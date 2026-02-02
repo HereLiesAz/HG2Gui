@@ -223,6 +223,11 @@
         </service>
         <service android:name=".managers.notifications.NotificationMonitorService" />
 
+        <activity android:name=".MitosisMenuActivity"
+            android:theme="@style/Custom.Solid" />
+        <activity android:name=".MagnetMenuActivity"
+            android:theme="@style/Custom.Solid" />
+
     </application>
 
 </manifest>

@@ -439,4 +439,6 @@
         \n$ open [pathToFile]
     </string>
 
+    <string name="help_menu">Open a random menu animation</string>
+
 </resources>

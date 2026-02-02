@@ -16,4 +16,14 @@
     <color name="term_gray">#444444</color>
     <color name="term_blue">#3B82F6</color>
 
+    <!-- Magnet UI Colors -->
+    <color name="primary">#13ec6a</color>
+    <color name="background_dark">#102217</color>
+    <color name="terminal_bg">#050a06</color>
+    <color name="terminal_border">#234832</color>
+
+    <!-- Mitosis Colors -->
+    <color name="mitosis_primary">#06f906</color>
+    <color name="mitosis_background_dark">#051005</color>
+
 </resources>
