@@ -223,18 +223,6 @@
         </service>
         <service android:name=".managers.notifications.NotificationMonitorService" />
 
-        <activity
-            android:name=".tuils.stuff.FakeLauncherActivity"
-            android:enabled="false">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-            </intent-filter>
-        </activity>
-
-        <activity
-            android:name=".MitosisMenuActivity"
-            android:label="Mitosis Menu"
-            android:theme="@style/Theme.AppCompat.NoActionBar" />
     </application>
 
 </manifest>

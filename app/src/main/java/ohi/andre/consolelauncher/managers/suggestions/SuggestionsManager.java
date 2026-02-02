@@ -65,6 +65,10 @@ import static ohi.andre.consolelauncher.commands.CommandTuils.xmlPrefsFiles;
 
 /**
  * Created by francescoandreuzzi on 25/12/15.
+ *
+ * Manages the suggestion system.
+ * Generates and displays context-aware suggestions based on user input.
+ * Integrates with {@link CommandMenu} to provide a point-and-click interface.
  */
 public class SuggestionsManager {
 
@@ -571,17 +575,7 @@ public class SuggestionsManager {
         List<MenuOption> menuOptions = CommandMenu.getSuggestions(fullInput);
         if (menuOptions != null && !menuOptions.isEmpty()) {
             for (MenuOption opt : menuOptions) {
-                String textBefore = Tuils.EMPTYSTRING;
-                String[] parts = fullInput.trim().split(Tuils.SPACE);
-                if (fullInput.endsWith(Tuils.SPACE)) {
-                     textBefore = fullInput.trim();
-                } else if (parts.length > 0) {
-                     // remove last part
-                     StringBuilder sb = new StringBuilder();
-                     for(int i=0; i<parts.length-1; i++) sb.append(parts[i]).append(Tuils.SPACE);
-                     textBefore = sb.toString().trim();
-                }
-
+                String textBefore = CommandMenu.calculateTextBefore(fullInput);
                 suggestionList.add(new Suggestion(textBefore, opt.value, false, Suggestion.TYPE_MENU_OPTION, opt));
             }
             if (!suggestionList.isEmpty()) {
