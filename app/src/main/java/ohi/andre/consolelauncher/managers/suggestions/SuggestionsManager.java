@@ -121,6 +121,10 @@ public class SuggestionsManager {
 
     private int quickCompare;
 
+    // Vine Menu State
+    private boolean useVineMenu = false;
+    private View currentVineView = null;
+
     public SuggestionsManager(LinearLayout suggestionsView, MainPack mainPack, TerminalManager mTerminalAdapter) {
         this.suggestionsView = suggestionsView;
         this.pack = mainPack;
@@ -317,6 +321,12 @@ public class SuggestionsManager {
     public void clear() {
         stop();
         suggestionsView.removeAllViews();
+
+        // Remove Vine View if it exists (it's added to parent usually)
+        if(currentVineView != null && currentVineView.getParent() != null) {
+            ((ViewGroup)currentVineView.getParent()).removeView(currentVineView);
+            currentVineView = null;
+        }
     }
 
     Runnable hideRunnable = new Runnable() {
@@ -413,7 +423,7 @@ public class SuggestionsManager {
         }
 
         if(suggestionRunnable == null) {
-            suggestionRunnable = new SuggestionRunnable(pack, suggestionsView, suggestionViewParams, (HorizontalScrollView) suggestionsView.getParent().getParent(), spaces);
+            suggestionRunnable = new SuggestionRunnable(pack, suggestionsView, suggestionViewParams, (HorizontalScrollView) suggestionsView.getParent().getParent(), spaces, this);
         }
 
         if (lastSuggestionThread != null) {
@@ -1279,6 +1289,52 @@ public class SuggestionsManager {
         }
 
         return true;
+    }
+
+    public void showVineMenu(List<Suggestion> suggestions) {
+        // Clear standard views
+        suggestionsView.removeAllViews();
+
+        if (currentVineView != null && currentVineView.getParent() != null) {
+            ((ViewGroup)currentVineView.getParent()).removeView(currentVineView);
+        }
+
+        // Get the HorizontalScrollView
+        View hsv = (View) suggestionsView.getParent().getParent();
+
+        // Get the root (RelativeLayout or LinearLayout)
+        ViewGroup parent = (ViewGroup) hsv.getParent();
+
+        // Create Vine Menu
+        currentVineView = VineMenuHelper.createVineMenu(pack.context, suggestions, this);
+
+        // Determine layout parameters based on parent type
+        if (parent instanceof android.widget.RelativeLayout) {
+            android.widget.RelativeLayout.LayoutParams lp = new android.widget.RelativeLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            );
+            // In RelativeLayout (input bottom), suggestions are above tools_view or input_group
+            // The id R.id.tools_view is visible in the file, but we need to ensure it exists
+            int toolsId = pack.context.getResources().getIdentifier("tools_view", "id", pack.context.getPackageName());
+            int inputGroupId = pack.context.getResources().getIdentifier("input_group", "id", pack.context.getPackageName());
+
+            if (toolsId != 0) {
+                lp.addRule(android.widget.RelativeLayout.ABOVE, toolsId);
+            } else if (inputGroupId != 0) {
+                lp.addRule(android.widget.RelativeLayout.ABOVE, inputGroupId);
+            }
+
+            currentVineView.setLayoutParams(lp);
+            parent.addView(currentVineView);
+        } else if (parent instanceof LinearLayout) {
+            // In LinearLayout (input up), suggestions are at the top
+            // We can just add it at index 0 or 1
+            parent.addView(currentVineView, 1); // Below HSV
+        } else {
+            // Fallback
+            parent.addView(currentVineView);
+        }
     }
 
     private boolean suggestBoundReplyApp(List<Suggestion> suggestions, String afterLastSpace, String beforeLastSpace) {
