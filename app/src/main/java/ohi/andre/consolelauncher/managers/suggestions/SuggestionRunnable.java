@@ -30,6 +30,9 @@ import java.util.List;
 import ohi.andre.consolelauncher.R;
 import ohi.andre.consolelauncher.commands.main.MainPack;
 import ohi.andre.consolelauncher.managers.AppsManager;
+import android.graphics.PorterDuff;
+import android.support.v4.content.ContextCompat;
+
 import ohi.andre.consolelauncher.managers.xml.XMLPrefsManager;
 import ohi.andre.consolelauncher.managers.xml.options.Suggestions;
 
@@ -146,6 +149,23 @@ public class SuggestionRunnable implements Runnable {
 
             if (sggView != null) {
                 sggView.setTag(R.id.suggestion_id, s);
+
+                if (s.type == SuggestionsManager.Suggestion.TYPE_MENU_OPTION) {
+                    MenuOption opt = (MenuOption) s.object;
+                    sggView.setText(opt.label);
+
+                    Drawable d = ContextCompat.getDrawable(suggestionsView.getContext(), R.drawable.suggestion_bg).mutate();
+                    d.setColorFilter(ContextCompat.getColor(suggestionsView.getContext(), opt.color), PorterDuff.Mode.MULTIPLY);
+                    sggView.setBackground(d);
+
+                    sggView.setTextColor(Color.BLACK);
+                    sggView.setPadding(spaces[2] * 2, spaces[3], spaces[2] * 2, spaces[3]);
+
+                    // Reset click listener or ensure it works
+                    // It is set in getSuggestionView
+
+                    continue; // Skip standard styling
+                }
 
                 sggView.setText(text);
 

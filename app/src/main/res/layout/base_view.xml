@@ -1,13 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/mainview"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:layout_height="match_parent">
 
-    <include
-        layout="@layout/about_device_view"
+    <LinearLayout
+        android:id="@+id/mainview"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
-</LinearLayout>
+        <include
+            layout="@layout/about_device_view"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#10FFFFFF"
+        android:clickable="false"
+        android:focusable="false" />
+
+    <TextView
+        android:id="@+id/panic_overlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/react_green"
+        android:gravity="center"
+        android:text="DON'T\nPANIC"
+        android:textColor="@color/react_red"
+        android:textSize="64sp"
+        android:textStyle="bold"
+        android:visibility="gone"
+        android:elevation="100dp" />
+
+</FrameLayout>
