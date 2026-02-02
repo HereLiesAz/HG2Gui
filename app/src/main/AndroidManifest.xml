@@ -213,6 +213,11 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".MitosisMenuActivity"
+            android:label="Menu"
+            android:theme="@style/Custom.Solid"/>
+
         <service
             android:name=".managers.notifications.NotificationService"
             android:label="@string/notification_reader"

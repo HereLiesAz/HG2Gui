@@ -35,6 +35,54 @@ public class MitosisMenuActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Randomize Theme
+        boolean useClockwork = new Random().nextBoolean();
+
+        if (useClockwork) {
+            setupClockworkTheme();
+        } else {
+            setupMitosisTheme();
+        }
+    }
+
+    private void setupClockworkTheme() {
+        setContentView(R.layout.activity_clockwork_menu);
+
+        // Gear Rotation
+        View gear = findViewById(R.id.clockwork_gear);
+        if (gear != null) {
+            ObjectAnimator rotate = ObjectAnimator.ofFloat(gear, "rotation", 0f, 360f);
+            rotate.setDuration(10000);
+            rotate.setInterpolator(new LinearInterpolator());
+            rotate.setRepeatCount(ValueAnimator.INFINITE);
+            rotate.start();
+        }
+
+        // Lever Movement (Cranking)
+        View lever = findViewById(R.id.clockwork_lever);
+        if (lever != null) {
+            ObjectAnimator crank = ObjectAnimator.ofFloat(lever, "rotation", -25f, 0f, -25f);
+            crank.setDuration(2000);
+            crank.setInterpolator(new AccelerateDecelerateInterpolator());
+            crank.setRepeatCount(ValueAnimator.INFINITE);
+            crank.start();
+        }
+
+        // Card Slide In
+        View card = findViewById(R.id.clockwork_card);
+        if (card != null) {
+            // Start off-screen
+            card.setTranslationX(1000f);
+            ObjectAnimator slide = ObjectAnimator.ofFloat(card, "translationX", 1000f, 0f);
+            slide.setDuration(800);
+            slide.setStartDelay(500);
+            slide.setInterpolator(new AccelerateDecelerateInterpolator());
+            slide.start();
+        }
+    }
+
+    private void setupMitosisTheme() {
         setContentView(R.layout.activity_mitosis_menu);
 
         bubbleContainer = findViewById(R.id.bubble_container);
