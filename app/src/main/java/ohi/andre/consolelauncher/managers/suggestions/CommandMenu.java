@@ -6,7 +6,6 @@ import java.util.List;
 
 import ohi.andre.consolelauncher.R;
 import ohi.andre.consolelauncher.managers.SystemContext;
-import ohi.andre.consolelauncher.tuils.Tuils;
 
 /**
  * Defines the static command tree for the point-and-click interface.
@@ -23,13 +22,13 @@ public class CommandMenu {
         SystemContext context = SystemContext.getInstance();
 
         // Colors
-        int C_GREEN = R.color.react_green;
-        int C_ORANGE = R.color.react_orange;
-        int C_RED = R.color.react_red;
-        int C_CYAN = R.color.react_cyan;
-        int C_PURPLE = R.color.react_purple;
-        int C_GRAY = R.color.react_gray;
-        int C_BLUE = R.color.react_blue;
+        int C_GREEN = R.color.term_green;
+        int C_ORANGE = R.color.term_orange;
+        int C_RED = R.color.term_red;
+        int C_CYAN = R.color.term_cyan;
+        int C_PURPLE = R.color.term_purple;
+        int C_GRAY = R.color.term_gray;
+        int C_BLUE = R.color.term_blue;
 
         // Common Packages
         List<MenuOption> packagesCommon = new ArrayList<>();
@@ -118,27 +117,6 @@ public class CommandMenu {
         tree.add(new MenuOption("sys-switch", "SWITCH OS", "switch-os", C_GRAY, switchChildren));
 
         return tree;
-    }
-
-    /**
-     * Helper to calculate the text that should appear before the suggestion.
-     * Centralizes tokenization logic to avoid inconsistency.
-     * @param input Full user input
-     * @return The prefix string (e.g., "git " for input "git st")
-     */
-    public static String calculateTextBefore(String input) {
-        if (input == null) return Tuils.EMPTYSTRING;
-        String fullInput = input;
-        String[] parts = fullInput.trim().split(Tuils.SPACE);
-        if (fullInput.endsWith(Tuils.SPACE)) {
-            return fullInput.trim();
-        } else if (parts.length > 0) {
-            // remove last part
-            StringBuilder sb = new StringBuilder();
-            for(int i=0; i<parts.length-1; i++) sb.append(parts[i]).append(Tuils.SPACE);
-            return sb.toString().trim();
-        }
-        return Tuils.EMPTYSTRING;
     }
 
     /**

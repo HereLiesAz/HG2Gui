@@ -154,12 +154,9 @@ public class SuggestionRunnable implements Runnable {
                     MenuOption opt = (MenuOption) s.object;
                     sggView.setText(opt.label);
 
-                    Drawable d = ContextCompat.getDrawable(suggestionsView.getContext(), R.drawable.suggestion_bg);
-                    if (d != null) {
-                        d = d.mutate();
-                        d.setColorFilter(ContextCompat.getColor(suggestionsView.getContext(), opt.colorRes), PorterDuff.Mode.MULTIPLY);
-                        sggView.setBackground(d);
-                    }
+                    Drawable d = ContextCompat.getDrawable(suggestionsView.getContext(), R.drawable.suggestion_bg).mutate();
+                    d.setColorFilter(ContextCompat.getColor(suggestionsView.getContext(), opt.color), PorterDuff.Mode.MULTIPLY);
+                    sggView.setBackground(d);
 
                     sggView.setTextColor(Color.BLACK);
                     sggView.setPadding(spaces[2] * 2, spaces[3], spaces[2] * 2, spaces[3]);

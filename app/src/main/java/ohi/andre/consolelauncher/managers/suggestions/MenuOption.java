@@ -6,22 +6,22 @@ public class MenuOption {
     public String id;
     public String label;
     public String value;
-    public int colorRes;
+    public int color;
     public List<MenuOption> children;
 
-    public MenuOption(String id, String label, String value, int colorRes) {
+    public MenuOption(String id, String label, String value, int color) {
         this.id = id;
         this.label = label;
         this.value = value;
-        this.colorRes = colorRes;
+        this.color = color;
         this.children = null;
     }
 
-    public MenuOption(String id, String label, String value, int colorRes, List<MenuOption> children) {
+    public MenuOption(String id, String label, String value, int color, List<MenuOption> children) {
         this.id = id;
         this.label = label;
         this.value = value;
-        this.colorRes = colorRes;
+        this.color = color;
         this.children = children;
     }
 }
