@@ -25,5 +25,15 @@
     <color name="origami_background_light">#f6f8f7</color>
     <color name="origami_background_dark">#102217</color>
     <color name="origami_terminal_black">#050a07</color>
+    <!-- Bubble Pop Surface Colors -->
+    <color name="bubble_primary">#13ec6a</color>
+    <color name="bubble_bg_light">#f6f8f7</color>
+    <color name="bubble_bg_dark">#102217</color>
+    <color name="bubble_void">#050a05</color>
+    <!-- Tentacle Interface Colors -->
+    <color name="tentacle_primary">#13ec6a</color>
+    <color name="tentacle_bg">#102217</color>
+    <color name="tentacle_bg_light">#f6f8f7</color>
+    <color name="tentacle_black">#050a07</color>
 
 </resources>
