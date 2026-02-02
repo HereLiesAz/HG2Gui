@@ -1,0 +1,18 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+        android:width="200dp"
+        android:height="50dp"
+        android:viewportWidth="200"
+        android:viewportHeight="50">
+    <!-- Arm -->
+    <path
+        android:fillColor="#d41111"
+        android:pathData="M20,15 L180,15 L180,35 L20,35 Z" />
+    <!-- Hinge 1 -->
+    <path
+        android:fillColor="#C5A059"
+        android:pathData="M30,25 m-8,0 a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0" />
+    <!-- Hinge 2 -->
+    <path
+        android:fillColor="#C5A059"
+        android:pathData="M170,25 m-8,0 a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0" />
+</vector>

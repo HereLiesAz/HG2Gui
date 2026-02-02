@@ -58,6 +58,11 @@ import ohi.andre.consolelauncher.tuils.interfaces.Inputable;
 import ohi.andre.consolelauncher.tuils.interfaces.Outputable;
 import ohi.andre.consolelauncher.tuils.interfaces.Reloadable;
 
+/**
+ * The main activity of the application.
+ * Initializes the UI, handles permissions, and manages the lifecycle of the terminal environment.
+ * It serves as the container for the {@link UIManager} and {@link MainManager}.
+ */
 public class LauncherActivity extends AppCompatActivity implements Reloadable {
 
     public static final int COMMAND_REQUEST_PERMISSION = 10;

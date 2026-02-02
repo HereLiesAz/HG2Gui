@@ -50,6 +50,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.*/
 
+/**
+ * Manages the visual aspect of the terminal.
+ * Handles the Input (EditText) and Output (TextView) views, processes user key events,
+ * and maintains the command history.
+ */
 public class TerminalManager {
 
     private final int SCROLL_DELAY = 200;
