@@ -224,6 +224,10 @@
         <service android:name=".managers.notifications.NotificationMonitorService" />
 
         <activity android:name=".MitosisMenuActivity"
+            android:theme="@style/Custom.Solid" />
+        <activity android:name=".MagnetMenuActivity"
+            android:theme="@style/Custom.Solid" />
+
             android:theme="@style/Theme.AppCompat.NoActionBar"/>
         <activity android:name=".OrigamiMenuActivity"
             android:theme="@style/Theme.AppCompat.NoActionBar"/>

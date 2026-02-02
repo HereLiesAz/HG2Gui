@@ -1,0 +1,328 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/terminal_bg">
+
+    <!-- Scanline Overlay -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/scanline"
+        android:alpha="0.4"/>
+
+    <!-- Header -->
+    <RelativeLayout
+        android:id="@+id/header"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:padding="8dp"
+        android:background="#CC102217"> <!-- Semi-transparent dark -->
+
+        <!-- Icon -->
+        <FrameLayout
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="#1A13ec6a"
+            android:padding="8dp">
+             <TextView
+                 android:layout_width="wrap_content"
+                 android:layout_height="wrap_content"
+                 android:text=">_"
+                 android:textColor="@color/primary"
+                 android:textSize="14sp"
+                 android:layout_gravity="center"/>
+        </FrameLayout>
+
+        <!-- Title -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:orientation="vertical"
+            android:gravity="center">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="HG2Gui // V.1.0"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold"
+                android:textSize="14sp"/>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="MAGNET_MOD_ACTIVE"
+                android:textColor="#9913ec6a"
+                android:textSize="10sp"
+                android:typeface="monospace"/>
+        </LinearLayout>
+
+        <!-- Settings Button -->
+        <ImageView
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_alignParentEnd="true"
+            android:padding="8dp"
+            android:src="@android:drawable/ic_menu_preferences"
+            android:tint="@color/primary"/>
+    </RelativeLayout>
+
+    <!-- Content -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/header"
+        android:layout_marginBottom="60dp"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Status -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginBottom="24dp">
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+                <ProgressBar
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:indeterminate="true"/>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text=" FIELD_STABILIZING..."
+                    android:textColor="@color/primary"
+                    android:textSize="12sp"
+                    android:typeface="monospace"/>
+            </LinearLayout>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="CORE_SYSTEM\nONLINE"
+                android:textColor="#FFFFFF"
+                android:textSize="32sp"
+                android:textStyle="bold"/>
+        </LinearLayout>
+
+        <!-- Magnetic Flux -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="120dp"
+            android:background="#80102217"
+            android:padding="8dp"
+            android:layout_marginBottom="24dp">
+
+            <!-- Custom View for Wave -->
+            <view class="ohi.andre.consolelauncher.MagnetMenuActivity$WaveView"
+                android:id="@+id/wave_view"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"/>
+
+            <!-- Overlay Info -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="MAGNETIC_FLUX_RIPPLE\nHIGH_VELOCITY"
+                android:textColor="@color/primary"
+                android:textSize="10sp"
+                android:layout_gravity="top|start"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="PULL_FORCE\n9.8m/s²"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:gravity="end"
+                android:layout_gravity="top|end"/>
+        </FrameLayout>
+
+        <!-- Animation Stage -->
+        <FrameLayout
+            android:id="@+id/stage_area"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="#4D102217"
+            android:layout_marginBottom="24dp">
+
+            <!-- Magnet -->
+            <FrameLayout
+                android:id="@+id/magnet"
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:layout_gravity="center">
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/magnet_circle"/>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:text="SYSTEM_"
+                    android:textColor="@color/primary"
+                    android:background="#102217"
+                    android:padding="4dp"
+                    android:textSize="12sp"
+                    android:textStyle="bold"/>
+            </FrameLayout>
+
+            <!-- Scraps (Initially positioned, will be moved by code) -->
+            <LinearLayout
+                android:id="@+id/scrap_logs"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/scrap_shape"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
+                android:layout_gravity="top|start"
+                android:layout_marginTop="30dp"
+                android:layout_marginStart="30dp">
+                <TextView android:text="LOGS" android:textColor="#FFF" android:textSize="12sp" android:textStyle="bold"/>
+            </LinearLayout>
+
+             <LinearLayout
+                android:id="@+id/scrap_net"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/scrap_shape"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="40dp"
+                android:layout_marginEnd="40dp">
+                <TextView android:text="NET" android:textColor="#FFF" android:textSize="12sp" android:textStyle="bold"/>
+            </LinearLayout>
+
+             <LinearLayout
+                android:id="@+id/scrap_audio"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/scrap_shape"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
+                android:layout_gravity="bottom|end"
+                android:layout_marginBottom="30dp"
+                android:layout_marginEnd="30dp">
+                <TextView android:text="AUDIO" android:textColor="#FFF" android:textSize="12sp" android:textStyle="bold"/>
+            </LinearLayout>
+
+             <LinearLayout
+                android:id="@+id/scrap_debug"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/scrap_shape"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
+                android:layout_gravity="bottom|start"
+                android:layout_marginBottom="50dp"
+                android:layout_marginStart="50dp">
+                <TextView android:text="DEBUG" android:textColor="#FFF" android:textSize="12sp" android:textStyle="bold"/>
+            </LinearLayout>
+
+        </FrameLayout>
+
+        <!-- Terminal Input -->
+         <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="COMMAND_LINE_INPUT"
+                android:textColor="#9913ec6a"
+                android:textSize="10sp"
+                android:layout_marginBottom="4dp"/>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:background="#102217"
+                android:orientation="horizontal">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:text=">"
+                    android:textColor="@color/primary"
+                    android:gravity="center"
+                    android:padding="12dp"
+                    android:textStyle="bold"/>
+                <EditText
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="@null"
+                    android:hint="INIT_SEQUENCE..."
+                    android:textColor="#FFF"
+                    android:textColorHint="#666"
+                    android:paddingStart="8dp"
+                    android:typeface="monospace"/>
+                 <ImageView
+                    android:layout_width="40dp"
+                    android:layout_height="match_parent"
+                    android:src="@android:drawable/ic_input_add"
+                    android:tint="@color/primary"
+                    android:scaleType="center"
+                    android:padding="10dp"/>
+            </LinearLayout>
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- Physics Controls -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:background="#E6102217"
+        android:padding="12dp"
+        android:gravity="center">
+
+        <TextView
+             android:layout_width="wrap_content"
+             android:layout_height="wrap_content"
+             android:text="GRAVITY: 98%"
+             android:textColor="@color/primary"
+             android:background="#1A13ec6a"
+             android:padding="8dp"
+             android:textSize="10sp"
+             android:textStyle="bold"
+             android:layout_marginEnd="8dp"/>
+
+         <TextView
+             android:layout_width="wrap_content"
+             android:layout_height="wrap_content"
+             android:text="FRICTION: OFF"
+             android:textColor="#99FFFFFF"
+             android:background="#1AFFFFFF"
+             android:padding="8dp"
+             android:textSize="10sp"
+             android:textStyle="bold"
+             android:layout_marginEnd="8dp"/>
+
+          <TextView
+             android:layout_width="wrap_content"
+             android:layout_height="wrap_content"
+             android:text="VELOCITY: MAX"
+             android:textColor="#99FFFFFF"
+             android:background="#1AFFFFFF"
+             android:padding="8dp"
+             android:textSize="10sp"
+             android:textStyle="bold"/>
+
+    </LinearLayout>
+
+</RelativeLayout>
