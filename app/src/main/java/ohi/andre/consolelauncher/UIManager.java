@@ -1355,6 +1355,27 @@ public class UIManager implements OnTouchListener {
 
         mTerminalAdapter = new TerminalManager(terminalView, inputView, prefixView, submitView, backView, nextView, deleteView, pasteView, context, mainPack, executer);
 
+        LinearLayout cliTabsGroup = (LinearLayout) inputOutputView.findViewById(R.id.cli_tabs_group);
+        if (cliTabsGroup != null) {
+            String[] tabs = new String[] {
+                    "./script.sh", "brew install", "code .", "clear", "ls -la", "switch-os macos", "switch-os windows"
+            };
+            for (final String tabCmd : tabs) {
+                TextView tabView = (TextView) inflater.inflate(R.layout.item_cli_tab, cliTabsGroup, false);
+                tabView.setText(tabCmd);
+                tabView.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        if (mTerminalAdapter != null) {
+                            mTerminalAdapter.setInput(tabCmd);
+                            mTerminalAdapter.simulateEnter();
+                        }
+                    }
+                });
+                cliTabsGroup.addView(tabView);
+            }
+        }
+
         if (XMLPrefsManager.getBoolean(Suggestions.show_suggestions)) {
             HorizontalScrollView sv = (HorizontalScrollView) rootView.findViewById(R.id.suggestions_container);
             sv.setFocusable(false);
