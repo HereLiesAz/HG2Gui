@@ -238,6 +238,12 @@
             android:theme="@style/Theme.AppCompat.NoActionBar"/>
 
         <activity
+            android:name=".DontPanicActivity"
+            android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
+            android:launchMode="singleTop"
+            android:screenOrientation="portrait"/>
+
+        <activity
             android:name=".MitosisMenuActivity"
             android:theme="@style/Theme.AppCompat.NoActionBar"
             android:screenOrientation="portrait"/>

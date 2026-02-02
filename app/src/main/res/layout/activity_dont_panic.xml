@@ -1,0 +1,331 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/panic_background_dark"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- Header -->
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingBottom="16dp">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="SIM DECK 42"
+                android:textColor="@android:color/white"
+                android:textStyle="bold"
+                android:textSize="18sp"
+                android:letterSpacing="0.1"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="PHYSICS WORKBENCH"
+                android:textColor="@color/panic_primary"
+                android:textSize="12sp"
+                android:letterSpacing="0.2"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentRight="true"
+            android:orientation="vertical"
+            android:gravity="end">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="HG2Gui v4.2"
+                android:textColor="@color/panic_secondary"
+                android:textStyle="bold"/>
+
+             <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="ONLINE"
+                android:textColor="#99ffffff"
+                android:textSize="10sp"/>
+        </LinearLayout>
+    </RelativeLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#33f20d0d"
+        android:layout_marginBottom="16dp"/>
+
+    <!-- Object Grid Header -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="OBJECT GRID"
+        android:textColor="@color/panic_primary"
+        android:textStyle="bold"
+        android:paddingLeft="8dp"
+        android:layout_marginBottom="8dp"/>
+
+    <!-- Grid -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:weightSum="2"
+        android:layout_marginBottom="8dp">
+
+        <!-- Item 1 -->
+        <LinearLayout
+            android:id="@+id/btn_obj_twl"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:background="@drawable/bg_panic_button"
+            android:padding="16dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginRight="8dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🧖"
+                android:textSize="32sp"
+                android:layout_gravity="center"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="OBJ_TWL"
+                android:textColor="@android:color/white"
+                android:textStyle="bold"/>
+             <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Mass: 0.42"
+                android:textColor="@color/panic_primary"
+                android:textSize="10sp"/>
+        </LinearLayout>
+
+        <!-- Item 2 -->
+        <LinearLayout
+            android:id="@+id/btn_obj_tea"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:background="@drawable/bg_panic_button"
+            android:padding="16dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginLeft="8dp">
+
+             <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="☕"
+                android:textSize="32sp"
+                android:layout_gravity="center"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="OBJ_TEA"
+                android:textColor="@android:color/white"
+                android:textStyle="bold"/>
+             <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Mass: 0.25"
+                android:textColor="@color/panic_primary"
+                android:textSize="10sp"/>
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:weightSum="2"
+        android:layout_marginBottom="16dp">
+
+        <!-- Item 3 -->
+        <LinearLayout
+            android:id="@+id/btn_obj_thmb"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:background="@drawable/bg_panic_button_selected"
+            android:padding="16dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginRight="8dp">
+
+             <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="👍"
+                android:textSize="32sp"
+                android:layout_gravity="center"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="OBJ_THMB"
+                android:textColor="@color/panic_primary"
+                android:textStyle="bold"/>
+             <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="SELECTED"
+                android:background="@color/panic_primary"
+                android:textColor="@android:color/white"
+                android:textSize="10sp"
+                android:padding="2dp"/>
+        </LinearLayout>
+
+        <!-- Item 4 -->
+        <LinearLayout
+            android:id="@+id/btn_obj_time"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:background="@drawable/bg_panic_button"
+            android:padding="16dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginLeft="8dp">
+
+             <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🕒"
+                android:textSize="32sp"
+                android:layout_gravity="center"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="OBJ_TIME"
+                android:textColor="@android:color/white"
+                android:textStyle="bold"/>
+             <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Mass: 0.05"
+                android:textColor="@color/panic_primary"
+                android:textSize="10sp"/>
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Physics Mode -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="PHYSICS MODE"
+        android:textColor="@color/panic_primary"
+        android:textStyle="bold"
+        android:layout_marginBottom="8dp"/>
+
+    <RadioGroup
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="@drawable/bg_panic_surface"
+        android:padding="4dp"
+        android:layout_marginBottom="16dp">
+
+        <RadioButton
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="SQUASH"
+            android:button="@null"
+            android:gravity="center"
+            android:textColor="@android:color/white"
+            android:background="@drawable/bg_panic_radio"
+            android:padding="8dp"/>
+
+        <RadioButton
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="STRETCH"
+            android:button="@null"
+            android:gravity="center"
+            android:textColor="@android:color/white"
+            android:background="@drawable/bg_panic_radio"
+            android:padding="8dp"/>
+
+        <RadioButton
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="SWING"
+            android:checked="true"
+            android:button="@null"
+            android:gravity="center"
+            android:textColor="@android:color/white"
+            android:background="@drawable/bg_panic_radio"
+            android:padding="8dp"/>
+    </RadioGroup>
+
+    <!-- Console -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/bg_panic_console"
+        android:padding="12dp"
+        android:layout_marginBottom="16dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="> SYSTEM_LOG: Physics engine initialized."
+            android:textColor="#9939ff14"
+            android:fontFamily="monospace"
+            android:textSize="12sp"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="> LOADING: vectors_v2.json ... OK"
+            android:textColor="#9939ff14"
+            android:fontFamily="monospace"
+            android:textSize="12sp"/>
+
+        <TextView
+            android:id="@+id/tv_console_error"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="> ERROR: "
+            android:textColor="@color/panic_primary"
+            android:fontFamily="monospace"
+            android:textSize="12sp"/>
+    </LinearLayout>
+
+    <!-- Graph -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="KINETIC VELOCITY"
+        android:textColor="@color/panic_primary"
+        android:textStyle="bold"
+        android:layout_marginBottom="4dp"/>
+
+    <ohi.andre.consolelauncher.components.PanicGraphView
+        android:layout_width="match_parent"
+        android:layout_height="150dp"
+        android:background="@drawable/bg_panic_surface"
+        android:padding="2dp"/>
+
+</LinearLayout>

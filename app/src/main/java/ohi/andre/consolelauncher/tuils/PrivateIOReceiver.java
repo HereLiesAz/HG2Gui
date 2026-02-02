@@ -15,6 +15,7 @@ import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 
 import ohi.andre.consolelauncher.BuildConfig;
+import ohi.andre.consolelauncher.DontPanicActivity;
 import ohi.andre.consolelauncher.MainManager;
 import ohi.andre.consolelauncher.managers.TerminalManager;
 import ohi.andre.consolelauncher.tuils.interfaces.Inputable;
@@ -89,8 +90,15 @@ public class PrivateIOReceiver extends BroadcastReceiver {
                     ((SpannableStringBuilder) text).setSpan(new LongClickableSpan(singleClickExtraObject, longClickExtraObject), 0, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 }
 
-                if(color != Integer.MAX_VALUE) outputable.onOutput(color, text);
-                else {
+                if(color != Integer.MAX_VALUE) {
+                    outputable.onOutput(color, text);
+
+                    if(color == Color.RED) {
+                        Intent panicIntent = new Intent(activity, DontPanicActivity.class);
+                        panicIntent.putExtra(DontPanicActivity.EXTRA_ERROR, text.toString());
+                        activity.startActivity(panicIntent);
+                    }
+                } else {
                     int type = intent.getIntExtra(TYPE, -1);
                     if(type != -1) outputable.onOutput(text, type);
                     else outputable.onOutput(text, TerminalManager.CATEGORY_OUTPUT);
