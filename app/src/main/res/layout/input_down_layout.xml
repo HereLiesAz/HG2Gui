@@ -19,7 +19,9 @@
             android:id="@+id/prefix_view"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="@color/term_cyan"/>
+            android:textColor="@color/hg_primary"
+            android:textStyle="bold"
+            android:textSize="18sp"/>
 
         <ohi.andre.consolelauncher.tuils.OutlineEditText
             android:id="@+id/input_view"
@@ -30,8 +32,9 @@
             android:background="@null"
             android:imeOptions="actionGo|flagNoFullscreen"
             android:textCursorDrawable="@drawable/cursor"
-            android:textColor="@color/term_green"
+            android:textColor="@color/hg_terminal_green"
             android:textStyle="bold"
+            android:textSize="18sp"
 
             android:importantForAutofill="no"
 
@@ -53,7 +56,8 @@
                 android:id="@+id/submit_tv"
 
                 android:background="@null"
-                android:src="@drawable/ic_enter"/>
+                android:src="@drawable/ic_enter"
+                android:tint="@color/hg_primary"/>
 
         </LinearLayout>
 
@@ -61,7 +65,7 @@
 
     <LinearLayout android:id="@+id/tools_view"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
+        android:layout_height="@dimen/tools_height"
         android:orientation="horizontal"
         android:visibility="gone"
 
@@ -162,7 +166,10 @@
                 android:scrollHorizontally="false"
                 android:scrollbars="vertical"
                 android:textIsSelectable="true"
-                android:gravity="bottom"/>
+                android:gravity="bottom"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp"
+                android:fontFamily="monospace"/>
 
         </LinearLayout>
 

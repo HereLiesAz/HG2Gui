@@ -61,4 +61,18 @@
     <color name="tentacle_bg_light">#f6f8f7</color>
     <color name="tentacle_black">#050a07</color>
 
+    <!-- HG2Gui Palette -->
+    <color name="hg_primary">#0db9f2</color>
+    <color name="hg_secondary">#ff424e</color>
+    <color name="hg_terminal_green">#0bda57</color>
+    <color name="hg_background_light">#f5f8f8</color>
+    <color name="hg_background_dark">#101e23</color>
+    <color name="hg_deep_space">#050a0c</color>
+    <color name="hg_panel_bg">#66182d34</color> <!-- #182d34 with 40% opacity approx -->
+    <color name="hg_border_color">#315a68</color>
+    <color name="hg_text_dim">#90bccb</color>
+    <color name="hg_scanline">#0DB9F2</color>
+    <color name="hg_key_bg">#253941</color>
+    <color name="hg_key_bg_special">#314a53</color>
+
 </resources>
