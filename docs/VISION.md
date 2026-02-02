@@ -7,7 +7,7 @@ To create the ultimate "Hitchhiker's Guide" style terminal for Android—a devic
 
 ### Phase 1: Foundation (Current)
 -   [x] Decouple from legacy launcher features.
--   [x] Implement "React-like" dark UI with scanline aesthetics.
+-   [x] Implement dark UI with scanline aesthetics.
 -   [x] Build the "Point-and-Click" command menu system.
 -   [x] Add basic OS context switching simulation.
 
