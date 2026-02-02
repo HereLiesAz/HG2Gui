@@ -76,6 +76,14 @@ public class CommandMenu {
         TREE.add(new MenuOption("root-cd", "CD", "cd", C_GRAY));
         TREE.add(new MenuOption("root-clear", "CLEAR", "clear", C_GRAY));
         TREE.add(new MenuOption("root-help", "HELP", "help", C_GREEN));
+
+        // Switch OS
+        List<MenuOption> switchOsChildren = new ArrayList<>();
+        switchOsChildren.add(new MenuOption("sw-ubuntu", "UBUNTU", "ubuntu", C_ORANGE, R.drawable.ic_os_ubuntu));
+        switchOsChildren.add(new MenuOption("sw-macos", "MACOS", "macos", C_GRAY, R.drawable.ic_os_macos));
+        switchOsChildren.add(new MenuOption("sw-win", "WINDOWS", "windows", C_BLUE, R.drawable.ic_os_windows));
+
+        TREE.add(new MenuOption("sys-switch", "SWITCH OS", "switch-os", C_GRAY, switchOsChildren));
     }
 
     public static List<MenuOption> getSuggestions(String input) {
