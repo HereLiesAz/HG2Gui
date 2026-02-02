@@ -16,4 +16,21 @@
     <color name="term_gray">#444444</color>
     <color name="term_blue">#3B82F6</color>
 
+    <!-- Clockwork Theme Colors -->
+    <color name="clockwork_primary">#d41111</color>
+    <color name="clockwork_background_light">#f8f6f6</color>
+    <color name="clockwork_background_dark">#221010</color>
+    <color name="clockwork_gold_metallic">#C5A059</color>
+    <color name="clockwork_gold_dark">#8a6d3b</color>
+    <color name="clockwork_terminal_dim">#4a2a2a</color>
+    <color name="clockwork_gear_bg">#2b1d10</color>
+    <color name="clockwork_lever_border">#8a0b0b</color>
+
+    <color name="clockwork_background_dark_90">#E6221010</color>
+    <color name="clockwork_primary_70">#B3d41111</color>
+    <color name="clockwork_primary_20">#33d41111</color>
+    <color name="clockwork_primary_60">#99d41111</color>
+    <color name="clockwork_footer_input_bg">#150a0a</color>
+    <color name="clockwork_grid_line">#331515</color>
+
 </resources>
