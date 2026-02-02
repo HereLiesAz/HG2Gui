@@ -439,4 +439,7 @@
         \n$ open [pathToFile]
     </string>
 
+    <string name="help_menu">Open the random menu</string>
+    <string name="origami_title">Origami Menu</string>
+
 </resources>

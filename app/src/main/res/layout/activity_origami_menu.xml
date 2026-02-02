@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/origami_background_dark"
+    android:orientation="vertical">
+
+    <!-- Top Bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#E6102217"
+        android:padding="16dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <!-- Icon Box -->
+        <FrameLayout
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="#1A13ec6a"
+            android:padding="12dp">
+             <ImageView
+                 android:layout_width="match_parent"
+                 android:layout_height="match_parent"
+                 android:src="@drawable/ic_folder_open"
+                 android:tint="@color/origami_primary"/>
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:paddingLeft="16dp">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="SYSTEM_READY // VARIANT_03"
+                android:textColor="@android:color/white"
+                android:textSize="14sp"
+                android:textStyle="bold"/>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="ORIGAMI_MODULE_ACTIVE"
+                android:textColor="#9913ec6a"
+                android:textSize="10sp"/>
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="HG2GUI"
+            android:textColor="@color/origami_primary"
+            android:background="#1A13ec6a"
+            android:padding="4dp"
+            android:textSize="12sp"
+            android:textStyle="bold"/>
+    </LinearLayout>
+
+    <!-- Main Content -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Headline -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginBottom="24dp">
+            <LinearLayout
+                 android:layout_width="match_parent"
+                 android:layout_height="wrap_content"
+                 android:orientation="horizontal"
+                 android:gravity="center_vertical">
+                 <TextView
+                     android:layout_width="wrap_content"
+                     android:layout_height="wrap_content"
+                     android:text="> "
+                     android:textColor="@color/origami_primary"/>
+                 <TextView
+                     android:layout_width="wrap_content"
+                     android:layout_height="wrap_content"
+                     android:text="EXECUTE_UNFOLD.EXE_"
+                     android:textColor="@android:color/white"
+                     android:textSize="20sp"
+                     android:textStyle="bold"/>
+            </LinearLayout>
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/origami_primary"
+                android:alpha="0.5"
+                android:layout_marginTop="8dp"/>
+        </LinearLayout>
+
+        <!-- Unfold Card (Animated Container) -->
+        <FrameLayout
+            android:id="@+id/card_container"
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:background="@drawable/bg_origami_card"
+            android:layout_marginBottom="24dp">
+
+            <!-- Inner Content -->
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <!-- Center Icon -->
+                <ImageView
+                    android:layout_width="64dp"
+                    android:layout_height="64dp"
+                    android:src="@drawable/ic_folder_open"
+                    android:tint="@color/origami_primary"
+                    android:layout_centerInParent="true"/>
+
+                <!-- Bottom Status -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentBottom="true"
+                    android:background="#0D13ec6a"
+                    android:padding="12dp"
+                    android:gravity="center_vertical">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="STATUS: SEQUENCE_COMPLETE"
+                        android:textColor="@color/origami_primary"
+                        android:textSize="10sp"
+                        android:textStyle="bold"/>
+                     <View android:layout_width="14dp" android:layout_height="14dp" android:background="@color/origami_primary"/>
+                </LinearLayout>
+            </RelativeLayout>
+
+            <!-- Corner Decors -->
+            <View android:layout_width="16dp" android:layout_height="1dp" android:background="@color/origami_primary" android:layout_gravity="top|left"/>
+            <View android:layout_width="1dp" android:layout_height="16dp" android:background="@color/origami_primary" android:layout_gravity="top|left"/>
+
+            <View android:layout_width="16dp" android:layout_height="1dp" android:background="@color/origami_primary" android:layout_gravity="top|right"/>
+            <View android:layout_width="1dp" android:layout_height="16dp" android:background="@color/origami_primary" android:layout_gravity="top|right"/>
+
+            <View android:layout_width="16dp" android:layout_height="1dp" android:background="@color/origami_primary" android:layout_gravity="bottom|left"/>
+            <View android:layout_width="1dp" android:layout_height="16dp" android:background="@color/origami_primary" android:layout_gravity="bottom|left"/>
+
+            <View android:layout_width="16dp" android:layout_height="1dp" android:background="@color/origami_primary" android:layout_gravity="bottom|right"/>
+            <View android:layout_width="1dp" android:layout_height="16dp" android:background="@color/origami_primary" android:layout_gravity="bottom|right"/>
+
+        </FrameLayout>
+
+        <!-- Menu List -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="[ NAVIGATION ]"
+                android:textColor="@android:color/white"
+                android:background="@drawable/bg_origami_menu_item"
+                android:layout_marginBottom="12dp"
+                android:gravity="left|center_vertical"
+                android:padding="16dp"/>
+
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="[ SENSOR_ARRAY ]"
+                android:textColor="@android:color/white"
+                android:background="@drawable/bg_origami_menu_item"
+                android:layout_marginBottom="12dp"
+                android:gravity="left|center_vertical"
+                android:padding="16dp"/>
+
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="[ COMM_UPLINK ]"
+                android:textColor="@android:color/white"
+                android:background="@drawable/bg_origami_menu_item"
+                android:layout_marginBottom="12dp"
+                android:gravity="left|center_vertical"
+                android:padding="16dp"/>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- Footer -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#CC102217"
+        android:padding="16dp"
+        android:orientation="vertical">
+
+        <LinearLayout
+             android:layout_width="match_parent"
+             android:layout_height="wrap_content"
+             android:orientation="horizontal">
+             <TextView android:text="MEM:" android:textColor="@color/origami_primary" android:layout_width="0dp" android:layout_weight="1"/>
+             <TextView android:text="64KB" android:textColor="@android:color/white" android:layout_width="wrap_content"/>
+        </LinearLayout>
+        <LinearLayout
+             android:layout_width="match_parent"
+             android:layout_height="wrap_content"
+             android:orientation="horizontal">
+             <TextView android:text="UPTIME:" android:textColor="@color/origami_primary" android:layout_width="0dp" android:layout_weight="1"/>
+             <TextView android:text="04:22:19" android:textColor="@android:color/white" android:layout_width="wrap_content"/>
+        </LinearLayout>
+         <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="HG2GUI_V3.0 // ORIGAMI_MODULE"
+            android:gravity="center"
+            android:textColor="#6613ec6a"
+            android:textSize="10sp"
+            android:layout_marginTop="8dp"/>
+    </LinearLayout>
+
+</LinearLayout>
