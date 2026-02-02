@@ -439,4 +439,6 @@
         \n$ open [pathToFile]
     </string>
 
+    <string name="help_surface">Open the Bubble Pop Surface menu</string>
+
 </resources>

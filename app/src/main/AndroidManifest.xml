@@ -224,6 +224,10 @@
         <service android:name=".managers.notifications.NotificationMonitorService" />
 
         <activity
+            android:name=".MitosisMenuActivity"
+            android:theme="@style/Theme.AppCompat.NoActionBar"
+            android:screenOrientation="portrait"/>
+
             android:name=".tuils.stuff.FakeLauncherActivity"
             android:enabled="false">
             <intent-filter>
