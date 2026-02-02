@@ -7,14 +7,14 @@
 
     <color name="hint_color">#AAA</color>
 
-    <color name="react_bg">#111111</color>
-    <color name="react_green">#A4F644</color>
-    <color name="react_orange">#F6A444</color>
-    <color name="react_red">#D92B2B</color>
-    <color name="react_cyan">#44F6F6</color>
-    <color name="react_purple">#9370DB</color>
-    <color name="react_gray">#444444</color>
-    <color name="react_blue">#3B82F6</color>
+    <color name="term_bg">#111111</color>
+    <color name="term_green">#A4F644</color>
+    <color name="term_orange">#F6A444</color>
+    <color name="term_red">#D92B2B</color>
+    <color name="term_cyan">#44F6F6</color>
+    <color name="term_purple">#9370DB</color>
+    <color name="term_gray">#444444</color>
+    <color name="term_blue">#3B82F6</color>
 
     <!-- Tentacle Interface Colors -->
     <color name="tentacle_primary">#13ec6a</color>

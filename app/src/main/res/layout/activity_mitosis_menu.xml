@@ -1,0 +1,285 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/mitosis_background_dark">
+
+    <!-- Scanlines Overlay (Simple tint for now) -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#10FFFFFF" />
+
+    <!-- Terminal Logs (Background) -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="24dp"
+        android:alpha="0.1"
+        android:fontFamily="monospace"
+        android:text="&gt; INIT_SEQ_2991... OK\n&gt; LOADING BIO_DRIVERS... 98%\n&gt; MOUNTING_VOLUME: /VAR/ROOT/CORE\n&gt; 0x9A [MITOSIS_SEQ] ... PREPARING CELL DIVISION\n&gt; 0x1B [NET_PULSE] ... SYNCING NEURAL PATHWAYS\n&gt; ALLOCATING MEMORY BLOCKS... 2048MB\n&gt; CHECKING INTEGRITY... PASSED\n&gt; ESTABLISHING SECURE CONNECTION...\n&gt; REROUTING THROUGH NODE 7...\n&gt; ERROR: PACKET LOSS DETECTED (IGNORED)\n&gt; RECALIBRATING HAPTIC FEEDBACK...\n&gt; SYSTEM_READY\n&gt; _CURSOR_BLINK\n\n&gt; DAEMON_START: WATCHDOG\n&gt; LISTENING ON PORT 8080"
+        android:textColor="@color/mitosis_primary"
+        android:textSize="14sp" />
+
+    <!-- Header -->
+    <RelativeLayout
+        android:id="@+id/header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp"
+        android:background="#CC2a0000"> <!-- Semi-transparent background -->
+
+        <ImageView
+            android:id="@+id/header_icon"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@drawable/ic_folder_open"
+            android:tint="@color/mitosis_primary"
+            android:layout_centerVertical="true"/>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toRightOf="@id/header_icon"
+            android:layout_marginLeft="12dp"
+            android:orientation="vertical"
+            android:layout_centerVertical="true">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="HG2Gui"
+                android:textColor="@color/mitosis_primary"
+                android:textStyle="bold"
+                android:textSize="18sp"
+                android:letterSpacing="0.1"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="TERMINAL_EMULATOR_V2.4"
+                android:textColor="#9906f906"
+                android:textSize="10sp"
+                android:letterSpacing="0.2"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_centerVertical="true"
+            android:gravity="center_vertical">
+
+            <View
+                android:layout_width="8dp"
+                android:layout_height="8dp"
+                android:background="@drawable/bg_mitosis_button"
+                android:backgroundTint="@color/mitosis_primary"
+                android:layout_marginRight="8dp"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="ONLINE"
+                android:textColor="#CC06f906"
+                android:textSize="12sp"
+                android:letterSpacing="0.1"/>
+        </LinearLayout>
+    </RelativeLayout>
+
+    <!-- Footer -->
+    <LinearLayout
+        android:id="@+id/footer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:gravity="center">
+
+        <!-- ECG Line Container -->
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="32dp"
+            android:gravity="center">
+             <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#4D06f906"
+                android:layout_centerVertical="true"/>
+
+             <View
+                android:id="@+id/ecg_dot"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:background="@drawable/bg_mitosis_button"
+                android:backgroundTint="@color/mitosis_primary"
+                android:layout_centerInParent="true"/>
+        </RelativeLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="SYSTEM_STATUS: ALIVE // BPM: 60"
+            android:textColor="@color/mitosis_primary"
+            android:textSize="14sp"
+            android:fontFamily="monospace"/>
+
+    </LinearLayout>
+
+    <!-- Main Content -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:layout_centerInParent="true">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="CONTEXT: FILE_OPS"
+            android:textColor="@color/mitosis_primary"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
+            android:background="@drawable/bg_context_label"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.15"
+            android:drawableLeft="@drawable/ic_folder_open"
+            android:drawableTint="@color/mitosis_primary"
+            android:drawablePadding="8dp"
+            android:layout_marginBottom="32dp"/>
+
+        <!-- Buttons -->
+        <!-- OPEN -->
+        <RelativeLayout
+            android:id="@+id/btn_open"
+            android:layout_width="260dp"
+            android:layout_height="80dp"
+            android:background="@drawable/bg_mitosis_button"
+            android:layout_marginBottom="24dp"
+            android:padding="4dp">
+
+            <FrameLayout
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:background="@drawable/bg_icon_container"
+                android:layout_centerVertical="true"
+                android:layout_marginLeft="4dp">
+                <ImageView
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:src="@drawable/ic_folder_open"
+                    android:tint="@color/mitosis_primary"
+                    android:layout_gravity="center"/>
+            </FrameLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="OPEN"
+                android:textColor="@color/mitosis_background_dark"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.1"
+                android:layout_centerInParent="true"/>
+
+            <View
+                android:layout_width="8dp"
+                android:layout_height="8dp"
+                android:background="@drawable/bg_icon_container"
+                android:layout_alignParentRight="true"
+                android:layout_centerVertical="true"
+                android:layout_marginRight="24dp"
+                android:alpha="0.5"/>
+        </RelativeLayout>
+
+        <!-- SAVE -->
+        <RelativeLayout
+            android:id="@+id/btn_save"
+            android:layout_width="260dp"
+            android:layout_height="80dp"
+            android:background="@drawable/bg_mitosis_button"
+            android:layout_marginBottom="24dp"
+            android:padding="4dp">
+
+            <FrameLayout
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:background="@drawable/bg_icon_container"
+                android:layout_centerVertical="true"
+                android:layout_marginLeft="4dp">
+                <ImageView
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:src="@drawable/ic_save"
+                    android:tint="@color/mitosis_primary"
+                    android:layout_gravity="center"/>
+            </FrameLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="SAVE"
+                android:textColor="@color/mitosis_background_dark"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.1"
+                android:layout_centerInParent="true"/>
+             <View
+                android:layout_width="8dp"
+                android:layout_height="8dp"
+                android:background="@drawable/bg_icon_container"
+                android:layout_alignParentRight="true"
+                android:layout_centerVertical="true"
+                android:layout_marginRight="24dp"
+                android:alpha="0.5"/>
+        </RelativeLayout>
+
+        <!-- DELETE -->
+        <RelativeLayout
+            android:id="@+id/btn_delete"
+            android:layout_width="260dp"
+            android:layout_height="80dp"
+            android:background="@drawable/bg_mitosis_button"
+            android:padding="4dp">
+
+            <FrameLayout
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:background="@drawable/bg_icon_container"
+                android:layout_centerVertical="true"
+                android:layout_marginLeft="4dp">
+                <ImageView
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:src="@drawable/ic_delete"
+                    android:tint="@color/mitosis_primary"
+                    android:layout_gravity="center"/>
+            </FrameLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="DELETE"
+                android:textColor="@color/mitosis_background_dark"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.1"
+                android:layout_centerInParent="true"/>
+             <View
+                android:layout_width="8dp"
+                android:layout_height="8dp"
+                android:background="@drawable/bg_icon_container"
+                android:layout_alignParentRight="true"
+                android:layout_centerVertical="true"
+                android:layout_marginRight="24dp"
+                android:alpha="0.5"/>
+        </RelativeLayout>
+
+    </LinearLayout>
+
+</RelativeLayout>
