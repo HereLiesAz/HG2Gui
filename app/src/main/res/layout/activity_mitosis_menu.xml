@@ -2,24 +2,15 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/mitosis_background_dark">
+    android:background="@color/bubble_bg_dark">
 
-    <!-- Scanlines Overlay (Simple tint for now) -->
-    <View
+    <!-- The Deep (Background Bubbles Container) -->
+    <FrameLayout
+        android:id="@+id/bubble_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#10FFFFFF" />
-
-    <!-- Terminal Logs (Background) -->
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:padding="24dp"
-        android:alpha="0.1"
-        android:fontFamily="monospace"
-        android:text="&gt; INIT_SEQ_2991... OK\n&gt; LOADING BIO_DRIVERS... 98%\n&gt; MOUNTING_VOLUME: /VAR/ROOT/CORE\n&gt; 0x9A [MITOSIS_SEQ] ... PREPARING CELL DIVISION\n&gt; 0x1B [NET_PULSE] ... SYNCING NEURAL PATHWAYS\n&gt; ALLOCATING MEMORY BLOCKS... 2048MB\n&gt; CHECKING INTEGRITY... PASSED\n&gt; ESTABLISHING SECURE CONNECTION...\n&gt; REROUTING THROUGH NODE 7...\n&gt; ERROR: PACKET LOSS DETECTED (IGNORED)\n&gt; RECALIBRATING HAPTIC FEEDBACK...\n&gt; SYSTEM_READY\n&gt; _CURSOR_BLINK\n\n&gt; DAEMON_START: WATCHDOG\n&gt; LISTENING ON PORT 8080"
-        android:textColor="@color/mitosis_primary"
-        android:textSize="14sp" />
+        android:layout_alignParentBottom="true"
+        android:background="@android:color/transparent" />
 
     <!-- Header -->
     <RelativeLayout
@@ -27,65 +18,233 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="16dp"
-        android:background="#CC2a0000"> <!-- Semi-transparent background -->
-
-        <ImageView
-            android:id="@+id/header_icon"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:src="@drawable/ic_folder_open"
-            android:tint="@color/mitosis_primary"
-            android:layout_centerVertical="true"/>
+        android:background="#E6102217"
+        android:elevation="4dp">
 
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_toRightOf="@id/header_icon"
-            android:layout_marginLeft="12dp"
-            android:orientation="vertical"
-            android:layout_centerVertical="true">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="HG2Gui"
-                android:textColor="@color/mitosis_primary"
-                android:textStyle="bold"
-                android:textSize="18sp"
-                android:letterSpacing="0.1"/>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="TERMINAL_EMULATOR_V2.4"
-                android:textColor="#9906f906"
-                android:textSize="10sp"
-                android:letterSpacing="0.2"/>
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentRight="true"
-            android:layout_centerVertical="true"
+            android:orientation="horizontal"
             android:gravity="center_vertical">
 
             <View
-                android:layout_width="8dp"
-                android:layout_height="8dp"
-                android:background="@drawable/bg_mitosis_button"
-                android:backgroundTint="@color/mitosis_primary"
-                android:layout_marginRight="8dp"/>
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="@drawable/circle_shape"
+                android:backgroundTint="#2013ec6a" />
+             <!-- Icon placeholder inside circle would be nice, but simple is ok -->
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:orientation="vertical"
+            android:gravity="center">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="ONLINE"
-                android:textColor="#CC06f906"
+                android:text="HG2Gui v2.4"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold"
+                android:textSize="18sp" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="4dp">
+
+                <View
+                    android:id="@+id/status_dot"
+                    android:layout_width="8dp"
+                    android:layout_height="8dp"
+                    android:background="@drawable/circle_shape"
+                    android:backgroundTint="@color/bubble_primary"
+                    android:layout_marginRight="4dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="SYSTEM ONLINE"
+                    android:textColor="@color/bubble_primary"
+                    android:textSize="10sp"
+                    android:letterSpacing="0.1" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:text="12:42"
+            android:textColor="@color/bubble_primary"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:layout_centerVertical="true" />
+
+    </RelativeLayout>
+
+    <!-- Surface Section -->
+    <LinearLayout
+        android:id="@+id/surface_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_below="@id/header"
+        android:paddingTop="32dp"
+        android:paddingBottom="16dp"
+        android:background="#CC102217"
+        android:gravity="center_horizontal">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="root/modules/surface"
+            android:textColor="#B3FFFFFF"
+            android:fontFamily="monospace"
+            android:textSize="12sp"
+            android:letterSpacing="0.1"
+            android:layout_marginBottom="8dp"/>
+
+        <View
+            android:layout_width="120dp"
+            android:layout_height="1dp"
+            android:background="@color/bubble_primary"
+            android:alpha="0.5"
+            android:layout_marginBottom="24dp"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:paddingBottom="16dp">
+
+            <!-- HOME Icon -->
+            <LinearLayout
+                android:id="@+id/icon_home"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:layout_margin="12dp"
+                android:clickable="true"
+                android:focusable="true">
+
+                <FrameLayout
+                    android:layout_width="56dp"
+                    android:layout_height="56dp"
+                    android:background="@drawable/circle_shape"
+                    android:backgroundTint="@color/bubble_primary">
+                    <!-- Placeholder for icon -->
+                    <View
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:background="#102217"
+                        android:layout_gravity="center"/>
+                </FrameLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="HOME"
+                    android:textColor="@color/bubble_primary"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:layout_marginTop="8dp"/>
+            </LinearLayout>
+
+            <!-- MAP Icon -->
+            <LinearLayout
+                android:id="@+id/icon_map"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:layout_margin="12dp"
+                android:clickable="true"
+                android:focusable="true">
+
+                <FrameLayout
+                    android:layout_width="56dp"
+                    android:layout_height="56dp"
+                    android:background="@drawable/circle_shape"
+                    android:backgroundTint="@color/bubble_primary">
+                    <View
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:background="#102217"
+                        android:rotation="45"
+                        android:layout_gravity="center"/>
+                </FrameLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="MAP"
+                    android:textColor="@color/bubble_primary"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:layout_marginTop="8dp"/>
+            </LinearLayout>
+
+            <!-- BOOST Icon -->
+            <LinearLayout
+                android:id="@+id/icon_boost"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:layout_margin="12dp"
+                android:clickable="true"
+                android:focusable="true">
+
+                <FrameLayout
+                    android:layout_width="56dp"
+                    android:layout_height="56dp"
+                    android:background="@drawable/surface_icon_bg">
+                     <View
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:background="@color/bubble_primary"
+                        android:layout_gravity="center"/>
+                </FrameLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="BOOST"
+                    android:textColor="@color/bubble_primary"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:layout_marginTop="8dp"/>
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- READY Indicator -->
+         <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/surface_icon_bg"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="_ READY"
+                android:textColor="@color/bubble_primary"
                 android:textSize="12sp"
+                android:textStyle="bold"
                 android:letterSpacing="0.1"/>
         </LinearLayout>
-    </RelativeLayout>
+
+    </LinearLayout>
 
     <!-- Footer -->
     <LinearLayout
@@ -93,193 +252,48 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:orientation="vertical"
+        android:orientation="horizontal"
         android:padding="16dp"
-        android:gravity="center">
+        android:gravity="bottom">
 
-        <!-- ECG Line Container -->
-        <RelativeLayout
-            android:layout_width="match_parent"
-            android:layout_height="32dp"
-            android:gravity="center">
-             <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:background="#4D06f906"
-                android:layout_centerVertical="true"/>
-
-             <View
-                android:id="@+id/ecg_dot"
-                android:layout_width="16dp"
-                android:layout_height="16dp"
-                android:background="@drawable/bg_mitosis_button"
-                android:backgroundTint="@color/mitosis_primary"
-                android:layout_centerInParent="true"/>
-        </RelativeLayout>
-
-        <TextView
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="SYSTEM_STATUS: ALIVE // BPM: 60"
-            android:textColor="@color/mitosis_primary"
-            android:textSize="14sp"
-            android:fontFamily="monospace"/>
-
-    </LinearLayout>
-
-    <!-- Main Content -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:gravity="center"
-        android:layout_centerInParent="true">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="CONTEXT: FILE_OPS"
-            android:textColor="@color/mitosis_primary"
-            android:paddingLeft="16dp"
-            android:paddingRight="16dp"
-            android:paddingTop="4dp"
-            android:paddingBottom="4dp"
-            android:background="@drawable/bg_context_label"
-            android:textSize="12sp"
-            android:textStyle="bold"
-            android:letterSpacing="0.15"
-            android:drawableLeft="@drawable/ic_folder_open"
-            android:drawableTint="@color/mitosis_primary"
-            android:drawablePadding="8dp"
-            android:layout_marginBottom="32dp"/>
-
-        <!-- Buttons -->
-        <!-- OPEN -->
-        <RelativeLayout
-            android:id="@+id/btn_open"
-            android:layout_width="260dp"
-            android:layout_height="80dp"
-            android:background="@drawable/bg_mitosis_button"
-            android:layout_marginBottom="24dp"
-            android:padding="4dp">
-
-            <FrameLayout
-                android:layout_width="64dp"
-                android:layout_height="64dp"
-                android:background="@drawable/bg_icon_container"
-                android:layout_centerVertical="true"
-                android:layout_marginLeft="4dp">
-                <ImageView
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:src="@drawable/ic_folder_open"
-                    android:tint="@color/mitosis_primary"
-                    android:layout_gravity="center"/>
-            </FrameLayout>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="OPEN"
-                android:textColor="@color/mitosis_background_dark"
-                android:textSize="20sp"
-                android:textStyle="bold"
-                android:letterSpacing="0.1"
-                android:layout_centerInParent="true"/>
+            android:layout_weight="1"
+            android:orientation="vertical">
 
             <View
-                android:layout_width="8dp"
-                android:layout_height="8dp"
-                android:background="@drawable/bg_icon_container"
-                android:layout_alignParentRight="true"
-                android:layout_centerVertical="true"
-                android:layout_marginRight="24dp"
-                android:alpha="0.5"/>
-        </RelativeLayout>
-
-        <!-- SAVE -->
-        <RelativeLayout
-            android:id="@+id/btn_save"
-            android:layout_width="260dp"
-            android:layout_height="80dp"
-            android:background="@drawable/bg_mitosis_button"
-            android:layout_marginBottom="24dp"
-            android:padding="4dp">
-
-            <FrameLayout
-                android:layout_width="64dp"
-                android:layout_height="64dp"
-                android:background="@drawable/bg_icon_container"
-                android:layout_centerVertical="true"
-                android:layout_marginLeft="4dp">
-                <ImageView
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:src="@drawable/ic_save"
-                    android:tint="@color/mitosis_primary"
-                    android:layout_gravity="center"/>
-            </FrameLayout>
+                android:layout_width="100dp"
+                android:layout_height="4dp"
+                android:background="#3313ec6a"
+                android:layout_marginBottom="4dp"/>
+             <View
+                android:layout_width="60dp"
+                android:layout_height="4dp"
+                android:background="@color/bubble_primary"
+                android:layout_marginTop="-8dp"/>
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="SAVE"
-                android:textColor="@color/mitosis_background_dark"
-                android:textSize="20sp"
-                android:textStyle="bold"
-                android:letterSpacing="0.1"
-                android:layout_centerInParent="true"/>
-             <View
-                android:layout_width="8dp"
-                android:layout_height="8dp"
-                android:background="@drawable/bg_icon_container"
-                android:layout_alignParentRight="true"
-                android:layout_centerVertical="true"
-                android:layout_marginRight="24dp"
-                android:alpha="0.5"/>
-        </RelativeLayout>
+                android:text="BUFFER LOAD: 67%"
+                android:textColor="#6613ec6a"
+                android:textSize="10sp"
+                android:fontFamily="monospace"/>
+        </LinearLayout>
 
-        <!-- DELETE -->
-        <RelativeLayout
-            android:id="@+id/btn_delete"
-            android:layout_width="260dp"
-            android:layout_height="80dp"
-            android:background="@drawable/bg_mitosis_button"
-            android:padding="4dp">
-
-            <FrameLayout
-                android:layout_width="64dp"
-                android:layout_height="64dp"
-                android:background="@drawable/bg_icon_container"
-                android:layout_centerVertical="true"
-                android:layout_marginLeft="4dp">
-                <ImageView
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:src="@drawable/ic_delete"
-                    android:tint="@color/mitosis_primary"
-                    android:layout_gravity="center"/>
-            </FrameLayout>
-
-            <TextView
+        <FrameLayout
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@drawable/surface_icon_bg">
+             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="DELETE"
-                android:textColor="@color/mitosis_background_dark"
-                android:textSize="20sp"
-                android:textStyle="bold"
-                android:letterSpacing="0.1"
-                android:layout_centerInParent="true"/>
-             <View
-                android:layout_width="8dp"
-                android:layout_height="8dp"
-                android:background="@drawable/bg_icon_container"
-                android:layout_alignParentRight="true"
-                android:layout_centerVertical="true"
-                android:layout_marginRight="24dp"
-                android:alpha="0.5"/>
-        </RelativeLayout>
-
+                android:text="+"
+                android:textColor="@color/bubble_primary"
+                android:textSize="24sp"
+                android:layout_gravity="center"/>
+        </FrameLayout>
     </LinearLayout>
 
 </RelativeLayout>
