@@ -1,0 +1,1 @@
+[{"outputType":{"type":"BUNDLE_MANIFEST"},"apkInfo":{"type":"MAIN","splits":[],"versionCode":205,"versionName":"v6.15","enabled":true,"outputFile":"./v6.15/ohi.andre.consolelauncher_fdroid_205_08.50.apk","fullName":"fdroidDebug","baseName":"fdroid-debug"},"path":"AndroidManifest.xml","properties":{"packageId":"ohi.andre.consolelauncher","split":"","minSdkVersion":"14"}}]

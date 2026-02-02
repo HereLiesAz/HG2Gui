@@ -39,6 +39,16 @@
     <color name="term_gray">#444444</color>
     <color name="term_blue">#3B82F6</color>
 
+    <!-- Mitosis Menu -->
+    <color name="mitosis_primary">#06f906</color>
+    <color name="mitosis_background_dark">#101010</color>
+
+    <!-- Snake Menu -->
+    <color name="snake_primary">#13ec6a</color>
+    <color name="snake_background_dark">#102217</color>
+    <color name="snake_background_light">#f6f8f7</color>
+
+</resources>
     <!-- Clockwork Theme Colors -->
     <color name="clockwork_primary">#d41111</color>
     <color name="clockwork_background_light">#f8f6f6</color>

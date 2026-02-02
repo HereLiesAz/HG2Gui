@@ -410,6 +410,18 @@
         \n-edit [contactName] -> edit an existing contact
         \n-rm [contactName] -> remove a contact</string>
     <string name="help_exit">Close T-UI and reset the default launcher</string>
+    <string name="help_menu">Open a randomized menu (Snake Segment or Mitosis)</string>
+
+    <!-- Snake Menu -->
+    <string name="snake_exit">EXIT</string>
+    <string name="snake_system_ready">SYSTEM_READY</string>
+    <string name="snake_menu_linked">MENU_LINKED</string>
+    <string name="snake_navigate">NAVIGATE</string>
+    <string name="snake_data_logs">DATA_LOGS</string>
+    <string name="snake_comms_uplink">COMMS_UPLINK</string>
+    <string name="snake_sys_config">SYS_CONFIG</string>
+    <string name="snake_reinitiate">RE-INITIATE</string>
+
     <string name="help_rss">-add [ID] [update_time_in_seconds] [url] -> add a new RSS feed. t-ui will try to get new contents every [update_time_in_seconds] seconds
         \n-rm [ID] -> remove this RSS feed
         \n-ls -> list your RSS feeds
