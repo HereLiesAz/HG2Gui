@@ -18,6 +18,7 @@ import java.util.regex.Pattern;
 
 import ohi.andre.consolelauncher.commands.Command;
 import ohi.andre.consolelauncher.commands.CommandGroup;
+import ohi.andre.consolelauncher.commands.CommandRepository;
 import ohi.andre.consolelauncher.commands.CommandTuils;
 import ohi.andre.consolelauncher.commands.main.MainPack;
 import ohi.andre.consolelauncher.commands.main.raw.location;
@@ -132,6 +133,7 @@ public class MainManager {
     private MusicManager2 musicManager2;
     private ThemeManager themeManager;
     private HTMLExtractManager htmlExtractManager;
+    private CommandRepository commandRepository;
 
     MessagesManager messagesManager;
 
@@ -211,7 +213,9 @@ public class MainManager {
             messagesManager = new MessagesManager(mContext);
         }
 
-        mainPack = new MainPack(mContext, group, aliasManager, appsManager, musicManager2, contactManager, redirectator, rssManager, client);
+        commandRepository = new CommandRepository();
+        mainPack = new MainPack(mContext, group, aliasManager, appsManager, musicManager2, contactManager, redirectator, rssManager, client, commandRepository);
+        commandRepository.update(mainPack);
 
         ShellHolder shellHolder = new ShellHolder(mContext);
         interactive = shellHolder.build();
@@ -220,12 +224,15 @@ public class MainManager {
         IntentFilter filter = new IntentFilter();
         filter.addAction(ACTION_EXEC);
         filter.addAction(location.ACTION_LOCATION_CMD_GOT);
+        filter.addAction(UIManager.ACTION_UPDATE_SUGGESTIONS);
 
         receiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
                 String action = intent.getAction();
-                if (action.equals(ACTION_EXEC)) {
+                if(action.equals(UIManager.ACTION_UPDATE_SUGGESTIONS)) {
+                    if(commandRepository != null && mainPack != null) commandRepository.update(mainPack);
+                } else if (action.equals(ACTION_EXEC)) {
                     String cmd = intent.getStringExtra(CMD);
                     if (cmd == null) cmd = intent.getStringExtra(PrivateIOReceiver.TEXT);
 
