@@ -1,0 +1,5 @@
+{
+  "name": "HG2Gui",
+  "description": "A retro-futuristic terminal emulator inspired by the 2005 Hitchhiker's Guide to the Galaxy movie, featuring the Guide itself powered by Gemini.",
+  "requestFramePermissions": []
+}
