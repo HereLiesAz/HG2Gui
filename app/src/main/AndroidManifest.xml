@@ -223,6 +223,9 @@
         </service>
         <service android:name=".managers.notifications.NotificationMonitorService" />
 
+        <activity android:name=".MitosisMenuActivity" />
+        <activity android:name=".SnakeMenuActivity" />
+
     </application>
 
 </manifest>

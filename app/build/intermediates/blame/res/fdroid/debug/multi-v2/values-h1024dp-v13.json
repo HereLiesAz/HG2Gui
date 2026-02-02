@@ -1,0 +1,26 @@
+{
+    "logs": [
+        {
+            "outputFile": "/app/app/build/intermediates/incremental/mergeFdroidDebugResources/merged.dir/values-h1024dp-v13/values-h1024dp-v13.xml",
+            "map": [
+                {
+                    "source": "/app/app/src/main/res/values-h1024dp/dimension.xml",
+                    "from": {
+                        "startLines": "3",
+                        "startColumns": "4",
+                        "startOffsets": "56",
+                        "endColumns": "43",
+                        "endOffsets": "95"
+                    },
+                    "to": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "43",
+                        "endOffsets": "94"
+                    }
+                }
+            ]
+        }
+    ]
+}

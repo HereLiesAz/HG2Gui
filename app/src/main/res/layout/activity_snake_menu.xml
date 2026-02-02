@@ -1,0 +1,307 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/snake_background_dark">
+
+    <!-- Grid Pattern -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/bg_grid_pattern"
+        android:alpha="0.2" />
+
+    <!-- Scanlines -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/bg_snake_scanlines"
+        android:alpha="0.3" />
+
+    <!-- Header -->
+    <LinearLayout
+        android:id="@+id/snake_header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:gravity="center_vertical">
+
+        <!-- Icon -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=">_"
+            android:textSize="24sp"
+            android:textColor="@color/snake_primary"
+            android:background="#1A13ec6a"
+            android:padding="8dp"/>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:paddingLeft="12dp">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="HG2Gui // V4.0"
+                android:textStyle="bold"
+                android:textColor="#FFFFFF"/>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="SNAKE_SEGMENT"
+                android:textColor="@color/snake_primary"
+                android:alpha="0.6"
+                android:textSize="12sp"/>
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btn_exit"
+            android:layout_width="wrap_content"
+            android:layout_height="32dp"
+            android:background="@drawable/bg_snake_button"
+            android:text="@string/snake_exit"
+            android:textColor="@color/snake_primary"
+            android:textSize="12sp"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"/>
+    </LinearLayout>
+
+    <!-- Main Content Area -->
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/snake_header"
+        android:layout_above="@+id/snake_footer">
+
+        <!-- Status -->
+        <LinearLayout
+            android:id="@+id/status_area"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/snake_system_ready"
+                android:textColor="@color/snake_primary"
+                android:textSize="10sp"
+                android:background="#1A13ec6a"
+                android:paddingLeft="8dp"
+                android:paddingRight="8dp"
+                android:paddingTop="2dp"
+                android:paddingBottom="2dp"
+                />
+             <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/snake_menu_linked"
+                android:textColor="#FFFFFF"
+                android:textSize="32sp"
+                android:textStyle="bold"
+                android:shadowColor="@color/snake_primary"
+                android:shadowRadius="10"
+                android:layout_marginTop="8dp"/>
+        </LinearLayout>
+
+        <!-- Snake Path View -->
+        <ohi.andre.consolelauncher.SnakePathView
+            android:id="@+id/snake_path_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_below="@id/status_area" />
+
+        <!-- Nodes Container -->
+
+        <!-- Center Head -->
+        <FrameLayout
+            android:id="@+id/snake_head"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:background="@drawable/bg_snake_head"
+            android:layout_below="@id/status_area"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="32dp">
+            <ImageView
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_gravity="center"
+                android:src="@drawable/cursor"
+                android:tint="#102217"/>
+        </FrameLayout>
+
+        <!-- Segment 1: Navigate (Left offset) -->
+        <RelativeLayout
+            android:id="@+id/btn_navigate"
+            android:layout_width="240dp"
+            android:layout_height="48dp"
+            android:background="@drawable/bg_snake_button"
+            android:layout_below="@id/snake_head"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="24dp"
+            android:translationX="-40dp">
+
+            <FrameLayout
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_centerVertical="true"
+                android:layout_marginLeft="4dp"
+                android:background="@drawable/bg_snake_icon_container">
+            </FrameLayout>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/snake_navigate"
+                android:textColor="#FFFFFF"
+                android:layout_centerInParent="true"
+                android:textStyle="bold"/>
+             <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="01"
+                android:textColor="@color/snake_primary"
+                android:alpha="0.5"
+                android:layout_alignParentRight="true"
+                android:layout_centerVertical="true"
+                android:paddingRight="16dp"/>
+        </RelativeLayout>
+
+        <!-- Segment 2: Data Logs (Right offset) -->
+        <RelativeLayout
+            android:id="@+id/btn_data_logs"
+            android:layout_width="240dp"
+            android:layout_height="48dp"
+            android:background="@drawable/bg_snake_button"
+            android:layout_below="@id/btn_navigate"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="16dp"
+            android:translationX="40dp">
+             <FrameLayout
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_centerVertical="true"
+                android:layout_alignParentRight="true"
+                android:layout_marginRight="4dp"
+                android:background="@drawable/bg_snake_icon_container">
+            </FrameLayout>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/snake_data_logs"
+                android:textColor="#FFFFFF"
+                android:layout_centerInParent="true"
+                android:textStyle="bold"/>
+             <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="02"
+                android:textColor="@color/snake_primary"
+                android:alpha="0.5"
+                android:layout_alignParentLeft="true"
+                android:layout_centerVertical="true"
+                android:paddingLeft="16dp"/>
+        </RelativeLayout>
+
+        <!-- Segment 3: Comms Uplink (Left offset) -->
+        <RelativeLayout
+            android:id="@+id/btn_comms"
+            android:layout_width="240dp"
+            android:layout_height="48dp"
+            android:background="@drawable/bg_snake_button"
+            android:layout_below="@id/btn_data_logs"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="16dp"
+            android:translationX="-20dp">
+             <FrameLayout
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_centerVertical="true"
+                android:layout_marginLeft="4dp"
+                android:background="@drawable/bg_snake_icon_container">
+            </FrameLayout>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/snake_comms_uplink"
+                android:textColor="#FFFFFF"
+                android:layout_centerInParent="true"
+                android:textStyle="bold"/>
+             <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="03"
+                android:textColor="@color/snake_primary"
+                android:alpha="0.5"
+                android:layout_alignParentRight="true"
+                android:layout_centerVertical="true"
+                android:paddingRight="16dp"/>
+        </RelativeLayout>
+
+         <!-- Segment 4: Sys Config (Centered) -->
+        <RelativeLayout
+            android:id="@+id/btn_sys_config"
+            android:layout_width="240dp"
+            android:layout_height="48dp"
+            android:background="@drawable/bg_snake_button"
+            android:layout_below="@id/btn_comms"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="16dp"
+            android:translationX="0dp">
+             <FrameLayout
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_centerVertical="true"
+                android:layout_alignParentRight="true"
+                android:layout_marginRight="4dp"
+                android:background="@drawable/bg_snake_icon_container">
+            </FrameLayout>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/snake_sys_config"
+                android:textColor="#FFFFFF"
+                android:layout_centerInParent="true"
+                android:textStyle="bold"/>
+             <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="04"
+                android:textColor="@color/snake_primary"
+                android:alpha="0.5"
+                android:layout_alignParentLeft="true"
+                android:layout_centerVertical="true"
+                android:paddingLeft="16dp"/>
+        </RelativeLayout>
+
+    </RelativeLayout>
+
+    <!-- Footer -->
+    <LinearLayout
+        android:id="@+id/snake_footer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:padding="24dp"
+        android:gravity="center">
+
+        <Button
+            android:id="@+id/btn_reinitiate"
+            android:layout_width="wrap_content"
+            android:layout_height="56dp"
+            android:background="@drawable/bg_snake_button"
+            android:text="@string/snake_reinitiate"
+            android:textColor="@color/snake_primary"
+            android:textStyle="bold"
+            android:paddingLeft="32dp"
+            android:paddingRight="32dp"
+            />
+    </LinearLayout>
+
+</RelativeLayout>
