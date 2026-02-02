@@ -7,6 +7,7 @@ public class MenuOption {
     public String label;
     public String value;
     public int color;
+    public int icon = -1; // Default no icon
     public List<MenuOption> children;
 
     public MenuOption(String id, String label, String value, int color) {
@@ -23,5 +24,13 @@ public class MenuOption {
         this.value = value;
         this.color = color;
         this.children = children;
+    }
+
+    public MenuOption(String id, String label, String value, int color, int icon) {
+        this.id = id;
+        this.label = label;
+        this.value = value;
+        this.color = color;
+        this.icon = icon;
     }
 }
