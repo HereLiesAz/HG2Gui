@@ -16,6 +16,15 @@
     <color name="term_gray">#444444</color>
     <color name="term_blue">#3B82F6</color>
 
+    <!-- Mitosis Colors -->
+    <color name="mitosis_background_dark">#000000</color>
+    <color name="mitosis_primary">#06f906</color>
+
+    <!-- Origami Colors -->
+    <color name="origami_primary">#13ec6a</color>
+    <color name="origami_background_light">#f6f8f7</color>
+    <color name="origami_background_dark">#102217</color>
+    <color name="origami_terminal_black">#050a07</color>
     <!-- Bubble Pop Surface Colors -->
     <color name="bubble_primary">#13ec6a</color>
     <color name="bubble_bg_light">#f6f8f7</color>
