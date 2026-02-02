@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/guide_bg">
+
+    <!-- Status Bar -->
+    <LinearLayout
+        android:id="@+id/status_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#E6111111"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:gravity="center_vertical"
+        android:layout_alignParentTop="true">
+
+        <!-- Satellite Icon + Text -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/guide_satellite"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:textColor="@color/guide_primary"
+            android:alpha="0.7"
+            android:letterSpacing="0.1"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/guide_earth"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:textColor="@color/guide_primary"
+            android:alpha="0.7"
+            android:letterSpacing="0.1"/>
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1"/>
+
+        <!-- Battery -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/guide_battery"
+            android:textSize="12sp"
+            android:textColor="@color/guide_primary"
+            android:alpha="0.7"
+            android:typeface="monospace"/>
+    </LinearLayout>
+
+    <!-- Scrollable Content -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/status_bar"
+        android:layout_above="@+id/footer_layout"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp"
+            android:gravity="center_horizontal">
+
+            <Space
+                android:layout_width="match_parent"
+                android:layout_height="32dp"/>
+
+            <!-- Don't Panic Circle -->
+            <FrameLayout
+                android:layout_width="192dp"
+                android:layout_height="192dp"
+                android:background="@drawable/shape_circle_panic"
+                android:layout_marginBottom="24dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/guide_dont_panic"
+                    android:textColor="@color/guide_red"
+                    android:textSize="24sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:layout_gravity="center"/>
+            </FrameLayout>
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="32dp">
+
+                <View
+                    android:layout_width="8dp"
+                    android:layout_height="8dp"
+                    android:background="@color/guide_primary"
+                    android:layout_marginRight="8dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/guide_encyclopedia"
+                    android:textColor="@color/guide_primary"
+                    android:alpha="0.6"
+                    android:textSize="12sp"
+                    android:letterSpacing="0.2"/>
+            </LinearLayout>
+
+            <!-- Title -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/guide_title"
+                android:textColor="#FFFFFF"
+                android:textSize="40sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:layout_marginBottom="32dp"/>
+
+            <!-- Divider -->
+            <View
+                android:layout_width="64dp"
+                android:layout_height="2dp"
+                android:background="@color/guide_primary"
+                android:alpha="0.5"
+                android:layout_marginBottom="32dp"/>
+
+            <!-- Body Text -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/guide_body_1"
+                android:textColor="#E6FFFFFF"
+                android:textSize="18sp"
+                android:lineSpacingExtra="8dp"
+                android:gravity="center"
+                android:layout_marginBottom="24dp"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#1A44F6F6"
+                android:padding="16dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/guide_warning_label"
+                    android:textColor="@color/guide_primary"
+                    android:textSize="12sp"
+                    android:letterSpacing="0.1"
+                    android:alpha="0.5"
+                    android:layout_marginBottom="8dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/guide_warning_text"
+                    android:textColor="@color/guide_primary"
+                    android:textSize="16sp"/>
+            </LinearLayout>
+
+            <Space
+                android:layout_width="match_parent"
+                android:layout_height="96dp"/>
+
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- Footer: Command Prompt -->
+    <LinearLayout
+        android:id="@+id/footer_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:background="#E6101E22"
+        android:padding="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#0a1417"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="4dp">
+
+            <TextView
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:text="@string/guide_prompt_icon"
+                android:textColor="@color/guide_primary"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:gravity="center"/>
+
+            <EditText
+                android:id="@+id/guide_input"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="@null"
+                android:hint="@string/guide_prompt_hint"
+                android:textColorHint="#4D44F6F6"
+                android:textColor="@color/guide_primary"
+                android:textStyle="bold"
+                android:textSize="18sp"
+                android:textAllCaps="true"
+                android:inputType="textNoSuggestions"
+                android:singleLine="true"
+                android:imeOptions="actionDone"/>
+
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Scanline Overlay -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/scanlines"
+        android:alpha="0.15"
+        android:clickable="false"
+        android:focusable="false"/>
+
+</RelativeLayout>

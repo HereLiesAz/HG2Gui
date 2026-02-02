@@ -439,4 +439,17 @@
         \n$ open [pathToFile]
     </string>
 
+    <!-- Guide Screen -->
+    <string name="guide_satellite">SATELLITE</string>
+    <string name="guide_earth"> • EARTH 42°N</string>
+    <string name="guide_battery">BAT: 98%</string>
+    <string name="guide_dont_panic">DON\'T\nPANIC</string>
+    <string name="guide_encyclopedia">ENCYCLOPEDIA GALACTICA</string>
+    <string name="guide_title">The Command Line</string>
+    <string name="guide_body_1">A primitive yet effective method of conversing with silicon.\n\nImagine a conversation where you must be incredibly precise, or the other party simply stares blankly.\n\nThat is the Command Line. It is the art of typing \'sudo\' and feeling like a wizard.</string>
+    <string name="guide_warning_label">WARNING:</string>
+    <string name="guide_warning_text">Mostly harmless, unless you delete the wrong directory.</string>
+    <string name="guide_prompt_icon">&gt;</string>
+    <string name="guide_prompt_hint">QUERY GUIDE...</string>
+
 </resources>

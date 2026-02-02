@@ -230,6 +230,12 @@
                 <action android:name="android.intent.action.MAIN" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".GuideActivity"
+            android:theme="@style/Custom.Solid"
+            android:windowSoftInputMode="adjustResize"
+            android:excludeFromRecents="true" />
     </application>
 
 </manifest>
