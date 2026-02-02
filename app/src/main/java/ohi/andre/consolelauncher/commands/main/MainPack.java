@@ -9,6 +9,7 @@ import java.io.File;
 import java.lang.reflect.Method;
 
 import ohi.andre.consolelauncher.commands.CommandGroup;
+import ohi.andre.consolelauncher.commands.CommandRepository;
 import ohi.andre.consolelauncher.commands.CommandsPreferences;
 import ohi.andre.consolelauncher.commands.ExecutePack;
 import ohi.andre.consolelauncher.managers.AliasManager;
@@ -54,6 +55,8 @@ public class MainPack extends ExecutePack {
     public AliasManager aliasManager;
     public AppsManager appsManager;
 
+    public CommandRepository commandRepository;
+
     public CommandsPreferences cmdPrefs;
 
     public String lastCommand;
@@ -69,7 +72,7 @@ public class MainPack extends ExecutePack {
     public int commandColor = TerminalManager.NO_COLOR;
 
     public MainPack(Context context, CommandGroup commandGroup, AliasManager alMgr, AppsManager appmgr, MusicManager2 p,
-                    ContactManager c, Redirectator redirectator, RssManager rssManager, OkHttpClient client) {
+                    ContactManager c, Redirectator redirectator, RssManager rssManager, OkHttpClient client, CommandRepository commandRepository) {
         super(commandGroup);
 
         this.currentDirectory = XMLPrefsManager.get(File.class, Behavior.home_path);
@@ -84,6 +87,8 @@ public class MainPack extends ExecutePack {
 
         this.aliasManager = alMgr;
         this.appsManager = appmgr;
+
+        this.commandRepository = commandRepository;
 
         this.cmdPrefs = new CommandsPreferences();
 

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:gravity="center_horizontal"
+    android:clipChildren="false">
+
+    <!-- The Fruit (Menu Capsule) -->
+    <LinearLayout
+        android:id="@+id/vine_capsule"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="@drawable/vine_capsule"
+        android:padding="8dp"
+        android:elevation="10dp"
+        android:gravity="center_vertical"
+        android:alpha="0"
+        android:visibility="invisible">
+        <!-- Icons added programmatically -->
+    </LinearLayout>
+
+    <!-- The Vine (Stem) -->
+    <ImageView
+        android:id="@+id/vine_stem"
+        android:layout_width="2dp"
+        android:layout_height="60dp"
+        android:src="@drawable/vine_stem"
+        android:scaleType="fitXY"
+        android:transformPivotX="1dp"
+        android:transformPivotY="60dp"/>
+</LinearLayout>

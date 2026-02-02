@@ -213,6 +213,11 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".MitosisMenuActivity"
+            android:label="Menu"
+            android:theme="@style/Custom.Solid"/>
+
         <service
             android:name=".managers.notifications.NotificationService"
             android:label="@string/notification_reader"
@@ -223,6 +228,15 @@
         </service>
         <service android:name=".managers.notifications.NotificationMonitorService" />
 
+        <activity android:name=".MitosisMenuActivity"
+            android:theme="@style/Custom.Solid" />
+        <activity android:name=".MagnetMenuActivity"
+            android:theme="@style/Custom.Solid" />
+
+            android:theme="@style/Theme.AppCompat.NoActionBar"/>
+        <activity android:name=".OrigamiMenuActivity"
+            android:theme="@style/Theme.AppCompat.NoActionBar"/>
+
         <activity
             android:name=".DontPanicActivity"
             android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
@@ -230,10 +244,30 @@
             android:screenOrientation="portrait"/>
 
         <activity
+            android:name=".MitosisMenuActivity"
+            android:theme="@style/Theme.AppCompat.NoActionBar"
+            android:screenOrientation="portrait"/>
+
             android:name=".tuils.stuff.FakeLauncherActivity"
             android:enabled="false">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".GuideActivity"
+            android:theme="@style/Custom.Solid"
+            android:windowSoftInputMode="adjustResize"
+            android:excludeFromRecents="true" />
+            android:name=".PanicActivity"
+            android:theme="@style/Custom.Solid" />
+            android:name=".commands.tentacle.TentacleActivity"
+            android:label="Tentacle Menu"
+            android:theme="@style/Custom.Solid">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
     </application>
