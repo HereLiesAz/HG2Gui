@@ -575,17 +575,7 @@ public class SuggestionsManager {
         List<MenuOption> menuOptions = CommandMenu.getSuggestions(fullInput);
         if (menuOptions != null && !menuOptions.isEmpty()) {
             for (MenuOption opt : menuOptions) {
-                String textBefore = Tuils.EMPTYSTRING;
-                String[] parts = fullInput.trim().split(Tuils.SPACE);
-                if (fullInput.endsWith(Tuils.SPACE)) {
-                     textBefore = fullInput.trim();
-                } else if (parts.length > 0) {
-                     // remove last part
-                     StringBuilder sb = new StringBuilder();
-                     for(int i=0; i<parts.length-1; i++) sb.append(parts[i]).append(Tuils.SPACE);
-                     textBefore = sb.toString().trim();
-                }
-
+                String textBefore = CommandMenu.calculateTextBefore(fullInput);
                 suggestionList.add(new Suggestion(textBefore, opt.value, false, Suggestion.TYPE_MENU_OPTION, opt));
             }
             if (!suggestionList.isEmpty()) {
