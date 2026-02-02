@@ -1,3 +1,10 @@
+/**
+ * @file App.tsx
+ * @description The main application controller.
+ * Manages the global state (SystemContext, Message Log) and layout.
+ * It handles the top-level window chrome (or lack thereof) and command routing.
+ */
+
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Terminal from './components/Terminal';
@@ -5,18 +12,23 @@ import { TerminalMessage, MessageType, ViewState, SystemContext, OSType } from '
 import { INITIAL_WELCOME_MSG } from './constants';
 
 const App: React.FC = () => {
-  const [messages, setMessages] = useState<TerminalMessage[]>([]);
-  const [currentInput, setCurrentInput] = useState('');
-  const [viewState, setViewState] = useState<ViewState>(ViewState.BOOTING);
+  // --- State Management ---
+  const [messages, setMessages] = useState<TerminalMessage[]>([]); // Command history log
+  const [currentInput, setCurrentInput] = useState('');            // Controlled input for Terminal
+  const [viewState, setViewState] = useState<ViewState>(ViewState.BOOTING); // Overall screen state
   
-  // New System Context State
+  // System Context: Simulates the underlying OS environment
+  // Changing this changes which commands are available in the menu.
   const [context, setContext] = useState<SystemContext>({
     os: 'ubuntu',
     user: 'root',
     hostname: 'hitchhiker-guide'
   });
 
-  // Initial Boot Sequence
+  // --- Effects ---
+
+  // 1. Initial Boot Sequence
+  // Simulates a hardware startup delay before showing the interactive terminal.
   useEffect(() => {
     const boot = async () => {
       await new Promise(r => setTimeout(r, 1000));
@@ -26,7 +38,9 @@ const App: React.FC = () => {
     boot();
   }, []);
 
-  // Monitor for Errors to trigger "Don't Panic"
+  // 2. Panic Monitor
+  // Easter Egg: If an ERROR message is received, trigger the "Don't Panic" overlay
+  // for a brief comedic effect.
   useEffect(() => {
     if (messages.length === 0) return;
     const lastMsg = messages[messages.length - 1];
@@ -39,6 +53,10 @@ const App: React.FC = () => {
     }
   }, [messages]);
 
+  /**
+   * Helper to append a new message to the log.
+   * Generates a unique ID and timestamp.
+   */
   const addMessage = (type: MessageType, content: string) => {
     setMessages(prev => [...prev, {
       id: Math.random().toString(36).substr(2, 9),
@@ -48,17 +66,24 @@ const App: React.FC = () => {
     }]);
   };
 
+  /**
+   * Main Command Processor.
+   * Intercepts specific commands (like 'clear' or 'switch-os') for client-side logic,
+   * otherwise simulates a generic execution response.
+   */
   const handleCommand = async (cmd: string) => {
     addMessage(MessageType.COMMAND, cmd);
     const lowerCmd = cmd.toLowerCase().trim();
     const parts = lowerCmd.split(' ');
 
+    // 1. Internal Command: CLEAR
     if (lowerCmd === 'clear') {
       setMessages([]);
       return;
     }
 
-    // Demo functionality to switch OS context
+    // 2. Internal Command: SWITCH-OS
+    // Updates the SystemContext to demonstrate dynamic menus.
     if (parts[0] === 'switch-os' && parts[1]) {
         const newOs = parts[1] as OSType;
         if (['ubuntu', 'macos', 'windows'].includes(newOs)) {
@@ -72,7 +97,7 @@ const App: React.FC = () => {
         return;
     }
     
-    // Simulate generic response
+    // 3. Simulated Responses for other commands
     setTimeout(() => {
         if (lowerCmd.startsWith('sudo')) {
              if (context.os === 'windows') {
@@ -99,7 +124,7 @@ const App: React.FC = () => {
 
   return (
     <div className="w-screen h-screen bg-[#111] flex flex-col overflow-hidden relative text-guide-green font-mono">
-      {/* Top Bar (Metadata only) */}
+      {/* Top Bar: Displays current system metadata (OS/User) */}
       <div className="h-8 w-full flex items-center px-4 justify-end bg-[#0a0a0a] border-b border-[#222] select-none z-20">
          <div className="flex gap-4 text-xs font-mono text-guide-offWhite opacity-30 tracking-widest uppercase">
             <span>OS: {context.os}</span>
@@ -108,6 +133,7 @@ const App: React.FC = () => {
       </div>
 
       <div className="flex-1 relative overflow-hidden">
+         {/* Panic Overlay: Only visible during ERROR states */}
          {viewState === ViewState.PANIC && (
             <motion.div 
                 initial={{ opacity: 0, scale: 0.5 }}
@@ -125,6 +151,7 @@ const App: React.FC = () => {
             </motion.div>
          )}
 
+        {/* Main Terminal Component */}
         <Terminal 
           messages={messages} 
           onCommand={handleCommand}

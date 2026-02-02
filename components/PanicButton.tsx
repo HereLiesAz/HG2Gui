@@ -1,8 +1,14 @@
+/**
+ * @file PanicButton.tsx
+ * @description A humorous, tactile button component inspired by the "DON'T PANIC" branding.
+ * Used to trigger system resets or view changes.
+ */
+
 import React from 'react';
 import { motion } from 'framer-motion';
 
 interface PanicButtonProps {
-  onPanic: () => void;
+  onPanic: () => void; // Callback when clicked
 }
 
 const PanicButton: React.FC<PanicButtonProps> = ({ onPanic }) => {

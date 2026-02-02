@@ -1,3 +1,9 @@
+/**
+ * @file constants.ts
+ * @description Stores static configuration, the command definitions tree, and utility functions
+ * for traversing the command hierarchy.
+ */
+
 import { MenuOption, SystemContext } from './types';
 
 export const INITIAL_WELCOME_MSG = `
@@ -8,18 +14,24 @@ HITCHHIKER TERMINAL v4.2
 > DON'T PANIC.
 `;
 
-// Colors
+/**
+ * Color Palette Constants
+ * Matches the flat, high-contrast aesthetic of the 2005 movie UI.
+ */
 const C = {
-  GREEN: 'bg-[#A4F644]',
-  ORANGE: 'bg-[#F6A444]',
-  RED: 'bg-[#D92B2B]',
-  CYAN: 'bg-[#44F6F6]', 
-  PURPLE: 'bg-[#9370DB]',
-  GRAY: 'bg-[#444444]',
-  BLUE: 'bg-[#3B82F6]',
+  GREEN: 'bg-[#A4F644]', // Primary text/success color
+  ORANGE: 'bg-[#F6A444]', // Secondary/Warning
+  RED: 'bg-[#D92B2B]',    // Error/High Importance
+  CYAN: 'bg-[#44F6F6]',   // Info/Structure
+  PURPLE: 'bg-[#9370DB]', // Special/Auxiliary
+  GRAY: 'bg-[#444444]',   // Neutral/Disabled
+  BLUE: 'bg-[#3B82F6]',   // Windows/Corporate
 };
 
 // --- Reusable Package Lists ---
+/**
+ * Helper to generate a consistent list of mock packages for installation commands.
+ */
 const createPackageList = (prefix: string, packages: string[], color: string): MenuOption[] => {
     return packages.map(pkg => ({
         id: `pkg-${pkg}`,
@@ -74,7 +86,7 @@ const COMMON_COMMANDS: MenuOption[] = [
 
 // --- OS Specific Menus ---
 
-// Ubuntu / Debian
+// Ubuntu / Debian Context
 const APT_MENU: MenuOption = {
     id: 'sudo-apt',
     label: 'APT',
@@ -99,7 +111,7 @@ const SNAP_MENU: MenuOption = {
     ]
 };
 
-// MacOS
+// MacOS Context
 const BREW_MENU: MenuOption = {
     id: 'root-brew',
     label: 'BREW',
@@ -114,7 +126,7 @@ const BREW_MENU: MenuOption = {
     ]
 };
 
-// Windows
+// Windows Context
 const WINGET_MENU: MenuOption = {
     id: 'root-winget',
     label: 'WINGET',
@@ -134,7 +146,11 @@ const POWERSHELL_MENU: MenuOption = {
 };
 
 /**
- * Generates the command tree based on the provided SystemContext.
+ * Generates the command tree dynamically based on the provided SystemContext.
+ * This allows the menu to show 'apt' for Ubuntu but 'brew' for MacOS.
+ * 
+ * @param context The current system state (OS, user)
+ * @returns An array of top-level MenuOptions valid for that OS.
  */
 export const getDynamicTree = (context: SystemContext): MenuOption[] => {
     const osSpecific: MenuOption[] = [];
@@ -160,7 +176,7 @@ export const getDynamicTree = (context: SystemContext): MenuOption[] => {
         GIT_MENU,
         DOCKER_MENU,
         ...COMMON_COMMANDS,
-        // Hidden command to switch OS for demo
+        // Hidden command to switch OS for demo purposes
         { id: 'sys-switch', label: 'SWITCH OS', value: 'switch-os', color: C.GRAY, children: [
             { id: 'sw-ubuntu', label: 'UBUNTU', value: 'ubuntu', color: C.ORANGE },
             { id: 'sw-macos', label: 'MACOS', value: 'macos', color: C.GRAY },
@@ -170,7 +186,11 @@ export const getDynamicTree = (context: SystemContext): MenuOption[] => {
 };
 
 /**
- * Helper to flatten grouping nodes (those with value='')
+ * Helper to flatten grouping nodes (those with value='').
+ * Grouping nodes are used for visual organization but don't represent a command themselves.
+ * 
+ * @param nodes The list of nodes to check.
+ * @returns A flattened list where grouping containers are replaced by their children.
  */
 const expandGroups = (nodes: MenuOption[]): MenuOption[] => {
     let expanded: MenuOption[] = [];
@@ -185,7 +205,12 @@ const expandGroups = (nodes: MenuOption[]): MenuOption[] => {
 };
 
 /**
- * Traverses the dynamic command tree based on input and context.
+ * The core suggestion engine.
+ * Traverses the dynamic command tree based on the user's current input string.
+ * 
+ * @param input The current text in the terminal input.
+ * @param context The system context (OS) to determine which tree to traverse.
+ * @returns A list of MenuOptions that are valid next steps.
  */
 export const getCommandSuggestions = (input: string, context: SystemContext): MenuOption[] => {
     const tree = getDynamicTree(context);
@@ -193,17 +218,20 @@ export const getCommandSuggestions = (input: string, context: SystemContext): Me
     const parts = input.trim().split(/\s+/);
     const cleanInput = input.trim();
     
-    // 1. Root Level (Empty or partial first word)
+    // 1. Root Level Check (Empty input or typing first word)
     if (cleanInput === '' || (parts.length === 1 && !input.endsWith(' '))) {
         const expandedRoot = expandGroups(tree);
         const keyword = parts[0] || '';
         return expandedRoot.filter(opt => opt.value.startsWith(keyword));
     }
 
-    // 2. Traverse
+    // 2. Tree Traversal
+    // Walk down the tree matching each word in the input parts
     let currentNode: MenuOption[] = tree;
     
     const isTypingNewWord = input.endsWith(' ');
+    // If we have a trailing space, we are looking for children of the last match.
+    // If no trailing space, we are still completing the last word.
     const traversableParts = isTypingNewWord ? parts : parts.slice(0, -1);
     
     for (const token of traversableParts) {
@@ -213,13 +241,14 @@ export const getCommandSuggestions = (input: string, context: SystemContext): Me
         if (match && match.children) {
             currentNode = match.children;
         } else if (match && !match.children) {
-            return []; // Leaf node
+            return []; // Reached a leaf node (end of command chain)
         } else if (!match) {
-            return []; // No match
+            return []; // Input deviates from valid tree
         }
     }
 
-    // 3. Filter
+    // 3. Final Filtering
+    // Return the children of the current node, filtered by what the user has started typing
     const expandedContext = expandGroups(currentNode);
     if (!isTypingNewWord) {
         const keyword = parts[parts.length - 1];
