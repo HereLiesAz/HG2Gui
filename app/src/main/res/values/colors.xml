@@ -16,4 +16,11 @@
     <color name="react_gray">#444444</color>
     <color name="react_blue">#3B82F6</color>
 
+    <!-- Mitosis Menu Colors -->
+    <color name="mitosis_primary">#06f906</color>
+    <color name="mitosis_primary_dim">#048004</color>
+    <color name="mitosis_background_light">#f5f8f5</color>
+    <color name="mitosis_background_dark">#2a0000</color>
+    <color name="mitosis_surface_dark">#3d0000</color>
+
 </resources>
