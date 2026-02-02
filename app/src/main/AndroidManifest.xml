@@ -224,6 +224,12 @@
         <service android:name=".managers.notifications.NotificationMonitorService" />
 
         <activity
+            android:name=".DontPanicActivity"
+            android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
+            android:launchMode="singleTop"
+            android:screenOrientation="portrait"/>
+
+        <activity
             android:name=".tuils.stuff.FakeLauncherActivity"
             android:enabled="false">
             <intent-filter>
