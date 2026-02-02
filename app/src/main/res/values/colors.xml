@@ -7,6 +7,22 @@
 
     <color name="hint_color">#AAA</color>
 
+    <color name="react_bg">#111111</color>
+    <color name="react_green">#A4F644</color>
+    <color name="react_orange">#F6A444</color>
+    <color name="react_red">#D92B2B</color>
+    <color name="react_cyan">#44F6F6</color>
+    <color name="react_purple">#9370DB</color>
+    <color name="react_gray">#444444</color>
+    <color name="react_blue">#3B82F6</color>
+
+    <!-- Guide Screen Colors -->
+    <color name="guide_primary">#0db9f2</color>
+    <color name="guide_bg">#101e22</color>
+    <color name="guide_red">#ff3b3b</color>
+    <color name="guide_green">#a1d821</color>
+
+</resources>
     <color name="term_bg">#111111</color>
     <color name="term_green">#A4F644</color>
     <color name="term_orange">#F6A444</color>

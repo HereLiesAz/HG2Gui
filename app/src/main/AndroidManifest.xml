@@ -250,6 +250,10 @@
         </activity>
 
         <activity
+            android:name=".GuideActivity"
+            android:theme="@style/Custom.Solid"
+            android:windowSoftInputMode="adjustResize"
+            android:excludeFromRecents="true" />
             android:name=".PanicActivity"
             android:theme="@style/Custom.Solid" />
             android:name=".commands.tentacle.TentacleActivity"
