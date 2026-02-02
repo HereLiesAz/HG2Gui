@@ -64,12 +64,14 @@ public class SuggestionRunnable implements Runnable {
     private int suggAppText, suggAliasText, suggCmdText, suggContactText, suggFileText, suggSongText, suggDefaultText;
 
     private int[] spaces;
+    private SuggestionsManager manager;
 
-    public SuggestionRunnable(MainPack pack, ViewGroup suggestionsView, LinearLayout.LayoutParams suggestionViewParams, HorizontalScrollView parent, int[] spaces) {
+    public SuggestionRunnable(MainPack pack, ViewGroup suggestionsView, LinearLayout.LayoutParams suggestionViewParams, HorizontalScrollView parent, int[] spaces, SuggestionsManager manager) {
         this.suggestionsView = suggestionsView;
         this.suggestionViewParams = suggestionViewParams;
         this.scrollView = parent;
         this.pack = pack;
+        this.manager = manager;
 
         transparentSuggestions = XMLPrefsManager.getBoolean(Suggestions.transparent_suggestions);
         if(!transparentSuggestions) {
@@ -115,6 +117,19 @@ public class SuggestionRunnable implements Runnable {
 
     @Override
     public void run() {
+        // Randomize logic for Vine Menu (Only for switch-os or small menus)
+        // Check if we should use Vine Menu
+        boolean isSwitchOs = false;
+        if (suggestions.size() > 0 && suggestions.get(0).type == SuggestionsManager.Suggestion.TYPE_MENU_OPTION) {
+             MenuOption opt = (MenuOption) suggestions.get(0).object;
+             if (opt.value.equals("ubuntu") || opt.value.equals("macos")) isSwitchOs = true;
+        }
+
+        if (isSwitchOs || (Math.random() > 0.7 && suggestions.size() <= 4 && suggestions.size() > 0)) {
+             manager.showVineMenu(suggestions);
+             return;
+        }
+
         if (n < 0) {
             for (int count = toRecycle.length; count < suggestionsView.getChildCount(); count++) {
                 suggestionsView.removeViewAt(count--);

@@ -1,0 +1,347 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_clockwork_grid">
+
+    <!-- Header -->
+    <RelativeLayout
+        android:id="@+id/clockwork_header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp"
+        android:background="@color/clockwork_background_dark_90">
+
+        <ImageView
+            android:id="@+id/header_icon"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/ic_folder_open"
+            android:padding="8dp"
+            android:background="@color/clockwork_grid_line"
+            android:tint="@color/clockwork_primary"
+            android:layout_centerVertical="true"/>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toRightOf="@id/header_icon"
+            android:layout_marginLeft="16dp"
+            android:orientation="vertical"
+            android:layout_centerVertical="true">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="HG2GUI // SYSTEM_READY"
+                android:textColor="@android:color/white"
+                android:textStyle="bold"
+                android:textSize="18sp"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="VARIANT_5 ACTIVE"
+                android:textColor="@color/clockwork_gold_metallic"
+                android:textSize="10sp"
+                android:letterSpacing="0.2"/>
+        </LinearLayout>
+
+        <ImageView
+             android:layout_width="40dp"
+             android:layout_height="40dp"
+             android:src="@android:drawable/ic_menu_rotate"
+             android:tint="@color/clockwork_gold_metallic"
+             android:layout_alignParentRight="true"
+             android:layout_centerVertical="true"/>
+    </RelativeLayout>
+
+    <!-- Terminal Output -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/clockwork_header"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="> USER_ID: ZAPHKIEL_42"
+            android:textColor="@color/clockwork_primary_70"
+            android:fontFamily="monospace"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="> INITIATING SEQUENCE..."
+            android:textColor="@android:color/white"
+            android:fontFamily="monospace"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="> CRANK_mechanism.exec(variant_5)"
+            android:textColor="@color/clockwork_gold_metallic"
+            android:fontFamily="monospace"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="> WARNING: HINGES UNSTABLE"
+            android:textColor="@color/clockwork_primary"
+            android:fontFamily="monospace"
+            android:layout_marginTop="8dp"/>
+    </LinearLayout>
+
+    <!-- Crank Mechanism Area -->
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/clockwork_header"
+        android:layout_above="@+id/clockwork_footer">
+
+        <!-- Gear -->
+        <ImageView
+            android:id="@+id/clockwork_gear"
+            android:layout_width="128dp"
+            android:layout_height="128dp"
+            android:src="@drawable/ic_clockwork_gear"
+            android:layout_marginLeft="32dp"
+            android:layout_marginTop="80dp"/>
+
+        <!-- Lever -->
+        <ImageView
+            android:id="@+id/clockwork_lever"
+            android:layout_width="200dp"
+            android:layout_height="50dp"
+            android:src="@drawable/ic_clockwork_lever"
+            android:layout_marginLeft="80dp"
+            android:layout_marginTop="120dp"
+            android:rotation="-25"/>
+
+        <!-- Card (Sub Menu) -->
+        <LinearLayout
+            android:id="@+id/clockwork_card"
+            android:layout_width="260dp"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/bg_clockwork_card"
+            android:layout_alignParentRight="true"
+            android:layout_marginRight="16dp"
+            android:layout_marginTop="100dp"
+            android:padding="0dp">
+
+            <!-- Card Header -->
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/clockwork_primary_20"
+                android:padding="12dp">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="SUB_MENU // 05"
+                    android:textColor="@color/clockwork_gold_metallic"
+                    android:textStyle="bold"/>
+            </RelativeLayout>
+
+            <!-- Card Items -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <!-- Item 1 -->
+                <LinearLayout
+                    android:id="@+id/btn_sector_zz9"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:background="@color/clockwork_background_dark"
+                    android:padding="8dp"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="8dp">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@android:drawable/star_on"
+                        android:tint="@color/clockwork_primary"/>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:layout_marginLeft="12dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="SECTOR ZZ9"
+                            android:textColor="@android:color/white"
+                            android:textStyle="bold"/>
+                         <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="PLURAL Z ALPHA"
+                            android:textColor="@color/hint_color"
+                            android:textSize="10sp"/>
+                    </LinearLayout>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text=">"
+                        android:textColor="@color/clockwork_gold_metallic"/>
+                </LinearLayout>
+
+                <!-- Item 2 -->
+                <LinearLayout
+                    android:id="@+id/btn_vogon_poetry"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:background="@color/clockwork_background_dark"
+                    android:padding="8dp"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="8dp">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@android:drawable/ic_menu_agenda"
+                        android:tint="@color/clockwork_gold_metallic"/>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:layout_marginLeft="12dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="VOGON POETRY"
+                            android:textColor="@android:color/white"
+                            android:textStyle="bold"/>
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="DO NOT OPEN"
+                            android:textColor="@color/clockwork_primary"
+                            android:textSize="10sp"/>
+                    </LinearLayout>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text=">"
+                        android:textColor="@color/clockwork_gold_metallic"/>
+                </LinearLayout>
+
+                <!-- Item 3 -->
+                <LinearLayout
+                    android:id="@+id/btn_improbability"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:background="@color/clockwork_background_dark"
+                    android:padding="8dp"
+                    android:gravity="center_vertical">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@android:drawable/ic_menu_rotate"
+                        android:tint="@color/clockwork_primary"/>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:layout_marginLeft="12dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="IMPROBABILITY"
+                            android:textColor="@android:color/white"
+                            android:textStyle="bold"/>
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="DRIVE: ONLINE"
+                            android:textColor="@color/hint_color"
+                            android:textSize="10sp"/>
+                    </LinearLayout>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text=">"
+                        android:textColor="@color/clockwork_gold_metallic"/>
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </RelativeLayout>
+
+    <!-- Footer -->
+    <LinearLayout
+        android:id="@+id/clockwork_footer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:orientation="vertical"
+        android:background="@color/clockwork_background_dark"
+        android:padding="16dp">
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="MEM: 42%"
+                android:textColor="@color/clockwork_primary_60"
+                android:textSize="10sp"
+                android:fontFamily="monospace"/>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="CPU: CRANKING"
+                android:textColor="@color/clockwork_primary_60"
+                android:textSize="10sp"
+                android:layout_alignParentRight="true"
+                android:fontFamily="monospace"/>
+        </RelativeLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/clockwork_footer_input_bg"
+            android:padding="12dp">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="$"
+                android:textColor="@color/clockwork_gold_metallic"
+                android:textStyle="bold"
+                android:layout_marginRight="8dp"/>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="AWAITING INPUT..."
+                android:textColor="@android:color/white"
+                android:fontFamily="monospace"/>
+             <View
+                android:layout_width="8dp"
+                android:layout_height="16dp"
+                android:background="@color/clockwork_primary"
+                android:layout_marginLeft="8dp"/>
+        </LinearLayout>
+    </LinearLayout>
+
+</RelativeLayout>
