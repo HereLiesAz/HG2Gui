@@ -439,4 +439,9 @@
         \n$ open [pathToFile]
     </string>
 
+    <string name="help_menu">Open a random menu animation</string>
+    <string name="help_menu">Open the random menu</string>
+    <string name="origami_title">Origami Menu</string>
+    <string name="help_surface">Open the Bubble Pop Surface menu</string>
+
 </resources>

@@ -410,6 +410,11 @@ public class AppsManager implements XMLPrefsElement {
                 LaunchInfo li = new LaunchInfo(ri.activityInfo.packageName, ri.activityInfo.name, ri.loadLabel(mgr).toString());
 
                 try {
+                    PackageInfo pi = mgr.getPackageInfo(li.componentName.getPackageName(), 0);
+                    li.lastUpdateTime = pi.firstInstallTime;
+                } catch (Exception e) {}
+
+                try {
                     LauncherApps.ShortcutQuery query = new LauncherApps.ShortcutQuery();
                     query.setQueryFlags(LauncherApps.ShortcutQuery.FLAG_MATCH_MANIFEST | LauncherApps.ShortcutQuery.FLAG_MATCH_DYNAMIC);
                     query.setPackage(li.componentName.getPackageName());
@@ -424,6 +429,12 @@ public class AppsManager implements XMLPrefsElement {
         } else {
             for (ResolveInfo ri : main) {
                 LaunchInfo li = new LaunchInfo(ri.activityInfo.packageName, ri.activityInfo.name, ri.loadLabel(mgr).toString());
+
+                try {
+                    PackageInfo pi = mgr.getPackageInfo(li.componentName.getPackageName(), 0);
+                    li.lastUpdateTime = pi.firstInstallTime;
+                } catch (Exception e) {}
+
                 infos.add(li);
             }
         }
@@ -465,6 +476,12 @@ public class AppsManager implements XMLPrefsElement {
             String label = manager.getActivityInfo(name, 0).loadLabel(manager).toString();
 
             LaunchInfo app = new LaunchInfo(packageName, activity, label);
+
+            try {
+                PackageInfo pi = manager.getPackageInfo(packageName, 0);
+                app.lastUpdateTime = pi.firstInstallTime;
+            } catch (Exception e) {}
+
             appsHolder.add(app);
         } catch (Exception e) {}
     }
@@ -1066,6 +1083,7 @@ public class AppsManager implements XMLPrefsElement {
 
         public String publicLabel, unspacedLowercaseLabel, lowercaseLabel;
         public int launchedTimes = 0;
+        public long lastUpdateTime = 0;
 
         public List<ShortcutInfo> shortcuts;
 
@@ -1078,6 +1096,7 @@ public class AppsManager implements XMLPrefsElement {
             componentName = in.readParcelable(ComponentName.class.getClassLoader());
             setLabel(in.readString());
             launchedTimes = in.readInt();
+            lastUpdateTime = in.readLong();
         }
 
         public static final Creator<LaunchInfo> CREATOR = new Creator<LaunchInfo>() {
@@ -1182,6 +1201,7 @@ public class AppsManager implements XMLPrefsElement {
             dest.writeParcelable(componentName, flags);
             dest.writeString(publicLabel);
             dest.writeInt(launchedTimes);
+            dest.writeLong(lastUpdateTime);
         }
 
         public void setShortcuts(List<ShortcutInfo> s) {

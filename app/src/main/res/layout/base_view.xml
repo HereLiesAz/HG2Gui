@@ -1,25 +1,113 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/hg_deep_space">
 
+    <!-- Wonky Background Shapes -->
+    <View
+        android:layout_width="300dp"
+        android:layout_height="300dp"
+        android:background="@drawable/bg_panel"
+        android:alpha="0.2"
+        android:layout_gravity="top|left"
+        android:layout_marginLeft="-50dp"
+        android:layout_marginTop="-50dp"
+        android:rotation="45"/>
+
+    <View
+        android:layout_width="200dp"
+        android:layout_height="200dp"
+        android:background="@drawable/bg_panel"
+        android:alpha="0.2"
+        android:layout_gravity="bottom|right"
+        android:layout_marginRight="-30dp"
+        android:layout_marginBottom="-30dp"
+        android:rotation="-15"/>
+
+    <!-- Main Content Layout -->
     <LinearLayout
-        android:id="@+id/mainview"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <include
-            layout="@layout/about_device_view"
+        <!-- Top Status Bar -->
+        <include layout="@layout/view_top_status_bar" />
+
+        <!-- Stats Dashboard -->
+        <include layout="@layout/view_stats_dashboard" />
+
+        <!-- Terminal Window Area -->
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:paddingLeft="12dp"
+            android:paddingRight="12dp"
+            android:paddingBottom="12dp">
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/bg_terminal_window"
+                android:padding="2dp">
+
+                <!-- The Original Main View (UIManager attaches here) -->
+                <LinearLayout
+                    android:id="@+id/mainview"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:background="#00000000">
+
+                    <include
+                        layout="@layout/about_device_view"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content" />
+                </LinearLayout>
+
+                <!-- Decorative header -->
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_gravity="top|center_horizontal"
+                    android:layout_marginTop="8dp"
+                    android:alpha="0.7">
+                    <View android:layout_width="8dp" android:layout_height="8dp" android:background="@color/hg_secondary" android:layout_marginRight="4dp"/>
+                    <View android:layout_width="8dp" android:layout_height="8dp" android:background="#fcd53f" android:layout_marginRight="4dp"/>
+                    <View android:layout_width="8dp" android:layout_height="8dp" android:background="@color/hg_terminal_green" android:layout_marginRight="8dp"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="root@heart-of-gold" android:textColor="@color/hg_border_color" android:textSize="10sp" android:fontFamily="monospace"/>
+                </LinearLayout>
+
+            </FrameLayout>
+        </FrameLayout>
+
+        <!-- Virtual Keyboard -->
+        <include layout="@layout/view_virtual_keyboard" />
+
     </LinearLayout>
 
+    <!-- Scanline Overlay -->
     <View
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#10FFFFFF"
+        android:background="@drawable/bg_scanline"
+        android:alpha="0.1"
         android:clickable="false"
         android:focusable="false" />
+
+    <TextView
+        android:id="@+id/panic_overlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/term_green"
+        android:gravity="center"
+        android:text="DON'T\nPANIC"
+        android:textColor="@color/term_red"
+        android:textSize="64sp"
+        android:textStyle="bold"
+        android:visibility="gone"
+        android:elevation="100dp" />
 
 </FrameLayout>
