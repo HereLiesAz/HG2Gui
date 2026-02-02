@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@color/hg_background_dark"
+    android:padding="8dp">
+
+    <!-- Predictive Bar Mockup -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="8dp">
+
+        <TextView
+            style="@style/VirtualKey"
+            android:layout_width="wrap_content"
+            android:layout_height="32dp"
+            android:text="sudo"
+            android:textColor="@color/hg_primary"
+            android:background="@drawable/bg_panel"
+            android:layout_marginRight="4dp"
+            android:paddingLeft="12dp"
+            android:paddingRight="12dp"
+            android:gravity="center"/>
+        <TextView
+            style="@style/VirtualKey"
+            android:layout_width="wrap_content"
+            android:layout_height="32dp"
+            android:text="apt-get"
+            android:textColor="@color/hg_primary"
+            android:background="@drawable/bg_panel"
+            android:layout_marginRight="4dp"
+            android:paddingLeft="12dp"
+            android:paddingRight="12dp"
+            android:gravity="center"/>
+        <TextView
+            style="@style/VirtualKey"
+            android:layout_width="wrap_content"
+            android:layout_height="32dp"
+            android:text="git push"
+            android:textColor="@color/hg_primary"
+            android:background="@drawable/bg_panel"
+            android:layout_marginRight="4dp"
+            android:paddingLeft="12dp"
+            android:paddingRight="12dp"
+            android:gravity="center"/>
+    </LinearLayout>
+
+    <!-- Row 1 -->
+    <LinearLayout style="@style/KeyboardRow">
+        <TextView style="@style/VirtualKey" android:text="q" />
+        <TextView style="@style/VirtualKey" android:text="w" />
+        <TextView style="@style/VirtualKey" android:text="e" />
+        <TextView style="@style/VirtualKey" android:text="r" />
+        <TextView style="@style/VirtualKey" android:text="t" />
+        <TextView style="@style/VirtualKey" android:text="y" />
+        <TextView style="@style/VirtualKey" android:text="u" />
+        <TextView style="@style/VirtualKey" android:text="i" />
+        <TextView style="@style/VirtualKey" android:text="o" />
+        <TextView style="@style/VirtualKey" android:text="p" />
+    </LinearLayout>
+
+    <!-- Row 2 -->
+    <LinearLayout style="@style/KeyboardRow" android:paddingLeft="16dp" android:paddingRight="16dp">
+        <TextView style="@style/VirtualKey" android:text="a" />
+        <TextView style="@style/VirtualKey" android:text="s" />
+        <TextView style="@style/VirtualKey" android:text="d" />
+        <TextView style="@style/VirtualKey" android:text="f" />
+        <TextView style="@style/VirtualKey" android:text="g" />
+        <TextView style="@style/VirtualKey" android:text="h" />
+        <TextView style="@style/VirtualKey" android:text="j" />
+        <TextView style="@style/VirtualKey" android:text="k" />
+        <TextView style="@style/VirtualKey" android:text="l" />
+    </LinearLayout>
+
+    <!-- Row 3 -->
+    <LinearLayout style="@style/KeyboardRow" android:paddingLeft="8dp" android:paddingRight="8dp">
+        <TextView style="@style/VirtualKeySpecial" android:text="^" android:layout_width="48dp" />
+        <TextView style="@style/VirtualKey" android:text="z" />
+        <TextView style="@style/VirtualKey" android:text="x" />
+        <TextView style="@style/VirtualKey" android:text="c" />
+        <TextView style="@style/VirtualKey" android:text="v" />
+        <TextView style="@style/VirtualKey" android:text="b" />
+        <TextView style="@style/VirtualKey" android:text="n" />
+        <TextView style="@style/VirtualKey" android:text="m" />
+        <TextView style="@style/VirtualKeySpecial" android:text="DEL" android:layout_width="48dp" />
+    </LinearLayout>
+
+    <!-- Row 4 -->
+    <LinearLayout style="@style/KeyboardRow" android:layout_marginTop="4dp">
+        <TextView style="@style/VirtualKeySpecial" android:text="123" android:layout_width="48dp" />
+        <TextView style="@style/VirtualKey" android:text="space" android:layout_weight="2" />
+        <TextView style="@style/VirtualKey" android:text="return" android:background="@drawable/bg_key_cap_primary" android:textColor="@color/hg_background_dark" android:layout_width="80dp" />
+    </LinearLayout>
+
+</LinearLayout>

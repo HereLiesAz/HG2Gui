@@ -451,5 +451,9 @@
     <string name="guide_warning_text">Mostly harmless, unless you delete the wrong directory.</string>
     <string name="guide_prompt_icon">&gt;</string>
     <string name="guide_prompt_hint">QUERY GUIDE...</string>
+    <string name="help_menu">Open a random menu animation</string>
+    <string name="help_menu">Open the random menu</string>
+    <string name="origami_title">Origami Menu</string>
+    <string name="help_surface">Open the Bubble Pop Surface menu</string>
 
 </resources>

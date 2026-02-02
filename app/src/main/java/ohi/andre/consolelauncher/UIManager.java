@@ -95,6 +95,7 @@ public class UIManager implements OnTouchListener {
     public static String ACTION_WEATHER_GOT_LOCATION = BuildConfig.APPLICATION_ID + "ui_weather_location";
     public static String ACTION_WEATHER_DELAY = BuildConfig.APPLICATION_ID + "ui_weather_delay";
     public static String ACTION_WEATHER_MANUAL_UPDATE = BuildConfig.APPLICATION_ID + "ui_weather_update";
+    public static String ACTION_PANIC = BuildConfig.APPLICATION_ID + ".ui_panic";
 
     public static String FILE_NAME = "fileName";
     public static String PREFS_NAME = "ui";
@@ -762,6 +763,7 @@ public class UIManager implements OnTouchListener {
     private SuggestionsManager suggestionsManager;
 
     private TextView terminalView;
+    private TextView panicView;
 
     private String doubleTapCmd;
     private boolean lockOnDbTap;
@@ -786,13 +788,20 @@ public class UIManager implements OnTouchListener {
         filter.addAction(ACTION_WEATHER_GOT_LOCATION);
         filter.addAction(ACTION_WEATHER_DELAY);
         filter.addAction(ACTION_WEATHER_MANUAL_UPDATE);
+        filter.addAction(ACTION_PANIC);
 
         receiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
                 String action = intent.getAction();
 
-                if(action.equals(ACTION_UPDATE_SUGGESTIONS)) {
+                if (action.equals(ACTION_PANIC)) {
+                    if (panicView != null) {
+                        panicView.setVisibility(View.VISIBLE);
+                        // Hide panic after 3 seconds
+                        handler.postDelayed(() -> panicView.setVisibility(View.GONE), 3000);
+                    }
+                } else if(action.equals(ACTION_UPDATE_SUGGESTIONS)) {
                     if(suggestionsManager != null) suggestionsManager.requestSuggestion(Tuils.EMPTYSTRING);
                 } else if(action.equals(ACTION_UPDATE_HINT)) {
                     mTerminalAdapter.setDefaultHint();
@@ -1284,6 +1293,8 @@ public class UIManager implements OnTouchListener {
         View inputOutputView = inflater.inflate(layoutId, null);
         rootView.addView(inputOutputView);
 
+        panicView = rootView.findViewById(R.id.panic_overlay);
+
         terminalView = (TextView) inputOutputView.findViewById(R.id.terminal_view);
         terminalView.setOnTouchListener(this);
         ((View) terminalView.getParent().getParent()).setOnTouchListener(this);
@@ -1343,6 +1354,27 @@ public class UIManager implements OnTouchListener {
         }
 
         mTerminalAdapter = new TerminalManager(terminalView, inputView, prefixView, submitView, backView, nextView, deleteView, pasteView, context, mainPack, executer);
+
+        LinearLayout cliTabsGroup = (LinearLayout) inputOutputView.findViewById(R.id.cli_tabs_group);
+        if (cliTabsGroup != null) {
+            String[] tabs = new String[] {
+                    "./script.sh", "brew install", "code .", "clear", "ls -la", "switch-os macos", "switch-os windows"
+            };
+            for (final String tabCmd : tabs) {
+                TextView tabView = (TextView) inflater.inflate(R.layout.item_cli_tab, cliTabsGroup, false);
+                tabView.setText(tabCmd);
+                tabView.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        if (mTerminalAdapter != null) {
+                            mTerminalAdapter.setInput(tabCmd);
+                            mTerminalAdapter.simulateEnter();
+                        }
+                    }
+                });
+                cliTabsGroup.addView(tabView);
+            }
+        }
 
         if (XMLPrefsManager.getBoolean(Suggestions.show_suggestions)) {
             HorizontalScrollView sv = (HorizontalScrollView) rootView.findViewById(R.id.suggestions_container);
