@@ -16,4 +16,10 @@
     <color name="react_gray">#444444</color>
     <color name="react_blue">#3B82F6</color>
 
+    <!-- Tentacle Interface Colors -->
+    <color name="tentacle_primary">#13ec6a</color>
+    <color name="tentacle_bg">#102217</color>
+    <color name="tentacle_bg_light">#f6f8f7</color>
+    <color name="tentacle_black">#050a07</color>
+
 </resources>
