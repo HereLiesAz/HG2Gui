@@ -250,6 +250,8 @@
         </activity>
 
         <activity
+            android:name=".PanicActivity"
+            android:theme="@style/Custom.Solid" />
             android:name=".commands.tentacle.TentacleActivity"
             android:label="Tentacle Menu"
             android:theme="@style/Custom.Solid">
