@@ -2,6 +2,7 @@ package ohi.andre.consolelauncher.managers;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.os.IBinder;
@@ -25,6 +26,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
+import ohi.andre.consolelauncher.PanicActivity;
 import ohi.andre.consolelauncher.commands.main.MainPack;
 import ohi.andre.consolelauncher.managers.xml.XMLPrefsManager;
 import ohi.andre.consolelauncher.managers.xml.options.Behavior;
@@ -349,6 +351,12 @@ public class TerminalManager {
 
     public void setOutput(int color, CharSequence output) {
         if(output == null || output.length() == 0) return;
+
+        if (color == Color.RED) {
+            Intent intent = new Intent(mContext, PanicActivity.class);
+            intent.putExtra(PanicActivity.EXTRA_ERROR_MESSAGE, output.toString());
+            mContext.startActivity(intent);
+        }
 
         if(color == TerminalManager.NO_COLOR) {
             color = XMLPrefsManager.getColor(Theme.output_color);

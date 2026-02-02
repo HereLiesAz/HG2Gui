@@ -230,6 +230,10 @@
                 <action android:name="android.intent.action.MAIN" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".PanicActivity"
+            android:theme="@style/Custom.Solid" />
     </application>
 
 </manifest>
