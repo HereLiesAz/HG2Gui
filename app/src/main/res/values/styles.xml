@@ -1,9 +1,10 @@
 <resources xmlns:android="http://schemas.android.com/apk/res/android">
 
     <style name="Custom.Solid" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="android:windowBackground">@color/react_bg</item>
         <item name="android:textColorHint">@color/hint_color</item>
-        <item name="android:statusBarColor">@android:color/black</item>
-        <item name="android:navigationBarColor">@android:color/black</item>
+        <item name="android:statusBarColor">@color/react_bg</item>
+        <item name="android:navigationBarColor">@color/react_bg</item>
     </style>
 
     <style name="Custom.SystemWP" parent="Theme.AppCompat.Light.NoActionBar">
