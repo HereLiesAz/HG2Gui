@@ -64,6 +64,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.*/
 
+/**
+ * Core logic coordinator for the application.
+ * Processes commands received from {@link TerminalManager}, routes them to the appropriate triggers
+ * (e.g., Shell, Alias, Apps), and manages background services.
+ */
 public class MainManager {
 
     public static String ACTION_EXEC = BuildConfig.APPLICATION_ID + ".main_exec";

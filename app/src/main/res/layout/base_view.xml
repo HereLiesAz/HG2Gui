@@ -22,4 +22,17 @@
         android:clickable="false"
         android:focusable="false" />
 
+    <TextView
+        android:id="@+id/panic_overlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/term_green"
+        android:gravity="center"
+        android:text="DON'T\nPANIC"
+        android:textColor="@color/term_red"
+        android:textSize="64sp"
+        android:textStyle="bold"
+        android:visibility="gone"
+        android:elevation="100dp" />
+
 </FrameLayout>

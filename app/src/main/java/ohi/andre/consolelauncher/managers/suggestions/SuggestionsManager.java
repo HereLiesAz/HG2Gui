@@ -65,6 +65,10 @@ import static ohi.andre.consolelauncher.commands.CommandTuils.xmlPrefsFiles;
 
 /**
  * Created by francescoandreuzzi on 25/12/15.
+ *
+ * Manages the suggestion system.
+ * Generates and displays context-aware suggestions based on user input.
+ * Integrates with {@link CommandMenu} to provide a point-and-click interface.
  */
 public class SuggestionsManager {
 
