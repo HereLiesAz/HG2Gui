@@ -1,12 +1,12 @@
 apply plugin: 'com.android.application'
 android {
-    namespace "ohi.andre.consolelauncher"
+    namespace "com.hereliesaz.hg2gui"
     compileSdkVersion 34
 
 
 
     defaultConfig {
-        applicationId "ohi.andre.consolelauncher"
+        applicationId "com.hereliesaz.hg2gui"
 
         minSdkVersion 14
         targetSdkVersion 34
@@ -37,6 +37,13 @@ android {
 
     lintOptions {
         checkReleaseBuilds false
+    }
+    android.applicationVariants.all { variant ->
+        def formattedDate = new Date().format('hh.mm')
+
+        variant.outputs.all {
+//             outputFileName = "./${variant.versionName}/${variant.applicationId}_${variant.getFlavorName()}_${variant.versionCode}_${formattedDate}.apk"
+        }
     }
 }
 dependencies {

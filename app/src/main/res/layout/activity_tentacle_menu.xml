@@ -5,7 +5,7 @@
     android:background="@color/tentacle_bg">
 
     <!-- Tentacle Drawing Layer -->
-    <ohi.andre.consolelauncher.commands.tentacle.TentacleView
+    <com.hereliesaz.hg2gui.commands.tentacle.TentacleView
         android:id="@+id/tentacle_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />

@@ -322,7 +322,7 @@
         android:textStyle="bold"
         android:layout_marginBottom="4dp"/>
 
-    <ohi.andre.consolelauncher.components.PanicGraphView
+    <com.hereliesaz.hg2gui.components.PanicGraphView
         android:layout_width="match_parent"
         android:layout_height="150dp"
         android:background="@drawable/bg_panic_surface"

@@ -112,7 +112,7 @@
         </LinearLayout>
 
         <!-- Snake Path View -->
-        <ohi.andre.consolelauncher.SnakePathView
+        <com.hereliesaz.hg2gui.SnakePathView
             android:id="@+id/snake_path_view"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
