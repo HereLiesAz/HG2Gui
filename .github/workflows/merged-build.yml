@@ -182,7 +182,7 @@ jobs:
           fi
           
           # Locate built APK
-          APK_ORIGINAL=$(find app/build/outputs/apk/debug -name "*.apk" | head -n 1)
+          APK_ORIGINAL=$(find app/build/outputs/apk -type f -name "*.apk" | head -n 1)
           
           if [ -z "$APK_ORIGINAL" ]; then
              echo "Error: No APK found to release!"
