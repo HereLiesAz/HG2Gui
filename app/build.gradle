@@ -38,13 +38,6 @@ android {
     lintOptions {
         checkReleaseBuilds false
     }
-    android.applicationVariants.all { variant ->
-        def formattedDate = new Date().format('hh.mm')
-
-        variant.outputs.all {
-            outputFileName = "./${variant.versionName}/${variant.applicationId}_${variant.getFlavorName()}_${variant.versionCode}_${formattedDate}.apk"
-        }
-    }
 }
 dependencies {
     testImplementation 'junit:junit:4.13.2'
