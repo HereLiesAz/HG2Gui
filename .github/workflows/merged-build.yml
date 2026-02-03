@@ -27,8 +27,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Dependencies
-        run: chmod +x setup_libs.sh && ./setup_libs.sh
+
 
       - name: Inject Google Services
         env:
