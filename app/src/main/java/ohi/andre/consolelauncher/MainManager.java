@@ -6,7 +6,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Color;
 import android.os.Parcelable;
-import android.support.v4.content.LocalBroadcastManager;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.style.ForegroundColorSpan;
@@ -72,7 +72,7 @@ limitations under the License.*/
  */
 public class MainManager {
 
-    public static String ACTION_EXEC = BuildConfig.APPLICATION_ID + ".main_exec";
+    public static String ACTION_EXEC = "ohi.andre.consolelauncher" + ".main_exec";
     public static String CMD = "cmd", NEED_WRITE_INPUT = "writeInput", ALIAS_NAME = "aliasName", PARCELABLE = "parcelable", CMD_COUNT = "cmdCount", MUSIC_SERVICE = "musicService";
 
     private RedirectCommand redirect;

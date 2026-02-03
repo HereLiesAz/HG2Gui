@@ -30,8 +30,8 @@ import android.os.Parcelable;
 import android.os.Process;
 import android.os.StatFs;
 import android.provider.Settings;
-import android.support.v4.content.FileProvider;
-import android.support.v4.content.LocalBroadcastManager;
+import androidx.core.content.FileProvider;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import android.telephony.TelephonyManager;
 import android.text.SpannableString;
 import android.text.Spanned;
@@ -90,7 +90,7 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
 import dalvik.system.DexFile;
-import ohi.andre.consolelauncher.BuildConfig;
+// import ohi.andre.consolelauncher.BuildConfig;
 import ohi.andre.consolelauncher.R;
 import ohi.andre.consolelauncher.commands.main.MainPack;
 import ohi.andre.consolelauncher.managers.TerminalManager;
@@ -376,7 +376,7 @@ public class Tuils {
     }
 
     public static boolean hasNotificationAccess(Context context) {
-        String pkgName = BuildConfig.APPLICATION_ID;
+        String pkgName = "ohi.andre.consolelauncher";
         final String flat = Settings.Secure.getString(context.getContentResolver(), "enabled_notification_listeners");
         if (!TextUtils.isEmpty(flat)) {
             final String[] names = flat.split(":");
@@ -504,7 +504,7 @@ public class Tuils {
         List<IntentFilter> filters = new ArrayList<>();
         filters.add(filter);
 
-        final String myPackageName = BuildConfig.APPLICATION_ID;
+        final String myPackageName = "ohi.andre.consolelauncher";
         List<ComponentName> activities = new ArrayList<>();
 
         // You can use name of your package here as third argument

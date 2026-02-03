@@ -5,11 +5,11 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
-import android.support.v4.content.LocalBroadcastManager;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import java.io.File;
 
-import ohi.andre.consolelauncher.BuildConfig;
+// import ohi.andre.consolelauncher.BuildConfig;
 import ohi.andre.consolelauncher.LauncherActivity;
 import ohi.andre.consolelauncher.R;
 import ohi.andre.consolelauncher.UIManager;
@@ -40,7 +40,7 @@ public class tui extends ParamCommand {
                 ComponentName name = new ComponentName(info.context, PolicyReceiver.class);
                 policy.removeActiveAdmin(name);
 
-                Uri packageURI = Uri.parse("package:" + BuildConfig.APPLICATION_ID);
+                Uri packageURI = Uri.parse("package:" + "ohi.andre.consolelauncher");
                 Intent uninstallIntent = new Intent(Intent.ACTION_DELETE, packageURI);
                 info.context.startActivity(uninstallIntent);
 
@@ -51,8 +51,8 @@ public class tui extends ParamCommand {
             @Override
             public String exec(ExecutePack pack) {
                 MainPack info = (MainPack) pack;
-                return "Version:" + Tuils.SPACE + BuildConfig.VERSION_NAME + " (code: " + BuildConfig.VERSION_CODE + ")" +
-                        (BuildConfig.DEBUG ? Tuils.NEWLINE + BuildConfig.BUILD_TYPE : Tuils.EMPTYSTRING) +
+                return "Version:" + Tuils.SPACE + "v6.15" + " (code: " + 205 + ")" +
+                        (true ? Tuils.NEWLINE + "debug" : Tuils.EMPTYSTRING) +
                         Tuils.NEWLINE + Tuils.NEWLINE + info.res.getString(R.string.output_about);
             }
         },

@@ -9,7 +9,7 @@ import android.text.style.ForegroundColorSpan;
 
 import java.util.regex.Pattern;
 
-import ohi.andre.consolelauncher.BuildConfig;
+// import ohi.andre.consolelauncher.BuildConfig;
 import ohi.andre.consolelauncher.R;
 import ohi.andre.consolelauncher.managers.xml.XMLPrefsManager;
 import ohi.andre.consolelauncher.managers.xml.options.Theme;
@@ -78,7 +78,7 @@ public class ChangelogManager {
                             return;
                         }
 
-                        String header = "Changelog " + BuildConfig.VERSION_NAME;
+                        String header = "Changelog " + "v6.15";
 
                         String log = response.body().string();
                         log = newlinePattern.matcher(log).replaceAll(Tuils.DOUBLE_SPACE + "-");

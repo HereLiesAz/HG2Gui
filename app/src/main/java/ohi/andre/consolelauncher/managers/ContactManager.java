@@ -10,10 +10,10 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.ContactsContract;
-import android.support.annotation.NonNull;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
-import android.support.v4.content.LocalBroadcastManager;
+import androidx.annotation.NonNull;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -21,14 +21,14 @@ import java.util.Iterator;
 import java.util.List;
 
 import it.andreuzzi.comparestring2.StringableObject;
-import ohi.andre.consolelauncher.BuildConfig;
+// import ohi.andre.consolelauncher.BuildConfig;
 import ohi.andre.consolelauncher.LauncherActivity;
 import ohi.andre.consolelauncher.tuils.StoppableThread;
 import ohi.andre.consolelauncher.tuils.Tuils;
 
 public class ContactManager {
 
-    public static String ACTION_REFRESH = BuildConfig.APPLICATION_ID + ".refresh_contacts";
+    public static String ACTION_REFRESH = "ohi.andre.consolelauncher" + ".refresh_contacts";
 
     private Context context;
     private List<Contact> contacts;

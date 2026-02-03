@@ -12,7 +12,7 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.service.notification.StatusBarNotification;
-import android.support.v4.content.LocalBroadcastManager;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -27,7 +27,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import ohi.andre.consolelauncher.BuildConfig;
+// import ohi.andre.consolelauncher.BuildConfig;
 import ohi.andre.consolelauncher.R;
 import ohi.andre.consolelauncher.managers.xml.XMLPrefsManager;
 import ohi.andre.consolelauncher.managers.xml.classes.XMLPrefsElement;
@@ -49,11 +49,11 @@ public class ReplyManager implements XMLPrefsElement {
 
     public static String PATH = "reply.xml";
     public static String NAME = "REPLY";
-    public static String ACTION = BuildConfig.APPLICATION_ID + ".reply";
+    public static String ACTION = "ohi.andre.consolelauncher" + ".reply";
     public static String ID = "id";
     public static String WHAT = "what";
-    public static String ACTION_UPDATE = BuildConfig.APPLICATION_ID + ".update";
-    public static String ACTION_LS = BuildConfig.APPLICATION_ID + ".lsreplies";
+    public static String ACTION_UPDATE = "ohi.andre.consolelauncher" + ".update";
+    public static String ACTION_LS = "ohi.andre.consolelauncher" + ".lsreplies";
 
     private static final String ID_ATTRIBUTE = "id";
 

@@ -12,8 +12,8 @@ import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
-import android.support.annotation.NonNull;
-import android.support.v4.content.LocalBroadcastManager;
+import androidx.annotation.NonNull;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.TextUtils;
@@ -37,7 +37,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import ohi.andre.consolelauncher.BuildConfig;
+// import ohi.andre.consolelauncher.BuildConfig;
 import ohi.andre.consolelauncher.R;
 import ohi.andre.consolelauncher.commands.main.raw.shortcut;
 import ohi.andre.consolelauncher.managers.xml.XMLPrefsManager;
@@ -57,12 +57,12 @@ import static ohi.andre.consolelauncher.managers.xml.XMLPrefsManager.resetFile;
 
 public class NotesManager {
 
-    public static String ACTION_RM = BuildConfig.APPLICATION_ID + ".rm_note";
-    public static String ACTION_ADD = BuildConfig.APPLICATION_ID + ".add_note";
-    public static String ACTION_CLEAR = BuildConfig.APPLICATION_ID + ".clear_notes";
-    public static String ACTION_LS = BuildConfig.APPLICATION_ID + ".ls_notes";
-    public static String ACTION_LOCK = BuildConfig.APPLICATION_ID + ".lock_notes";
-    public static String ACTION_CP = BuildConfig.APPLICATION_ID + ".cp_notes";
+    public static String ACTION_RM = "ohi.andre.consolelauncher" + ".rm_note";
+    public static String ACTION_ADD = "ohi.andre.consolelauncher" + ".add_note";
+    public static String ACTION_CLEAR = "ohi.andre.consolelauncher" + ".clear_notes";
+    public static String ACTION_LS = "ohi.andre.consolelauncher" + ".ls_notes";
+    public static String ACTION_LOCK = "ohi.andre.consolelauncher" + ".lock_notes";
+    public static String ACTION_CP = "ohi.andre.consolelauncher" + ".cp_notes";
 
     public static String BROADCAST_COUNT = "broadcastCount";
     public static String CREATION_TIME = "creationTime", TEXT = "text", LOCK = "lock";

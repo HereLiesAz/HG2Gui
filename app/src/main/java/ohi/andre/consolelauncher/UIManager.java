@@ -21,9 +21,9 @@ import android.net.wifi.WifiManager;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Handler;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.LocalBroadcastManager;
-import android.support.v4.view.GestureDetectorCompat;
+import androidx.core.app.ActivityCompat;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+import androidx.core.view.GestureDetectorCompat;
 import android.text.SpannableString;
 import android.text.TextUtils;
 import android.text.method.LinkMovementMethod;
@@ -85,17 +85,17 @@ import ohi.andre.consolelauncher.tuils.stuff.PolicyReceiver;
 
 public class UIManager implements OnTouchListener {
 
-    public static String ACTION_UPDATE_SUGGESTIONS = BuildConfig.APPLICATION_ID + ".ui_update_suggestions";
-    public static String ACTION_UPDATE_HINT = BuildConfig.APPLICATION_ID + ".ui_update_hint";
-    public static String ACTION_ROOT = BuildConfig.APPLICATION_ID + ".ui_root";
-    public static String ACTION_NOROOT = BuildConfig.APPLICATION_ID + ".ui_noroot";
-    public static String ACTION_LOGTOFILE = BuildConfig.APPLICATION_ID + ".ui_log";
-    public static String ACTION_CLEAR = BuildConfig.APPLICATION_ID + "ui_clear";
-    public static String ACTION_WEATHER = BuildConfig.APPLICATION_ID + "ui_weather";
-    public static String ACTION_WEATHER_GOT_LOCATION = BuildConfig.APPLICATION_ID + "ui_weather_location";
-    public static String ACTION_WEATHER_DELAY = BuildConfig.APPLICATION_ID + "ui_weather_delay";
-    public static String ACTION_WEATHER_MANUAL_UPDATE = BuildConfig.APPLICATION_ID + "ui_weather_update";
-    public static String ACTION_PANIC = BuildConfig.APPLICATION_ID + ".ui_panic";
+    public static String ACTION_UPDATE_SUGGESTIONS = "ohi.andre.consolelauncher" + ".ui_update_suggestions";
+    public static String ACTION_UPDATE_HINT = "ohi.andre.consolelauncher" + ".ui_update_hint";
+    public static String ACTION_ROOT = "ohi.andre.consolelauncher" + ".ui_root";
+    public static String ACTION_NOROOT = "ohi.andre.consolelauncher" + ".ui_noroot";
+    public static String ACTION_LOGTOFILE = "ohi.andre.consolelauncher" + ".ui_log";
+    public static String ACTION_CLEAR = "ohi.andre.consolelauncher" + "ui_clear";
+    public static String ACTION_WEATHER = "ohi.andre.consolelauncher" + "ui_weather";
+    public static String ACTION_WEATHER_GOT_LOCATION = "ohi.andre.consolelauncher" + "ui_weather_location";
+    public static String ACTION_WEATHER_DELAY = "ohi.andre.consolelauncher" + "ui_weather_delay";
+    public static String ACTION_WEATHER_MANUAL_UPDATE = "ohi.andre.consolelauncher" + "ui_weather_update";
+    public static String ACTION_PANIC = "ohi.andre.consolelauncher" + ".ui_panic";
 
     public static String FILE_NAME = "fileName";
     public static String PREFS_NAME = "ui";

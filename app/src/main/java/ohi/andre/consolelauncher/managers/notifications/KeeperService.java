@@ -10,13 +10,14 @@ import android.content.Intent;
 import android.os.Build;
 import android.os.Environment;
 import android.os.IBinder;
-import android.support.v4.app.NotificationCompat;
-import android.support.v4.app.NotificationManagerCompat;
-import android.support.v4.app.RemoteInput;
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.RemoteInput;
+import androidx.core.app.NotificationManagerCompat;
+import androidx.core.app.RemoteInput;
 import android.text.SpannableString;
 import android.text.TextUtils;
 
-import ohi.andre.consolelauncher.BuildConfig;
+// import ohi.andre.consolelauncher.BuildConfig;
 import ohi.andre.consolelauncher.R;
 import ohi.andre.consolelauncher.managers.TimeManager;
 import ohi.andre.consolelauncher.managers.xml.XMLPrefsManager;
@@ -176,11 +177,11 @@ public class KeeperService extends Service {
                 int oPriority = Tuils.scale(new int[] {0, 4}, new int[] {2,4}, priority + 2);
                 if(oPriority < 2 || oPriority > 4) oPriority = NotificationManager.IMPORTANCE_UNSPECIFIED;
 
-                NotificationChannel notificationChannel = new NotificationChannel(BuildConfig.APPLICATION_ID, c.getString(R.string.app_name), oPriority);
+                NotificationChannel notificationChannel = new NotificationChannel("ohi.andre.consolelauncher", c.getString(R.string.app_name), oPriority);
                 ((NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE)).createNotificationChannel(notificationChannel);
             }
 
-            NotificationCompat.Builder builder = new NotificationCompat.Builder(c, BuildConfig.APPLICATION_ID)
+            NotificationCompat.Builder builder = new NotificationCompat.Builder(c, "ohi.andre.consolelauncher")
                     .setSmallIcon(R.mipmap.ic_launcher)
                     .setTicker(c.getString(R.string.start_notification))
                     .setWhen(System.currentTimeMillis())
