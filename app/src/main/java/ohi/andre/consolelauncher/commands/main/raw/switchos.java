@@ -10,7 +10,7 @@ public class switchos implements CommandAbstraction {
     public String exec(ExecutePack pack) throws Exception {
         Object[] args = pack.args;
         if (args == null || args.length != 1) {
-            return "Usage: switch-os <ubuntu|macos|windows>";
+            return "Usage: switchos <ubuntu|macos|windows>";
         }
 
         String os = ((String) args[0]).toLowerCase();
@@ -54,6 +54,6 @@ public class switchos implements CommandAbstraction {
 
     @Override
     public String onNotArgEnough(ExecutePack pack, int nArgs) {
-        return "Usage: switch-os <ubuntu|macos|windows>";
+        return "Usage: switchos <ubuntu|macos|windows>";
     }
 }
