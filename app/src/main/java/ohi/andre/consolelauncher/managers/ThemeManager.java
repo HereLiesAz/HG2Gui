@@ -5,7 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Color;
-import android.support.v4.content.LocalBroadcastManager;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -13,7 +13,7 @@ import java.io.IOException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import ohi.andre.consolelauncher.BuildConfig;
+// import ohi.andre.consolelauncher.BuildConfig;
 import ohi.andre.consolelauncher.R;
 import ohi.andre.consolelauncher.managers.xml.XMLPrefsManager;
 import ohi.andre.consolelauncher.tuils.Tuils;
@@ -28,9 +28,9 @@ import okhttp3.Response;
 
 public class ThemeManager {
 
-    public static String ACTION_APPLY = BuildConfig.APPLICATION_ID + ".theme_apply";
-    public static String ACTION_REVERT = BuildConfig.APPLICATION_ID + ".theme_revert";
-    public static String ACTION_STANDARD = BuildConfig.APPLICATION_ID + ".theme_standard";
+    public static String ACTION_APPLY = "ohi.andre.consolelauncher" + ".theme_apply";
+    public static String ACTION_REVERT = "ohi.andre.consolelauncher" + ".theme_revert";
+    public static String ACTION_STANDARD = "ohi.andre.consolelauncher" + ".theme_standard";
 
     public static String NAME = "name";
 

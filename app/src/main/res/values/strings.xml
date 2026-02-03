@@ -410,7 +410,7 @@
         \n-edit [contactName] -> edit an existing contact
         \n-rm [contactName] -> remove a contact</string>
     <string name="help_exit">Close T-UI and reset the default launcher</string>
-    <string name="help_menu">Open a randomized menu (Snake Segment or Mitosis)</string>
+
 
     <!-- Snake Menu -->
     <string name="snake_exit">EXIT</string>
@@ -463,7 +463,7 @@
     <string name="guide_warning_text">Mostly harmless, unless you delete the wrong directory.</string>
     <string name="guide_prompt_icon">&gt;</string>
     <string name="guide_prompt_hint">QUERY GUIDE...</string>
-    <string name="help_menu">Open a random menu animation</string>
+
     <string name="help_menu">Open the random menu</string>
     <string name="origami_title">Origami Menu</string>
     <string name="help_surface">Open the Bubble Pop Surface menu</string>

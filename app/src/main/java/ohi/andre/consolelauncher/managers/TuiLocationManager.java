@@ -15,13 +15,13 @@ import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.LocalBroadcastManager;
+import androidx.core.app.ActivityCompat;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import ohi.andre.consolelauncher.BuildConfig;
+// import ohi.andre.consolelauncher.BuildConfig;
 import ohi.andre.consolelauncher.LauncherActivity;
 import ohi.andre.consolelauncher.managers.xml.XMLPrefsManager;
 import ohi.andre.consolelauncher.managers.xml.options.Behavior;
@@ -29,7 +29,7 @@ import ohi.andre.consolelauncher.tuils.Tuils;
 
 public class TuiLocationManager {
 
-    public static final String ACTION_GOT_PERMISSION = BuildConfig.APPLICATION_ID + ".got_location_permission";
+    public static final String ACTION_GOT_PERMISSION = "ohi.andre.consolelauncher" + ".got_location_permission";
 
     public static final String LATITUDE = "lat", LONGITUDE = "long", FAIL = "fail";
 

@@ -3,7 +3,7 @@ package ohi.andre.consolelauncher.commands.main.raw;
 import android.content.Context;
 import android.os.Build;
 
-import ohi.andre.consolelauncher.BuildConfig;
+// import ohi.andre.consolelauncher.BuildConfig;
 import ohi.andre.consolelauncher.R;
 import ohi.andre.consolelauncher.commands.CommandAbstraction;
 import ohi.andre.consolelauncher.commands.ExecutePack;
@@ -17,7 +17,7 @@ import ohi.andre.consolelauncher.managers.TuiLocationManager;
 
 public class location implements APICommand, CommandAbstraction {
 
-    public static String ACTION_LOCATION_CMD_GOT = BuildConfig.APPLICATION_ID + ".loc_cmd_location";
+    public static String ACTION_LOCATION_CMD_GOT = "ohi.andre.consolelauncher" + ".loc_cmd_location";
 
     @Override
     public String exec(final ExecutePack pack) throws Exception {

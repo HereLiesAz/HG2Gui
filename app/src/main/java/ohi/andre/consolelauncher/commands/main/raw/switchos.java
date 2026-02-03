@@ -1,24 +1,19 @@
 package ohi.andre.consolelauncher.commands.main.raw;
 
 import ohi.andre.consolelauncher.commands.CommandAbstraction;
-import ohi.andre.consolelauncher.commands.main.MainPack;
+import ohi.andre.consolelauncher.commands.ExecutePack;
 import ohi.andre.consolelauncher.managers.SystemContext;
-import ohi.andre.consolelauncher.tuils.Tuils;
 
 public class switchos implements CommandAbstraction {
 
     @Override
-    public String exec(MainPack info) throws Exception {
-        return "Usage: switch-os <ubuntu|macos|windows>";
-    }
-
-    @Override
-    public String exec(MainPack info, String[] args) throws Exception {
-        if (args.length != 1) {
+    public String exec(ExecutePack pack) throws Exception {
+        Object[] args = pack.args;
+        if (args == null || args.length != 1) {
             return "Usage: switch-os <ubuntu|macos|windows>";
         }
 
-        String os = args[0].toLowerCase();
+        String os = ((String) args[0]).toLowerCase();
         SystemContext.OSType newOs = null;
 
         if (os.equals("ubuntu")) {
@@ -49,16 +44,16 @@ public class switchos implements CommandAbstraction {
 
     @Override
     public int helpRes() {
-        return 0; // No help resource yet
+        return 0;
     }
 
     @Override
-    public String onArgIsNotValid(MainPack mainPack, int i) {
+    public String onArgNotFound(ExecutePack pack, int indexNotFound) {
         return null;
     }
 
     @Override
-    public String onNotEnoughArgs(MainPack mainPack, int i) {
+    public String onNotArgEnough(ExecutePack pack, int nArgs) {
         return "Usage: switch-os <ubuntu|macos|windows>";
     }
 }

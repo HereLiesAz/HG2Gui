@@ -4,10 +4,10 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.v4.app.RemoteInput;
-import android.support.v4.content.LocalBroadcastManager;
+import androidx.core.app.RemoteInput;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
-import ohi.andre.consolelauncher.BuildConfig;
+// import ohi.andre.consolelauncher.BuildConfig;
 import ohi.andre.consolelauncher.MainManager;
 
 /**
@@ -16,8 +16,8 @@ import ohi.andre.consolelauncher.MainManager;
 
 public class PublicIOReceiver extends BroadcastReceiver {
 
-    public static final String ACTION_OUTPUT = BuildConfig.APPLICATION_ID + ".action_public_output";
-    public static final String ACTION_CMD = BuildConfig.APPLICATION_ID + ".action_public_cmd";
+    public static final String ACTION_OUTPUT = "ohi.andre.consolelauncher" + ".action_public_output";
+    public static final String ACTION_CMD = "ohi.andre.consolelauncher" + ".action_public_cmd";
 
     @Override
     public void onReceive(Context context, Intent intent) {

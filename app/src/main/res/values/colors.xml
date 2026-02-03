@@ -1,12 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
     <color name="default_input_color">#0f0</color>
     <color name="default_output_color">#fff</color>
     <color name="default_bg_color">#000</color>
-
     <color name="hint_color">#AAA</color>
-
     <color name="react_bg">#111111</color>
     <color name="react_green">#A4F644</color>
     <color name="react_orange">#F6A444</color>
@@ -15,21 +12,17 @@
     <color name="react_purple">#9370DB</color>
     <color name="react_gray">#444444</color>
     <color name="react_blue">#3B82F6</color>
-
     <!-- Panic Screen Colors -->
     <color name="panic_primary">#f20d0d</color>
     <color name="panic_secondary">#39ff14</color>
     <color name="panic_background_dark">#221010</color>
     <color name="panic_surface_dark">#2a1515</color>
     <color name="panic_surface_selected_bg">#33f20d0d</color>
-</resources>
     <!-- Guide Screen Colors -->
     <color name="guide_primary">#0db9f2</color>
     <color name="guide_bg">#101e22</color>
     <color name="guide_red">#ff3b3b</color>
     <color name="guide_green">#a1d821</color>
-
-</resources>
     <color name="term_bg">#111111</color>
     <color name="term_green">#A4F644</color>
     <color name="term_orange">#F6A444</color>
@@ -38,17 +31,11 @@
     <color name="term_purple">#9370DB</color>
     <color name="term_gray">#444444</color>
     <color name="term_blue">#3B82F6</color>
-
     <!-- Mitosis Menu -->
-    <color name="mitosis_primary">#06f906</color>
-    <color name="mitosis_background_dark">#101010</color>
-
     <!-- Snake Menu -->
     <color name="snake_primary">#13ec6a</color>
     <color name="snake_background_dark">#102217</color>
     <color name="snake_background_light">#f6f8f7</color>
-
-</resources>
     <!-- Clockwork Theme Colors -->
     <color name="clockwork_primary">#d41111</color>
     <color name="clockwork_background_light">#f8f6f6</color>
@@ -58,7 +45,6 @@
     <color name="clockwork_terminal_dim">#4a2a2a</color>
     <color name="clockwork_gear_bg">#2b1d10</color>
     <color name="clockwork_lever_border">#8a0b0b</color>
-
     <color name="clockwork_background_dark_90">#E6221010</color>
     <color name="clockwork_primary_70">#B3d41111</color>
     <color name="clockwork_primary_20">#33d41111</color>
@@ -70,14 +56,10 @@
     <color name="background_dark">#102217</color>
     <color name="terminal_bg">#050a06</color>
     <color name="terminal_border">#234832</color>
-
     <!-- Mitosis Colors -->
-    <color name="mitosis_primary">#06f906</color>
-    <color name="mitosis_background_dark">#051005</color>
     <!-- Mitosis Colors -->
     <color name="mitosis_background_dark">#000000</color>
     <color name="mitosis_primary">#06f906</color>
-
     <!-- Origami Colors -->
     <color name="origami_primary">#13ec6a</color>
     <color name="origami_background_light">#f6f8f7</color>
@@ -93,7 +75,6 @@
     <color name="tentacle_bg">#102217</color>
     <color name="tentacle_bg_light">#f6f8f7</color>
     <color name="tentacle_black">#050a07</color>
-
     <!-- HG2Gui Palette -->
     <color name="hg_primary">#0db9f2</color>
     <color name="hg_secondary">#ff424e</color>
@@ -107,5 +88,4 @@
     <color name="hg_scanline">#0DB9F2</color>
     <color name="hg_key_bg">#253941</color>
     <color name="hg_key_bg_special">#314a53</color>
-
 </resources>

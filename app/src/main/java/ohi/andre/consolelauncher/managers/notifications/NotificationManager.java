@@ -292,7 +292,7 @@ public class NotificationManager implements XMLPrefsElement {
     }
 
     public boolean match(String text) {
-//        if(pkg.equals(BuildConfig.APPLICATION_ID)) return true;
+//        if(pkg.equals("ohi.andre.consolelauncher")) return true;
 
         for(Pattern f : filters) {
 

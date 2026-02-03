@@ -9,12 +9,12 @@ import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
-import android.support.v4.app.RemoteInput;
-import android.support.v4.content.LocalBroadcastManager;
+import androidx.core.app.RemoteInput;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 
-import ohi.andre.consolelauncher.BuildConfig;
+// import ohi.andre.consolelauncher.BuildConfig;
 import ohi.andre.consolelauncher.DontPanicActivity;
 import ohi.andre.consolelauncher.MainManager;
 import ohi.andre.consolelauncher.managers.TerminalManager;
@@ -31,21 +31,21 @@ public class PrivateIOReceiver extends BroadcastReceiver {
 //    process input
 //    show custom output
 
-    public static final String ACTION_OUTPUT = BuildConfig.APPLICATION_ID + ".action_output";
-    public static final String ACTION_INPUT = BuildConfig.APPLICATION_ID + ".action_input";
-    public static final String ACTION_REPLY = BuildConfig.APPLICATION_ID + ".action_reply";
+    public static final String ACTION_OUTPUT = "ohi.andre.consolelauncher" + ".action_output";
+    public static final String ACTION_INPUT = "ohi.andre.consolelauncher" + ".action_input";
+    public static final String ACTION_REPLY = "ohi.andre.consolelauncher" + ".action_reply";
 
-    public static final String TEXT = BuildConfig.APPLICATION_ID + ".text";
-    public static final String TYPE = BuildConfig.APPLICATION_ID + ".type";
-    public static final String COLOR = BuildConfig.APPLICATION_ID + ".color";
-    public static final String ACTION = BuildConfig.APPLICATION_ID + ".action";
-    public static final String LONG_ACTION = BuildConfig.APPLICATION_ID + ".longaction";
-    public static final String REMOTE_INPUTS = BuildConfig.APPLICATION_ID + ".remote_inputs";
-    public static final String BUNDLE = BuildConfig.APPLICATION_ID + ".bundle";
-    public static final String PENDING_INTENT = BuildConfig.APPLICATION_ID + ".pending_intent";
-    public static final String ID = BuildConfig.APPLICATION_ID + ".id";
-    public static final String CURRENT_ID = BuildConfig.APPLICATION_ID + ".current_id";
-    public static final String INFO_AREA = BuildConfig.APPLICATION_ID + ".info_area";
+    public static final String TEXT = "ohi.andre.consolelauncher" + ".text";
+    public static final String TYPE = "ohi.andre.consolelauncher" + ".type";
+    public static final String COLOR = "ohi.andre.consolelauncher" + ".color";
+    public static final String ACTION = "ohi.andre.consolelauncher" + ".action";
+    public static final String LONG_ACTION = "ohi.andre.consolelauncher" + ".longaction";
+    public static final String REMOTE_INPUTS = "ohi.andre.consolelauncher" + ".remote_inputs";
+    public static final String BUNDLE = "ohi.andre.consolelauncher" + ".bundle";
+    public static final String PENDING_INTENT = "ohi.andre.consolelauncher" + ".pending_intent";
+    public static final String ID = "ohi.andre.consolelauncher" + ".id";
+    public static final String CURRENT_ID = "ohi.andre.consolelauncher" + ".current_id";
+    public static final String INFO_AREA = "ohi.andre.consolelauncher" + ".info_area";
 
     Outputable outputable;
     Inputable inputable;

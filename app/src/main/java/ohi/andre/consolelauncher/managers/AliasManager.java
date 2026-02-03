@@ -5,7 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Color;
-import android.support.v4.content.LocalBroadcastManager;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import ohi.andre.consolelauncher.BuildConfig;
+// import ohi.andre.consolelauncher.BuildConfig;
 import ohi.andre.consolelauncher.R;
 import ohi.andre.consolelauncher.managers.xml.XMLPrefsManager;
 import ohi.andre.consolelauncher.managers.xml.options.Behavior;
@@ -28,9 +28,9 @@ import ohi.andre.consolelauncher.tuils.Tuils;
 
 public class AliasManager {
 
-    public static String ACTION_LS = BuildConfig.APPLICATION_ID + ".alias_ls";
-    public static String ACTION_ADD = BuildConfig.APPLICATION_ID + ".alias_add";
-    public static String ACTION_RM = BuildConfig.APPLICATION_ID + ".alias_rm";
+    public static String ACTION_LS = "ohi.andre.consolelauncher" + ".alias_ls";
+    public static String ACTION_ADD = "ohi.andre.consolelauncher" + ".alias_add";
+    public static String ACTION_RM = "ohi.andre.consolelauncher" + ".alias_rm";
 
     public static String NAME = "name";
 

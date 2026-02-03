@@ -6,7 +6,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Color;
 import android.net.Uri;
-import android.support.v4.content.LocalBroadcastManager;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.TextUtils;
@@ -35,7 +35,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import ohi.andre.consolelauncher.BuildConfig;
+// import ohi.andre.consolelauncher.BuildConfig;
 import ohi.andre.consolelauncher.R;
 import ohi.andre.consolelauncher.UIManager;
 import ohi.andre.consolelauncher.managers.xml.XMLPrefsManager;
@@ -56,13 +56,13 @@ import static ohi.andre.consolelauncher.managers.xml.XMLPrefsManager.resetFile;
 
 public class HTMLExtractManager {
 
-    public static String ACTION_ADD = BuildConfig.APPLICATION_ID + ".htmlextract_add";
-    public static String ACTION_RM = BuildConfig.APPLICATION_ID + ".htmlextract_rm";
-    public static String ACTION_EDIT = BuildConfig.APPLICATION_ID + ".htmlextract_edit";
-    public static String ACTION_LS = BuildConfig.APPLICATION_ID + ".htmlextract_ls";
+    public static String ACTION_ADD = "ohi.andre.consolelauncher" + ".htmlextract_add";
+    public static String ACTION_RM = "ohi.andre.consolelauncher" + ".htmlextract_rm";
+    public static String ACTION_EDIT = "ohi.andre.consolelauncher" + ".htmlextract_edit";
+    public static String ACTION_LS = "ohi.andre.consolelauncher" + ".htmlextract_ls";
 
-    public static String ACTION_QUERY = BuildConfig.APPLICATION_ID + ".htmlextract_query";
-    public static String ACTION_WEATHER = BuildConfig.APPLICATION_ID + ".htmlextract_weather";
+    public static String ACTION_QUERY = "ohi.andre.consolelauncher" + ".htmlextract_query";
+    public static String ACTION_WEATHER = "ohi.andre.consolelauncher" + ".htmlextract_weather";
 
     public static String ID = "id";
     public static String FORMAT_ID = "formatId";

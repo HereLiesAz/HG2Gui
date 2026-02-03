@@ -104,10 +104,10 @@ public class CommandMenu {
         tree.add(new MenuOption("root-docker", "DOCKER", "docker", C_CYAN, dockerChildren));
 
         // Common
-        TREE.add(new MenuOption("root-ls", "LS", "ls", C_GRAY));
-        TREE.add(new MenuOption("root-cd", "CD", "cd", C_GRAY));
-        TREE.add(new MenuOption("root-clear", "CLEAR", "clear", C_GRAY));
-        TREE.add(new MenuOption("root-help", "HELP", "help", C_GREEN));
+        tree.add(new MenuOption("root-ls", "LS", "ls", C_GRAY));
+        tree.add(new MenuOption("root-cd", "CD", "cd", C_GRAY));
+        tree.add(new MenuOption("root-clear", "CLEAR", "clear", C_GRAY));
+        tree.add(new MenuOption("root-help", "HELP", "help", C_GREEN));
 
         // Switch OS
         List<MenuOption> switchOsChildren = new ArrayList<>();
@@ -115,18 +115,8 @@ public class CommandMenu {
         switchOsChildren.add(new MenuOption("sw-macos", "MACOS", "macos", C_GRAY, R.drawable.ic_os_macos));
         switchOsChildren.add(new MenuOption("sw-win", "WINDOWS", "windows", C_BLUE, R.drawable.ic_os_windows));
 
-        TREE.add(new MenuOption("sys-switch", "SWITCH OS", "switch-os", C_GRAY, switchOsChildren));
-        tree.add(new MenuOption("root-ls", "LS", "ls", C_GRAY));
-        tree.add(new MenuOption("root-cd", "CD", "cd", C_GRAY));
-        tree.add(new MenuOption("root-clear", "CLEAR", "clear", C_GRAY));
-        tree.add(new MenuOption("root-help", "HELP", "help", C_GREEN));
+        tree.add(new MenuOption("sys-switch", "SWITCH OS", "switch-os", C_GRAY, switchOsChildren));
 
-        // Switch OS (Hidden/Utility)
-        List<MenuOption> switchChildren = new ArrayList<>();
-        switchChildren.add(new MenuOption("sw-ubuntu", "UBUNTU", "ubuntu", C_ORANGE));
-        switchChildren.add(new MenuOption("sw-macos", "MACOS", "macos", C_GRAY));
-        switchChildren.add(new MenuOption("sw-win", "WINDOWS", "windows", C_BLUE));
-        tree.add(new MenuOption("sys-switch", "SWITCH OS", "switch-os", C_GRAY, switchChildren));
 
         return tree;
     }
