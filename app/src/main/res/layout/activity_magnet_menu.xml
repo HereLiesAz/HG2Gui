@@ -117,7 +117,7 @@
             android:layout_marginBottom="24dp">
 
             <!-- Custom View for Wave -->
-            <view class="ohi.andre.consolelauncher.MagnetMenuActivity$WaveView"
+            <view class="com.hereliesaz.hg2gui.MagnetMenuActivity$WaveView"
                 android:id="@+id/wave_view"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"/>
