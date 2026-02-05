@@ -54,33 +54,44 @@ limitations under the License.*/
 
 /**
  * Manages the visual aspect of the terminal.
- * Handles the Input (EditText) and Output (TextView) views, processes user key events,
- * and maintains the command history.
+ * <p>
+ * This class wraps the primary TextView (output) and EditText (input) to provide a unified
+ * interface for the "Terminal" view. It acts as an adapter, handling:
+ * 1. Appending new text to the output.
+ * 2. Formatting text (colors, timestamps, prefixes).
+ * 3. Handling user input events (Enter key, buttons).
+ * 4. Managing command history (Up/Down arrows simulation).
+ * 5. Auto-scrolling logic.
+ * </p>
  */
 public class TerminalManager {
 
-    private final int SCROLL_DELAY = 200;
-    private final int CMD_LIST_SIZE = 40;
+    private final int SCROLL_DELAY = 200; // Delay before scrolling to bottom
+    private final int CMD_LIST_SIZE = 40; // Max history size
 
+    // Categories for text output formatting
     public static final int CATEGORY_INPUT = 10, CATEGORY_OUTPUT = 11, CATEGORY_NO_COLOR = 20;
 
     public static int NO_COLOR = Integer.MAX_VALUE;
 
-    private long lastEnter;
+    private long lastEnter; // Timestamp to prevent double-enter debounce
 
-    private String prefix;
-    private String suPrefix;
+    private String prefix; // Standard prompt prefix (e.g. "$")
+    private String suPrefix; // Root prompt prefix (e.g. "#")
 
+    // UI Components
     private ScrollView mScrollView;
     private TextView mTerminalView;
     private EditText mInputView;
-
     private TextView mPrefix;
-    private boolean suMode;
 
+    private boolean suMode; // Is root mode active?
+
+    // History buffer
     private List<String> cmdList = new ArrayList<>(CMD_LIST_SIZE);
-    private int howBack = -1;
+    private int howBack = -1; // Pointer for history navigation
 
+    // Runnable to scroll to the bottom of the terminal
     private Runnable mScrollRunnable = new Runnable() {
         @Override
         public void run() {
@@ -95,6 +106,7 @@ public class TerminalManager {
 
     private int clearCmdsCount= 0;
 
+    // Configuration for auto-clearing the screen
     private int clearAfterCmds, clearAfterMs, maxLines;
     private Runnable clearRunnable = new Runnable() {
 
@@ -114,6 +126,9 @@ public class TerminalManager {
 
     private CommandExecuter executer;
 
+    /**
+     * Constructor. Binds all UI elements and loads preferences.
+     */
     public TerminalManager(final TextView terminalView, EditText inputView, TextView prefixView, ImageView submitView, final ImageView backView, ImageButton nextView, ImageButton deleteView,
                            ImageButton pasteView, final Context context, MainPack mainPack, CommandExecuter executer) {
         if (terminalView == null || inputView == null || prefixView == null)
@@ -124,6 +139,7 @@ public class TerminalManager {
 
         this.mainPack = mainPack;
 
+        // Load preferences
         this.clickCommands = XMLPrefsManager.getBoolean(Behavior.click_commands);
         this.longClickCommands = XMLPrefsManager.getBoolean(Behavior.long_click_commands);
 
@@ -142,12 +158,14 @@ public class TerminalManager {
 
         int ioSize = XMLPrefsManager.getInt(Ui.input_output_size);
 
+        // Configure Prefix View
         prefixView.setTypeface(Tuils.getTypeface(context));
         prefixView.setTextColor(XMLPrefsManager.getColor(Theme.input_color));
         prefixView.setTextSize(ioSize);
         prefixView.setText(prefix.endsWith(Tuils.SPACE) ? prefix : prefix + Tuils.SPACE);
         this.mPrefix = prefixView;
 
+        // Configure Toolbar Buttons
         if (submitView != null) {
             submitView.setColorFilter(XMLPrefsManager.getColor(Theme.enter_color));
             submitView.setOnClickListener(v -> onNewInput());
@@ -178,14 +196,15 @@ public class TerminalManager {
             deleteView.setOnClickListener(v -> setInput(Tuils.EMPTYSTRING));
         }
 
+        // Configure Terminal Output View
         this.mTerminalView = terminalView;
         this.mTerminalView.setTypeface(Tuils.getTypeface(context));
         this.mTerminalView.setTextSize(ioSize);
         this.mTerminalView.setFocusable(false);
         this.mTerminalView.setMovementMethod(LongClickMovementMethod.getInstance(XMLPrefsManager.getInt(Behavior.long_click_duration)));
 
+        // Hack to set Hint Color using reflection (Standard API might not support it fully on all versions in this context)
         int hintColor = XMLPrefsManager.getColor(Theme.session_info_color);
-
         ColorStateList list = mTerminalView.getHintTextColors();
         try {
             Field colors = list.getClass().getDeclaredField("mColors");
@@ -205,7 +224,10 @@ public class TerminalManager {
             Tuils.log(e);
         }
 
+        // Setup auto-clear
         if(clearAfterMs > 0) this.mTerminalView.postDelayed(clearRunnable, clearAfterMs);
+
+        // Setup Max Lines limiter
         if(maxLines > 0) {
             this.mTerminalView.getViewTreeObserver().addOnPreDrawListener(() -> {
                 if(TerminalManager.this.mTerminalView == null) return true;
@@ -215,6 +237,7 @@ public class TerminalManager {
 
                 int count = l.getLineCount() - 1;
 
+                // Truncate text from the top if it exceeds max lines
                 if(count > maxLines) {
                     int excessive = count - maxLines;
 
@@ -233,12 +256,14 @@ public class TerminalManager {
             });
         }
 
+        // Find parent ScrollView
         View v = mTerminalView;
         do {
             v = (View) v.getParent();
         } while (!(v instanceof ScrollView));
         this.mScrollView = (ScrollView) v;
 
+        // Configure Input View
         this.mInputView = inputView;
         this.mInputView.setTextSize(ioSize);
         this.mInputView.setTextColor(XMLPrefsManager.getColor(Theme.input_color));
@@ -247,10 +272,12 @@ public class TerminalManager {
         this.mInputView.setInputType(InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
         Tuils.setCursorDrawableColor(this.mInputView, XMLPrefsManager.getColor(Theme.cursor_color));
         this.mInputView.setHighlightColor(Color.TRANSPARENT);
+
+        // Handle Action Key on Keyboard
         this.mInputView.setOnEditorActionListener((v1, actionId, event) -> {
             if(!mInputView.hasFocus()) mInputView.requestFocus();
 
-//                physical enter
+            // Debounce physical Enter key
             if(actionId == KeyEvent.ACTION_DOWN) {
                 if(lastEnter == 0) {
                     lastEnter = System.currentTimeMillis();
@@ -267,25 +294,13 @@ public class TerminalManager {
                 onNewInput();
             }
 
-//                if (event == null && actionId == EditorInfo.IME_NULL) onNewInput();
-//                if (event != null && event.getAction() == KeyEvent.ACTION_DOWN && event.getKeyCode() == KeyEvent.KEYCODE_ENTER) onNewInput();
-
             return true;
         });
-//        if(autoLowerFirstChar) {
-//            this.mInputView.setFilters(new InputFilter[] {new InputFilter() {
-//                @Override
-//                public CharSequence filter(CharSequence source, int start, int end, Spanned dest, int dstart, int dend) {
-//                    if (dstart == 0 && dend == 0 && start == 0 && end == 1 && source.length() > 0) {
-//                        return TextUtils.concat(source.toString().toLowerCase().charAt(0) + Tuils.EMPTYSTRING, source.subSequence(1,source.length()));
-//                    }
-//
-//                    return source;
-//                }
-//            }});
-//        }
     }
 
+    /**
+     * Resets the input field after a command is sent.
+     */
     private void setupNewInput() {
         mInputView.setText(Tuils.EMPTYSTRING);
 
@@ -296,67 +311,66 @@ public class TerminalManager {
         requestInputFocus();
     }
 
+    /**
+     * Handles the submission of new input.
+     * @return true if handled.
+     */
     private boolean onNewInput() {
         if (mInputView == null) {
             return false;
         }
 
         CharSequence input = mInputView.getText();
-
         String cmd = input.toString().trim();
 
+        // Check for special objects (like app LaunchInfo) in the text spans
         Object obj = null;
         try {
             obj = ((Spannable) input).getSpans(0, input.length(), AppsManager.LaunchInfo.class)[0];
         } catch (Exception e) {
-//            an error will probably be thrown everytime, but we don't need to track it
+            // Ignore if no spans found
         }
 
         if(input.length() > 0) {
+            // Auto-clear logic
             clearCmdsCount++;
             if(clearCmdsCount != 0 && clearAfterCmds > 0 && clearCmdsCount % clearAfterCmds == 0) clear();
 
+            // Echo input to terminal output
             writeToView(input, CATEGORY_INPUT);
 
+            // Add to history
             if(cmdList.size() == CMD_LIST_SIZE) {
                 cmdList.remove(0);
             }
             cmdList.add(cmdList.size(), cmd);
-            howBack = -1;
+            howBack = -1; // Reset history pointer
         }
 
-//        DO NOT USE THE INTENT APPROACH
-//        apps are not launching properly, when one has been launched, an other attempt will show always the same
-//
-//        Intent intent = new Intent(MainManager.ACTION_EXEC);
-//        intent.putExtra(MainManager.CMD, cmd);
-//        intent.putExtra(MainManager.CMD_COUNT, MainManager.commandCount);
-//
-//        Parcelable p = null;
-//        if(obj instanceof Parcelable) p = (Parcelable) obj;
-//        intent.putExtra(MainManager.PARCELABLE, p);
-//
-//        LocalBroadcastManager.getInstance(mContext.getApplicationContext()).sendBroadcast(intent);
-
+        // Execute the command via MainManager
         executer.execute(cmd, obj);
-
-//        because it will clear suggestions without refilling them, because "aftertextchanged" wont be called
-//        if(cmd.length() > 0) LocalBroadcastManager.getInstance(mContext.getApplicationContext()).sendBroadcast(new Intent(UIManager.ACTION_CLEAR_SUGGESTIONS));
 
         setupNewInput();
 
         return true;
     }
 
+    /**
+     * Public method to append output to the terminal.
+     */
     public void setOutput(CharSequence output, int type) {
         if (output == null || output.length() == 0) return;
 
         writeToView(output, type);
     }
 
+    /**
+     * Output with specific color.
+     */
     public void setOutput(int color, CharSequence output) {
         if(output == null || output.length() == 0) return;
 
+        // Easter Egg: Panic Mode if output is Red
         if (color == Color.RED) {
             Intent intent = new Intent(mContext, PanicActivity.class);
             intent.putExtra(PanicActivity.EXTRA_ERROR_MESSAGE, output.toString());
@@ -378,6 +392,9 @@ public class TerminalManager {
         return mTerminalView.getText().toString();
     }
 
+    /**
+     * Navigate history back (Up arrow).
+     */
     public void onBackPressed() {
         if(cmdList.size() > 0) {
 
@@ -392,6 +409,9 @@ public class TerminalManager {
         }
     }
 
+    /**
+     * Navigate history forward (Down arrow).
+     */
     public void onNextPressed() {
         if(howBack != -1 && howBack < cmdList.size()) {
             howBack++;
@@ -407,17 +427,24 @@ public class TerminalManager {
         }
     }
 
+    // Placeholders for format strings
     public static final String FORMAT_INPUT = "%i";
     public static final String FORMAT_OUTPUT = "%o";
     public static final String FORMAT_PREFIX = "%p";
     public static final String FORMAT_NEWLINE = "%n";
 
+    /**
+     * Internal method to process text before writing to view (formatting).
+     */
     private void writeToView(CharSequence text, int type) {
         text = getFinalText(text, type);
         text = TextUtils.concat(Tuils.NEWLINE, text);
         writeToView(text);
     }
 
+    /**
+     * Writes text to the TextView on the UI thread and scrolls.
+     */
     private void writeToView(final CharSequence text) {
         mTerminalView.post(() -> {
             mTerminalView.append(text);
@@ -425,6 +452,9 @@ public class TerminalManager {
         });
     }
 
+    /**
+     * Applies formatting (prefixes, colors, timestamp) based on message category.
+     */
     private CharSequence getFinalText(CharSequence t, int type) {
         CharSequence s;
         switch (type) {
@@ -434,6 +464,8 @@ public class TerminalManager {
                 boolean su = t.toString().startsWith("su ") || suMode;
 
                 SpannableString si = Tuils.span(inputFormat, inputColor);
+
+                // Add click listeners to re-run command if configured
                 if(clickCommands || longClickCommands) si.setSpan(new LongClickableSpan(clickCommands ? t.toString() : null, longClickCommands ? t.toString() : null, PrivateIOReceiver.ACTION_INPUT), 0,
                         si.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
 
@@ -453,7 +485,6 @@ public class TerminalManager {
                         new CharSequence[] {t, Tuils.NEWLINE, t, Tuils.NEWLINE});
 
                 break;
-//            already colored here
             case CATEGORY_NO_COLOR:
                 s = t;
                 break;

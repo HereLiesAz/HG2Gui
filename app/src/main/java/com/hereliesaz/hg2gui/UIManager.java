@@ -83,8 +83,20 @@ import com.hereliesaz.hg2gui.tuils.interfaces.OnRedirectionListener;
 import com.hereliesaz.hg2gui.tuils.interfaces.OnTextChanged;
 import com.hereliesaz.hg2gui.tuils.stuff.PolicyReceiver;
 
+/**
+ * Manages the User Interface of the terminal launcher.
+ * <p>
+ * This massive class is responsible for:
+ * 1. Initializing and managing the Terminal Views (Input, Output, Suggestions).
+ * 2. Rendering dynamic status information (Battery, RAM, Network, Storage, Weather).
+ * 3. Handling touch events (gestures, double taps).
+ * 4. Responding to UI-related broadcasts (clear screen, update weather).
+ * 5. Managing the Soft Keyboard visibility.
+ * </p>
+ */
 public class UIManager implements OnTouchListener {
 
+    // --- Broadcast Action Definitions ---
     public static String ACTION_UPDATE_SUGGESTIONS = "com.hereliesaz.hg2gui" + ".ui_update_suggestions";
     public static String ACTION_UPDATE_HINT = "com.hereliesaz.hg2gui" + ".ui_update_hint";
     public static String ACTION_ROOT = "com.hereliesaz.hg2gui" + ".ui_root";
@@ -100,6 +112,8 @@ public class UIManager implements OnTouchListener {
     public static String FILE_NAME = "fileName";
     public static String PREFS_NAME = "ui";
 
+    // --- UI Labels ---
+    // Enumeration of the dynamic text fields available on the UI
     private enum Label {
         ram,
         device,
@@ -112,40 +126,51 @@ public class UIManager implements OnTouchListener {
         unlock
     }
 
+    // Update frequencies for various monitors (ms)
     private final int RAM_DELAY = 3000;
     private final int TIME_DELAY = 1000;
     private final int STORAGE_DELAY = 60 * 1000;
 
     protected Context mContext;
-
     private Handler handler;
 
-    private DevicePolicyManager policy;
+    // --- Device Policy & Gestures ---
+    private DevicePolicyManager policy; // For locking screen
     private ComponentName component;
     private GestureDetectorCompat gestureDetector;
 
     SharedPreferences preferences;
 
     private InputMethodManager imm;
-    private TerminalManager mTerminalAdapter;
+    private TerminalManager mTerminalAdapter; // Adapts the UI to the logical terminal model
 
+    // Battery styling configs
     int mediumPercentage, lowPercentage;
     String batteryFormat;
 
+    // Toolbar visibility flags
     boolean hideToolbarNoInput;
     View toolbarView;
 
-    //    never access this directly, use getLabelView
+    // --- Dynamic Label Views ---
+    // Array holding the TextViews for the labels defined in the Label enum.
+    // NOTE: never access this directly, use getLabelView(Label)
     private TextView[] labelViews = new TextView[Label.values().length];
 
-    private float[] labelIndexes = new float[labelViews.length];
-    private int[] labelSizes = new int[labelViews.length];
-    private CharSequence[] labelTexts = new CharSequence[labelViews.length];
+    // Helpers for ordering and sizing labels
+    private float[] labelIndexes = new float[labelViews.length]; // Determines order/position
+    private int[] labelSizes = new int[labelViews.length];       // Font sizes
+    private CharSequence[] labelTexts = new CharSequence[labelViews.length]; // Current text content
 
+    /**
+     * Retrieves the TextView associated with a specific Label.
+     * Mappings are determined by configuration indexes.
+     */
     private TextView getLabelView(Label l) {
         return labelViews[(int) labelIndexes[l.ordinal()]];
     }
 
+    // --- Notes Manager ---
     private int notesMaxLines;
     private NotesManager notesManager;
     private NotesRunnable notesRunnable;
@@ -156,21 +181,20 @@ public class UIManager implements OnTouchListener {
         @Override
         public void run() {
             if(notesManager != null) {
+                // Only update if notes have changed in the file
                 if(notesManager.hasChanged) {
                     UIManager.this.updateText(Label.notes, Tuils.span(mContext, labelSizes[Label.notes.ordinal()], notesManager.getNotes()));
                 }
-
                 handler.postDelayed(this, updateTime);
             }
         }
     };
 
+    // --- Battery Monitor ---
     private BatteryUpdate batteryUpdate;
     private class BatteryUpdate implements OnBatteryUpdate {
 
-//        %(charging:not charging)
-
-        //        final Pattern optionalCharging = Pattern.compile("%\\(([^\\/]*)\\/([^)]*)\\)", Pattern.CASE_INSENSITIVE);
+        // Regex patterns for custom battery formatting (e.g. show different text if charging)
         Pattern optionalCharging;
         final Pattern value = Pattern.compile("%v", Pattern.LITERAL | Pattern.CASE_INSENSITIVE);
 
@@ -182,9 +206,11 @@ public class UIManager implements OnTouchListener {
 
         @Override
         public void update(float p) {
+            // Lazy initialization of patterns
             if(batteryFormat == null) {
                 batteryFormat = XMLPrefsManager.get(Behavior.battery_format);
 
+                // Get initial charging state
                 Intent intent = mContext.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
                 if(intent == null) charging = false;
                 else {
@@ -200,9 +226,9 @@ public class UIManager implements OnTouchListener {
             if(p == -1) p = last;
             last = p;
 
+            // Load colors once
             if(!loaded) {
                 loaded = true;
-
                 manyStatus = XMLPrefsManager.getBoolean(Ui.enable_battery_status);
                 colorHigh = XMLPrefsManager.getColor(Theme.battery_color_high);
                 colorMedium = XMLPrefsManager.getColor(Theme.battery_color_medium);
@@ -210,9 +236,9 @@ public class UIManager implements OnTouchListener {
             }
 
             int percentage = (int) p;
-
             int color;
 
+            // Determine color based on percentage
             if(manyStatus) {
                 if(percentage > mediumPercentage) color = colorHigh;
                 else if(percentage > lowPercentage) color = colorMedium;
@@ -223,11 +249,13 @@ public class UIManager implements OnTouchListener {
 
             String cp = batteryFormat;
 
+            // Handle optional charging text: %(charging/not charging)
             Matcher m = optionalCharging.matcher(cp);
             while (m.find()) {
                 cp = cp.replace(m.group(0), m.groupCount() == 2 ? m.group(charging ? 1 : 2) : Tuils.EMPTYSTRING);
             }
 
+            // Replace %v with percentage
             cp = value.matcher(cp).replaceAll(String.valueOf(percentage));
             cp = Tuils.patternNewline.matcher(cp).replaceAll(Tuils.NEWLINE);
 
@@ -237,7 +265,7 @@ public class UIManager implements OnTouchListener {
         @Override
         public void onCharging() {
             charging = true;
-            update(-1);
+            update(-1); // Force update with last percentage
         }
 
         @Override
@@ -247,17 +275,18 @@ public class UIManager implements OnTouchListener {
         }
     };
 
+    // --- Storage Monitor ---
     private StorageRunnable storageRunnable;
     private class StorageRunnable implements Runnable {
 
-        private final String INT_AV = "%iav";
-        private final String INT_TOT = "%itot";
-        private final String EXT_AV = "%eav";
-        private final String EXT_TOT = "%etot";
+        // Regex keys for storage info
+        private final String INT_AV = "%iav"; // Internal Available
+        private final String INT_TOT = "%itot"; // Internal Total
+        private final String EXT_AV = "%eav"; // External Available
+        private final String EXT_TOT = "%etot"; // External Total
 
         private List<Pattern> storagePatterns;
         private String storageFormat;
-
         int color;
 
         @Override
@@ -267,9 +296,11 @@ public class UIManager implements OnTouchListener {
                 color = XMLPrefsManager.getColor(Theme.storage_color);
             }
 
+            // Compile patterns once
             if(storagePatterns == null) {
                 storagePatterns = new ArrayList<>();
-
+                // Add patterns for various units (tb, gb, mb, kb, b, %)
+                // ... (Listing all patterns for internal/external storage)
                 storagePatterns.add(Pattern.compile(INT_AV + "tb", Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
                 storagePatterns.add(Pattern.compile(INT_AV + "gb", Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
                 storagePatterns.add(Pattern.compile(INT_AV + "mb", Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
@@ -298,12 +329,14 @@ public class UIManager implements OnTouchListener {
 
                 storagePatterns.add(Tuils.patternNewline);
 
+                // Fallback patterns (default unit)
                 storagePatterns.add(Pattern.compile(INT_AV, Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
                 storagePatterns.add(Pattern.compile(INT_TOT, Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
                 storagePatterns.add(Pattern.compile(EXT_AV, Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
                 storagePatterns.add(Pattern.compile(EXT_TOT, Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
             }
 
+            // Fetch storage stats
             double iav = Tuils.getAvailableInternalMemorySize(Tuils.BYTE);
             double itot = Tuils.getTotalInternalMemorySize(Tuils.BYTE);
             double eav = Tuils.getAvailableExternalMemorySize(Tuils.BYTE);
@@ -311,6 +344,7 @@ public class UIManager implements OnTouchListener {
 
             String copy = storageFormat;
 
+            // Replace patterns with formatted values
             copy = storagePatterns.get(0).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) iav, Tuils.TERA))));
             copy = storagePatterns.get(1).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) iav, Tuils.GIGA))));
             copy = storagePatterns.get(2).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) iav, Tuils.MEGA))));
@@ -318,6 +352,7 @@ public class UIManager implements OnTouchListener {
             copy = storagePatterns.get(4).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) iav, Tuils.BYTE))));
             copy = storagePatterns.get(5).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.percentage(iav, itot))));
 
+            // ... (Replacements for Total Internal, Available External, Total External)
             copy = storagePatterns.get(6).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) itot, Tuils.TERA))));
             copy = storagePatterns.get(7).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) itot, Tuils.GIGA))));
             copy = storagePatterns.get(8).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) itot, Tuils.MEGA))));
@@ -339,6 +374,7 @@ public class UIManager implements OnTouchListener {
 
             copy = storagePatterns.get(22).matcher(copy).replaceAll(Matcher.quoteReplacement(Tuils.NEWLINE));
 
+            // Default unit replacements (Giga)
             copy = storagePatterns.get(23).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) iav, Tuils.GIGA))));
             copy = storagePatterns.get(24).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) itot, Tuils.GIGA))));
             copy = storagePatterns.get(25).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) eav, Tuils.GIGA))));
@@ -350,9 +386,9 @@ public class UIManager implements OnTouchListener {
         }
     };
 
+    // --- Time Monitor ---
     private TimeRunnable timeRunnable;
     private class TimeRunnable implements Runnable {
-
         boolean active;
 
         @Override
@@ -360,36 +396,34 @@ public class UIManager implements OnTouchListener {
             if(!active) {
                 active = true;
             }
-
+            // Update time label using TimeManager
             updateText(Label.time, TimeManager.instance.getCharSequence(mContext, labelSizes[Label.time.ordinal()], "%t0"));
             handler.postDelayed(this, TIME_DELAY);
         }
     };
 
+    // --- RAM Monitor ---
     private ActivityManager.MemoryInfo memory;
     private ActivityManager activityManager;
-
     private RamRunnable ramRunnable;
     private class RamRunnable implements Runnable {
-        private final String AV = "%av";
-        private final String TOT = "%tot";
+        private final String AV = "%av"; // Available RAM
+        private final String TOT = "%tot"; // Total RAM
 
         List<Pattern> ramPatterns;
         String ramFormat;
-
         int color;
 
         @Override
         public void run() {
             if(ramFormat == null) {
                 ramFormat = XMLPrefsManager.get(Behavior.ram_format);
-
                 color = XMLPrefsManager.getColor(Theme.ram_color);
             }
 
             if(ramPatterns == null) {
                 ramPatterns = new ArrayList<>();
-
+                // Compile patterns for various RAM units
                 ramPatterns.add(Pattern.compile(AV + "tb", Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
                 ramPatterns.add(Pattern.compile(AV + "gb", Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
                 ramPatterns.add(Pattern.compile(AV + "mb", Pattern.CASE_INSENSITIVE | Pattern.LITERAL));
@@ -411,6 +445,7 @@ public class UIManager implements OnTouchListener {
             double av = Tuils.freeRam(activityManager, memory);
             double tot = Tuils.totalRam() * 1024L;
 
+            // Replace patterns with calculated values
             copy = ramPatterns.get(0).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) av, Tuils.TERA))));
             copy = ramPatterns.get(1).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) av, Tuils.GIGA))));
             copy = ramPatterns.get(2).matcher(copy).replaceAll(Matcher.quoteReplacement(String.valueOf(Tuils.formatSize((long) av, Tuils.MEGA))));
@@ -432,11 +467,11 @@ public class UIManager implements OnTouchListener {
         }
     };
 
+    // --- Network Monitor ---
     private NetworkRunnable networkRunnable;
     private class NetworkRunnable implements Runnable {
-//        %() -> wifi
-//        %[] -> data
-//        %{} -> bluetooth
+        // Formats for optional values depending on connection state
+        // %() -> wifi, %[] -> data, %{} -> bluetooth
 
         final String zero = "0";
         final String one = "1";
@@ -449,12 +484,13 @@ public class UIManager implements OnTouchListener {
         final String TRUE = _true.toUpperCase();
         final String FALSE = _false.toUpperCase();
 
+        // Regex for different display formats (0/1, on/off, TRUE/FALSE)
         final Pattern w0 = Pattern.compile("%w0", Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
         final Pattern w1 = Pattern.compile("%w1", Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
         final Pattern w2 = Pattern.compile("%w2", Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
         final Pattern w3 = Pattern.compile("%w3", Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
         final Pattern w4 = Pattern.compile("%w4", Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
-        final Pattern wn = Pattern.compile("%wn", Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
+        final Pattern wn = Pattern.compile("%wn", Pattern.CASE_INSENSITIVE | Pattern.LITERAL); // Wifi Name
         final Pattern d0 = Pattern.compile("%d0", Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
         final Pattern d1 = Pattern.compile("%d1", Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
         final Pattern d2 = Pattern.compile("%d2", Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
@@ -469,10 +505,6 @@ public class UIManager implements OnTouchListener {
         final Pattern ip6 = Pattern.compile("%ip6", Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
         final Pattern dt = Pattern.compile("%dt", Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
 
-//        final Pattern optionalWifi = Pattern.compile("%\\(([^/]*)/([^)]*)\\)", Pattern.CASE_INSENSITIVE);
-//        final Pattern optionalData = Pattern.compile("%\\[([^/]*)/([^\\]]*)\\]", Pattern.CASE_INSENSITIVE);
-//        final Pattern optionalBluetooth = Pattern.compile("%\\{([^/]*)/([^}]*)\\}", Pattern.CASE_INSENSITIVE);
-
         Pattern optionalWifi, optionalData, optionalBluetooth;
 
         String format, optionalValueSeparator;
@@ -480,7 +512,6 @@ public class UIManager implements OnTouchListener {
 
         WifiManager wifiManager;
         BluetoothAdapter mBluetoothAdapter;
-
         ConnectivityManager connectivityManager;
 
         Class cmClass;
@@ -492,6 +523,7 @@ public class UIManager implements OnTouchListener {
         @Override
         public void run() {
             if (format == null) {
+                // Initialize resources and patterns
                 format = XMLPrefsManager.get(Behavior.network_info_format);
                 color = XMLPrefsManager.getColor(Theme.network_info_color);
                 maxDepth = XMLPrefsManager.getInt(Behavior.max_optional_depth);
@@ -514,6 +546,7 @@ public class UIManager implements OnTouchListener {
                 optionalBluetooth = Pattern.compile(bluetoothRegex, Pattern.CASE_INSENSITIVE);
                 optionalData = Pattern.compile(dataRegex, Pattern.CASE_INSENSITIVE);
 
+                // Reflection to get mobile data state (hidden API)
                 try {
                     cmClass = Class.forName(connectivityManager.getClass().getName());
                     method = cmClass.getDeclaredMethod("getMobileDataEnabled");
@@ -524,7 +557,7 @@ public class UIManager implements OnTouchListener {
                 }
             }
 
-//            wifi
+            // Check Wifi state
             boolean wifiOn = connectivityManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI).isConnected();
             String wifiName = null;
             if (wifiOn) {
@@ -534,7 +567,7 @@ public class UIManager implements OnTouchListener {
                 }
             }
 
-//            mobile data
+            // Check Mobile Data state
             boolean mobileOn = false;
             try {
                 mobileOn = method != null && connectivityManager != null && (Boolean) method.invoke(connectivityManager);
@@ -548,23 +581,27 @@ public class UIManager implements OnTouchListener {
                 mobileType = "unknown";
             }
 
-//            bluetooth
+            // Check Bluetooth state
             boolean bluetoothOn = mBluetoothAdapter != null && mBluetoothAdapter.isEnabled();
 
             String copy = format;
 
+            // Apply nested conditional formatting based on states
             if (maxDepth > 0) {
                 copy = apply(1, copy, new boolean[]{wifiOn, mobileOn, bluetoothOn}, optionalWifi, optionalData, optionalBluetooth);
                 copy = apply(1, copy, new boolean[]{mobileOn, wifiOn, bluetoothOn}, optionalData, optionalWifi, optionalBluetooth);
                 copy = apply(1, copy, new boolean[]{bluetoothOn, wifiOn, mobileOn}, optionalBluetooth, optionalWifi, optionalData);
             }
 
+            // Replace simple placeholders
             copy = w0.matcher(copy).replaceAll(wifiOn ? one : zero);
             copy = w1.matcher(copy).replaceAll(wifiOn ? on : off);
             copy = w2.matcher(copy).replaceAll(wifiOn ? ON : OFF);
             copy = w3.matcher(copy).replaceAll(wifiOn ? _true : _false);
             copy = w4.matcher(copy).replaceAll(wifiOn ? TRUE : FALSE);
             copy = wn.matcher(copy).replaceAll(wifiName != null ? wifiName.replaceAll("\"", Tuils.EMPTYSTRING) : "null");
+
+            // ... (Replacements for Data and Bluetooth)
             copy = d0.matcher(copy).replaceAll(mobileOn ? one : zero);
             copy = d1.matcher(copy).replaceAll(mobileOn ? on : off);
             copy = d2.matcher(copy).replaceAll(mobileOn ? ON : OFF);
@@ -575,6 +612,7 @@ public class UIManager implements OnTouchListener {
             copy = b2.matcher(copy).replaceAll(bluetoothOn ? ON : OFF);
             copy = b3.matcher(copy).replaceAll(bluetoothOn ? _true : _false);
             copy = b4.matcher(copy).replaceAll(bluetoothOn ? TRUE : FALSE);
+
             copy = ip4.matcher(copy).replaceAll(NetworkUtils.getIPAddress(true));
             copy = ip6.matcher(copy).replaceAll(NetworkUtils.getIPAddress(false));
             copy = dt.matcher(copy).replaceAll(mobileType);
@@ -584,6 +622,7 @@ public class UIManager implements OnTouchListener {
             handler.postDelayed(this, updateTime);
         }
 
+        // Recursive helper for conditional formatting (e.g., show wifi icon if on, else empty)
         private String apply(int depth, String s, boolean[] on, Pattern... ps) {
 
             if(ps.length == 0) return s;
@@ -629,12 +668,11 @@ public class UIManager implements OnTouchListener {
         }
     }
 
+    // --- Weather Monitor ---
     private int weatherDelay;
-
     private double lastLatitude, lastLongitude;
     private String location;
     private boolean fixedLocation = false;
-
     private boolean weatherPerformedStartupRun = false;
     private WeatherRunnable weatherRunnable;
     private int weatherColor;
@@ -646,45 +684,19 @@ public class UIManager implements OnTouchListener {
         String url;
 
         public WeatherRunnable() {
-
+            // Load OpenWeatherMap API key
             if(XMLPrefsManager.wasChanged(Behavior.weather_key, false)) {
                 weatherDelay = XMLPrefsManager.getInt(Behavior.weather_update_time);
                 key = XMLPrefsManager.get(Behavior.weather_key);
             } else {
                 key = Behavior.weather_key.defaultValue();
-                weatherDelay = 60 * 60;
+                weatherDelay = 60 * 60; // 1 hour default
             }
             weatherDelay *= 1000;
 
             String where = XMLPrefsManager.get(Behavior.weather_location);
             if(where == null || where.length() == 0 || (!Tuils.isNumber(where) && !where.contains(","))) {
-//                Tuils.location(mContext, new Tuils.ArgsRunnable() {
-//                    @Override
-//                    public void run() {
-//                        setUrl(
-//                                "lat=" + get(int.class, 0) + "&lon=" + get(int.class, 1),
-//                                finalKey,
-//                                XMLPrefsManager.get(Behavior.weather_temperature_measure));
-//                        WeatherRunnable.this.run();
-//                    }
-//                }, new Runnable() {
-//                    @Override
-//                    public void run() {
-//                        updateText(Label.weather, Tuils.span(mContext, mContext.getString(R.string.location_error), XMLPrefsManager.getColor(Theme.weather_color), labelSizes[Label.weather.ordinal()]));
-//                    }
-//                }, handler);
-
-//                Location l = Tuils.getLocation(mContext);
-//                if(l != null) {
-//                    setUrl(
-//                            "lat=" + l.getLatitude() + "&lon=" + l.getLongitude(),
-//                            finalKey,
-//                            XMLPrefsManager.get(Behavior.weather_temperature_measure));
-//                    WeatherRunnable.this.run();
-//                } else {
-//                    updateText(Label.weather, Tuils.span(mContext, mContext.getString(R.string.location_error), XMLPrefsManager.getColor(Theme.weather_color), labelSizes[Label.weather.ordinal()]));
-//                }
-
+                // If no fixed location, request dynamic location
                 TuiLocationManager l = TuiLocationManager.instance(mContext);
                 l.add(ACTION_WEATHER_GOT_LOCATION);
 
@@ -715,6 +727,7 @@ public class UIManager implements OnTouchListener {
         private void send() {
             if(url == null) return;
 
+            // Broadcast request to HTMLExtractManager to fetch weather JSON
             Intent i = new Intent(HTMLExtractManager.ACTION_WEATHER);
             i.putExtra(XMLPrefsManager.VALUE_ATTRIBUTE, url);
             i.putExtra(HTMLExtractManager.BROADCAST_COUNT, HTMLExtractManager.broadcastCount);
@@ -730,21 +743,28 @@ public class UIManager implements OnTouchListener {
         }
     }
 
-//    you need to use labelIndexes[i]
+    /**
+     * Updates the text of a specific label.
+     * Handles positioning multiple labels on the same visual line (e.g. status bar).
+     * @param l The Label to update.
+     * @param s The new text content.
+     */
     private void updateText(Label l, CharSequence s) {
         labelTexts[l.ordinal()] = s;
 
-        int base = (int) labelIndexes[l.ordinal()];
+        int base = (int) labelIndexes[l.ordinal()]; // The visual line index
 
+        // Find all labels sharing this base line
         List<Float> indexs = new ArrayList<>();
         for(int count = 0; count < Label.values().length; count++) {
             if((int) labelIndexes[count] == base && labelTexts[count] != null) indexs.add(labelIndexes[count]);
         }
-//        now I'm sorting the labels on the same line for decimals (2.1, 2.0, ...)
+        // Sort them by their fractional index (e.g. 2.0, 2.1, 2.2)
         Collections.sort(indexs);
 
         CharSequence sequence = Tuils.EMPTYSTRING;
 
+        // Concatenate texts in order
         for(int c = 0; c < indexs.size(); c++) {
             float i = indexs.get(c);
 
@@ -753,6 +773,7 @@ public class UIManager implements OnTouchListener {
             }
         }
 
+        // Update the actual View
         if(sequence.length() == 0) labelViews[base].setVisibility(View.GONE);
         else {
             labelViews[base].setVisibility(View.VISIBLE);
@@ -774,14 +795,17 @@ public class UIManager implements OnTouchListener {
 
     private boolean clearOnLock;
 
+    /**
+     * Constructor. Initializes the UI layout and listeners.
+     */
     protected UIManager(final Context context, final ViewGroup rootView, MainPack mainPack, boolean canApplyTheme, CommandExecuter executer) {
 
+        // Register receiver for UI updates
         IntentFilter filter = new IntentFilter();
         filter.addAction(ACTION_UPDATE_SUGGESTIONS);
         filter.addAction(ACTION_UPDATE_HINT);
         filter.addAction(ACTION_ROOT);
         filter.addAction(ACTION_NOROOT);
-//        filter.addAction(ACTION_CLEAR_SUGGESTIONS);
         filter.addAction(ACTION_LOGTOFILE);
         filter.addAction(ACTION_CLEAR);
         filter.addAction(ACTION_WEATHER);
@@ -809,9 +833,8 @@ public class UIManager implements OnTouchListener {
                     mTerminalAdapter.onRoot();
                 } else if(action.equals(ACTION_NOROOT)) {
                     mTerminalAdapter.onStandard();
-//                } else if(action.equals(ACTION_CLEAR_SUGGESTIONS)) {
-//                    if(suggestionsManager != null) suggestionsManager.clear();
                 } else if(action.equals(ACTION_LOGTOFILE)) {
+                    // Handle dumping terminal output to a file
                     String fileName = intent.getStringExtra(FILE_NAME);
                     if(fileName == null || fileName.contains(File.separator)) return;
 
@@ -833,6 +856,7 @@ public class UIManager implements OnTouchListener {
                     if (suggestionsManager != null)
                         suggestionsManager.requestSuggestion(Tuils.EMPTYSTRING);
                 } else if(action.equals(ACTION_WEATHER)) {
+                    // Update weather display
                     Calendar c = Calendar.getInstance();
 
                     CharSequence s = intent.getCharSequenceExtra(XMLPrefsManager.VALUE_ATTRIBUTE);
@@ -848,11 +872,7 @@ public class UIManager implements OnTouchListener {
                         Tuils.sendOutput(context, message, TerminalManager.CATEGORY_OUTPUT);
                     }
                 } else if(action.equals(ACTION_WEATHER_GOT_LOCATION)) {
-//                    int result = intent.getIntExtra(XMLPrefsManager.VALUE_ATTRIBUTE, 0);
-//                    if(result == PackageManager.PERMISSION_DENIED) {
-//                        updateText(Label.weather, Tuils.span(context, context.getString(R.string.location_error), weatherColor, labelSizes[Label.weather.ordinal()]));
-//                    } else handler.post(weatherRunnable);
-
+                    // Handle location result for weather
                     if(intent.getBooleanExtra(TuiLocationManager.FAIL, false)) {
                         handler.removeCallbacks(weatherRunnable);
                         weatherRunnable = null;
@@ -872,6 +892,7 @@ public class UIManager implements OnTouchListener {
                         }
                     }
                 } else if(action.equals(ACTION_WEATHER_DELAY)) {
+                    // Handle delay in weather update
                     Calendar c = Calendar.getInstance();
                     c.setTimeInMillis(System.currentTimeMillis() + 1000 * 10);
 
@@ -902,13 +923,14 @@ public class UIManager implements OnTouchListener {
 
         imm = (InputMethodManager) mContext.getSystemService(Context.INPUT_METHOD_SERVICE);
 
+        // Apply background color/theme
         if (!XMLPrefsManager.getBoolean(Ui.system_wallpaper) || !canApplyTheme) {
             rootView.setBackgroundColor(XMLPrefsManager.getColor(Theme.bg_color));
         } else {
             rootView.setBackgroundColor(XMLPrefsManager.getColor(Theme.overlay_color));
         }
 
-//        scrolllllll
+        // Auto-scroll logic (detect keyboard appearance)
         if(XMLPrefsManager.getBoolean(Behavior.auto_scroll)) {
             rootView.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
                 int heightDiff = rootView.getRootView().getHeight() - rootView.getHeight();
@@ -920,6 +942,7 @@ public class UIManager implements OnTouchListener {
 
         clearOnLock = XMLPrefsManager.getBoolean(Behavior.clear_on_lock);
 
+        // Double tap gesture logic
         lockOnDbTap = XMLPrefsManager.getBoolean(Behavior.double_tap_lock);
         doubleTapCmd = XMLPrefsManager.get(Behavior.double_tap_cmd);
         if(!lockOnDbTap && doubleTapCmd == null) {
@@ -928,27 +951,23 @@ public class UIManager implements OnTouchListener {
             gestureDetector = null;
         } else {
             gestureDetector = new GestureDetectorCompat(mContext, new GestureDetector.OnGestureListener() {
+                // ... (Gesture Listener implementations)
                 @Override
                 public boolean onDown(MotionEvent e) {
                     return false;
                 }
-
                 @Override
                 public void onShowPress(MotionEvent e) {}
-
                 @Override
                 public boolean onSingleTapUp(MotionEvent e) {
                     return false;
                 }
-
                 @Override
                 public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
                     return false;
                 }
-
                 @Override
                 public void onLongPress(MotionEvent e) {}
-
                 @Override
                 public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
                     return false;
@@ -970,6 +989,7 @@ public class UIManager implements OnTouchListener {
                 @Override
                 public boolean onDoubleTap(MotionEvent e) {
 
+                    // Execute custom command on double tap
                     if(doubleTapCmd != null && doubleTapCmd.length() > 0) {
                         String input = mTerminalAdapter.getInput();
                         mTerminalAdapter.setInput(doubleTapCmd);
@@ -977,6 +997,7 @@ public class UIManager implements OnTouchListener {
                         mTerminalAdapter.setInput(input);
                     }
 
+                    // Lock screen if enabled
                     if(lockOnDbTap) {
                         boolean admin = policy.isAdminActive(component);
 
@@ -993,10 +1014,12 @@ public class UIManager implements OnTouchListener {
             });
         }
 
+        // Apply display margins
         int[] displayMargins = getListOfIntValues(XMLPrefsManager.get(Ui.display_margin_mm), 4, 0);
         DisplayMetrics metrics = mContext.getResources().getDisplayMetrics();
         rootView.setPadding(Tuils.mmToPx(metrics, displayMargins[0]), Tuils.mmToPx(metrics, displayMargins[1]), Tuils.mmToPx(metrics, displayMargins[2]), Tuils.mmToPx(metrics, displayMargins[3]));
 
+        // Load label sizes from preferences
         labelSizes[Label.time.ordinal()] = XMLPrefsManager.getInt(Ui.time_size);
         labelSizes[Label.ram.ordinal()] = XMLPrefsManager.getInt(Ui.ram_size);
         labelSizes[Label.battery.ordinal()] = XMLPrefsManager.getInt(Ui.battery_size);
@@ -1007,6 +1030,7 @@ public class UIManager implements OnTouchListener {
         labelSizes[Label.weather.ordinal()] = XMLPrefsManager.getInt(Ui.weather_size);
         labelSizes[Label.unlock.ordinal()] = XMLPrefsManager.getInt(Ui.unlock_size);
 
+        // Bind TextViews from layout
         labelViews = new TextView[] {
                 (TextView) rootView.findViewById(R.id.tv0),
                 (TextView) rootView.findViewById(R.id.tv1),
@@ -1019,6 +1043,7 @@ public class UIManager implements OnTouchListener {
                 (TextView) rootView.findViewById(R.id.tv8),
         };
 
+        // Determine which labels are enabled
         boolean[] show = new boolean[Label.values().length];
         show[Label.notes.ordinal()] = XMLPrefsManager.getBoolean(Ui.show_notes);
         show[Label.ram.ordinal()] = XMLPrefsManager.getBoolean(Ui.show_ram);
@@ -1030,9 +1055,11 @@ public class UIManager implements OnTouchListener {
         show[Label.weather.ordinal()] = XMLPrefsManager.getBoolean(Ui.show_weather);
         show[Label.unlock.ordinal()] = XMLPrefsManager.getBoolean(Ui.show_unlock_counter);
 
+        // Determine ordering indexes
         float[] indexes = new float[Label.values().length];
         indexes[Label.notes.ordinal()] = show[Label.notes.ordinal()] ? XMLPrefsManager.getFloat(Ui.notes_index) : Integer.MAX_VALUE;
         indexes[Label.ram.ordinal()] = show[Label.ram.ordinal()] ? XMLPrefsManager.getFloat(Ui.ram_index) : Integer.MAX_VALUE;
+        // ... (loading other indexes)
         indexes[Label.device.ordinal()] = show[Label.device.ordinal()] ? XMLPrefsManager.getFloat(Ui.device_index) : Integer.MAX_VALUE;
         indexes[Label.time.ordinal()] = show[Label.time.ordinal()] ? XMLPrefsManager.getFloat(Ui.time_index) : Integer.MAX_VALUE;
         indexes[Label.battery.ordinal()] = show[Label.battery.ordinal()] ? XMLPrefsManager.getFloat(Ui.battery_index) : Integer.MAX_VALUE;
@@ -1041,8 +1068,9 @@ public class UIManager implements OnTouchListener {
         indexes[Label.weather.ordinal()] = show[Label.weather.ordinal()] ? XMLPrefsManager.getFloat(Ui.weather_index) : Integer.MAX_VALUE;
         indexes[Label.unlock.ordinal()] = show[Label.unlock.ordinal()] ? XMLPrefsManager.getFloat(Ui.unlock_index) : Integer.MAX_VALUE;
 
+        // Load visual customization options (alignment, colors, shadows)
         int[] statusLineAlignments = getListOfIntValues(XMLPrefsManager.get(Ui.status_lines_alignment), 9, -1);
-
+        // ... (loading colors arrays)
         String[] statusLinesBgRectColors = getListOfStringValues(XMLPrefsManager.get(Theme.status_lines_bgrectcolor), 9, "#ff000000");
         String[] otherBgRectColors = {
                 XMLPrefsManager.get(Theme.input_bgrectcolor),
@@ -1105,6 +1133,7 @@ public class UIManager implements OnTouchListener {
         margins[4] = getListOfIntValues(XMLPrefsManager.get(Ui.toolbar_margins), 4, 0);
         margins[5] = getListOfIntValues(XMLPrefsManager.get(Ui.suggestions_area_margin), 4, 0);
 
+        // Sort labels based on indexes
         AllowEqualsSequence sequence = new AllowEqualsSequence(indexes, Label.values());
 
         LinearLayout lViewsParent = (LinearLayout) labelViews[0].getParent();
@@ -1115,13 +1144,11 @@ public class UIManager implements OnTouchListener {
 
             Object[] os = sequence.get(count);
 
-//            views on the same line
+            // Configure views on the same visual line
             for(int j = 0; j < os.length; j++) {
-//                i is the object gave to the constructor
                 int i = ((Label) os[j]).ordinal();
-//                v is the adjusted index (2.0, 2.1, 2.2, ...)
+                // Store adjusted index (e.g. 2.0, 2.1)
                 float v = (float) count + ((float) j * 0.1f);
-
                 labelIndexes[i] = v;
             }
 
@@ -1130,7 +1157,7 @@ public class UIManager implements OnTouchListener {
 
                 int ec = effectiveCount++;
 
-//                -1 = left     0 = center     1 = right
+                // Set alignment (-1 = left, 0 = center, 1 = right)
                 int p = statusLineAlignments[ec];
                 if(p >= 0) labelViews[count].setGravity(p == 0 ? Gravity.CENTER_HORIZONTAL : Gravity.RIGHT);
 
@@ -1138,17 +1165,19 @@ public class UIManager implements OnTouchListener {
                     labelViews[count].setVerticalScrollBarEnabled(false);
                 }
 
+                // Apply styling (backgrounds, shadows)
                 applyBgRect(labelViews[count], bgRectColors[count], bgColors[count], margins[0], strokeWidth, cornerRadius);
                 applyShadow(labelViews[count], outlineColors[count], shadowXOffset, shadowYOffset, shadowRadius);
             } else {
+                // Remove unused views
                 lViewsParent.removeView(labelViews[count]);
                 labelViews[count] = null;
             }
         }
 
+        // Initialize enabled monitors
         if (show[Label.ram.ordinal()]) {
             ramRunnable = new RamRunnable();
-
             memory = new ActivityManager.MemoryInfo();
             activityManager = (ActivityManager) context.getSystemService(Activity.ACTIVITY_SERVICE);
             handler.post(ramRunnable);
@@ -1185,10 +1214,8 @@ public class UIManager implements OnTouchListener {
 
         if(show[Label.battery.ordinal()]) {
             batteryUpdate = new BatteryUpdate();
-
             mediumPercentage = XMLPrefsManager.getInt(Behavior.battery_medium);
             lowPercentage = XMLPrefsManager.getInt(Behavior.battery_low);
-
             Tuils.registerBatteryReceiver(context, batteryUpdate);
         } else {
             batteryUpdate = null;
@@ -1199,6 +1226,7 @@ public class UIManager implements OnTouchListener {
             handler.post(networkRunnable);
         }
 
+        // Initialize Notes
         final TextView notesView = getLabelView(Label.notes);
         notesManager = new NotesManager(context, notesView);
         if(show[Label.notes.ordinal()]) {
@@ -1211,20 +1239,16 @@ public class UIManager implements OnTouchListener {
             if(notesMaxLines > 0) {
                 notesView.setMaxLines(notesMaxLines);
                 notesView.setEllipsize(TextUtils.TruncateAt.MARQUEE);
-//                notesView.setScrollBarStyle(View.SCROLLBARS_OUTSIDE_OVERLAY);
-//                notesView.setVerticalScrollBarEnabled(true);
 
+                // Add layout listener to check if notes exceed max lines
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB && XMLPrefsManager.getBoolean(Ui.show_scroll_notes_message)) {
                     notesView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-
                         int linesBefore = Integer.MIN_VALUE;
-
                         @Override
                         public void onGlobalLayout() {
                             if(notesView.getLineCount() > notesMaxLines && linesBefore <= notesMaxLines) {
                                 Tuils.sendOutput(Color.RED, context, R.string.note_max_reached);
                             }
-
                             linesBefore = notesView.getLineCount();
                         }
                     });
@@ -1234,16 +1258,14 @@ public class UIManager implements OnTouchListener {
 
         if(show[Label.weather.ordinal()]) {
             weatherRunnable = new WeatherRunnable();
-
             weatherColor = XMLPrefsManager.getColor(Theme.weather_color);
-
             String where = XMLPrefsManager.get(Behavior.weather_location);
             if(where.contains(",") || Tuils.isNumber(where)) handler.post(weatherRunnable);
-
             showWeatherUpdate = XMLPrefsManager.getBoolean(Behavior.show_weather_updates);
         }
 
         if(show[Label.unlock.ordinal()]) {
+            // Unlock counter logic
             unlockTimes = preferences.getInt(UNLOCK_KEY, 0);
 
             unlockColor = XMLPrefsManager.getColor(Theme.unlock_counter_color);
@@ -1266,7 +1288,6 @@ public class UIManager implements OnTouchListener {
             unlockTimeOrder = XMLPrefsManager.getInt(Behavior.unlock_time_order);
 
             nextUnlockCycleRestart = preferences.getLong(NEXT_UNLOCK_CYCLE_RESTART, 0);
-//            Tuils.log("set", nextUnlockCycleRestart);
 
             m = timePattern.matcher(unlockFormat);
             if(m.find()) {
@@ -1286,6 +1307,7 @@ public class UIManager implements OnTouchListener {
             }
         }
 
+        // Inflate Input/Output Layout (bottom or top based on prefs)
         final boolean inputBottom = XMLPrefsManager.getBoolean(Ui.input_bottom);
         int layoutId = inputBottom ? R.layout.input_down_layout : R.layout.input_up_layout;
 
@@ -1299,6 +1321,7 @@ public class UIManager implements OnTouchListener {
         terminalView.setOnTouchListener(this);
         ((View) terminalView.getParent().getParent()).setOnTouchListener(this);
 
+        // Apply styles to terminal view
         applyBgRect(terminalView, bgRectColors[OUTPUT_BGCOLOR_INDEX], bgColors[OUTPUT_BGCOLOR_INDEX], margins[OUTPUT_MARGINS_INDEX], strokeWidth, cornerRadius);
         applyShadow(terminalView, outlineColors[OUTPUT_BGCOLOR_INDEX], shadowXOffset, shadowYOffset, shadowRadius);
 
@@ -1312,6 +1335,7 @@ public class UIManager implements OnTouchListener {
         applyMargins(inputView, margins[INPUTFIELD_MARGINS_INDEX]);
         applyMargins(prefixView, margins[INPUTFIELD_MARGINS_INDEX]);
 
+        // Submit/Enter button
         ImageView submitView = (ImageView) inputOutputView.findViewById(R.id.submit_tv);
         boolean showSubmit = XMLPrefsManager.getBoolean(Ui.show_enter_button);
         if (!showSubmit) {
@@ -1319,19 +1343,7 @@ public class UIManager implements OnTouchListener {
             submitView = null;
         }
 
-//        final ImageButton finalSubmitView = submitView;
-//        inputView.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
-//            @Override
-//            public boolean onPreDraw() {
-//                Tuils.scaleImage(finalSubmitView, 20, 20);
-//
-//                inputView.getViewTreeObserver().removeOnPreDrawListener(this);
-//
-//                return false;
-//            }
-//        });
-
-//        toolbar
+        // Toolbar initialization
         boolean showToolbar = XMLPrefsManager.getBoolean(Toolbar.show_toolbar);
         ImageButton backView = null;
         ImageButton nextView = null;
@@ -1353,8 +1365,10 @@ public class UIManager implements OnTouchListener {
             applyBgRect(toolbarView, bgRectColors[TOOLBAR_BGCOLOR_INDEX], bgColors[TOOLBAR_BGCOLOR_INDEX], margins[TOOLBAR_MARGINS_INDEX], strokeWidth, cornerRadius);
         }
 
+        // Initialize TerminalAdapter (Controller for the terminal view)
         mTerminalAdapter = new TerminalManager(terminalView, inputView, prefixView, submitView, backView, nextView, deleteView, pasteView, context, mainPack, executer);
 
+        // CLI Tabs (Quick Access Buttons)
         LinearLayout cliTabsGroup = (LinearLayout) inputOutputView.findViewById(R.id.cli_tabs_group);
         if (cliTabsGroup != null) {
             String[] tabs = new String[] {
@@ -1376,6 +1390,7 @@ public class UIManager implements OnTouchListener {
             }
         }
 
+        // Suggestions View initialization
         if (XMLPrefsManager.getBoolean(Suggestions.show_suggestions)) {
             HorizontalScrollView sv = (HorizontalScrollView) rootView.findViewById(R.id.suggestions_container);
             sv.setFocusable(false);
@@ -1390,6 +1405,7 @@ public class UIManager implements OnTouchListener {
 
             suggestionsManager = new SuggestionsManager(suggestionsView, mainPack, mTerminalAdapter);
 
+            // Listen for text changes to update suggestions and toolbar visibility
             inputView.addTextChangedListener(new SuggestionTextWatcher(suggestionsManager, (currentText, before) -> {
                 if(!hideToolbarNoInput) return;
 
@@ -1405,6 +1421,7 @@ public class UIManager implements OnTouchListener {
         OutlineTextView.redrawTimes = drawTimes;
     }
 
+    // --- Helper Methods for Preferences Parsing ---
     public static int[] getListOfIntValues(String values, int length, int defaultValue) {
         int[] is = new int[length];
         values = removeSquareBrackets(values);
@@ -1439,10 +1456,7 @@ public class UIManager implements OnTouchListener {
         return sbPattern.matcher(s).replaceAll(Tuils.EMPTYSTRING);
     }
 
-//    0 = ext hor
-//    1 = ext ver
-//    2 = int hor
-//    3 = int ver
+    // Helper to apply background rectangle styling (stroke, color, corners)
     private static void applyBgRect(View v, String strokeColor, String bgColor, int[] spaces, int strokeWidth, int cornerRadius) {
         try {
             GradientDrawable d = new GradientDrawable();
@@ -1478,12 +1492,12 @@ public class UIManager implements OnTouchListener {
         if(!(color.startsWith("#00") && color.length() == 9)) {
             v.setShadowLayer(radius, x, y, Color.parseColor(color));
             v.setTag(OutlineTextView.SHADOW_TAG);
-
-//            if(radius > v.getPaddingTop()) v.setPadding(v.getPaddingLeft(), (int) Math.floor(radius), v.getPaddingRight(), (int) Math.floor(radius));
-//            if(radius > v.getPaddingLeft()) v.setPadding((int) Math.floor(radius), v.getPaddingTop(), (int) Math.floor(radius), v.getPaddingBottom());
         }
     }
 
+    /**
+     * Clean up resources.
+     */
     public void dispose() {
         if(handler != null) {
             handler.removeCallbacksAndMessages(null);
@@ -1500,10 +1514,10 @@ public class UIManager implements OnTouchListener {
         unregisterLockReceiver();
     }
 
+    // --- Input Management ---
     public void openKeyboard() {
         mTerminalAdapter.requestInputFocus();
         imm.showSoftInput(mTerminalAdapter.getInputView(), InputMethodManager.SHOW_IMPLICIT);
-//        mTerminalAdapter.scrollToEnd();
     }
 
     public void closeKeyboard() {
@@ -1564,6 +1578,9 @@ public class UIManager implements OnTouchListener {
         return v.onTouchEvent(event);
     }
 
+    /**
+     * Creates a listener that handles redirection (e.g. specialized input modes).
+     */
     public OnRedirectionListener buildRedirectionListener() {
         return new OnRedirectionListener() {
             @Override
@@ -1584,12 +1601,12 @@ public class UIManager implements OnTouchListener {
         };
     }
 
+    // --- Lock Screen Listener ---
     private BroadcastReceiver lockReceiver = null;
     private void registerLockReceiver() {
         if(lockReceiver != null) return;
 
         final IntentFilter theFilter = new IntentFilter();
-
         theFilter.addAction(Intent.ACTION_SCREEN_ON);
         theFilter.addAction(Intent.ACTION_SCREEN_OFF);
         theFilter.addAction(Intent.ACTION_USER_PRESENT);
@@ -1598,7 +1615,6 @@ public class UIManager implements OnTouchListener {
             @Override
             public void onReceive(Context context, Intent intent) {
                 String strAction = intent.getAction();
-
                 KeyguardManager myKM = (KeyguardManager) context.getSystemService(Context.KEYGUARD_SERVICE);
                 if(strAction.equals(Intent.ACTION_USER_PRESENT) || strAction.equals(Intent.ACTION_SCREEN_OFF) || strAction.equals(Intent.ACTION_SCREEN_ON)  )
                     if(myKM.inKeyguardRestrictedInputMode()) onLock();
@@ -1619,22 +1635,16 @@ public class UIManager implements OnTouchListener {
         }
     }
 
+    // --- Unlock Counter Logic ---
     private final long A_DAY = (1000 * 60 * 60 * 24);
 
     private int unlockColor, unlockTimeOrder;
-
     private int unlockTimes, unlockHour, unlockMinute, cycleDuration = (int) A_DAY;
     private long lastUnlockTime = -1, nextUnlockCycleRestart;
     private String unlockFormat, notAvailableText, unlockTimeDivider;
-
     private final int UP_DOWN = 1;
 
     public static String UNLOCK_KEY = "unlockTimes", NEXT_UNLOCK_CYCLE_RESTART = "nextUnlockRestart";
-
-//    last unlocks are stored here in this way
-//    0 - the first
-//    1 - the second
-//    2 - ...
     private long[] lastUnlocks;
 
     private void onUnlock() {
@@ -1654,15 +1664,10 @@ public class UIManager implements OnTouchListener {
     }
 
     final int UNLOCK_RUNNABLE_DELAY = cycleDuration / 24;
-//    this invalidates the text and checks the time values
     Runnable unlockTimeRunnable = new Runnable() {
         @Override
         public void run() {
-//            Tuils.log("run");
             long delay = nextUnlockCycleRestart - System.currentTimeMillis();
-//            Tuils.log("nucr", nextUnlockCycleRestart);
-//            Tuils.log("now", System.currentTimeMillis());
-//            Tuils.log("delay", delay);
             if(delay <= 0) {
                 unlockTimes = 0;
 
@@ -1673,8 +1678,6 @@ public class UIManager implements OnTouchListener {
                 }
 
                 Calendar now = Calendar.getInstance();
-//                Tuils.log("nw", now.toString());
-
                 int hour = now.get(Calendar.HOUR_OF_DAY), minute = now.get(Calendar.MINUTE);
                 if(unlockHour < hour || (unlockHour == hour && unlockMinute <= minute)) {
                     now.set(Calendar.DAY_OF_YEAR, now.get(Calendar.DAY_OF_YEAR) + 1);
@@ -1683,10 +1686,8 @@ public class UIManager implements OnTouchListener {
                 nextRestart.set(Calendar.HOUR_OF_DAY, unlockHour);
                 nextRestart.set(Calendar.MINUTE, unlockMinute);
                 nextRestart.set(Calendar.SECOND, 0);
-//                Tuils.log("nr", nextRestart.toString());
 
                 nextUnlockCycleRestart = nextRestart.getTimeInMillis();
-//                Tuils.log("new setted", nextUnlockCycleRestart);
 
                 preferences.edit()
                         .putLong(NEXT_UNLOCK_CYCLE_RESTART, nextUnlockCycleRestart)
@@ -1698,16 +1699,13 @@ public class UIManager implements OnTouchListener {
             }
 
             invalidateUnlockText();
-
             delay = Math.min(delay, UNLOCK_RUNNABLE_DELAY);
-//            Tuils.log("with delay", delay);
             handler.postDelayed(this, delay);
         }
     };
 
     Pattern unlockCount = Pattern.compile("%c", Pattern.CASE_INSENSITIVE);
     Pattern advancement = Pattern.compile("%a(\\d+)(.)");
-//    Pattern timePattern = Pattern.compile("(%t\\d*)(?:\\((?:(\\d+)([^\\)]*))\\)|\\((?:([^\\)]*)(\\d+))\\))?");
     Pattern timePattern = Pattern.compile("(%t\\d*)(?:\\(([^\\)]*)\\))?(\\d+)?");
     Pattern indexPattern = Pattern.compile("%i", Pattern.CASE_INSENSITIVE);
     String whenPattern = "%w";
@@ -1773,4 +1771,3 @@ public class UIManager implements OnTouchListener {
         updateText(Label.unlock, s);
     }
 }
-

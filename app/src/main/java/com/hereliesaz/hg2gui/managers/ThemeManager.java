@@ -23,11 +23,19 @@ import okhttp3.Request;
 import okhttp3.Response;
 
 /**
- * Created by francescoandreuzzi on 17/02/2018.
+ * Manages the application and removal of themes.
+ * <p>
+ * Supports:
+ * 1. Downloading themes from a repository.
+ * 2. Parsing theme XML/JSON.
+ * 3. Applying themes by replacing local configuration files (theme.xml, suggestions.xml).
+ * 4. Reverting to previous themes.
+ * 5. Parsing CSS-style rgba() colors to Android Hex codes.
+ * </p>
  */
-
 public class ThemeManager {
 
+    // Actions for theme control broadcasts
     public static String ACTION_APPLY = "com.hereliesaz.hg2gui" + ".theme_apply";
     public static String ACTION_REVERT = "com.hereliesaz.hg2gui" + ".theme_revert";
     public static String ACTION_STANDARD = "com.hereliesaz.hg2gui" + ".theme_standard";
@@ -36,8 +44,9 @@ public class ThemeManager {
 
     OkHttpClient client;
     Context context;
-    Reloadable reloadable;
+    Reloadable reloadable; // Interface to restart the activity
 
+    // Regex to split a theme file into suggestions config and theme config
     Pattern parser = Pattern.compile("(<SUGGESTIONS>.+<\\/SUGGESTIONS>).*(<THEME>.+<\\/THEME>)", Pattern.DOTALL);
 
     BroadcastReceiver receiver = new BroadcastReceiver() {
@@ -47,7 +56,7 @@ public class ThemeManager {
                 String name = intent.getStringExtra(NAME);
                 if(name == null) return;
 
-//                name needs to be the absolute path
+                // name needs to be the absolute path if it's a file
                 if(name.endsWith(".zip")) apply(new File(name));
                 else apply(name);
             } else if(intent.getAction().equals(ACTION_REVERT)) {
@@ -58,6 +67,9 @@ public class ThemeManager {
         }
     };
 
+    /**
+     * Constructor. Registers receivers for theme commands.
+     */
     public ThemeManager(OkHttpClient client, Context context, Reloadable reloadable) {
         this.client = client;
         this.context = context;
@@ -75,6 +87,9 @@ public class ThemeManager {
         LocalBroadcastManager.getInstance(context.getApplicationContext()).unregisterReceiver(receiver);
     }
 
+    /**
+     * Downloads and applies a theme by ID/Name from the online repository.
+     */
     public void apply(final String themeName) {
         new Thread() {
             @Override
@@ -86,6 +101,7 @@ public class ThemeManager {
                     return;
                 }
 
+                // TODO: This URL seems to be legacy. Verify availability or make configurable.
                 String url = "https://tui.tarunshankerpandey.com/show_data.php?data_type=xml&theme_id=" + themeName;
 
                 Request.Builder builder = new Request.Builder()
@@ -113,6 +129,7 @@ public class ThemeManager {
                         return;
                     }
 
+                    // Parse the response
                     Matcher m = parser.matcher(string);
                     if(m.find()) {
                         String suggestions = m.group(1);
@@ -129,9 +146,12 @@ public class ThemeManager {
     }
 
     public void apply(File zip) {
-        
+        // Zip implementation appears to be missing or incomplete in original source
     }
 
+    /**
+     * Applies a theme from local files.
+     */
     private void applyTheme(File theme, File suggestions, boolean keepOld) {
         if(theme == null || suggestions == null) {
             Tuils.sendOutput(context, R.string.theme_unable);
@@ -140,23 +160,30 @@ public class ThemeManager {
 
         File oldTheme = new File(Tuils.getFolder(), XMLPrefsManager.XMLPrefsRoot.THEME.path);
         File oldSuggestions = new File(Tuils.getFolder(), XMLPrefsManager.XMLPrefsRoot.SUGGESTIONS.path);
+
+        // Backup existing config
         if(keepOld) {
             Tuils.insertOld(oldTheme);
             Tuils.insertOld(oldSuggestions);
         }
 
+        // Overwrite
         theme.renameTo(oldTheme);
         suggestions.renameTo(oldSuggestions);
 
         reloadable.reload();
     }
 
+    /**
+     * Applies a theme from string content (downloaded).
+     */
     private void applyTheme(String theme, String suggestions, boolean keepOld, String themeName) {
         if(theme == null || suggestions == null) {
             Tuils.sendOutput(context, R.string.theme_unable);
             return;
         }
 
+        // Convert RGBA colors to Hex before saving
         Matcher colorMatcher = colorParser.matcher(theme);
         while(colorMatcher.find()) {
             theme = Pattern.compile(Pattern.quote(colorMatcher.group())).matcher(theme).replaceAll(toHexColor(colorMatcher.group()));
@@ -169,6 +196,7 @@ public class ThemeManager {
 
         File oldTheme = new File(Tuils.getFolder(), XMLPrefsManager.XMLPrefsRoot.THEME.path);
         File oldSuggestions = new File(Tuils.getFolder(), XMLPrefsManager.XMLPrefsRoot.SUGGESTIONS.path);
+
         if(keepOld) {
             Tuils.insertOld(oldTheme);
             Tuils.insertOld(oldSuggestions);
@@ -194,13 +222,20 @@ public class ThemeManager {
         }
     }
 
+    /**
+     * Reverts to the previous theme.
+     */
     private void revert() {
         applyTheme(Tuils.getOld(XMLPrefsManager.XMLPrefsRoot.THEME.path), Tuils.getOld(XMLPrefsManager.XMLPrefsRoot.SUGGESTIONS.path), false);
     }
 
+    /**
+     * Resets to the default standard theme.
+     */
     private void standard() {
         File oldTheme = new File(Tuils.getFolder(), XMLPrefsManager.XMLPrefsRoot.THEME.path);
         File oldSuggestions = new File(Tuils.getFolder(), XMLPrefsManager.XMLPrefsRoot.SUGGESTIONS.path);
+
         Tuils.insertOld(oldTheme);
         Tuils.insertOld(oldSuggestions);
 
@@ -210,8 +245,12 @@ public class ThemeManager {
         reloadable.addMessage(context.getString(R.string.theme_applied) + Tuils.SPACE + "standard", null);
     }
 
-//    rgba(255,87,34,1)
+    // Regex for parsing rgba(r, g, b, a)
     Pattern colorParser = Pattern.compile("rgba\\([\\s]*(\\d+),[\\s]*(\\d+),[\\s]*(\\d+),[\\s]*(\\d.*\\d*)[\\s]*\\)");
+
+    /**
+     * Converts a CSS-style rgba() string to Android Hex string (#AARRGGBB).
+     */
     private String toHexColor(String color) {
         Matcher m = colorParser.matcher(color);
         if(m.find()) {
