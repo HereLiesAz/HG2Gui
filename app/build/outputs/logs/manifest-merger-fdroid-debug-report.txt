@@ -1,5 +1,5 @@
 -- Merging decision tree log ---
-provider#ohi.andre.consolelauncher.tuils.GenericFileProvider
+provider#com.hereliesaz.hg2gui.tuils.GenericFileProvider
 INJECTED from /app/app/src/main/AndroidManifest.xml:69:9-77:20
 	android:authorities
 		INJECTED from /app/app/src/main/AndroidManifest.xml
@@ -52,7 +52,7 @@ MERGED from [androidx.documentfile:documentfile:1.0.0] /home/jules/.gradle/cache
 MERGED from [androidx.print:print:1.0.0] /home/jules/.gradle/caches/transforms-3/0dc11088d04eaaff51666aa63f2e0850/transformed/print-1.0.0/AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.annotation:annotation-experimental:1.3.0] /home/jules/.gradle/caches/transforms-3/97c0b78dc1fd16c16d8e3a552467c647/transformed/jetified-annotation-experimental-1.3.0/AndroidManifest.xml:17:1-22:12
 	package
-		ADDED from /app/app/src/fdroid/AndroidManifest.xml:3:5-40
+		ADDED from /app/app/src/fdroid/AndroidManifest.xml:3:5-36
 		INJECTED from /app/app/src/fdroid/AndroidManifest.xml
 	android:versionName
 		INJECTED from /app/app/src/fdroid/AndroidManifest.xml
@@ -217,7 +217,7 @@ MERGED from [androidx.startup:startup-runtime:1.1.1] /home/jules/.gradle/caches/
 		ADDED from /app/app/src/main/AndroidManifest.xml:64:9-35
 	android:theme
 		ADDED from /app/app/src/main/AndroidManifest.xml:67:9-44
-activity#ohi.andre.consolelauncher.LauncherActivity
+activity#com.hereliesaz.hg2gui.LauncherActivity
 ADDED from /app/app/src/main/AndroidManifest.xml:79:9-95:20
 	android:enabled
 		ADDED from /app/app/src/main/AndroidManifest.xml:83:13-35
@@ -251,7 +251,7 @@ category#android.intent.category.LAUNCHER
 ADDED from /app/app/src/main/AndroidManifest.xml:93:17-77
 	android:name
 		ADDED from /app/app/src/main/AndroidManifest.xml:93:27-74
-receiver#ohi.andre.consolelauncher.tuils.stuff.PolicyReceiver
+receiver#com.hereliesaz.hg2gui.tuils.stuff.PolicyReceiver
 ADDED from /app/app/src/main/AndroidManifest.xml:97:9-110:20
 	android:exported
 		ADDED from /app/app/src/main/AndroidManifest.xml:100:13-36
@@ -277,7 +277,7 @@ action#android.app.action.DEVICE_ADMIN_DISABLED
 ADDED from /app/app/src/main/AndroidManifest.xml:108:17-83
 	android:name
 		ADDED from /app/app/src/main/AndroidManifest.xml:108:25-80
-service#ohi.andre.consolelauncher.managers.notifications.KeeperService
+service#com.hereliesaz.hg2gui.managers.notifications.KeeperService
 ADDED from /app/app/src/main/AndroidManifest.xml:112:9-115:40
 	android:enabled
 		ADDED from /app/app/src/main/AndroidManifest.xml:114:13-35
@@ -285,7 +285,7 @@ ADDED from /app/app/src/main/AndroidManifest.xml:112:9-115:40
 		ADDED from /app/app/src/main/AndroidManifest.xml:115:13-37
 	android:name
 		ADDED from /app/app/src/main/AndroidManifest.xml:113:13-65
-service#ohi.andre.consolelauncher.managers.music.MusicService
+service#com.hereliesaz.hg2gui.managers.music.MusicService
 ADDED from /app/app/src/main/AndroidManifest.xml:116:9-119:39
 	android:enabled
 		ADDED from /app/app/src/main/AndroidManifest.xml:118:13-35
@@ -293,7 +293,7 @@ ADDED from /app/app/src/main/AndroidManifest.xml:116:9-119:39
 		ADDED from /app/app/src/main/AndroidManifest.xml:119:13-36
 	android:name
 		ADDED from /app/app/src/main/AndroidManifest.xml:117:13-56
-activity#ohi.andre.consolelauncher.commands.tuixt.TuixtActivity
+activity#com.hereliesaz.hg2gui.commands.tuixt.TuixtActivity
 ADDED from /app/app/src/main/AndroidManifest.xml:121:9-158:20
 	android:label
 		ADDED from /app/app/src/main/AndroidManifest.xml:124:13-48
@@ -335,7 +335,7 @@ ADDED from /app/app/src/main/AndroidManifest.xml:137:17-76
 		ADDED from /app/app/src/main/AndroidManifest.xml:137:27-73
 intent-filter#action:name:android.intent.action.EDIT+action:name:android.intent.action.VIEW+category:name:android.intent.category.DEFAULT+data:host:*+data:host:*+data:host:*+data:host:*+data:host:*+data:host:*+data:host:*+data:host:*+data:host:*+data:host:*+data:host:*+data:host:*+data:host:*+data:pathPattern:.*\.cfg+data:pathPattern:.*\.conf+data:pathPattern:.*\.db+data:pathPattern:.*\.htm+data:pathPattern:.*\.html+data:pathPattern:.*\.ini+data:pathPattern:.*\.js+data:pathPattern:.*\.log+data:pathPattern:.*\.php+data:pathPattern:.*\.sh+data:pathPattern:.*\.txt+data:pathPattern:.*\.xhtml+data:pathPattern:.*\.xml+data:scheme:file+data:scheme:file+data:scheme:file+data:scheme:file+data:scheme:file+data:scheme:file+data:scheme:file+data:scheme:file+data:scheme:file+data:scheme:file+data:scheme:file+data:scheme:file+data:scheme:file
 ADDED from /app/app/src/main/AndroidManifest.xml:140:13-157:29
-activity#ohi.andre.consolelauncher.MitosisMenuActivity
+activity#com.hereliesaz.hg2gui.MitosisMenuActivity
 ADDED from /app/app/src/main/AndroidManifest.xml:160:9-164:51
 	android:screenOrientation
 		ADDED from /app/app/src/main/AndroidManifest.xml:164:13-49
@@ -345,7 +345,7 @@ ADDED from /app/app/src/main/AndroidManifest.xml:160:9-164:51
 		ADDED from /app/app/src/main/AndroidManifest.xml:163:13-48
 	android:name
 		ADDED from /app/app/src/main/AndroidManifest.xml:161:13-48
-service#ohi.andre.consolelauncher.managers.notifications.NotificationService
+service#com.hereliesaz.hg2gui.managers.notifications.NotificationService
 ADDED from /app/app/src/main/AndroidManifest.xml:166:9-174:19
 	android:label
 		ADDED from /app/app/src/main/AndroidManifest.xml:168:13-56
@@ -361,27 +361,27 @@ action#android.service.notification.NotificationListenerService
 ADDED from /app/app/src/main/AndroidManifest.xml:172:17-99
 	android:name
 		ADDED from /app/app/src/main/AndroidManifest.xml:172:25-96
-service#ohi.andre.consolelauncher.managers.notifications.NotificationMonitorService
+service#com.hereliesaz.hg2gui.managers.notifications.NotificationMonitorService
 ADDED from /app/app/src/main/AndroidManifest.xml:175:9-86
 	android:name
 		ADDED from /app/app/src/main/AndroidManifest.xml:175:18-83
-activity#ohi.andre.consolelauncher.SnakeMenuActivity
+activity#com.hereliesaz.hg2gui.SnakeMenuActivity
 ADDED from /app/app/src/main/AndroidManifest.xml:177:9-55
 	android:name
 		ADDED from /app/app/src/main/AndroidManifest.xml:177:19-52
-activity#ohi.andre.consolelauncher.MagnetMenuActivity
+activity#com.hereliesaz.hg2gui.MagnetMenuActivity
 ADDED from /app/app/src/main/AndroidManifest.xml:178:9-92
 	android:theme
 		ADDED from /app/app/src/main/AndroidManifest.xml:178:54-89
 	android:name
 		ADDED from /app/app/src/main/AndroidManifest.xml:178:19-53
-activity#ohi.andre.consolelauncher.OrigamiMenuActivity
+activity#com.hereliesaz.hg2gui.OrigamiMenuActivity
 ADDED from /app/app/src/main/AndroidManifest.xml:179:9-107
 	android:theme
 		ADDED from /app/app/src/main/AndroidManifest.xml:179:55-105
 	android:name
 		ADDED from /app/app/src/main/AndroidManifest.xml:179:19-54
-activity#ohi.andre.consolelauncher.DontPanicActivity
+activity#com.hereliesaz.hg2gui.DontPanicActivity
 ADDED from /app/app/src/main/AndroidManifest.xml:181:9-185:51
 	android:screenOrientation
 		ADDED from /app/app/src/main/AndroidManifest.xml:185:13-49
@@ -391,7 +391,7 @@ ADDED from /app/app/src/main/AndroidManifest.xml:181:9-185:51
 		ADDED from /app/app/src/main/AndroidManifest.xml:183:13-71
 	android:name
 		ADDED from /app/app/src/main/AndroidManifest.xml:182:13-46
-activity#ohi.andre.consolelauncher.tuils.stuff.FakeLauncherActivity
+activity#com.hereliesaz.hg2gui.tuils.stuff.FakeLauncherActivity
 ADDED from /app/app/src/main/AndroidManifest.xml:187:9-194:20
 	android:enabled
 		ADDED from /app/app/src/main/AndroidManifest.xml:189:13-36
@@ -401,7 +401,7 @@ ADDED from /app/app/src/main/AndroidManifest.xml:187:9-194:20
 		ADDED from /app/app/src/main/AndroidManifest.xml:188:13-61
 intent-filter#action:name:android.intent.action.MAIN
 ADDED from /app/app/src/main/AndroidManifest.xml:191:13-193:29
-activity#ohi.andre.consolelauncher.GuideActivity
+activity#com.hereliesaz.hg2gui.GuideActivity
 ADDED from /app/app/src/main/AndroidManifest.xml:196:9-200:49
 	android:excludeFromRecents
 		ADDED from /app/app/src/main/AndroidManifest.xml:200:13-46
@@ -411,13 +411,13 @@ ADDED from /app/app/src/main/AndroidManifest.xml:196:9-200:49
 		ADDED from /app/app/src/main/AndroidManifest.xml:198:13-48
 	android:name
 		ADDED from /app/app/src/main/AndroidManifest.xml:197:13-42
-activity#ohi.andre.consolelauncher.PanicActivity
+activity#com.hereliesaz.hg2gui.PanicActivity
 ADDED from /app/app/src/main/AndroidManifest.xml:202:9-204:51
 	android:theme
 		ADDED from /app/app/src/main/AndroidManifest.xml:204:13-48
 	android:name
 		ADDED from /app/app/src/main/AndroidManifest.xml:203:13-42
-activity#ohi.andre.consolelauncher.commands.tentacle.TentacleActivity
+activity#com.hereliesaz.hg2gui.commands.tentacle.TentacleActivity
 ADDED from /app/app/src/main/AndroidManifest.xml:206:9-215:20
 	android:label
 		ADDED from /app/app/src/main/AndroidManifest.xml:208:13-42
@@ -561,7 +561,7 @@ ADDED from [androidx.core:core:1.12.0] /home/jules/.gradle/caches/transforms-3/f
 		ADDED from [androidx.core:core:1.12.0] /home/jules/.gradle/caches/transforms-3/f77e7110af5da499b096d7ec7ddd5d11/transformed/core-1.12.0/AndroidManifest.xml:24:9-44
 	android:name
 		ADDED from [androidx.core:core:1.12.0] /home/jules/.gradle/caches/transforms-3/f77e7110af5da499b096d7ec7ddd5d11/transformed/core-1.12.0/AndroidManifest.xml:23:9-81
-permission#ohi.andre.consolelauncher.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+permission#com.hereliesaz.hg2gui.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
 ADDED from [androidx.core:core:1.12.0] /home/jules/.gradle/caches/transforms-3/f77e7110af5da499b096d7ec7ddd5d11/transformed/core-1.12.0/AndroidManifest.xml:22:5-24:47
 	android:protectionLevel
 		ADDED from [androidx.core:core:1.12.0] /home/jules/.gradle/caches/transforms-3/f77e7110af5da499b096d7ec7ddd5d11/transformed/core-1.12.0/AndroidManifest.xml:24:9-44
@@ -571,7 +571,7 @@ uses-permission#${applicationId}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
 ADDED from [androidx.core:core:1.12.0] /home/jules/.gradle/caches/transforms-3/f77e7110af5da499b096d7ec7ddd5d11/transformed/core-1.12.0/AndroidManifest.xml:26:5-97
 	android:name
 		ADDED from [androidx.core:core:1.12.0] /home/jules/.gradle/caches/transforms-3/f77e7110af5da499b096d7ec7ddd5d11/transformed/core-1.12.0/AndroidManifest.xml:26:22-94
-uses-permission#ohi.andre.consolelauncher.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+uses-permission#com.hereliesaz.hg2gui.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
 ADDED from [androidx.core:core:1.12.0] /home/jules/.gradle/caches/transforms-3/f77e7110af5da499b096d7ec7ddd5d11/transformed/core-1.12.0/AndroidManifest.xml:26:5-97
 	android:name
 		ADDED from [androidx.core:core:1.12.0] /home/jules/.gradle/caches/transforms-3/f77e7110af5da499b096d7ec7ddd5d11/transformed/core-1.12.0/AndroidManifest.xml:26:22-94
