@@ -42,7 +42,7 @@ import ohi.andre.consolelauncher.tuils.interfaces.Redirectator;
 import ohi.andre.consolelauncher.tuils.libsuperuser.Shell;
 
 /**
- * MainManager: The "Kernel" of the HG2Gui Terminal.
+ * MainManager: The "Deep Thought" Central Logic Core of the HG2Gui Terminal.
  * <p>
  * This class coordinates the execution of commands, manages system state, and interfaces
  * with the various "Device Drivers" (Managers) of the application.
@@ -138,7 +138,7 @@ public class MainManager {
         // Initialize TUI utilities with the pack
         CommandTuils.init(mainPack);
 
-        // 5. Define Command Triggers (Priority Order matters!)
+        // 5. Define Command Triggers. ORDER IS CRITICAL: Aliases must resolve first to allow command re-writing before Shell or Internal handlers see the input.
         triggers = new CmdTrigger[] {
             new AliasTrigger(),         // 1. Check if it's an alias
             new GroupTrigger(),         // 2. Check if it's an app group

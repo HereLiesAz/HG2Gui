@@ -15,7 +15,7 @@ public interface CommandAbstraction {
     // These constants define what kind of arguments the command expects.
     // The parsing engine uses this to validate input and provide autocomplete suggestions.
 
-    /** Expects a raw string. */
+    /** Expects a raw string, potentially a Vogon poem. */
     int PLAIN_TEXT = 10;
 
     /** Expects a file path (enables file system autocomplete). */
@@ -30,13 +30,13 @@ public interface CommandAbstraction {
     /** Expects a song name. */
     int SONG = 15;
 
-    /** Expects a boolean (true/false). */
+    /** Expects a boolean (True/False, or perhaps 42/Not 42). */
     int BOOLEAN = 19;
 
     /** Expects a HEX color code. */
     int COLOR = 21;
 
-    /** Expects an integer. */
+    /** Expects a numerical input, likely for coordinates or quantum probability calculations. */
     int INT = 24;
 
     // -----------------------------------------------------------------------------------------

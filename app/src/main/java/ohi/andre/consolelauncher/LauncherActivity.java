@@ -160,7 +160,7 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
     private Set<ReloadMessageCategory> categories;
 
     /**
-     * Runnable execution block to restart the activity.
+     * Initiating a Kernel Panic / Reboot Sequence. Cycles the activity to apply new themes or recover from errors.
      * Used when themes change or a critical error requires a reset.
      */
     private Runnable stopActivity = () -> {
@@ -198,7 +198,7 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
 
         @Override
         public void in(String s) {
-            // Delegate to UIManager to set text in EditText
+            // Delegate to UIManager (View Controller) to set text in EditText, strictly enforcing MVC separation.
             if(ui != null) ui.setInput(s);
         }
 
@@ -330,7 +330,7 @@ public class LauncherActivity extends AppCompatActivity implements Reloadable {
     }
 
     /**
-     * Completes the initialization process.
+     * Completes the initialization process. Separated from onCreate to handle the asynchronous Android Runtime Permission model (Marshmallow+).
      * Called either directly from onCreate (if permissions exist) or after permissions are granted.
      */
     private void finishOnCreate() {
