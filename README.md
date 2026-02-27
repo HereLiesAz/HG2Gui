@@ -1,41 +1,44 @@
-# HG2Gui - The Hitchhiker's Guide Terminal
+# HG2Gui - The Hitchhiker's Guide Terminal (Android)
 
-> *"DON'T PANIC."*
-
-**HG2Gui** is a retro-futuristic terminal emulator web application inspired by the UI design of the *Hitchhiker's Guide to the Galaxy* (2005 film). It combines a functional command-line interface with the whimsical, "wonky," and tactile motion graphics seen in the movie.
-
-## 🎨 Aesthetic Philosophy
-
-The design strictly adheres to the **2005 Film Aesthetic**:
-1.  **Low-Fi/High-Tech**: It looks like advanced technology from the perspective of the early 2000s.
-2.  **Kinetic Typography**: Text doesn't just appear; it pops, slides, and bounces.
-3.  **Flat Vector Graphics**: No complex 3D shading; mostly flat colors with high contrast (Deep Red, Neon Green, Cyan).
-4.  **"Wonky" Physics**: UI elements use "squash and stretch" animation principles rather than linear transitions.
+**HG2Gui** is an Android Launcher that transforms your device into a retro-futuristic, text-based terminal. Inspired by the "Hitchhiker's Guide to the Galaxy" (2005) aesthetic and built upon the legacy of T-UI Launcher, it offers a powerful command-line interface for power users.
 
 ## 🚀 Features
 
-*   **Context-Aware Shell**: The terminal mimics different Operating Systems (`Ubuntu`, `MacOS`, `Windows`).
-    *   *Try:* `switch-os macos` or `switch-os windows` to see the available commands change dynamically.
-*   **Dynamic Command Menu**: A floating, animated suggestion engine that updates based on your current input and OS context.
-*   **Generative "Guide" Manual**: (Integration Ready) Uses Google Gemini 2.5/3 Flash to generate whimsical, "Guide-style" explanations for commands using Structured Output.
-*   **Immersive Visuals**: Scanlines, CRT flicker effects, and custom rounded-monospace typography (`Cousine` & `Fredoka`).
-*   **Easter Eggs**: A dedicated "Panic" state and humorous system messages.
+*   **Linux-like CLI:** Use commands to launch apps, manage files, and control system settings.
+*   **Customizable Interface:** Change colors, fonts, sizes, and layout via XML configuration or in-app commands.
+*   **Smart Suggestions:** T9-like suggestion system for commands and apps.
+*   **Aliases:** Create custom aliases for frequently used commands.
+*   **RSS Reader:** Built-in RSS feed reader in the terminal.
+*   **Text Editor:** Includes `tuixt`, a simple in-terminal text editor.
+*   **Themes:** Support for custom themes.
 
-## 🛠 Tech Stack
+## 🛠 Project Structure
 
-*   **Frontend**: React 18+ (React 19 compatible)
-*   **Language**: TypeScript
-*   **Styling**: Tailwind CSS
-*   **Animation**: Framer Motion (Heavy usage for layout transitions and enter/exit effects)
-*   **AI/Backend**: Google GenAI SDK (Gemini) for dynamic content generation.
+The project is a standard Android application written in Java.
 
-## ⌨️ Usage
+*   `app/src/main/java/com/hereliesaz/hg2gui/` - Main source code.
+    *   `LauncherActivity.java` - The entry point and main terminal activity.
+    *   `commands/` - Implementation of all terminal commands.
+    *   `managers/` - Core logic for suggestions, apps, files, and system integration.
+    *   `tuils/` - Utilities and helper classes.
+*   `app/src/main/res/` - Android resources (layouts, values, drawables).
 
-1.  **Type commands**: Try standard unix commands like `ls`, `git status`, or `docker ps`.
-2.  **Navigation**: Use `Up/Down` arrows to cycle through command history.
-3.  **Autocomplete**: Press `Tab` or click on the floating menu chips to autocomplete commands.
-4.  **OS Switching**: Type `switch-os [ubuntu|macos|windows]` to change the underlying system context.
+## 🔨 Build
 
-## 📜 License
+To build the project, use Gradle:
 
-MIT
+```bash
+./gradlew assembleDebug
+```
+
+## 📜 Documentation
+
+Detailed documentation is available in the `docs/` directory:
+
+*   [Architecture](docs/ARCHITECTURE.md)
+*   [Commands](docs/COMMANDS.md)
+*   [Contributing](docs/CONTRIBUTING.md)
+
+## ⚖️ License
+
+[Include License Here - originally GPLv3 or similar from T-UI]

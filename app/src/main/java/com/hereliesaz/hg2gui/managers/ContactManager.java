@@ -26,22 +26,38 @@ import com.hereliesaz.hg2gui.LauncherActivity;
 import com.hereliesaz.hg2gui.tuils.StoppableThread;
 import com.hereliesaz.hg2gui.tuils.Tuils;
 
+/**
+ * Manages the retrieval and caching of device contacts.
+ * <p>
+ * This manager is responsible for:
+ * 1. Requesting `READ_CONTACTS` permission if not granted.
+ * 2. Querying the Android `ContactsContract` database in a background thread.
+ * 3. Normalizing and storing contact data (names and phone numbers).
+ * 4. Listening for contact changes via BroadcastReceiver.
+ * </p>
+ */
 public class ContactManager {
 
+    // Action to trigger a refresh of the contacts list
     public static String ACTION_REFRESH = "com.hereliesaz.hg2gui" + ".refresh_contacts";
 
     private Context context;
-    private List<Contact> contacts;
+    private List<Contact> contacts; // Cached list of contacts
 
     private BroadcastReceiver receiver;
 
+    /**
+     * Constructor. Checks permissions and initializes the receiver.
+     */
     public ContactManager(Context context) {
         this.context = context;
 
+        // Initial load if permission is already granted
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED) {
             refreshContacts(context);
         }
 
+        // Register receiver for refresh requests (e.g. after permission grant)
         IntentFilter filter = new IntentFilter();
         filter.addAction(ACTION_REFRESH);
 
@@ -61,7 +77,12 @@ public class ContactManager {
         LocalBroadcastManager.getInstance(context.getApplicationContext()).unregisterReceiver(receiver);
     }
 
+    /**
+     * Re-queries the contacts provider.
+     * Runs asynchronously.
+     */
     public void refreshContacts(final Context context) {
+        // Request permission if missing
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions((Activity) context, new String[]{Manifest.permission.READ_CONTACTS}, LauncherActivity.COMMAND_SUGGESTION_REQUEST_PERMISSION);
             return;
@@ -77,8 +98,11 @@ public class ContactManager {
                 } else {
                     contacts.clear();
                 }
+
+                // Shadowing the field for thread safety inside the run block
                 List<Contact> contacts = ContactManager.this.contacts;
 
+                // Query for Name, ID, Number, and Primary flag
                 Cursor phones = context.getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
                         new String[] {ContactsContract.Contacts.DISPLAY_NAME, ContactsContract.Data.CONTACT_ID, ContactsContract.CommonDataKinds.Phone.NUMBER, ContactsContract.Data.IS_SUPER_PRIMARY,}, null, null,
                         ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME + " ASC");
@@ -87,7 +111,7 @@ public class ContactManager {
 
                     int lastId = -1;
                     List<String> lastNumbers = new ArrayList<>();
-                    List<String> nrml = new ArrayList<>();
+                    List<String> nrml = new ArrayList<>(); // Normalized numbers to check for duplicates
                     int defaultNumber = 0;
                     String name = null, number;
                     int id, prim;
@@ -96,6 +120,7 @@ public class ContactManager {
                         id = phones.getInt(phones.getColumnIndex(ContactsContract.Data.CONTACT_ID));
                         number = phones.getString(phones.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
 
+                        // Check if this is the primary number
                         prim = phones.getInt(phones.getColumnIndex(ContactsContract.Data.IS_SUPER_PRIMARY));
                         if(prim > 0) {
                             defaultNumber = lastNumbers.size();
@@ -107,10 +132,12 @@ public class ContactManager {
                             lastId = id;
                             name = phones.getString(phones.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
                         } else if(id != lastId || phones.isLast()) {
+                            // New contact ID encountered, verify and add previous one
                             lastId = id;
 
                             contacts.add(new Contact(name, lastNumbers, defaultNumber));
 
+                            // Reset buffers for new contact
                             lastNumbers = new ArrayList<>();
                             nrml = new ArrayList<>();
                             name = null;
@@ -119,12 +146,14 @@ public class ContactManager {
                             name = phones.getString(phones.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
                         }
 
+                        // Normalize number to avoid duplicates (e.g. spacing differences)
                         String normalized = number.replaceAll(Tuils.SPACE, Tuils.EMPTYSTRING);
                         if(!nrml.contains(normalized)) {
                             nrml.add(normalized);
                             lastNumbers.add(number);
                         }
 
+                        // Handle the very last contact in the cursor
                         if(name != null && phones.isLast()) {
                             contacts.add(new Contact(name, lastNumbers, defaultNumber));
                         }
@@ -132,6 +161,7 @@ public class ContactManager {
                     phones.close();
                 }
 
+                // Cleanup empty contacts
                 Iterator<Contact> iterator = contacts.iterator();
                 while(iterator.hasNext()) {
                     Contact c = iterator.next();
@@ -180,6 +210,7 @@ public class ContactManager {
         return c;
     }
 
+    // Indexes for the 'about' array
     public static final int NAME = 0;
     public static final int NUMBERS = 1;
     public static final int TIME_CONTACTED = 2;
@@ -187,6 +218,10 @@ public class ContactManager {
     public static final int CONTACT_ID = 4;
     public static final int SIZE = CONTACT_ID + 1;
 
+    /**
+     * Retrieves detailed info about a contact by phone number.
+     * @return Array of strings containing details.
+     */
     public String[] about(String phone) {
         Cursor mCursor = context.getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
                 new String[] {ContactsContract.CommonDataKinds.Phone.CONTACT_ID},
@@ -202,6 +237,8 @@ public class ContactManager {
         about[CONTACT_ID] = id;
 
         mCursor.close();
+
+        // Query details
         mCursor = context.getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
                 new String[] {ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME, ContactsContract.CommonDataKinds.Phone.TIMES_CONTACTED, ContactsContract.CommonDataKinds.Phone.LAST_TIME_CONTACTED,
                         ContactsContract.CommonDataKinds.Phone.NUMBER},
@@ -228,6 +265,8 @@ public class ContactManager {
         } while (mCursor.moveToNext());
 
         about[TIME_CONTACTED] = String.valueOf(timesContacted);
+
+        // Format last contacted time
         if(lastContacted != Long.MAX_VALUE) {
             long difference = System.currentTimeMillis() - lastContacted;
             long sc = difference / 1000;
@@ -272,6 +311,9 @@ public class ContactManager {
         return context.getContentResolver().delete(fromPhone(phone), null, null) > 0;
     }
 
+    /**
+     * Resolves a lookup URI from a phone number.
+     */
     public Uri fromPhone(String phone) {
         Cursor mCursor = context.getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
                 new String[] {ContactsContract.CommonDataKinds.Phone.NUMBER, ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME},
@@ -300,6 +342,9 @@ public class ContactManager {
         return ContactsContract.Contacts.getLookupUri(mCurrentId, mCurrentLookupKey);
     }
 
+    /**
+     * DTO for a single contact.
+     */
     public static class Contact implements Comparable<Contact>, StringableObject {
         public String name, lowercaseName;
         public List<String> numbers;
@@ -336,6 +381,7 @@ public class ContactManager {
 
         @Override
         public int compareTo(@NonNull Contact o) {
+            // Sort by first letter
             char tf = name.toUpperCase().charAt(0);
             char of = o.name.toUpperCase().charAt(0);
 

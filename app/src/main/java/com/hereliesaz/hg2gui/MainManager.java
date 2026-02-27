@@ -67,16 +67,28 @@ limitations under the License.*/
 
 /**
  * Core logic coordinator for the application.
- * Processes commands received from {@link TerminalManager}, routes them to the appropriate triggers
- * (e.g., Shell, Alias, Apps), and manages background services.
+ * <p>
+ * This class acts as the central controller for the terminal environment. It is responsible for:
+ * 1. Initializing and managing all other subsystems (Apps, Music, Theme, RSS, etc.).
+ * 2. Receiving user input from the UI.
+ * 3. Routing that input through a series of "Triggers" to determine the action (Alias, Command, App Launch, or Shell).
+ * 4. Handling background service communication.
+ * </p>
  */
 public class MainManager {
 
+    // Action strings for Intents used in local broadcasts
     public static String ACTION_EXEC = "com.hereliesaz.hg2gui" + ".main_exec";
     public static String CMD = "cmd", NEED_WRITE_INPUT = "writeInput", ALIAS_NAME = "aliasName", PARCELABLE = "parcelable", CMD_COUNT = "cmdCount", MUSIC_SERVICE = "musicService";
 
+    // --- Redirection Logic ---
+    // Handles commands that "redirect" flow, like 'alias' or commands expecting interactive input.
     private RedirectCommand redirect;
     private Redirectator redirectator = new Redirectator() {
+        /**
+         * Prepares a redirection. Called when a command requests control over subsequent inputs.
+         * @param cmd The command requesting redirection.
+         */
         @Override
         public void prepareRedirection(RedirectCommand cmd) {
             redirect = cmd;
@@ -86,12 +98,17 @@ public class MainManager {
             }
         }
 
+        /**
+         * Cleans up after redirection ends.
+         */
         @Override
         public void cleanup() {
             if(redirect != null) {
+                // Clear any state stored in the redirect command
                 redirect.beforeObjects.clear();
                 redirect.afterObjects.clear();
 
+                // Notify listener (usually UIManager) that redirection ended
                 if(redirectionListener != null) {
                     redirectionListener.onRedirectionEnd(redirect);
                 }
@@ -105,8 +122,16 @@ public class MainManager {
         this.redirectionListener = redirectionListener;
     }
 
+    // Package path where raw command classes are located.
     private final String COMMANDS_PKG = "com.hereliesaz.hg2gui.commands.main.raw";
 
+    // --- Triggers ---
+    // The order of triggers determines the precedence of interpretation.
+    // 1. Groups (e.g. folder-like structures for apps)
+    // 2. Aliases (user-defined shortcuts)
+    // 3. TUI Commands (internal commands like 'clear', 'config')
+    // 4. App Launch (if input matches an app name)
+    // 5. Shell Command (fallback to system shell)
     private CmdTrigger[] triggers = new CmdTrigger[] {
             new GroupTrigger(),
             new AliasTrigger(),
@@ -114,18 +139,23 @@ public class MainManager {
             new AppTrigger(),
             new ShellCommandTrigger()
     };
+
+    // MainPack holds references to all managers, passed to commands so they can access system resources.
     private MainPack mainPack;
 
     private LauncherActivity mContext;
 
+    // Preferences cached for performance
     private boolean showAliasValue;
     private boolean showAppHistory;
     private int aliasContentColor;
 
     private String multipleCmdSeparator;
 
+    // Static interactive shell session (shared across the app)
     public static Shell.Interactive interactive;
 
+    // Sub-Managers
     private AliasManager aliasManager;
     private RssManager rssManager;
     private AppsManager appsManager;
@@ -139,13 +169,19 @@ public class MainManager {
 
     private BroadcastReceiver receiver;
 
+    // Counter to keep track of command order and avoid race conditions
     public static int commandCount = 0;
 
     private boolean keeperServiceRunning;
 
+    /**
+     * Constructor. Initializes the environment.
+     * @param c The LauncherActivity context.
+     */
     protected MainManager(LauncherActivity c) {
         mContext = c;
 
+        // Load preferences
         keeperServiceRunning = XMLPrefsManager.getBoolean(Behavior.tui_notification);
 
         showAliasValue = XMLPrefsManager.getBoolean(Behavior.show_alias_content);
@@ -154,6 +190,7 @@ public class MainManager {
 
         multipleCmdSeparator = XMLPrefsManager.get(Behavior.multiple_cmd_separator);
 
+        // CommandGroup manages categorization of commands
         CommandGroup group = new CommandGroup(mContext, COMMANDS_PKG);
 
         try {
@@ -165,44 +202,12 @@ public class MainManager {
         appsManager = new AppsManager(c);
         aliasManager = new AliasManager(mContext);
 
+        // HTTP Client for network operations (Weather, RSS)
         final OkHttpClient client = new OkHttpClient.Builder()
                 .cache(new Cache(mContext.getCacheDir(), 10*1024*1024))
                 .build();
 
-//        new Thread() {
-//            @Override
-//            public void run() {
-//                super.run();
-//
-//                int lat = -90, lon = 0;
-//
-//                for(int j = 0; j < 120; j++) {
-//                    Tuils.log("----------------" + j + "----------------");
-//
-//                    try {
-//                        Request.Builder builder = new Request.Builder()
-//                                .url("http://api.openweathermap.org/data/2.5/weather?lat=" + lat++ + "&lon=" + lon++ + "&appid=1f798f99228596c20ccfda51b9771a86&units=metric")
-//                                .cacheControl(CacheControl.FORCE_NETWORK)
-//                                .get();
-//
-//                        Response response = client.newCall(builder.build()).execute();
-//
-//                        Tuils.log("code", response.code());
-//                        if (!response.isSuccessful()) {
-//                            Tuils.log("not succesfull");
-//                            return;
-//                        }
-//
-//                        InputStream inputStream = response.body().byteStream();
-//                        String json = Tuils.inputStreamToString(inputStream);
-//                        Tuils.log(json);
-//                    } catch (Exception e) {
-//                        Tuils.log(e);
-//                    }
-//                }
-//            }
-//        }.start();
-
+        // Initialize other managers
         rssManager = new RssManager(mContext, client);
         themeManager = new ThemeManager(client, mContext, c);
         musicManager2 = XMLPrefsManager.getBoolean(Behavior.enable_music) ? new MusicManager2(mContext) : null;
@@ -213,26 +218,33 @@ public class MainManager {
             messagesManager = new MessagesManager(mContext);
         }
 
+        // Initialize Command Repository (indexes available commands)
         commandRepository = new CommandRepository();
+        // Create the MainPack data transfer object
         mainPack = new MainPack(mContext, group, aliasManager, appsManager, musicManager2, contactManager, redirectator, rssManager, client, commandRepository);
+        // Populate command repository with available commands
         commandRepository.update(mainPack);
 
+        // Initialize Shell
         ShellHolder shellHolder = new ShellHolder(mContext);
         interactive = shellHolder.build();
         mainPack.shellHolder = shellHolder;
 
+        // Register BroadcastReceiver for internal events
         IntentFilter filter = new IntentFilter();
-        filter.addAction(ACTION_EXEC);
-        filter.addAction(location.ACTION_LOCATION_CMD_GOT);
-        filter.addAction(UIManager.ACTION_UPDATE_SUGGESTIONS);
+        filter.addAction(ACTION_EXEC); // Execute command
+        filter.addAction(location.ACTION_LOCATION_CMD_GOT); // Location received
+        filter.addAction(UIManager.ACTION_UPDATE_SUGGESTIONS); // Update suggestions UI
 
         receiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
                 String action = intent.getAction();
                 if(action.equals(UIManager.ACTION_UPDATE_SUGGESTIONS)) {
+                    // Update command repository when suggestions need refresh (e.g. new app installed)
                     if(commandRepository != null && mainPack != null) commandRepository.update(mainPack);
                 } else if (action.equals(ACTION_EXEC)) {
+                    // Execute a command received via Intent
                     String cmd = intent.getStringExtra(CMD);
                     if (cmd == null) cmd = intent.getStringExtra(PrivateIOReceiver.TEXT);
 
@@ -240,6 +252,7 @@ public class MainManager {
                         return;
                     }
 
+                    // Check for stale commands
                     int cmdCount = intent.getIntExtra(CMD_COUNT, -1);
                     if (cmdCount < commandCount) return;
                     commandCount++;
@@ -248,18 +261,21 @@ public class MainManager {
                     boolean needWriteInput = intent.getBooleanExtra(NEED_WRITE_INPUT, false);
                     Parcelable p = intent.getParcelableExtra(PARCELABLE);
 
+                    // If requested, echo the command to the input field
                     if(needWriteInput) {
                         Intent i = new Intent(PrivateIOReceiver.ACTION_INPUT);
                         i.putExtra(PrivateIOReceiver.TEXT, cmd);
                         LocalBroadcastManager.getInstance(context.getApplicationContext()).sendBroadcast(i);
                     }
 
+                    // Execute based on type
                     if(p != null && p instanceof AppsManager.LaunchInfo) {
                         onCommand(cmd, (AppsManager.LaunchInfo) p, intent.getBooleanExtra(MainManager.MUSIC_SERVICE, false));
                     } else {
                         onCommand(cmd, aliasName, intent.getBooleanExtra(MainManager.MUSIC_SERVICE, false));
                     }
                 } else if(action.equals(location.ACTION_LOCATION_CMD_GOT)) {
+                    // Handle async location result
                     Tuils.sendOutput(context, "Lat: " + intent.getDoubleExtra(TuiLocationManager.LATITUDE, 0) + "; Long: " + intent.getDoubleExtra(TuiLocationManager.LONGITUDE, 0));
                     TuiLocationManager.instance(context).rm(location.ACTION_LOCATION_CMD_GOT);
                 }
@@ -269,6 +285,10 @@ public class MainManager {
         LocalBroadcastManager.getInstance(mContext.getApplicationContext()).registerReceiver(receiver, filter);
     }
 
+    /**
+     * Updates background services when a command is executed.
+     * This informs the KeeperService (notification listener) of the current context.
+     */
     private void updateServices(String cmd, boolean wasMusicService) {
 
         if(keeperServiceRunning) {
@@ -284,6 +304,9 @@ public class MainManager {
         }
     }
 
+    /**
+     * Handles a command that is explicitly an App Launch.
+     */
     public void onCommand(String input, AppsManager.LaunchInfo launchInfo, boolean wasMusicService) {
         if(launchInfo == null) {
             onCommand(input, (String) null, wasMusicService);
@@ -292,21 +315,31 @@ public class MainManager {
 
         updateServices(input, wasMusicService);
 
+        // Verify if the input matches the app label
         if(launchInfo.unspacedLowercaseLabel.equals(Tuils.removeSpaces(input.toLowerCase()))) {
             performLaunch(mainPack, launchInfo, input);
         } else {
+            // Fallback to standard processing
             onCommand(input, (String) null, wasMusicService);
         }
     }
 
+    // Pattern to extract color codes from input: #RRGGBB[text]
     Pattern colorExtractor = Pattern.compile("(#[^(]{6})\\[([^\\)]*)\\]", Pattern.CASE_INSENSITIVE);
 
-//    command manager
+    /**
+     * Main command processing entry point.
+     * @param input The raw command string.
+     * @param alias The alias name if this command came from an alias expansion.
+     * @param wasMusicService Whether this command originated from the music service.
+     */
     public void onCommand(String input, String alias, boolean wasMusicService) {
         input = Tuils.removeUnncesarySpaces(input);
 
         if(alias == null) updateServices(input, wasMusicService);
 
+        // --- Redirection Handling ---
+        // If a command like 'tuixt' or 'alias' requested redirection, all input goes to it.
         if(redirect != null) {
             if(!redirect.isWaitingPermission()) {
                 redirect.afterObjects.add(input);
@@ -317,10 +350,13 @@ public class MainManager {
             return;
         }
 
+        // Show alias expansion if enabled
         if(alias != null && showAliasValue) {
            Tuils.sendOutput(aliasContentColor, mContext, aliasManager.formatLabel(alias, input));
         }
 
+        // --- Multiple Commands ---
+        // Split input by separator (e.g., '&&' or ';')
         String[] cmds;
         if(multipleCmdSeparator.length() > 0) {
             cmds = input.split(multipleCmdSeparator);
@@ -328,23 +364,27 @@ public class MainManager {
             cmds = new String[] {input};
         }
 
+        // --- Color Extraction ---
+        // Check if user specified a color for the output
         int[] colors = new int[cmds.length];
         for(int c = 0; c < colors.length; c++) {
             Matcher m = colorExtractor.matcher(cmds[c]);
             if(m.matches()) {
                 try {
                     colors[c] = Color.parseColor(m.group(1));
-                    cmds[c] = m.group(2);
+                    cmds[c] = m.group(2); // The actual text content
                 } catch (Exception e) {
                     colors[c] = TerminalManager.NO_COLOR;
                 }
             } else colors[c] = TerminalManager.NO_COLOR;
         }
 
+        // --- Execution Loop ---
         for(int c = 0; c < cmds.length; c++) {
             mainPack.clear();
             mainPack.commandColor = colors[c];
 
+            // Iterate through triggers until one handles the command
             for (CmdTrigger trigger : triggers) {
                 boolean r;
                 try {
@@ -354,6 +394,7 @@ public class MainManager {
                     break;
                 }
                 if (r) {
+                    // If triggered successfully, check for hint messages
                     if(messagesManager != null) messagesManager.afterCmd();
                     break;
                 }
@@ -361,18 +402,31 @@ public class MainManager {
         }
     }
 
+    /**
+     * Handle long press on back button.
+     */
     public void onLongBack() {
+        // Clear input
         Tuils.sendInput(mContext, Tuils.EMPTYSTRING);
     }
 
+    /**
+     * Called when a command requires permissions that were denied.
+     */
     public void sendPermissionNotGrantedWarning() {
         redirectator.cleanup();
     }
 
+    /**
+     * Dispose of resources.
+     */
     public void dispose() {
         mainPack.dispose();
     }
 
+    /**
+     * Permanent destruction of the manager.
+     */
     public void destroy() {
         mainPack.destroy();
         TuiLocationManager.disposeStatic();
@@ -384,6 +438,7 @@ public class MainManager {
         aliasManager.dispose();
         LocalBroadcastManager.getInstance(mContext.getApplicationContext()).unregisterReceiver(receiver);
 
+        // Kill the shell session in background
         new StoppableThread() {
             @Override
             public void run() {
@@ -404,6 +459,9 @@ public class MainManager {
         return mainPack;
     }
 
+    /**
+     * Returns an executor for functional interfaces.
+     */
     public CommandExecuter executer() {
         return (input, obj) -> {
             AppsManager.LaunchInfo li = obj instanceof AppsManager.LaunchInfo ? (AppsManager.LaunchInfo) obj : null;
@@ -420,12 +478,20 @@ public class MainManager {
     Pattern pp = Pattern.compile("%p", Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
     Pattern pl = Pattern.compile("%l", Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
 
+    /**
+     * Launches an application.
+     * @param mainPack The main data pack.
+     * @param i The LaunchInfo of the app.
+     * @param input The raw input.
+     * @return True if successful.
+     */
     public boolean performLaunch(MainPack mainPack, AppsManager.LaunchInfo i, String input) {
         Intent intent = appsManager.getIntent(i);
         if (intent == null) {
             return false;
         }
 
+        // Show launch history message if enabled
         if(showAppHistory) {
             if(appFormat == null) {
                 appFormat = XMLPrefsManager.get(Behavior.app_launch_format);
@@ -433,6 +499,7 @@ public class MainManager {
             }
 
             String a = new String(appFormat);
+            // Replace placeholders in format string (%a=Activity, %p=Package, %l=Label)
             a = pa.matcher(a).replaceAll(Matcher.quoteReplacement(intent.getComponent().getClassName()));
             a = pp.matcher(a).replaceAll(Matcher.quoteReplacement(intent.getComponent().getPackageName()));
             a = pl.matcher(a).replaceAll(Matcher.quoteReplacement(i.publicLabel));
@@ -445,20 +512,28 @@ public class MainManager {
             Tuils.sendOutput(mainPack, s, TerminalManager.CATEGORY_OUTPUT);
         }
 
+        // Start the app activity
         mainPack.context.startActivity(intent);
 
         return true;
     }
 //
 
+    /**
+     * Interface for command triggers.
+     */
     public interface CmdTrigger {
         boolean trigger(MainPack info, String input) throws Exception;
     }
 
+    /**
+     * Trigger for Aliases.
+     */
     private class AliasTrigger implements CmdTrigger {
 
         @Override
         public boolean trigger(MainPack info, String input) {
+            // Check if input matches an alias
             String alias[] = aliasManager.getAlias(input, true);
 
             String aliasValue = alias[0];
@@ -469,14 +544,19 @@ public class MainManager {
             String aliasName = alias[1];
             String residual = alias[2];
 
+            // Format alias with arguments
             aliasValue = aliasManager.format(aliasValue, residual);
 
+            // Execute the expanded command
             onCommand(aliasValue, aliasName, false);
 
             return true;
         }
     }
 
+    /**
+     * Trigger for App Groups (folders).
+     */
     private class GroupTrigger implements CmdTrigger {
 
         @Override
@@ -484,6 +564,7 @@ public class MainManager {
             int index = input.indexOf(Tuils.SPACE);
             String name;
 
+            // Separate group name from arguments
             if(index != -1) {
                 name = input.substring(0,index);
                 input = input.substring(index + 1);
@@ -497,9 +578,11 @@ public class MainManager {
                 for(Group g : appGroups) {
                     if(name.equals(g.name())) {
                         if(input == null) {
+                            // List members if no argument
                             Tuils.sendOutput(mContext, AppsManager.AppUtils.printApps(AppsManager.AppUtils.labelList((List<AppsManager.LaunchInfo>) g.members(), false)));
                             return true;
                         } else {
+                            // Execute action within group
                             return g.use(mainPack, input);
                         }
                     }
@@ -510,17 +593,23 @@ public class MainManager {
         }
     }
 
+    /**
+     * Trigger for Shell commands.
+     */
     private class ShellCommandTrigger implements CmdTrigger {
 
         final int CD_CODE = 10;
         final int PWD_CODE = 11;
 
+        // Listener for shell command results
         final Shell.OnCommandResultListener result = new Shell.OnCommandResultListener() {
             @Override
             public void onCommandResult(int commandCode, int exitCode, List<String> output) {
                 if(commandCode == CD_CODE) {
+                    // After changing directory, get the new path
                     interactive.addCommand("pwd", PWD_CODE, result);
                 } else if(commandCode == PWD_CODE && output.size() == 1) {
+                    // Update current directory in MainPack
                     File f = new File(output.get(0));
                     if(f.exists()) {
                         mainPack.currentDirectory = f;
@@ -536,11 +625,13 @@ public class MainManager {
             new StoppableThread() {
                 @Override
                 public void run() {
+                    // Handle 'su' specially to toggle root indicator
                     if(input.trim().equalsIgnoreCase("su")) {
                         if(Shell.SU.available()) LocalBroadcastManager.getInstance(mContext.getApplicationContext()).sendBroadcast(new Intent(UIManager.ACTION_ROOT));
                         interactive.addCommand("su");
 
                     } else if(input.contains("cd ")) {
+                        // Handle directory change with callback
                         interactive.addCommand(input, CD_CODE, result);
                     } else interactive.addCommand(input);
 
@@ -551,25 +642,35 @@ public class MainManager {
         }
     }
 
+    /**
+     * Trigger for launching apps by name.
+     */
     private class AppTrigger implements CmdTrigger {
 
         @Override
         public boolean trigger(MainPack info, String input) {
+            // Find app with matching label
             AppsManager.LaunchInfo i = appsManager.findLaunchInfoWithLabel(input, AppsManager.SHOWN_APPS);
+            // Launch it
             return i != null && performLaunch(info, i, input);
         }
     }
 
+    /**
+     * Trigger for internal TUI commands.
+     */
     private class TuiCommandTrigger implements CmdTrigger {
 
         @Override
         public boolean trigger(final MainPack info, final String input) throws Exception {
 
+            // Parse input into a Command object
             final Command command = CommandTuils.parse(input, info);
             if(command == null) return false;
 
             mainPack.lastCommand = input;
 
+            // Execute in background thread
             new StoppableThread() {
                 @Override
                 public void run() {
@@ -591,6 +692,9 @@ public class MainManager {
         }
     }
 
+    /**
+     * Interface for groupable items.
+     */
     public interface Group {
         List<? extends Object> members();
         boolean use(MainPack mainPack, String input);
