@@ -1,58 +1,87 @@
 # Architecture
 
-HG2Gui is an Android application designed as a terminal emulator launcher. It follows a modular architecture centered around the "Command" pattern and a "Manager" pattern for handling system resources.
+HG2Gui is an Android **terminal application** — not a launcher. It follows the "Command"
+pattern for its engine and a "Manager" pattern for system resources. The presentation layer is
+Jetpack Compose; the engine beneath it is Java.
 
 ## Core Components
 
-### 1. LauncherActivity (`LauncherActivity.java`)
-The entry point of the application.
-*   **Role:** Initializes the application, manages Android permissions, handles lifecycle events (onCreate, onPause, onDestroy), and sets up the UI.
+### 1. TerminalActivity (`TerminalActivity.kt`)
+The entry point.
+*   **Role:** Initialises the application, manages permissions and lifecycle, and sets the
+    Compose content.
 *   **Key Responsibilities:**
-    *   Initializing `MainManager` and `UIManager`.
+    *   Initialising `MainManager`.
     *   Handling `Intent`s and `BroadcastReceiver`s for inter-process communication.
-    *   Managing window flags (fullscreen, status bar colors).
+    *   Edge-to-edge window handling (required from `compileSdk` 35).
 
 ### 2. Main Manager (`MainManager.java`)
-The central coordinator of the application logic.
-*   **Role:** Bridges the gap between the UI (`UIManager`) and the underlying logic (`managers`).
+The central coordinator.
+*   **Role:** Bridges the UI and the underlying logic.
 *   **Key Responsibilities:**
-    *   Initializing all sub-managers (Apps, File, Contacts, etc.).
+    *   Initialising all sub-managers (Apps, File, Contacts, …).
     *   Routing user input to the appropriate command or manager.
     *   Managing the `CommandRepository`.
 
-### 3. UI Manager (`UIManager.java`)
-The view controller for the terminal interface.
-*   **Role:** Manages the `TerminalView` (or equivalent layout), handles text input/output, and manages UI-related settings (colors, fonts).
-*   **Key Responsibilities:**
-    *   Displaying the prompt and user input.
-    *   Rendering output from commands (text, colors).
-    *   Handling suggestions and autocomplete visualization.
+`MainManager` does not return output. Commands broadcast what they print over
+`LocalBroadcastManager` as `PrivateIOReceiver.ACTION_OUTPUT`, so output is collected by
+listening, not by a return value — see `TerminalEngine` below.
+
+### 3. Execution layer (`terminal/`)
+*   `ShellSession.java` — one long-lived `/system/bin/sh`, kept for the life of the session so
+    `cd` and exported variables persist. Commands are framed by a sentinel the shell echoes
+    after each line, carrying `$?` and `$PWD`. There is no pty: no job control, no cursor
+    addressing, and full-screen programs will not behave.
+*   `TerminalEngine.kt` — decides where a line runs. A verb matching a built-in goes to
+    `MainManager` and its broadcast output is captured; anything else goes to the shell.
+    Built-ins win ties, so `apps` is the app list rather than whatever is on `PATH`.
+
+### 4. UI layer (`ui/`)
+Compose. There is no `UIManager`; a screen is a function of state.
+*   `TerminalScreen.kt` — sessions, working directory, command line, modifier keys, output.
+*   `ui/menu/PillMenu.kt` — the suggestion tree and its motion.
+*   `ui/menu/CommandTree.kt` — builds the tree from the live `CommandGroup`, plus a Shell
+    category for verbs that run in `ShellSession`.
+*   `Theme.kt` — Azphalt colour and type tokens.
 
 ## Package Structure (`com.hereliesaz.hg2gui`)
 
-*   **`root`**: Contains Activities (`LauncherActivity`, `GuideActivity`, `PanicActivity`).
-*   **`managers/`**: Contains logic for specific domains.
-    *   `AppsManager`: Loading and launching installed apps.
-    *   `FileManager`: File system operations.
-    *   `TerminalManager`: Core terminal state.
-    *   `SystemContext`: OS/Environment emulation context.
-    *   `...`: Others (Contact, Time, Location, etc.).
-*   **`commands/`**: Implements the command pattern.
-    *   `CommandAbstraction`: Interface for all commands.
-    *   `CommandRepository`: Index of available commands.
-    *   `main/`: Core system commands.
-    *   `tuixt/`: The built-in text editor.
-*   **`tuils/`**: Utilities (likely "T-UI Utils").
-    *   `Tuils.java`: General static helper methods.
-    *   `interfaces/`: Common interfaces (`Inputable`, `Outputable`).
+*   **root**: `TerminalActivity` (Kotlin), plus `GuideActivity`, `PanicActivity` — feature
+    screens reached by command, never by icon.
+*   **`ui/`**: Compose UI and the pill menu.
+*   **`managers/`**: Logic for specific domains.
+    *   `AppsManager`: launching installed apps (as a command, not a drawer).
+    *   `FileManager`: file system operations.
+    *   `TerminalManager`: core terminal state — scrollback, history, sessions.
+    *   `SystemContext`: OS/environment emulation.
+*   **`commands/`**: The command pattern.
+    *   `CommandAbstraction`: interface for all commands.
+    *   `CommandRepository`: index of available commands — also the source of the menu tree.
+    *   `main/`: core system commands.
+    *   `tuixt/`: the built-in text editor.
+*   **`tuils/`**: Utilities.
 
 ## Data Flow
 
-1.  **Input:** User types text in `LauncherActivity` (handled by `UIManager`).
-2.  **Processing:** `MainManager` receives the input.
-3.  **Parsing:** The input is parsed to identify the command name and arguments.
+1.  **Input:** The user taps pills in `PillMenu`; `TerminalScreen` accumulates tokens. Typing
+    is possible but secondary.
+2.  **Processing:** Run joins the tokens and calls `TerminalEngine.run`, off the main thread.
+3.  **Routing:** The first token decides the path — a built-in name goes to `MainManager`,
+    anything else to `ShellSession`.
 4.  **Execution:**
-    *   If it's a known command, the corresponding `Command` class in `commands/` is executed.
-    *   If it matches an app name, `AppsManager` launches the app.
-    *   If it's an alias, `AliasManager` expands it.
-5.  **Output:** The result is sent back to `UIManager` via the `Outputable` interface to be displayed.
+    *   A known command runs its `Command` class in `commands/`, and its broadcast output is
+        captured for the duration of the call.
+    *   A matching app name goes to `AppsManager`.
+    *   An alias is expanded by `AliasManager`.
+    *   Otherwise the line is written to the shell and read back to the sentinel.
+5.  **Output:** The result returns as a string and becomes screen state, rendered in a record
+    tile. `Outputable` remains for commands that stream.
+
+## Migration status
+
+| Layer | State |
+| --- | --- |
+| Entry point, terminal screen, suggestion menu | Kotlin + Compose |
+| Command engine, managers, `tuixt`, Guide | Java, unchanged |
+| XML layouts for the terminal | Replaced |
+| Launcher-specific code (drawer, app menus, fake launcher) | Removed |
