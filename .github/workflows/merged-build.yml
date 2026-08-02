@@ -150,10 +150,20 @@ jobs:
             }
 
       # ------------------------------------------------------------------
-      # RELEASE STEPS (Only run on PUSH, not Pull Requests)
+      # RELEASE STEPS
+      #
+      # Default branch only. These steps force-push a single shared tag
+      # (latest-debug-v<major>.<minor>), and the concurrency group above is keyed on
+      # github.ref — so runs for two different branches are in different groups and execute
+      # at the same time. When both reached the tag push, the loser failed with
+      # "cannot lock ref ... is at X but expected Y".
+      #
+      # Restricting releases to the default branch means only one ref ever writes the tag,
+      # and back-to-back pushes to it serialise through the shared concurrency group.
+      # Branch pushes still build; they just no longer publish.
       # ------------------------------------------------------------------
       - name: Prepare Release Variables
-        if: success() && github.event_name == 'push'
+        if: success() && github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
         id: release_vars
         run: |
           export BUILD_NUMBER=$(git rev-list --count HEAD)
@@ -183,9 +193,16 @@ jobs:
              APP_NAME="App"
           fi
           
-          # Locate built APK
-          APK_ORIGINAL=$(find app/build/outputs/apk -type f -name "*.apk" | head -n 1)
-          
+          # Locate built APK. assembleDebug produces one per flavour, so pick deliberately
+          # rather than taking whatever find returns first — that made the released flavour
+          # arbitrary from run to run. fdroid is the sideload build.
+          APK_ORIGINAL=$(find app/build/outputs/apk/fdroid -type f -name "*.apk" | sort | head -n 1)
+
+          if [ -z "$APK_ORIGINAL" ]; then
+             echo "No fdroid APK found; falling back to any flavour."
+             APK_ORIGINAL=$(find app/build/outputs/apk -type f -name "*.apk" | sort | head -n 1)
+          fi
+
           if [ -z "$APK_ORIGINAL" ]; then
              echo "Error: No APK found to release!"
              exit 1
@@ -206,39 +223,62 @@ jobs:
           cd build_tools_package && zip -r ../build-tools.zip . && cd ..
 
       - name: Publish Release
-        if: success() && github.event_name == 'push'
+        if: success() && github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set -euo pipefail
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          # Force update tag to point to current commit
-          git tag -fa $TAG_NAME -m "Latest Debug Build"
-          git push origin $TAG_NAME --force
+          # Move the rolling tag to this commit. Refresh local tags first: the checkout's
+          # copy can already be stale, and pushing from a stale ref is what produced
+          # "cannot lock ref ... but expected <old sha>".
+          git fetch origin --tags --force --quiet
+          git tag -fa "$TAG_NAME" -m "Latest Debug Build"
+          git push origin "refs/tags/$TAG_NAME" --force
 
           BUILD_TOOLS="build-tools.zip"
 
-          # Check if release exists
-          if gh release view $TAG_NAME > /dev/null 2>&1; then
+          if gh release view "$TAG_NAME" > /dev/null 2>&1; then
              echo "Updating existing release..."
 
-             # Clean up ONLY the build-tools asset to avoid conflicts
-             gh release delete-asset "$TAG_NAME" "$BUILD_TOOLS" -y || true
+             # Every build names its APK after the commit count, so --clobber never matched
+             # the previous asset and they accumulated — the release had grown to seven APKs
+             # with no obvious one to download. This is a rolling "latest" prerelease, so drop
+             # the old binaries and keep only what this run produced.
+             #
+             # Collected into a variable rather than piped through grep: under pipefail a
+             # grep that matches nothing (an empty release) would fail the whole step.
+             OLD_ASSETS=$(gh release view "$TAG_NAME" --json assets --jq '.assets[].name' || true)
+             for OLD_ASSET in $OLD_ASSETS; do
+               case "$OLD_ASSET" in
+                 *.apk|*.zip)
+                   echo "Removing stale asset: $OLD_ASSET"
+                   gh release delete-asset "$TAG_NAME" "$OLD_ASSET" -y || true
+                   ;;
+               esac
+             done
 
-             gh release edit $TAG_NAME --prerelease \
+             gh release edit "$TAG_NAME" --prerelease \
                --title "Latest Debug Build ($TAG_NAME)" \
                --notes "Auto-build from commit $GITHUB_SHA" \
-               --target $GITHUB_SHA
+               --target "$GITHUB_SHA"
 
-             # Clobber ensures that if we re-run the workflow on the exact same commit, it replaces the APK instead of failing.
-             gh release upload $TAG_NAME "$APK_FILE" --clobber
-             [ -f "$BUILD_TOOLS" ] && gh release upload $TAG_NAME "$BUILD_TOOLS" --clobber
+             gh release upload "$TAG_NAME" "$APK_FILE" --clobber
+             if [ -f "$BUILD_TOOLS" ]; then
+               gh release upload "$TAG_NAME" "$BUILD_TOOLS" --clobber
+             fi
           else
              echo "Creating new release..."
-             gh release create $TAG_NAME "$APK_FILE" --prerelease \
+             gh release create "$TAG_NAME" "$APK_FILE" --prerelease \
                --title "Latest Debug Build ($TAG_NAME)" \
                --notes "Auto-build from commit $GITHUB_SHA" \
-               --target $GITHUB_SHA
-             [ -f "$BUILD_TOOLS" ] && gh release upload $TAG_NAME "$BUILD_TOOLS" --clobber
+               --target "$GITHUB_SHA"
+             if [ -f "$BUILD_TOOLS" ]; then
+               gh release upload "$TAG_NAME" "$BUILD_TOOLS" --clobber
+             fi
           fi
+
+          echo "Published $APK_FILE to $TAG_NAME"
