@@ -1,20 +1,23 @@
 apply plugin: 'com.android.application'
+apply plugin: 'org.jetbrains.kotlin.android'
+apply plugin: 'org.jetbrains.kotlin.plugin.compose'
+
 android {
     namespace "com.hereliesaz.hg2gui"
-    compileSdkVersion 34
-
-
+    // The platform SDK is now minor-versioned (android-37.0); `compileSdk 37` alone resolves
+    // to a non-existent `android-37`, so the minor must be stated explicitly.
+    compileSdk 37
+    compileSdkMinor 0
 
     defaultConfig {
         applicationId "com.hereliesaz.hg2gui"
 
-        minSdkVersion 14
-        targetSdkVersion 34
-        flavorDimensions "default"
+        // Compose floor is 21; 24 is the sane modern floor and drops the multidex workaround.
+        minSdk 24
+        targetSdk 37
 
         versionName "v6.15"
         versionCode 205
-        multiDexEnabled true
     }
     buildTypes {
         release {
@@ -24,18 +27,25 @@ android {
             zipAlignEnabled true
         }
     }
+    flavorDimensions += "default"
     productFlavors {
         fdroid {
         }
         playstore {
         }
     }
+    buildFeatures {
+        compose true
+    }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_21
+        targetCompatibility JavaVersion.VERSION_21
+    }
+    kotlinOptions {
+        jvmTarget = '21'
     }
 
-    lintOptions {
+    lint {
         checkReleaseBuilds false
     }
     android.applicationVariants.all { variant ->
@@ -46,19 +56,29 @@ android {
         }
     }
 }
+
 dependencies {
     testImplementation 'junit:junit:4.13.2'
-    testImplementation 'org.mockito:mockito-core:5.11.0'
+    testImplementation 'org.mockito:mockito-core:5.14.2'
 
-    implementation 'androidx.multidex:multidex:2.0.1'
-    implementation 'androidx.appcompat:appcompat:1.6.1'
-    implementation 'androidx.core:core:1.12.0'
+    implementation 'androidx.appcompat:appcompat:1.7.1'
+    implementation 'androidx.core:core-ktx:1.17.0'
     implementation 'androidx.localbroadcastmanager:localbroadcastmanager:1.1.0'
-    implementation 'com.google.android.material:material:1.11.0'
+    implementation 'com.google.android.material:material:1.13.0'
 
-    implementation 'com.squareup.okhttp3:okhttp:3.10.0'
+    // Compose
+    implementation platform('androidx.compose:compose-bom:2025.09.01')
+    implementation 'androidx.compose.ui:ui'
+    implementation 'androidx.compose.foundation:foundation'
+    implementation 'androidx.compose.material3:material3'
+    implementation 'androidx.activity:activity-compose:1.11.0'
+    debugImplementation 'androidx.compose.ui:ui-tooling'
+    debugImplementation 'androidx.compose.ui:ui-tooling-preview'
+
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
     implementation 'net.sourceforge.htmlcleaner:htmlcleaner:2.6'
-    implementation 'com.jayway.jsonpath:json-path:2.4.0'
-    implementation 'org.jsoup:jsoup:1.11.3'
+    implementation 'com.jayway.jsonpath:json-path:2.9.0'
+    implementation 'org.jsoup:jsoup:1.18.3'
     implementation 'it.andreuzzi:CompareString2:1.0.9'
 }
+

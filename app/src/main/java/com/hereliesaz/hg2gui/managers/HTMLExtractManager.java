@@ -14,8 +14,6 @@ import android.text.style.ForegroundColorSpan;
 
 import com.jayway.jsonpath.JsonPath;
 
-import net.minidev.json.JSONArray;
-
 import org.htmlcleaner.CleanerProperties;
 import org.htmlcleaner.HtmlCleaner;
 import org.htmlcleaner.TagNode;
@@ -500,7 +498,9 @@ public class HTMLExtractManager {
                             output(output, context, weatherArea, TerminalManager.CATEGORY_NO_COLOR);
                         } else if(o instanceof List) {
 //                            this is an array of JSON objects
-                            JSONArray a = (JSONArray) o;
+//                            json-smart is runtime-scoped in json-path 2.9, so bind to the
+//                            List interface rather than its net.minidev.json.JSONArray impl
+                            List<?> a = (List<?>) o;
 
                             for(int c = 0; c < a.size(); c++) {
                                 String f = format == null ? defaultFormat : format;
