@@ -92,6 +92,34 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      # Computed before the build so the same numbers reach both the APK and the release
+      # filename. This used to be worked out after the build, in the release step, which meant
+      # the version the workflow advertised was never the version compiled into the APK.
+      - name: Compute Version
+        run: |
+          BUILD_NUMBER=$(git rev-list --count HEAD)
+
+          MAJOR=$(grep 'versionMajor=' version.properties | cut -d'=' -f2)
+          MINOR=$(grep 'versionMinor=' version.properties | cut -d'=' -f2)
+
+          # Patch counts commits since versionMinor last changed.
+          MINOR_COMMIT=$(git blame -L '/versionMinor=/',+1 version.properties 2>/dev/null | awk '{print $1}' | tr -d '^' || true)
+          if [ -n "$MINOR_COMMIT" ]; then
+            PATCH=$(git rev-list --count "$MINOR_COMMIT"..HEAD)
+          else
+            PATCH=$(grep 'versionPatch=' version.properties | cut -d'=' -f2)
+          fi
+
+          VERSION_NAME="$MAJOR.$MINOR.$PATCH.$BUILD_NUMBER"
+
+          {
+            echo "BUILD_NUMBER=$BUILD_NUMBER"
+            echo "VERSION_NAME=$VERSION_NAME"
+            echo "TAG_NAME=latest-debug-v${MAJOR}.${MINOR}"
+          } >> "$GITHUB_ENV"
+
+          echo "versionName=$VERSION_NAME versionCode=$BUILD_NUMBER"
+
       - name: Build with Gradle
         id: gradle-build
         env:
@@ -100,10 +128,10 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           set +e
-          export BUILD_NUMBER=$(git rev-list --count HEAD)
-          
-          # Build the APK
-          ./gradlew assembleDebug -PversionBuild=$BUILD_NUMBER --build-cache \
+
+          # Build the APK. versionName/versionBuild come from the Compute Version step, so the
+          # APK reports exactly what the release filename claims.
+          ./gradlew assembleDebug -PversionBuild=$BUILD_NUMBER -PversionName=$VERSION_NAME --build-cache \
             -Pandroid.injected.signing.store.file=$(pwd)/app/keystore.jks \
             -Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD \
             -Pandroid.injected.signing.key.alias=$KEY_ALIAS \
@@ -166,24 +194,9 @@ jobs:
         if: success() && github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
         id: release_vars
         run: |
-          export BUILD_NUMBER=$(git rev-list --count HEAD)
-          
-          # Extract version info from properties file
-          MAJOR=$(grep 'versionMajor=' version.properties | cut -d'=' -f2)
-          MINOR=$(grep 'versionMinor=' version.properties | cut -d'=' -f2)
+          # VERSION_NAME and TAG_NAME come from the Compute Version step, which ran before the
+          # build. Recomputing them here would risk advertising a version the APK doesn't carry.
 
-          # Calculate Patch version programmatically based on commits since Minor update
-          MINOR_COMMIT=$(git blame -L '/versionMinor=/',+1 version.properties | awk '{print $1}' | tr -d '^')
-          if [ -n "$MINOR_COMMIT" ]; then
-            PATCH=$(git rev-list --count $MINOR_COMMIT..HEAD)
-          else
-            PATCH=$(grep 'versionPatch=' version.properties | cut -d'=' -f2)
-          fi
-
-          VERSION_NAME="$MAJOR.$MINOR.$PATCH.$BUILD_NUMBER"
-          
-          TAG_NAME="latest-debug-v${MAJOR}.${MINOR}"
-          
           # Dynamic App Name from settings.gradle
           if [ -f "settings.gradle.kts" ]; then
              APP_NAME=$(grep 'rootProject.name' settings.gradle.kts | sed -E "s/.*=.*[\"'](.*)[\"']/\1/")
@@ -213,7 +226,6 @@ jobs:
           # Rename for release
           mv "$APK_ORIGINAL" "$TARGET_NAME"
           
-          echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
           echo "APK_FILE=$TARGET_NAME" >> $GITHUB_ENV
           
           # Package Build Tools (Optional)
