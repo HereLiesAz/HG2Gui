@@ -18,12 +18,18 @@
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK"  />
 
-    <permission
-        android:name="android.permission.FLASHLIGHT"
-        android:description="@string/help_flash"
-        android:label="@string/help_flash"
-        android:permissionGroup="android.permission-group.HARDWARE_CONTROLS"
-        android:protectionLevel="normal" />
+<!--
+      No <permission> declarations here.
+
+      This manifest used to define android.permission.FLASHLIGHT. That name belongs to the
+      platform, and an app that redefines a permission another package already owns is
+      rejected at install time with INSTALL_FAILED_DUPLICATE_PERMISSION — surfaced to the
+      user as a bare "App not installed" with no reason given. Its permissionGroup,
+      android.permission-group.HARDWARE_CONTROLS, no longer exists either.
+
+      Nothing needed it: the torch is driven through CameraManager, and `flash` requests
+      android.permission.CAMERA at runtime.
+    -->
 
     <!-- features -->
     <uses-feature
