@@ -8,3 +8,6 @@
 /captures
 .externalNativeBuild
 /app/build
+
+# JVM heap dumps, e.g. from an OOM during dexing
+*.hprof

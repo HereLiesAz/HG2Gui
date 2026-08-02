@@ -1,6 +1,7 @@
 package com.hereliesaz.hg2gui;
 
 import android.content.BroadcastReceiver;
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -46,6 +47,7 @@ import com.hereliesaz.hg2gui.tuils.Tuils;
 import com.hereliesaz.hg2gui.tuils.interfaces.CommandExecuter;
 import com.hereliesaz.hg2gui.tuils.interfaces.OnRedirectionListener;
 import com.hereliesaz.hg2gui.tuils.interfaces.Redirectator;
+import com.hereliesaz.hg2gui.tuils.interfaces.Reloadable;
 import com.hereliesaz.hg2gui.tuils.libsuperuser.Shell;
 import com.hereliesaz.hg2gui.tuils.libsuperuser.ShellHolder;
 import okhttp3.Cache;
@@ -143,7 +145,10 @@ public class MainManager {
     // MainPack holds references to all managers, passed to commands so they can access system resources.
     private MainPack mainPack;
 
-    private LauncherActivity mContext;
+    // An Activity rather than a LauncherActivity: commands that request runtime permissions
+    // cast this to Activity, but nothing here needs the launcher specifically. Keeping it
+    // broad is what lets TerminalActivity host the engine.
+    private Activity mContext;
 
     // Preferences cached for performance
     private boolean showAliasValue;
@@ -175,10 +180,21 @@ public class MainManager {
     private boolean keeperServiceRunning;
 
     /**
-     * Constructor. Initializes the environment.
-     * @param c The LauncherActivity context.
+     * Convenience constructor for {@link LauncherActivity}, which is its own
+     * {@link Reloadable}.
      */
     protected MainManager(LauncherActivity c) {
+        this(c, c);
+    }
+
+    /**
+     * Constructor. Initializes the environment.
+     *
+     * @param c          the hosting Activity. Commands cast this to Activity to request
+     *                   runtime permissions, so it must be an Activity and not a bare Context.
+     * @param reloadable how a theme change asks the host to restart itself.
+     */
+    public MainManager(Activity c, Reloadable reloadable) {
         mContext = c;
 
         // Load preferences
@@ -199,7 +215,7 @@ public class MainManager {
             Tuils.log(e);
         }
 
-        appsManager = new AppsManager(c);
+        appsManager = new AppsManager(mContext);
         aliasManager = new AliasManager(mContext);
 
         // HTTP Client for network operations (Weather, RSS)
@@ -209,7 +225,7 @@ public class MainManager {
 
         // Initialize other managers
         rssManager = new RssManager(mContext, client);
-        themeManager = new ThemeManager(client, mContext, c);
+        themeManager = new ThemeManager(client, mContext, reloadable);
         musicManager2 = XMLPrefsManager.getBoolean(Behavior.enable_music) ? new MusicManager2(mContext) : null;
         ChangelogManager.printLog(mContext, client);
         htmlExtractManager = new HTMLExtractManager(mContext, client);

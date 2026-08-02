@@ -76,23 +76,45 @@
                 android:resource="@xml/provider_paths"/>
         </provider>
 
+        <!--
+          The terminal. One entry, normal lifecycle, present in recents.
+
+          Changed from the launcher declaration this replaces:
+            - dropped clearTaskOnLaunch, excludeFromRecents, stateNotNeeded, resumeWhilePausing
+              and taskAffinity="" — all launcher-lifecycle tricks. A terminal belongs in
+              recents and keeps its state.
+            - no category.HOME is added here. This manifest never declared one, so the app was
+              already only a home-screen candidate by way of the flags above, not by filter.
+            - launchMode singleTask -> singleTop
+            - windowSoftInputMode stateAlwaysVisible -> stateUnchanged: the suggestion tree is
+              the input method, so the keyboard opens only when asked for.
+        -->
         <activity
-            android:name=".LauncherActivity"
-            android:clearTaskOnLaunch="true"
-            android:configChanges="keyboardHidden|orientation|screenSize|keyboard|navigation"
-            android:enabled="true"
-            android:excludeFromRecents="true"
-            android:launchMode="singleTask"
-            android:resumeWhilePausing="true"
-            android:stateNotNeeded="true"
-            android:taskAffinity=""
+            android:name=".TerminalActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize|keyboard|navigation|uiMode"
+            android:documentLaunchMode="intoExisting"
             android:exported="true"
-            android:windowSoftInputMode="stateAlwaysVisible|adjustResize">
+            android:launchMode="singleTop"
+            android:windowSoftInputMode="stateUnchanged|adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!--
+          The old launcher UI. No longer an entry point and no longer exported, but still
+          declared: MusicService targets it from its playback notification, and MainManager
+          can still host it. It keeps the runtime permission request codes the command
+          classes reference.
+        -->
+        <activity
+            android:name=".LauncherActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize|keyboard|navigation"
+            android:enabled="true"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:windowSoftInputMode="stateUnchanged|adjustResize" />
 
         <receiver
             android:name=".tuils.stuff.PolicyReceiver"
@@ -203,16 +225,15 @@
             android:name=".PanicActivity"
             android:theme="@style/Custom.Solid" />
 
+        <!--
+          Reached by command, never by icon. It carried a second category.LAUNCHER filter,
+          which put a second HG2Gui entry in the app drawer: one icon, one entry.
+        -->
         <activity
             android:name=".commands.tentacle.TentacleActivity"
             android:label="Tentacle Menu"
-            android:exported="true"
-            android:theme="@style/Custom.Solid">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:exported="false"
+            android:theme="@style/Custom.Solid" />
     </application>
 
 </manifest>

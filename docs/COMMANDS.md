@@ -1,6 +1,7 @@
 # Command Reference
 
-This document lists the available commands in HG2Gui.
+This document lists the available commands in HG2Gui. The suggestion tree groups them exactly
+as the headings below — see `ui/menu/CommandTree.kt`.
 
 ## System & Utilities
 *   `airplane`: Toggle airplane mode.
@@ -12,13 +13,13 @@ This document lists the available commands in HG2Gui.
 *   `clear`: Clear the terminal screen.
 *   `config`: Manage settings.
 *   `data`: Toggle mobile data (root may be required).
-*   `exit`: Close the launcher.
+*   `exit`: Close the terminal.
 *   `flash`: Toggle flashlight.
 *   `location`: Manage location services.
 *   `music`: Control music playback.
 *   `notifications`: Read or clear notifications.
 *   `refresh`: Refresh cached data (apps, contacts).
-*   `restart`: Restart the launcher.
+*   `restart`: Restart the app.
 *   `share`: Share text or files.
 *   `shell`: Execute native shell commands.
 *   `time`: Show time or set alarms.
@@ -41,15 +42,20 @@ This document lists the available commands in HG2Gui.
 *   `guide`: Open the Hitchhiker's Guide (Help).
 *   `help`: Show help for commands.
 *   `htmlextract`: Extract content from HTML.
-*   `menu`: Open the graphical menu.
 *   `notes`: Manage simple notes.
 *   `panic`: Trigger the Panic Mode.
 *   `rate`: Rate the app.
 *   `regex`: Regex testing utility.
 *   `rss`: RSS feed reader.
+*   `session`: Create, switch or close terminal sessions.
 *   `surface`: Manage surface/window settings.
 *   `switchos`: Switch the simulated OS theme/context.
 *   `theme`: Apply or manage themes.
 *   `tui`: About T-UI.
 *   `tuixt`: In-terminal text editor.
 *   `tutorial`: Run the initial tutorial.
+
+## Removed
+
+`menu` opened the graphical app-picker menus (Mitosis, Snake, Magnet, Origami). Those are
+launcher surfaces for choosing apps from a home screen; the command tree replaces them.
