@@ -4,15 +4,25 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Text
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import com.hereliesaz.hg2gui.managers.xml.XMLPrefsManager
 import com.hereliesaz.hg2gui.terminal.TerminalEngine
 import com.hereliesaz.hg2gui.tuils.interfaces.Reloadable
 import com.hereliesaz.hg2gui.ui.HG2GuiTheme
 import com.hereliesaz.hg2gui.ui.TerminalScreen
 import com.hereliesaz.hg2gui.ui.menu.CommandTree
+import com.hereliesaz.hg2gui.ui.menu.MenuNode
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /*
  * The entry point. This is a terminal app, not a launcher:
@@ -25,35 +35,69 @@ import com.hereliesaz.hg2gui.ui.menu.CommandTree
  */
 class TerminalActivity : ComponentActivity(), Reloadable {
 
-    private lateinit var main: MainManager
-    private lateinit var engine: TerminalEngine
+    // Null until background init finishes. Building these before the first frame held the
+    // splash screen up indefinitely: MainManager's constructor runs a contacts query, a full
+    // package-manager scan, OkHttp setup, a changelog fetch and a shell spawn, and the command
+    // tree comes from a full APK-wide class scan (CommandGroup -> DexFile.entries()) — none of
+    // it async, all of it between onCreate and setContent. Android never had a frame to
+    // dismiss the splash with. Both are only ever written from the main dispatcher (after the
+    // background withContext block returns, not inside it), so no synchronization is needed to
+    // read them safely from onDestroy.
+    private var main: MainManager? = null
+    private var engine: TerminalEngine? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
-        main = MainManager(this, this)
-        engine = TerminalEngine(this, main, main.mainPack?.currentDirectory)
-
-        val tree = CommandTree.from(
-            main.mainPack?.commandGroup?.commands?.toList().orEmpty()
-        )
-
         setContent {
             HG2GuiTheme {
+                var tree by remember { mutableStateOf<List<MenuNode>?>(null) }
                 // The shell reports where it ended up after every command, so `cd` is visible
                 // in the header rather than being silently swallowed.
-                var cwd by remember { mutableStateOf(engine.workingDirectory) }
+                var cwd by remember { mutableStateOf("") }
 
-                TerminalScreen(
-                    tree = tree,
-                    cwd = cwd,
-                    onRun = { line ->
-                        val result = engine.run(line)
-                        cwd = engine.workingDirectory
-                        result
+                LaunchedEffect(Unit) {
+                    val (builtMain, builtEngine, builtTree) = withContext(Dispatchers.Default) {
+                        // Must happen before MainManager reads a single XMLPrefsSave, or every
+                        // preference read falls back to its default through
+                        // exception-swallowing logic instead of the user's saved value — this
+                        // activity used to skip it entirely.
+                        XMLPrefsManager.loadCommons(this@TerminalActivity)
+
+                        val builtMain = MainManager(this@TerminalActivity, this@TerminalActivity)
+                        val builtEngine = TerminalEngine(
+                            this@TerminalActivity, builtMain, builtMain.mainPack?.currentDirectory
+                        )
+                        val builtTree = CommandTree.from(
+                            builtMain.mainPack?.commandGroup?.commands?.toList().orEmpty()
+                        )
+                        Triple(builtMain, builtEngine, builtTree)
                     }
-                )
+
+                    main = builtMain
+                    engine = builtEngine
+                    cwd = builtEngine.workingDirectory
+                    tree = builtTree
+                }
+
+                val currentEngine = engine
+                val currentTree = tree
+                if (currentEngine != null && currentTree != null) {
+                    TerminalScreen(
+                        tree = currentTree,
+                        cwd = cwd,
+                        onRun = { line ->
+                            val result = currentEngine.run(line)
+                            cwd = currentEngine.workingDirectory
+                            result
+                        }
+                    )
+                } else {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("Loading…")
+                    }
+                }
             }
         }
     }
@@ -70,8 +114,8 @@ class TerminalActivity : ComponentActivity(), Reloadable {
     }
 
     override fun onDestroy() {
-        engine.destroy()
-        main.destroy()
+        engine?.destroy()
+        main?.destroy()
         super.onDestroy()
     }
 }
