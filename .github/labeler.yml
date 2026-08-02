@@ -1,0 +1,69 @@
+# Configuration for actions/labeler.
+#
+# This file did not exist, so the `label` workflow failed on every pull request with
+# "HttpError: Not Found" rather than labelling anything.
+#
+# Schema is labeler v5 (changed-files / any-glob-to-any-file), which is what the workflow
+# now pins. The v4 schema — a bare list of globs under each label — is not compatible.
+
+build:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.gradle'
+          - '**/*.gradle.kts'
+          - 'gradle/**'
+          - 'gradle.properties'
+          - 'gradlew'
+          - 'gradlew.bat'
+          - 'settings.gradle'
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/**'
+
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.md'
+          - 'docs/**'
+          - 'LICENSE'
+
+ui:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'app/src/main/java/com/hereliesaz/hg2gui/ui/**'
+          - 'app/src/main/res/layout/**'
+          - 'app/src/main/res/font/**'
+          - 'app/src/main/java/com/hereliesaz/hg2gui/TerminalActivity.kt'
+
+terminal:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'app/src/main/java/com/hereliesaz/hg2gui/terminal/**'
+
+commands:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'app/src/main/java/com/hereliesaz/hg2gui/commands/**'
+
+managers:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'app/src/main/java/com/hereliesaz/hg2gui/managers/**'
+
+resources:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'app/src/main/res/**'
+
+manifest:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'app/src/**/AndroidManifest.xml'
+
+tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'app/src/test/**'
+          - 'app/src/androidTest/**'
