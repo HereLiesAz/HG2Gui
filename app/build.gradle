@@ -2,6 +2,39 @@ apply plugin: 'com.android.application'
 apply plugin: 'org.jetbrains.kotlin.android'
 apply plugin: 'org.jetbrains.kotlin.plugin.compose'
 
+// Version wiring.
+//
+// versionCode and versionName used to be hardcoded here, so every build published the same
+// versionCode (205). Android refuses to install a package whose versionCode is not greater
+// than the installed one, so releases could never upgrade in place — you had to uninstall
+// first — even though the release filename advertised a new build number every time.
+//
+// CI computes the build number (git commit count) and passes -PversionBuild, and passes the
+// full -PversionName so the in-app version matches the published filename exactly.
+def versionProps = new Properties()
+def versionPropsFile = rootProject.file('version.properties')
+if (versionPropsFile.exists()) {
+    versionPropsFile.withInputStream { versionProps.load(it) }
+}
+
+// Legacy hardcoded value. Any generated versionCode must clear it, or devices carrying an
+// older build could not upgrade to a new one.
+def legacyVersionCode = 205
+
+// Local builds get no -PversionBuild, and their clone is often shallow (CI uses
+// fetch-depth: 0), which makes a locally derived commit count both smaller and meaningless.
+// Falling back to the floor keeps local installs upgradable without pretending to be a
+// release build.
+def buildNumber = (project.findProperty('versionBuild') ?: '0').toString() as int
+def resolvedVersionCode = Math.max(buildNumber, legacyVersionCode + 1)
+
+def resolvedVersionName = project.findProperty('versionName') ?: String.format(
+        '%s.%s.%s.%d',
+        versionProps.getProperty('versionMajor', '0'),
+        versionProps.getProperty('versionMinor', '0'),
+        versionProps.getProperty('versionPatch', '0'),
+        buildNumber)
+
 android {
     namespace "com.hereliesaz.hg2gui"
     // The platform SDK is now minor-versioned (android-37.0); `compileSdk 37` alone resolves
@@ -16,8 +49,8 @@ android {
         minSdk 24
         targetSdk 37
 
-        versionName "v6.15"
-        versionCode 205
+        versionName resolvedVersionName
+        versionCode resolvedVersionCode
     }
     buildTypes {
         release {
