@@ -1,9 +1,9 @@
-package ohi.andre.consolelauncher.commands.main.raw;
+package com.hereliesaz.hg2gui.commands.main.raw;
 
 import org.junit.Test;
 import static org.junit.Assert.*;
 
-import ohi.andre.consolelauncher.commands.ExecutePack;
+import com.hereliesaz.hg2gui.commands.ExecutePack;
 
 public class CalcTest {
 
