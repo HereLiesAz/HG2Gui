@@ -144,7 +144,10 @@ public class TuiLocationManager {
             Tuils.toFile(e);
         }
 
-        handler = new Handler();
+        // Built-in commands (including this one, via the `location` command) run on
+        // Dispatchers.IO — a thread pool with no Looper. A plain `new Handler()` needs one,
+        // same failure as the requestLocationUpdates call three lines up worked around already.
+        handler = new Handler(Looper.getMainLooper());
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {

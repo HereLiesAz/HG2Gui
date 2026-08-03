@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.net.ConnectivityManager;
 import android.os.Handler;
+import android.os.Looper;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import android.text.TextUtils;
 
@@ -143,7 +144,13 @@ public class RssManager implements XMLPrefsElement {
 
         values = new XMLPrefsList();
 
-        handler = new Handler();
+        // A plain `new Handler()` binds to whatever thread constructs this instance. That used
+        // to always be the main thread; now MainManager (and therefore this) is built on a
+        // background dispatcher with no Looper, and the no-arg constructor throws instead of
+        // silently picking one. Binding explicitly to the main Looper restores the original
+        // behavior — callbacks posted here always land on the main thread — regardless of
+        // which thread does the constructing.
+        handler = new Handler(Looper.getMainLooper());
         refresh();
     }
 

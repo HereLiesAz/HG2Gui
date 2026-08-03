@@ -3,6 +3,7 @@ package com.hereliesaz.hg2gui.managers;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Handler;
+import android.os.Looper;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -39,7 +40,11 @@ public class MessagesManager {
     boolean tutorialMode;
 
     final int delay = 100;
-    Handler handler = new Handler();
+    // MainManager (which constructs this, when Behavior.show_hints — on by default — is set)
+    // now builds on a background dispatcher with no Looper, so a plain `new Handler()` throws
+    // instead of picking one implicitly. Bind explicitly to main, matching what happened
+    // implicitly when everything used to construct on the main thread.
+    Handler handler = new Handler(Looper.getMainLooper());
     Runnable post = this::tryPrint;
 
     public MessagesManager(Context context) {
