@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.hereliesaz.hg2gui.managers.xml.XMLPrefsManager
 import com.hereliesaz.hg2gui.terminal.TerminalEngine
+import com.hereliesaz.hg2gui.tuils.Tuils
 import com.hereliesaz.hg2gui.tuils.interfaces.Reloadable
 import com.hereliesaz.hg2gui.ui.HG2GuiTheme
 import com.hereliesaz.hg2gui.ui.TerminalScreen
@@ -49,6 +50,12 @@ class TerminalActivity : ComponentActivity(), Reloadable {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+
+        // Must run before anything below resolves the t-ui folder (loadCommons, and every
+        // manager MainManager builds). Tuils.getTuiFolder() needs an application context to
+        // resolve an app-scoped storage path; without it there is nowhere sanctioned to fall
+        // back to.
+        Tuils.init(applicationContext)
 
         setContent {
             HG2GuiTheme {
