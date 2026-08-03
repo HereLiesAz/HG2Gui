@@ -10,6 +10,8 @@ import com.hereliesaz.hg2gui.tuils.PrivateIOReceiver
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 /**
  * Decides where a command runs, and collects what it prints.
@@ -81,26 +83,51 @@ class TerminalEngine(
 
     /**
      * Built-ins report asynchronously over LocalBroadcastManager, so the call is bracketed by
-     * a capture window and then given a moment to deliver. Commands that keep working after
-     * they return (a network fetch, say) will land their output in a later window; those need
-     * to stream rather than be captured, which the record-tile UI does not model yet.
+     * a capture window. This used to be followed by a blind `Thread.sleep(120L)` before reading
+     * [captured] — a guess at how long the command's *own background thread* (MainManager
+     * dispatches every built-in on a spawned thread and returns before it finishes) would take.
+     * Any command slower than the guess — a wifi/bluetooth toggle, anything touching the
+     * network — lost the race and returned truncated or empty output. `apps`-style commands
+     * that finished fast enough "happened to work"; that was luck, not the mechanism working.
+     *
+     * MainManager.CommandCompletionListener replaces the guess with a real signal: it fires
+     * once the dispatched command has actually finished (on every path, including one that
+     * never dispatches because parsing rejected the input — otherwise a command that will never
+     * signal would block this until the timeout below, every time).
+     *
+     * Commands that keep working after they report done (a network fetch that streams further
+     * updates, say) will land that later output in a later window; those need to stream rather
+     * than be captured, which the record-tile UI does not model yet.
      */
     private fun runBuiltin(line: String): String {
         synchronized(captured) {
             captured.setLength(0)
         }
         capturing = true
+        val done = CountDownLatch(1)
+        main.setCommandCompletionListener { done.countDown() }
         try {
             // onCommand is overloaded on the second parameter (String alias / LaunchInfo), so
             // a bare null is ambiguous. No alias applies here — the line is already expanded.
             main.onCommand(line, null as String?, false)
-            // LocalBroadcastManager dispatches on the main looper; yield long enough for the
-            // synchronous portion of the command to have been delivered.
-            Thread.sleep(120L)
+
+            // Bounded, not infinite: the listener fires on every path MainManager knows about,
+            // but if something unforeseen dispatches without it (a future trigger, say), this
+            // is the backstop that keeps the terminal from wedging on a single bad command.
+            val completed = done.await(8, TimeUnit.SECONDS)
+            if (completed) {
+                // The command has finished, but LocalBroadcastManager still posts to the main
+                // thread's Handler asynchronously — sendOutput() returning doesn't mean
+                // onReceive() has run yet. This is not the same blind wait as before: it bounds
+                // a small, structural delivery hop, not the command's own execution time, which
+                // is what actually varied and broke the original fixed guess.
+                Thread.sleep(50L)
+            }
         } catch (e: Exception) {
             return "error: ${e.message}"
         } finally {
             capturing = false
+            main.setCommandCompletionListener(null)
         }
         return synchronized(captured) { captured.toString() }
     }

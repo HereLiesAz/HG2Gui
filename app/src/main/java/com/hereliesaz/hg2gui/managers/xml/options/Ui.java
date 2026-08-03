@@ -380,6 +380,25 @@ public enum Ui implements XMLPrefsSave {
             return "If true, t-ui will run in fullscreen mode";
         }
     },
+    // Stored as a percentage (100 = 1x) rather than a fraction: XMLPrefsSave has no FLOAT type,
+    // and an integer percentage is exact through string round-trips, which a stringified float
+    // is not guaranteed to be.
+    font_scale_percent {
+        @Override
+        public String defaultValue() {
+            return "100";
+        }
+
+        @Override
+        public String type() {
+            return XMLPrefsSave.INTEGER;
+        }
+
+        @Override
+        public String info() {
+            return "Terminal UI scale, as a percentage of the default size";
+        }
+    },
     device_index {
         @Override
         public String defaultValue() {

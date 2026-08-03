@@ -3,11 +3,14 @@ package com.hereliesaz.hg2gui.ui
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.hereliesaz.hg2gui.R
@@ -44,8 +47,21 @@ private val AzphaltType = Typography(
     )
 )
 
+/**
+ * [scale] resizes the whole UI — pills, text, padding, and the pixel-space every pill
+ * animation measures itself against — uniformly, by overriding the ambient density rather than
+ * threading a multiplier through every dp/sp literal in TerminalScreen/PillMenu.
+ *
+ * Compose resolves every `Dp` as `value * density.density`, and every `TextUnit` (sp) as
+ * `value * density.fontScale * density.density`. Multiplying only `density` (and leaving
+ * `fontScale` — the system accessibility text-size setting — untouched) scales both by the same
+ * factor, so the whole layout grows or shrinks together instead of only the text resizing
+ * against fixed-size pills. Every animation in PillMenu already converts its own dp constants
+ * to px via `LocalDensity.current` at the point it runs, so it picks up the scaled space with no
+ * changes of its own.
+ */
 @Composable
-fun HG2GuiTheme(content: @Composable () -> Unit) {
+fun HG2GuiTheme(scale: Float = 1f, content: @Composable () -> Unit) {
     MaterialTheme(
         colorScheme = darkColorScheme(
             background = Azphalt.Yellow,
@@ -55,7 +71,13 @@ fun HG2GuiTheme(content: @Composable () -> Unit) {
             primary = Azphalt.hues[6],      // red = the primary action, per Azphalt
             onPrimary = Azphalt.White
         ),
-        typography = AzphaltType,
-        content = content
-    )
+        typography = AzphaltType
+    ) {
+        val base = LocalDensity.current
+        CompositionLocalProvider(
+            LocalDensity provides Density(base.density * scale, base.fontScale)
+        ) {
+            content()
+        }
+    }
 }

@@ -142,6 +142,21 @@ public class MainManager {
             new ShellCommandTrigger()
     };
 
+    // A built-in command's real work happens on a thread TuiCommandTrigger spawns and does not
+    // wait for (see below) — onCommand() returns as soon as it's dispatched, not as soon as it's
+    // done. A caller that needs to know when a command has actually finished (TerminalEngine,
+    // capturing its broadcast output to return synchronously) registers a listener here and
+    // TuiCommandTrigger signals it, on every path through trigger() — including the one where
+    // parsing rejects the input — so the caller never waits past the timeout it sets for a
+    // command that will never signal.
+    public interface CommandCompletionListener {
+        void onCommandComplete();
+    }
+    private volatile CommandCompletionListener commandCompletionListener;
+    public void setCommandCompletionListener(CommandCompletionListener listener) {
+        commandCompletionListener = listener;
+    }
+
     // MainPack holds references to all managers, passed to commands so they can access system resources.
     private MainPack mainPack;
 
@@ -682,7 +697,16 @@ public class MainManager {
 
             // Parse input into a Command object
             final Command command = CommandTuils.parse(input, info);
-            if(command == null) return false;
+            if(command == null) {
+                // The verb matched a known built-in, but parsing this particular input didn't —
+                // wrong argument count/type, say. Nothing will run, so nothing will ever signal
+                // completion on this input; do it now, or a caller waiting on the listener (see
+                // its declaration above) blocks for its whole timeout over a call that was never
+                // going to produce anything.
+                CommandCompletionListener listener = commandCompletionListener;
+                if(listener != null) listener.onCommandComplete();
+                return false;
+            }
 
             mainPack.lastCommand = input;
 
@@ -700,6 +724,12 @@ public class MainManager {
                     } catch (Exception e) {
                         Tuils.sendOutput(mContext, Tuils.getStackTrace(e));
                         Tuils.log(e);
+                    } finally {
+                        // Signal completion after sendOutput, not before — a caller (like
+                        // TerminalEngine) that stops waiting for output as soon as it sees this
+                        // must already have the output available to capture when it looks.
+                        CommandCompletionListener listener = commandCompletionListener;
+                        if(listener != null) listener.onCommandComplete();
                     }
                 }
             }.start();

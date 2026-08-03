@@ -37,6 +37,8 @@ fun TerminalScreen(
     tree: List<MenuNode>,
     sessions: List<String> = listOf("main", "tuixt", "rss"),
     cwd: String,
+    fullscreen: Boolean,
+    onOpenSettings: () -> Unit,
     onRun: suspend (String) -> String
 ) {
     var active by remember { mutableStateOf(sessions.first()) }
@@ -45,9 +47,18 @@ fun TerminalScreen(
     var running by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    Column(Modifier.fillMaxSize().background(PageYellow)) {
+    Column(
+        Modifier
+            .fillMaxSize()
+            .background(PageYellow)
+            // Fullscreen mode hides the system bars (see TerminalActivity), so content is free
+            // to draw under them. Otherwise the app draws edge-to-edge but the bars stay
+            // visible — without this, the bottom-anchored command line and quick keys render
+            // straight under the navigation bar, unreachable.
+            .then(if (fullscreen) Modifier else Modifier.windowInsetsPadding(WindowInsets.systemBars))
+    ) {
 
-        SessionTabs(sessions, active) { active = it }
+        SessionTabs(sessions, active, onOpenSettings) { active = it }
 
         Text(
             cwd,
@@ -102,7 +113,12 @@ fun TerminalScreen(
 }
 
 @Composable
-private fun SessionTabs(sessions: List<String>, active: String, onPick: (String) -> Unit) {
+private fun SessionTabs(
+    sessions: List<String>,
+    active: String,
+    onOpenSettings: () -> Unit,
+    onPick: (String) -> Unit
+) {
     Row(
         Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 18.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -125,6 +141,14 @@ private fun SessionTabs(sessions: List<String>, active: String, onPick: (String)
             }
         }
         Spacer(Modifier.weight(1f))
+        Box(
+            Modifier
+                .size(22.dp)
+                .clip(RoundedCornerShape(percent = 50))
+                .background(Azphalt.Ink.copy(alpha = .14f))
+                .clickable(onClick = onOpenSettings),
+            contentAlignment = Alignment.Center
+        ) { Text("⚙", color = Azphalt.Ink, fontSize = 12.sp, fontWeight = FontWeight.Black) }
         Box(
             Modifier
                 .size(22.dp)
@@ -238,7 +262,7 @@ private fun ModifierKeys(keys: List<String> = listOf("ctrl", "alt", "esc", "tab"
 }
 
 @Composable
-private fun Eyebrow(text: String) {
+internal fun Eyebrow(text: String) {
     Text(
         text.uppercase(),
         color = Azphalt.Ink.copy(alpha = .55f),
