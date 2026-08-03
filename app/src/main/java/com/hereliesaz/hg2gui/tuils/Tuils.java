@@ -117,6 +117,14 @@ public class Tuils {
 
     public static Pattern patternNewline = Pattern.compile("%n", Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
 
+    // Set once by TerminalActivity.onCreate, before anything reads a preference. Safe to hold
+    // statically: an application context, not an Activity, so it cannot leak one.
+    private static Context applicationContext;
+
+    public static void init(Context context) {
+        applicationContext = context.getApplicationContext();
+    }
+
     private static Typeface globalTypeface = null;
     public static String fontPath = null;
 
@@ -1379,9 +1387,30 @@ public class Tuils {
         return uri;
     }
 
+    /**
+     * Used to be {@code Environment.getExternalStorageDirectory()} + "t-ui" — a *new* top-level
+     * directory in shared storage. Scoped storage (enforced unconditionally from API 30, and
+     * this app targets 37) refuses to create one regardless of any permission grant: {@code
+     * mkdir()} silently fails and MediaProvider logs "Creating or writing to a non-default top
+     * level directory is not allowed!" for every attempt. Every caller of {@link #getFolder()}
+     * then got null, so every preference read fell through to a default (or, where nothing
+     * defends against a null entry, crashed — that's what killed the app during the
+     * suggested-apps list build).
+     *
+     * The app's own external files directory is exempt from that restriction, requires no
+     * permission, and is still reachable with a file manager under Android/data/ — it just
+     * isn't a bare top-level folder. Falls back to internal storage if external is unavailable
+     * (unmounted SD card, for instance), and to the old behavior only if {@link #init} was
+     * never called, which should not happen in practice.
+     */
     private static File getTuiFolder() {
-        File internalDir = Environment.getExternalStorageDirectory();
-        return new File(internalDir, TUI_FOLDER);
+        File base = null;
+        if (applicationContext != null) {
+            base = applicationContext.getExternalFilesDir(null);
+            if (base == null) base = applicationContext.getFilesDir();
+        }
+        if (base == null) base = Environment.getExternalStorageDirectory();
+        return new File(base, TUI_FOLDER);
     }
 
     public static double eval(final String str) {

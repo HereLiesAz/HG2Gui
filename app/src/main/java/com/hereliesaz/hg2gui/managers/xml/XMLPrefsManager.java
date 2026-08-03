@@ -134,13 +134,19 @@ public class XMLPrefsManager {
     static boolean commonsLoaded = false;
     public static void loadCommons(Context context) {
         if(commonsLoaded) return;
-        commonsLoaded = true;
 
         File folder = Tuils.getFolder();
         if(folder == null) {
+            // Do not latch commonsLoaded here: a caller that hits this before the folder is
+            // available (transient — unmounted storage, a permission not yet settled) would
+            // otherwise disable preference loading for the rest of the process's life. Every
+            // subsequent get() falls back to a default silently, and code that reads an entry
+            // without going through get()'s exception-swallowing path crashes on a null one.
             Tuils.sendOutput(Color.RED, context, R.string.tuinotfound_xmlprefs);
             return;
         }
+
+        commonsLoaded = true;
 
         for(XMLPrefsRoot element : XMLPrefsRoot.values()) {
             File file = new File(folder, element.path);

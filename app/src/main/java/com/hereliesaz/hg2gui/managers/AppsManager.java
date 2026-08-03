@@ -44,6 +44,7 @@ import com.hereliesaz.hg2gui.UIManager;
 import com.hereliesaz.hg2gui.commands.main.MainPack;
 import com.hereliesaz.hg2gui.managers.xml.XMLPrefsManager;
 import com.hereliesaz.hg2gui.managers.xml.classes.XMLPrefsElement;
+import com.hereliesaz.hg2gui.managers.xml.classes.XMLPrefsEntry;
 import com.hereliesaz.hg2gui.managers.xml.classes.XMLPrefsList;
 import com.hereliesaz.hg2gui.managers.xml.classes.XMLPrefsSave;
 import com.hereliesaz.hg2gui.managers.xml.options.Apps;
@@ -1232,7 +1233,14 @@ public class AppsManager implements XMLPrefsElement {
 
                 final String PREFIX = "default_app_n";
                 for(int count = 0; count < 5; count++) {
-                    String vl = values.get(Apps.valueOf(PREFIX + (count + 1))).value;
+                    // values.get() returns null for a key with no stored entry — every other
+                    // preference read (XMLPrefsManager.get()) falls back to a default when
+                    // that happens; this one didn't, and an unresolved values map (an empty
+                    // storage folder, for instance) turned a missing suggestion slot into an
+                    // uncaught NullPointerException that killed the whole process on a
+                    // background thread.
+                    XMLPrefsEntry entry = values.get(Apps.valueOf(PREFIX + (count + 1)));
+                    String vl = entry != null ? entry.value : Apps.NULL;
 
                     if(vl.equals(Apps.NULL)) continue;
                     if(vl.equals(Apps.MOST_USED)) suggested.add(new SuggestedApp(MOST_USED, count + 1));
