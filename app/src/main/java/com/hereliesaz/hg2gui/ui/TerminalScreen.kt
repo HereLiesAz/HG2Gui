@@ -56,6 +56,16 @@ fun TerminalScreen(
             modifier = Modifier.padding(start = 20.dp, top = 10.dp)
         )
 
+        Eyebrow("01 — Command tree")
+
+        // The pill tree is the input method, so it gets the middle of the screen; the command
+        // line and quick keys anchor to the bottom, under it, where a thumb actually reaches.
+        PillMenu(
+            roots = tree,
+            modifier = Modifier.weight(1f).padding(horizontal = 20.dp, vertical = 12.dp),
+            onRun = { tokens = it }
+        )
+
         CommandLine(
             tokens = tokens,
             hint = when {
@@ -88,14 +98,6 @@ fun TerminalScreen(
         output?.let { OutputTile(it) { output = null } }
 
         ModifierKeys()
-
-        Eyebrow("01 — Command tree")
-
-        PillMenu(
-            roots = tree,
-            modifier = Modifier.weight(1f).padding(horizontal = 20.dp, vertical = 12.dp),
-            onRun = { tokens = it }
-        )
     }
 }
 

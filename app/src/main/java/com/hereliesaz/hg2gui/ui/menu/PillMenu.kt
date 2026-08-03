@@ -1,7 +1,6 @@
 package com.hereliesaz.hg2gui.ui.menu
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.keyframes
 import androidx.compose.animation.core.tween
@@ -64,12 +63,10 @@ object Azphalt {
     /** Hue is assigned by hashing the identifier — it carries no meaning. */
     fun hueOf(id: String) = (id.hashCode().let { if (it < 0) -it else it }) % hues.size
 
-    val Unfold = CubicBezierEasing(0f, 0.9f, 0.1f, 1f)   // slide + drop
-    val Swing = CubicBezierEasing(0.3f, 0.05f, 0.2f, 1f) // the turn
-
-    const val SLIDE_MS = 420
-    const val DROP_MS = 420
-    const val SWING_MS = 520
+    // Three times as fast, linear throughout — no eased curves.
+    const val SLIDE_MS = 420 / 3
+    const val DROP_MS = 420 / 3
+    const val SWING_MS = 520 / 3
     const val LIFT_FRACTION = 0.90f   // the lift happens in the last 10%
 }
 
@@ -186,8 +183,8 @@ private fun StackPill(
     LaunchedEffect(leaving, entering) {
         if (entering) offset.animateTo(
             0f,
-            tween(Azphalt.SLIDE_MS, delayMillis = index * 70, easing = Azphalt.Swing)
-        ) else offset.animateTo(target, tween(Azphalt.SLIDE_MS, easing = Azphalt.Swing))
+            tween(Azphalt.SLIDE_MS, delayMillis = index * 70, easing = LinearEasing)
+        ) else offset.animateTo(target, tween(Azphalt.SLIDE_MS, easing = LinearEasing))
     }
 
     Pill(
@@ -210,7 +207,7 @@ private fun StackPill(
 private fun HostPill(node: MenuNode, rowsBelow: Int, onClick: () -> Unit) {
     val drop = remember { Animatable(-(ROW_PITCH.value * rowsBelow)) }
     LaunchedEffect(node.id) {
-        drop.animateTo(0f, tween(Azphalt.DROP_MS, easing = Azphalt.Unfold))
+        drop.animateTo(0f, tween(Azphalt.DROP_MS, easing = LinearEasing))
     }
     Box(Modifier.fillMaxSize()) {
         Pill(
@@ -252,7 +249,7 @@ private fun ChildChain(
                 launch {
                     turn.animateTo(0f, keyframes {
                         durationMillis = Azphalt.SWING_MS
-                        (if (i % 2 == 0) -360f else 360f) at 0 using Azphalt.Swing
+                        (if (i % 2 == 0) -360f else 360f) at 0 using LinearEasing
                         (if (i % 2 == 0) -36f else 36f) at (Azphalt.SWING_MS * 0.9f).toInt() using LinearEasing
                         0f at Azphalt.SWING_MS
                     })
@@ -261,7 +258,7 @@ private fun ChildChain(
                     // holds its predecessor's row, then rises exactly one row at the tail
                     lift.animateTo(-pitchPx * i, keyframes {
                         durationMillis = Azphalt.SWING_MS
-                        (-pitchPx * (i - 1).coerceAtLeast(0)) at (Azphalt.SWING_MS * 0.9f).toInt()
+                        (-pitchPx * (i - 1).coerceAtLeast(0)) at (Azphalt.SWING_MS * 0.9f).toInt() using LinearEasing
                     })
                 }
             }
