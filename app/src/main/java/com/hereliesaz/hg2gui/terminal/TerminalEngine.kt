@@ -34,7 +34,7 @@ class TerminalEngine(
     home: File? = null
 ) {
 
-    private val shell = ShellSession(home)
+    private val shell = ShellSession.forAndroid(home, context)
 
     /**
      * Names of the built-in commands, taken from the live CommandGroup rather than a hardcoded

@@ -1,5 +1,7 @@
 package com.hereliesaz.hg2gui.terminal;
 
+import android.content.Context;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -36,8 +38,18 @@ public class ShellSession {
     /** Fallback shell. Every Android device has this; it is toybox/mksh, not bash. */
     private static final String DEFAULT_SHELL = "/system/bin/sh";
 
+    /** Filename the zsh binary is bundled under in jniLibs (must end ".so" to survive packaging). */
+    private static final String ZSH_LIB_NAME = "libzsh.so";
+
     /** How long a single command may run before we give up reading its output. */
     private static final long TIMEOUT_MS = 15_000L;
+
+    /**
+     * How long to wait after spawning zsh before trusting it survived. A dynamic-linker failure
+     * (a bundled .so missing or mismatched) kills the process within milliseconds; a real zsh
+     * sits blocked reading stdin. This is paid once per session, not per command.
+     */
+    private static final long STARTUP_PROBE_MS = 300L;
 
     private Process process;
     private BufferedWriter stdin;
@@ -66,7 +78,7 @@ public class ShellSession {
      *             if null or missing.
      */
     public ShellSession(File home) {
-        this(home, DEFAULT_SHELL);
+        this(home, new String[] { DEFAULT_SHELL }, null);
     }
 
     /**
@@ -74,13 +86,29 @@ public class ShellSession {
      *                  on a host JVM, where the Android shell path does not exist.
      */
     public ShellSession(File home, String shellPath) {
+        this(home, new String[] { shellPath }, null);
+    }
+
+    /**
+     * @param command       argv for the shell process, e.g. {@code {path, "-f"}}.
+     * @param ldLibraryPath directory to prepend to LD_LIBRARY_PATH so a bundled shell can find
+     *                      its own dependency libraries (jniLibs are not on the system linker's
+     *                      default search path). Null leaves the inherited environment as-is.
+     */
+    private ShellSession(File home, String[] command, String ldLibraryPath) {
         try {
-            ProcessBuilder builder = new ProcessBuilder(shellPath);
+            ProcessBuilder builder = new ProcessBuilder(command);
             // Interleave stderr into stdout. A terminal shows both in one stream, and keeping
             // them separate would need a second reader thread to avoid deadlocking on a full
             // stderr pipe buffer.
             builder.redirectErrorStream(true);
             if (home != null && home.isDirectory()) builder.directory(home);
+            if (ldLibraryPath != null) {
+                builder.environment().put("LD_LIBRARY_PATH", ldLibraryPath);
+                // Avoids a stray "HOME not set" line landing in the pipe before the first
+                // command is written, where exec() would misattribute it as that command's output.
+                if (home != null) builder.environment().put("HOME", home.getAbsolutePath());
+            }
 
             process = builder.start();
             stdin = new BufferedWriter(new OutputStreamWriter(process.getOutputStream()));
@@ -91,6 +119,34 @@ public class ShellSession {
         } catch (IOException e) {
             alive.set(false);
         }
+    }
+
+    /**
+     * Starts a session on Android, preferring the zsh bundled in jniLibs and falling back to
+     * {@link #DEFAULT_SHELL} if it is missing or fails to survive startup (e.g. a dynamic-linker
+     * failure from a mismatched dependency .so — that kills the process within milliseconds,
+     * which {@link ProcessBuilder#start()} itself cannot detect since fork+exec already
+     * succeeded from Java's point of view).
+     */
+    public static ShellSession forAndroid(File home, Context context) {
+        File zsh = new File(context.getApplicationInfo().nativeLibraryDir, ZSH_LIB_NAME);
+        if (zsh.canExecute()) {
+            ShellSession session = new ShellSession(
+                    home, new String[] { zsh.getAbsolutePath(), "-f" }, zsh.getParent());
+            if (session.survivedStartup()) return session;
+            session.close();
+        }
+        return new ShellSession(home);
+    }
+
+    private boolean survivedStartup() {
+        if (!alive.get()) return false;
+        try {
+            Thread.sleep(STARTUP_PROBE_MS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        return processStillRunning();
     }
 
     public boolean isAlive() {
