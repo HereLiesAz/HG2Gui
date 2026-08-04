@@ -5,11 +5,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import hg2gui.composeapp.generated.resources.Res
-import hg2gui.composeapp.generated.resources.*
+import hg2gui.composeapp.generated.resources.jost_black
+import hg2gui.composeapp.generated.resources.jost_medium
+import hg2gui.composeapp.generated.resources.jost_semibold
+import hg2gui.composeapp.generated.resources.jost_extrabold
 import org.jetbrains.compose.resources.Font
 
 @Composable
-fun JostFontFamily() = FontFamily(
+fun jostFontFamily() = FontFamily(
     Font(Res.font.jost_black, FontWeight.Black),
     Font(Res.font.jost_medium, FontWeight.Medium),
     Font(Res.font.jost_semibold, FontWeight.SemiBold),
@@ -17,8 +20,8 @@ fun JostFontFamily() = FontFamily(
 )
 
 @Composable
-fun AppTypography() = Typography().let { 
-    val family = JostFontFamily()
+fun appTypography() = Typography().let { 
+    val family = jostFontFamily()
     it.copy(
         displayLarge = it.displayLarge.copy(fontFamily = family),
         displayMedium = it.displayMedium.copy(fontFamily = family),
