@@ -22,10 +22,6 @@ actual class ShellSession private constructor(
         private const val TIMEOUT_MS = 15_000L
         private const val STARTUP_PROBE_MS = 300L
 
-        /**
-         * Starts a session on Android, preferring the zsh bundled in jniLibs and falling back to
-         * [DEFAULT_SHELL] if it is missing or fails to survive startup.
-         */
         fun forAndroid(home: File?, context: Context): ShellSession {
             val zsh = File(context.applicationInfo.nativeLibraryDir, ZSH_LIB_NAME)
             if (zsh.canExecute()) {
@@ -54,18 +50,13 @@ actual class ShellSession private constructor(
     actual val isAlive: Boolean
         get() = alive.get() && process != null && processStillRunning()
 
-    /**
-     * Starts the shell.
-     *
-     * @param home directory the session starts in; falls back to the shell's own default
-     *             if null or missing.
-     */
     constructor(home: File?) : this(home, arrayOf(DEFAULT_SHELL), null)
 
-    /**
-     * @param shellPath which shell binary to run.
-     */
     constructor(home: File?, shellPath: String) : this(home, arrayOf(shellPath), null)
+
+    actual constructor(homePath: String?) : this(homePath?.let { File(it) })
+
+    actual constructor(homePath: String?, shellPath: String) : this(homePath?.let { File(it) }, shellPath)
 
     init {
         try {
@@ -107,9 +98,6 @@ actual class ShellSession private constructor(
         }
     }
 
-    /**
-     * Runs one command and blocks until it completes. Call this off the main thread.
-     */
     actual fun exec(command: String): ShellSessionResult {
         if (!isAlive) {
             return ShellSessionResult("shell is not running", -1, _workingDirectory)
@@ -184,7 +172,6 @@ actual class ShellSession private constructor(
         return ShellSessionResult(collected.toString(), exitCode, _workingDirectory)
     }
 
-    /** Ends the session. The shell exits when its stdin closes. */
     actual fun close() {
         alive.set(false)
         try {

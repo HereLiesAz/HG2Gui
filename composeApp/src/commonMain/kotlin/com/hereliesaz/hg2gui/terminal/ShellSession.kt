@@ -7,6 +7,9 @@ data class ShellSessionResult(
 )
 
 expect class ShellSession {
+    constructor(homePath: String?)
+    constructor(homePath: String?, shellPath: String)
+
     val isAlive: Boolean
     val workingDirectory: String
     fun exec(command: String): ShellSessionResult

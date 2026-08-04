@@ -58,6 +58,7 @@ kotlin {
             implementation("com.google.android.material:material:1.13.0")
         }
         commonTest.dependencies {
+            implementation(kotlin("test"))
             implementation(libs.junit)
             implementation(libs.mockito.core)
         }
