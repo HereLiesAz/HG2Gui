@@ -5,6 +5,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -13,7 +16,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
@@ -43,9 +50,42 @@ fun TerminalScreen(
 ) {
     var active by remember { mutableStateOf(sessions.first()) }
     var tokens by remember { mutableStateOf(listOf<String>()) }
+    var inputText by remember { mutableStateOf("") }
+    var history by remember { mutableStateOf(listOf<String>()) }
+    var historyIndex by remember { mutableStateOf(-1) }
     var output by remember { mutableStateOf<String?>(null) }
     var running by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+
+    val executeCommand = {
+        val fullLine = buildString {
+            if (tokens.isNotEmpty()) append(tokens.joinToString(" "))
+            if (inputText.isNotBlank()) {
+                if (isNotEmpty()) append(" ")
+                append(inputText.trim())
+            }
+        }.trim()
+
+        if (fullLine.isNotEmpty() && !running) {
+            running = true
+            if (history.isEmpty() || history.last() != fullLine) {
+                history = history + fullLine
+            }
+            historyIndex = -1
+            val lineToRun = fullLine
+            tokens = emptyList()
+            inputText = ""
+            scope.launch {
+                output = try {
+                    onRun(lineToRun).ifBlank { "(no output)" }
+                } catch (e: Exception) {
+                    "error: ${e.message}"
+                } finally {
+                    running = false
+                }
+            }
+        }
+    }
 
     Column(
         Modifier
@@ -74,41 +114,66 @@ fun TerminalScreen(
         PillMenu(
             roots = tree,
             modifier = Modifier.weight(1f).padding(horizontal = 20.dp, vertical = 12.dp),
-            onRun = { tokens = it }
+            onRun = {
+                tokens = it
+                inputText = ""
+            }
         )
 
         CommandLine(
             tokens = tokens,
+            inputText = inputText,
+            onInputTextChange = { inputText = it },
             hint = when {
                 running -> "Running…"
                 output != null -> "Ran · tap the host pill to go back"
-                tokens.size > 1 -> "Ready — press run"
+                tokens.isNotEmpty() || inputText.isNotBlank() -> "Ready — press run"
                 tokens.isEmpty() -> "Pick a category"
                 else -> "Pick a command"
             },
-            enabled = !running,
-            onRun = {
-                if (tokens.isNotEmpty() && !running) {
-                    // The command runs off the main thread; the tile renders from state, so
-                    // the result simply arrives as a recomposition when it is ready.
-                    running = true
-                    val line = tokens.joinToString(" ")
-                    scope.launch {
-                        output = try {
-                            onRun(line).ifBlank { "(no output)" }
-                        } catch (e: Exception) {
-                            "error: ${e.message}"
-                        } finally {
-                            running = false
+            enabled = !running && (tokens.isNotEmpty() || inputText.isNotBlank()),
+            onRun = executeCommand
+        )
+
+        output?.let { OutputTile(it) { output = null } }
+
+        ModifierKeys(
+            onKeyClick = { key ->
+                when (key) {
+                    "↑" -> {
+                        if (history.isNotEmpty()) {
+                            val nextIdx = if (historyIndex == -1) history.size - 1 else (historyIndex - 1).coerceAtLeast(0)
+                            historyIndex = nextIdx
+                            inputText = history[nextIdx]
+                            tokens = emptyList()
+                        }
+                    }
+                    "↓" -> {
+                        if (historyIndex >= 0) {
+                            val nextIdx = historyIndex + 1
+                            if (nextIdx < history.size) {
+                                historyIndex = nextIdx
+                                inputText = history[nextIdx]
+                            } else {
+                                historyIndex = -1
+                                inputText = ""
+                            }
+                            tokens = emptyList()
+                        }
+                    }
+                    "esc" -> {
+                        tokens = emptyList()
+                        inputText = ""
+                        output = null
+                    }
+                    "tab" -> {
+                        if (inputText.isNotEmpty() && !inputText.endsWith(" ")) {
+                            inputText += " "
                         }
                     }
                 }
             }
         )
-
-        output?.let { OutputTile(it) { output = null } }
-
-        ModifierKeys()
     }
 }
 
@@ -162,6 +227,8 @@ private fun SessionTabs(
 @Composable
 private fun CommandLine(
     tokens: List<String>,
+    inputText: String,
+    onInputTextChange: (String) -> Unit,
     hint: String,
     enabled: Boolean,
     onRun: () -> Unit
@@ -198,6 +265,21 @@ private fun CommandLine(
                         )
                     }
                 }
+                BasicTextField(
+                    value = inputText,
+                    onValueChange = onInputTextChange,
+                    modifier = Modifier.weight(1f),
+                    textStyle = TextStyle(
+                        color = Azphalt.Yellow,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontFamily = FontFamily.Monospace
+                    ),
+                    cursorBrush = SolidColor(Azphalt.Yellow),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
+                    keyboardActions = KeyboardActions(onGo = { onRun() })
+                )
             }
             Row(
                 Modifier
@@ -238,7 +320,10 @@ private fun OutputTile(text: String, onDismiss: () -> Unit) {
 }
 
 @Composable
-private fun ModifierKeys(keys: List<String> = listOf("ctrl", "alt", "esc", "tab", "↑", "↓")) {
+private fun ModifierKeys(
+    keys: List<String> = listOf("ctrl", "alt", "esc", "tab", "↑", "↓"),
+    onKeyClick: (String) -> Unit = {}
+) {
     Row(
         Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -249,7 +334,8 @@ private fun ModifierKeys(keys: List<String> = listOf("ctrl", "alt", "esc", "tab"
                     .weight(1f)
                     .height(26.dp)
                     .clip(RoundedCornerShape(percent = 50))
-                    .background(Azphalt.Ink.copy(alpha = .14f)),
+                    .background(Azphalt.Ink.copy(alpha = .14f))
+                    .clickable { onKeyClick(k) },
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -270,3 +356,4 @@ internal fun Eyebrow(text: String) {
         modifier = Modifier.padding(start = 20.dp, top = 8.dp, bottom = 9.dp)
     )
 }
+

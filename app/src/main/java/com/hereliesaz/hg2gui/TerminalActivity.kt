@@ -201,6 +201,24 @@ class TerminalActivity : ComponentActivity(), Reloadable {
         // record tile instead, so there is nothing to queue here.
     }
 
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == 10) { // COMMAND_REQUEST_PERMISSION
+            if (grantResults.isNotEmpty() && grantResults[0] == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                val lastCmd = main?.mainPack?.lastCommand
+                if (!lastCmd.isNullOrBlank()) {
+                    main?.onCommand(lastCmd, null as String?, false)
+                }
+            } else {
+                main?.sendPermissionNotGrantedWarning()
+            }
+        }
+    }
+
     override fun onDestroy() {
         engine?.destroy()
         main?.destroy()

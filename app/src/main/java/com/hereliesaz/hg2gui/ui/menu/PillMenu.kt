@@ -121,7 +121,8 @@ fun PillMenu(
                             entering = leavingHost == null,
                             onClick = {
                                 phase = Phase.Leaving(node.id)
-                                tokens = listOf(node.label)
+                                tokens = emptyList()
+                                onRun(tokens)
                                 scope.launch {
                                     delay(Azphalt.SLIDE_MS.toLong())
                                     phase = Phase.Open(node.id, null)
@@ -146,7 +147,13 @@ fun PillMenu(
                     chain = chain,
                     hueOwner = host.id,
                     onPick = { node, isLeaf ->
-                        tokens = if (isLeaf) listOf(host.label, node.label) else listOf(node.label)
+                        tokens = if (isLeaf) {
+                            val parentNode = host.children.firstOrNull { it.id == p.selectedChild }
+                            if (parentNode != null) listOf(parentNode.label, node.label) else listOf(node.label)
+                        } else {
+                            listOf(node.label)
+                        }
+                        onRun(tokens)
                         if (!isLeaf) phase = Phase.Open(host.id, node.id)
                     }
                 )
@@ -154,7 +161,11 @@ fun PillMenu(
                 HostPill(
                     node = host,
                     rowsBelow = rowsBelow,
-                    onClick = { phase = Phase.Browsing }
+                    onClick = {
+                        phase = Phase.Browsing
+                        tokens = emptyList()
+                        onRun(tokens)
+                    }
                 )
             }
         }
