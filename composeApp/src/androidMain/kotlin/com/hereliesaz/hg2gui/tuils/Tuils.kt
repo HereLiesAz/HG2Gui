@@ -1,1636 +1,1295 @@
-package com.hereliesaz.hg2gui.tuils;
+package com.hereliesaz.hg2gui.tuils
 
-import android.annotation.TargetApi;
-import android.app.ActivityManager;
-import android.app.ActivityManager.MemoryInfo;
-import android.app.admin.DevicePolicyManager;
-import android.content.BroadcastReceiver;
-import android.content.ClipData;
-import android.content.ClipboardManager;
-import android.content.ComponentName;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
-import android.content.pm.PackageManager;
-import android.content.res.Resources;
-import android.graphics.Bitmap;
-import android.graphics.Color;
-import android.graphics.Matrix;
-import android.graphics.PorterDuff;
-import android.graphics.Typeface;
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
-import android.location.Address;
-import android.location.Geocoder;
-import android.net.Uri;
-import android.os.BatteryManager;
-import android.os.Build;
-import android.os.Environment;
-import android.os.Parcelable;
-import android.os.Process;
-import android.os.StatFs;
-import android.provider.Settings;
-import androidx.core.content.FileProvider;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
-import android.telephony.TelephonyManager;
-import android.text.SpannableString;
-import android.text.Spanned;
-import android.text.TextUtils;
-import android.text.style.AbsoluteSizeSpan;
-import android.text.style.BackgroundColorSpan;
-import android.text.style.ForegroundColorSpan;
-import android.util.DisplayMetrics;
-import android.util.Log;
-import android.util.TypedValue;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.EditText;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.TextView;
+import android.annotation.SuppressLint
+import android.annotation.TargetApi
+import android.app.ActivityManager
+import android.app.ActivityManager.MemoryInfo
+import android.app.admin.DevicePolicyManager
+import android.content.*
+import android.content.pm.PackageManager
+import android.content.res.Resources
+import android.graphics.*
+import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.Drawable
+import android.location.Geocoder
+import android.net.Uri
+import android.os.*
+import android.provider.Settings
+import android.telephony.TelephonyManager
+import android.text.SpannableString
+import android.text.Spanned
+import android.text.TextUtils
+import android.text.style.AbsoluteSizeSpan
+import android.text.style.BackgroundColorSpan
+import android.text.style.ForegroundColorSpan
+import android.util.DisplayMetrics
+import android.util.Log
+import android.util.TypedValue
+import android.view.View
+import android.view.ViewGroup
+import android.widget.EditText
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.TextView
+import androidx.core.content.FileProvider
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import com.hereliesaz.hg2gui.R
+import com.hereliesaz.hg2gui.commands.main.MainPack
+import com.hereliesaz.hg2gui.managers.TerminalManager
+import com.hereliesaz.hg2gui.managers.music.MusicManager2
+import com.hereliesaz.hg2gui.managers.music.Song
+import com.hereliesaz.hg2gui.managers.notifications.NotificationService
+import com.hereliesaz.hg2gui.managers.xml.XMLPrefsManager
+import com.hereliesaz.hg2gui.managers.xml.classes.XMLPrefsSave
+import com.hereliesaz.hg2gui.managers.xml.options.Behavior
+import com.hereliesaz.hg2gui.managers.xml.options.Ui
+import com.hereliesaz.hg2gui.tuils.interfaces.OnBatteryUpdate
+import com.hereliesaz.hg2gui.tuils.stuff.FakeLauncherActivity
+import dalvik.system.DexFile
+import org.w3c.dom.Node
+import org.xml.sax.SAXParseException
+import java.io.*
+import java.math.BigDecimal
+import java.math.RoundingMode
+import java.net.HttpURLConnection
+import java.net.URL
+import java.nio.channels.Channels
+import java.util.*
+import java.util.regex.Matcher
+import java.util.regex.Pattern
+import javax.xml.transform.OutputKeys
+import javax.xml.transform.TransformerException
+import javax.xml.transform.TransformerFactory
+import javax.xml.transform.dom.DOMSource
+import javax.xml.transform.stream.StreamResult
 
-import org.w3c.dom.Node;
-import org.xml.sax.SAXParseException;
+object Tuils {
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.PrintStream;
-import java.io.PrintWriter;
-import java.io.RandomAccessFile;
-import java.io.Reader;
-import java.io.StringWriter;
-import java.lang.reflect.Array;
-import java.lang.reflect.Field;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.channels.Channels;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.Locale;
-import java.util.NoSuchElementException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+    const val SPACE = " "
+    const val DOUBLE_SPACE = "  "
+    const val NEWLINE = "\n"
+    const val TRIBLE_SPACE = "   "
+    const val DOT = "."
+    const val EMPTYSTRING = ""
+    private const val TUI_FOLDER = "t-ui"
+    const val MINUS = "-"
 
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
+    val patternNewline: Pattern = Pattern.compile("%n", Pattern.CASE_INSENSITIVE or Pattern.LITERAL)
 
-import dalvik.system.DexFile;
-// import com.hereliesaz.hg2gui.BuildConfig;
-import com.hereliesaz.hg2gui.R;
-import com.hereliesaz.hg2gui.commands.main.MainPack;
-import com.hereliesaz.hg2gui.managers.TerminalManager;
-import com.hereliesaz.hg2gui.managers.music.MusicManager2;
-import com.hereliesaz.hg2gui.managers.music.Song;
-import com.hereliesaz.hg2gui.managers.notifications.NotificationService;
-import com.hereliesaz.hg2gui.managers.xml.XMLPrefsManager;
-import com.hereliesaz.hg2gui.managers.xml.classes.XMLPrefsSave;
-import com.hereliesaz.hg2gui.managers.xml.options.Behavior;
-import com.hereliesaz.hg2gui.managers.xml.options.Ui;
-import com.hereliesaz.hg2gui.tuils.interfaces.OnBatteryUpdate;
-import com.hereliesaz.hg2gui.tuils.stuff.FakeLauncherActivity;
+    private var applicationContext: Context? = null
 
-public class Tuils {
-
-    public static final String SPACE = " ";
-    public static final String DOUBLE_SPACE = "  ";
-    public static final String NEWLINE = "\n";
-    public static final String TRIBLE_SPACE = "   ";
-    public static final String DOT = ".";
-    public static final String EMPTYSTRING = "";
-    private static final String TUI_FOLDER = "t-ui";
-    public static final String MINUS = "-";
-
-    public static Pattern patternNewline = Pattern.compile("%n", Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
-
-    // Set once by TerminalActivity.onCreate, before anything reads a preference. Safe to hold
-    // statically: an application context, not an Activity, so it cannot leak one.
-    private static Context applicationContext;
-
-    public static void init(Context context) {
-        applicationContext = context.getApplicationContext();
+    fun init(context: Context) {
+        applicationContext = context.applicationContext
     }
 
-    private static Typeface globalTypeface = null;
-    public static String fontPath = null;
+    private var globalTypeface: Typeface? = null
+    var fontPath: String? = null
 
-    static Pattern calculusPattern = Pattern.compile("([\\+\\-\\*\\/\\^])(\\d+\\.?\\d*)");
-    public static double textCalculus(double input, String text) {
-        Matcher m = calculusPattern.matcher(text);
-        while(m.find()) {
-            char operator = m.group(1).charAt(0);
-            double value = Double.parseDouble(m.group(2));
+    private val calculusPattern = Pattern.compile("([+\\-*/^])(\\d+\\.?\\d*)")
 
-            switch (operator) {
-                case '+':
-                    input += value;
-                    break;
-                case '-':
-                    input -= value;
-                    break;
-                case '*':
-                    input *= value;
-                    break;
-                case '/':
-                    input = input / value;
-                    break;
-                case '^':
-                    input = Math.pow(input, value);
-                    break;
+    fun textCalculus(input: Double, text: String): Double {
+        var result = input
+        val m = calculusPattern.matcher(text)
+        while (m.find()) {
+            val operator = m.group(1)!![0]
+            val value = m.group(2)!!.toDouble()
+
+            when (operator) {
+                '+' -> result += value
+                '-' -> result -= value
+                '*' -> result *= value
+                '/' -> result /= value
+                '^' -> result = Math.pow(result, value)
             }
 
-            Tuils.log("now im", input);
+            log("now im", result)
         }
-
-        return input;
+        return result
     }
 
-    public static Typeface getTypeface(Context context) {
-        if(globalTypeface == null) {
+    fun getTypeface(context: Context): Typeface? {
+        if (globalTypeface == null) {
             try {
-                XMLPrefsManager.loadCommons(context);
-            } catch (Exception e) {
-                return null;
+                XMLPrefsManager.loadCommons(context)
+            } catch (e: Exception) {
+                return null
             }
 
-            boolean systemFont = XMLPrefsManager.getBoolean(Ui.system_font);
-            if(systemFont) globalTypeface = Typeface.DEFAULT;
-            else {
-                File tui = Tuils.getFolder();
-                if(tui == null) {
-                    return Typeface.createFromAsset(context.getAssets(), "lucida_console.ttf");
+            val systemFont = XMLPrefsManager.getBoolean(Ui.system_font)
+            if (systemFont) {
+                globalTypeface = Typeface.DEFAULT
+            } else {
+                val tui = getFolder()
+                if (tui == null) {
+                    return Typeface.createFromAsset(context.assets, "lucida_console.ttf")
                 }
 
-                Pattern p = Pattern.compile(".[ot]tf$");
-
-                File font = null;
-                for(File f : tui.listFiles()) {
-                    String name = f.getName();
-                    if(p.matcher(name).find()) {
-                        font = f;
-                        fontPath = f.getAbsolutePath();
-                        break;
+                val p = Pattern.compile(".[ot]tf$")
+                var font: File? = null
+                val files = tui.listFiles()
+                if (files != null) {
+                    for (f in files) {
+                        val name = f.name
+                        if (p.matcher(name).find()) {
+                            font = f
+                            fontPath = f.absolutePath
+                            break
+                        }
                     }
                 }
 
-                if(font != null) {
+                if (font != null) {
                     try {
-                        globalTypeface = Typeface.createFromFile(font);
-                        if(globalTypeface == null) throw new UnsupportedOperationException();
-                    } catch (Exception e) {
-                        globalTypeface = null;
+                        globalTypeface = Typeface.createFromFile(font)
+                        if (globalTypeface == null) throw UnsupportedOperationException()
+                    } catch (e: Exception) {
+                        globalTypeface = null
                     }
                 }
             }
 
-            if(globalTypeface == null) globalTypeface = systemFont ? Typeface.DEFAULT : Typeface.createFromAsset(context.getAssets(), "lucida_console.ttf");
+            if (globalTypeface == null) {
+                globalTypeface = if (systemFont) Typeface.DEFAULT else Typeface.createFromAsset(context.assets, "lucida_console.ttf")
+            }
         }
-        return globalTypeface;
+        return globalTypeface
     }
 
-    public static void cancelFont() {
-        globalTypeface = null;
-        fontPath = null;
+    fun cancelFont() {
+        globalTypeface = null
+        fontPath = null
     }
 
-    public static String locationName(Context context, double lat, double lng) {
-        Geocoder geocoder = new Geocoder(context, Locale.getDefault());
-        List<Address> addresses = null;
-        try {
-            addresses = geocoder.getFromLocation(lat, lng, 1);
-            return addresses.get(0).getAddressLine(2);
-        } catch (Exception e) {
-            return null;
+    fun locationName(context: Context, lat: Double, lng: Double): String? {
+        val geocoder = Geocoder(context, Locale.getDefault())
+        return try {
+            val addresses = geocoder.getFromLocation(lat, lng, 1)
+            addresses?.get(0)?.getAddressLine(2)
+        } catch (e: Exception) {
+            null
         }
     }
 
-    public static boolean notificationServiceIsRunning(Context context) {
-        ComponentName collectorComponent = new ComponentName(context, NotificationService.class);
-        ActivityManager manager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-        boolean collectorRunning = false;
-        List<ActivityManager.RunningServiceInfo> runningServices = manager.getRunningServices(Integer.MAX_VALUE);
-        if (runningServices == null ) {
-            return false;
-        }
+    fun notificationServiceIsRunning(context: Context): Boolean {
+        val collectorComponent = ComponentName(context, NotificationService::class.java)
+        val manager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        val runningServices = manager.getRunningServices(Int.MAX_VALUE) ?: return false
 
-        for (ActivityManager.RunningServiceInfo service : runningServices) {
-            if (service.service.equals(collectorComponent)) {
+        for (service in runningServices) {
+            if (service.service == collectorComponent) {
                 if (service.pid == Process.myPid()) {
-                    collectorRunning = true;
+                    return true
                 }
             }
         }
 
-        return collectorRunning;
+        return false
     }
 
-    public static boolean arrayContains(int[] array, int value) {
-        if(array == null) return false;
-
-        for(int i : array) {
-            if(i == value) {
-                return true;
-            }
+    fun arrayContains(array: IntArray?, value: Int): Boolean {
+        if (array == null) return false
+        for (i in array) {
+            if (i == value) return true
         }
-        return false;
+        return false
     }
 
-    public static String readerToString(Reader initialReader) throws IOException {
-        char[] arr = new char[8 * 1024];
-        StringBuilder buffer = new StringBuilder();
-        int numCharsRead;
-        while ((numCharsRead = initialReader.read(arr, 0, arr.length)) != -1) {
-            buffer.append(arr, 0, numCharsRead);
+    @Throws(IOException::class)
+    fun readerToString(initialReader: Reader): String {
+        val arr = CharArray(8 * 1024)
+        val buffer = StringBuilder()
+        var numCharsRead: Int
+        while (initialReader.read(arr, 0, arr.size).also { numCharsRead = it } != -1) {
+            buffer.append(arr, 0, numCharsRead)
         }
-        initialReader.close();
-        return buffer.toString();
+        initialReader.close()
+        return buffer.toString()
     }
 
-    private static OnBatteryUpdate batteryUpdate;
-    private static BroadcastReceiver batteryReceiver = null;
+    private var batteryUpdate: OnBatteryUpdate? = null
+    private var batteryReceiver: BroadcastReceiver? = null
 
-    public static void registerBatteryReceiver(Context context, OnBatteryUpdate listener) {
+    fun registerBatteryReceiver(context: Context, listener: OnBatteryUpdate) {
         try {
-            batteryReceiver = new BroadcastReceiver() {
-                @Override
-                public void onReceive(Context context, Intent intent) {
-                    if(batteryUpdate == null) return;
-
-                    switch (intent.getAction()) {
-                        case Intent.ACTION_BATTERY_CHANGED:
-                            int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, 0);
-                            batteryUpdate.update(level);
-                            break;
-                        case Intent.ACTION_POWER_CONNECTED:
-                            batteryUpdate.onCharging();
-                            break;
-                        case Intent.ACTION_POWER_DISCONNECTED:
-                            batteryUpdate.onNotCharging();
-                            break;
-                    }
-                }
-            };
-
-            IntentFilter iFilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
-            iFilter.addAction(Intent.ACTION_POWER_CONNECTED);
-            iFilter.addAction(Intent.ACTION_POWER_DISCONNECTED);
-
-            context.registerReceiver(batteryReceiver, iFilter);
-
-            batteryUpdate = listener;
-        } catch (Exception e) {
-            Tuils.toFile(e);
-        }
-    }
-
-    public static void unregisterBatteryReceiver(Context context) {
-        if(batteryReceiver != null) context.unregisterReceiver(batteryReceiver);
-    }
-
-    public static boolean containsExtension(String[] array, String value) {
-        try {
-            value = value.toLowerCase().trim();
-            for (String s : array) {
-                if (value.endsWith(s)) {
-                    return true;
-                }
-            }
-            return false;
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    public static List<Song> getSongsInFolder(File folder) {
-        List<Song> songs = new ArrayList<>();
-
-        File[] files = folder.listFiles();
-        if(files == null || files.length == 0) {
-            return songs;
-        }
-
-        for (File file : files) {
-            if (file.isDirectory()) {
-                List<Song> s = getSongsInFolder(file);
-                if(s != null) {
-                    songs.addAll(s);
-                }
-            }
-            else if (containsExtension(MusicManager2.MUSIC_EXTENSIONS, file.getName())) {
-                songs.add(new Song(file));
-            }
-        }
-
-        return songs;
-    }
-
-    public static String convertStreamToString(java.io.InputStream is) {
-        if (is == null) return Tuils.EMPTYSTRING;
-
-        java.util.Scanner s = new java.util.Scanner(is).useDelimiter("\\A");
-        return s.hasNext() ? s.next() : Tuils.EMPTYSTRING;
-    }
-
-    public static long download(InputStream in, File file) throws Exception {
-        OutputStream out = new FileOutputStream(file, false);
-
-        byte data[] = new byte[1024];
-
-        long bytes = 0;
-
-        int count;
-        while ((count = in.read(data)) != -1) {
-            out.write(data, 0, count);
-            bytes += count;
-        }
-
-        out.flush();
-        out.close();
-        in.close();
-
-        return bytes;
-    }
-
-    public static void write(File file, String separator, String... ss) throws Exception {
-        FileOutputStream headerStream = new FileOutputStream(file, false);
-
-        for(int c = 0; c < ss.length - 1; c++) {
-            headerStream.write(ss[c].getBytes());
-            headerStream.write(separator.getBytes());
-        }
-        headerStream.write(ss[ss.length - 1].getBytes());
-
-        headerStream.flush();
-        headerStream.close();
-    }
-
-    public static float dpToPx(Context context, float valueInDp) {
-        DisplayMetrics metrics = context.getResources().getDisplayMetrics();
-        return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, valueInDp, metrics);
-    }
-
-    public static boolean hasNotificationAccess(Context context) {
-        String pkgName = "com.hereliesaz.hg2gui";
-        final String flat = Settings.Secure.getString(context.getContentResolver(), "enabled_notification_listeners");
-        if (!TextUtils.isEmpty(flat)) {
-            final String[] names = flat.split(":");
-            for (int i = 0; i < names.length; i++) {
-                final ComponentName cn = ComponentName.unflattenFromString(names[i]);
-                if (cn != null) {
-                    if (TextUtils.equals(pkgName, cn.getPackageName())) {
-                        return true;
+            batteryReceiver = object : BroadcastReceiver() {
+                override fun onReceive(context: Context, intent: Intent) {
+                    val update = batteryUpdate ?: return
+                    when (intent.action) {
+                        Intent.ACTION_BATTERY_CHANGED -> {
+                            val level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, 0)
+                            update.update(level.toFloat())
+                        }
+                        Intent.ACTION_POWER_CONNECTED -> update.onCharging()
+                        Intent.ACTION_POWER_DISCONNECTED -> update.onNotCharging()
                     }
                 }
             }
+
+            val iFilter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
+            iFilter.addAction(Intent.ACTION_POWER_CONNECTED)
+            iFilter.addAction(Intent.ACTION_POWER_DISCONNECTED)
+
+            context.registerReceiver(batteryReceiver, iFilter)
+            batteryUpdate = listener
+        } catch (e: Exception) {
+            toFile(e)
         }
-        return false;
     }
 
-    public static void resetPreferredLauncherAndOpenChooser(Context context) {
-        PackageManager packageManager = context.getPackageManager();
-        ComponentName componentName = new ComponentName(context, FakeLauncherActivity.class);
-        packageManager.setComponentEnabledSetting(componentName, PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP);
+    fun unregisterBatteryReceiver(context: Context) {
+        batteryReceiver?.let {
+            context.unregisterReceiver(it)
+            batteryReceiver = null
+        }
+    }
 
-        Intent selector = new Intent(Intent.ACTION_MAIN);
-        selector.addCategory(Intent.CATEGORY_HOME);
-        selector.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        context.startActivity(selector);
+    fun containsExtension(array: Array<String>?, value: String?): Boolean {
+        if (array == null || value == null) return false
+        return try {
+            val lowerValue = value.lowercase(Locale.getDefault()).trim()
+            for (s in array) {
+                if (lowerValue.endsWith(s)) return true
+            }
+            false
+        } catch (e: Exception) {
+            false
+        }
+    }
 
-        packageManager.setComponentEnabledSetting(componentName, PackageManager.COMPONENT_ENABLED_STATE_DEFAULT, PackageManager.DONT_KILL_APP);
+    fun getSongsInFolder(folder: File): List<Song> {
+        val songs = ArrayList<Song>()
+        val files = folder.listFiles() ?: return songs
+
+        for (file in files) {
+            if (file.isDirectory) {
+                songs.addAll(getSongsInFolder(file))
+            } else if (containsExtension(MusicManager2.MUSIC_EXTENSIONS, file.name)) {
+                songs.add(Song(file))
+            }
+        }
+        return songs
+    }
+
+    fun convertStreamToString(inputStream: InputStream?): String {
+        if (inputStream == null) return EMPTYSTRING
+        val s = Scanner(inputStream).useDelimiter("\\A")
+        return if (s.hasNext()) s.next() else EMPTYSTRING
+    }
+
+    @Throws(Exception::class)
+    fun download(inputStream: InputStream, file: File): Long {
+        val out = FileOutputStream(file, false)
+        val data = ByteArray(1024)
+        var bytes: Long = 0
+        var count: Int
+        while (inputStream.read(data).also { count = it } != -1) {
+            out.write(data, 0, count)
+            bytes += count.toLong()
+        }
+        out.flush()
+        out.close()
+        inputStream.close()
+        return bytes
+    }
+
+    @Throws(Exception::class)
+    fun write(file: File, separator: String, vararg ss: String) {
+        val headerStream = FileOutputStream(file, false)
+        for (c in 0 until ss.size - 1) {
+            headerStream.write(ss[c].toByteArray())
+            headerStream.write(separator.toByteArray())
+        }
+        headerStream.write(ss[ss.size - 1].toByteArray())
+        headerStream.flush()
+        headerStream.close()
+    }
+
+    fun dpToPx(context: Context, valueInDp: Float): Float {
+        val metrics = context.resources.displayMetrics
+        return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, valueInDp, metrics)
+    }
+
+    fun hasNotificationAccess(context: Context): Boolean {
+        val pkgName = "com.hereliesaz.hg2gui"
+        val flat = Settings.Secure.getString(context.contentResolver, "enabled_notification_listeners")
+        if (!flat.isNullOrEmpty()) {
+            val names = flat.split(":")
+            for (name in names) {
+                val cn = ComponentName.unflattenFromString(name)
+                if (cn != null && TextUtils.equals(pkgName, cn.packageName)) {
+                    return true
+                }
+            }
+        }
+        return false
+    }
+
+    fun resetPreferredLauncherAndOpenChooser(context: Context) {
+        val packageManager = context.packageManager
+        val componentName = ComponentName(context, FakeLauncherActivity::class.java)
+        packageManager.setComponentEnabledSetting(componentName, PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP)
+
+        val selector = Intent(Intent.ACTION_MAIN)
+        selector.addCategory(Intent.CATEGORY_HOME)
+        selector.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        context.startActivity(selector)
+
+        packageManager.setComponentEnabledSetting(componentName, PackageManager.COMPONENT_ENABLED_STATE_DEFAULT, PackageManager.DONT_KILL_APP)
     }
 
     @TargetApi(Build.VERSION_CODES.GINGERBREAD)
-    public static void openSettingsPage(Context c, String packageName) {
-        Intent intent = new Intent();
-        intent.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-        Uri uri = Uri.fromParts("package", packageName, null);
-        intent.setData(uri);
-        c.startActivity(intent);
+    fun openSettingsPage(c: Context, packageName: String) {
+        val intent = Intent()
+        intent.action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
+        val uri = Uri.fromParts("package", packageName, null)
+        intent.data = uri
+        c.startActivity(intent)
     }
 
-    public static Intent requestAdmin(ComponentName component, String explanation) {
-        Intent intent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
-        intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, component);
-        intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, explanation);
-        return intent;
+    fun requestAdmin(component: ComponentName, explanation: String): Intent {
+        val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
+        intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, component)
+        intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, explanation)
+        return intent
     }
 
-    public static Intent webPage(String url) {
-        return new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+    fun webPage(url: String): Intent {
+        return Intent(Intent.ACTION_VIEW, Uri.parse(url))
     }
 
-    public static double getAvailableInternalMemorySize(int unit) {
-        return getAvailableSpace(Environment.getDataDirectory(), unit);
+    fun getAvailableInternalMemorySize(unit: Int): Double {
+        return getAvailableSpace(Environment.getDataDirectory(), unit)
     }
 
-    public static double getTotalInternalMemorySize(int unit) {
-        return getTotaleSpace(Environment.getDataDirectory(), unit);
+    fun getTotalInternalMemorySize(unit: Int): Double {
+        return getTotalSpace(Environment.getDataDirectory(), unit)
     }
 
-    public static double getAvailableExternalMemorySize(int unit) {
-        try {
-            return getAvailableSpace(XMLPrefsManager.get(File.class, Behavior.external_storage_path), unit);
-        } catch (Exception e) {
-            return -1;
+    fun getAvailableExternalMemorySize(unit: Int): Double {
+        return try {
+            getAvailableSpace(XMLPrefsManager.get(File::class.java, Behavior.external_storage_path), unit)
+        } catch (e: Exception) {
+            -1.0
         }
     }
 
-    public static double getTotalExternalMemorySize(int unit) {
-        try {
-            return getTotaleSpace(XMLPrefsManager.get(File.class, Behavior.external_storage_path), unit);
-        } catch (Exception e) {
-            return -1;
+    fun getTotalExternalMemorySize(unit: Int): Double {
+        return try {
+            getTotalSpace(XMLPrefsManager.get(File::class.java, Behavior.external_storage_path), unit)
+        } catch (e: Exception) {
+            -1.0
         }
     }
 
-    public static double getAvailableSpace(File dir, int unit) {
-        if(dir == null) return -1;
-
-        StatFs statFs = new StatFs(dir.getAbsolutePath());
-        long blocks = statFs.getAvailableBlocks();
-        return formatSize(blocks * statFs.getBlockSize(), unit);
+    fun getAvailableSpace(dir: File?, unit: Int): Double {
+        if (dir == null) return -1.0
+        val statFs = StatFs(dir.absolutePath)
+        val blocks = statFs.availableBlocksLong
+        return formatSize(blocks * statFs.blockSizeLong, unit)
     }
 
-    public static double getTotaleSpace(File dir, int unit) {
-        if(dir == null) return -1;
-
-        StatFs statFs = new StatFs(dir.getAbsolutePath());
-        long blocks = statFs.getBlockCount();
-        return formatSize(blocks * statFs.getBlockSize(), unit);
+    fun getTotalSpace(dir: File?, unit: Int): Double {
+        if (dir == null) return -1.0
+        val statFs = StatFs(dir.absolutePath)
+        val blocks = statFs.blockCountLong
+        return formatSize(blocks * statFs.blockSizeLong, unit)
     }
 
-    public static double percentage(double part, double total) {
-        return round(part * 100 / total, 2);
+    fun percentage(part: Double, total: Double): Double {
+        return round(part * 100 / total, 2)
     }
 
-    public static double formatSize(long bytes, int unit) {
-        double convert = 1048576.0;
-        double smallConvert = 1024.0;
-
-        double result;
-
-        switch (unit) {
-            case TERA:
-                result = (bytes / convert) / convert;
-                break;
-            case GIGA:
-                result = (bytes / convert) / smallConvert;
-                break;
-            case MEGA:
-                result = bytes / convert;
-                break;
-            case KILO:
-                result = bytes / smallConvert;
-                break;
-            case BYTE:
-                result = bytes;
-                break;
-            default: return -1;
+    fun formatSize(bytes: Long, unit: Int): Double {
+        val convert = 1048576.0
+        val smallConvert = 1024.0
+        val result = when (unit) {
+            TERA -> bytes / convert / convert
+            GIGA -> bytes / convert / smallConvert
+            MEGA -> bytes / convert
+            KILO -> bytes / smallConvert
+            BYTE -> bytes.toDouble()
+            else -> return -1.0
         }
-
-        return round(result, 2);
+        return round(result, 2)
     }
 
-    public static boolean isMyLauncherDefault(PackageManager packageManager) {
-        final IntentFilter filter = new IntentFilter(Intent.ACTION_MAIN);
-        filter.addCategory(Intent.CATEGORY_HOME);
-
-        List<IntentFilter> filters = new ArrayList<>();
-        filters.add(filter);
-
-        final String myPackageName = "com.hereliesaz.hg2gui";
-        List<ComponentName> activities = new ArrayList<>();
-
-        // You can use name of your package here as third argument
-        packageManager.getPreferredActivities(filters, activities, null);
-
-        for (ComponentName activity : activities) {
-            if (myPackageName.equals(activity.getPackageName())) {
-                return true;
+    fun isMyLauncherDefault(packageManager: PackageManager): Boolean {
+        val filter = IntentFilter(Intent.ACTION_MAIN)
+        filter.addCategory(Intent.CATEGORY_HOME)
+        val filters = ArrayList<IntentFilter>()
+        filters.add(filter)
+        val myPackageName = "com.hereliesaz.hg2gui"
+        val activities = ArrayList<ComponentName>()
+        packageManager.getPreferredActivities(filters, activities, null)
+        for (activity in activities) {
+            if (myPackageName == activity.packageName) {
+                return true
             }
         }
-        return false;
+        return false
     }
 
-
-    public static SpannableString span(CharSequence text, int color) {
-        return span(null, text, color, Integer.MAX_VALUE);
+    fun span(text: CharSequence?, color: Int): SpannableString {
+        return span(null, text, color, Int.MAX_VALUE)
     }
 
-    public static SpannableString span(Context context, int size, CharSequence text) {
-        return span(context, text, Integer.MAX_VALUE, size);
+    fun span(context: Context?, size: Int, text: CharSequence?): SpannableString {
+        return span(context, text, Int.MAX_VALUE, size)
     }
 
-    public static SpannableString span(Context context, CharSequence text, int color, int size) {
-        return span(context, Integer.MAX_VALUE, color, text, size);
+    fun span(context: Context?, text: CharSequence?, color: Int, size: Int): SpannableString {
+        return span(context, Int.MAX_VALUE, color, text, size)
     }
 
-    public static SpannableString span(int bgColor, int foreColor, CharSequence text) {
-        return span(null, bgColor, foreColor, text, Integer.MAX_VALUE);
+    fun span(bgColor: Int, foreColor: Int, text: CharSequence?): SpannableString {
+        return span(null, bgColor, foreColor, text, Int.MAX_VALUE)
     }
 
-    public static SpannableString span(Context context, int bgColor, int foreColor, CharSequence text, int size) {
-        if(text == null) {
-            text = Tuils.EMPTYSTRING;
+    fun span(context: Context?, bgColor: Int, foreColor: Int, text: CharSequence?, size: Int): SpannableString {
+        val txt = text ?: EMPTYSTRING
+        val spannableString = if (txt is SpannableString) txt else SpannableString(txt)
+        if (size != Int.MAX_VALUE && context != null) {
+            spannableString.setSpan(AbsoluteSizeSpan(convertSpToPixels(size.toFloat(), context)), 0, txt.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+        if (foreColor != Int.MAX_VALUE) {
+            spannableString.setSpan(ForegroundColorSpan(foreColor), 0, txt.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+        if (bgColor != Int.MAX_VALUE) {
+            spannableString.setSpan(BackgroundColorSpan(bgColor), 0, txt.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+        return spannableString
+    }
+
+    fun span(bgColor: Int, text: SpannableString, section: String, fromIndex: Int): Int {
+        val index = text.toString().indexOf(section, fromIndex)
+        if (index == -1) return index
+        text.setSpan(BackgroundColorSpan(bgColor), index, index + section.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        return index + section.length
+    }
+
+    fun convertSpToPixels(sp: Float, context: Context): Int {
+        return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, sp, context.resources.displayMetrics).toInt()
+    }
+
+    fun inputStreamToString(inputStream: InputStream): String {
+        val s = Scanner(inputStream).useDelimiter("\\A")
+        return if (s.hasNext()) s.next() else EMPTYSTRING
+    }
+
+    abstract class ArgsRunnable : Runnable {
+        private var args: Array<out Any?>? = null
+
+        fun setArgs(vararg args: Any?) {
+            this.args = args
         }
 
-        SpannableString spannableString;
-        if(text instanceof SpannableString) spannableString = (SpannableString) text;
-        else spannableString = new SpannableString(text);
-
-        if(size != Integer.MAX_VALUE && context != null) spannableString.setSpan(new AbsoluteSizeSpan(convertSpToPixels(size, context)), 0, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        if(foreColor != Integer.MAX_VALUE) spannableString.setSpan(new ForegroundColorSpan(foreColor), 0, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        if(bgColor != Integer.MAX_VALUE) spannableString.setSpan(new BackgroundColorSpan(bgColor), 0, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-
-        return spannableString;
-    }
-
-    public static int span(int bgColor, SpannableString text, String section, int fromIndex) {
-        int index = text.toString().indexOf(section, fromIndex);
-        if(index == -1) return index;
-
-        text.setSpan(new BackgroundColorSpan(bgColor), index, index + section.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-
-        return index + section.length();
-    }
-
-    public static int convertSpToPixels(float sp, Context context) {
-        return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, sp, context.getResources().getDisplayMetrics());
-    }
-
-    public static String inputStreamToString(InputStream is) {
-        java.util.Scanner s = new java.util.Scanner(is).useDelimiter("\\A");
-        return s.hasNext() ? s.next() : Tuils.EMPTYSTRING;
-    }
-
-//    static final int WEATHER_TIMEOUT = 6000;
-//    public static boolean location(Context context, final ArgsRunnable whenFound, final Runnable notFound, final Handler handler) {
-//        final LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
-//        if(locationManager == null) return false;
-//
-//        final LocationListener locationListener = new LocationListener() {
-//            @Override
-//            public void onLocationChanged(Location location) {
-//                whenFound.run(location.getLatitude(), location.getLongitude());
-//            }
-//
-//            @Override
-//            public void onStatusChanged(String provider, int status, Bundle extras) {
-//            }
-//
-//            @Override
-//            public void onProviderEnabled(String provider) {
-//            }
-//
-//            @Override
-//            public void onProviderDisabled(String provider) {
-//            }
-//        };
-//
-//        boolean gpsProvider = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
-//        boolean networkProvider = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
-//        boolean passiveProvider = locationManager.isProviderEnabled(LocationManager.PASSIVE_PROVIDER);
-//
-//        if (!gpsStatus && !networkStatus) return false;
-//
-//        try {
-//            locationManager.requestSingleUpdate(gpsStatus ? LocationManager.GPS_PROVIDER : LocationManager.NETWORK_PROVIDER, locationListener, Looper.getMainLooper());
-//        } catch (SecurityException e) {
-//            Tuils.log(e);
-//            Tuils.toFile(e);
-//            return false;
-//        }
-//
-//        Location location;
-//        try {
-//            Location[] ls = {
-//                    locationManager.getLastKnownLocation(LocationManager.PASSIVE_PROVIDER),
-//                    locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER),
-//                    locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)};
-//
-//            location = ls[0];
-//            for(int c = 1; c < ls.length; c++) {
-//                if(location == null) location = ls[c];
-//                else if(ls[c] != null && location.getTime() < ls[c].getTime()) location = ls[c];
-//            }
-//        } catch (SecurityException e) {
-//            Tuils.toFile(e);
-//            return false;
-//        }
-//
-//        if(handler != null) {
-//            handler.postDelayed(notFound, WEATHER_TIMEOUT);
-//            handler.postDelayed(new Runnable() {
-//                @Override
-//                public void run() {
-//                    if(locationManager != null) locationManager.removeUpdates(locationListener);
-//                }
-//            }, WEATHER_TIMEOUT);
-//        }
-//
-//        return true;
-//    }
-
-//    public static Location getLocation(Context context) {
-//        final LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
-//        if(locationManager == null) return null;
-//
-//        Location location;
-//        try {
-//            Location[] ls = {
-//                    locationManager.getLastKnownLocation(LocationManager.PASSIVE_PROVIDER),
-//                    locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER),
-//                    locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)};
-//
-//            location = ls[0];
-//            for(int c = 1; c < ls.length; c++) {
-//                if(location == null) location = ls[c];
-//                else if(ls[c] != null && location.getTime() < ls[c].getTime()) location = ls[c];
-//            }
-//
-//            return location;
-//        } catch (SecurityException e) {
-//            Tuils.toFile(e);
-//            return null;
-//        }
-//    }
-
-    public abstract static class ArgsRunnable implements Runnable {
-        private Object[] args;
-
-        public void setArgs(Object... args) {
-            this.args = args;
+        fun run(vararg args: Any?) {
+            setArgs(*args)
+            run()
         }
 
-        public void run(Object... args) {
-            setArgs(args);
-            run();
-        }
-
-        public <T> T get(Class<T> c, int index) {
-            if(index < args.length) return (T) args[index];
-            return null;
+        fun <T> get(c: Class<T>, index: Int): T? {
+            val currentArgs = args ?: return null
+            return if (index < currentArgs.size) currentArgs[index] as? T else null
         }
     }
 
-    public static void deleteContentOnly(File dir) {
-        File[] files = dir.listFiles();
-        if(files == null) return;
-
-        for(File f : dir.listFiles()) {
-            if(f.isDirectory()) delete(f);
-            f.delete();
+    fun deleteContentOnly(dir: File) {
+        val files = dir.listFiles() ?: return
+        for (f in files) {
+            if (f.isDirectory) delete(f)
+            f.delete()
         }
     }
 
-    public static void delete(File dir) {
-        File[] files = dir.listFiles();
-        if(files == null) return;
-
-        for(File f : dir.listFiles()) {
-            if(f.isDirectory()) delete(f);
-            f.delete();
+    fun delete(dir: File) {
+        val files = dir.listFiles() ?: return
+        for (f in files) {
+            if (f.isDirectory) delete(f)
+            f.delete()
         }
-        dir.delete();
+        dir.delete()
     }
 
-    public static boolean insertOld(File oldFile) {
-        if(oldFile == null || !oldFile.exists()) return false;
-
-        String oldPath = oldFile.getAbsolutePath();
-
-        File oldFolder = new File(Tuils.getFolder(), "old");
-        if(!oldFolder.exists()) oldFolder.mkdir();
-
-        File dest = new File(oldFolder, oldFile.getName());
-        if(dest.exists()) dest.delete();
-
-        return oldFile.renameTo(dest) && new File(oldPath).delete();
+    fun insertOld(oldFile: File?): Boolean {
+        if (oldFile == null || !oldFile.exists()) return false
+        val oldPath = oldFile.absolutePath
+        val oldFolder = File(getFolder(), "old")
+        if (!oldFolder.exists()) oldFolder.mkdir()
+        val dest = File(oldFolder, oldFile.name)
+        if (dest.exists()) dest.delete()
+        return oldFile.renameTo(dest) && File(oldPath).delete()
     }
 
-    public static File getOld(String name) {
-        File old = new File(Tuils.getFolder(), "old");
-        File file = new File(old, name);
-
-        if(file.exists()) return file;
-        return null;
+    fun getOld(name: String): File? {
+        val old = File(getFolder(), "old")
+        val file = File(old, name)
+        return if (file.exists()) file else null
     }
 
-    public static void deepView(View v) {
-        Tuils.log(v.toString());
-
-        if(!(v instanceof ViewGroup)) return;
-        ViewGroup g = (ViewGroup) v;
-
-        Tuils.log(g.getChildCount());
-        for(int c = 0; c < g.getChildCount(); c++) deepView(g.getChildAt(c));
-
-        Tuils.log("end of parents of: " + v.toString());
+    fun deepView(v: View) {
+        log(v.toString())
+        if (v !is ViewGroup) return
+        log(v.childCount)
+        for (c in 0 until v.childCount) deepView(v.getChildAt(c))
+        log("end of parents of: $v")
     }
 
-    private static View.OnClickListener deepClickListener = v -> Tuils.log(v.toString());
+    private val deepClickListener = View.OnClickListener { v -> log(v.toString()) }
 
-    public static void deepClickView(View v) {
-        v.setOnClickListener(deepClickListener);
-
-        if(!(v instanceof ViewGroup)) return;
-        ViewGroup g = (ViewGroup) v;
-
-        for(int c = 0; c < g.getChildCount(); c++) deepClickView(g.getChildAt(c));
+    fun deepClickView(v: View) {
+        v.setOnClickListener(deepClickListener)
+        if (v !is ViewGroup) return
+        for (c in 0 until v.childCount) deepClickView(v.getChildAt(c))
     }
 
-    public static void scaleImage(ImageView view, int newX, int newY) throws NoSuchElementException {
-        // Get bitmap from the the ImageView.
-        Bitmap bitmap = null;
+    @Throws(NoSuchElementException::class)
+    fun scaleImage(view: ImageView, newX: Int, newY: Int) {
+        val bitmap = try {
+            val drawing = view.drawable
+            (drawing as BitmapDrawable).bitmap
+        } catch (e: Exception) {
+            throw NoSuchElementException("No drawable on given view")
+        }
 
+        val width = bitmap.width
+        val height = bitmap.height
+        val xBounding = dpToPx(view.context, newX)
+        val yBounding = dpToPx(view.context, newY)
+
+        val xScale = xBounding.toFloat() / width
+        val yScale = yBounding.toFloat() / height
+        val scale = if (xScale <= yScale) xScale else yScale
+
+        val matrix = Matrix()
+        matrix.postScale(scale, scale)
+
+        val scaledBitmap = Bitmap.createBitmap(bitmap, 0, 0, width, height, matrix, true)
+        val scaledWidth = scaledBitmap.width
+        val scaledHeight = scaledBitmap.height
+        val result = BitmapDrawable(scaledBitmap)
+
+        view.setImageDrawable(result)
+
+        val params = view.layoutParams as LinearLayout.LayoutParams
+        params.width = scaledWidth
+        params.height = scaledHeight
+        view.layoutParams = params
+    }
+
+    fun dpToPx(context: Context, dp: Int): Int {
+        val density = context.applicationContext.resources.displayMetrics.density
+        return Math.round(dp.toFloat() * density)
+    }
+
+    fun sendOutput(context: Context, res: Int) {
+        sendOutput(Int.MAX_VALUE, context, res)
+    }
+
+    fun sendOutput(color: Int, context: Context, res: Int) {
+        sendOutput(color, context, context.getString(res))
+    }
+
+    fun sendOutput(context: Context, res: Int, type: Int) {
+        sendOutput(Int.MAX_VALUE, context, res, type)
+    }
+
+    fun sendOutput(color: Int, context: Context, res: Int, type: Int) {
+        sendOutput(color, context, context.getString(res), type)
+    }
+
+    fun sendOutput(context: Context, s: CharSequence) {
+        sendOutput(Int.MAX_VALUE, context, s)
+    }
+
+    fun sendOutput(color: Int, context: Context, s: CharSequence) {
+        sendOutput(color, context, s, TerminalManager.CATEGORY_OUTPUT)
+    }
+
+    fun sendOutput(context: Context, s: CharSequence, type: Int) {
+        sendOutput(Int.MAX_VALUE, context, s, type)
+    }
+
+    fun sendOutput(color: Int, context: Context, s: CharSequence, type: Int) {
+        val intent = Intent(PrivateIOReceiver.ACTION_OUTPUT)
+        intent.putExtra(PrivateIOReceiver.TEXT, s)
+        intent.putExtra(PrivateIOReceiver.COLOR, color)
+        intent.putExtra(PrivateIOReceiver.TYPE, type)
+        LocalBroadcastManager.getInstance(context).sendBroadcast(intent)
+    }
+
+    fun sendOutput(mainPack: MainPack, s: CharSequence, type: Int) {
+        sendOutput(mainPack.commandColor, mainPack.context, s, type)
+    }
+
+    fun sendOutput(context: Context, s: CharSequence, type: Int, action: Any?) {
+        sendOutput(Int.MAX_VALUE, context, s, type, action)
+    }
+
+    fun sendOutput(color: Int, context: Context, s: CharSequence, type: Int, action: Any?) {
+        val intent = Intent(PrivateIOReceiver.ACTION_OUTPUT)
+        intent.putExtra(PrivateIOReceiver.TEXT, s)
+        intent.putExtra(PrivateIOReceiver.COLOR, color)
+        intent.putExtra(PrivateIOReceiver.TYPE, type)
+
+        when (action) {
+            is String -> intent.putExtra(PrivateIOReceiver.ACTION, action)
+            is Parcelable -> intent.putExtra(PrivateIOReceiver.ACTION, action)
+        }
+
+        LocalBroadcastManager.getInstance(context).sendBroadcast(intent)
+    }
+
+    fun sendOutput(context: Context, s: CharSequence, type: Int, action: Any?, longAction: Any?) {
+        sendOutput(Int.MAX_VALUE, context, s, type, action, longAction)
+    }
+
+    fun sendOutput(color: Int, context: Context, s: CharSequence, type: Int, action: Any?, longAction: Any?) {
+        val intent = Intent(PrivateIOReceiver.ACTION_OUTPUT)
+        intent.putExtra(PrivateIOReceiver.TEXT, s)
+        intent.putExtra(PrivateIOReceiver.COLOR, color)
+        intent.putExtra(PrivateIOReceiver.TYPE, type)
+
+        when (action) {
+            is String -> intent.putExtra(PrivateIOReceiver.ACTION, action)
+            is Parcelable -> intent.putExtra(PrivateIOReceiver.ACTION, action)
+        }
+
+        when (longAction) {
+            is String -> intent.putExtra(PrivateIOReceiver.LONG_ACTION, longAction)
+            is Parcelable -> intent.putExtra(PrivateIOReceiver.LONG_ACTION, longAction)
+        }
+
+        LocalBroadcastManager.getInstance(context).sendBroadcast(intent)
+    }
+
+    fun sendInput(context: Context, text: String) {
+        val intent = Intent(PrivateIOReceiver.ACTION_INPUT)
+        intent.putExtra(PrivateIOReceiver.TEXT, text)
+        LocalBroadcastManager.getInstance(context).sendBroadcast(intent)
+    }
+
+    const val TERA = 0
+    const val GIGA = 1
+    const val MEGA = 2
+    const val KILO = 3
+    const val BYTE = 4
+
+    private var total: Long = -1
+
+    fun freeRam(mgr: ActivityManager, info: MemoryInfo): Double {
+        mgr.getMemoryInfo(info)
+        return info.availMem.toDouble()
+    }
+
+    fun totalRam(): Long {
+        if (total > 0) return total
         try {
-            Drawable drawing = view.getDrawable();
-            bitmap = ((BitmapDrawable) drawing).getBitmap();
-        } catch (NullPointerException e) {
-            throw new NoSuchElementException("No drawable on given view");
-        }
-
-        // Get current dimensions AND the desired bounding box
-        int width = 0;
-
-        try {
-            width = bitmap.getWidth();
-        } catch (NullPointerException e) {
-            throw new NoSuchElementException("Can't find bitmap on given view/drawable");
-        }
-
-        int height = bitmap.getHeight();
-        int xBounding = dpToPx(view.getContext(), newX);
-        int yBounding = dpToPx(view.getContext(), newY);
-
-        // Determine how much to scale: the dimension requiring less scaling is
-        // closer to the its side. This way the image always stays inside your
-        // bounding box AND either x/y axis touches it.
-        float xScale = ((float) xBounding) / width;
-        float yScale = ((float) yBounding) / height;
-        float scale = (xScale <= yScale) ? xScale : yScale;
-
-        // Create a matrix for the scaling and add the scaling data
-        Matrix matrix = new Matrix();
-        matrix.postScale(scale, scale);
-
-        // Create a new bitmap and convert it to a format understood by the ImageView
-        Bitmap scaledBitmap = Bitmap.createBitmap(bitmap, 0, 0, width, height, matrix, true);
-        width = scaledBitmap.getWidth(); // re-use
-        height = scaledBitmap.getHeight(); // re-use
-        BitmapDrawable result = new BitmapDrawable(scaledBitmap);
-
-        // Apply the scaled bitmap
-        view.setImageDrawable(result);
-
-        // Now change ImageView's dimensions to match the scaled image
-        LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) view.getLayoutParams();
-        params.width = width;
-        params.height = height;
-        view.setLayoutParams(params);
-    }
-
-    public static int dpToPx(Context context, int dp) {
-        float density = context.getApplicationContext().getResources().getDisplayMetrics().density;
-        return Math.round((float)dp * density);
-    }
-
-    public static void sendOutput(Context context, int res) {
-        sendOutput(Integer.MAX_VALUE, context, res);
-    }
-
-    public static void sendOutput(int color, Context context, int res) {
-        sendOutput(color, context, context.getString(res));
-    }
-
-    public static void sendOutput(Context context, int res, int type) {
-        sendOutput(Integer.MAX_VALUE, context, res, type);
-    }
-
-    public static void sendOutput(int color, Context context, int res, int type) {
-        sendOutput(color, context, context.getString(res), type);
-    }
-
-    public static void sendOutput(Context context, CharSequence s) {
-        sendOutput(Integer.MAX_VALUE, context, s);
-    }
-
-    public static void sendOutput(int color, Context context, CharSequence s) {
-        sendOutput(color, context, s, TerminalManager.CATEGORY_OUTPUT);
-    }
-
-    public static void sendOutput(Context context, CharSequence s, int type) {
-        sendOutput(Integer.MAX_VALUE, context, s, type);
-    }
-
-    public static void sendOutput(int color, Context context, CharSequence s, int type) {
-        Intent intent = new Intent(PrivateIOReceiver.ACTION_OUTPUT);
-        intent.putExtra(PrivateIOReceiver.TEXT, s);
-        intent.putExtra(PrivateIOReceiver.COLOR, color);
-        intent.putExtra(PrivateIOReceiver.TYPE, type);
-        LocalBroadcastManager.getInstance(context).sendBroadcast(intent);
-    }
-
-    public static void sendOutput(MainPack mainPack, CharSequence s, int type) {
-        sendOutput(mainPack.commandColor, mainPack.context, s, type);
-    }
-
-    public static void sendOutput(Context context, CharSequence s, int type, Object action) {
-        sendOutput(Integer.MAX_VALUE, context, s, type, action);
-    }
-
-    public static void sendOutput(int color, Context context, CharSequence s, int type, Object action) {
-        Intent intent = new Intent(PrivateIOReceiver.ACTION_OUTPUT);
-        intent.putExtra(PrivateIOReceiver.TEXT, s);
-        intent.putExtra(PrivateIOReceiver.COLOR, color);
-        intent.putExtra(PrivateIOReceiver.TYPE, type);
-
-        if(action instanceof String) intent.putExtra(PrivateIOReceiver.ACTION, (String) action);
-        else if(action instanceof Parcelable) intent.putExtra(PrivateIOReceiver.ACTION, (Parcelable) action);
-
-        LocalBroadcastManager.getInstance(context).sendBroadcast(intent);
-    }
-
-    public static void sendOutput(Context context, CharSequence s, int type, Object action, Object longAction) {
-        sendOutput(Integer.MAX_VALUE, context, s, type, action, longAction);
-    }
-
-    public static void sendOutput(int color, Context context, CharSequence s, int type, Object action, Object longAction) {
-        Intent intent = new Intent(PrivateIOReceiver.ACTION_OUTPUT);
-        intent.putExtra(PrivateIOReceiver.TEXT, s);
-        intent.putExtra(PrivateIOReceiver.COLOR, color);
-        intent.putExtra(PrivateIOReceiver.TYPE, type);
-
-        if(action instanceof String) intent.putExtra(PrivateIOReceiver.ACTION, (String) action);
-        else if(action instanceof Parcelable) intent.putExtra(PrivateIOReceiver.ACTION, (Parcelable) action);
-
-        if(longAction instanceof String) intent.putExtra(PrivateIOReceiver.LONG_ACTION, (String) longAction);
-        else if(longAction instanceof Parcelable) intent.putExtra(PrivateIOReceiver.LONG_ACTION, (Parcelable) longAction);
-
-        LocalBroadcastManager.getInstance(context).sendBroadcast(intent);
-    }
-
-    public static void sendInput(Context context, String text) {
-        Intent intent = new Intent(PrivateIOReceiver.ACTION_INPUT);
-        intent.putExtra(PrivateIOReceiver.TEXT, text);
-        LocalBroadcastManager.getInstance(context).sendBroadcast(intent);
-    }
-
-    public static final int TERA = 0;
-    public static final int GIGA = 1;
-    public static final int MEGA = 2;
-    public static final int KILO = 3;
-    public static final int BYTE = 4;
-
-    private static long total = -1;
-
-    public static double freeRam(ActivityManager mgr, MemoryInfo info) {
-        mgr.getMemoryInfo(info);
-        return info.availMem;
-    }
-
-    public static long totalRam() {
-        if(total > 0) return total;
-
-        BufferedReader reader;
-        try {
-            reader = new BufferedReader(new InputStreamReader(new FileInputStream("/proc/meminfo")));
-
-            String line;
-            while((line = reader.readLine()) != null) {
-                if(line.startsWith("MemTotal")) {
-                    line = line.replaceAll("\\D+", Tuils.EMPTYSTRING);
-                    return Long.parseLong(line);
+            val reader = BufferedReader(InputStreamReader(FileInputStream("/proc/meminfo")))
+            var line: String?
+            while (reader.readLine().also { line = it } != null) {
+                if (line?.startsWith("MemTotal") == true) {
+                    line = line!!.replace("\\D+".toRegex(), EMPTYSTRING)
+                    total = line!!.toLong()
+                    return total
                 }
             }
-        } catch (Exception e) {}
-        return 0;
+        } catch (e: Exception) {
+        }
+        return 0
     }
 
-    public static double round(double value, int places) {
-        if (places < 0) places = 0;
-
-        try {
-            BigDecimal bd = new BigDecimal(value);
-            bd = bd.setScale(places, RoundingMode.HALF_UP);
-            return bd.doubleValue();
-        } catch (Exception e) {
-            return value;
+    fun round(value: Double, places: Int): Double {
+        var p = places
+        if (p < 0) p = 0
+        return try {
+            val bd = BigDecimal(value)
+            bd.setScale(p, RoundingMode.HALF_UP).toDouble()
+        } catch (e: Exception) {
+            value
         }
     }
 
-    public static List<String> getClassesInPackage(String packageName, Context c) throws IOException {
-        List<String> classes = new ArrayList<>();
-        String packageCodePath = c.getPackageCodePath();
-        DexFile df = new DexFile(packageCodePath);
-        for (Enumeration<String> iter = df.entries(); iter.hasMoreElements(); ) {
-            String className = iter.nextElement();
+    @Throws(IOException::class)
+    fun getClassesInPackage(packageName: String, c: Context): List<String> {
+        val classes = ArrayList<String>()
+        val packageCodePath = c.packageCodePath
+        val df = DexFile(packageCodePath)
+        val iter = df.entries()
+        while (iter.hasMoreElements()) {
+            val className = iter.nextElement()
             if (className.contains(packageName) && !className.contains("$")) {
-                classes.add(className.substring(className.lastIndexOf(".") + 1, className.length()));
+                classes.add(className.substring(className.lastIndexOf(".") + 1))
             }
         }
-
-        return classes;
+        return classes
     }
 
-    public static int scale(int[] from, int[] to, int n) {
-        return (to[1] - to[0])*(n - from[0])/(from[1] - from[0]) + to[0];
+    fun scale(from: IntArray, to: IntArray, n: Int): Int {
+        return (to[1] - to[0]) * (n - from[0]) / (from[1] - from[0]) + to[0]
     }
 
-    public static String[] toString(Enum[] enums) {
-        String[] arr = new String[enums.length];
-        for(int count = 0; count < enums.length; count++) arr[count] = enums[count].name();
-        return arr;
+    fun toString(enums: Array<Enum<*>>): Array<String> {
+        return Array(enums.size) { i -> enums[i].name }
     }
 
-    private static String getNicePath(String filePath) {
-        if(filePath == null) return "null";
-
-        String home = XMLPrefsManager.get(File.class, Behavior.home_path).getAbsolutePath();
-
-        if(filePath.equals(home)) {
-            return "~";
-        } else if(filePath.startsWith(home)) {
-            return "~" + filePath.replace(home, Tuils.EMPTYSTRING);
-        } else {
-            return filePath;
+    private fun getNicePath(filePath: String?): String {
+        if (filePath == null) return "null"
+        val home = XMLPrefsManager.get(File::class.java, Behavior.home_path).absolutePath
+        return when {
+            filePath == home -> "~"
+            filePath.startsWith(home) -> "~" + filePath.replace(home, EMPTYSTRING)
+            else -> filePath
         }
     }
 
-    public static int find(Object o, Object[] array) {
-        return find(o, Arrays.asList(array));
+    fun find(o: Any?, array: Array<Any?>): Int {
+        return find(o, array.toList())
     }
 
-    public static int find(Object o, List list) {
-        for(int count = 0; count < list.size(); count++) {
-            Object x = list.get(count);
-            if(x == null) continue;
+    fun find(o: Any?, list: List<Any?>): Int {
+        for (count in list.indices) {
+            val x = list[count] ?: continue
+            if (o === x) return count
 
-            if(o == x) return count;
-
-            if (o instanceof XMLPrefsSave) {
+            if (o is XMLPrefsSave) {
                 try {
-                    if (((XMLPrefsSave) o).label().equals((String) x)) return count;
-                } catch (Exception e) {}
+                    if (o.label() == x as? String) return count
+                } catch (e: Exception) {
+                }
             }
 
-            if (o instanceof String && x instanceof XMLPrefsSave) {
+            if (o is String && x is XMLPrefsSave) {
                 try {
-                    if (((XMLPrefsSave) x).label().equals((String) o)) return count;
-                } catch (Exception e) {}
+                    if (x.label() == o) return count
+                } catch (e: Exception) {
+                }
             }
 
             try {
-                if (o.equals(x) || x.equals(o)) return count;
-            } catch (Exception e) {
-                continue;
+                if (o == x || x == o) return count
+            } catch (e: Exception) {
+                continue
             }
         }
-        return -1;
+        return -1
     }
 
-    static Pattern pd = Pattern.compile("%d", Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
-    static Pattern pu = Pattern.compile("%u", Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
-    static Pattern pp = Pattern.compile("%p", Pattern.CASE_INSENSITIVE | Pattern.LITERAL);
-    public static String getHint(String currentPath) {
-        if(!XMLPrefsManager.getBoolean(Ui.show_session_info)) return null;
+    private val pd = Pattern.compile("%d", Pattern.CASE_INSENSITIVE or Pattern.LITERAL)
+    private val pu = Pattern.compile("%u", Pattern.CASE_INSENSITIVE or Pattern.LITERAL)
+    private val pp = Pattern.compile("%p", Pattern.CASE_INSENSITIVE or Pattern.LITERAL)
 
-        String format = XMLPrefsManager.get(Behavior.session_info_format);
-        if(format.length() == 0) return null;
+    fun getHint(currentPath: String): String? {
+        if (!XMLPrefsManager.getBoolean(Ui.show_session_info)) return null
+        var format = XMLPrefsManager.get(Behavior.session_info_format)
+        if (format.isEmpty()) return null
 
-        String deviceName = XMLPrefsManager.get(Ui.deviceName);
-        if(deviceName == null || deviceName.length() == 0) {
-            deviceName = Build.DEVICE;
+        var deviceName = XMLPrefsManager.get(Ui.deviceName)
+        if (deviceName.isNullOrEmpty()) {
+            deviceName = Build.DEVICE
         }
 
-        String username = XMLPrefsManager.get(Ui.username);
-        if(username == null) username = Tuils.EMPTYSTRING;
+        var username = XMLPrefsManager.get(Ui.username)
+        if (username == null) username = EMPTYSTRING
 
-        format = pd.matcher(format).replaceAll(Matcher.quoteReplacement(deviceName));
-        format = pu.matcher(format).replaceAll(Matcher.quoteReplacement(username));
-        format = pp.matcher(format).replaceAll(Matcher.quoteReplacement(Tuils.getNicePath(currentPath)));
+        format = pd.matcher(format).replaceAll(Matcher.quoteReplacement(deviceName))
+        format = pu.matcher(format).replaceAll(Matcher.quoteReplacement(username))
+        format = pp.matcher(format).replaceAll(Matcher.quoteReplacement(getNicePath(currentPath)))
 
-        return format;
+        return format
     }
 
-    public static int findPrefix(List<String> list, String prefix) {
-        for (int count = 0; count < list.size(); count++)
-            if (list.get(count).startsWith(prefix))
-                return count;
-        return -1;
+    fun findPrefix(list: List<String>, prefix: String): Int {
+        for (count in list.indices) {
+            if (list[count].startsWith(prefix)) return count
+        }
+        return -1
     }
 
-    public static int mmToPx(DisplayMetrics metrics, int mm) {
-        return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_MM, mm, metrics);
+    fun mmToPx(metrics: DisplayMetrics, mm: Int): Int {
+        return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_MM, mm.toFloat(), metrics).toInt()
     }
 
-    public static void insertHeaders(List<String> s, boolean newLine) {
-        char current = 0;
-        for (int count = 0; count < s.size(); count++) {
-            String st = s.get(count).trim().toUpperCase();
-            if(st.length() < 0) continue;
-
-            char c = st.charAt(0);
+    fun insertHeaders(s: MutableList<String>, newLine: Boolean) {
+        var current: Char = 0.toChar()
+        var count = 0
+        while (count < s.size) {
+            val st = s[count].trim().uppercase(Locale.getDefault())
+            if (st.isEmpty()) {
+                count++
+                continue
+            }
+            val c = st[0]
             if (current != c) {
-                s.add(count, (newLine ? NEWLINE : EMPTYSTRING) + c + (newLine ? NEWLINE : EMPTYSTRING));
-                current = c;
+                s.add(count, (if (newLine) NEWLINE else EMPTYSTRING) + c + (if (newLine) NEWLINE else EMPTYSTRING))
+                current = c
+                count++
             }
+            count++
         }
     }
 
-    public static void addPrefix(List<String> list, String prefix) {
-        for (int count = 0; count < list.size(); count++) {
-            list.set(count, prefix.concat(list.get(count)));
+    fun addPrefix(list: MutableList<String>, prefix: String) {
+        for (count in list.indices) {
+            list[count] = prefix + list[count]
         }
     }
 
-    public static void addSeparator(List<String> list, String separator) {
-        for (int count = 0; count < list.size(); count++)
-            list.set(count, list.get(count).concat(separator));
-    }
-
-    public static String toPlanString(String[] strings, String separator) {
-        if(strings == null) {
-            return Tuils.EMPTYSTRING;
-        }
-
-        String output = Tuils.EMPTYSTRING;
-        for (int count = 0; count < strings.length; count++) {
-            output = output.concat(strings[count]);
-            if (count < strings.length - 1) output = output.concat(separator);
-        }
-        return output;
-    }
-
-    public static String toPlanString(String[] strings) {
-        if (strings != null) {
-            return Tuils.toPlanString(strings, Tuils.NEWLINE);
-        }
-        return Tuils.EMPTYSTRING;
-    }
-
-    public static String toPlanString(String separator, List strings) {
-        if(strings == null) {
-            return Tuils.EMPTYSTRING;
-        }
-
-        String output = Tuils.EMPTYSTRING;
-        for (int count = 0; count < strings.size(); count++) {
-            output = output.concat(strings.get(count).toString());
-            if (count < strings.size() - 1) output = output.concat(separator);
-        }
-        return output;
-    }
-
-    public static String nodeToString(Node node) {
-        try {
-            TransformerFactory transfac = TransformerFactory.newInstance();
-            Transformer trans = transfac.newTransformer();
-            trans.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
-            trans.setOutputProperty(OutputKeys.INDENT, "yes");
-            StringWriter sw = new StringWriter();
-            StreamResult result = new StreamResult(sw);
-            DOMSource source = new DOMSource(node);
-            trans.transform(source, result);
-
-            return sw.toString();
-        }
-        catch (TransformerException e) {
-            e.printStackTrace();
-            return null;
+    fun addSeparator(list: MutableList<String>, separator: String) {
+        for (count in list.indices) {
+            list[count] = list[count] + separator
         }
     }
 
-    public static void log(Object o) {
-//        Log.e("andre", Arrays.toString(Thread.currentThread().getStackTrace()));
+    fun toPlanString(strings: Array<String>?, separator: String): String {
+        if (strings == null) return EMPTYSTRING
+        val output = StringBuilder()
+        for (count in strings.indices) {
+            output.append(strings[count])
+            if (count < strings.size - 1) output.append(separator)
+        }
+        return output.toString()
+    }
 
-        if(o instanceof Throwable) {
-            Log.e("andre", "", (Throwable) o);
+    fun toPlanString(strings: Array<String>?): String {
+        return if (strings != null) toPlanString(strings, NEWLINE) else EMPTYSTRING
+    }
+
+    fun toPlanString(separator: String, strings: List<*>?): String {
+        if (strings == null) return EMPTYSTRING
+        val output = StringBuilder()
+        for (count in strings.indices) {
+            output.append(strings[count].toString())
+            if (count < strings.size - 1) output.append(separator)
+        }
+        return output.toString()
+    }
+
+    fun nodeToString(node: Node): String? {
+        return try {
+            val transfac = TransformerFactory.newInstance()
+            val trans = transfac.newTransformer()
+            trans.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes")
+            trans.setOutputProperty(OutputKeys.INDENT, "yes")
+            val sw = StringWriter()
+            val result = StreamResult(sw)
+            val source = DOMSource(node)
+            trans.transform(source, result)
+            sw.toString()
+        } catch (e: TransformerException) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    fun log(o: Any?) {
+        if (o is Throwable) {
+            Log.e("andre", "", o)
         } else {
-            String text;
-            if(o instanceof Object[]) text = Arrays.toString((Object[]) o);
-            else text = o.toString();
-            Log.e("andre", text);
+            val text = if (o is Array<*>) o.contentToString() else o.toString()
+            Log.e("andre", text)
         }
     }
 
-    public static void log(Object o, Object o2) {
-        if(o instanceof Object[] && o2 instanceof Object[]){
-            Log.e("andre", Arrays.toString((Object[]) o) + " -- " + Arrays.toString((Object[]) o2));
+    fun log(o: Any?, o2: Any?) {
+        if (o is Array<*> && o2 is Array<*>) {
+            Log.e("andre", o.contentToString() + " -- " + o2.contentToString())
         } else {
-            Log.e("andre", String.valueOf(o) + " -- " + String.valueOf(o2));
+            Log.e("andre", o.toString() + " -- " + o2.toString())
         }
     }
 
-    public static void log(Object o, PrintStream to) {
-//        Log.e("andre", Arrays.toString(Thread.currentThread().getStackTrace()));
-
-        if(o instanceof Throwable) {
-            ((Throwable) o).printStackTrace(to);
+    fun log(o: Any?, to: PrintStream) {
+        if (o is Throwable) {
+            o.printStackTrace(to)
         } else {
-            String text;
-            if(o instanceof Object[]) text = Arrays.toString((Object[]) o);
-            else text = o.toString();
-
+            val text = if (o is Array<*>) o.contentToString() else o.toString()
             try {
-                to.write(text.getBytes());
-            } catch (IOException e) {
-                Tuils.log(e);
+                to.write(text.toByteArray())
+            } catch (e: IOException) {
+                log(e)
             }
         }
     }
 
-    public static void log(Object o, Object o2, OutputStream to) {
+    fun log(o: Any?, o2: Any?, to: OutputStream) {
         try {
-            if(o instanceof Object[] && o2 instanceof Object[]){
-                to.write((Arrays.toString((Object[]) o) + " -- " + Arrays.toString((Object[]) o2)).getBytes());
+            if (o is Array<*> && o2 is Array<*>) {
+                to.write((o.contentToString() + " -- " + o2.contentToString()).toByteArray())
             } else {
-                to.write((String.valueOf(o) + " -- " + String.valueOf(o2)).getBytes());
+                to.write((o.toString() + " -- " + o2.toString()).toByteArray())
             }
-        } catch (Exception e) {
-            Tuils.log(e);
+        } catch (e: Exception) {
+            log(e)
         }
     }
 
-    public static boolean hasInternetAccess() {
-        try {
-            HttpURLConnection urlc = (HttpURLConnection) (new URL("http://clients3.google.com/generate_204").openConnection());
-            return (urlc.getResponseCode() == 204 && urlc.getContentLength() == 0);
-        } catch (IOException e) {
-            return false;
+    fun hasInternetAccess(): Boolean {
+        return try {
+            val urlc = URL("http://clients3.google.com/generate_204").openConnection() as HttpURLConnection
+            urlc.responseCode == 204 && urlc.contentLength == 0
+        } catch (e: IOException) {
+            false
         }
     }
 
-    public static <T> T getDefaultValue(Class<T> clazz) {
-        return (T) Array.get(Array.newInstance(clazz, 1), 0);
+    @Suppress("UNCHECKED_CAST")
+    fun <T> getDefaultValue(clazz: Class<T>): T {
+        return java.lang.reflect.Array.get(java.lang.reflect.Array.newInstance(clazz, 1), 0) as T
     }
 
-    public static void toFile(String s) {
+    fun toFile(s: String) {
         try {
-            RandomAccessFile f = new RandomAccessFile(new File(Tuils.getFolder(), "crash.txt"), "rw");
-            f.seek(0);
-            f.write((new Date().toString() + Tuils.NEWLINE + Tuils.NEWLINE).getBytes());
-            OutputStream is = Channels.newOutputStream(f.getChannel());
-            is.write(s.getBytes());
-            f.write((Tuils.NEWLINE + Tuils.NEWLINE).getBytes());
-
-            is.close();
-            f.close();
-        } catch (Exception e1) {}
+            val f = RandomAccessFile(File(getFolder(), "crash.txt"), "rw")
+            f.seek(0)
+            f.write((Date().toString() + NEWLINE + NEWLINE).toByteArray())
+            val isChannel = Channels.newOutputStream(f.channel)
+            isChannel.write(s.toByteArray())
+            f.write((NEWLINE + NEWLINE).toByteArray())
+            isChannel.close()
+            f.close()
+        } catch (e1: Exception) {
+        }
     }
 
-    public static void toFile(Object o) {
-        if(o == null) return;
-
-//            RandomAccessFile f = new RandomAccessFile(new File(Tuils.getFolder(), "crash.txt"), "rw");
-//            f.seek(0);
-//            f.write((new Date().toString() + Tuils.NEWLINE + Tuils.NEWLINE).getBytes());
-//            OutputStream is = Channels.newOutputStream(f.getChannel());
-//            e.printStackTrace(new PrintStream(is));
-//            f.write((Tuils.NEWLINE + Tuils.NEWLINE).getBytes());
-//
-//            is.close();
-//            f.close();
-
+    fun toFile(o: Any?) {
+        if (o == null) return
         try {
-            FileOutputStream stream = new FileOutputStream(new File(Tuils.getFolder(), "crash.txt"));
-            stream.write((Tuils.NEWLINE + Tuils.NEWLINE).getBytes());
-
-            if(o instanceof Throwable) {
-                PrintStream ps = new PrintStream(stream);
-                ((Throwable) o).printStackTrace(ps);
+            val stream = FileOutputStream(File(getFolder(), "crash.txt"))
+            stream.write((NEWLINE + NEWLINE).toByteArray())
+            if (o is Throwable) {
+                val ps = PrintStream(stream)
+                o.printStackTrace(ps)
             } else {
-                stream.write(o.toString().getBytes());
+                stream.write(o.toString().toByteArray())
             }
-
-            stream.write((Tuils.NEWLINE + "----------------------------").getBytes());
-
-            stream.close();
-        } catch (Exception e1) {}
+            stream.write((NEWLINE + "----------------------------").toByteArray())
+            stream.close()
+        } catch (e1: Exception) {
+        }
     }
 
-    public static String toPlanString(List<String> strings, String separator) {
-        if(strings != null) {
-            String[] object = new String[strings.size()];
-            return Tuils.toPlanString(strings.toArray(object), separator);
-        }
-        return Tuils.EMPTYSTRING;
+    fun toPlanString(strings: List<String>?, separator: String): String {
+        return if (strings != null) {
+            toPlanString(strings.toTypedArray() as Array<String>, separator)
+        } else EMPTYSTRING
     }
 
-    public static String filesToPlanString(List<File> files, String separator) {
-        if(files == null || files.size() == 0) {
-            return null;
+    fun filesToPlanString(files: List<File>?, separator: String): String? {
+        if (files.isNullOrEmpty()) {
+            return null
         }
-
-        StringBuilder builder = new StringBuilder();
-        int limit = files.size() - 1;
-        for (int count = 0; count < files.size(); count++) {
-            builder.append(files.get(count).getName());
+        val builder = StringBuilder()
+        val limit = files.size - 1
+        for (count in files.indices) {
+            builder.append(files[count].name)
             if (count < limit) {
-                builder.append(separator);
+                builder.append(separator)
             }
         }
-        return builder.toString();
+        return builder.toString()
     }
 
-    public static String toPlanString(List<String> strings) {
-        return Tuils.toPlanString(strings, NEWLINE);
+    fun toPlanString(strings: List<String>): String {
+        return toPlanString(strings, NEWLINE)
     }
 
-    public static String toPlanString(Object[] objs, String separator) {
-        if(objs == null) {
-            return Tuils.EMPTYSTRING;
-        }
-
-        StringBuilder output = new StringBuilder();
-        for(int count = 0; count < objs.length; count++) {
-            output.append(objs[count]);
-            if(count < objs.length - 1) {
-                output.append(separator);
+    fun toPlanString(objs: Array<Any?>?, separator: String): String {
+        if (objs == null) return EMPTYSTRING
+        val output = StringBuilder()
+        for (count in objs.indices) {
+            output.append(objs[count])
+            if (count < objs.size - 1) {
+                output.append(separator)
             }
         }
-        return output.toString();
+        return output.toString()
     }
 
-    static Pattern unnecessarySpaces = Pattern.compile("\\s{2,}");
-    public static String removeUnncesarySpaces(String string) {
-        return unnecessarySpaces.matcher(string).replaceAll(Tuils.SPACE);
+    private val unnecessarySpaces = Pattern.compile("\\s{2,}")
+    fun removeUnnecessarySpaces(string: String): String {
+        return unnecessarySpaces.matcher(string).replaceAll(SPACE)
     }
 
-    public static String getStackTrace(final Throwable throwable) {
-        final StringWriter sw = new StringWriter();
-        final PrintWriter pw = new PrintWriter(sw, true);
-        throwable.printStackTrace(pw);
-        return sw.getBuffer().toString();
+    fun getStackTrace(throwable: Throwable): String {
+        val sw = StringWriter()
+        val pw = PrintWriter(sw, true)
+        throwable.printStackTrace(pw)
+        return sw.buffer.toString()
     }
 
-    public static boolean isAlpha(String s) {
-        if(s == null) {
-            return false;
-        }
-        char[] chars = s.toCharArray();
-
-        for (char c : chars)
-            if (!Character.isLetter(c))
-                return false;
-
-        return true;
+    fun isAlpha(s: String?): Boolean {
+        if (s == null) return false
+        val chars = s.toCharArray()
+        for (c in chars) if (!Character.isLetter(c)) return false
+        return true
     }
 
-    public static boolean isPhoneNumber(String s) {
-        if(s == null) {
-            return false;
-        }
-        char[] chars = s.toCharArray();
-
-        for (char c : chars) {
-            if (Character.isLetter(c)) {
-                return false;
-            }
-        }
-
-        return true;
+    fun isPhoneNumber(s: String?): Boolean {
+        if (s == null) return false
+        val chars = s.toCharArray()
+        for (c in chars) if (Character.isLetter(c)) return false
+        return true
     }
 
-//    return 0 if only digit
-    public static char firstNonDigit(String s) {
-        if(s == null) {
-            return 0;
-        }
-
-        char[] chars = s.toCharArray();
-
-        for (char c : chars) {
-            if (!Character.isDigit(c)) {
-                return c;
-            }
-        }
-
-        return 0;
+    fun firstNonDigit(s: String?): Char {
+        if (s == null) return 0.toChar()
+        val chars = s.toCharArray()
+        for (c in chars) if (!Character.isDigit(c)) return c
+        return 0.toChar()
     }
 
-    public static boolean isNumber(String s) {
-        if(s == null || s.length() == 0) {
-            return false;
-        }
-
-        char[] chars = s.toCharArray();
-
-        for (char c : chars) {
-            if (!Character.isDigit(c)) {
-                return false;
-            }
-        }
-
-        return true;
+    fun isNumber(s: String?): Boolean {
+        if (s.isNullOrEmpty()) return false
+        val chars = s.toCharArray()
+        for (c in chars) if (!Character.isDigit(c)) return false
+        return true
     }
 
-    public static Intent openFile(Context c, File f) {
-        Intent intent = new Intent(Intent.ACTION_VIEW);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-
-        Uri u = buildFile(c, f);
-        String mimetype = MimeTypes.getMimeType(f.getAbsolutePath(), f.isDirectory());
-
-        intent.setDataAndType(u, mimetype);
-
-        int flags;
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_PREFIX_URI_PERMISSION;
+    fun openFile(c: Context, f: File): Intent {
+        val intent = Intent(Intent.ACTION_VIEW)
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        val u = buildFile(c, f)
+        val mimetype = MimeTypes.getMimeType(f.absolutePath, f.isDirectory)
+        intent.setDataAndType(u, mimetype)
+        val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_GRANT_PREFIX_URI_PERMISSION
         } else {
-            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION;
+            Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
         }
-
-        intent.addFlags(flags);
-
-        return intent;
+        intent.addFlags(flags)
+        return intent
     }
 
-    public static Intent shareFile(Context c, File f) {
-        Intent intent = new Intent(Intent.ACTION_SEND);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-
-        Uri u = buildFile(c, f);
-
-        String mimetype = MimeTypes.getMimeType(f.getAbsolutePath(), f.isDirectory());
-
-        intent.setDataAndType(u, mimetype);
-
-        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        intent.putExtra(Intent.EXTRA_STREAM, u);
-
-        return intent;
+    fun shareFile(c: Context, f: File): Intent {
+        val intent = Intent(Intent.ACTION_SEND)
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        val u = buildFile(c, f)
+        val mimetype = MimeTypes.getMimeType(f.absolutePath, f.isDirectory)
+        intent.setDataAndType(u, mimetype)
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        intent.putExtra(Intent.EXTRA_STREAM, u)
+        return intent
     }
 
-    private static Uri buildFile(Context context, File file) {
-        Uri uri;
-        if(Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
-            uri = Uri.fromFile(file);
+    private fun buildFile(context: Context, file: File): Uri {
+        return if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+            Uri.fromFile(file)
+        } else {
+            FileProvider.getUriForFile(context, GenericFileProvider.PROVIDER_NAME, file)
         }
-        else {
-            uri = FileProvider.getUriForFile(context, GenericFileProvider.PROVIDER_NAME, file);
-        }
-        return uri;
     }
 
-    /**
-     * Used to be {@code Environment.getExternalStorageDirectory()} + "t-ui" — a *new* top-level
-     * directory in shared storage. Scoped storage (enforced unconditionally from API 30, and
-     * this app targets 37) refuses to create one regardless of any permission grant: {@code
-     * mkdir()} silently fails and MediaProvider logs "Creating or writing to a non-default top
-     * level directory is not allowed!" for every attempt. Every caller of {@link #getFolder()}
-     * then got null, so every preference read fell through to a default (or, where nothing
-     * defends against a null entry, crashed — that's what killed the app during the
-     * suggested-apps list build).
-     *
-     * The app's own external files directory is exempt from that restriction, requires no
-     * permission, and is still reachable with a file manager under Android/data/ — it just
-     * isn't a bare top-level folder. Falls back to internal storage if external is unavailable
-     * (unmounted SD card, for instance), and to the old behavior only if {@link #init} was
-     * never called, which should not happen in practice.
-     */
-    private static File getTuiFolder() {
-        File base = null;
+    private fun getTuiFolder(): File {
+        var base: File? = null
         if (applicationContext != null) {
-            base = applicationContext.getExternalFilesDir(null);
-            if (base == null) base = applicationContext.getFilesDir();
+            base = applicationContext!!.getExternalFilesDir(null)
+            if (base == null) base = applicationContext!!.filesDir
         }
-        if (base == null) base = Environment.getExternalStorageDirectory();
-        return new File(base, TUI_FOLDER);
+        if (base == null) base = Environment.getExternalStorageDirectory()
+        return File(base, TUI_FOLDER)
     }
 
-    public static double eval(final String str) {
-        return new Object() {
-            int pos = -1, ch;
+    fun eval(str: String): Double {
+        return object {
+            var pos = -1
+            var ch = 0
 
-            void nextChar() {
-                ch = (++pos < str.length()) ? str.charAt(pos) : -1;
+            fun nextChar() {
+                ch = if (++pos < str.length) str[pos].code else -1
             }
 
-            boolean eat(int charToEat) {
-                while (ch == ' ') nextChar();
+            fun eat(charToEat: Int): Boolean {
+                while (ch == ' '.code) nextChar()
                 if (ch == charToEat) {
-                    nextChar();
-                    return true;
+                    nextChar()
+                    return true
                 }
-                return false;
+                return false
             }
 
-            double parse() {
-                nextChar();
-                double x = parseExpression();
-                if (pos < str.length()) throw new RuntimeException("Unexpected: " + (char)ch);
-                return x;
+            fun parse(): Double {
+                nextChar()
+                val x = parseExpression()
+                if (pos < str.length) throw RuntimeException("Unexpected: " + ch.toChar())
+                return x
             }
 
-            double parseExpression() {
-                double x = parseTerm();
-                for (;;) {
-                    if      (eat('+')) x += parseTerm(); // addition
-                    else if (eat('-')) x -= parseTerm(); // subtraction
-                    else return x;
-                }
-            }
-
-            double parseTerm() {
-                double x = parseFactor();
-                for (;;) {
-                    if      (eat('*')) x *= parseFactor(); // multiplication
-                    else if (eat('/')) x /= parseFactor(); // division
-                    else return x;
+            fun parseExpression(): Double {
+                var x = parseTerm()
+                while (true) {
+                    if (eat('+'.code)) x += parseTerm()
+                    else if (eat('-'.code)) x -= parseTerm()
+                    else return x
                 }
             }
 
-            double parseFactor() {
-                if (eat('+')) return parseFactor(); // unary plus
-                if (eat('-')) return -parseFactor(); // unary minus
+            fun parseTerm(): Double {
+                var x = parseFactor()
+                while (true) {
+                    if (eat('*'.code)) x *= parseFactor()
+                    else if (eat('/'.code)) x /= parseFactor()
+                    else return x
+                }
+            }
 
-                double x;
-                int startPos = this.pos;
-                if (eat('(')) { // parentheses
-                    x = parseExpression();
-                    eat(')');
-                } else if ((ch >= '0' && ch <= '9') || ch == '.') { // numbers
-                    while ((ch >= '0' && ch <= '9') || ch == '.') nextChar();
-                    x = Double.parseDouble(str.substring(startPos, this.pos));
-                } else if (ch >= 'a' && ch <= 'z') { // functions
-                    while (ch >= 'a' && ch <= 'z') nextChar();
-                    String func = str.substring(startPos, this.pos);
-                    x = parseFactor();
-                    if (func.equals("sqrt")) x = Math.sqrt(x);
-                    else if (func.equals("sin")) x = Math.sin(Math.toRadians(x));
-                    else if (func.equals("cos")) x = Math.cos(Math.toRadians(x));
-                    else if (func.equals("tan")) x = Math.tan(Math.toRadians(x));
-                    else throw new RuntimeException("Unknown function: " + func);
+            fun parseFactor(): Double {
+                if (eat('+'.code)) return parseFactor()
+                if (eat('-'.code)) return -parseFactor()
+                var x: Double
+                val startPos = pos
+                if (eat('('.code)) {
+                    x = parseExpression()
+                    eat(')'.code)
+                } else if (ch >= '0'.code && ch <= '9'.code || ch == '.'.code) {
+                    while (ch >= '0'.code && ch <= '9'.code || ch == '.'.code) nextChar()
+                    x = str.substring(startPos, pos).toDouble()
+                } else if (ch >= 'a'.code && ch <= 'z'.code) {
+                    while (ch >= 'a'.code && ch <= 'z'.code) nextChar()
+                    val func = str.substring(startPos, pos)
+                    x = parseFactor()
+                    x = when (func) {
+                        "sqrt" -> Math.sqrt(x)
+                        "sin" -> Math.sin(Math.toRadians(x))
+                        "cos" -> Math.cos(Math.toRadians(x))
+                        "tan" -> Math.tan(Math.toRadians(x))
+                        else -> throw RuntimeException("Unknown function: $func")
+                    }
                 } else {
-                    throw new RuntimeException("Unexpected: " + (char)ch);
+                    throw RuntimeException("Unexpected: " + ch.toChar())
                 }
-
-                if (eat('^')) x = Math.pow(x, parseFactor()); // exponentiation
-
-                return x;
+                if (eat('^'.code)) x = Math.pow(x, parseFactor())
+                return x
             }
-        }.parse();
+        }.parse()
     }
 
-    public static String getTextFromClipboard(Context context) {
-        try {
-            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR2) {
-                ClipboardManager manager = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
-                ClipData.Item item = manager.getPrimaryClip().getItemAt(0);
-                return item.getText().toString();
+    fun getTextFromClipboard(context: Context): String? {
+        return try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR2) {
+                val manager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                val item = manager.primaryClip!!.getItemAt(0)
+                item.text.toString()
             } else {
-                android.text.ClipboardManager manager = (android.text.ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
-                return manager.getText().toString();
+                val manager = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.text.ClipboardManager
+                manager.text.toString()
             }
-        } catch (Exception e) {
-            return null;
+        } catch (e: Exception) {
+            null
         }
     }
 
-    public static int dpToPx(Resources resources, int dp) {
-        DisplayMetrics displayMetrics = resources.getDisplayMetrics();
-        return Math.round(dp * (displayMetrics.xdpi / DisplayMetrics.DENSITY_DEFAULT));
+    fun dpToPx(resources: Resources, dp: Int): Int {
+        val displayMetrics = resources.displayMetrics
+        return Math.round(dp * (displayMetrics.xdpi / DisplayMetrics.DENSITY_DEFAULT))
     }
 
-    private static final int FILEUPDATE_DELAY = 100;
-    private static File folder = null;
-    public static File getFolder() {
-        if(folder != null) return folder;
+    private const val FILEUPDATE_DELAY = 100
+    private var folder: File? = null
 
-        int elapsedTime = 0;
+    fun getFolder(): File? {
+        if (folder != null) return folder
+        var elapsedTime = 0
         while (elapsedTime < 1000) {
-            File tuiFolder = Tuils.getTuiFolder();
-            if(tuiFolder != null && ((tuiFolder.exists() && tuiFolder.isDirectory()) || tuiFolder.mkdir())) {
-                folder = tuiFolder;
-                return folder;
+            val tuiFolder = getTuiFolder()
+            if ((tuiFolder.exists() && tuiFolder.isDirectory) || tuiFolder.mkdir()) {
+                folder = tuiFolder
+                return folder
             }
-
             try {
-                Thread.sleep(FILEUPDATE_DELAY);
-            } catch (InterruptedException e) {}
-
-            elapsedTime += FILEUPDATE_DELAY;
-        }
-
-        return null;
-    }
-
-    public static int alphabeticCompare(String s1, String s2) {
-        String cmd1 = removeSpaces(s1).toLowerCase();
-        String cmd2 = removeSpaces(s2).toLowerCase();
-
-        for (int count = 0; count < cmd1.length() && count < cmd2.length(); count++) {
-            char c1 = cmd1.charAt(count);
-            char c2 = cmd2.charAt(count);
-
-            if (c1 < c2) {
-                return -1;
-            } else if (c1 > c2) {
-                return 1;
+                Thread.sleep(FILEUPDATE_DELAY.toLong())
+            } catch (e: InterruptedException) {
             }
+            elapsedTime += FILEUPDATE_DELAY
         }
-
-        if (s1.length() > s2.length()) {
-            return 1;
-        } else if (s1.length() < s2.length()) {
-            return -1;
-        }
-        return 0;
+        return null
     }
 
-    private static final String SPACE_REGEXP = "\\s";
-    public static String removeSpaces(String string) {
-        return string.replaceAll(SPACE_REGEXP, EMPTYSTRING);
+    fun alphabeticCompare(s1: String, s2: String): Int {
+        val cmd1 = removeSpaces(s1).lowercase(Locale.getDefault())
+        val cmd2 = removeSpaces(s2).lowercase(Locale.getDefault())
+        var count = 0
+        while (count < cmd1.length && count < cmd2.length) {
+            val c1 = cmd1[count]
+            val c2 = cmd2[count]
+            if (c1 < c2) {
+                return -1
+            } else if (c1 > c2) {
+                return 1
+            }
+            count++
+        }
+        if (s1.length > s2.length) {
+            return 1
+        } else if (s1.length < s2.length) {
+            return -1
+        }
+        return 0
     }
 
-    public static String getNetworkType(Context context) {
-        TelephonyManager mTelephonyManager = (TelephonyManager)
-                context.getSystemService(Context.TELEPHONY_SERVICE);
-        int networkType = mTelephonyManager.getNetworkType();
-        switch (networkType) {
-            case TelephonyManager.NETWORK_TYPE_GPRS:
-            case TelephonyManager.NETWORK_TYPE_EDGE:
-            case TelephonyManager.NETWORK_TYPE_CDMA:
-            case TelephonyManager.NETWORK_TYPE_1xRTT:
-            case TelephonyManager.NETWORK_TYPE_IDEN:
-                return "2g";
-            case TelephonyManager.NETWORK_TYPE_UMTS:
-            case TelephonyManager.NETWORK_TYPE_EVDO_0:
-            case TelephonyManager.NETWORK_TYPE_EVDO_A:
-            case TelephonyManager.NETWORK_TYPE_HSDPA:
-            case TelephonyManager.NETWORK_TYPE_HSUPA:
-            case TelephonyManager.NETWORK_TYPE_HSPA:
-            case TelephonyManager.NETWORK_TYPE_EVDO_B:
-            case TelephonyManager.NETWORK_TYPE_EHRPD:
-            case TelephonyManager.NETWORK_TYPE_HSPAP:
-                return "3g";
-            case TelephonyManager.NETWORK_TYPE_LTE:
-                return "4g";
-            default:
-                return "unknown";
+    private const val SPACE_REGEXP = "\\s"
+    fun removeSpaces(string: String): String {
+        return string.replace(SPACE_REGEXP.toRegex(), EMPTYSTRING)
+    }
+
+    @SuppressLint("MissingPermission")
+    fun getNetworkType(context: Context): String {
+        val mTelephonyManager = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+        val networkType = mTelephonyManager.networkType
+        return when (networkType) {
+            TelephonyManager.NETWORK_TYPE_GPRS, TelephonyManager.NETWORK_TYPE_EDGE, TelephonyManager.NETWORK_TYPE_CDMA, TelephonyManager.NETWORK_TYPE_1xRTT, TelephonyManager.NETWORK_TYPE_IDEN -> "2g"
+            TelephonyManager.NETWORK_TYPE_UMTS, TelephonyManager.NETWORK_TYPE_EVDO_0, TelephonyManager.NETWORK_TYPE_EVDO_A, TelephonyManager.NETWORK_TYPE_HSDPA, TelephonyManager.NETWORK_TYPE_HSUPA, TelephonyManager.NETWORK_TYPE_HSPA, TelephonyManager.NETWORK_TYPE_EVDO_B, TelephonyManager.NETWORK_TYPE_EHRPD, TelephonyManager.NETWORK_TYPE_HSPAP -> "3g"
+            TelephonyManager.NETWORK_TYPE_LTE -> "4g"
+            else -> "unknown"
         }
     }
 
-    public static void setCursorDrawableColor(EditText editText, int color) {
+    @SuppressLint("DiscouragedPrivateApi", "SoonBlockedPrivateApi")
+    fun setCursorDrawableColor(editText: EditText, color: Int) {
         try {
-            Field fCursorDrawableRes = TextView.class.getDeclaredField("mCursorDrawableRes");
-            fCursorDrawableRes.setAccessible(true);
-            int mCursorDrawableRes = fCursorDrawableRes.getInt(editText);
-            Field fEditor = TextView.class.getDeclaredField("mEditor");
-            fEditor.setAccessible(true);
-            Object editor = fEditor.get(editText);
-            Class<?> clazz = editor.getClass();
-            Field fCursorDrawable = clazz.getDeclaredField("mCursorDrawable");
-            fCursorDrawable.setAccessible(true);
-            Drawable[] drawables = new Drawable[2];
-            drawables[0] = editText.getContext().getResources().getDrawable(mCursorDrawableRes);
-            drawables[1] = editText.getContext().getResources().getDrawable(mCursorDrawableRes);
-            drawables[0].setColorFilter(color, PorterDuff.Mode.SRC_IN);
-            drawables[1].setColorFilter(color, PorterDuff.Mode.SRC_IN);
-            fCursorDrawable.set(editor, drawables);
-        } catch (Throwable ignored) {}
-    }
-
-    public static int nOfBytes(File file) {
-        int count = 0;
-        try {
-            FileInputStream in = new FileInputStream(file);
-
-            while(in.read() != -1) count++;
-
-            return count;
-        } catch (IOException e) {
-            Tuils.log(e);
-            return count;
+            val fCursorDrawableRes = TextView::class.java.getDeclaredField("mCursorDrawableRes")
+            fCursorDrawableRes.isAccessible = true
+            val mCursorDrawableRes = fCursorDrawableRes.getInt(editText)
+            val fEditor = TextView::class.java.getDeclaredField("mEditor")
+            fEditor.isAccessible = true
+            val editor = fEditor.get(editText)
+            val clazz = editor.javaClass
+            val fCursorDrawable = clazz.getDeclaredField("mCursorDrawable")
+            fCursorDrawable.isAccessible = true
+            val drawables = arrayOfNulls<Drawable>(2)
+            drawables[0] = editText.context.resources.getDrawable(mCursorDrawableRes)
+            drawables[1] = editText.context.resources.getDrawable(mCursorDrawableRes)
+            drawables[0]!!.setColorFilter(color, PorterDuff.Mode.SRC_IN)
+            drawables[1]!!.setColorFilter(color, PorterDuff.Mode.SRC_IN)
+            fCursorDrawable.set(editor, drawables)
+        } catch (ignored: Throwable) {
         }
     }
 
-    public static void sendXMLParseError(Context context, String PATH, SAXParseException e) {
-        Tuils.sendOutput(
-                Color.RED,
-                context, context.getString(R.string.output_xmlproblem1) + Tuils.SPACE + PATH + context.getString(R.string.output_xmlproblem2) + Tuils.NEWLINE + context.getString(R.string.output_errorlabel) +
-                "File: " + e.getSystemId() + Tuils.NEWLINE +
-                "Message" + e.getMessage() + Tuils.NEWLINE +
-                "Line" + e.getLineNumber() + Tuils.NEWLINE +
-                "Column" + e.getColumnNumber());
+    fun nOfBytes(file: File): Int {
+        var count = 0
+        try {
+            val `in` = FileInputStream(file)
+            while (`in`.read() != -1) count++
+            `in`.close()
+        } catch (e: IOException) {
+            log(e)
+        }
+        return count
     }
 
-    public static void sendXMLParseError(Context context, String PATH) {
-        Tuils.sendOutput(Color.RED, context, context.getString(R.string.output_xmlproblem1) + Tuils.SPACE + PATH + context.getString(R.string.output_xmlproblem2));
+    fun sendXMLParseError(context: Context, path: String, e: SAXParseException) {
+        sendOutput(
+            Color.RED,
+            context, context.getString(R.string.output_xmlproblem1) + SPACE + path + context.getString(R.string.output_xmlproblem2) + NEWLINE + context.getString(R.string.output_errorlabel) +
+                    "File: " + e.systemId + NEWLINE +
+                    "Message" + e.message + NEWLINE +
+                    "Line" + e.lineNumber + NEWLINE +
+                    "Column" + e.columnNumber
+        )
+    }
+
+    fun sendXMLParseError(context: Context, path: String) {
+        sendOutput(Color.RED, context, context.getString(R.string.output_xmlproblem1) + SPACE + path + context.getString(R.string.output_xmlproblem2))
     }
 }
