@@ -15,14 +15,14 @@ public class bluetooth implements CommandAbstraction {
 
         BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
 
-        if(adapter == null) return info.context.getString(R.string.output_bluetooth_unavailable);
+        if(adapter == null) return info.getContext().getString(R.string.output_bluetooth_unavailable);
 
         if(adapter.isEnabled()) {
             adapter.disable();
-            return info.context.getString(R.string.output_bluetooth) + " false";
+            return info.getContext().getString(R.string.output_bluetooth) + " false";
         } else {
             adapter.enable();
-            return info.context.getString(R.string.output_bluetooth) + " true";
+            return info.getContext().getString(R.string.output_bluetooth) + " true";
         }
     }
 

@@ -19,7 +19,7 @@ public class uninstall implements CommandAbstraction {
 
         Uri packageURI = Uri.parse("package:" + packageName);
         Intent uninstallIntent = new Intent(Intent.ACTION_DELETE, packageURI);
-        info.context.startActivity(uninstallIntent);
+        info.getContext().startActivity(uninstallIntent);
 
         return Tuils.EMPTYSTRING;
     }

@@ -29,7 +29,7 @@ public class theme extends ParamCommand {
             public String exec(ExecutePack pack) {
                 Intent intent = new Intent(ThemeManager.ACTION_APPLY);
                 intent.putExtra(ThemeManager.NAME, pack.getString());
-                LocalBroadcastManager.getInstance(pack.context.getApplicationContext()).sendBroadcast(intent);
+                LocalBroadcastManager.getInstance(pack.getContext().getApplicationContext()).sendBroadcast(intent);
                 return null;
             }
         },
@@ -41,35 +41,35 @@ public class theme extends ParamCommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                LocalBroadcastManager.getInstance(pack.context.getApplicationContext()).sendBroadcast(new Intent(ThemeManager.ACTION_STANDARD));
+                LocalBroadcastManager.getInstance(pack.getContext().getApplicationContext()).sendBroadcast(new Intent(ThemeManager.ACTION_STANDARD));
                 return null;
             }
         },
         view {
             @Override
             public String exec(ExecutePack pack) {
-                pack.context.startActivity(Tuils.webPage("https://tui.tarunshankerpandey.com"));
+                pack.getContext().startActivity(Tuils.webPage("https://tui.tarunshankerpandey.com"));
                 return null;
             }
         },
         create {
             @Override
             public String exec(ExecutePack pack) {
-                pack.context.startActivity(Tuils.webPage("https://tui.tarunshankerpandey.com/create.php"));
+                pack.getContext().startActivity(Tuils.webPage("https://tui.tarunshankerpandey.com/create.php"));
                 return null;
             }
         },
         old {
             @Override
             public String exec(ExecutePack pack) {
-                LocalBroadcastManager.getInstance(pack.context.getApplicationContext()).sendBroadcast(new Intent(ThemeManager.ACTION_REVERT));
+                LocalBroadcastManager.getInstance(pack.getContext().getApplicationContext()).sendBroadcast(new Intent(ThemeManager.ACTION_REVERT));
                 return null;
             }
         },
         tutorial {
             @Override
             public String exec(ExecutePack pack) {
-                pack.context.startActivity(Tuils.webPage("https://github.com/Andre1299/TUI-ConsoleLauncher/wiki/Themes"));
+                pack.getContext().startActivity(Tuils.webPage("https://github.com/Andre1299/TUI-ConsoleLauncher/wiki/Themes"));
                 return null;
             }
         };
@@ -101,7 +101,7 @@ public class theme extends ParamCommand {
 
         @Override
         public String onNotArgEnough(ExecutePack pack, int n) {
-            return pack.context.getString(R.string.help_theme);
+            return pack.getContext().getString(R.string.help_theme);
         }
 
         @Override

@@ -21,7 +21,7 @@ public class regex extends ParamCommand {
             public String exec(ExecutePack pack) {
                 String output = RegexManager.instance.add(pack.getInt(), pack.getString());
                 if(output == null) return null;
-                if(output.length() == 0) return pack.context.getString(R.string.id_already);
+                if(output.length() == 0) return pack.getContext().getString(R.string.id_already);
                 else return output;
             }
 
@@ -35,7 +35,7 @@ public class regex extends ParamCommand {
             public String exec(ExecutePack pack) {
                 String output = RegexManager.instance.rm(pack.getInt());
                 if(output == null) return null;
-                if(output.length() == 0) return pack.context.getString(R.string.id_notfound);
+                if(output.length() == 0) return pack.getContext().getString(R.string.id_notfound);
                 return output;
             }
 
@@ -48,7 +48,7 @@ public class regex extends ParamCommand {
             @Override
             public String exec(ExecutePack pack) {
                 RegexManager.Regex r = RegexManager.instance.get(pack.getInt());
-                if(r == null) return pack.context.getString(R.string.id_notfound);
+                if(r == null) return pack.getContext().getString(R.string.id_notfound);
 
                 return r.regex != null ? r.regex.pattern() : r.literalPattern;
             }
@@ -62,9 +62,9 @@ public class regex extends ParamCommand {
             @Override
             public String exec(ExecutePack pack) {
                 CharSequence s = RegexManager.instance.test(pack.getInt(), pack.getString());
-                if(s.length() == 0) return pack.context.getString(R.string.id_notfound);
+                if(s.length() == 0) return pack.getContext().getString(R.string.id_notfound);
 
-                Tuils.sendOutput(pack.context, s);
+                Tuils.sendOutput(pack.getContext(), s);
                 return null;
             }
 
@@ -76,12 +76,12 @@ public class regex extends ParamCommand {
 
         @Override
         public String onArgNotFound(ExecutePack pack, int index) {
-            return pack.context.getString(R.string.invalid_integer);
+            return pack.getContext().getString(R.string.invalid_integer);
         }
 
         @Override
         public String onNotArgEnough(ExecutePack pack, int n) {
-            return pack.context.getString(R.string.help_regex);
+            return pack.getContext().getString(R.string.help_regex);
         }
 
         @Override

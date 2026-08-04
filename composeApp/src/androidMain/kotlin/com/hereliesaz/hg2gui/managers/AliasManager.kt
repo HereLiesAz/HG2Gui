@@ -294,7 +294,8 @@ class AliasManager(private val context: Context) {
     /**
      * Internal representation of an alias.
      */
-    class Alias(var name: String, var value: String, parameterPattern: Pattern) {
+    class Alias(@JvmField var name: String, @JvmField var value: String, parameterPattern: Pattern) {
+        @JvmField
         val isParametrized: Boolean = parameterPattern.matcher(value).find()
 
         override fun equals(other: Any?): Boolean {

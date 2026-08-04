@@ -20,15 +20,15 @@ public class call implements CommandAbstraction {
     @Override
     public String exec(ExecutePack pack) {
         final MainPack info = (MainPack) pack;
-        if (ContextCompat.checkSelfPermission(info.context, Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED ||
-                ContextCompat.checkSelfPermission(info.context, Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(info.getContext(), Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(info.getContext(), Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
 
-            ActivityCompat.requestPermissions((Activity) info.context, new String[]{Manifest.permission.READ_CONTACTS, Manifest.permission.CALL_PHONE}, LauncherActivity.COMMAND_REQUEST_PERMISSION);
-            return info.context.getString(R.string.output_waitingpermission);
+            ActivityCompat.requestPermissions((Activity) info.getContext(), new String[]{Manifest.permission.READ_CONTACTS, Manifest.permission.CALL_PHONE}, LauncherActivity.COMMAND_REQUEST_PERMISSION);
+            return info.getContext().getString(R.string.output_waitingpermission);
         }
 
         String number = info.getString();
-        if(number == null) return pack.context.getString(R.string.invalid_number);
+        if(number == null) return pack.getContext().getString(R.string.invalid_number);
 
         StringBuilder s = new StringBuilder(Tuils.EMPTYSTRING);
         for(char c : number.toCharArray()) {
@@ -37,12 +37,12 @@ public class call implements CommandAbstraction {
         }
 
         Uri uri = Uri.parse("tel:" + s);
-        if(uri == null) return pack.context.getString(R.string.invalid_number);
+        if(uri == null) return pack.getContext().getString(R.string.invalid_number);
 
         final Intent intent = new Intent(Intent.ACTION_CALL, uri);
 
         try {
-            ((Activity) pack.context).runOnUiThread(() -> info.context.startActivity(intent));
+            ((Activity) pack.getContext()).runOnUiThread(() -> info.getContext().startActivity(intent));
         } catch (SecurityException e) {
             return info.res.getString(R.string.output_nopermissions);
         }
@@ -67,7 +67,7 @@ public class call implements CommandAbstraction {
 
     @Override
     public String onNotArgEnough(ExecutePack info, int nArgs) {
-        return info.context.getString(helpRes());
+        return info.getContext().getString(helpRes());
     }
 
     @Override

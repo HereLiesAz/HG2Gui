@@ -31,11 +31,11 @@ public class volume extends ParamCommand {
             @Override
             public String exec(ExecutePack pack) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                    NotificationManager mNotificationManager = (NotificationManager) pack.context.getSystemService(Context.NOTIFICATION_SERVICE);
+                    NotificationManager mNotificationManager = (NotificationManager) pack.getContext().getSystemService(Context.NOTIFICATION_SERVICE);
                     if (!mNotificationManager.isNotificationPolicyAccessGranted()) {
                         Intent intent = new Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS);
-                        pack.context.startActivity(intent);
-                        return pack.context.getString(R.string.output_waitingpermission);
+                        pack.getContext().startActivity(intent);
+                        return pack.getContext().getString(R.string.output_waitingpermission);
                     }
                 }
 
@@ -45,7 +45,7 @@ public class volume extends ParamCommand {
                 if(volume < 0) volume = 0;
                 else if(volume > 100) volume = 100;
 
-                AudioManager manager = (AudioManager) pack.context.getSystemService(Context.AUDIO_SERVICE);
+                AudioManager manager = (AudioManager) pack.getContext().getSystemService(Context.AUDIO_SERVICE);
                 int maxIndex = manager.getStreamMaxVolume(type);
 
                 volume = volume * maxIndex / 100;
@@ -57,7 +57,7 @@ public class volume extends ParamCommand {
 
             @Override
             public String onArgNotFound(ExecutePack pack, int index) {
-                return pack.context.getString(R.string.invalid_integer);
+                return pack.getContext().getString(R.string.invalid_integer);
             }
         },
         profile {
@@ -70,15 +70,15 @@ public class volume extends ParamCommand {
             public String exec(ExecutePack pack) {
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                    NotificationManager mNotificationManager = (NotificationManager) pack.context.getSystemService(Context.NOTIFICATION_SERVICE);
+                    NotificationManager mNotificationManager = (NotificationManager) pack.getContext().getSystemService(Context.NOTIFICATION_SERVICE);
                     if (!mNotificationManager.isNotificationPolicyAccessGranted()) {
                         Intent intent = new Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS);
-                        pack.context.startActivity(intent);
-                        return pack.context.getString(R.string.output_waitingpermission);
+                        pack.getContext().startActivity(intent);
+                        return pack.getContext().getString(R.string.output_waitingpermission);
                     }
                 }
 
-                AudioManager manager = (AudioManager) pack.context.getSystemService(Context.AUDIO_SERVICE);
+                AudioManager manager = (AudioManager) pack.getContext().getSystemService(Context.AUDIO_SERVICE);
                 manager.setRingerMode(pack.getInt());
 
                 return null;
@@ -86,7 +86,7 @@ public class volume extends ParamCommand {
 
             @Override
             public String onArgNotFound(ExecutePack pack, int index) {
-                return pack.context.getString(R.string.invalid_integer);
+                return pack.getContext().getString(R.string.invalid_integer);
             }
         },
         get {
@@ -103,7 +103,7 @@ public class volume extends ParamCommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                AudioManager manager = (AudioManager) pack.context.getSystemService(Context.AUDIO_SERVICE);
+                AudioManager manager = (AudioManager) pack.getContext().getSystemService(Context.AUDIO_SERVICE);
 
                 int c = pack.getInt();
 
@@ -115,12 +115,12 @@ public class volume extends ParamCommand {
 
             @Override
             public String onArgNotFound(ExecutePack pack, int index) {
-                return pack.context.getString(R.string.invalid_integer);
+                return pack.getContext().getString(R.string.invalid_integer);
             }
 
             @Override
             public String onNotArgEnough(ExecutePack pack, int n) {
-                AudioManager manager = (AudioManager) pack.context.getSystemService(Context.AUDIO_SERVICE);
+                AudioManager manager = (AudioManager) pack.getContext().getSystemService(Context.AUDIO_SERVICE);
 
                 StringBuilder builder = new StringBuilder();
                 for(int c = 0; c < labels.length; c++) {
@@ -156,7 +156,7 @@ public class volume extends ParamCommand {
 
         @Override
         public String onNotArgEnough(ExecutePack pack, int n) {
-            return pack.context.getString(R.string.help_volume);
+            return pack.getContext().getString(R.string.help_volume);
         }
     }
 

@@ -682,7 +682,7 @@ class LauncherActivity : AppCompatActivity(), Reloadable {
                 contact.selectedNumber = item.itemId
 
                 // Send the contact name to input
-                Tuils.sendInput(this, it.text)
+                Tuils.sendInput(this, it.getText())
 
                 return true
             }

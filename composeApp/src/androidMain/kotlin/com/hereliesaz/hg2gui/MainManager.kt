@@ -421,7 +421,7 @@ class MainManager(private val mContext: Activity, reloadable: Reloadable) {
             Tuils.sendOutput(mainPack, s, TerminalManager.CATEGORY_OUTPUT)
         }
 
-        mainPack.androidContext.startActivity(intent)
+        Tuils.getContext(mainPack).startActivity(intent)
         return true
     }
 

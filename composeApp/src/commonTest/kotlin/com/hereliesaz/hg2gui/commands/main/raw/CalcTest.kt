@@ -8,8 +8,10 @@ import org.junit.Test
 class CalcTest {
 
     private val mockPack = object : ExecutePack() {
-        override val context: PlatformContext get() = throw UnsupportedOperationException()
-        override val commandGroup: Any? get() = null
+        override val context: PlatformContext = object : PlatformContext {
+            override fun getString(resId: Int): String = ""
+            override fun getString(resId: Int, vararg args: Any): String = ""
+        }
         override fun getPrefsSave(): Any? = null
         override fun getLaunchInfo(): Any? = null
     }

@@ -23,7 +23,7 @@ public class devutils extends ParamCommand {
         notify {
             @Override
             public String exec(ExecutePack pack) {
-                List<String> text = pack.getList();
+                List<String> text = (List<String>) pack.getList();
 
                 String title, txt = null;
                 if(text.size() == 0) return null;
@@ -32,8 +32,8 @@ public class devutils extends ParamCommand {
                     if(text.size() >= 2) txt = Tuils.toPlanString(text, Tuils.SPACE);
                 }
 
-                NotificationManagerCompat.from(pack.context).notify(200,
-                        new NotificationCompat.Builder(pack.context)
+                NotificationManagerCompat.from(pack.getContext()).notify(200,
+                        new NotificationCompat.Builder(pack.getContext())
                             .setSmallIcon(R.mipmap.ic_launcher)
                             .setContentTitle(title)
                             .setContentText(txt)
@@ -55,7 +55,7 @@ public class devutils extends ParamCommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                return "Notification access: " + NotificationManagerCompat.getEnabledListenerPackages(pack.context).contains("com.hereliesaz.hg2gui") + Tuils.NEWLINE + "Notification service running: " + Tuils.notificationServiceIsRunning(pack.context);
+                return "Notification access: " + NotificationManagerCompat.getEnabledListenerPackages(pack.getContext()).contains("com.hereliesaz.hg2gui") + Tuils.NEWLINE + "Notification service running: " + Tuils.notificationServiceIsRunning(pack.getContext());
             }
         };
 
@@ -86,7 +86,7 @@ public class devutils extends ParamCommand {
 
         @Override
         public String onNotArgEnough(ExecutePack pack, int n) {
-            return pack.context.getString(R.string.help_devutils);
+            return pack.getContext().getString(R.string.help_devutils);
         }
 
         @Override

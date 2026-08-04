@@ -34,6 +34,7 @@ object CommandTuils {
     var xmlPrefsFiles: MutableList<String>? = null
 
     //	parse a command
+    @JvmStatic
     @Throws(Exception::class)
     fun parse(input: String, info: ExecutePack): Command? {
         var inputVar = input
@@ -127,6 +128,7 @@ object CommandTuils {
     }
 
     //	find args
+    @JvmStatic
     fun getArg(info: ExecutePack, input: String, type: Int): ArgInfo? {
         return when {
             type == CommandAbstraction.FILE && info is MainPack -> file(input, info.currentDirectory)
@@ -446,10 +448,12 @@ object CommandTuils {
         return ArgInfo(n, if (index == -1) null else input.substring(index + 1), true, 1)
     }
 
+    @JvmStatic
     fun isSuRequest(input: String): Boolean {
         return input == "su"
     }
 
+    @JvmStatic
     fun isSuCommand(input: String): Boolean {
         return input.startsWith("su ")
     }

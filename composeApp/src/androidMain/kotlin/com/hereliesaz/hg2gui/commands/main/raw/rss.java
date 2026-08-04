@@ -147,7 +147,7 @@ public class rss extends ParamCommand {
 
             @Override
             public String onArgNotFound(ExecutePack pack, int index) {
-                if(index == 2) return pack.context.getString(R.string.output_invalidcolor);
+                if(index == 2) return pack.getContext().getString(R.string.output_invalidcolor);
                 return super.onArgNotFound(pack, index);
             }
         },
@@ -182,19 +182,19 @@ public class rss extends ParamCommand {
             @Override
             public String exec(ExecutePack pack) {
                 Node n = XMLPrefsManager.findNode(new File(Tuils.getFolder(), RssManager.PATH), RssManager.RSS_LABEL, new String[] {RssManager.ID_ATTRIBUTE}, new String[] {String.valueOf(pack.getInt())});
-                if(n == null) return pack.context.getString(R.string.id_notfound);
+                if(n == null) return pack.getContext().getString(R.string.id_notfound);
 
                 Element el = (Element) n;
 
                 String value = el.hasAttribute(RssManager.LASTCHECKED_ATTRIBUTE) ? el.getAttribute(RssManager.LASTCHECKED_ATTRIBUTE) : null;
-                if(value == null) return pack.context.getString(R.string.rss_never_checked);
+                if(value == null) return pack.getContext().getString(R.string.rss_never_checked);
 
                 try {
                     return TimeManager.instance.replace(XMLPrefsManager.get(Rss.rss_time_format), Long.parseLong(value),
                             Integer.MAX_VALUE).toString();
                 } catch (Exception e) {
                     Tuils.log(e);
-                    return pack.context.getString(R.string.output_error);
+                    return pack.getContext().getString(R.string.output_error);
                 }
             }
         },
@@ -206,7 +206,7 @@ public class rss extends ParamCommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                if(!((MainPack) pack).rssManager.updateRss(pack.getInt(), false, true)) return pack.context.getString(R.string.id_notfound);
+                if(!((MainPack) pack).rssManager.updateRss(pack.getInt(), false, true)) return pack.getContext().getString(R.string.id_notfound);
                 return null;
             }
         },
@@ -219,7 +219,7 @@ public class rss extends ParamCommand {
             @Override
             public String exec(ExecutePack pack) {
                 RssManager.Rss rss = ((MainPack) pack).rssManager.findId(pack.getInt());
-                if(rss == null) return pack.context.getString(R.string.id_notfound);
+                if(rss == null) return pack.getContext().getString(R.string.id_notfound);
 
                 return rss.toString();
             }
@@ -325,7 +325,7 @@ public class rss extends ParamCommand {
         file {
             @Override
             public String exec(ExecutePack pack) {
-                pack.context.startActivity(Tuils.openFile(pack.context, new File(Tuils.getFolder(), RssManager.PATH)));
+                pack.getContext().startActivity(Tuils.openFile(pack.getContext(), new File(Tuils.getFolder(), RssManager.PATH)));
                 return null;
             }
 
@@ -362,12 +362,12 @@ public class rss extends ParamCommand {
 
         @Override
         public String onNotArgEnough(ExecutePack pack, int n) {
-            return pack.context.getString(R.string.help_rss);
+            return pack.getContext().getString(R.string.help_rss);
         }
 
         @Override
         public String onArgNotFound(ExecutePack pack, int index) {
-            return pack.context.getString(R.string.invalid_integer);
+            return pack.getContext().getString(R.string.invalid_integer);
         }
     }
 

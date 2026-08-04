@@ -26,9 +26,9 @@ public class menu implements CommandAbstraction {
             default: activityClass = MitosisMenuActivity.class;
         }
 
-        Intent intent = new Intent(pack.context, activityClass);
+        Intent intent = new Intent(pack.getContext(), activityClass);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        pack.context.startActivity(intent);
+        pack.getContext().startActivity(intent);
 
         return null;
     }

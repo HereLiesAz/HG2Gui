@@ -1,14 +1,14 @@
--keep public class ohi.andre.consolelauncher.commands.main.raw.* { public *; }
--keep public abstract class ohi.andre.consolelauncher.commands.main.generals.* { public *; }
--keep public class ohi.andre.consolelauncher.commands.tuixt.raw.* { public *; }
--keep public class ohi.andre.consolelauncher.managers.notifications.NotificationService
--keep public class ohi.andre.consolelauncher.managers.notifications.KeeperService
--keep public class ohi.andre.consolelauncher.managers.options.**
--keep class ohi.andre.consolelauncher.tuils.libsuperuser.**
--keep class ohi.andre.consolelauncher.managers.suggestions.HideSuggestionViewValues
+-keep public class com.hereliesaz.hg2gui.commands.main.raw.* { public *; }
+-keep public abstract class com.hereliesaz.hg2gui.commands.main.generals.* { public *; }
+-keep public class com.hereliesaz.hg2gui.commands.tuixt.raw.* { public *; }
+-keep public class com.hereliesaz.hg2gui.managers.notifications.NotificationService
+-keep public class com.hereliesaz.hg2gui.managers.notifications.KeeperService
+-keep public class com.hereliesaz.hg2gui.managers.xml.options.**
+-keep class com.hereliesaz.hg2gui.tuils.libsuperuser.**
+-keep class com.hereliesaz.hg2gui.managers.suggestions.HideSuggestionViewValues
 -keep public class it.andreuzzi.comparestring2.**
 
--dontwarn ohi.andre.consolelauncher.commands.main.raw.**
+-dontwarn com.hereliesaz.hg2gui.commands.main.raw.**
 
 -dontwarn javax.annotation.**
 -dontwarn javax.inject.**

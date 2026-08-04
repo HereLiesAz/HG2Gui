@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import com.hereliesaz.hg2gui.commands.BaseCommandGroup
 import com.hereliesaz.hg2gui.managers.xml.XMLPrefsManager
 import com.hereliesaz.hg2gui.managers.xml.options.Ui
 import com.hereliesaz.hg2gui.terminal.TerminalEngine

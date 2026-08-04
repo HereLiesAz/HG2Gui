@@ -31,7 +31,7 @@ public class notes extends ParamCommand {
                 i.putExtra(NotesManager.TEXT, pack.getString());
                 i.putExtra(NotesManager.BROADCAST_COUNT, NotesManager.broadcastCount);
 
-                LocalBroadcastManager.getInstance(pack.context).sendBroadcast(i);
+                LocalBroadcastManager.getInstance(pack.getContext()).sendBroadcast(i);
                 return null;
             }
         },
@@ -47,7 +47,7 @@ public class notes extends ParamCommand {
                 i.putExtra(NotesManager.TEXT, pack.getString());
                 i.putExtra(NotesManager.BROADCAST_COUNT, NotesManager.broadcastCount);
 
-                LocalBroadcastManager.getInstance(pack.context).sendBroadcast(i);
+                LocalBroadcastManager.getInstance(pack.getContext()).sendBroadcast(i);
                 return null;
             }
         },
@@ -63,7 +63,7 @@ public class notes extends ParamCommand {
                 i.putExtra(NotesManager.TEXT, pack.getString());
                 i.putExtra(NotesManager.BROADCAST_COUNT, NotesManager.broadcastCount);
 
-                LocalBroadcastManager.getInstance(pack.context).sendBroadcast(i);
+                LocalBroadcastManager.getInstance(pack.getContext()).sendBroadcast(i);
                 return null;
             }
         },
@@ -73,7 +73,7 @@ public class notes extends ParamCommand {
                 Intent i = new Intent(NotesManager.ACTION_LS);
                 i.putExtra(NotesManager.BROADCAST_COUNT, NotesManager.broadcastCount);
 
-                LocalBroadcastManager.getInstance(pack.context).sendBroadcast(i);
+                LocalBroadcastManager.getInstance(pack.getContext()).sendBroadcast(i);
                 return null;
             }
         },
@@ -83,7 +83,7 @@ public class notes extends ParamCommand {
                 Intent i = new Intent(NotesManager.ACTION_CLEAR);
                 i.putExtra(NotesManager.BROADCAST_COUNT, NotesManager.broadcastCount);
 
-                LocalBroadcastManager.getInstance(pack.context).sendBroadcast(i);
+                LocalBroadcastManager.getInstance(pack.getContext()).sendBroadcast(i);
                 return null;
             }
         },
@@ -100,7 +100,7 @@ public class notes extends ParamCommand {
                 i.putExtra(NotesManager.LOCK, true);
                 i.putExtra(NotesManager.BROADCAST_COUNT, NotesManager.broadcastCount);
 
-                LocalBroadcastManager.getInstance(pack.context).sendBroadcast(i);
+                LocalBroadcastManager.getInstance(pack.getContext()).sendBroadcast(i);
                 return null;
             }
         },
@@ -117,7 +117,7 @@ public class notes extends ParamCommand {
                 i.putExtra(NotesManager.LOCK, false);
                 i.putExtra(NotesManager.BROADCAST_COUNT, NotesManager.broadcastCount);
 
-                LocalBroadcastManager.getInstance(pack.context).sendBroadcast(i);
+                LocalBroadcastManager.getInstance(pack.getContext()).sendBroadcast(i);
                 return null;
             }
         },
@@ -129,7 +129,7 @@ public class notes extends ParamCommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                pack.context.startActivity(Tuils.webPage("https://github.com/Andre1299/TUI-ConsoleLauncher/wiki/Notes"));
+                pack.getContext().startActivity(Tuils.webPage("https://github.com/Andre1299/TUI-ConsoleLauncher/wiki/Notes"));
                 return null;
             }
         };
@@ -166,12 +166,12 @@ public class notes extends ParamCommand {
 
         @Override
         public String onArgNotFound(ExecutePack pack, int index) {
-            return pack.context.getString(R.string.help_notes);
+            return pack.getContext().getString(R.string.help_notes);
         }
 
         @Override
         public String onNotArgEnough(ExecutePack pack, int n) {
-            return pack.context.getString(R.string.help_notes);
+            return pack.getContext().getString(R.string.help_notes);
         }
     }
 

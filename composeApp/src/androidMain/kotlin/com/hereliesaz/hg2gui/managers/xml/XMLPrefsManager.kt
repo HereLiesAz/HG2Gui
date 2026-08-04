@@ -224,6 +224,7 @@ class XMLPrefsManager private constructor() {
         }
 
         @Throws(Exception::class)
+        @JvmStatic
         fun transform(s: String?, c: Class<*>): Any? {
             if (s == null) throw UnsupportedOperationException()
 
@@ -278,6 +279,7 @@ class XMLPrefsManager private constructor() {
         @JvmStatic
         fun getString(prefsSave: XMLPrefsSave): String? = get(prefsSave)
 
+        @JvmStatic
         fun <T> get(c: Class<T>, root: XMLPrefsRoot, s: String): T? {
             return try {
                 transform(root.getValues().get(s).value, c) as T?
@@ -286,6 +288,7 @@ class XMLPrefsManager private constructor() {
             }
         }
 
+        @JvmStatic
         fun <T> get(c: Class<T>, prefsSave: XMLPrefsSave): T? {
             return try {
                 transform(prefsSave.parent().getValues().get(prefsSave).value, c) as T?
@@ -323,6 +326,7 @@ class XMLPrefsManager private constructor() {
             return res
         }
 
+        @JvmStatic
         @Throws(Exception::class)
         fun buildDocument(file: File, rootName: String?): Array<Any?>? {
             if (!file.exists()) {
@@ -345,6 +349,7 @@ class XMLPrefsManager private constructor() {
             return arrayOf(d, r)
         }
 
+        @JvmStatic
         fun writeTo(d: Document, f: File) {
             try {
                 val transformerFactory = TransformerFactory.newInstance()
@@ -364,6 +369,7 @@ class XMLPrefsManager private constructor() {
             }
         }
 
+        @JvmStatic
         fun add(file: File, elementName: String, attributeNames: Array<String>, attributeValues: Array<String?>): String? {
             return try {
                 val o = try {
@@ -389,10 +395,12 @@ class XMLPrefsManager private constructor() {
             }
         }
 
+        @JvmStatic
         fun set(file: File, elementName: String, attributeNames: Array<String>, attributeValues: Array<String?>): String? {
             return set(file, elementName, null, null, attributeNames, attributeValues, true)
         }
 
+        @JvmStatic
         fun set(
             file: File,
             elementName: String,
@@ -406,10 +414,12 @@ class XMLPrefsManager private constructor() {
             return setMany(file, arrayOf(elementName), thatHasThose, forValues, attributeNames, values, addIfNotFound)
         }
 
+        @JvmStatic
         fun setMany(file: File, elementNames: Array<String?>, attributeNames: Array<String>, attributeValues: Array<Array<String?>>): String? {
             return setMany(file, elementNames, null, null, attributeNames, attributeValues, true)
         }
 
+        @JvmStatic
         fun setMany(
             file: File,
             elementNames: Array<String?>,
@@ -480,8 +490,10 @@ class XMLPrefsManager private constructor() {
             }
         }
 
+        @JvmStatic
         fun removeNode(file: File, nodeName: String): String? = removeNode(file, nodeName, null, null)
 
+        @JvmStatic
         fun removeNode(file: File, nodeName: String, thatHasThose: Array<String>?, forValues: Array<String>?): String? {
             return try {
                 val o = try {
@@ -501,10 +513,12 @@ class XMLPrefsManager private constructor() {
             }
         }
 
+        @JvmStatic
         fun removeNode(file: File, thatHasThose: Array<String>?, forValues: Array<String>?): String? {
             return removeNode(file, thatHasThose, forValues, alsoNotFound = false, all = false)
         }
 
+        @JvmStatic
         fun removeNode(file: File, thatHasThose: Array<String>?, forValues: Array<String>?, alsoNotFound: Boolean, all: Boolean): String? {
             return try {
                 val o = try {
@@ -535,8 +549,10 @@ class XMLPrefsManager private constructor() {
             }
         }
 
+        @JvmStatic
         fun findNode(file: File, nodeName: String): Node? = findNode(file, nodeName, null, null)
 
+        @JvmStatic
         fun findNode(file: File, nodeName: String, thatHasThose: Array<String>?, forValues: Array<String>?): Node? {
             return try {
                 val o = try {
@@ -552,6 +568,7 @@ class XMLPrefsManager private constructor() {
             }
         }
 
+        @JvmStatic
         fun findNode(root: Element, nodeName: String, thatHasThose: Array<String>?, forValues: Array<String>?): Node? {
             val nodes = root.getElementsByTagName(nodeName)
             for (j in 0 until nodes.length) {
@@ -560,8 +577,10 @@ class XMLPrefsManager private constructor() {
             return null
         }
 
+        @JvmStatic
         fun findNode(root: Element, nodeName: String): Node? = findNode(root, nodeName, null, null)
 
+        @JvmStatic
         fun findNodes(root: Element, nodeName: String?, thatHasThose: Array<String>?, forValue: Array<String>?): List<Node> {
             val nodes = root.getElementsByTagName(nodeName ?: "*")
             val nodeList = mutableListOf<Node>()
@@ -575,17 +594,22 @@ class XMLPrefsManager private constructor() {
             return nodeList
         }
 
+        @JvmStatic
         fun findNodes(root: Element, thatHasThose: Array<String>?, forValue: Array<String>?): List<Node> = findNodes(root, null, thatHasThose, forValue)
 
+        @JvmStatic
         fun attrValue(file: File, nodeName: String, attrName: String): String? = attrValue(file, nodeName, null, null, attrName)
 
+        @JvmStatic
         fun attrValue(file: File, nodeName: String, thatHasThose: Array<String>?, forValues: Array<String>?, attrName: String): String? {
             val vs = attrValues(file, nodeName, thatHasThose, forValues, arrayOf(attrName))
             return if (vs != null && vs.isNotEmpty()) vs[0] else null
         }
 
+        @JvmStatic
         fun attrValues(file: File, nodeName: String, attrNames: Array<String>): Array<String?>? = attrValues(file, nodeName, null, null, attrNames)
 
+        @JvmStatic
         fun attrValues(file: File, nodeName: String, thatHasThose: Array<String>?, forValues: Array<String>?, attrNames: Array<String>): Array<String?>? {
             try {
                 val o = try {
@@ -621,6 +645,7 @@ class XMLPrefsManager private constructor() {
             return true
         }
 
+        @JvmStatic
         fun resetFile(f: File, name: String?): Boolean {
             return try {
                 if (f.exists()) f.delete()
@@ -636,8 +661,10 @@ class XMLPrefsManager private constructor() {
             }
         }
 
+        @JvmStatic
         fun getStringAttribute(e: Element, attribute: String): String? = if (e.hasAttribute(attribute)) e.getAttribute(attribute) else null
 
+        @JvmStatic
         fun getLongAttribute(e: Element, attribute: String): Long {
             val value = getStringAttribute(e, attribute)
             return try {
@@ -647,11 +674,13 @@ class XMLPrefsManager private constructor() {
             }
         }
 
+        @JvmStatic
         fun getBooleanAttribute(e: Element, attribute: String): Boolean {
             val s = getStringAttribute(e, attribute)
             return s != null && s.toBoolean()
         }
 
+        @JvmStatic
         fun getIntAttribute(e: Element, attribute: String): Int {
             return try {
                 getStringAttribute(e, attribute)?.toInt() ?: -1
@@ -660,6 +689,7 @@ class XMLPrefsManager private constructor() {
             }
         }
 
+        @JvmStatic
         fun getFloatAttribute(e: Element, attribute: String): Float {
             return try {
                 getStringAttribute(e, attribute)?.toFloat() ?: -1f

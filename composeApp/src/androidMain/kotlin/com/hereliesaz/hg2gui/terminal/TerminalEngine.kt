@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.hereliesaz.hg2gui.MainManager
+import com.hereliesaz.hg2gui.commands.BaseCommandGroup
 import com.hereliesaz.hg2gui.tuils.PrivateIOReceiver
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose

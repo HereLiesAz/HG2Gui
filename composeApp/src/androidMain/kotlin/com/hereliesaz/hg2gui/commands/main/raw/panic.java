@@ -11,7 +11,7 @@ public class panic implements CommandAbstraction {
 
     @Override
     public String exec(ExecutePack pack) throws Exception {
-        LocalBroadcastManager.getInstance(pack.context).sendBroadcast(new Intent(UIManager.ACTION_PANIC));
+        LocalBroadcastManager.getInstance(pack.getContext()).sendBroadcast(new Intent(UIManager.ACTION_PANIC));
         return null;
     }
 

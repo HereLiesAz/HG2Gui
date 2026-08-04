@@ -32,7 +32,7 @@ public class time implements CommandAbstraction {
 
     @Override
     public String onArgNotFound(ExecutePack info, int index) {
-        return info.context.getString(R.string.invalid_integer);
+        return info.getContext().getString(R.string.invalid_integer);
     }
 
     @Override

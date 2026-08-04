@@ -36,7 +36,9 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.content.FileProvider
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import com.hereliesaz.hg2gui.AndroidPlatformContext
 import com.hereliesaz.hg2gui.R
+import com.hereliesaz.hg2gui.commands.ExecutePack
 import com.hereliesaz.hg2gui.commands.main.MainPack
 import com.hereliesaz.hg2gui.managers.TerminalManager
 import com.hereliesaz.hg2gui.managers.music.MusicManager2
@@ -432,6 +434,17 @@ object Tuils {
         return round(result, 2)
     }
 
+    @JvmStatic
+    fun getContext(pack: ExecutePack): Context {
+        if (pack is MainPack) return pack.androidContext
+        return (pack.context as AndroidPlatformContext).androidContext
+    }
+
+    @JvmStatic
+    fun isMyLauncherDefault(context: Context): Boolean {
+        return isMyLauncherDefault(context.packageManager)
+    }
+
     fun isMyLauncherDefault(packageManager: PackageManager): Boolean {
         val filter = IntentFilter(Intent.ACTION_MAIN)
         filter.addCategory(Intent.CATEGORY_HOME)
@@ -777,7 +790,8 @@ object Tuils {
         }
     }
 
-    fun find(o: Any?, array: Array<Any?>): Int {
+    @JvmStatic
+    fun find(o: Any?, array: Array<out Any?>): Int {
         return find(o, array.toList())
     }
 

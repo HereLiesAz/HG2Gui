@@ -66,7 +66,7 @@ interface CommandAbstraction {
      * @throws Exception If execution fails.
      */
     @Throws(Exception::class)
-    fun exec(pack: ExecutePack): String
+    fun exec(pack: ExecutePack): String?
 
     /**
      * Defines the expected argument types.
@@ -93,7 +93,7 @@ interface CommandAbstraction {
      * @param indexNotFound The index of the argument that failed validation.
      * @return Error message.
      */
-    fun onArgNotFound(pack: ExecutePack, indexNotFound: Int): String
+    fun onArgNotFound(pack: ExecutePack, indexNotFound: Int): String?
 
     /**
      * Called when the user provides fewer arguments than required.
@@ -101,5 +101,5 @@ interface CommandAbstraction {
      * @param nArgs Number of arguments provided.
      * @return Error message.
      */
-    fun onNotArgEnough(pack: ExecutePack, nArgs: Int): String
+    fun onNotArgEnough(pack: ExecutePack, nArgs: Int): String?
 }

@@ -15,7 +15,7 @@ public class clear implements CommandAbstraction {
 
     @Override
     public String exec(ExecutePack info) throws Exception {
-        LocalBroadcastManager.getInstance(info.context.getApplicationContext()).sendBroadcast(new Intent(UIManager.ACTION_CLEAR));
+        LocalBroadcastManager.getInstance(info.getContext().getApplicationContext()).sendBroadcast(new Intent(UIManager.ACTION_CLEAR));
         return null;
     }
 

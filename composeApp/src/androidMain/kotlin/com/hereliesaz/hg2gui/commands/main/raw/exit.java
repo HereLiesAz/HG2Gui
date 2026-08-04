@@ -12,7 +12,7 @@ import com.hereliesaz.hg2gui.tuils.Tuils;
 public class exit implements CommandAbstraction {
     @Override
     public String exec(ExecutePack pack) throws Exception {
-        Tuils.resetPreferredLauncherAndOpenChooser(pack.context);
+        Tuils.resetPreferredLauncherAndOpenChooser(pack.getContext());
         return null;
     }
 

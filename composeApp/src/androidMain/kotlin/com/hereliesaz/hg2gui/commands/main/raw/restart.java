@@ -11,9 +11,9 @@ public class restart implements CommandAbstraction {
     @Override
     public String exec(ExecutePack pack) {
         MainPack info = (MainPack) pack;
-        ((Reloadable) info.context).reload();
+        ((Reloadable) info.getContext()).reload();
 
-        return pack.context.getString(R.string.restarting);
+        return pack.getContext().getString(R.string.restarting);
     }
 
     @Override

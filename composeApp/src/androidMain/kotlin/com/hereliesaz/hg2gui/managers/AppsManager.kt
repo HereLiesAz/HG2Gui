@@ -823,7 +823,7 @@ class AppsManager(private val context: Context) : XMLPrefsElement {
             intent.component = info.componentName
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
-            mainPack.androidContext.startActivity(intent)
+            Tuils.getContext(mainPack).startActivity(intent)
 
             return true
         }
@@ -859,8 +859,10 @@ class AppsManager(private val context: Context) : XMLPrefsElement {
             const val MOSTUSED_UP_DOWN = 4
             const val MOSTUSED_DOWN_UP = 5
 
+            @JvmField
             var sorting = 0
 
+            @JvmField
             val comparator = Comparator<GroupLaunchInfo> { o1, o2 ->
                 when (sorting) {
                     ALPHABETIC_UP_DOWN -> Tuils.alphabeticCompare(o1.publicLabel ?: "", o2.publicLabel ?: "")
@@ -880,12 +882,19 @@ class AppsManager(private val context: Context) : XMLPrefsElement {
     }
 
     open class LaunchInfo : Parcelable, StringableObject, Comparable<LaunchInfo> {
+        @JvmField
         var componentName: ComponentName
+        @JvmField
         var publicLabel: String? = null
+        @JvmField
         var unspacedLowercaseLabel: String? = null
+        @JvmField
         var lowercaseLabel: String? = null
+        @JvmField
         var launchedTimes = 0
+        @JvmField
         var lastUpdateTime: Long = 0
+        @JvmField
         var shortcuts: List<ShortcutInfo>? = null
 
         constructor(packageName: String, activityName: String, label: String) {
@@ -1202,6 +1211,7 @@ class AppsManager(private val context: Context) : XMLPrefsElement {
     }
 
     object AppUtils {
+        @JvmStatic
         fun findLaunchInfoWithComponent(appList: List<LaunchInfo>, name: ComponentName?): LaunchInfo? {
             if (name == null) return null
             for (i in appList) {
@@ -1210,18 +1220,21 @@ class AppsManager(private val context: Context) : XMLPrefsElement {
             return null
         }
 
+        @JvmStatic
         fun findLaunchInfoWithLabel(appList: List<out LaunchInfo>, label: String?): LaunchInfo? {
             val cleanLabel = Tuils.removeSpaces(label ?: "")
             for (i in appList) if (i.unspacedLowercaseLabel.equals(cleanLabel, ignoreCase = true)) return i
             return null
         }
 
+        @JvmStatic
         fun findLaunchInfosWithPackage(packageName: String, infos: List<LaunchInfo>): List<LaunchInfo> {
             val result: MutableList<LaunchInfo> = ArrayList()
             for (info in infos) if (info.componentName.packageName == packageName) result.add(info)
             return result
         }
 
+        @JvmStatic
         fun checkEquality(list: MutableList<LaunchInfo>) {
             for (info in list) {
                 if (info.publicLabel == null) {
@@ -1249,6 +1262,7 @@ class AppsManager(private val context: Context) : XMLPrefsElement {
         }
 
         var activityPattern: Pattern = Pattern.compile("activity", Pattern.CASE_INSENSITIVE or Pattern.LITERAL)
+        @JvmStatic
         fun insertActivityName(oldLabel: String, activityName: String): String {
             var name: String
             val lastDot = activityName.lastIndexOf(".")
@@ -1262,6 +1276,7 @@ class AppsManager(private val context: Context) : XMLPrefsElement {
             return oldLabel + Tuils.SPACE + "-" + Tuils.SPACE + name
         }
 
+        @JvmStatic
         fun getNewLabel(oldLabel: String, packageName: String): String {
             try {
                 var firstDot = packageName.indexOf(Tuils.DOT)
@@ -1285,6 +1300,7 @@ class AppsManager(private val context: Context) : XMLPrefsElement {
             }
         }
 
+        @JvmStatic
         fun format(app: LaunchInfo, info: PackageInfo): String {
             val builder = StringBuilder()
             builder.append(info.packageName).append(Tuils.NEWLINE)
@@ -1326,6 +1342,7 @@ class AppsManager(private val context: Context) : XMLPrefsElement {
             return builder.toString()
         }
 
+        @JvmStatic
         fun printApps(apps: List<String>): String {
             if (apps.isEmpty()) {
                 return apps.toString()
@@ -1337,6 +1354,7 @@ class AppsManager(private val context: Context) : XMLPrefsElement {
             return Tuils.toPlanString(list)
         }
 
+        @JvmStatic
         fun labelList(infos: List<LaunchInfo>, sort: Boolean): MutableList<String> {
             val labels: MutableList<String> = ArrayList()
             for (info in infos) {

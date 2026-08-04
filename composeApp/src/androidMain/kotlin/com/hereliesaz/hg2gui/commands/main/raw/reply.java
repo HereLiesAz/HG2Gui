@@ -34,7 +34,7 @@ public class reply extends ParamCommand implements APICommand {
                 intent.putExtra(ReplyManager.ID, pack.getString());
                 intent.putExtra(ReplyManager.WHAT, pack.getString());
 
-                LocalBroadcastManager.getInstance(pack.context).sendBroadcast(intent);
+                LocalBroadcastManager.getInstance(pack.getContext()).sendBroadcast(intent);
                 return null;
             }
         },
@@ -47,7 +47,7 @@ public class reply extends ParamCommand implements APICommand {
             @Override
             public String exec(ExecutePack pack) {
                 String output = ReplyManager.bind(pack.getLaunchInfo().componentName.getPackageName());
-                LocalBroadcastManager.getInstance(pack.context).sendBroadcast(new Intent(ReplyManager.ACTION_UPDATE));
+                LocalBroadcastManager.getInstance(pack.getContext()).sendBroadcast(new Intent(ReplyManager.ACTION_UPDATE));
                 return output;
             }
         },
@@ -62,7 +62,7 @@ public class reply extends ParamCommand implements APICommand {
                 Intent intent = new Intent(ReplyManager.ACTION);
                 intent.putExtra(ReplyManager.ID, pack.getString());
 
-                LocalBroadcastManager.getInstance(pack.context).sendBroadcast(intent);
+                LocalBroadcastManager.getInstance(pack.getContext()).sendBroadcast(intent);
                 return null;
             }
         },
@@ -75,9 +75,9 @@ public class reply extends ParamCommand implements APICommand {
             @Override
             public String exec(ExecutePack pack) {
                 String output = ReplyManager.unbind(pack.getLaunchInfo().componentName.getPackageName());
-                LocalBroadcastManager.getInstance(pack.context).sendBroadcast(new Intent(ReplyManager.ACTION_UPDATE));
+                LocalBroadcastManager.getInstance(pack.getContext()).sendBroadcast(new Intent(ReplyManager.ACTION_UPDATE));
 
-                if(output != null && output.length() == 0) return pack.context.getString(R.string.reply_app_not_found) + pack.getLaunchInfo().componentName.getPackageName();
+                if(output != null && output.length() == 0) return pack.getContext().getString(R.string.reply_app_not_found) + pack.getLaunchInfo().componentName.getPackageName();
                 return output;
             }
         },
@@ -90,7 +90,7 @@ public class reply extends ParamCommand implements APICommand {
             @Override
             public String exec(ExecutePack pack) {
                 Intent intent = new Intent(ReplyManager.ACTION_LS);
-                LocalBroadcastManager.getInstance(pack.context).sendBroadcast(intent);
+                LocalBroadcastManager.getInstance(pack.getContext()).sendBroadcast(intent);
                 return null;
             }
         },
@@ -102,7 +102,7 @@ public class reply extends ParamCommand implements APICommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                pack.context.startActivity(Tuils.webPage("https://github.com/Andre1299/TUI-ConsoleLauncher/wiki/Reply"));
+                pack.getContext().startActivity(Tuils.webPage("https://github.com/Andre1299/TUI-ConsoleLauncher/wiki/Reply"));
                 return null;
             }
         };
@@ -134,12 +134,12 @@ public class reply extends ParamCommand implements APICommand {
 
         @Override
         public String onNotArgEnough(ExecutePack pack, int n) {
-            return pack.context.getString(R.string.help_reply);
+            return pack.getContext().getString(R.string.help_reply);
         }
 
         @Override
         public String onArgNotFound(ExecutePack pack, int index) {
-            return pack.context.getString(R.string.help_reply);
+            return pack.getContext().getString(R.string.help_reply);
         }
     }
 

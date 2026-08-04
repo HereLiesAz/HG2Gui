@@ -9,9 +9,9 @@ public class guide implements CommandAbstraction {
 
     @Override
     public String exec(ExecutePack pack) throws Exception {
-        Intent intent = new Intent(pack.context, GuideActivity.class);
+        Intent intent = new Intent(pack.getContext(), GuideActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        pack.context.startActivity(intent);
+        pack.getContext().startActivity(intent);
         return null;
     }
 

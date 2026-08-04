@@ -15,9 +15,9 @@ public class surface implements CommandAbstraction {
     public String exec(ExecutePack pack) {
         MainPack info = (MainPack) pack;
 
-        Intent intent = new Intent(info.context, MitosisMenuActivity.class);
+        Intent intent = new Intent(info.getContext(), MitosisMenuActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        info.context.startActivity(intent);
+        info.getContext().startActivity(intent);
 
         return Tuils.EMPTYSTRING;
     }

@@ -16,13 +16,13 @@ public class flash implements CommandAbstraction {
 
     @Override
     public String exec(ExecutePack pack) {
-        if (ContextCompat.checkSelfPermission(pack.context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(pack.getContext(), Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
 
-            ActivityCompat.requestPermissions((Activity) pack.context, new String[]{Manifest.permission.CAMERA}, LauncherActivity.COMMAND_REQUEST_PERMISSION);
-            return pack.context.getString(R.string.output_waitingpermission);
+            ActivityCompat.requestPermissions((Activity) pack.getContext(), new String[]{Manifest.permission.CAMERA}, LauncherActivity.COMMAND_REQUEST_PERMISSION);
+            return pack.getContext().getString(R.string.output_waitingpermission);
         }
 
-        TorchManager.getInstance().toggle(pack.context);
+        TorchManager.getInstance().toggle(pack.getContext());
 
 //        final MainPack info = (MainPack) pack;
 //        if (!info.canUseFlash) {
@@ -73,9 +73,9 @@ public class flash implements CommandAbstraction {
 //            }.start();
 //        } else {
 //            if(!flashOn) {
-//                flashOnMarshy(info.context);
+//                flashOnMarshy(info.getContext());
 //            } else {
-//                flashOffMarshy(info.context);
+//                flashOffMarshy(info.getContext());
 //            }
 //        }
 //

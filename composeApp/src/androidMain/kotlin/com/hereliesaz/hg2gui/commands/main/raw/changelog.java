@@ -14,7 +14,7 @@ public class changelog implements CommandAbstraction {
 
     @Override
     public String exec(ExecutePack pack) throws Exception {
-        ChangelogManager.printLog(pack.context, ((MainPack) pack).client, true);
+        ChangelogManager.printLog(pack.getContext(), ((MainPack) pack).client, true);
         return null;
     }
 

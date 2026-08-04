@@ -14,7 +14,6 @@ object NetworkUtils {
      * @param bytes
      * @return
      */
-    @JvmStatic
     fun bytesToHex(bytes: ByteArray): String {
         val sbuf = StringBuilder()
         for (b in bytes) {
@@ -30,7 +29,6 @@ object NetworkUtils {
      * @param str
      * @return array of NULL if error was found
      */
-    @JvmStatic
     fun getUTF8Bytes(str: String): ByteArray? {
         return try {
             str.toByteArray(Charsets.UTF_8)
@@ -45,7 +43,6 @@ object NetworkUtils {
      * @return
      * @throws IOException
      */
-    @JvmStatic
     @Throws(IOException::class)
     fun loadFileAsString(filename: String): String {
         val BUFLEN = 1024
@@ -80,7 +77,6 @@ object NetworkUtils {
      * @param interfaceName eth0, wlan0 or NULL=use first interface
      * @return mac address or empty string
      */
-    @JvmStatic
     fun getMACAddress(interfaceName: String?): String {
         try {
             val interfaces = Collections.list(NetworkInterface.getNetworkInterfaces())
@@ -107,7 +103,6 @@ object NetworkUtils {
      * @param useIPv4 true=return ipv4, false=return ipv6
      * @return address or empty string
      */
-    @JvmStatic
     fun getIPAddress(useIPv4: Boolean): String {
         try {
             val interfaces = Collections.list(NetworkInterface.getNetworkInterfaces())

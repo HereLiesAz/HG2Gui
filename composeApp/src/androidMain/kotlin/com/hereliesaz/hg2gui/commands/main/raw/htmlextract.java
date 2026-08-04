@@ -36,14 +36,14 @@ public class htmlextract extends ParamCommand {
                 i.putExtra(HTMLExtractManager.FORMAT_ID, pack.getInt());
                 i.putExtra(XMLPrefsManager.VALUE_ATTRIBUTE, pack.getString());
                 i.putExtra(HTMLExtractManager.BROADCAST_COUNT, HTMLExtractManager.broadcastCount);
-                LocalBroadcastManager.getInstance(pack.context.getApplicationContext()).sendBroadcast(i);
+                LocalBroadcastManager.getInstance(pack.getContext().getApplicationContext()).sendBroadcast(i);
 
                 return null;
             }
 
             @Override
             public String onArgNotFound(ExecutePack pack, int index) {
-                if(index == 1) return pack.context.getString(R.string.invalid_integer);
+                if(index == 1) return pack.getContext().getString(R.string.invalid_integer);
 
                 if(index == 2) {
 //                    the user was trying to use the default format
@@ -55,12 +55,12 @@ public class htmlextract extends ParamCommand {
                     i.putExtra(HTMLExtractManager.ID, pack.getInt());
                     i.putExtra(XMLPrefsManager.VALUE_ATTRIBUTE, pack.getString());
                     i.putExtra(HTMLExtractManager.BROADCAST_COUNT, HTMLExtractManager.broadcastCount);
-                    LocalBroadcastManager.getInstance(pack.context.getApplicationContext()).sendBroadcast(i);
+                    LocalBroadcastManager.getInstance(pack.getContext().getApplicationContext()).sendBroadcast(i);
 
                     return null;
                 }
 
-                return pack.context.getString(R.string.help_htmlextract);
+                return pack.getContext().getString(R.string.help_htmlextract);
             }
         },
         add {
@@ -76,14 +76,14 @@ public class htmlextract extends ParamCommand {
                 i.putExtra(HTMLExtractManager.ID, pack.getInt());
                 i.putExtra(XMLPrefsManager.VALUE_ATTRIBUTE, pack.getString());
                 i.putExtra(HTMLExtractManager.BROADCAST_COUNT, HTMLExtractManager.broadcastCount);
-                LocalBroadcastManager.getInstance(pack.context.getApplicationContext()).sendBroadcast(i);
+                LocalBroadcastManager.getInstance(pack.getContext().getApplicationContext()).sendBroadcast(i);
 
                 return null;
             }
 
             @Override
             public String onArgNotFound(ExecutePack pack, int index) {
-                if(index == 1) return pack.context.getString(R.string.invalid_datastoretype);
+                if(index == 1) return pack.getContext().getString(R.string.invalid_datastoretype);
                 return super.onArgNotFound(pack, index);
             }
         },
@@ -98,7 +98,7 @@ public class htmlextract extends ParamCommand {
                 Intent i = new Intent(HTMLExtractManager.ACTION_RM);
                 i.putExtra(HTMLExtractManager.ID, pack.getInt());
                 i.putExtra(HTMLExtractManager.BROADCAST_COUNT, HTMLExtractManager.broadcastCount);
-                LocalBroadcastManager.getInstance(pack.context.getApplicationContext()).sendBroadcast(i);
+                LocalBroadcastManager.getInstance(pack.getContext().getApplicationContext()).sendBroadcast(i);
 
                 return null;
             }
@@ -115,7 +115,7 @@ public class htmlextract extends ParamCommand {
                 i.putExtra(HTMLExtractManager.ID, pack.getInt());
                 i.putExtra(HTMLExtractManager.BROADCAST_COUNT, HTMLExtractManager.broadcastCount);
                 i.putExtra(XMLPrefsManager.VALUE_ATTRIBUTE, pack.getString());
-                LocalBroadcastManager.getInstance(pack.context.getApplicationContext()).sendBroadcast(i);
+                LocalBroadcastManager.getInstance(pack.getContext().getApplicationContext()).sendBroadcast(i);
 
                 return null;
             }
@@ -131,7 +131,7 @@ public class htmlextract extends ParamCommand {
                 Intent i = new Intent(HTMLExtractManager.ACTION_LS);
                 i.putExtra(HTMLExtractManager.BROADCAST_COUNT, HTMLExtractManager.broadcastCount);
                 i.putExtra(HTMLExtractManager.TAG_NAME, pack.getString());
-                LocalBroadcastManager.getInstance(pack.context.getApplicationContext()).sendBroadcast(i);
+                LocalBroadcastManager.getInstance(pack.getContext().getApplicationContext()).sendBroadcast(i);
 
                 return null;
             }
@@ -140,14 +140,14 @@ public class htmlextract extends ParamCommand {
             public String onNotArgEnough(ExecutePack pack, int n) {
                 Intent i = new Intent(HTMLExtractManager.ACTION_LS);
                 i.putExtra(HTMLExtractManager.BROADCAST_COUNT, HTMLExtractManager.broadcastCount);
-                LocalBroadcastManager.getInstance(pack.context.getApplicationContext()).sendBroadcast(i);
+                LocalBroadcastManager.getInstance(pack.getContext().getApplicationContext()).sendBroadcast(i);
 
                 return null;
             }
 
             @Override
             public String onArgNotFound(ExecutePack pack, int index) {
-                return pack.context.getString(R.string.invalid_datastoretype);
+                return pack.getContext().getString(R.string.invalid_datastoretype);
             }
         },
         tutorial {
@@ -158,7 +158,7 @@ public class htmlextract extends ParamCommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                pack.context.startActivity(Tuils.webPage("https://github.com/Andre1299/TUI-ConsoleLauncher/wiki/HTMLExtract"));
+                pack.getContext().startActivity(Tuils.webPage("https://github.com/Andre1299/TUI-ConsoleLauncher/wiki/HTMLExtract"));
                 return null;
             }
         },
@@ -171,7 +171,7 @@ public class htmlextract extends ParamCommand {
             @Override
             public String exec(ExecutePack pack) {
                 File file = new File(Tuils.getFolder(), HTMLExtractManager.PATH);
-                pack.context.startActivity(Tuils.openFile(pack.context, file));
+                pack.getContext().startActivity(Tuils.openFile(pack.getContext(), file));
                 return null;
             }
         };
@@ -201,12 +201,12 @@ public class htmlextract extends ParamCommand {
 
         @Override
         public String onNotArgEnough(ExecutePack pack, int n) {
-            return pack.context.getString(R.string.help_htmlextract);
+            return pack.getContext().getString(R.string.help_htmlextract);
         }
 
         @Override
         public String onArgNotFound(ExecutePack pack, int index) {
-            return pack.context.getString(R.string.invalid_integer);
+            return pack.getContext().getString(R.string.invalid_integer);
         }
     }
 

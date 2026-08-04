@@ -45,7 +45,7 @@ public class cntcts extends ParamCommand {
             public String exec(ExecutePack pack) {
                 Intent intent = new Intent(ContactsContract.Intents.Insert.ACTION);
                 intent.setType(ContactsContract.RawContacts.CONTENT_TYPE);
-                pack.context.startActivity(intent);
+                pack.getContext().startActivity(intent);
 
                 return null;
             }
@@ -58,9 +58,9 @@ public class cntcts extends ParamCommand {
         rm {
             @Override
             public String exec(ExecutePack pack) {
-                if (ContextCompat.checkSelfPermission(pack.context, Manifest.permission.WRITE_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
-                    ActivityCompat.requestPermissions((Activity) pack.context, new String[]{Manifest.permission.WRITE_CONTACTS}, LauncherActivity.COMMAND_REQUEST_PERMISSION);
-                    return pack.context.getString(R.string.output_waitingpermission);
+                if (ContextCompat.checkSelfPermission(pack.getContext(), Manifest.permission.WRITE_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
+                    ActivityCompat.requestPermissions((Activity) pack.getContext(), new String[]{Manifest.permission.WRITE_CONTACTS}, LauncherActivity.COMMAND_REQUEST_PERMISSION);
+                    return pack.getContext().getString(R.string.output_waitingpermission);
                 }
 
                 ((MainPack) pack).contacts.delete(pack.getString());
@@ -74,7 +74,7 @@ public class cntcts extends ParamCommand {
 
             @Override
             public String onArgNotFound(ExecutePack pack, int index) {
-                return pack.context.getString(R.string.output_numbernotfound);
+                return pack.getContext().getString(R.string.output_numbernotfound);
             }
         },
         edit {
@@ -82,7 +82,7 @@ public class cntcts extends ParamCommand {
             public String exec(ExecutePack pack) {
                 Intent editIntent = new Intent(Intent.ACTION_EDIT);
                 editIntent.setDataAndType(((MainPack) pack).contacts.fromPhone(pack.getString()), ContactsContract.Contacts.CONTENT_ITEM_TYPE);
-                pack.context.startActivity(editIntent);
+                pack.getContext().startActivity(editIntent);
 
                 return null;
             }
@@ -94,7 +94,7 @@ public class cntcts extends ParamCommand {
 
             @Override
             public String onArgNotFound(ExecutePack pack, int index) {
-                return pack.context.getString(R.string.output_numbernotfound);
+                return pack.getContext().getString(R.string.output_numbernotfound);
             }
         },
         l {
@@ -118,7 +118,7 @@ public class cntcts extends ParamCommand {
 
             @Override
             public String onArgNotFound(ExecutePack pack, int index) {
-                return pack.context.getString(R.string.output_numbernotfound);
+                return pack.getContext().getString(R.string.output_numbernotfound);
             }
         };
 
@@ -154,7 +154,7 @@ public class cntcts extends ParamCommand {
 
         @Override
         public String onNotArgEnough(ExecutePack pack, int n) {
-            return pack.context.getString(R.string.help_cntcts);
+            return pack.getContext().getString(R.string.help_cntcts);
         }
     }
 
@@ -170,9 +170,9 @@ public class cntcts extends ParamCommand {
 
     @Override
     protected String doThings(ExecutePack pack) {
-        if (ContextCompat.checkSelfPermission(pack.context, Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions((Activity) pack.context, new String[]{Manifest.permission.READ_CONTACTS}, LauncherActivity.COMMAND_REQUEST_PERMISSION);
-            return pack.context.getString(R.string.output_waitingpermission);
+        if (ContextCompat.checkSelfPermission(pack.getContext(), Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions((Activity) pack.getContext(), new String[]{Manifest.permission.READ_CONTACTS}, LauncherActivity.COMMAND_REQUEST_PERMISSION);
+            return pack.getContext().getString(R.string.output_waitingpermission);
         }
         return null;
     }

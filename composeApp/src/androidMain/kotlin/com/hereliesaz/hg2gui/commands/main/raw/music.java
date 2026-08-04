@@ -23,7 +23,7 @@ public class music extends ParamCommand {
                 }
 
                 String title = ((MainPack) pack).player.playNext();
-                if(title != null) return pack.context.getString(R.string.output_playing) + Tuils.SPACE + title;
+                if(title != null) return pack.getContext().getString(R.string.output_playing) + Tuils.SPACE + title;
                 return null;
             }
         },
@@ -37,7 +37,7 @@ public class music extends ParamCommand {
                 }
 
                 String title = ((MainPack) pack).player.playPrev();
-                if(title != null) return pack.context.getString(R.string.output_playing) + Tuils.SPACE + title;
+                if(title != null) return pack.getContext().getString(R.string.output_playing) + Tuils.SPACE + title;
                 return null;
             }
         },
@@ -45,7 +45,7 @@ public class music extends ParamCommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                if(((MainPack) pack).player == null) return pack.context.getString(R.string.output_musicdisabled);
+                if(((MainPack) pack).player == null) return pack.getContext().getString(R.string.output_musicdisabled);
 
                 return ((MainPack) pack).player.lsSongs();
             }
@@ -61,7 +61,7 @@ public class music extends ParamCommand {
 
                 String title = ((MainPack) pack).player.play();
                 if(title == null) return null;
-                return pack.context.getString(R.string.output_playing) + Tuils.SPACE + title;
+                return pack.getContext().getString(R.string.output_playing) + Tuils.SPACE + title;
             }
         },
         stop {
@@ -85,7 +85,7 @@ public class music extends ParamCommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                if(((MainPack) pack).player == null) return pack.context.getString(R.string.output_musicdisabled);
+                if(((MainPack) pack).player == null) return pack.getContext().getString(R.string.output_musicdisabled);
 
                 String s = pack.getString();
                 ((MainPack) pack).player.select(s);
@@ -94,20 +94,20 @@ public class music extends ParamCommand {
 
             @Override
             public String onArgNotFound(ExecutePack pack, int indexNotFound) {
-                return pack.context.getString(R.string.output_songnotfound);
+                return pack.getContext().getString(R.string.output_songnotfound);
             }
         },
         info {
 
             @Override
             public String exec(ExecutePack pack) {
-                if(((MainPack) pack).player == null) return pack.context.getString(R.string.output_musicdisabled);
+                if(((MainPack) pack).player == null) return pack.getContext().getString(R.string.output_musicdisabled);
 
                 StringBuilder builder = new StringBuilder();
 
                 MusicManager2 m = ((MainPack) pack).player;
                 Song song = m.get(m.getSongIndex());
-                if(song == null) return pack.context.getString(R.string.output_songnotfound);
+                if(song == null) return pack.getContext().getString(R.string.output_songnotfound);
 
                 builder.append("Name: ").append(song.getTitle()).append(Tuils.NEWLINE);
                 if(song.getID() == -1) builder.append("Path: ").append(song.getPath()).append(Tuils.NEWLINE);
@@ -139,7 +139,7 @@ public class music extends ParamCommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                if(((MainPack) pack).player == null) return pack.context.getString(R.string.output_musicdisabled);
+                if(((MainPack) pack).player == null) return pack.getContext().getString(R.string.output_musicdisabled);
 
                 ((MainPack) pack).player.seekTo(pack.getInt() * 1000);
                 return null;
@@ -147,7 +147,7 @@ public class music extends ParamCommand {
 
             @Override
             public String onArgNotFound(ExecutePack pack, int indexNotFound) {
-                return pack.context.getString(R.string.invalid_integer);
+                return pack.getContext().getString(R.string.invalid_integer);
             }
         };
 
@@ -183,7 +183,7 @@ public class music extends ParamCommand {
 
         @Override
         public String onNotArgEnough(ExecutePack pack, int n) {
-            return pack.context.getString(R.string.help_music);
+            return pack.getContext().getString(R.string.help_music);
         }
 
         @Override

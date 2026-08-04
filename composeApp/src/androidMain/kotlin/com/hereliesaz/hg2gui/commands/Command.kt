@@ -1,6 +1,7 @@
 package com.hereliesaz.hg2gui.commands
 
 import com.hereliesaz.hg2gui.R
+import com.hereliesaz.hg2gui.commands.main.MainPack
 import com.hereliesaz.hg2gui.commands.main.Param
 import com.hereliesaz.hg2gui.commands.main.specific.ParamCommand
 import com.hereliesaz.hg2gui.tuils.Tuils
@@ -46,7 +47,7 @@ class Command {
         if (command is ParamCommand) {
             // If the first argument (the parameter itself) is invalid
             if (indexNotFound == 0) {
-                return info.context.getString(R.string.output_invalid_param) + Tuils.SPACE + mArgs!![0]
+                return Tuils.getContext(info).getString(R.string.output_invalid_param) + Tuils.SPACE + mArgs!![0]
             }
 
             val pCmd = command

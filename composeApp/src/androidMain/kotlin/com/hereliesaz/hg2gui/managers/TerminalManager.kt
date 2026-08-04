@@ -44,7 +44,7 @@ limitations under the License.*/
  * This version removes direct View dependencies and provides a StateFlow for the UI.
  */
 class TerminalManager(
-    private val mContext: Context,
+    @JvmField val mContext: Context,
     private val mainPack: MainPack,
     private val executer: CommandExecuter
 ) {

@@ -57,7 +57,7 @@ public class CommandRepository {
                 }
 
                 // --- Index Internal Commands ---
-                CommandAbstraction[] commands = pack.getCommandGroup().getCommands();
+                CommandAbstraction[] commands = pack.commandGroup.getCommands();
                 if (commands != null) {
                     for (CommandAbstraction cmd : commands) {
                         // Use class simple name (lowercase) as command alias (e.g. "clear")

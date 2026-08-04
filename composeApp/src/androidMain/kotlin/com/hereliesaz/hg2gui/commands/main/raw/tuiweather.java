@@ -28,11 +28,11 @@ public class tuiweather extends ParamCommand {
             @Override
             public String exec(ExecutePack pack) {
                 if(!XMLPrefsManager.getBoolean(Ui.show_weather)) {
-                    return pack.context.getString(R.string.weather_disabled);
+                    return pack.getContext().getString(R.string.weather_disabled);
                 } else if(!XMLPrefsManager.wasChanged(Behavior.weather_key, false)) {
-                    return pack.context.getString(R.string.weather_cant_update);
+                    return pack.getContext().getString(R.string.weather_cant_update);
                 } else {
-                    LocalBroadcastManager.getInstance(pack.context.getApplicationContext()).sendBroadcast(new Intent(UIManager.ACTION_WEATHER_MANUAL_UPDATE));
+                    LocalBroadcastManager.getInstance(pack.getContext().getApplicationContext()).sendBroadcast(new Intent(UIManager.ACTION_WEATHER_MANUAL_UPDATE));
                 }
 
                 return null;
@@ -44,8 +44,8 @@ public class tuiweather extends ParamCommand {
                 XMLPrefsSave save = Ui.show_weather;
 
                 save.parent().write(save, "true");
-                ((Reloadable) pack.context).addMessage(save.parent().path(), save.label() + " -> " + "true");
-                ((Reloadable) pack.context).reload();
+                ((Reloadable) pack.getContext()).addMessage(save.parent().path(), save.label() + " -> " + "true");
+                ((Reloadable) pack.getContext()).reload();
 
                 return null;
             }
@@ -56,8 +56,8 @@ public class tuiweather extends ParamCommand {
                 XMLPrefsSave save = Ui.show_weather;
 
                 save.parent().write(save, "false");
-                ((Reloadable) pack.context).addMessage(save.parent().path(), save.label() + " -> " + "false");
-                ((Reloadable) pack.context).reload();
+                ((Reloadable) pack.getContext()).addMessage(save.parent().path(), save.label() + " -> " + "false");
+                ((Reloadable) pack.getContext()).reload();
 
                 return null;
             }
@@ -65,7 +65,7 @@ public class tuiweather extends ParamCommand {
         tutorial {
             @Override
             public String exec(ExecutePack pack) {
-                pack.context.startActivity(Tuils.webPage("https://github.com/Andre1299/TUI-ConsoleLauncher/wiki/Weather/_edit"));
+                pack.getContext().startActivity(Tuils.webPage("https://github.com/Andre1299/TUI-ConsoleLauncher/wiki/Weather/_edit"));
                 return null;
             }
         },
@@ -114,12 +114,12 @@ public class tuiweather extends ParamCommand {
 
         @Override
         public String onNotArgEnough(ExecutePack pack, int n) {
-            return pack.context.getString(R.string.help_shortcut);
+            return pack.getContext().getString(R.string.help_shortcut);
         }
 
         @Override
         public String onArgNotFound(ExecutePack pack, int index) {
-            return pack.context.getString(R.string.output_appnotfound);
+            return pack.getContext().getString(R.string.output_appnotfound);
         }
     }
 

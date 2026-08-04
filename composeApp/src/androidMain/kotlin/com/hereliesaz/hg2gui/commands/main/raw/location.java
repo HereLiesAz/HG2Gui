@@ -31,11 +31,11 @@ public class location implements APICommand, CommandAbstraction {
 //            return context.getString(R.string.output_waitingpermission);
 //        }
 
-//        Location l = Tuils.getLocation(pack.context);
+//        Location l = Tuils.getLocation(pack.getContext());
 //        if(l != null) {
 //            Tuils.sendOutput(context, "Lat: " + l.getLatitude() + "; Long: " + l.getLongitude());
 //        } else {
-//            Tuils.sendOutput(pack.context, R.string.location_error);
+//            Tuils.sendOutput(pack.getContext(), R.string.location_error);
 //        }
 //
 //                , new Tuils.ArgsRunnable() {
@@ -46,7 +46,7 @@ public class location implements APICommand, CommandAbstraction {
 //        }, new Runnable() {
 //            @Override
 //            public void run() {
-//                Tuils.sendOutput(pack.context, R.string.location_error);
+//                Tuils.sendOutput(pack.getContext(), R.string.location_error);
 //            }
 //        }, handler);
 

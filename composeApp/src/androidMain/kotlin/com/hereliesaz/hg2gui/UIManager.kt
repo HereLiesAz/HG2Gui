@@ -88,6 +88,7 @@ open class UIManager(
         const val UNLOCK_KEY = "unlockTimes"
         const val NEXT_UNLOCK_CYCLE_RESTART = "nextUnlockRestart"
 
+        @JvmStatic
         fun getListOfIntValues(values: String, length: Int, defaultValue: Int): IntArray {
             val `is` = IntArray(length)
             val cleanValues = removeSquareBrackets(values)
@@ -108,6 +109,7 @@ open class UIManager(
             return `is`
         }
 
+        @JvmStatic
         fun getListOfStringValues(values: String, length: Int, defaultValue: String): Array<String> {
             val `is` = Array(length) { defaultValue }
             val split = values.split(",").toTypedArray()
@@ -1203,7 +1205,7 @@ open class UIManager(
                 applyBgRect(this, bgRectColors[SUGGESTIONS_BGCOLOR_INDEX], bgColors[SUGGESTIONS_BGCOLOR_INDEX], margins[SUGGESTIONS_MARGINS_INDEX], strokeWidth, cornerRadius)
             }
             val suggestionsView = rootView.findViewById<LinearLayout>(R.id.suggestions_group)
-            suggestionsManager = SuggestionsManager(suggestionsView, mainPack, mTerminalAdapter)
+            suggestionsManager = SuggestionsManager(suggestionsView, mainPack, mTerminalAdapter!!)
             inputView.addTextChangedListener(SuggestionTextWatcher(suggestionsManager, object : OnTextChanged {
                 override fun textChanged(currentText: String, before: Int) {
                     if (!hideToolbarNoInput) return
