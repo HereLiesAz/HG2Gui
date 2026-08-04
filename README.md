@@ -1,9 +1,6 @@
-# HG2Gui — The Hitchhiker's Guide Terminal (Android)
+# HG2Gui — The Hitchhiker's Terminal to the Galaxy
 
-**HG2Gui** is a touch-optimised terminal for Android. It is not a launcher: it does not
-replace your home screen, and it does not want to. It is a terminal you can drive with your
-thumbs — every command, subcommand and argument is a pill you tap, so a real shell is usable
-without a keyboard.
+**HG2Gui** is a touch-optimised terminal designed after Douglas Adams' The Hitchhiker's Guide to the Galaxy — every command, subcommand and argument is an animated pill thinger you tap, with the goal being to use a real shell without a keyboard. 
 
 Inspired by the *Hitchhiker's Guide to the Galaxy* (2005) aesthetic and built on the legacy of
 T-UI Launcher, from which it has been decoupled.
@@ -28,12 +25,12 @@ capsule, modifier keys (`ctrl` `alt` `esc` `tab` `↑` `↓`), and the command t
 category sends the stack off the left edge, drops that pill to the bottom of the screen, and
 cascades its children upward from it. Output arrives in a record tile, not a scrollback wall.
 
-The visual language is [Azphalt](https://azphalt.org) — a yellow page, no borders, no shadows,
+The visual language matches [Azphalt](https://azphalt.org) — a yellow page, no borders, no shadows,
 no icons; a capsule is the only primitive.
 
 ## Project structure
 
-Kotlin and Jetpack Compose for the UI; the command engine is still Java.
+Kotlin and Jetpack Compose Multiplatform for the UI; the command engine is still Java.
 
 *   `app/src/main/java/com/hereliesaz/hg2gui/`
     *   `TerminalActivity.kt` — the entry point.
