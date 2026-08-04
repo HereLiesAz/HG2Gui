@@ -57,11 +57,11 @@ class XMLPrefsManager private constructor() {
         };
 
         var path: String
-        var values: XMLPrefsList
+        var pValues: XMLPrefsList
         var enums: MutableList<XMLPrefsSave>
 
         init {
-            this.values = XMLPrefsList()
+            this.pValues = XMLPrefsList()
             this.enums = en.toMutableList()
             this.path = "${this.name.lowercase()}.xml"
         }
@@ -70,7 +70,7 @@ class XMLPrefsManager private constructor() {
             set(File(Tuils.getFolder(), path), save.label(), arrayOf(VALUE_ATTRIBUTE), arrayOf(value))
         }
 
-        override fun getValues(): XMLPrefsList = values
+        override fun getValues(): XMLPrefsList = pValues
 
         override fun path(): String = path
 
@@ -96,8 +96,8 @@ class XMLPrefsManager private constructor() {
         @JvmStatic
         fun dispose() {
             commonsLoaded = false
-            for (element in XMLPrefsRoot.values()) {
-                element.values.list.clear()
+            for (element in XMLPrefsRoot.entries) {
+                element.getValues().list.clear()
             }
         }
 
@@ -188,7 +188,7 @@ class XMLPrefsManager private constructor() {
                                 }
                             }
 
-                            element.values.add(nn, value)
+                            element.getValues().add(nn, value)
                             check = true
                             break
                         }
@@ -216,7 +216,7 @@ class XMLPrefsManager private constructor() {
                     val em = d.createElement(s.label())
                     em.setAttribute(VALUE_ATTRIBUTE, value)
                     root.appendChild(em)
-                    element.values.add(s.label(), value)
+                    element.getValues().add(s.label(), value)
                 }
 
                 writeTo(d, file)

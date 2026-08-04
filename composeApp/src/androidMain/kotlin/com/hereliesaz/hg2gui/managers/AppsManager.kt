@@ -340,7 +340,7 @@ class AppsManager(private val context: Context) : XMLPrefsElement {
                     val query = LauncherApps.ShortcutQuery()
                     query.setQueryFlags(LauncherApps.ShortcutQuery.FLAG_MATCH_MANIFEST or LauncherApps.ShortcutQuery.FLAG_MATCH_DYNAMIC)
                     query.setPackage(li.componentName.packageName)
-                    li.setShortcuts(launcherApps.getShortcuts(query, Process.myUserHandle()))
+                    li.shortcuts = launcherApps.getShortcuts(query, Process.myUserHandle())
                 } catch (e: Throwable) {
                     Tuils.log(e)
                 }
@@ -960,9 +960,7 @@ class AppsManager(private val context: Context) : XMLPrefsElement {
             dest.writeLong(lastUpdateTime)
         }
 
-        fun setShortcuts(s: List<ShortcutInfo>?) {
-            this.shortcuts = s
-        }
+
 
         override fun compareTo(other: LaunchInfo): Int {
             return other.launchedTimes - launchedTimes

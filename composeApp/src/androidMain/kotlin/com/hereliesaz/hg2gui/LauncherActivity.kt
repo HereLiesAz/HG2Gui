@@ -452,8 +452,9 @@ class LauncherActivity : AppCompatActivity(), Reloadable {
 
         // Display restart message if one exists (passed from previous instance)
         if (XMLPrefsManager.getBoolean(Ui.show_restart_message)) {
-            val s = intent.getCharSequenceExtra(Reloadable.MESSAGE)
-            if (s != null) out.onOutput(Tuils.span(s, XMLPrefsManager.getColor(Theme.restart_message_color)))
+            intent.getCharSequenceExtra(Reloadable.MESSAGE)?.let { s ->
+                out.onOutput(Tuils.span(s, XMLPrefsManager.getColor(Theme.restart_message_color)))
+            }
         }
 
         categories = HashSet<ReloadMessageCategory>()
@@ -594,7 +595,7 @@ class LauncherActivity : AppCompatActivity(), Reloadable {
     /**
      * Handle long key presses (specifically Back button).
      */
-    @Suppress("BackPress")
+    @Suppress("IllegalBackPress")
     override fun onKeyLongPress(keyCode: Int, event: KeyEvent): Boolean {
         if (keyCode != KeyEvent.KEYCODE_BACK)
             return super.onKeyLongPress(keyCode, event)
@@ -678,7 +679,7 @@ class LauncherActivity : AppCompatActivity(), Reloadable {
             if (it.type == SuggestionsManager.Suggestion.TYPE_CONTACT) {
                 // If a number was selected for a contact, use that number
                 val contact = it.`object` as ContactManager.Contact
-                contact.setSelectedNumber(item.itemId)
+                contact.selectedNumber = item.itemId
 
                 // Send the contact name to input
                 Tuils.sendInput(this, it.text)
