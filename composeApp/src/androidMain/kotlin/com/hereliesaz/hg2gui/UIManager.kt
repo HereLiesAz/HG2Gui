@@ -33,6 +33,7 @@ import com.hereliesaz.hg2gui.managers.suggestions.SuggestionTextWatcher
 import com.hereliesaz.hg2gui.managers.suggestions.SuggestionsManager
 import com.hereliesaz.hg2gui.managers.xml.XMLPrefsManager
 import com.hereliesaz.hg2gui.managers.xml.options.*
+import com.hereliesaz.hg2gui.managers.xml.options.Toolbar as XMLToolbar
 import com.hereliesaz.hg2gui.tuils.AllowEqualsSequence
 import com.hereliesaz.hg2gui.tuils.NetworkUtils
 import com.hereliesaz.hg2gui.tuils.OutlineTextView
@@ -662,13 +663,13 @@ open class UIManager(
                 } else {
                     w = "id=$w"
                 }
-                setUrl(w)
+                updateUrl(w)
             }
         }
 
         override fun run() {
             weatherPerformedStartupRun = true
-            if (!fixedLocation) setUrl(lastLatitude, lastLongitude)
+            if (!fixedLocation) updateUrl(lastLatitude, lastLongitude)
             send()
             handler?.postDelayed(this, weatherDelay.toLong())
         }
@@ -681,11 +682,11 @@ open class UIManager(
             LocalBroadcastManager.getInstance(mContext.applicationContext).sendBroadcast(i)
         }
 
-        private fun setUrl(where: String) {
+        private fun updateUrl(where: String) {
             url = "http://api.openweathermap.org/data/2.5/weather?$where&appid=$key&units=${XMLPrefsManager.get(Behavior.weather_temperature_measure)}"
         }
 
-        private fun setUrl(latitude: Double, longitude: Double) {
+        private fun updateUrl(latitude: Double, longitude: Double) {
             url = "http://api.openweathermap.org/data/2.5/weather?lat=$latitude&lon=$longitude&appid=$key&units=${XMLPrefsManager.get(Behavior.weather_temperature_measure)}"
         }
     }
@@ -1162,7 +1163,7 @@ open class UIManager(
         var nextView: ImageButton? = null
         var deleteView: ImageButton? = null
         var pasteView: ImageButton? = null
-        if (!XMLToolbar.show_toolbar.parent().getBoolean(XMLToolbar.show_toolbar)) {
+        if (!XMLPrefsManager.getBoolean(XMLToolbar.show_toolbar)) {
             inputOutputView.findViewById<View>(R.id.tools_view).visibility = View.GONE
             toolbarView = null
         } else {
@@ -1171,7 +1172,7 @@ open class UIManager(
             deleteView = inputOutputView.findViewById(R.id.delete_view)
             pasteView = inputOutputView.findViewById(R.id.paste_view)
             toolbarView = inputOutputView.findViewById(R.id.tools_view)
-            hideToolbarNoInput = XMLToolbar.hide_toolbar_no_input.parent().getBoolean(XMLToolbar.hide_toolbar_no_input)
+            hideToolbarNoInput = XMLPrefsManager.getBoolean(XMLToolbar.hide_toolbar_no_input)
             toolbarView?.let { applyBgRect(it, bgRectColors[TOOLBAR_BGCOLOR_INDEX], bgColors[TOOLBAR_BGCOLOR_INDEX], margins[TOOLBAR_MARGINS_INDEX], strokeWidth, cornerRadius) }
         }
 
@@ -1339,21 +1340,6 @@ open class UIManager(
         }
     }
 
-    private val A_DAY = (1000 * 60 * 60 * 24).toLong()
-    private var unlockColor = 0
-    private var unlockTimeOrder = 0
-    private var unlockTimes = 0
-    private var unlockHour = 0
-    private var unlockMinute = 0
-    private val cycleDuration = A_DAY.toInt()
-    private var lastUnlockTime = -1L
-    private var nextUnlockCycleRestart = 0L
-    private var unlockFormat: String? = null
-    private var notAvailableText: String? = null
-    private var unlockTimeDivider: String? = null
-    private val UP_DOWN = 1
-    private var lastUnlocks: LongArray? = null
-
     private fun onUnlock() {
         if (System.currentTimeMillis() - lastUnlockTime < 1000 || lastUnlocks == null) return
         lastUnlockTime = System.currentTimeMillis()
@@ -1364,44 +1350,6 @@ open class UIManager(
         preferences.edit().putInt(UNLOCK_KEY, unlockTimes).apply()
         invalidateUnlockText()
     }
-
-    private val UNLOCK_RUNNABLE_DELAY = cycleDuration / 24
-    private val unlockTimeRunnable: Runnable = object : Runnable {
-        override fun run() {
-            var delay = nextUnlockCycleRestart - System.currentTimeMillis()
-            if (delay <= 0) {
-                unlockTimes = 0
-                lastUnlocks?.let { unlocks ->
-                    for (c in unlocks.indices) {
-                        unlocks[c] = -1
-                    }
-                }
-                val now = Calendar.getInstance()
-                val hour = now[Calendar.HOUR_OF_DAY]
-                val minute = now[Calendar.MINUTE]
-                if (unlockHour < hour || unlockHour == hour && unlockMinute <= minute) {
-                    now.set(Calendar.DAY_OF_YEAR, now[Calendar.DAY_OF_YEAR] + 1)
-                }
-                val nextRestart = now
-                nextRestart[Calendar.HOUR_OF_DAY] = unlockHour
-                nextRestart[Calendar.MINUTE] = unlockMinute
-                nextRestart[Calendar.SECOND] = 0
-                nextUnlockCycleRestart = nextRestart.timeInMillis
-                preferences.edit().putLong(NEXT_UNLOCK_CYCLE_RESTART, nextUnlockCycleRestart).putInt(UNLOCK_KEY, 0).apply()
-                delay = nextUnlockCycleRestart - System.currentTimeMillis()
-                if (delay < 0) delay = 0
-            }
-            invalidateUnlockText()
-            delay = delay.coerceAtMost(UNLOCK_RUNNABLE_DELAY.toLong())
-            handler?.postDelayed(this, delay)
-        }
-    }
-
-    private val unlockCount = Pattern.compile("%c", Pattern.CASE_INSENSITIVE)
-    private val advancement = Pattern.compile("%a(\\d+)(.)")
-    private val timePattern = Pattern.compile("(%t\\d*)(?:\\(([^\\)]*)\\))?(\\d+)?")
-    private val indexPattern = Pattern.compile("%i", Pattern.CASE_INSENSITIVE)
-    private val whenPattern = "%w"
 
     private fun invalidateUnlockText() {
         var cp = unlockFormat ?: ""
