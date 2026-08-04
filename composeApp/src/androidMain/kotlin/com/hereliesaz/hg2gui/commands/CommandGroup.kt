@@ -5,12 +5,11 @@ import android.os.Build
 import com.hereliesaz.hg2gui.commands.main.specific.APICommand
 import com.hereliesaz.hg2gui.tuils.Tuils
 import java.io.IOException
-import java.util.*
 
 class CommandGroup(c: Context, private val packageName: String) : BaseCommandGroup {
 
-    private var commands: Array<CommandAbstraction> = emptyArray()
-    private var commandNames: Array<String> = emptyArray()
+    private var _commands: Array<CommandAbstraction> = emptyArray()
+    private var _commandNames: Array<String> = emptyArray()
 
     init {
         var cmds: MutableList<String>
@@ -33,14 +32,14 @@ class CommandGroup(c: Context, private val packageName: String) : BaseCommandGro
         }
 
         cmds.sort()
-        commandNames = cmds.toTypedArray()
+        _commandNames = cmds.toTypedArray()
 
         cmdAbs.sortWith { o1, o2 -> o2.priority() - o1.priority() }
-        commands = cmdAbs.toTypedArray()
+        _commands = cmdAbs.toTypedArray()
     }
 
     override fun getCommandByName(name: String): CommandAbstraction? {
-        for (c in commands) {
+        for (c in _commands) {
             if (c.javaClass.simpleName == name) {
                 return c
             }
@@ -64,10 +63,10 @@ class CommandGroup(c: Context, private val packageName: String) : BaseCommandGro
     }
 
     override fun getCommands(): Array<CommandAbstraction> {
-        return commands
+        return _commands
     }
 
     override fun getCommandNames(): Array<String> {
-        return commandNames
+        return _commandNames
     }
 }
