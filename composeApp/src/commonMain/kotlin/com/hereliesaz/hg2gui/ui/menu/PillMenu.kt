@@ -30,19 +30,7 @@ import kotlinx.coroutines.launch
 
 /*
  * The HG2Gui suggestion menu — the Azphalt capsule as a key.
- *
- * Choreography (see "HG2Gui Menu Style Guide"):
- *   1. Tapping a host sends the whole stack left. The host stops with its RIGHT END at 34% of
- *      the screen; every other pill leaves entirely.
- *   2. The host then drops to the bottom of the screen and stays pinned there.
- *   3. Children cascade UPWARD from it. Each starts hidden behind the pill before it (the first
- *      behind the host, on the host's own row), swings a full 360° hinged on an end — alternating
- *      left end, right end — and lifts exactly one row during the final 10% of its swing.
- *   4. Strictly sequential: a pill does not begin until the one before it has landed.
- *   5. Returning to a stack is animated too: the pills slide back in from off-screen left.
  */
-
-// ---------------------------------------------------------------- tokens
 
 object Azphalt {
     val Ink = Color(0xFF1E1A17)
@@ -60,24 +48,20 @@ object Azphalt {
         Color(0xFF653578), Color(0xFF1E4E85)
     )
 
-    /** Hue is assigned by hashing the identifier — it carries no meaning. */
     fun hueOf(id: String) = (id.hashCode().let { if (it < 0) -it else it }) % hues.size
 
-    // Three times as fast, linear throughout — no eased curves.
     const val SLIDE_MS = 420 / 3
     const val DROP_MS = 420 / 3
     const val SWING_MS = 520 / 3
-    const val LIFT_FRACTION = 0.90f   // the lift happens in the last 10%
+    const val LIFT_FRACTION = 0.90f
 }
 
 private val PILL_HEIGHT = 17.dp
-private val ROW_PITCH = 20.dp        // pill + gap
-private val OVERHANG = 62.dp         // how far a stack pill runs off the left edge
+private val ROW_PITCH = 20.dp
+private val OVERHANG = 62.dp
 private const val HOST_RIGHT_EDGE = 0.34f
 private const val CHILD_LEFT = 0.30f
 private const val CHILD_WIDTH = 0.34f
-
-// ---------------------------------------------------------------- model
 
 data class MenuNode(
     val id: String,
@@ -91,8 +75,6 @@ private sealed interface Phase {
     data class Leaving(val hostId: String) : Phase
     data class Open(val hostId: String, val selectedChild: String?) : Phase
 }
-
-// ---------------------------------------------------------------- menu
 
 @Composable
 fun PillMenu(
@@ -172,8 +154,6 @@ fun PillMenu(
     }
 }
 
-// ---------------------------------------------------------------- the stack (browsing)
-
 @Composable
 private fun StackPill(
     node: MenuNode,
@@ -183,10 +163,9 @@ private fun StackPill(
     entering: Boolean,
     onClick: () -> Unit
 ) {
-    // fraction of the parent width; -1.7 is fully off the left edge
     val target = when {
         !leaving -> 0f
-        isHost -> HOST_RIGHT_EDGE - 1f   // right end parks at 34%
+        isHost -> HOST_RIGHT_EDGE - 1f
         else -> -1.7f
     }
     val offset = remember { Animatable(if (entering) -1.7f else 0f) }
@@ -204,15 +183,13 @@ private fun StackPill(
         hue = Azphalt.hueOf(node.id),
         selected = leaving && isHost,
         modifier = Modifier
-            .fillMaxWidth(0.66f)          // never past two thirds
+            .fillMaxWidth(0.66f)
             .offsetByFractionOfParent(offset.value)
             .padding(start = 0.dp)
             .absoluteBleed(OVERHANG)
             .clickable(enabled = !leaving, onClick = onClick)
     )
 }
-
-// ---------------------------------------------------------------- the host
 
 @Composable
 private fun HostPill(node: MenuNode, rowsBelow: Int, onClick: () -> Unit) {
@@ -236,8 +213,6 @@ private fun HostPill(node: MenuNode, rowsBelow: Int, onClick: () -> Unit) {
     }
 }
 
-// ---------------------------------------------------------------- the children
-
 @Composable
 private fun ChildChain(
     chain: List<Pair<MenuNode, Boolean>>,
@@ -249,14 +224,11 @@ private fun ChildChain(
 
     Box(Modifier.fillMaxSize()) {
         chain.forEachIndexed { i, (node, isLeaf) ->
-            // rotation: 360° hinged on alternating ends; lift: one row, in the last 10%
             val turn = remember(node.id, i) { Animatable(if (i % 2 == 0) -360f else 360f) }
             val lift = remember(node.id, i) { Animatable(0f) }
 
             LaunchedEffect(node.id, i) {
-                delay(
-                    (Azphalt.DROP_MS + i * Azphalt.SWING_MS).toLong()   // strictly sequential
-                )
+                delay((Azphalt.DROP_MS + i * Azphalt.SWING_MS).toLong())
                 launch {
                     turn.animateTo(0f, keyframes {
                         durationMillis = Azphalt.SWING_MS
@@ -266,7 +238,6 @@ private fun ChildChain(
                     })
                 }
                 launch {
-                    // holds its predecessor's row, then rises exactly one row at the tail
                     lift.animateTo(-pitchPx * i, keyframes {
                         durationMillis = Azphalt.SWING_MS
                         (-pitchPx * (i - 1).coerceAtLeast(0)) at (Azphalt.SWING_MS * 0.9f).toInt() using LinearEasing
@@ -283,7 +254,7 @@ private fun ChildChain(
                     .align(Alignment.BottomStart)
                     .fillMaxWidth(CHILD_WIDTH)
                     .offsetByFractionOfParent(CHILD_LEFT)
-                    .zIndex(50f - i)                       // hidden behind the pill before it
+                    .zIndex(50f - i)
                     .graphicsLayer {
                         transformOrigin =
                             if (i % 2 == 0) TransformOrigin(0f, 0.5f) else TransformOrigin(1f, 0.5f)
@@ -295,8 +266,6 @@ private fun ChildChain(
         }
     }
 }
-
-// ---------------------------------------------------------------- the capsule
 
 @Composable
 private fun Pill(
@@ -318,7 +287,7 @@ private fun Pill(
             .background(bg)
             .padding(start = 12.dp, end = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(5.dp, Alignment.End)  // label rides the right
+        horizontalArrangement = Arrangement.spacedBy(5.dp, Alignment.End)
     ) {
         Text(
             text = label.uppercase(),
@@ -350,9 +319,6 @@ private fun Pill(
     }
 }
 
-// ---------------------------------------------------------------- helpers
-
-/** Offsets by a fraction of the PARENT's width — the pills are positioned in screen fractions. */
 private fun Modifier.offsetByFractionOfParent(fraction: Float) = layout { measurable, constraints ->
     val placeable = measurable.measure(constraints)
     layout(placeable.width, placeable.height) {
@@ -360,7 +326,6 @@ private fun Modifier.offsetByFractionOfParent(fraction: Float) = layout { measur
     }
 }
 
-/** Lets a pill run past the left edge of its parent. */
 private fun Modifier.absoluteBleed(by: Dp) = layout { measurable, constraints ->
     val extra = by.roundToPx()
     val placeable = measurable.measure(constraints.copy(maxWidth = constraints.maxWidth + extra))

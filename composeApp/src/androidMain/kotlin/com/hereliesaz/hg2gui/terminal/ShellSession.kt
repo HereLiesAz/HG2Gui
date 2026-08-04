@@ -99,11 +99,20 @@ actual class ShellSession private constructor(
     }
 
     actual fun exec(command: String): ShellSessionResult {
+        val collected = StringBuilder()
+        val exitCode = stream(command) { line ->
+            if (collected.isNotEmpty()) collected.append('\n')
+            collected.append(line)
+        }
+        return ShellSessionResult(collected.toString(), exitCode, _workingDirectory)
+    }
+
+    actual fun stream(command: String, onLine: (line: String) -> Unit): Int {
         if (!isAlive) {
-            return ShellSessionResult("shell is not running", -1, _workingDirectory)
+            onLine("shell is not running")
+            return -1
         }
 
-        val collected = StringBuilder()
         var exitCode = -1
 
         try {
@@ -119,8 +128,7 @@ actual class ShellSession private constructor(
 
             while (true) {
                 if (System.currentTimeMillis() > deadline) {
-                    collected.append("\n[timed out after ")
-                        .append(TIMEOUT_MS / 1000).append("s]")
+                    onLine("\n[timed out after ${TIMEOUT_MS / 1000}s]")
                     break
                 }
 
@@ -146,7 +154,7 @@ actual class ShellSession private constructor(
 
                 val marker = line.indexOf(SENTINEL)
                 if (marker >= 0) {
-                    if (marker > 0) collected.append(line.substring(0, marker))
+                    if (marker > 0) onLine(line.substring(0, marker))
 
                     val tail = line.substring(marker + SENTINEL.length)
                     val split = tail.indexOf(':')
@@ -161,15 +169,15 @@ actual class ShellSession private constructor(
                     break
                 }
 
-                if (collected.isNotEmpty()) collected.append('\n')
-                collected.append(line)
+                onLine(line)
             }
         } catch (e: IOException) {
             alive.set(false)
-            return ShellSessionResult("shell died: ${e.message}", -1, _workingDirectory)
+            onLine("shell died: ${e.message}")
+            return -1
         }
 
-        return ShellSessionResult(collected.toString(), exitCode, _workingDirectory)
+        return exitCode
     }
 
     actual fun close() {

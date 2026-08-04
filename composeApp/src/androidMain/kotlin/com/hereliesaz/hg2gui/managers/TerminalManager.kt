@@ -1,42 +1,29 @@
-package com.hereliesaz.hg2gui.managers;
+package com.hereliesaz.hg2gui.managers
 
-import android.app.Activity;
-import android.content.Context;
-import android.content.Intent;
-import android.content.res.ColorStateList;
-import android.graphics.Color;
-import android.os.IBinder;
-import android.text.InputType;
-import android.text.Layout;
-import android.text.Spannable;
-import android.text.SpannableString;
-import android.text.Spanned;
-import android.text.TextUtils;
-import android.text.style.ForegroundColorSpan;
-import android.view.KeyEvent;
-import android.view.View;
-import android.view.inputmethod.EditorInfo;
-import android.widget.EditText;
-import android.widget.ImageButton;
-import android.widget.ImageView;
-import android.widget.ScrollView;
-import android.widget.TextView;
-
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.List;
-
-import com.hereliesaz.hg2gui.PanicActivity;
-import com.hereliesaz.hg2gui.commands.main.MainPack;
-import com.hereliesaz.hg2gui.managers.xml.XMLPrefsManager;
-import com.hereliesaz.hg2gui.managers.xml.options.Behavior;
-import com.hereliesaz.hg2gui.managers.xml.options.Theme;
-import com.hereliesaz.hg2gui.managers.xml.options.Ui;
-import com.hereliesaz.hg2gui.tuils.LongClickMovementMethod;
-import com.hereliesaz.hg2gui.tuils.LongClickableSpan;
-import com.hereliesaz.hg2gui.tuils.PrivateIOReceiver;
-import com.hereliesaz.hg2gui.tuils.Tuils;
-import com.hereliesaz.hg2gui.tuils.interfaces.CommandExecuter;
+import android.content.ClipboardManager
+import android.content.Context
+import android.graphics.Color
+import android.os.Handler
+import android.os.Looper
+import com.hereliesaz.hg2gui.PanicActivity
+import com.hereliesaz.hg2gui.commands.main.MainPack
+import com.hereliesaz.hg2gui.managers.xml.XMLPrefsManager
+import com.hereliesaz.hg2gui.managers.xml.options.Behavior
+import com.hereliesaz.hg2gui.managers.xml.options.Theme
+import com.hereliesaz.hg2gui.managers.xml.options.Ui
+import com.hereliesaz.hg2gui.tuils.Tuils
+import com.hereliesaz.hg2gui.tuils.interfaces.CommandExecuter
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import android.content.Intent
+import android.widget.EditText
+import android.widget.ImageView
+import android.widget.TextView
+import android.view.View
+import android.view.inputmethod.EditorInfo
+import android.widget.ScrollView
 
 /*Copyright Francesco Andreuzzi
 
@@ -53,523 +40,274 @@ See the License for the specific language governing permissions and
 limitations under the License.*/
 
 /**
- * Manages the visual aspect of the terminal.
- * <p>
- * This class wraps the primary TextView (output) and EditText (input) to provide a unified
- * interface for the "Terminal" view. It acts as an adapter, handling:
- * 1. Appending new text to the output.
- * 2. Formatting text (colors, timestamps, prefixes).
- * 3. Handling user input events (Enter key, buttons).
- * 4. Managing command history (Up/Down arrows simulation).
- * 5. Auto-scrolling logic.
- * </p>
+ * Manages the terminal state and history, refactored for Compose.
+ * This version removes direct View dependencies and provides a StateFlow for the UI.
  */
-public class TerminalManager {
+class TerminalManager(
+    private val mContext: Context,
+    private val mainPack: MainPack,
+    private val executer: CommandExecuter
+) {
+    // Legacy View support
+    private var terminalView: TextView? = null
+    private var inputView: EditText? = null
+    private var prefixView: TextView? = null
+    private var submitView: ImageView? = null
+    private var backView: View? = null
+    private var nextView: View? = null
+    private var deleteView: View? = null
+    private var pasteView: View? = null
 
-    private final int SCROLL_DELAY = 200; // Delay before scrolling to bottom
-    private final int CMD_LIST_SIZE = 40; // Max history size
+    constructor(
+        terminalView: TextView,
+        inputView: EditText,
+        prefixView: TextView,
+        submitView: ImageView?,
+        backView: View?,
+        nextView: View?,
+        deleteView: View?,
+        pasteView: View?,
+        mContext: Context,
+        mainPack: MainPack,
+        executer: CommandExecuter
+    ) : this(mContext, mainPack, executer) {
+        this.terminalView = terminalView
+        this.inputView = inputView
+        this.prefixView = prefixView
+        this.submitView = submitView
+        this.backView = backView
+        this.nextView = nextView
+        this.deleteView = deleteView
+        this.pasteView = pasteView
 
-    // Categories for text output formatting
-    public static final int CATEGORY_INPUT = 10, CATEGORY_OUTPUT = 11, CATEGORY_NO_COLOR = 20;
-
-    public static int NO_COLOR = Integer.MAX_VALUE;
-
-    private long lastEnter; // Timestamp to prevent double-enter debounce
-
-    private String prefix; // Standard prompt prefix (e.g. "$")
-    private String suPrefix; // Root prompt prefix (e.g. "#")
-
-    // UI Components
-    private ScrollView mScrollView;
-    private TextView mTerminalView;
-    private EditText mInputView;
-    private TextView mPrefix;
-
-    private boolean suMode; // Is root mode active?
-
-    // History buffer
-    private List<String> cmdList = new ArrayList<>(CMD_LIST_SIZE);
-    private int howBack = -1; // Pointer for history navigation
-
-    // Runnable to scroll to the bottom of the terminal
-    private Runnable mScrollRunnable = new Runnable() {
-        @Override
-        public void run() {
-            mScrollView.fullScroll(ScrollView.FOCUS_DOWN);
-            mInputView.requestFocus();
-        }
-    };
-
-    private MainPack mainPack;
-
-    private boolean defaultHint = true;
-
-    private int clearCmdsCount= 0;
-
-    // Configuration for auto-clearing the screen
-    private int clearAfterCmds, clearAfterMs, maxLines;
-    private Runnable clearRunnable = new Runnable() {
-
-        @Override
-        public void run() {
-            clear();
-            mTerminalView.postDelayed(this, clearAfterMs);
-        }
-    };
-
-    private String inputFormat, outputFormat;
-    private int inputColor, outputColor;
-
-    private boolean clickCommands, longClickCommands;
-
-    public Context mContext;
-
-    private CommandExecuter executer;
-
-    /**
-     * Constructor. Binds all UI elements and loads preferences.
-     */
-    public TerminalManager(final TextView terminalView, EditText inputView, TextView prefixView, ImageView submitView, final ImageView backView, ImageButton nextView, ImageButton deleteView,
-                           ImageButton pasteView, final Context context, MainPack mainPack, CommandExecuter executer) {
-        if (terminalView == null || inputView == null || prefixView == null)
-            throw new UnsupportedOperationException();
-
-        this.mContext = context;
-        this.executer = executer;
-
-        this.mainPack = mainPack;
-
-        // Load preferences
-        this.clickCommands = XMLPrefsManager.getBoolean(Behavior.click_commands);
-        this.longClickCommands = XMLPrefsManager.getBoolean(Behavior.long_click_commands);
-
-        this.clearAfterMs = XMLPrefsManager.getInt(Behavior.clear_after_seconds) * 1000;
-        this.clearAfterCmds = XMLPrefsManager.getInt(Behavior.clear_after_cmds);
-        this.maxLines = XMLPrefsManager.getInt(Behavior.max_lines);
-
-        inputFormat = XMLPrefsManager.get(Behavior.input_format);
-        outputFormat = XMLPrefsManager.get(Behavior.output_format);
-
-        inputColor = XMLPrefsManager.getColor(Theme.input_color);
-        outputColor = XMLPrefsManager.getColor(Theme.output_color);
-
-        prefix = XMLPrefsManager.get(Ui.input_prefix);
-        suPrefix = XMLPrefsManager.get(Ui.input_root_prefix);
-
-        int ioSize = XMLPrefsManager.getInt(Ui.input_output_size);
-
-        // Configure Prefix View
-        prefixView.setTypeface(Tuils.getTypeface(context));
-        prefixView.setTextColor(XMLPrefsManager.getColor(Theme.input_color));
-        prefixView.setTextSize(ioSize);
-        prefixView.setText(prefix.endsWith(Tuils.SPACE) ? prefix : prefix + Tuils.SPACE);
-        this.mPrefix = prefixView;
-
-        // Configure Toolbar Buttons
-        if (submitView != null) {
-            submitView.setColorFilter(XMLPrefsManager.getColor(Theme.enter_color));
-            submitView.setOnClickListener(v -> onNewInput());
-        }
-
-        if (backView != null) {
-            backView.setColorFilter(XMLPrefsManager.getColor(Theme.toolbar_color));
-            backView.setOnClickListener(v -> onBackPressed());
-        }
-
-        if (nextView != null) {
-            nextView.setColorFilter(XMLPrefsManager.getColor(Theme.toolbar_color));
-            nextView.setOnClickListener(v -> onNextPressed());
-        }
-
-        if (pasteView != null) {
-            pasteView.setColorFilter(XMLPrefsManager.getColor(Theme.toolbar_color));
-            pasteView.setOnClickListener(v -> {
-                String text = Tuils.getTextFromClipboard(context);
-                if(text != null && text.length() > 0) {
-                    setInput(getInput() + text);
-                }
-            });
-        }
-
-        if (deleteView != null) {
-            deleteView.setColorFilter(XMLPrefsManager.getColor(Theme.toolbar_color));
-            deleteView.setOnClickListener(v -> setInput(Tuils.EMPTYSTRING));
-        }
-
-        // Configure Terminal Output View
-        this.mTerminalView = terminalView;
-        this.mTerminalView.setTypeface(Tuils.getTypeface(context));
-        this.mTerminalView.setTextSize(ioSize);
-        this.mTerminalView.setFocusable(false);
-        this.mTerminalView.setMovementMethod(LongClickMovementMethod.getInstance(XMLPrefsManager.getInt(Behavior.long_click_duration)));
-
-        // Hack to set Hint Color using reflection (Standard API might not support it fully on all versions in this context)
-        int hintColor = XMLPrefsManager.getColor(Theme.session_info_color);
-        ColorStateList list = mTerminalView.getHintTextColors();
-        try {
-            Field colors = list.getClass().getDeclaredField("mColors");
-            Field dColor = list.getClass().getDeclaredField("mDefaultColor");
-
-            colors.setAccessible(true);
-            dColor.setAccessible(true);
-
-            int[] a = (int[]) colors.get(list);
-            for(int c = 0; c < a.length; c++) {
-                a[c] = hintColor;
-            }
-
-            colors.set(list, a);
-            dColor.set(list, hintColor);
-        } catch (Exception e) {
-            Tuils.log(e);
-        }
-
-        // Setup auto-clear
-        if(clearAfterMs > 0) this.mTerminalView.postDelayed(clearRunnable, clearAfterMs);
-
-        // Setup Max Lines limiter
-        if(maxLines > 0) {
-            this.mTerminalView.getViewTreeObserver().addOnPreDrawListener(() -> {
-                if(TerminalManager.this.mTerminalView == null) return true;
-
-                Layout l = terminalView.getLayout();
-                if(l == null) return true;
-
-                int count = l.getLineCount() - 1;
-
-                // Truncate text from the top if it exceeds max lines
-                if(count > maxLines) {
-                    int excessive = count - maxLines;
-
-                    CharSequence text = terminalView.getText();
-                    while (excessive >= 0) {
-                        int index = TextUtils.indexOf(text, Tuils.NEWLINE);
-                        if(index == -1) break;
-                        text = text.subSequence(index + 1, text.length());
-                        excessive--;
-                    }
-
-                    terminalView.setText(text);
-                }
-
-                return true;
-            });
-        }
-
-        // Find parent ScrollView
-        View v = mTerminalView;
-        do {
-            v = (View) v.getParent();
-        } while (!(v instanceof ScrollView));
-        this.mScrollView = (ScrollView) v;
-
-        // Configure Input View
-        this.mInputView = inputView;
-        this.mInputView.setTextSize(ioSize);
-        this.mInputView.setTextColor(XMLPrefsManager.getColor(Theme.input_color));
-        this.mInputView.setTypeface(Tuils.getTypeface(context));
-        this.mInputView.setHint(Tuils.getHint(mainPack.currentDirectory.getAbsolutePath()));
-        this.mInputView.setInputType(InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
-        Tuils.setCursorDrawableColor(this.mInputView, XMLPrefsManager.getColor(Theme.cursor_color));
-        this.mInputView.setHighlightColor(Color.TRANSPARENT);
-
-        // Handle Action Key on Keyboard
-        this.mInputView.setOnEditorActionListener((v1, actionId, event) -> {
-            if(!mInputView.hasFocus()) mInputView.requestFocus();
-
-            // Debounce physical Enter key
-            if(actionId == KeyEvent.ACTION_DOWN) {
-                if(lastEnter == 0) {
-                    lastEnter = System.currentTimeMillis();
-                } else {
-                    long difference = System.currentTimeMillis() - lastEnter;
-                    lastEnter = System.currentTimeMillis();
-                    if(difference < 350) {
-                        return true;
-                    }
-                }
-            }
-
-            if (actionId == EditorInfo.IME_ACTION_GO || actionId == EditorInfo.IME_ACTION_DONE || actionId == KeyEvent.ACTION_DOWN) {
-                onNewInput();
-            }
-
-            return true;
-        });
+        setupLegacyViews()
     }
 
-    /**
-     * Resets the input field after a command is sent.
-     */
-    private void setupNewInput() {
-        mInputView.setText(Tuils.EMPTYSTRING);
-
-        if(defaultHint) {
-            mInputView.setHint(Tuils.getHint(mainPack.currentDirectory.getAbsolutePath()));
+    private fun setupLegacyViews() {
+        setDefaultHint()
+        inputView?.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_GO || actionId == EditorInfo.IME_ACTION_DONE) {
+                simulateEnter()
+                true
+            } else false
         }
-
-        requestInputFocus();
+        submitView?.setOnClickListener { simulateEnter() }
+        backView?.setOnClickListener { getPreviousCommand()?.let { setInput(it) } }
+        nextView?.setOnClickListener { getNextCommand()?.let { setInput(it) } }
+        deleteView?.setOnClickListener { setInput("") }
+        pasteView?.setOnClickListener {
+            val clipboard = mContext.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            clipboard.primaryClip?.getItemAt(0)?.text?.let { setInput(getInput() + it) }
+        }
     }
 
-    /**
-     * Handles the submission of new input.
-     * @return true if handled.
-     */
-    private boolean onNewInput() {
-        if (mInputView == null) {
-            return false;
+    fun setDefaultHint() {
+        inputView?.hint = getPrefix()
+    }
+
+    fun setHint(hint: String) {
+        inputView?.hint = hint
+    }
+
+    fun getTerminalText(): String = terminalView?.text?.toString() ?: ""
+
+    fun scrollToEnd() {
+        terminalView?.let { tv ->
+            val scroll = tv.parent?.parent as? ScrollView
+            scroll?.fullScroll(View.FOCUS_DOWN)
         }
+    }
 
-        CharSequence input = mInputView.getText();
-        String cmd = input.toString().trim();
+    fun getInput(): String = inputView?.text?.toString() ?: ""
 
-        // Check for special objects (like app LaunchInfo) in the text spans
-        Object obj = null;
-        try {
-            obj = ((Spannable) input).getSpans(0, input.length(), AppsManager.LaunchInfo.class)[0];
-        } catch (Exception e) {
-            // Ignore if no spans found
+    fun setInput(s: String) {
+        inputView?.setText(s)
+        focusInputEnd()
+    }
+
+    fun simulateEnter() {
+        val input = getInput()
+        onNewInput(input)
+        setInput("")
+    }
+
+    fun requestInputFocus() {
+        inputView?.requestFocus()
+    }
+
+    fun getInputView(): EditText? = inputView
+
+    fun getInputWindowToken() = inputView?.windowToken
+
+    fun focusInputEnd() {
+        inputView?.let { it.setSelection(it.text.length) }
+    }
+
+    fun onBackPressed() {
+        // Legacy back button logic
+    }
+    companion object {
+        const val CATEGORY_INPUT = 10
+        const val CATEGORY_OUTPUT = 11
+        const val CATEGORY_NO_COLOR = 20
+        const val NO_COLOR = Int.MAX_VALUE
+
+        const val FORMAT_INPUT = "%i"
+        const val FORMAT_OUTPUT = "%o"
+        const val FORMAT_PREFIX = "%p"
+        const val FORMAT_NEWLINE = "%n"
+    }
+
+
+    private val _history = MutableStateFlow<List<TerminalHistoryEntry>>(emptyList())
+    val history: StateFlow<List<TerminalHistoryEntry>> = _history.asStateFlow()
+
+    private val cmdList = mutableListOf<String>()
+    private var howBack = -1
+    private val CMD_LIST_SIZE = 40
+
+    private val clearAfterMs = XMLPrefsManager.getInt(Behavior.clear_after_seconds) * 1000
+    private val clearAfterCmds = XMLPrefsManager.getInt(Behavior.clear_after_cmds)
+    private val maxLines = XMLPrefsManager.getInt(Behavior.max_lines)
+
+    private var clearCmdsCount = 0
+    private var suMode = false
+
+    private val prefix: String = XMLPrefsManager.get(Ui.input_prefix) ?: ""
+    private val suPrefix: String = XMLPrefsManager.get(Ui.input_root_prefix) ?: ""
+
+    private val handler = Handler(Looper.getMainLooper())
+    private val clearRunnable = object : Runnable {
+        override fun run() {
+            clear()
+            if (clearAfterMs > 0) handler.postDelayed(this, clearAfterMs.toLong())
         }
+    }
 
-        if(input.length() > 0) {
-            // Auto-clear logic
-            clearCmdsCount++;
-            if(clearCmdsCount != 0 && clearAfterCmds > 0 && clearCmdsCount % clearAfterCmds == 0) clear();
+    init {
+        if (clearAfterMs > 0) handler.postDelayed(clearRunnable, clearAfterMs.toLong())
+    }
 
-            // Echo input to terminal output
-            writeToView(input, CATEGORY_INPUT);
+    fun onNewInput(input: String, obj: Any? = null) {
+        val cmd = input.trim()
+        if (cmd.isNotEmpty()) {
+            clearCmdsCount++
+            if (clearAfterCmds > 0 && clearCmdsCount % clearAfterCmds == 0) clear()
 
             // Add to history
-            if(cmdList.size() == CMD_LIST_SIZE) {
-                cmdList.remove(0);
+            if (cmdList.size >= CMD_LIST_SIZE) {
+                cmdList.removeAt(0)
             }
-            cmdList.add(cmdList.size(), cmd);
-            howBack = -1; // Reset history pointer
+            cmdList.add(cmd)
+            howBack = -1
+
+            // Add to visual buffer
+            _history.update { it + TerminalHistoryEntry(command = cmd, isRunning = true) }
         }
 
-        // Execute the command via MainManager
-        executer.execute(cmd, obj);
-
-        setupNewInput();
-
-        return true;
+        executer.execute(cmd, obj)
     }
 
-    /**
-     * Public method to append output to the terminal.
-     */
-    public void setOutput(CharSequence output, int type) {
-        if (output == null || output.length() == 0) return;
-
-        writeToView(output, type);
+    fun setOutput(output: CharSequence?, type: Int) {
+        if (output == null || output.isEmpty()) return
+        appendOutput(output.toString(), type)
     }
 
-    /**
-     * Output with specific color.
-     */
-    public void setOutput(int color, CharSequence output) {
-        if(output == null || output.length() == 0) return;
+    fun setOutput(color: Int, output: CharSequence?) {
+        if (output == null || output.isEmpty()) return
 
-        // Easter Egg: Panic Mode if output is Red
         if (color == Color.RED) {
-            Intent intent = new Intent(mContext, PanicActivity.class);
-            intent.putExtra(PanicActivity.EXTRA_ERROR_MESSAGE, output.toString());
-            mContext.startActivity(intent);
+            val intent = Intent(mContext, PanicActivity::class.java)
+            intent.putExtra(PanicActivity.EXTRA_ERROR_MESSAGE, output.toString())
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            mContext.startActivity(intent)
         }
 
-        if(color == TerminalManager.NO_COLOR) {
-            color = XMLPrefsManager.getColor(Theme.output_color);
-        }
-
-        SpannableString si = new SpannableString(output);
-        si.setSpan(new ForegroundColorSpan(color), 0, output.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-
-        CharSequence s = TextUtils.concat(Tuils.NEWLINE, si);
-        writeToView(s);
-    }
-
-    public String getTerminalText() {
-        return mTerminalView.getText().toString();
+        appendOutput(output.toString(), CATEGORY_OUTPUT)
     }
 
     /**
-     * Navigate history back (Up arrow).
+     * Appends text to the terminal. Supports streaming by updating the last entry if it's running.
      */
-    public void onBackPressed() {
-        if(cmdList.size() > 0) {
-
-            if(howBack == -1) {
-                howBack = cmdList.size();
-            } else if(howBack == 0) {
-                return;
-            }
-            howBack--;
-
-            setInput(cmdList.get(howBack));
-        }
-    }
-
-    /**
-     * Navigate history forward (Down arrow).
-     */
-    public void onNextPressed() {
-        if(howBack != -1 && howBack < cmdList.size()) {
-            howBack++;
-
-            String input;
-            if(howBack == cmdList.size()) {
-                input = Tuils.EMPTYSTRING;
+    fun appendOutput(text: String, type: Int = CATEGORY_OUTPUT) {
+        _history.update { current ->
+            if (current.isEmpty()) {
+                listOf(TerminalHistoryEntry(command = "", output = text, type = type))
             } else {
-                input = cmdList.get(howBack);
+                val last = current.last()
+                // If the last entry is a command that is still "running", append to its output.
+                // Otherwise, create a new output-only entry.
+                if (last.isRunning || last.command.isEmpty()) {
+                    val newList = current.toMutableList()
+                    newList[newList.size - 1] = last.copy(
+                        output = if (last.output.isEmpty()) text else last.output + "\n" + text
+                    )
+                    newList
+                } else {
+                    current + TerminalHistoryEntry(command = "", output = text, type = type)
+                }
             }
+        }
+        
+        // Handle max lines
+        if (maxLines > 0) {
+            _history.update { current ->
+                if (current.size > maxLines) current.takeLast(maxLines) else current
+            }
+        }
 
-            setInput(input);
+        // Legacy View update
+        terminalView?.let { tv ->
+            tv.append((if (tv.text.isNotEmpty()) "\n" else "") + text)
+            scrollToEnd()
         }
     }
 
-    // Placeholders for format strings
-    public static final String FORMAT_INPUT = "%i";
-    public static final String FORMAT_OUTPUT = "%o";
-    public static final String FORMAT_PREFIX = "%p";
-    public static final String FORMAT_NEWLINE = "%n";
-
-    /**
-     * Internal method to process text before writing to view (formatting).
-     */
-    private void writeToView(CharSequence text, int type) {
-        text = getFinalText(text, type);
-        text = TextUtils.concat(Tuils.NEWLINE, text);
-        writeToView(text);
-    }
-
-    /**
-     * Writes text to the TextView on the UI thread and scrolls.
-     */
-    private void writeToView(final CharSequence text) {
-        mTerminalView.post(() -> {
-            mTerminalView.append(text);
-            scrollToEnd();
-        });
-    }
-
-    /**
-     * Applies formatting (prefixes, colors, timestamp) based on message category.
-     */
-    private CharSequence getFinalText(CharSequence t, int type) {
-        CharSequence s;
-        switch (type) {
-            case CATEGORY_INPUT:
-                t = t.toString();
-
-                boolean su = t.toString().startsWith("su ") || suMode;
-
-                SpannableString si = Tuils.span(inputFormat, inputColor);
-
-                // Add click listeners to re-run command if configured
-                if(clickCommands || longClickCommands) si.setSpan(new LongClickableSpan(clickCommands ? t.toString() : null, longClickCommands ? t.toString() : null, PrivateIOReceiver.ACTION_INPUT), 0,
-                        si.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-
-                s = TimeManager.instance.replace(si);
-                s = TextUtils.replace(s,
-                        new String[] {FORMAT_INPUT, FORMAT_PREFIX, FORMAT_NEWLINE, FORMAT_INPUT.toUpperCase(), FORMAT_PREFIX.toUpperCase(), FORMAT_NEWLINE.toUpperCase()},
-                        new CharSequence[] {t, su ? suPrefix : prefix, Tuils.NEWLINE, t, su ? suPrefix : prefix, Tuils.NEWLINE});
-
-                break;
-            case CATEGORY_OUTPUT:
-                t = t.toString();
-
-                SpannableString so = Tuils.span(outputFormat, outputColor);
-
-                s = TextUtils.replace(so,
-                        new String[] {FORMAT_OUTPUT, FORMAT_NEWLINE, FORMAT_OUTPUT.toUpperCase(), FORMAT_NEWLINE.toUpperCase()},
-                        new CharSequence[] {t, Tuils.NEWLINE, t, Tuils.NEWLINE});
-
-                break;
-            case CATEGORY_NO_COLOR:
-                s = t;
-                break;
-            default:
-                return null;
-        }
-
-        return s;
-    }
-
-    public void simulateEnter() {
-        onNewInput();
-    }
-
-    public String getInput() {
-        return mInputView.getText().toString();
-    }
-
-    public void setInput(String input, Object obj) {
-        SpannableString spannable = new SpannableString(input);
-        if(obj != null) {
-            spannable.setSpan(obj, 0, input.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        }
-
-        mInputView.setText(spannable);
-        focusInputEnd();
-    }
-
-    public void setInput(String input) {
-        setInput(input, null);
-    }
-
-    public void setHint(String hint) {
-        defaultHint = false;
-
-        if(mInputView != null) {
-            mInputView.setHint(hint);
+    fun finishLastCommand() {
+        _history.update { current ->
+            if (current.isEmpty()) return@update current
+            val last = current.last()
+            if (last.isRunning) {
+                val newList = current.toMutableList()
+                newList[newList.size - 1] = last.copy(isRunning = false)
+                newList
+            } else {
+                current
+            }
         }
     }
 
-    public void setDefaultHint() {
-        defaultHint = true;
+    fun clear() {
+        _history.value = emptyList()
+        clearCmdsCount = 0
+        terminalView?.text = ""
+    }
 
-        if(mInputView != null) {
-            mInputView.setHint(Tuils.getHint(mainPack.currentDirectory.getAbsolutePath()));
+    fun getPreviousCommand(): String? {
+        if (cmdList.isEmpty()) return null
+        if (howBack == -1) howBack = cmdList.size
+        if (howBack > 0) {
+            howBack--
+            return cmdList[howBack]
         }
+        return null
     }
 
-    public void focusInputEnd() {
-        mInputView.setSelection(getInput().length());
+    fun getNextCommand(): String? {
+        if (howBack != -1 && howBack < cmdList.size) {
+            howBack++
+            return if (howBack == cmdList.size) "" else cmdList[howBack]
+        }
+        return null
     }
 
-    public void scrollToEnd() {
-        mScrollView.postDelayed(mScrollRunnable, SCROLL_DELAY);
+    fun onRoot() {
+        suMode = true
     }
 
-    public void requestInputFocus() {
-        mInputView.requestFocus();
+    fun onStandard() {
+        suMode = false
     }
 
-    public IBinder getInputWindowToken() {
-        return mInputView.getWindowToken();
-    }
-
-    public View getInputView() {
-        return mInputView;
-    }
-
-    public void clear() {
-        mTerminalView.post(() -> mTerminalView.setText(Tuils.EMPTYSTRING));
-        cmdList.clear();
-        clearCmdsCount = 0;
-    }
-
-    public void onRoot() {
-        ((Activity) mContext).runOnUiThread(() -> {
-            suMode = true;
-            mPrefix.setText(suPrefix.endsWith(Tuils.SPACE) ? suPrefix : suPrefix + Tuils.SPACE);
-        });
-    }
-
-    public void onStandard() {
-        ((Activity) mContext).runOnUiThread(() -> {
-            suMode = false;
-            mPrefix.setText(prefix.endsWith(Tuils.SPACE) ? prefix : prefix + Tuils.SPACE);
-        });
-    }
+    fun getPrefix(): String = if (suMode) suPrefix else prefix
 }

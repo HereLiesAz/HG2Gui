@@ -13,5 +13,6 @@ expect class ShellSession {
     val isAlive: Boolean
     val workingDirectory: String
     fun exec(command: String): ShellSessionResult
+    fun stream(command: String, onLine: (line: String) -> Unit): Int
     fun close()
 }
