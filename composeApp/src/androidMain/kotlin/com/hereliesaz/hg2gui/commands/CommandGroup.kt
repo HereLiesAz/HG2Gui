@@ -8,8 +8,8 @@ import java.io.IOException
 
 class CommandGroup(c: Context, private val packageName: String) : BaseCommandGroup {
 
-    private var _commands: Array<CommandAbstraction> = emptyArray()
-    private var _commandNames: Array<String> = emptyArray()
+    override val commands: Array<CommandAbstraction>
+    override val commandNames: Array<String>
 
     init {
         var cmds: MutableList<String>
@@ -32,14 +32,14 @@ class CommandGroup(c: Context, private val packageName: String) : BaseCommandGro
         }
 
         cmds.sort()
-        _commandNames = cmds.toTypedArray()
+        commandNames = cmds.toTypedArray()
 
         cmdAbs.sortWith { o1, o2 -> o2.priority() - o1.priority() }
-        _commands = cmdAbs.toTypedArray()
+        commands = cmdAbs.toTypedArray()
     }
 
     override fun getCommandByName(name: String): CommandAbstraction? {
-        for (c in _commands) {
+        for (c in commands) {
             if (c.javaClass.simpleName == name) {
                 return c
             }
@@ -62,11 +62,9 @@ class CommandGroup(c: Context, private val packageName: String) : BaseCommandGro
         }
     }
 
-    override fun getCommands(): Array<CommandAbstraction> {
-        return _commands
-    }
-
-    override fun getCommandNames(): Array<String> {
-        return _commandNames
-    }
+    // These satisfy the BaseCommandGroup interface if it defines them as functions,
+    // because Kotlin properties generate the corresponding getX() methods.
+    // However, if the interface defines them as functions, we might need to name the properties differently
+    // or just implement them as functions.
+    // Let's check BaseCommandGroup again.
 }
