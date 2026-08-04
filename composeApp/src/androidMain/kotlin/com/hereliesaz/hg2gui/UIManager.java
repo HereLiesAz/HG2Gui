@@ -1567,7 +1567,9 @@ public class UIManager implements OnTouchListener {
     public OnRedirectionListener buildRedirectionListener() {
         return new OnRedirectionListener() {
             @Override
-            public void onRedirectionRequest(final RedirectCommand cmd) {
+            public void onRedirectionRequest(Object cmdObj) {
+                if (!(cmdObj instanceof RedirectCommand)) return;
+                final RedirectCommand cmd = (RedirectCommand) cmdObj;
                 ((Activity) mContext).runOnUiThread(() -> {
                     mTerminalAdapter.setHint(mContext.getString(cmd.getHint()));
                     disableSuggestions();
@@ -1575,7 +1577,9 @@ public class UIManager implements OnTouchListener {
             }
 
             @Override
-            public void onRedirectionEnd(RedirectCommand cmd) {
+            public void onRedirectionEnd(Object cmdObj) {
+                if (!(cmdObj instanceof RedirectCommand)) return;
+                final RedirectCommand cmd = (RedirectCommand) cmdObj;
                 ((Activity) mContext).runOnUiThread(() -> {
                     mTerminalAdapter.setDefaultHint();
                     enableSuggestions();

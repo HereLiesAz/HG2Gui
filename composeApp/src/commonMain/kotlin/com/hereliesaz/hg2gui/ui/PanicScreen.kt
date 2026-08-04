@@ -3,9 +3,7 @@ package com.hereliesaz.hg2gui.ui
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,7 +49,7 @@ fun PanicScreen(errorMessage: String?, onCalm: () -> Unit) {
                 Text(
                     text = "SYSTEM CRITICAL",
                     color = textPrimary,
-                    fontSize = 18.sp,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
@@ -84,14 +82,14 @@ fun PanicScreen(errorMessage: String?, onCalm: () -> Unit) {
                 Text(
                     text = "DON'T",
                     color = textWarning,
-                    fontSize = 56.sp,
+                    style = MaterialTheme.typography.displayLarge,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.rotate(-2f)
                 )
                 Text(
                     text = "PANIC",
                     color = textWarning,
-                    fontSize = 56.sp,
+                    style = MaterialTheme.typography.displayLarge,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier
                         .rotate(3f)

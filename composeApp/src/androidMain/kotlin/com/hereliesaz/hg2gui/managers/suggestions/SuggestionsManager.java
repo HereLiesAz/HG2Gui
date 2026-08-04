@@ -1050,7 +1050,7 @@ public class SuggestionsManager {
         if(afterLastSpace.length() <= FIRST_INTERVAL) {
             afterLastSpace = afterLastSpace.toLowerCase().trim();
 
-            String[] cmds = info.commandGroup.getCommandNames();
+            String[] cmds = info.getCommandGroup().getCommandNames();
             if(cmds == null) return;
 
             int canInsert = counts[Suggestion.TYPE_COMMAND];
@@ -1058,7 +1058,7 @@ public class SuggestionsManager {
                 if(canInsert == 0 || Thread.currentThread().isInterrupted()) return;
 
                 if(s.startsWith(afterLastSpace)) {
-                    CommandAbstraction cmd = info.commandGroup.getCommandByName(s);
+                    CommandAbstraction cmd = info.getCommandGroup().getCommandByName(s);
                     int[] args = cmd.argType();
                     boolean exec = args == null || args.length == 0;
                     suggestions.add(new Suggestion(beforeLastSpace , s, exec && clickToLaunch, Suggestion.TYPE_COMMAND));
@@ -1069,7 +1069,7 @@ public class SuggestionsManager {
     }
 
     private void suggestCommand(MainPack info, List<Suggestion> suggestions, String beforeLastSpace) {
-        CommandAbstraction[] cmds = info.commandGroup.getCommands();
+        CommandAbstraction[] cmds = info.getCommandGroup().getCommands();
         if(cmds == null) return;
 
 //        if there's a beforelastspace -> help ...

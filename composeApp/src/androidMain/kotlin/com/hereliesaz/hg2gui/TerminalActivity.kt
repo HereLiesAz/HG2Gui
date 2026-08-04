@@ -196,7 +196,7 @@ class TerminalActivity : ComponentActivity(), Reloadable {
         startActivity(intent)
     }
 
-    override fun addMessage(header: String?, message: String?) {
+    override fun addMessage(header: String, message: String) {
         // Reload messages were a launcher-startup affordance. The terminal reports through the
         // record tile instead, so there is nothing to queue here.
     }

@@ -8,7 +8,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,14 +46,14 @@ fun GuideScreen(onExit: () -> Unit) {
                 Text(
                     text = "SATELLITE",
                     color = GuidePrimary,
-                    fontSize = 12.sp,
+                    style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.alpha(0.7f)
                 )
                 Text(
                     text = " • EARTH 42°N",
                     color = GuidePrimary,
-                    fontSize = 12.sp,
+                    style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.alpha(0.7f)
                 )
@@ -61,8 +61,7 @@ fun GuideScreen(onExit: () -> Unit) {
                 Text(
                     text = "BAT: 98%",
                     color = GuidePrimary,
-                    fontSize = 12.sp,
-                    fontFamily = FontFamily.Monospace,
+                    style = MaterialTheme.typography.labelSmall,
                     modifier = Modifier.alpha(0.7f)
                 )
             }
@@ -120,7 +119,7 @@ fun GuideScreen(onExit: () -> Unit) {
                 Text(
                     text = "The Command Line",
                     color = Color.White,
-                    fontSize = 40.sp,
+                    style = MaterialTheme.typography.displayMedium,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center
                 )
@@ -139,7 +138,7 @@ fun GuideScreen(onExit: () -> Unit) {
                 Text(
                     text = "A primitive yet effective method of conversing with silicon.\n\nImagine a conversation where you must be incredibly precise, or the other party simply stares blankly.\n\nThat is the Command Line. It is the art of typing 'sudo' and feeling like a wizard.",
                     color = Color.White.copy(alpha = 0.9f),
-                    fontSize = 18.sp,
+                    style = MaterialTheme.typography.bodyLarge,
                     lineHeight = 26.sp,
                     textAlign = TextAlign.Center
                 )

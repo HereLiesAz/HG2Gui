@@ -22,9 +22,9 @@ import com.hereliesaz.hg2gui.ui.menu.Azphalt
  */
 
 val Jost = FontFamily(
-    Font(R.font.jost_medium, FontWeight.Medium),
+    Font(R.font.jost_latin, FontWeight.Medium),
     Font(R.font.jost_semibold, FontWeight.SemiBold),
-    Font(R.font.jost_extrabold, FontWeight.ExtraBold),
+    Font(R.font.jost_latin_ext, FontWeight.ExtraBold),
     Font(R.font.jost_black, FontWeight.Black)
 )
 

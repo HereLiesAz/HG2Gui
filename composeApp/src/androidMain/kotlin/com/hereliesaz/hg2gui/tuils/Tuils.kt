@@ -16,6 +16,9 @@ import android.net.Uri
 import android.os.*
 import android.provider.Settings
 import android.telephony.TelephonyManager
+import kotlin.jvm.JvmField
+import kotlin.jvm.JvmStatic
+
 import android.text.SpannableString
 import android.text.Spanned
 import android.text.TextUtils
@@ -74,10 +77,12 @@ object Tuils {
     private const val TUI_FOLDER = "t-ui"
     const val MINUS = "-"
 
+    @JvmField
     val patternNewline: Pattern = Pattern.compile("%n", Pattern.CASE_INSENSITIVE or Pattern.LITERAL)
 
     private var applicationContext: Context? = null
 
+    @JvmStatic
     fun init(context: Context) {
         applicationContext = context.applicationContext
     }
@@ -107,6 +112,7 @@ object Tuils {
         return result
     }
 
+    @JvmStatic
     fun getTypeface(context: Context): Typeface? {
         if (globalTypeface == null) {
             try {
@@ -155,11 +161,13 @@ object Tuils {
         return globalTypeface
     }
 
+    @JvmStatic
     fun cancelFont() {
         globalTypeface = null
         fontPath = null
     }
 
+    @JvmStatic
     fun locationName(context: Context, lat: Double, lng: Double): String? {
         val geocoder = Geocoder(context, Locale.getDefault())
         return try {
@@ -209,6 +217,7 @@ object Tuils {
     private var batteryUpdate: OnBatteryUpdate? = null
     private var batteryReceiver: BroadcastReceiver? = null
 
+    @JvmStatic
     fun registerBatteryReceiver(context: Context, listener: OnBatteryUpdate) {
         try {
             batteryReceiver = object : BroadcastReceiver() {
@@ -236,6 +245,7 @@ object Tuils {
         }
     }
 
+    @JvmStatic
     fun unregisterBatteryReceiver(context: Context) {
         batteryReceiver?.let {
             context.unregisterReceiver(it)
@@ -304,11 +314,13 @@ object Tuils {
         headerStream.close()
     }
 
+    @JvmStatic
     fun dpToPx(context: Context, valueInDp: Float): Float {
         val metrics = context.resources.displayMetrics
         return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, valueInDp, metrics)
     }
 
+    @JvmStatic
     fun hasNotificationAccess(context: Context): Boolean {
         val pkgName = "com.hereliesaz.hg2gui"
         val flat = Settings.Secure.getString(context.contentResolver, "enabled_notification_listeners")
@@ -346,6 +358,7 @@ object Tuils {
         c.startActivity(intent)
     }
 
+    @JvmStatic
     fun requestAdmin(component: ComponentName, explanation: String): Intent {
         val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
         intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, component)
@@ -357,14 +370,17 @@ object Tuils {
         return Intent(Intent.ACTION_VIEW, Uri.parse(url))
     }
 
+    @JvmStatic
     fun getAvailableInternalMemorySize(unit: Int): Double {
         return getAvailableSpace(Environment.getDataDirectory(), unit)
     }
 
+    @JvmStatic
     fun getTotalInternalMemorySize(unit: Int): Double {
         return getTotalSpace(Environment.getDataDirectory(), unit)
     }
 
+    @JvmStatic
     fun getAvailableExternalMemorySize(unit: Int): Double {
         return try {
             getAvailableSpace(XMLPrefsManager.get(File::class.java, Behavior.external_storage_path), unit)
@@ -373,6 +389,7 @@ object Tuils {
         }
     }
 
+    @JvmStatic
     fun getTotalExternalMemorySize(unit: Int): Double {
         return try {
             getTotalSpace(XMLPrefsManager.get(File::class.java, Behavior.external_storage_path), unit)
@@ -395,10 +412,12 @@ object Tuils {
         return formatSize(blocks * statFs.blockSizeLong, unit)
     }
 
+    @JvmStatic
     fun percentage(part: Double, total: Double): Double {
         return round(part * 100 / total, 2)
     }
 
+    @JvmStatic
     fun formatSize(bytes: Long, unit: Int): Double {
         val convert = 1048576.0
         val smallConvert = 1024.0
@@ -429,14 +448,17 @@ object Tuils {
         return false
     }
 
+    @JvmStatic
     fun span(text: CharSequence?, color: Int): SpannableString {
         return span(null, text, color, Int.MAX_VALUE)
     }
 
+    @JvmStatic
     fun span(context: Context?, size: Int, text: CharSequence?): SpannableString {
         return span(context, text, Int.MAX_VALUE, size)
     }
 
+    @JvmStatic
     fun span(context: Context?, text: CharSequence?, color: Int, size: Int): SpannableString {
         return span(context, Int.MAX_VALUE, color, text, size)
     }
@@ -577,35 +599,43 @@ object Tuils {
         view.layoutParams = params
     }
 
+    @JvmStatic
     fun dpToPx(context: Context, dp: Int): Int {
         val density = context.applicationContext.resources.displayMetrics.density
         return Math.round(dp.toFloat() * density)
     }
 
+    @JvmStatic
     fun sendOutput(context: Context, res: Int) {
         sendOutput(Int.MAX_VALUE, context, res)
     }
 
+    @JvmStatic
     fun sendOutput(color: Int, context: Context, res: Int) {
         sendOutput(color, context, context.getString(res))
     }
 
+    @JvmStatic
     fun sendOutput(context: Context, res: Int, type: Int) {
         sendOutput(Int.MAX_VALUE, context, res, type)
     }
 
+    @JvmStatic
     fun sendOutput(color: Int, context: Context, res: Int, type: Int) {
         sendOutput(color, context, context.getString(res), type)
     }
 
+    @JvmStatic
     fun sendOutput(context: Context, s: CharSequence) {
         sendOutput(Int.MAX_VALUE, context, s)
     }
 
+    @JvmStatic
     fun sendOutput(color: Int, context: Context, s: CharSequence) {
         sendOutput(color, context, s, TerminalManager.CATEGORY_OUTPUT)
     }
 
+    @JvmStatic
     fun sendOutput(context: Context, s: CharSequence, type: Int) {
         sendOutput(Int.MAX_VALUE, context, s, type)
     }
@@ -618,8 +648,9 @@ object Tuils {
         LocalBroadcastManager.getInstance(context).sendBroadcast(intent)
     }
 
+    @JvmStatic
     fun sendOutput(mainPack: MainPack, s: CharSequence, type: Int) {
-        sendOutput(mainPack.commandColor, mainPack.context, s, type)
+        sendOutput(mainPack.commandColor, mainPack.androidContext, s, type)
     }
 
     fun sendOutput(context: Context, s: CharSequence, type: Int, action: Any?) {
@@ -663,6 +694,7 @@ object Tuils {
         LocalBroadcastManager.getInstance(context).sendBroadcast(intent)
     }
 
+    @JvmStatic
     fun sendInput(context: Context, text: String) {
         val intent = Intent(PrivateIOReceiver.ACTION_INPUT)
         intent.putExtra(PrivateIOReceiver.TEXT, text)
@@ -677,11 +709,13 @@ object Tuils {
 
     private var total: Long = -1
 
+    @JvmStatic
     fun freeRam(mgr: ActivityManager, info: MemoryInfo): Double {
         mgr.getMemoryInfo(info)
         return info.availMem.toDouble()
     }
 
+    @JvmStatic
     fun totalRam(): Long {
         if (total > 0) return total
         try {
@@ -735,7 +769,7 @@ object Tuils {
 
     private fun getNicePath(filePath: String?): String {
         if (filePath == null) return "null"
-        val home = XMLPrefsManager.get(File::class.java, Behavior.home_path).absolutePath
+        val home = XMLPrefsManager.get(File::class.java, Behavior.home_path)?.absolutePath ?: ""
         return when {
             filePath == home -> "~"
             filePath.startsWith(home) -> "~" + filePath.replace(home, EMPTYSTRING)
@@ -782,7 +816,7 @@ object Tuils {
     fun getHint(currentPath: String): String? {
         if (!XMLPrefsManager.getBoolean(Ui.show_session_info)) return null
         var format = XMLPrefsManager.get(Behavior.session_info_format)
-        if (format.isEmpty()) return null
+        if (format.isNullOrEmpty()) return null
 
         var deviceName = XMLPrefsManager.get(Ui.deviceName)
         if (deviceName.isNullOrEmpty()) {
@@ -806,6 +840,7 @@ object Tuils {
         return -1
     }
 
+    @JvmStatic
     fun mmToPx(metrics: DisplayMetrics, mm: Int): Int {
         return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_MM, mm.toFloat(), metrics).toInt()
     }
@@ -882,6 +917,7 @@ object Tuils {
         }
     }
 
+    @JvmStatic
     fun log(o: Any?) {
         if (o is Throwable) {
             Log.e("andre", "", o)
@@ -891,6 +927,7 @@ object Tuils {
         }
     }
 
+    @JvmStatic
     fun log(o: Any?, o2: Any?) {
         if (o is Array<*> && o2 is Array<*>) {
             Log.e("andre", o.contentToString() + " -- " + o2.contentToString())
@@ -938,6 +975,7 @@ object Tuils {
         return java.lang.reflect.Array.get(java.lang.reflect.Array.newInstance(clazz, 1), 0) as T
     }
 
+    @JvmStatic
     fun toFile(s: String) {
         try {
             val f = RandomAccessFile(File(getFolder(), "crash.txt"), "rw")
@@ -952,6 +990,7 @@ object Tuils {
         }
     }
 
+    @JvmStatic
     fun toFile(o: Any?) {
         if (o == null) return
         try {
@@ -1007,7 +1046,7 @@ object Tuils {
     }
 
     private val unnecessarySpaces = Pattern.compile("\\s{2,}")
-    fun removeUnnecessarySpaces(string: String): String {
+    fun removeUnncesarySpaces(string: String): String {
         return unnecessarySpaces.matcher(string).replaceAll(SPACE)
     }
 
@@ -1039,6 +1078,7 @@ object Tuils {
         return 0.toChar()
     }
 
+    @JvmStatic
     fun isNumber(s: String?): Boolean {
         if (s.isNullOrEmpty()) return false
         val chars = s.toCharArray()
@@ -1179,6 +1219,7 @@ object Tuils {
         }
     }
 
+    @JvmStatic
     fun dpToPx(resources: Resources, dp: Int): Int {
         val displayMetrics = resources.displayMetrics
         return Math.round(dp * (displayMetrics.xdpi / DisplayMetrics.DENSITY_DEFAULT))
@@ -1187,6 +1228,7 @@ object Tuils {
     private const val FILEUPDATE_DELAY = 100
     private var folder: File? = null
 
+    @JvmStatic
     fun getFolder(): File? {
         if (folder != null) return folder
         var elapsedTime = 0
@@ -1233,6 +1275,7 @@ object Tuils {
     }
 
     @SuppressLint("MissingPermission")
+    @JvmStatic
     fun getNetworkType(context: Context): String {
         val mTelephonyManager = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
         val networkType = mTelephonyManager.networkType

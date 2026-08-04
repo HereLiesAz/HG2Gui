@@ -67,20 +67,21 @@ class MainManager(private val mContext: Activity, reloadable: Reloadable) {
         const val MUSIC_SERVICE = "musicService"
 
         // Static interactive shell session (shared across the app)
-        @JvmStatic
+        @JvmField
         var interactive: Shell.Interactive? = null
 
         // Counter to keep track of command order and avoid race conditions
-        @JvmStatic
+        @JvmField
         var commandCount = 0
     }
 
     // --- Redirection Logic ---
     private var redirect: RedirectCommand? = null
     private val redirectator = object : Redirectator {
-        override fun prepareRedirection(cmd: RedirectCommand) {
-            redirect = cmd
-            redirectionListener?.onRedirectionRequest(cmd)
+        override fun prepareRedirection(cmd: Any?) {
+            val redirectCmd = cmd as? RedirectCommand ?: return
+            redirect = redirectCmd
+            redirectionListener?.onRedirectionRequest(redirectCmd)
         }
 
         override fun cleanup() {
@@ -149,7 +150,7 @@ class MainManager(private val mContext: Activity, reloadable: Reloadable) {
         showAliasValue = XMLPrefsManager.getBoolean(Behavior.show_alias_content)
         showAppHistory = XMLPrefsManager.getBoolean(Behavior.show_launch_history)
         aliasContentColor = XMLPrefsManager.getColor(Theme.alias_content_color)
-        multipleCmdSeparator = XMLPrefsManager.get(Behavior.multiple_cmd_separator)
+        multipleCmdSeparator = XMLPrefsManager.get(Behavior.multiple_cmd_separator) ?: ""
 
         // CommandGroup manages categorization of commands
         val group = CommandGroup(mContext, COMMANDS_PKG)
@@ -256,7 +257,7 @@ class MainManager(private val mContext: Activity, reloadable: Reloadable) {
         if (keeperServiceRunning) {
             val i = Intent(mContext, KeeperService::class.java).apply {
                 putExtra(KeeperService.CMD_KEY, cmd)
-                putExtra(KeeperService.PATH_KEY, mainPack.currentDirectory.absolutePath)
+                putExtra(KeeperService.PATH_KEY, mainPack.currentDirectory?.absolutePath)
             }
             mContext.startService(i)
         }
@@ -415,12 +416,12 @@ class MainManager(private val mContext: Activity, reloadable: Reloadable) {
             val text = SpannableString(a).apply {
                 setSpan(ForegroundColorSpan(outputColor), 0, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
             }
-            val s = TimeManager.instance.replace(text)
+            val s = TimeManager.instance?.replace(text) ?: text
 
             Tuils.sendOutput(mainPack, s, TerminalManager.CATEGORY_OUTPUT)
         }
 
-        mainPack.context.startActivity(intent)
+        mainPack.androidContext.startActivity(intent)
         return true
     }
 
@@ -436,7 +437,7 @@ class MainManager(private val mContext: Activity, reloadable: Reloadable) {
             val aliasName = alias[1]
             val residual = alias[2]
 
-            val expandedValue = aliasManager.format(aliasValue, residual)
+            val expandedValue = aliasManager.format(aliasValue, residual ?: "")
             onCommand(expandedValue, aliasName, false)
             return true
         }
