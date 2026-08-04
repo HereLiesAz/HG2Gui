@@ -1,0 +1,34 @@
+[versions]
+agp = "8.13.0"
+kotlin = "2.2.20"
+compose-multiplatform = "1.11.1"
+androidx-activityCompose = "1.11.0"
+androidx-appcompat = "1.7.1"
+androidx-core-ktx = "1.17.0"
+junit = "4.13.2"
+mockito = "5.14.2"
+okhttp = "4.12.0"
+htmlcleaner = "2.6"
+jsonpath = "2.9.0"
+jsoup = "1.18.3"
+comparestring2 = "1.0.9"
+
+[libraries]
+androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "androidx-activityCompose" }
+androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "androidx-appcompat" }
+androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "androidx-core-ktx" }
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+mockito-core = { group = "org.mockito", name = "mockito-core", version.ref = "mockito" }
+okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
+htmlcleaner = { group = "net.sourceforge.htmlcleaner", name = "htmlcleaner", version.ref = "htmlcleaner" }
+json-path = { group = "com.jayway.jsonpath", name = "json-path", version.ref = "jsonpath" }
+jsoup = { group = "org.jsoup", name = "jsoup", version.ref = "jsoup" }
+comparestring2 = { group = "it.andreuzzi", name = "CompareString2", version.ref = "comparestring2" }
+
+[plugins]
+androidApplication = { id = "com.android.application", version.ref = "agp" }
+androidLibrary = { id = "com.android.library", version.ref = "agp" }
+jetbrainsCompose = { id = "org.jetbrains.compose", version.ref = "compose-multiplatform" }
+compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+kotlinAndroid = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }

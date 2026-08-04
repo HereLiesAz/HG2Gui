@@ -1,0 +1,299 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bubble_bg_dark">
+
+    <!-- The Deep (Background Bubbles Container) -->
+    <FrameLayout
+        android:id="@+id/bubble_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_alignParentBottom="true"
+        android:background="@android:color/transparent" />
+
+    <!-- Header -->
+    <RelativeLayout
+        android:id="@+id/header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp"
+        android:background="#E6102217"
+        android:elevation="4dp">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <View
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="@drawable/circle_shape"
+                android:backgroundTint="#2013ec6a" />
+             <!-- Icon placeholder inside circle would be nice, but simple is ok -->
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="HG2Gui v2.4"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold"
+                android:textSize="18sp" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="4dp">
+
+                <View
+                    android:id="@+id/status_dot"
+                    android:layout_width="8dp"
+                    android:layout_height="8dp"
+                    android:background="@drawable/circle_shape"
+                    android:backgroundTint="@color/bubble_primary"
+                    android:layout_marginRight="4dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="SYSTEM ONLINE"
+                    android:textColor="@color/bubble_primary"
+                    android:textSize="10sp"
+                    android:letterSpacing="0.1" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:text="12:42"
+            android:textColor="@color/bubble_primary"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:layout_centerVertical="true" />
+
+    </RelativeLayout>
+
+    <!-- Surface Section -->
+    <LinearLayout
+        android:id="@+id/surface_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_below="@id/header"
+        android:paddingTop="32dp"
+        android:paddingBottom="16dp"
+        android:background="#CC102217"
+        android:gravity="center_horizontal">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="root/modules/surface"
+            android:textColor="#B3FFFFFF"
+            android:fontFamily="monospace"
+            android:textSize="12sp"
+            android:letterSpacing="0.1"
+            android:layout_marginBottom="8dp"/>
+
+        <View
+            android:layout_width="120dp"
+            android:layout_height="1dp"
+            android:background="@color/bubble_primary"
+            android:alpha="0.5"
+            android:layout_marginBottom="24dp"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:paddingBottom="16dp">
+
+            <!-- HOME Icon -->
+            <LinearLayout
+                android:id="@+id/icon_home"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:layout_margin="12dp"
+                android:clickable="true"
+                android:focusable="true">
+
+                <FrameLayout
+                    android:layout_width="56dp"
+                    android:layout_height="56dp"
+                    android:background="@drawable/circle_shape"
+                    android:backgroundTint="@color/bubble_primary">
+                    <!-- Placeholder for icon -->
+                    <View
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:background="#102217"
+                        android:layout_gravity="center"/>
+                </FrameLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="HOME"
+                    android:textColor="@color/bubble_primary"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:layout_marginTop="8dp"/>
+            </LinearLayout>
+
+            <!-- MAP Icon -->
+            <LinearLayout
+                android:id="@+id/icon_map"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:layout_margin="12dp"
+                android:clickable="true"
+                android:focusable="true">
+
+                <FrameLayout
+                    android:layout_width="56dp"
+                    android:layout_height="56dp"
+                    android:background="@drawable/circle_shape"
+                    android:backgroundTint="@color/bubble_primary">
+                    <View
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:background="#102217"
+                        android:rotation="45"
+                        android:layout_gravity="center"/>
+                </FrameLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="MAP"
+                    android:textColor="@color/bubble_primary"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:layout_marginTop="8dp"/>
+            </LinearLayout>
+
+            <!-- BOOST Icon -->
+            <LinearLayout
+                android:id="@+id/icon_boost"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:layout_margin="12dp"
+                android:clickable="true"
+                android:focusable="true">
+
+                <FrameLayout
+                    android:layout_width="56dp"
+                    android:layout_height="56dp"
+                    android:background="@drawable/surface_icon_bg">
+                     <View
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:background="@color/bubble_primary"
+                        android:layout_gravity="center"/>
+                </FrameLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="BOOST"
+                    android:textColor="@color/bubble_primary"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:layout_marginTop="8dp"/>
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- READY Indicator -->
+         <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/surface_icon_bg"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="_ READY"
+                android:textColor="@color/bubble_primary"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.1"/>
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- Footer -->
+    <LinearLayout
+        android:id="@+id/footer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:gravity="bottom">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <View
+                android:layout_width="100dp"
+                android:layout_height="4dp"
+                android:background="#3313ec6a"
+                android:layout_marginBottom="4dp"/>
+             <View
+                android:layout_width="60dp"
+                android:layout_height="4dp"
+                android:background="@color/bubble_primary"
+                android:layout_marginTop="-8dp"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="BUFFER LOAD: 67%"
+                android:textColor="#6613ec6a"
+                android:textSize="10sp"
+                android:fontFamily="monospace"/>
+        </LinearLayout>
+
+        <FrameLayout
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@drawable/surface_icon_bg">
+             <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="+"
+                android:textColor="@color/bubble_primary"
+                android:textSize="24sp"
+                android:layout_gravity="center"/>
+        </FrameLayout>
+    </LinearLayout>
+
+</RelativeLayout>
