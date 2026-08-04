@@ -1,9 +1,9 @@
-package com.hereliesaz.hg2gui.commands;
+package com.hereliesaz.hg2gui.commands
 
-import com.hereliesaz.hg2gui.R;
-import com.hereliesaz.hg2gui.commands.main.Param;
-import com.hereliesaz.hg2gui.commands.main.specific.ParamCommand;
-import com.hereliesaz.hg2gui.tuils.Tuils;
+import com.hereliesaz.hg2gui.R
+import com.hereliesaz.hg2gui.commands.main.Param
+import com.hereliesaz.hg2gui.commands.main.specific.ParamCommand
+import com.hereliesaz.hg2gui.tuils.Tuils
 
 /**
  * Wrapper class for Executing Commands.
@@ -13,20 +13,21 @@ import com.hereliesaz.hg2gui.tuils.Tuils;
  * before delegating execution to the underlying command.
  * </p>
  */
-public class Command {
-
+class Command {
     /** The command implementation (e.g. Clear, Apps). */
-    public CommandAbstraction cmd;
+    var cmd: CommandAbstraction? = null
+
     /** The parsed arguments provided by user input. */
-    public Object[] mArgs;
+    var mArgs: Array<Any?>? = null
+
     /** The number of arguments found. */
-    public int nArgs;
+    var nArgs: Int = 0
 
     /**
      * If an argument was expected but not found/valid, this index indicates which one.
      * -1 if all good.
      */
-    public int indexNotFound = -1;
+    var indexNotFound: Int = -1
 
     /**
      * Validates arguments and executes the command.
@@ -34,54 +35,53 @@ public class Command {
      * @return Output string.
      * @throws Exception If execution fails.
      */
-    public String exec(ExecutePack info) throws Exception {
+    @Throws(Exception::class)
+    fun exec(info: ExecutePack): String? {
+        val command = cmd ?: return null
+        
         // Pass the arguments to the execution pack
-        info.set(mArgs);
+        info.set(mArgs)
 
         // --- Parameterized Command Handling (e.g. `flash -on`) ---
-        if(cmd instanceof ParamCommand) {
+        if (command is ParamCommand) {
             // If the first argument (the parameter itself) is invalid
-            if(indexNotFound == 0) {
-                return info.context.getString(R.string.output_invalid_param) + Tuils.SPACE + mArgs[0];
+            if (indexNotFound == 0) {
+                return info.context.getString(R.string.output_invalid_param) + Tuils.SPACE + mArgs!![0]
             }
 
-            ParamCommand pCmd = (ParamCommand) cmd;
-            Param param = (Param) mArgs[0];
-
-            int[] args = param.args();
+            val pCmd = command
+            val param = mArgs!![0] as Param
+            val args = param.args()
 
             // Check if any argument *after* the parameter is invalid
-            if(indexNotFound != -1) {
-                return param.onArgNotFound(info, indexNotFound);
+            if (indexNotFound != -1) {
+                return param.onArgNotFound(info, indexNotFound)
             }
 
             // Check argument count for the specific parameter
-            if(pCmd.defaultParamReference() != null) {
-                if(args.length > nArgs) {
-                    return param.onNotArgEnough(info, nArgs);
+            if (pCmd.defaultParamReference() != null) {
+                if (args.size > nArgs) {
+                    return param.onNotArgEnough(info, nArgs)
                 }
             } else {
                 // +1 because mArgs includes the parameter itself
-                if(args.length + 1 > nArgs) {
-                    return param.onNotArgEnough(info, nArgs);
+                if (args.size + 1 > nArgs) {
+                    return param.onNotArgEnough(info, nArgs)
                 }
             }
-        }
-        // --- Standard Command Handling ---
-        else if(indexNotFound != -1) {
+        } else if (indexNotFound != -1) {
             // Standard argument validation failed
-            return cmd.onArgNotFound(info, indexNotFound);
-        }
-        else {
+            return command.onArgNotFound(info, indexNotFound)
+        } else {
             // Check standard argument count
-            int[] args = cmd.argType();
-            if (nArgs < args.length || (mArgs == null && args.length > 0)) {
-                return cmd.onNotArgEnough(info, nArgs);
+            val args = command.argType()
+            if (nArgs < args.size || (mArgs == null && args.size > 0)) {
+                return command.onNotArgEnough(info, nArgs)
             }
         }
 
         // Execution is safe
-        return cmd.exec(info);
+        return command.exec(info)
     }
 
     /**
@@ -89,28 +89,33 @@ public class Command {
      * Used for suggestion generation.
      * @return The integer constant representing the argument type.
      */
-    public int nextArg() {
-        boolean useParamArgs = cmd instanceof ParamCommand && mArgs != null && mArgs.length >= 1;
+    fun nextArg(): Int {
+        val command = cmd ?: return 0
+        
+        val useParamArgs = command is ParamCommand && mArgs != null && mArgs!!.size >= 1
 
-        int[] args;
+        val args: IntArray?
         if (useParamArgs) {
             // If executing a param command and we have the param, look up *its* args
-            if(!(mArgs[0] instanceof Param)) args = null;
-            else args = ((Param) mArgs[0]).args();
+            if (mArgs!![0] !is Param) {
+                args = null
+            } else {
+                args = (mArgs!![0] as Param).args()
+            }
         } else {
             // Otherwise use command's standard args
-            args = cmd.argType();
+            args = command.argType()
         }
 
-        if (args == null || args.length == 0) {
-            return 0; // No arguments expected
+        if (args == null || args.isEmpty()) {
+            return 0 // No arguments expected
         }
 
-        try {
+        return try {
             // Return the type of the Nth argument (where N is current count)
-            return args[useParamArgs ? nArgs - 1 : nArgs];
-        } catch (ArrayIndexOutOfBoundsException e) {
-            return 0; // Overflow
+            args[if (useParamArgs) nArgs - 1 else nArgs]
+        } catch (e: ArrayIndexOutOfBoundsException) {
+            0 // Overflow
         }
     }
 }

@@ -1,44 +1,30 @@
-package com.hereliesaz.hg2gui;
+package com.hereliesaz.hg2gui
 
-import android.app.Activity;
-import android.os.Bundle;
-import android.view.KeyEvent;
-import android.view.inputmethod.EditorInfo;
-import android.widget.EditText;
-import android.widget.TextView;
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import com.hereliesaz.hg2gui.ui.GuideScreen
+import com.hereliesaz.hg2gui.ui.theme.HG2GuiTheme
 
-public class GuideActivity extends Activity {
+class GuideActivity : ComponentActivity() {
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_guide);
-
-        EditText input = (EditText) findViewById(R.id.guide_input);
-        input.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                if (actionId == EditorInfo.IME_ACTION_DONE ||
-                    (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER && event.getAction() == KeyEvent.ACTION_DOWN)) {
-
-                    String text = v.getText().toString().trim().toLowerCase();
-                    if (text.equals("exit") || text.equals("quit") || text.equals("back")) {
-                        finish();
-                        overridePendingTransition(0, 0);
-                    } else {
-                        // For now just clear input if not exit
-                        v.setText("");
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        
+        setContent {
+            HG2GuiTheme {
+                GuideScreen(
+                    onExit = {
+                        finish()
+                        overridePendingTransition(0, 0)
                     }
-                    return true;
-                }
-                return false;
+                )
             }
-        });
+        }
     }
 
-    @Override
-    public void onBackPressed() {
-        super.onBackPressed();
-        overridePendingTransition(0, 0);
+    override fun onBackPressed() {
+        super.onBackPressed()
+        overridePendingTransition(0, 0)
     }
 }

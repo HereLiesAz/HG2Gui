@@ -1,26 +1,20 @@
-package com.hereliesaz.hg2gui;
+package com.hereliesaz.hg2gui
 
-import android.animation.ObjectAnimator;
-import android.os.Bundle;
-import androidx.appcompat.app.AppCompatActivity;
-import android.view.View;
-import android.view.animation.AccelerateDecelerateInterpolator;
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import com.hereliesaz.hg2gui.ui.OrigamiScreen
+import com.hereliesaz.hg2gui.ui.theme.HG2GuiTheme
 
-public class OrigamiMenuActivity extends AppCompatActivity {
+class OrigamiMenuActivity : ComponentActivity() {
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_origami_menu);
-
-        View card = findViewById(R.id.card_container);
-        if (card != null) {
-            // Unfold animation: Scale Y from 0 to 1
-            card.setPivotY(0); // Unfold from top
-            ObjectAnimator animator = ObjectAnimator.ofFloat(card, "scaleY", 0f, 1f);
-            animator.setDuration(1000);
-            animator.setInterpolator(new AccelerateDecelerateInterpolator());
-            animator.start();
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        
+        setContent {
+            HG2GuiTheme {
+                OrigamiScreen()
+            }
         }
     }
 }
