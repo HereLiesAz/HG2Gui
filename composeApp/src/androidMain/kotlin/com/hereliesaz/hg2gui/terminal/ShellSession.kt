@@ -22,11 +22,74 @@ actual class ShellSession private constructor(
         private const val TIMEOUT_MS = 15_000L
         private const val STARTUP_PROBE_MS = 300L
 
+        private fun setupZshrc(home: File?) {
+            if (home == null) return
+            try {
+                if (!home.exists()) home.mkdirs()
+                val zshrc = File(home, ".zshrc")
+                if (!zshrc.exists()) {
+                    zshrc.writeText(
+                        "export ZSH=\"\$HOME/.oh-my-zsh\"\n" +
+                        "if command -v git &> /dev/null; then\n" +
+                        "  if [ ! -d \"\$ZSH\" ]; then\n" +
+                        "      git clone https://github.com/ohmyzsh/ohmyzsh.git \"\$ZSH\"\n" +
+                        "  fi\n" +
+                        "  ZSH_CUSTOM=\"\$ZSH/custom\"\n" +
+                        "  if [ ! -d \"\$ZSH_CUSTOM/plugins/zsh-completions\" ]; then\n" +
+                        "      git clone https://github.com/zsh-users/zsh-completions \"\$ZSH_CUSTOM/plugins/zsh-completions\"\n" +
+                        "  fi\n" +
+                        "  if [ ! -d \"\$ZSH_CUSTOM/plugins/zsh-autosuggestions\" ]; then\n" +
+                        "      git clone https://github.com/zsh-users/zsh-autosuggestions \"\$ZSH_CUSTOM/plugins/zsh-autosuggestions\"\n" +
+                        "  fi\n" +
+                        "  if [ ! -d \"\$ZSH_CUSTOM/plugins/zsh-syntax-highlighting\" ]; then\n" +
+                        "      git clone https://github.com/zsh-users/zsh-syntax-highlighting.git \"\$ZSH_CUSTOM/plugins/zsh-syntax-highlighting\"\n" +
+                        "  fi\n" +
+                        "  if [ ! -d \"\$ZSH_CUSTOM/plugins/zsh-history-substring-search\" ]; then\n" +
+                        "      git clone https://github.com/zsh-users/zsh-history-substring-search \"\$ZSH_CUSTOM/plugins/zsh-history-substring-search\"\n" +
+                        "  fi\n" +
+                        "  if [ ! -d \"\$ZSH_CUSTOM/plugins/you-should-use\" ]; then\n" +
+                        "      git clone https://github.com/MichaelAquilina/zsh-you-should-use.git \"\$ZSH_CUSTOM/plugins/you-should-use\"\n" +
+                        "  fi\n" +
+                        "  if [ ! -d \"\$ZSH_CUSTOM/plugins/zsh-bat\" ]; then\n" +
+                        "      git clone https://github.com/fdellutri/zsh-bat.git \"\$ZSH_CUSTOM/plugins/zsh-bat\"\n" +
+                        "  fi\n" +
+                        "  if [ ! -d \"\$ZSH_CUSTOM/plugins/zsh-defer\" ]; then\n" +
+                        "      git clone https://github.com/romkatv/zsh-defer.git \"\$ZSH_CUSTOM/plugins/zsh-defer\"\n" +
+                        "  fi\n" +
+                        "  if [ ! -d \"\$ZSH_CUSTOM/plugins/fzf-zsh-plugin\" ]; then\n" +
+                        "      git clone https://github.com/unixorn/fzf-zsh-plugin.git \"\$ZSH_CUSTOM/plugins/fzf-zsh-plugin\"\n" +
+                        "  fi\n" +
+                        "fi\n" +
+                        "plugins=(zsh-completions zsh-history-substring-search zsh-autosuggestions zsh-syntax-highlighting thefuck you-should-use sudo zsh-bat copypath copyfile zsh-defer dotenv command-not-found fzf-zsh-plugin extract warp zsh-vi-man zsnapshot)\n" +
+                        "if [ -f \"\$ZSH/oh-my-zsh.sh\" ]; then\n" +
+                        "  source \"\$ZSH/oh-my-zsh.sh\"\n" +
+                        "fi\n" +
+                        "zmodload zsh/parameter\n" +
+                        "autoload -Uz add-zsh-hook\n" +
+                        "autoload -Uz zsh-capture-completion\n" +
+                        "autoload -Uz zsh-mime-setup\n" +
+                        "zsh-mime-setup\n" +
+                        "if command -v starship &> /dev/null; then\n" +
+                        "    eval \"\$(starship init zsh)\"\n" +
+                        "fi\n" +
+                        "if command -v atuin &> /dev/null; then\n" +
+                        "    eval \"\$(atuin init zsh)\"\n" +
+                        "fi\n" +
+                        "# Virtual Terminal State Integration (VT Sequences)\n" +
+                        "printf '\\033P\$q\"p\\033\\\\'\n"
+                    )
+                }
+            } catch (e: Exception) {
+                // Ignore
+            }
+        }
+
         fun forAndroid(home: File?, context: Context): ShellSession {
             val zsh = File(context.applicationInfo.nativeLibraryDir, ZSH_LIB_NAME)
             if (zsh.canExecute()) {
+                setupZshrc(home)
                 val session = ShellSession(
-                    home, arrayOf(zsh.absolutePath, "-f"), zsh.parent
+                    home, arrayOf(zsh.absolutePath), zsh.parent
                 )
                 if (session.survivedStartup()) return session
                 session.close()
