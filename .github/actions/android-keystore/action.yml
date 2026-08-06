@@ -194,6 +194,13 @@ runs:
             }
           fi
 
+          if grep -q "BEGIN PUBLIC KEY" "$cert_pem" 2>/dev/null; then
+            materialise "${KEYSTORE_CHAIN:-}" "$cert_pem" || {
+              echo "::error::KEYSTORE_PUBLIC contained a public key, but KEYSTORE_CHAIN (certificate) was missing."
+              exit 1
+            }
+          fi
+
           p12="$work/assembled.p12"
           extra_certs=()
           if materialise "${KEYSTORE_CHAIN:-}" "$chain_pem" && ! cmp -s "$chain_pem" "$cert_pem"; then
