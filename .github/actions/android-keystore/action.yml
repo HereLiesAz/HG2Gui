@@ -1,0 +1,276 @@
+name: Prepare Android signing keystore
+description: >
+  Materialise the release keystore from repository secrets and verify it is the
+  key we expect before any signing happens. Fails loudly rather than letting a
+  build fall through to producing an unsigned artifact.
+
+# Accepts the keystore in either of the two shapes the secrets can hold:
+#
+#   1. A whole keystore in KEYSTORE_RAW — base64-encoded (what
+#      `base64 -w0 upload.jks` produces) or the raw bytes. JKS, JCEKS and
+#      PKCS#12 are all detected from their magic bytes, so it doesn't matter
+#      which one was uploaded.
+#   2. The key material split across KEYSTORE_PRIVATE / KEYSTORE_RSA (private
+#      key) plus KEYSTORE_PUBLIC (signing certificate) and optionally
+#      KEYSTORE_CHAIN (the rest of the chain), in PEM or base64-wrapped PEM.
+#      These are assembled into a PKCS#12 keystore with openssl + keytool.
+#
+# Whichever path is used, the result is checked against KEYSTORE_SHA256 /
+# KEYSTORE_SHA1 / KEYSTORE_OWNER when those secrets are set. A keystore that
+# doesn't contain the alias, or whose certificate fingerprint doesn't match,
+# fails the job here — before a wrong-key artifact can be published, which on
+# Android is unrecoverable for anyone who already installed the app.
+
+inputs:
+  keystore-raw:
+    description: KEYSTORE_RAW — a complete keystore, base64-encoded or raw.
+    required: false
+    default: ''
+  keystore-private:
+    description: KEYSTORE_PRIVATE — private key (PEM or base64-wrapped PEM).
+    required: false
+    default: ''
+  keystore-rsa:
+    description: KEYSTORE_RSA — alternative private key source, tried if KEYSTORE_PRIVATE is empty.
+    required: false
+    default: ''
+  keystore-public:
+    description: KEYSTORE_PUBLIC — the signing certificate (PEM or base64-wrapped PEM).
+    required: false
+    default: ''
+  keystore-chain:
+    description: KEYSTORE_CHAIN — any intermediate/root certificates (PEM).
+    required: false
+    default: ''
+  keystore-password:
+    description: KEYSTORE_PASSWORD — the keystore (store) password.
+    required: true
+  key-alias:
+    description: KEY_ALIAS — the alias of the signing key inside the keystore.
+    required: true
+  key-password:
+    description: KEY_PASSWORD — the key password. Defaults to the store password when empty.
+    required: false
+    default: ''
+  expected-sha256:
+    description: KEYSTORE_SHA256 — expected certificate SHA-256 fingerprint. Checked when set.
+    required: false
+    default: ''
+  expected-sha1:
+    description: KEYSTORE_SHA1 — expected certificate SHA-1 fingerprint. Checked when set.
+    required: false
+    default: ''
+  expected-owner:
+    description: KEYSTORE_OWNER — expected certificate Owner DN. Checked when set.
+    required: false
+    default: ''
+
+outputs:
+  keystore-path:
+    description: Absolute path to the prepared keystore file.
+    value: ${{ steps.prepare.outputs.keystore-path }}
+  store-type:
+    description: JKS, JCEKS or PKCS12 — pass to Gradle as QUICLOC_KEYSTORE_TYPE.
+    value: ${{ steps.prepare.outputs.store-type }}
+  sha256:
+    description: The SHA-256 fingerprint of the certificate that will sign the build.
+    value: ${{ steps.prepare.outputs.sha256 }}
+
+runs:
+  using: composite
+  steps:
+    - id: prepare
+      shell: bash
+      env:
+        KEYSTORE_RAW: ${{ inputs.keystore-raw }}
+        KEYSTORE_PRIVATE: ${{ inputs.keystore-private }}
+        KEYSTORE_RSA: ${{ inputs.keystore-rsa }}
+        KEYSTORE_PUBLIC: ${{ inputs.keystore-public }}
+        KEYSTORE_CHAIN: ${{ inputs.keystore-chain }}
+        KEYSTORE_PASSWORD: ${{ inputs.keystore-password }}
+        KEY_ALIAS: ${{ inputs.key-alias }}
+        KEY_PASSWORD: ${{ inputs.key-password }}
+        EXPECTED_SHA256: ${{ inputs.expected-sha256 }}
+        EXPECTED_SHA1: ${{ inputs.expected-sha1 }}
+        EXPECTED_OWNER: ${{ inputs.expected-owner }}
+      run: |
+        set -euo pipefail
+
+        work="$RUNNER_TEMP/signing"
+        mkdir -p "$work"
+        chmod 700 "$work"
+
+        if [ -z "${KEYSTORE_PASSWORD:-}" ]; then
+          echo "::error::KEYSTORE_PASSWORD secret is empty or unset. Set it to the keystore (store) password."
+          exit 1
+        fi
+        if [ -z "${KEY_ALIAS:-}" ]; then
+          echo "::error::KEY_ALIAS secret is empty or unset. Set it to the alias of the signing key."
+          exit 1
+        fi
+        # A keystore created by `keytool -genkeypair` without -keypass uses the
+        # store password for the key too, which is the common case.
+        if [ -z "${KEY_PASSWORD:-}" ]; then
+          echo "KEY_PASSWORD is empty — using the store password for the key as well."
+          KEY_PASSWORD="$KEYSTORE_PASSWORD"
+        fi
+        export KEYSTORE_PASSWORD KEY_PASSWORD
+
+        # Write a secret to a file, tolerating either raw bytes or base64. PEM
+        # is recognised directly; everything else is attempted as base64 first
+        # (that is how a binary keystore has to travel through a secret) and
+        # falls back to the literal bytes. Returns 1 when there was nothing to
+        # write, so callers can branch on "was this secret set?".
+        materialise() {
+          local value="$1" out="$2"
+          [ -n "$value" ] || return 1
+          # Strip surrounding whitespace/newlines that copy-paste tends to add.
+          printf '%s' "$value" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' > "$work/.in"
+          if head -c 11 "$work/.in" | grep -q -- "-----BEGIN"; then
+            cp "$work/.in" "$out"
+          elif tr -d '[:space:]' < "$work/.in" | base64 --decode > "$out" 2>/dev/null && [ -s "$out" ]; then
+            : # decoded fine
+          else
+            cp "$work/.in" "$out"
+          fi
+          rm -f "$work/.in"
+          [ -s "$out" ]
+        }
+
+        # Keystore format from its first bytes: JKS and JCEKS have their own
+        # magic numbers, PKCS#12 is a DER SEQUENCE. `od` rather than `xxd` —
+        # coreutils is always there, vim-common isn't.
+        detect_store_type() {
+          local f="$1" magic
+          magic=$(head -c 4 "$f" | od -An -tx1 | tr -d ' \n' || true)
+          case "$magic" in
+            feedfeed*) echo JKS ;;
+            cececece*) echo JCEKS ;;
+            3082*)     echo PKCS12 ;;
+            *)         echo UNKNOWN ;;
+          esac
+        }
+
+        keystore="$work/release.keystore"
+        store_type=""
+
+        # ---- Path 1: a complete keystore in KEYSTORE_RAW --------------------
+        if materialise "${KEYSTORE_RAW:-}" "$keystore"; then
+          store_type=$(detect_store_type "$keystore")
+          if [ "$store_type" = "UNKNOWN" ]; then
+            echo "::warning::KEYSTORE_RAW did not decode to a recognisable keystore (JKS/JCEKS/PKCS12). Falling back to assembling one from the key + certificate secrets."
+            rm -f "$keystore"
+            store_type=""
+          else
+            echo "Using the keystore from KEYSTORE_RAW (detected $store_type)."
+          fi
+        fi
+
+        # ---- Path 2: assemble one from private key + certificate ------------
+        if [ -z "$store_type" ]; then
+          key_pem="$work/key.pem"
+          cert_pem="$work/cert.pem"
+          chain_pem="$work/chain.pem"
+
+          if ! materialise "${KEYSTORE_PRIVATE:-}" "$key_pem"; then
+            materialise "${KEYSTORE_RSA:-}" "$key_pem" || true
+          fi
+          if [ ! -s "$key_pem" ]; then
+            echo "::error::No usable keystore. KEYSTORE_RAW was empty or unrecognisable, and neither KEYSTORE_PRIVATE nor KEYSTORE_RSA contains a private key."
+            exit 1
+          fi
+          # A DER-encoded key still works if we convert it to PEM first.
+          if ! grep -q -- "-----BEGIN" "$key_pem"; then
+            openssl pkey -inform DER -in "$key_pem" -out "$work/key.converted.pem" 2>/dev/null \
+              || openssl rsa -inform DER -in "$key_pem" -out "$work/key.converted.pem" 2>/dev/null \
+              || { echo "::error::The private key secret is neither PEM nor DER — could not read it."; exit 1; }
+            mv "$work/key.converted.pem" "$key_pem"
+          fi
+
+          if ! materialise "${KEYSTORE_PUBLIC:-}" "$cert_pem"; then
+            materialise "${KEYSTORE_CHAIN:-}" "$cert_pem" || {
+              echo "::error::A private key was supplied but no certificate. Set KEYSTORE_PUBLIC (the signing certificate) as well."
+              exit 1
+            }
+          fi
+
+          p12="$work/assembled.p12"
+          extra_certs=()
+          if materialise "${KEYSTORE_CHAIN:-}" "$chain_pem" && ! cmp -s "$chain_pem" "$cert_pem"; then
+            extra_certs=(-certfile "$chain_pem")
+          fi
+
+          echo "Assembling a PKCS#12 keystore from the key + certificate secrets."
+          openssl pkcs12 -export \
+            -inkey "$key_pem" \
+            -in "$cert_pem" \
+            "${extra_certs[@]}" \
+            -name "$KEY_ALIAS" \
+            -passout env:KEYSTORE_PASSWORD \
+            -out "$p12"
+
+          # Re-import so the key entry carries KEY_PASSWORD when it differs
+          # from the store password (openssl can only set one passphrase).
+          keytool -importkeystore \
+            -srckeystore "$p12" -srcstoretype PKCS12 -srcstorepass:env KEYSTORE_PASSWORD \
+            -srcalias "$KEY_ALIAS" \
+            -destkeystore "$keystore" -deststoretype PKCS12 \
+            -deststorepass:env KEYSTORE_PASSWORD -destkeypass:env KEY_PASSWORD \
+            -destalias "$KEY_ALIAS" -noprompt
+          rm -f "$p12" "$key_pem"
+          store_type=PKCS12
+        fi
+
+        chmod 600 "$keystore"
+
+        # ---- Verify it is the key we think it is ---------------------------
+        if ! keytool -list -v -keystore "$keystore" -storetype "$store_type" \
+              -storepass:env KEYSTORE_PASSWORD -alias "$KEY_ALIAS" > "$work/cert.txt" 2>"$work/cert.err"; then
+          echo "::error::The keystore does not contain the alias '$KEY_ALIAS', or KEYSTORE_PASSWORD is wrong."
+          echo "keytool said:"; sed -e "s/$KEY_ALIAS/<alias>/g" "$work/cert.err" || true
+          echo "Aliases actually present:"
+          keytool -list -keystore "$keystore" -storetype "$store_type" -storepass:env KEYSTORE_PASSWORD \
+            | grep -i "PrivateKeyEntry\|trustedCertEntry" || true
+          exit 1
+        fi
+
+        norm() { tr -d ': \t' | tr '[:lower:]' '[:upper:]'; }
+        actual_sha256=$(grep -m1 'SHA256:' "$work/cert.txt" | sed 's/.*SHA256: *//' | tr -d '\r')
+        actual_sha1=$(grep -m1 'SHA1:' "$work/cert.txt" | sed 's/.*SHA1: *//' | tr -d '\r')
+        actual_owner=$(grep -m1 '^Owner:' "$work/cert.txt" | sed 's/^Owner: *//' | tr -d '\r')
+
+        echo "Signing certificate"
+        echo "  Owner:  $actual_owner"
+        echo "  SHA-1:  $actual_sha1"
+        echo "  SHA-256:$actual_sha256"
+
+        fail=0
+        if [ -n "${EXPECTED_SHA256:-}" ] && \
+           [ "$(printf '%s' "$actual_sha256" | norm)" != "$(printf '%s' "$EXPECTED_SHA256" | norm)" ]; then
+          echo "::error::Certificate SHA-256 does not match the KEYSTORE_SHA256 secret. This is the wrong signing key — publishing with it would break upgrades for every existing install."
+          echo "  expected: $EXPECTED_SHA256"
+          echo "  actual:   $actual_sha256"
+          fail=1
+        fi
+        if [ -n "${EXPECTED_SHA1:-}" ] && \
+           [ "$(printf '%s' "$actual_sha1" | norm)" != "$(printf '%s' "$EXPECTED_SHA1" | norm)" ]; then
+          echo "::error::Certificate SHA-1 does not match the KEYSTORE_SHA1 secret."
+          echo "  expected: $EXPECTED_SHA1"
+          echo "  actual:   $actual_sha1"
+          fail=1
+        fi
+        if [ -n "${EXPECTED_OWNER:-}" ] && [ "$actual_owner" != "$EXPECTED_OWNER" ]; then
+          # A DN mismatch is worth flagging but is not proof of the wrong key —
+          # the fingerprints are the authoritative check.
+          echo "::warning::Certificate Owner does not match the KEYSTORE_OWNER secret (expected '$EXPECTED_OWNER', got '$actual_owner')."
+        fi
+        [ "$fail" -eq 0 ] || exit 1
+
+        {
+          echo "keystore-path=$keystore"
+          echo "store-type=$store_type"
+          echo "sha256=$actual_sha256"
+        } >> "$GITHUB_OUTPUT"
+
+        rm -f "$work/cert.err"
+        echo "Keystore ready ($store_type), alias '$KEY_ALIAS' verified."

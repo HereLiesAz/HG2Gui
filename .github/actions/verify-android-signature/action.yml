@@ -1,0 +1,98 @@
+name: Verify Android artifact signature
+description: >
+  Prove that a built APK or AAB is actually signed, and signed by the expected
+  certificate, before it goes anywhere. Run this between building and
+  publishing.
+
+# Gradle's signing config only attaches when every piece of keystore material
+# is present; when something is missing it quietly produces an *unsigned*
+# artifact instead of failing. That is how an unsigned APK ends up attached to
+# a GitHub Release. This action closes that hole: it inspects the artifact that
+# was actually produced and fails the job if it isn't signed by the key we
+# expect.
+
+inputs:
+  artifact:
+    description: Path to the .apk or .aab to check.
+    required: true
+  expected-sha256:
+    description: >
+      Expected signing-certificate SHA-256 fingerprint. Pass the value the
+      keystore action reported (or the KEYSTORE_SHA256 secret). When empty,
+      the artifact is only checked for being signed at all.
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        ARTIFACT: ${{ inputs.artifact }}
+        EXPECTED_SHA256: ${{ inputs.expected-sha256 }}
+      run: |
+        set -euo pipefail
+
+        if [ ! -f "$ARTIFACT" ]; then
+          echo "::error::Nothing to verify — $ARTIFACT does not exist."
+          exit 1
+        fi
+
+        case "$ARTIFACT" in
+          *-unsigned.apk|*-unsigned.aab)
+            echo "::error::$ARTIFACT is the unsigned output. The signing config did not attach — check that the keystore secrets are present and reached Gradle."
+            exit 1
+            ;;
+        esac
+
+        norm() { tr -d ': \t' | tr '[:lower:]' '[:upper:]'; }
+        actual=""
+
+        if [[ "$ARTIFACT" == *.apk ]]; then
+          # apksigner ships with the build-tools; pick the newest installed.
+          apksigner=$(find "${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}/build-tools" \
+            -maxdepth 2 -name apksigner -type f 2>/dev/null | sort -V | tail -n1 || true)
+          if [ -z "$apksigner" ]; then
+            echo "::error::apksigner not found in the Android SDK — cannot verify the APK signature."
+            exit 1
+          fi
+          if ! "$apksigner" verify --print-certs "$ARTIFACT" > "$RUNNER_TEMP/verify.txt" 2>&1; then
+            echo "::error::$ARTIFACT is not correctly signed."
+            cat "$RUNNER_TEMP/verify.txt"
+            exit 1
+          fi
+          cat "$RUNNER_TEMP/verify.txt"
+          actual=$(grep -m1 -i 'SHA-256 digest:' "$RUNNER_TEMP/verify.txt" | sed 's/.*digest: *//' | tr -d '\r')
+        else
+          # An .aab is jar-signed; read the signer certificate straight out of
+          # the block file, which also proves the signature block exists.
+          block=$(unzip -Z1 "$ARTIFACT" 'META-INF/*.RSA' 'META-INF/*.EC' 'META-INF/*.DSA' 2>/dev/null | head -n1 || true)
+          if [ -z "$block" ]; then
+            echo "::error::$ARTIFACT contains no signature block — the bundle is unsigned."
+            exit 1
+          fi
+          if ! jarsigner -verify -strict "$ARTIFACT" > "$RUNNER_TEMP/verify.txt" 2>&1; then
+            echo "::warning::jarsigner reported warnings for $ARTIFACT:"
+            cat "$RUNNER_TEMP/verify.txt"
+          fi
+          unzip -p "$ARTIFACT" "$block" | keytool -printcert > "$RUNNER_TEMP/cert.txt"
+          grep -E '^(Owner|Valid from)|SHA256:' "$RUNNER_TEMP/cert.txt" || true
+          actual=$(grep -m1 'SHA256:' "$RUNNER_TEMP/cert.txt" | sed 's/.*SHA256: *//' | tr -d '\r')
+        fi
+
+        if [ -z "$actual" ]; then
+          echo "::error::Could not read a signing certificate fingerprint out of $ARTIFACT."
+          exit 1
+        fi
+
+        if [ -n "${EXPECTED_SHA256:-}" ]; then
+          if [ "$(printf '%s' "$actual" | norm)" != "$(printf '%s' "$EXPECTED_SHA256" | norm)" ]; then
+            echo "::error::$ARTIFACT is signed by the wrong certificate."
+            echo "  expected: $EXPECTED_SHA256"
+            echo "  actual:   $actual"
+            exit 1
+          fi
+          echo "Signature verified against the expected certificate ($actual)."
+        else
+          echo "Signed by $actual (no expected fingerprint supplied, so identity was not checked)."
+        fi

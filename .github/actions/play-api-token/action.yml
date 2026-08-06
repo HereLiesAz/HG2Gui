@@ -1,0 +1,91 @@
+name: Mint a Google Play API access token
+description: >
+  Exchange the service-account JSON for an androidpublisher OAuth token, and
+  write it to a file. Used by both the preflight and the publish step.
+
+# Self-contained: jq + openssl + curl, all present on ubuntu-latest. No
+# third-party action gets to see the key.
+#
+# The token lands in a file rather than a step output because outputs are
+# easy to leak into logs by accident, and this is a bearer credential for the
+# app's Play listing. It is also masked, belt and braces.
+#
+# Tokens are minted with a 5-minute life. Mint one immediately before the calls
+# that need it — don't mint before a build and use it after.
+
+inputs:
+  service-account-json:
+    description: The PLAY_SERVICE_ACCOUNT_JSON secret, verbatim.
+    required: true
+
+outputs:
+  token-file:
+    description: Path to a file containing the bearer token (no trailing newline).
+    value: ${{ steps.mint.outputs.token-file }}
+  client-email:
+    description: The service account's email, for logging.
+    value: ${{ steps.mint.outputs.client-email }}
+
+runs:
+  using: composite
+  steps:
+    - id: mint
+      shell: bash
+      env:
+        SERVICE_ACCOUNT_JSON: ${{ inputs.service-account-json }}
+      run: |
+        set -euo pipefail
+
+        if [ -z "${SERVICE_ACCOUNT_JSON:-}" ]; then
+          echo "::error::PLAY_SERVICE_ACCOUNT_JSON secret is empty or unset — set it to the full service-account JSON."
+          exit 1
+        fi
+        sa="$RUNNER_TEMP/sa.json"
+        umask 077
+        printf '%s' "$SERVICE_ACCOUNT_JSON" > "$sa"
+        if ! jq -e . "$sa" >/dev/null 2>&1; then
+          echo "::error::PLAY_SERVICE_ACCOUNT_JSON is not valid JSON."
+          exit 1
+        fi
+        client_email=$(jq -r '.client_email // empty' "$sa")
+        token_uri=$(jq -r '.token_uri // "https://oauth2.googleapis.com/token"' "$sa")
+        if [ -z "$client_email" ]; then
+          echo "::error::Service-account JSON is missing client_email — the secret is malformed."
+          exit 1
+        fi
+        echo "Service account: $client_email"
+
+        # RS256-signed JWT, exchanged for an androidpublisher access token.
+        b64url() { openssl base64 -e -A | tr '+/' '-_' | tr -d '='; }
+        now=$(date +%s); exp=$((now + 300))
+        header_b64=$(printf '%s' '{"alg":"RS256","typ":"JWT"}' | b64url)
+        claim_b64=$(jq -nc --arg iss "$client_email" --arg aud "$token_uri" \
+          --argjson iat "$now" --argjson exp "$exp" \
+          '{iss:$iss, scope:"https://www.googleapis.com/auth/androidpublisher", aud:$aud, iat:$iat, exp:$exp}' \
+          | b64url)
+        jq -r '.private_key' "$sa" > "$RUNNER_TEMP/key.pem"
+        sig=$(printf '%s' "$header_b64.$claim_b64" | openssl dgst -sha256 -sign "$RUNNER_TEMP/key.pem" | b64url)
+        jwt="$header_b64.$claim_b64.$sig"
+        rm -f "$RUNNER_TEMP/key.pem"
+
+        resp="$RUNNER_TEMP/token.json"
+        curl -s -o "$resp" -X POST "$token_uri" \
+          --data-urlencode "grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer" \
+          --data-urlencode "assertion=$jwt"
+        access_token=$(jq -r '.access_token // empty' "$resp")
+        if [ -z "$access_token" ]; then
+          echo "::error::Could not obtain an access token — $token_uri rejected the service-account credentials."
+          echo "Error from the token endpoint: $(jq -r '.error_description // .error // "no detail"' "$resp")"
+          exit 1
+        fi
+        echo "::add-mask::$access_token"
+
+        token_file="$RUNNER_TEMP/play-token"
+        printf '%s' "$access_token" > "$token_file"
+        chmod 600 "$token_file"
+        rm -f "$resp"
+
+        {
+          echo "token-file=$token_file"
+          echo "client-email=$client_email"
+        } >> "$GITHUB_OUTPUT"
