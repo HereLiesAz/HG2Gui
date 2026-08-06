@@ -58,7 +58,6 @@ kotlin {
             implementation("com.google.android.material:material:1.13.0")
             
             implementation(project(":terminal-emulator"))
-            implementation(project(":terminal-view"))
             implementation(project(":termux-shared"))
         }
         commonTest.dependencies {
@@ -115,11 +114,14 @@ android {
     }
 
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
     }
 }
 
 dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:1.1.5")
     debugImplementation(compose.uiTooling)
+    implementation("com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava")
 }

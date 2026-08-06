@@ -86,7 +86,7 @@ fun TerminalScreen(
                         // Update the buffer with the streaming output
                         buffer = buffer.mapIndexed { index, entry ->
                             if (index == entryId) {
-                                entry.copy(output = if (entry.output.isEmpty()) outputChunk else entry.output + "\n" + outputChunk)
+                                entry.copy(output = outputChunk)
                             } else {
                                 entry
                             }

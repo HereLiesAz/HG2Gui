@@ -1,0 +1,81 @@
+{
+  "buildFiles": [
+    "C:\\Users\\azrie\\StudioProjects\\HG2Gui\\terminal-emulator\\src\\main\\jni\\Android.mk"
+  ],
+  "cleanCommandsComponents": [
+    [
+      "C:\\Users\\azrie\\AppData\\Local\\Android\\Sdk\\ndk\\26.1.10909125\\ndk-build.cmd",
+      "NDK_PROJECT_PATH\u003dnull",
+      "APP_BUILD_SCRIPT\u003dC:\\Users\\azrie\\StudioProjects\\HG2Gui\\terminal-emulator\\src\\main\\jni\\Android.mk",
+      "APP_ABI\u003dx86",
+      "NDK_ALL_ABIS\u003dx86",
+      "NDK_DEBUG\u003d1",
+      "APP_PLATFORM\u003dandroid-24",
+      "NDK_OUT\u003dC:\\Users\\azrie\\StudioProjects\\HG2Gui\\terminal-emulator\\build\\intermediates\\cxx\\Debug\\5v19261c/obj",
+      "NDK_LIBS_OUT\u003dC:\\Users\\azrie\\StudioProjects\\HG2Gui\\terminal-emulator\\build\\intermediates\\cxx\\Debug\\5v19261c/lib",
+      "APP_CFLAGS+\u003d-std\u003dc11",
+      "APP_CFLAGS+\u003d-Wall",
+      "APP_CFLAGS+\u003d-Wextra",
+      "APP_CFLAGS+\u003d-Werror",
+      "APP_CFLAGS+\u003d-Os",
+      "APP_CFLAGS+\u003d-fno-stack-protector",
+      "APP_CFLAGS+\u003d-Wl,--gc-sections",
+      "clean"
+    ]
+  ],
+  "buildTargetsCommandComponents": [
+    "C:\\Users\\azrie\\AppData\\Local\\Android\\Sdk\\ndk\\26.1.10909125\\ndk-build.cmd",
+    "NDK_PROJECT_PATH\u003dnull",
+    "APP_BUILD_SCRIPT\u003dC:\\Users\\azrie\\StudioProjects\\HG2Gui\\terminal-emulator\\src\\main\\jni\\Android.mk",
+    "APP_ABI\u003dx86",
+    "NDK_ALL_ABIS\u003dx86",
+    "NDK_DEBUG\u003d1",
+    "APP_PLATFORM\u003dandroid-24",
+    "NDK_OUT\u003dC:\\Users\\azrie\\StudioProjects\\HG2Gui\\terminal-emulator\\build\\intermediates\\cxx\\Debug\\5v19261c/obj",
+    "NDK_LIBS_OUT\u003dC:\\Users\\azrie\\StudioProjects\\HG2Gui\\terminal-emulator\\build\\intermediates\\cxx\\Debug\\5v19261c/lib",
+    "APP_CFLAGS+\u003d-std\u003dc11",
+    "APP_CFLAGS+\u003d-Wall",
+    "APP_CFLAGS+\u003d-Wextra",
+    "APP_CFLAGS+\u003d-Werror",
+    "APP_CFLAGS+\u003d-Os",
+    "APP_CFLAGS+\u003d-fno-stack-protector",
+    "APP_CFLAGS+\u003d-Wl,--gc-sections",
+    "{LIST_OF_TARGETS_TO_BUILD}"
+  ],
+  "libraries": {
+    "termux-debug-x86": {
+      "buildCommandComponents": [
+        "C:\\Users\\azrie\\AppData\\Local\\Android\\Sdk\\ndk\\26.1.10909125\\ndk-build.cmd",
+        "NDK_PROJECT_PATH\u003dnull",
+        "APP_BUILD_SCRIPT\u003dC:\\Users\\azrie\\StudioProjects\\HG2Gui\\terminal-emulator\\src\\main\\jni\\Android.mk",
+        "APP_ABI\u003dx86",
+        "NDK_ALL_ABIS\u003dx86",
+        "NDK_DEBUG\u003d1",
+        "APP_PLATFORM\u003dandroid-24",
+        "NDK_OUT\u003dC:\\Users\\azrie\\StudioProjects\\HG2Gui\\terminal-emulator\\build\\intermediates\\cxx\\Debug\\5v19261c/obj",
+        "NDK_LIBS_OUT\u003dC:\\Users\\azrie\\StudioProjects\\HG2Gui\\terminal-emulator\\build\\intermediates\\cxx\\Debug\\5v19261c/lib",
+        "APP_CFLAGS+\u003d-std\u003dc11",
+        "APP_CFLAGS+\u003d-Wall",
+        "APP_CFLAGS+\u003d-Wextra",
+        "APP_CFLAGS+\u003d-Werror",
+        "APP_CFLAGS+\u003d-Os",
+        "APP_CFLAGS+\u003d-fno-stack-protector",
+        "APP_CFLAGS+\u003d-Wl,--gc-sections",
+        "C:\\Users\\azrie\\StudioProjects\\HG2Gui\\terminal-emulator\\build\\intermediates\\cxx\\Debug\\5v19261c/obj/local/x86/libtermux.so"
+      ],
+      "toolchain": "toolchain-x86",
+      "abi": "x86",
+      "artifactName": "termux",
+      "output": "C:\\Users\\azrie\\StudioProjects\\HG2Gui\\terminal-emulator\\build\\intermediates\\cxx\\Debug\\5v19261c\\obj\\local\\x86\\libtermux.so"
+    }
+  },
+  "toolchains": {
+    "toolchain-x86": {
+      "cCompilerExecutable": "C:\\Users\\azrie\\AppData\\Local\\Android\\Sdk\\ndk\\26.1.10909125\\build\\..\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang.exe"
+    }
+  },
+  "cFileExtensions": [
+    "c"
+  ],
+  "cppFileExtensions": []
+}

@@ -9,6 +9,18 @@ import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.util.concurrent.atomic.AtomicBoolean
 
+import com.termux.terminal.TerminalEmulator
+import com.termux.terminal.TerminalOutput
+
+class DummyTerminalOutput : TerminalOutput() {
+    override fun write(data: ByteArray, offset: Int, count: Int) {}
+    override fun titleChanged(oldTitle: String?, newTitle: String?) {}
+    override fun onCopyTextToClipboard(text: String) {}
+    override fun onPasteTextFromClipboard() {}
+    override fun onBell() {}
+    override fun onColorsChanged() {}
+}
+
 actual class ShellSession private constructor(
     home: File?,
     command: Array<String>,
@@ -181,6 +193,9 @@ actual class ShellSession private constructor(
         try {
             val sin = stdin ?: throw IOException("stdin is null")
             val sout = stdout ?: throw IOException("stdout is null")
+            
+            // Create a headless VT100 parser for this execution
+            val emulator = TerminalEmulator(DummyTerminalOutput(), 120, 24, 10, 10, 1000, null)
 
             sin.write(command)
             sin.write("\n")
@@ -191,7 +206,9 @@ actual class ShellSession private constructor(
 
             while (true) {
                 if (System.currentTimeMillis() > deadline) {
-                    onLine("\n[timed out after ${TIMEOUT_MS / 1000}s]")
+                    val bytes = "\n[timed out after ${TIMEOUT_MS / 1000}s]".toByteArray()
+                    emulator.append(bytes, bytes.size)
+                    onLine(emulator.mScreen.transcriptTextWithFullLinesJoined)
                     break
                 }
 
@@ -217,7 +234,10 @@ actual class ShellSession private constructor(
 
                 val marker = line.indexOf(SENTINEL)
                 if (marker >= 0) {
-                    if (marker > 0) onLine(line.substring(0, marker))
+                    if (marker > 0) {
+                        val bytes = (line.substring(0, marker) + "\n").toByteArray(Charsets.UTF_8)
+                        emulator.append(bytes, bytes.size)
+                    }
 
                     val tail = line.substring(marker + SENTINEL.length)
                     val split = tail.indexOf(':')
@@ -229,10 +249,13 @@ actual class ShellSession private constructor(
                         val pwd = tail.substring(split + 1)
                         if (pwd.isNotEmpty()) _workingDirectory = pwd
                     }
+                    onLine(emulator.mScreen.transcriptTextWithFullLinesJoined)
                     break
                 }
 
-                onLine(line)
+                val bytes = (line + "\n").toByteArray(Charsets.UTF_8)
+                emulator.append(bytes, bytes.size)
+                onLine(emulator.mScreen.transcriptTextWithFullLinesJoined)
             }
         } catch (e: IOException) {
             alive.set(false)

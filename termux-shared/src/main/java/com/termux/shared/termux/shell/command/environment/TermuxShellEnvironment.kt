@@ -18,9 +18,7 @@ import java.util.HashMap
  */
 open class TermuxShellEnvironment : AndroidShellEnvironment() {
 
-    init {
-        shellCommandShellEnvironment = TermuxShellCommandShellEnvironment()
-    }
+
 
     /** Get shell environment for Termux. */
     override fun getEnvironment(currentPackageContext: Context, isFailSafe: Boolean): HashMap<String, String> {

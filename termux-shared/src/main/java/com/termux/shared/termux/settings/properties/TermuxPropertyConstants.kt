@@ -9,7 +9,6 @@ import com.termux.shared.settings.properties.SharedProperties
 import com.termux.shared.termux.TermuxConstants
 import com.termux.shared.logger.Logger
 import com.termux.terminal.TerminalEmulator
-import com.termux.view.TerminalView
 import java.io.File
 
 /*
@@ -160,8 +159,8 @@ object TermuxPropertyConstants {
 
     /** Defines the key for the terminal cursor blink rate */
     const val KEY_TERMINAL_CURSOR_BLINK_RATE = "terminal-cursor-blink-rate" // Default: "terminal-cursor-blink-rate"
-    const val IVALUE_TERMINAL_CURSOR_BLINK_RATE_MIN = TerminalView.TERMINAL_CURSOR_BLINK_RATE_MIN
-    const val IVALUE_TERMINAL_CURSOR_BLINK_RATE_MAX = TerminalView.TERMINAL_CURSOR_BLINK_RATE_MAX
+    const val IVALUE_TERMINAL_CURSOR_BLINK_RATE_MIN = 100
+    const val IVALUE_TERMINAL_CURSOR_BLINK_RATE_MAX = 2000
     const val DEFAULT_IVALUE_TERMINAL_CURSOR_BLINK_RATE = 0
 
     /** Defines the key for the terminal cursor style */

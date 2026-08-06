@@ -1,0 +1,4 @@
+lib/armeabi-v7a\libtermux.so->Project
+lib/arm64-v8a\libtermux.so->Project
+lib/x86\libtermux.so->Project
+lib/x86_64\libtermux.so->Project

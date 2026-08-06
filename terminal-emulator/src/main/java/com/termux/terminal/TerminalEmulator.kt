@@ -65,7 +65,7 @@ class TerminalEmulator(
     val mAltBuffer: TerminalBuffer = TerminalBuffer(columns, rows, rows)
 
     /** The current screen buffer, pointing at either [mMainBuffer] or [mAltBuffer]. */
-    private var mScreen: TerminalBuffer = mMainBuffer
+    var mScreen: TerminalBuffer = mMainBuffer
 
     /** Keeps track of the current argument of the current escape sequence. Ranges from 0 to MAX_ESCAPE_PARAMETERS-1. */
     private var mArgIndex: Int = 0

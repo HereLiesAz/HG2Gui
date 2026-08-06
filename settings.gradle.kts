@@ -11,11 +11,9 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        maven { url = uri("https://jitpack.io") }
     }
 }
 
 rootProject.name = "HG2Gui"
-include(":composeApp")
-include(":terminal-emulator")
-include(":terminal-view")
-include(":termux-shared")
+include(":composeApp", ":terminal-emulator", ":termux-shared")
