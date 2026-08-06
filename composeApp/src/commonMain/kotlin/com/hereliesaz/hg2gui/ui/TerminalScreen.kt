@@ -42,6 +42,7 @@ fun TerminalScreen(
     cwd: String,
     fullscreen: Boolean,
     onOpenSettings: () -> Unit,
+    onOpenGuide: () -> Unit,
     onRun: suspend (String, (String) -> Unit) -> Unit
 ) {
     var active by remember { mutableStateOf(sessions.first()) }
@@ -121,7 +122,7 @@ fun TerminalScreen(
             .then(if (fullscreen) Modifier else Modifier.windowInsetsPadding(WindowInsets.systemBars))
     ) {
 
-        SessionTabs(sessions, active, onOpenSettings) { active = it }
+        SessionTabs(sessions, active, onOpenSettings, onOpenGuide) { active = it }
 
         Text(
             cwd,
@@ -263,6 +264,7 @@ private fun SessionTabs(
     sessions: List<String>,
     active: String,
     onOpenSettings: () -> Unit,
+    onOpenGuide: () -> Unit,
     onPick: (String) -> Unit
 ) {
     Row(
@@ -306,11 +308,12 @@ private fun SessionTabs(
             Modifier
                 .size(22.dp)
                 .clip(RoundedCornerShape(percent = 50))
-                .background(Azphalt.Ink.copy(alpha = .14f)),
+                .background(Azphalt.Ink.copy(alpha = .14f))
+                .clickable(onClick = onOpenGuide),
             contentAlignment = Alignment.Center
         ) { 
             Text(
-                "+", 
+                "?", 
                 style = MaterialTheme.typography.titleMedium.copy(color = Azphalt.Ink, fontSize = 12.sp)
             ) 
         }

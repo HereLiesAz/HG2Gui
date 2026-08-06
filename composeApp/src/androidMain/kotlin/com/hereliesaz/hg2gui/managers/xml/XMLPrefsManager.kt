@@ -329,7 +329,6 @@ class XMLPrefsManager private constructor() {
 
         @JvmStatic
         @Throws(Exception::class)
-        @JvmStatic
         fun buildDocument(file: File, rootName: String?): Array<Any?>? {
             if (!file.exists()) {
                 resetFile(file, rootName)

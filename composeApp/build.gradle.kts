@@ -105,9 +105,7 @@ android {
     
     flavorDimensions += "default"
     productFlavors {
-        create("fdroid") {
-            dimension = "default"
-        }
+
         create("playstore") {
             dimension = "default"
         }

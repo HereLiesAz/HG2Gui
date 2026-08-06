@@ -6,7 +6,10 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -27,6 +30,7 @@ import com.hereliesaz.hg2gui.tuils.interfaces.Reloadable
 import com.hereliesaz.hg2gui.ui.HG2GuiTheme
 import com.hereliesaz.hg2gui.ui.SettingsScreen
 import com.hereliesaz.hg2gui.ui.TerminalScreen
+import com.hereliesaz.hg2gui.ui.guide.CommandGuideScreen
 import com.hereliesaz.hg2gui.ui.menu.CommandTree
 import com.hereliesaz.hg2gui.ui.menu.MenuNode
 import kotlinx.coroutines.Dispatchers
@@ -38,7 +42,7 @@ class TerminalActivity : ComponentActivity(), Reloadable {
     private var main: MainManager? = null
     private var engine: TerminalEngine? = null
 
-    private enum class Screen { Terminal, Settings }
+    private enum class Screen { Terminal, Settings, Guide }
 
     private data class InitResult(
         val main: MainManager,
@@ -116,11 +120,17 @@ class TerminalActivity : ComponentActivity(), Reloadable {
                         onBack = { screen = Screen.Terminal }
                     )
 
+                    screen == Screen.Guide -> CommandGuideScreen(
+                        onBack = { screen = Screen.Terminal },
+                        modifier = Modifier.windowInsetsPadding(WindowInsets.systemBars)
+                    )
+
                     currentEngine != null && currentTree != null -> TerminalScreen(
                         tree = currentTree,
                         cwd = cwd,
                         fullscreen = fullscreen,
                         onOpenSettings = { screen = Screen.Settings },
+                        onOpenGuide = { screen = Screen.Guide },
                         onRun = { line, onOutput ->
                             currentEngine.run(line).collect { output ->
                                 onOutput(output)
