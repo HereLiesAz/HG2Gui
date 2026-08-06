@@ -195,7 +195,7 @@ jobs:
         if: ${{ inputs.publish }}
         run: |
           set -euo pipefail
-          committed=$(grep -E '^VERSION_D=' app/version.properties | cut -d= -f2 | tr -d '[:space:]')
+          committed=$(grep -E '^VERSION_D=' version.properties | cut -d= -f2 | tr -d '[:space:]')
           play_max=${PLAY_MAX_VERSION_CODE:-0}
           next=$((committed + 1))
           echo "version.properties VERSION_D=$committed -> would build $next"
@@ -212,7 +212,7 @@ jobs:
           fi
 
           # Play is ahead of the file — take the next code after Play's.
-          sed -i "s/^VERSION_D=.*/VERSION_D=$play_max/" app/version.properties
+          sed -i "s/^VERSION_D=.*/VERSION_D=$play_max/" version.properties
           echo "::notice::version.properties was behind Play ($committed vs $play_max). Building versionCode $((play_max + 1)) instead; it will be committed back after publishing."
 
       - name: Build signed release bundle
