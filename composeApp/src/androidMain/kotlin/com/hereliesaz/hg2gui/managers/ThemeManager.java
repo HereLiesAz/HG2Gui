@@ -158,8 +158,8 @@ public class ThemeManager {
             return;
         }
 
-        File oldTheme = new File(Tuils.getFolder(), XMLPrefsManager.XMLPrefsRoot.THEME.path);
-        File oldSuggestions = new File(Tuils.getFolder(), XMLPrefsManager.XMLPrefsRoot.SUGGESTIONS.path);
+        File oldTheme = new File(Tuils.getFolder(), XMLPrefsManager.XMLPrefsRoot.THEME.getPath());
+        File oldSuggestions = new File(Tuils.getFolder(), XMLPrefsManager.XMLPrefsRoot.SUGGESTIONS.getPath());
 
         // Backup existing config
         if(keepOld) {
@@ -194,8 +194,8 @@ public class ThemeManager {
             suggestions = Pattern.compile(Pattern.quote(colorMatcher.group())).matcher(suggestions).replaceAll(toHexColor(colorMatcher.group()));
         }
 
-        File oldTheme = new File(Tuils.getFolder(), XMLPrefsManager.XMLPrefsRoot.THEME.path);
-        File oldSuggestions = new File(Tuils.getFolder(), XMLPrefsManager.XMLPrefsRoot.SUGGESTIONS.path);
+        File oldTheme = new File(Tuils.getFolder(), XMLPrefsManager.XMLPrefsRoot.THEME.getPath());
+        File oldSuggestions = new File(Tuils.getFolder(), XMLPrefsManager.XMLPrefsRoot.SUGGESTIONS.getPath());
 
         if(keepOld) {
             Tuils.insertOld(oldTheme);
@@ -226,15 +226,15 @@ public class ThemeManager {
      * Reverts to the previous theme.
      */
     private void revert() {
-        applyTheme(Tuils.getOld(XMLPrefsManager.XMLPrefsRoot.THEME.path), Tuils.getOld(XMLPrefsManager.XMLPrefsRoot.SUGGESTIONS.path), false);
+        applyTheme(Tuils.getOld(XMLPrefsManager.XMLPrefsRoot.THEME.getPath()), Tuils.getOld(XMLPrefsManager.XMLPrefsRoot.SUGGESTIONS.getPath()), false);
     }
 
     /**
      * Resets to the default standard theme.
      */
     private void standard() {
-        File oldTheme = new File(Tuils.getFolder(), XMLPrefsManager.XMLPrefsRoot.THEME.path);
-        File oldSuggestions = new File(Tuils.getFolder(), XMLPrefsManager.XMLPrefsRoot.SUGGESTIONS.path);
+        File oldTheme = new File(Tuils.getFolder(), XMLPrefsManager.XMLPrefsRoot.THEME.getPath());
+        File oldSuggestions = new File(Tuils.getFolder(), XMLPrefsManager.XMLPrefsRoot.SUGGESTIONS.getPath());
 
         Tuils.insertOld(oldTheme);
         Tuils.insertOld(oldSuggestions);

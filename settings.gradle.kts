@@ -16,3 +16,6 @@ dependencyResolutionManagement {
 
 rootProject.name = "HG2Gui"
 include(":composeApp")
+include(":terminal-emulator")
+include(":terminal-view")
+include(":termux-shared")

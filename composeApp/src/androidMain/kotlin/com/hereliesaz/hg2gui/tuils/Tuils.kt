@@ -368,6 +368,7 @@ object Tuils {
         return intent
     }
 
+    @JvmStatic
     fun webPage(url: String): Intent {
         return Intent(Intent.ACTION_VIEW, Uri.parse(url))
     }
@@ -827,6 +828,7 @@ object Tuils {
     private val pu = Pattern.compile("%u", Pattern.CASE_INSENSITIVE or Pattern.LITERAL)
     private val pp = Pattern.compile("%p", Pattern.CASE_INSENSITIVE or Pattern.LITERAL)
 
+    @JvmStatic
     fun getHint(currentPath: String): String? {
         if (!XMLPrefsManager.getBoolean(Ui.show_session_info)) return null
         var format = XMLPrefsManager.get(Behavior.session_info_format)
@@ -859,6 +861,7 @@ object Tuils {
         return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_MM, mm.toFloat(), metrics).toInt()
     }
 
+    @JvmStatic
     fun insertHeaders(s: MutableList<String>, newLine: Boolean) {
         var current: Char = 0.toChar()
         var count = 0
@@ -878,18 +881,21 @@ object Tuils {
         }
     }
 
+    @JvmStatic
     fun addPrefix(list: MutableList<String>, prefix: String) {
         for (count in list.indices) {
             list[count] = prefix + list[count]
         }
     }
 
+    @JvmStatic
     fun addSeparator(list: MutableList<String>, separator: String) {
         for (count in list.indices) {
             list[count] = list[count] + separator
         }
     }
 
+    @JvmStatic
     fun toPlanString(strings: Array<String>?, separator: String): String {
         if (strings == null) return EMPTYSTRING
         val output = StringBuilder()
@@ -900,10 +906,12 @@ object Tuils {
         return output.toString()
     }
 
+    @JvmStatic
     fun toPlanString(strings: Array<String>?): String {
         return if (strings != null) toPlanString(strings, NEWLINE) else EMPTYSTRING
     }
 
+    @JvmStatic
     fun toPlanString(separator: String, strings: List<*>?): String {
         if (strings == null) return EMPTYSTRING
         val output = StringBuilder()
@@ -1022,6 +1030,7 @@ object Tuils {
         }
     }
 
+    @JvmStatic
     fun toPlanString(strings: List<String>?, separator: String): String {
         return if (strings != null) {
             toPlanString(strings.toTypedArray() as Array<String>, separator)
@@ -1043,10 +1052,12 @@ object Tuils {
         return builder.toString()
     }
 
+    @JvmStatic
     fun toPlanString(strings: List<String>): String {
         return toPlanString(strings, NEWLINE)
     }
 
+    @JvmStatic
     fun toPlanString(objs: Array<Any?>?, separator: String): String {
         if (objs == null) return EMPTYSTRING
         val output = StringBuilder()
@@ -1100,6 +1111,7 @@ object Tuils {
         return true
     }
 
+    @JvmStatic
     fun openFile(c: Context, f: File): Intent {
         val intent = Intent(Intent.ACTION_VIEW)
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -1115,6 +1127,7 @@ object Tuils {
         return intent
     }
 
+    @JvmStatic
     fun shareFile(c: Context, f: File): Intent {
         val intent = Intent(Intent.ACTION_SEND)
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -1261,6 +1274,7 @@ object Tuils {
         return null
     }
 
+    @JvmStatic
     fun alphabeticCompare(s1: String, s2: String): Int {
         val cmd1 = removeSpaces(s1).lowercase(Locale.getDefault())
         val cmd2 = removeSpaces(s2).lowercase(Locale.getDefault())

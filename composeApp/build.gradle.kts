@@ -56,6 +56,10 @@ kotlin {
             // localbroadcastmanager is legacy, but keeping for now
             implementation("androidx.localbroadcastmanager:localbroadcastmanager:1.1.0")
             implementation("com.google.android.material:material:1.13.0")
+            
+            implementation(project(":terminal-emulator"))
+            implementation(project(":terminal-view"))
+            implementation(project(":termux-shared"))
         }
         commonTest.dependencies {
             implementation(kotlin("test"))

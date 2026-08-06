@@ -18,6 +18,11 @@ abstract class ExecutePack {
         return if (currentIndex < currentArgs.size) currentArgs[currentIndex++] else null
     }
 
+    fun get(index: Int): Any? {
+        val currentArgs = args ?: return null
+        return if (index < currentArgs.size) currentArgs[index] else null
+    }
+
     fun getString(): String? = get() as? String
 
     fun getInt(): Int = get() as? Int ?: 0

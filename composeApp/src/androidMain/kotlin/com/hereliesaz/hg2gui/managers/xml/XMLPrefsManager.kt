@@ -320,6 +320,7 @@ class XMLPrefsManager private constructor() {
         private val p1s = ">${Tuils.NEWLINE}"
         private val p3s = Tuils.NEWLINE
 
+        @JvmStatic
         fun fixNewlines(s: String): String {
             var res = p1.matcher(s).replaceAll(p1s)
             res = p3.matcher(res).replaceAll(p3s)
@@ -328,6 +329,7 @@ class XMLPrefsManager private constructor() {
 
         @JvmStatic
         @Throws(Exception::class)
+        @JvmStatic
         fun buildDocument(file: File, rootName: String?): Array<Any?>? {
             if (!file.exists()) {
                 resetFile(file, rootName)

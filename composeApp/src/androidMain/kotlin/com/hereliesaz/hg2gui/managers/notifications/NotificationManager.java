@@ -226,8 +226,8 @@ public class NotificationManager implements XMLPrefsElement {
                 int formatID = Integer.parseInt(app.format);
 
                 for(XMLPrefsManager.IdValue idValue : formats) {
-                    if(idValue.id == formatID) {
-                        app.format = idValue.value;
+                    if(idValue.getId() == formatID) {
+                        app.format = idValue.getValue();
                         break;
                     }
                 }
