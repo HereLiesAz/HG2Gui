@@ -55,8 +55,19 @@ fun TerminalScreen(
     var buffer by remember { mutableStateOf(listOf<TerminalHistoryEntry>()) }
     
     var running by remember { mutableStateOf(false) }
+    var showGuide by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
+
+    if (showGuide) {
+        CommandGuideScreen(
+            onCommandSelected = { cmd -> 
+                inputText = cmd
+            },
+            onClose = { showGuide = false }
+        )
+        return
+    }
 
     val executeCommand = {
         val fullLine = buildString {
@@ -122,7 +133,7 @@ fun TerminalScreen(
             .then(if (fullscreen) Modifier else Modifier.windowInsetsPadding(WindowInsets.systemBars))
     ) {
 
-        SessionTabs(sessions, active, onOpenSettings, onOpenGuide) { active = it }
+        SessionTabs(sessions, active, onOpenSettings, { showGuide = true }) { active = it }
 
         Text(
             cwd,
