@@ -16,7 +16,7 @@ val versionProps = Properties().apply {
 }
 
 val legacyVersionCode = 205
-val buildNumber = (project.findProperty("versionBuild") ?: "0").toString().toInt()
+val buildNumber = (project.findProperty("versionBuild")?.toString() ?: versionProps.getProperty("versionBuild", "0")).toInt()
 val resolvedVersionCode = maxOf(buildNumber, legacyVersionCode + 1)
 
 val resolvedVersionName = project.findProperty("versionName")?.toString() ?: String.format(
