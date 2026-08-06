@@ -113,7 +113,17 @@ jobs:
           expected-owner: ${{ secrets.KEYSTORE_OWNER }}
 
       - name: Read application id
-        run: echo "APP_ID=$(./gradlew -q :app:printApplicationId)" >> "$GITHUB_ENV"
+        run: |
+          cat << 'EOF' > get-app-id.gradle
+          allprojects {
+              afterEvaluate { project ->
+                  if (project.plugins.hasPlugin("com.android.application")) {
+                      println "QUICLOC_APP_ID=" + project.android.defaultConfig.applicationId
+                  }
+              }
+          }
+          EOF
+          echo "APP_ID=$(./gradlew -q --init-script get-app-id.gradle help | grep '^QUICLOC_APP_ID=' | cut -d= -f2)" >> "$GITHUB_ENV"
 
       # Everything Play-related is hand-rolled against the API (curl + jq +
       # openssl, all on ubuntu-latest) rather than delegated to a third-party
@@ -244,8 +254,19 @@ jobs:
       # build just incremented (matches the .aab's versionName/versionCode).
       - name: Get app version
         run: |
-          echo "VERSION_NAME=$(./gradlew -q :app:printVersionName)" >> "$GITHUB_ENV"
-          echo "VERSION_CODE=$(./gradlew -q :app:printVersionCode)" >> "$GITHUB_ENV"
+          cat << 'EOF' > get-app-version.gradle
+          allprojects {
+              afterEvaluate { project ->
+                  if (project.plugins.hasPlugin("com.android.application")) {
+                      println "QUICLOC_VERSION_NAME=" + project.android.defaultConfig.versionName
+                      println "QUICLOC_VERSION_CODE=" + project.android.defaultConfig.versionCode
+                  }
+              }
+          }
+          EOF
+          OUTPUT=$(./gradlew -q --init-script get-app-version.gradle help)
+          echo "VERSION_NAME=$(echo "$OUTPUT" | grep '^QUICLOC_VERSION_NAME=' | cut -d= -f2)" >> "$GITHUB_ENV"
+          echo "VERSION_CODE=$(echo "$OUTPUT" | grep '^QUICLOC_VERSION_CODE=' | cut -d= -f2)" >> "$GITHUB_ENV"
 
       # The pre-build check used the committed VERSION_D; this one uses what was
       # actually built. Belt and braces, because the cost of getting it wrong is
