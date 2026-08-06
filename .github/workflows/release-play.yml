@@ -217,7 +217,7 @@ jobs:
           fi
 
           if [ "${{ inputs.version_code_mode }}" = "strict" ]; then
-            echo "::error::versionCode $next would not clear Play, which already has $play_max. Set VERSION_D=$play_max in app/version.properties and commit (the build adds 1), or re-run in auto mode."
+            echo "::error::versionCode $next would not clear Play, which already has $play_max. Set VERSION_D=$play_max in version.properties and commit (the build adds 1), or re-run in auto mode."
             exit 1
           fi
 
@@ -278,7 +278,7 @@ jobs:
           play_max=${PLAY_MAX_VERSION_CODE:-0}
           echo "Built versionCode $VERSION_CODE; Play's highest is $play_max."
           if [ "$VERSION_CODE" -le "$play_max" ]; then
-            echo "::error::The built bundle is versionCode $VERSION_CODE but Play already has $play_max. Refusing to upload — it could not be rolled out to any existing user. Set VERSION_D=$play_max in app/version.properties and commit."
+            echo "::error::The built bundle is versionCode $VERSION_CODE but Play already has $play_max. Refusing to upload — it could not be rolled out to any existing user. Set VERSION_D=$play_max in version.properties and commit."
             exit 1
           fi
 
@@ -288,7 +288,7 @@ jobs:
           name: quicloc-release-aab-${{ env.VERSION_NAME }}
           path: |
             app/build/outputs/bundle/release/*.aab
-            app/version.properties
+            version.properties
           if-no-files-found: error
 
       # Minted here rather than reused from the preflight: tokens last 5 minutes
@@ -345,12 +345,12 @@ jobs:
             git fetch origin main --quiet || true
             # The build mutated version.properties on disk; start from main.
             git reset --hard origin/main --quiet
-            current=$(grep -E '^VERSION_D=' app/version.properties | cut -d= -f2 | tr -d '[:space:]')
+            current=$(grep -E '^VERSION_D=' version.properties | cut -d= -f2 | tr -d '[:space:]')
             if [ "$current" -ge "$published" ]; then
               echo "main already has VERSION_D=$current (>= $published) — nothing to commit."
               exit 0
             fi
-            sed -i "s/^VERSION_D=.*/VERSION_D=$published/" app/version.properties
+            sed -i "s/^VERSION_D=.*/VERSION_D=$published/" version.properties
             git -c user.name="github-actions[bot]" \
                 -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
                 commit -q -am "chore: versionCode $published shipped to Play [skip ci]"
@@ -361,10 +361,10 @@ jobs:
             echo "Push attempt $attempt failed (main probably moved) — retrying."
             sleep $((attempt * 3))
           done
-          echo "::warning::Published versionCode $published but could not commit the bump to main. Set VERSION_D=$published in app/version.properties by hand. Releases still work without it — auto mode reads the next code from Play."
+          echo "::warning::Published versionCode $published but could not commit the bump to main. Set VERSION_D=$published in version.properties by hand. Releases still work without it — auto mode reads the next code from Play."
           {
             echo "### Commit this by hand"
             echo ""
             echo "versionCode **$published** shipped, but the bump could not be pushed to \`main\`."
-            echo "Set \`VERSION_D=$published\` in \`app/version.properties\`."
+            echo "Set \`VERSION_D=$published\` in \`version.properties\`."
           } >> "$GITHUB_STEP_SUMMARY"
