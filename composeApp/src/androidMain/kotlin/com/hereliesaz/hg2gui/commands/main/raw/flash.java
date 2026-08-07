@@ -10,19 +10,20 @@ import com.hereliesaz.hg2gui.PermissionCodes;
 import com.hereliesaz.hg2gui.R;
 import com.hereliesaz.hg2gui.commands.CommandAbstraction;
 import com.hereliesaz.hg2gui.commands.ExecutePack;
+import com.hereliesaz.hg2gui.commands.main.MainPack;
 import com.hereliesaz.hg2gui.managers.flashlight.TorchManager;
 
 public class flash implements CommandAbstraction {
 
     @Override
     public String exec(ExecutePack pack) {
-        if (ContextCompat.checkSelfPermission(pack.getContext(), Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(((MainPack) pack).androidContext, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
 
-            ActivityCompat.requestPermissions((Activity) pack.getContext(), new String[]{Manifest.permission.CAMERA}, PermissionCodes.COMMAND_REQUEST_PERMISSION);
+            ActivityCompat.requestPermissions((Activity) ((MainPack) pack).androidContext, new String[]{Manifest.permission.CAMERA}, PermissionCodes.COMMAND_REQUEST_PERMISSION);
             return pack.getContext().getString(R.string.output_waitingpermission);
         }
 
-        TorchManager.getInstance().toggle(pack.getContext());
+        TorchManager.getInstance().toggle(((MainPack) pack).androidContext);
 
 //        final MainPack info = (MainPack) pack;
 //        if (!info.canUseFlash) {

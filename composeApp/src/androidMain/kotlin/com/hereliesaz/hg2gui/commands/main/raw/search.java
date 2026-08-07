@@ -35,7 +35,7 @@ public class search extends ParamCommand {
             @Override
             public String exec(ExecutePack pack) {
                 List<String> args = (List<String>) pack.getList();
-                return playstore(args, pack.getContext());
+                return playstore(args, ((MainPack) pack).androidContext);
             }
         },
 //        file {
@@ -50,28 +50,28 @@ public class search extends ParamCommand {
             @Override
             public String exec(ExecutePack pack) {
                 List<String> args = (List<String>) pack.getList();
-                return google(args, pack.getContext());
+                return google(args, ((MainPack) pack).androidContext);
             }
         },
         yt {
             @Override
             public String exec(ExecutePack pack) {
                 List<String> args = (List<String>) pack.getList();
-                return youTube(args, pack.getContext());
+                return youTube(args, ((MainPack) pack).androidContext);
             }
         },
         u {
             @Override
             public String exec(ExecutePack pack) {
                 List<String> args = (List<String>) pack.getList();
-                return url(Tuils.toPlanString(args, Tuils.SPACE), pack.getContext());
+                return url(Tuils.toPlanString(args, Tuils.SPACE), ((MainPack) pack).androidContext);
             }
         },
         dd {
             @Override
             public String exec(ExecutePack pack) {
                 List<String> args = (List<String>) pack.getList();
-                return duckDuck(args, pack.getContext());
+                return duckDuck(args, ((MainPack) pack).androidContext);
             }
         };
 

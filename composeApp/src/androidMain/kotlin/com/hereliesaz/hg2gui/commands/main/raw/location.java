@@ -21,7 +21,7 @@ public class location implements APICommand, CommandAbstraction {
 
     @Override
     public String exec(final ExecutePack pack) throws Exception {
-        final Context context = ((MainPack) pack).context;
+        final Context context = ((MainPack) pack).androidContext;
 
         TuiLocationManager l = TuiLocationManager.instance(context);
         if(l.locationAvailable) return "Lat: " + l.latitude + "; Long: " + l.longitude;

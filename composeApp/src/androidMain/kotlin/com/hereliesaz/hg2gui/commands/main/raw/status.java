@@ -32,12 +32,12 @@ public class status implements CommandAbstraction {
         MainPack info = (MainPack) pack;
 
 //        wifi
-        ConnectivityManager connManager = (ConnectivityManager) info.getContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+        ConnectivityManager connManager = (ConnectivityManager) info.androidContext.getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo mWifi = connManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
         boolean wifiConnected = mWifi.isConnected();
 
 //        battery
-        Intent batteryIntent = info.getContext().getApplicationContext().registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+        Intent batteryIntent = info.androidContext.getApplicationContext().registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
         int rawlevel = batteryIntent.getIntExtra("level", -1);
         double scale = batteryIntent.getIntExtra("scale", -1);
         double level = -1;
@@ -59,7 +59,7 @@ public class status implements CommandAbstraction {
         } catch (Exception e) {}
 
 //        brightness
-        ContentResolver cResolver = pack.getContext().getApplicationContext().getContentResolver();
+        ContentResolver cResolver = info.androidContext.getApplicationContext().getContentResolver();
         int b = 0;
         try {
             b = Settings.System.getInt(cResolver, SCREEN_BRIGHTNESS);
@@ -72,7 +72,7 @@ public class status implements CommandAbstraction {
         } catch (Exception e) {}
 
 //        location
-        LocationManager lm = (LocationManager) pack.getContext().getSystemService(Context.LOCATION_SERVICE);
+        LocationManager lm = (LocationManager) info.androidContext.getSystemService(Context.LOCATION_SERVICE);
         boolean gps_enabled = false;
         boolean network_enabled = false;
 

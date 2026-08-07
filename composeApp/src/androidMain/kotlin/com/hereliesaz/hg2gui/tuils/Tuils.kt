@@ -89,10 +89,12 @@ object Tuils {
     }
 
     private var globalTypeface: Typeface? = null
+    @JvmField
     var fontPath: String? = null
 
     private val calculusPattern = Pattern.compile("([+\\-*/^])(\\d+\\.?\\d*)")
 
+    @JvmStatic
     fun textCalculus(input: Double, text: String): Double {
         var result = input
         val m = calculusPattern.matcher(text)
@@ -179,6 +181,7 @@ object Tuils {
         }
     }
 
+    @JvmStatic
     fun notificationServiceIsRunning(context: Context): Boolean {
         val collectorComponent = ComponentName(context, NotificationService::class.java)
         val manager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
@@ -195,6 +198,7 @@ object Tuils {
         return false
     }
 
+    @JvmStatic
     fun arrayContains(array: IntArray?, value: Int): Boolean {
         if (array == null) return false
         for (i in array) {
@@ -204,6 +208,7 @@ object Tuils {
     }
 
     @Throws(IOException::class)
+    @JvmStatic
     fun readerToString(initialReader: Reader): String {
         val arr = CharArray(8 * 1024)
         val buffer = StringBuilder()
@@ -254,6 +259,7 @@ object Tuils {
         }
     }
 
+    @JvmStatic
     fun containsExtension(array: Array<String>?, value: String?): Boolean {
         if (array == null || value == null) return false
         return try {
@@ -267,6 +273,7 @@ object Tuils {
         }
     }
 
+    @JvmStatic
     fun getSongsInFolder(folder: File): List<Song> {
         val songs = ArrayList<Song>()
         val files = folder.listFiles() ?: return songs
@@ -281,6 +288,7 @@ object Tuils {
         return songs
     }
 
+    @JvmStatic
     fun convertStreamToString(inputStream: InputStream?): String {
         if (inputStream == null) return EMPTYSTRING
         val s = Scanner(inputStream).useDelimiter("\\A")
@@ -288,6 +296,7 @@ object Tuils {
     }
 
     @Throws(Exception::class)
+    @JvmStatic
     fun download(inputStream: InputStream, file: File): Long {
         val out = FileOutputStream(file, false)
         val data = ByteArray(1024)
@@ -304,6 +313,7 @@ object Tuils {
     }
 
     @Throws(Exception::class)
+    @JvmStatic
     fun write(file: File, separator: String, vararg ss: String) {
         val headerStream = FileOutputStream(file, false)
         for (c in 0 until ss.size - 1) {
@@ -339,6 +349,7 @@ object Tuils {
 
 
     @TargetApi(Build.VERSION_CODES.GINGERBREAD)
+    @JvmStatic
     fun openSettingsPage(c: Context, packageName: String) {
         val intent = Intent()
         intent.action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
@@ -388,6 +399,7 @@ object Tuils {
         }
     }
 
+    @JvmStatic
     fun getAvailableSpace(dir: File?, unit: Int): Double {
         if (dir == null) return -1.0
         val statFs = StatFs(dir.absolutePath)
@@ -395,6 +407,7 @@ object Tuils {
         return formatSize(blocks * statFs.blockSizeLong, unit)
     }
 
+    @JvmStatic
     fun getTotalSpace(dir: File?, unit: Int): Double {
         if (dir == null) return -1.0
         val statFs = StatFs(dir.absolutePath)
@@ -433,6 +446,7 @@ object Tuils {
         return isMyLauncherDefault(context.packageManager)
     }
 
+    @JvmStatic
     fun isMyLauncherDefault(packageManager: PackageManager): Boolean {
         val filter = IntentFilter(Intent.ACTION_MAIN)
         filter.addCategory(Intent.CATEGORY_HOME)
@@ -464,10 +478,12 @@ object Tuils {
         return span(context, Int.MAX_VALUE, color, text, size)
     }
 
+    @JvmStatic
     fun span(bgColor: Int, foreColor: Int, text: CharSequence?): SpannableString {
         return span(null, bgColor, foreColor, text, Int.MAX_VALUE)
     }
 
+    @JvmStatic
     fun span(context: Context?, bgColor: Int, foreColor: Int, text: CharSequence?, size: Int): SpannableString {
         val txt = text ?: EMPTYSTRING
         val spannableString = if (txt is SpannableString) txt else SpannableString(txt)
@@ -483,6 +499,7 @@ object Tuils {
         return spannableString
     }
 
+    @JvmStatic
     fun span(bgColor: Int, text: SpannableString, section: String, fromIndex: Int): Int {
         val index = text.toString().indexOf(section, fromIndex)
         if (index == -1) return index
@@ -490,10 +507,12 @@ object Tuils {
         return index + section.length
     }
 
+    @JvmStatic
     fun convertSpToPixels(sp: Float, context: Context): Int {
         return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, sp, context.resources.displayMetrics).toInt()
     }
 
+    @JvmStatic
     fun inputStreamToString(inputStream: InputStream): String {
         val s = Scanner(inputStream).useDelimiter("\\A")
         return if (s.hasNext()) s.next() else EMPTYSTRING
@@ -517,6 +536,7 @@ object Tuils {
         }
     }
 
+    @JvmStatic
     fun deleteContentOnly(dir: File) {
         val files = dir.listFiles() ?: return
         for (f in files) {
@@ -525,6 +545,7 @@ object Tuils {
         }
     }
 
+    @JvmStatic
     fun delete(dir: File) {
         val files = dir.listFiles() ?: return
         for (f in files) {
@@ -534,6 +555,7 @@ object Tuils {
         dir.delete()
     }
 
+    @JvmStatic
     fun insertOld(oldFile: File?): Boolean {
         if (oldFile == null || !oldFile.exists()) return false
         val oldPath = oldFile.absolutePath
@@ -544,12 +566,14 @@ object Tuils {
         return oldFile.renameTo(dest) && File(oldPath).delete()
     }
 
+    @JvmStatic
     fun getOld(name: String): File? {
         val old = File(getFolder(), "old")
         val file = File(old, name)
         return if (file.exists()) file else null
     }
 
+    @JvmStatic
     fun deepView(v: View) {
         log(v.toString())
         if (v !is ViewGroup) return
@@ -560,6 +584,7 @@ object Tuils {
 
     private val deepClickListener = View.OnClickListener { v -> log(v.toString()) }
 
+    @JvmStatic
     fun deepClickView(v: View) {
         v.setOnClickListener(deepClickListener)
         if (v !is ViewGroup) return
@@ -567,6 +592,7 @@ object Tuils {
     }
 
     @Throws(NoSuchElementException::class)
+    @JvmStatic
     fun scaleImage(view: ImageView, newX: Int, newY: Int) {
         val bitmap = try {
             val drawing = view.drawable
@@ -641,6 +667,7 @@ object Tuils {
         sendOutput(Int.MAX_VALUE, context, s, type)
     }
 
+    @JvmStatic
     fun sendOutput(color: Int, context: Context, s: CharSequence, type: Int) {
         val intent = Intent(PrivateIOReceiver.ACTION_OUTPUT)
         intent.putExtra(PrivateIOReceiver.TEXT, s)
@@ -654,10 +681,12 @@ object Tuils {
         sendOutput(mainPack.commandColor, mainPack.androidContext, s, type)
     }
 
+    @JvmStatic
     fun sendOutput(context: Context, s: CharSequence, type: Int, action: Any?) {
         sendOutput(Int.MAX_VALUE, context, s, type, action)
     }
 
+    @JvmStatic
     fun sendOutput(color: Int, context: Context, s: CharSequence, type: Int, action: Any?) {
         val intent = Intent(PrivateIOReceiver.ACTION_OUTPUT)
         intent.putExtra(PrivateIOReceiver.TEXT, s)
@@ -672,10 +701,12 @@ object Tuils {
         LocalBroadcastManager.getInstance(context).sendBroadcast(intent)
     }
 
+    @JvmStatic
     fun sendOutput(context: Context, s: CharSequence, type: Int, action: Any?, longAction: Any?) {
         sendOutput(Int.MAX_VALUE, context, s, type, action, longAction)
     }
 
+    @JvmStatic
     fun sendOutput(color: Int, context: Context, s: CharSequence, type: Int, action: Any?, longAction: Any?) {
         val intent = Intent(PrivateIOReceiver.ACTION_OUTPUT)
         intent.putExtra(PrivateIOReceiver.TEXT, s)
@@ -734,6 +765,7 @@ object Tuils {
         return 0
     }
 
+    @JvmStatic
     fun round(value: Double, places: Int): Double {
         var p = places
         if (p < 0) p = 0
@@ -746,6 +778,7 @@ object Tuils {
     }
 
     @Throws(IOException::class)
+    @JvmStatic
     fun getClassesInPackage(packageName: String, c: Context): List<String> {
         val classes = ArrayList<String>()
         val packageCodePath = c.packageCodePath
@@ -760,10 +793,12 @@ object Tuils {
         return classes
     }
 
+    @JvmStatic
     fun scale(from: IntArray, to: IntArray, n: Int): Int {
         return (to[1] - to[0]) * (n - from[0]) / (from[1] - from[0]) + to[0]
     }
 
+    @JvmStatic
     fun toString(enums: Array<Enum<*>>): Array<String> {
         return Array(enums.size) { i -> enums[i].name }
     }
@@ -783,6 +818,7 @@ object Tuils {
         return find(o, array.toList())
     }
 
+    @JvmStatic
     fun find(o: Any?, list: List<Any?>): Int {
         for (count in list.indices) {
             val x = list[count] ?: continue
@@ -836,6 +872,7 @@ object Tuils {
         return format
     }
 
+    @JvmStatic
     fun findPrefix(list: List<String>, prefix: String): Int {
         for (count in list.indices) {
             if (list[count].startsWith(prefix)) return count
@@ -909,6 +946,7 @@ object Tuils {
         return output.toString()
     }
 
+    @JvmStatic
     fun nodeToString(node: Node): String? {
         return try {
             val transfac = TransformerFactory.newInstance()
@@ -945,6 +983,7 @@ object Tuils {
         }
     }
 
+    @JvmStatic
     fun log(o: Any?, to: PrintStream) {
         if (o is Throwable) {
             o.printStackTrace(to)
@@ -958,6 +997,7 @@ object Tuils {
         }
     }
 
+    @JvmStatic
     fun log(o: Any?, o2: Any?, to: OutputStream) {
         try {
             if (o is Array<*> && o2 is Array<*>) {
@@ -970,6 +1010,7 @@ object Tuils {
         }
     }
 
+    @JvmStatic
     fun hasInternetAccess(): Boolean {
         return try {
             val urlc = URL("http://clients3.google.com/generate_204").openConnection() as HttpURLConnection
@@ -980,6 +1021,7 @@ object Tuils {
     }
 
     @Suppress("UNCHECKED_CAST")
+    @JvmStatic
     fun <T> getDefaultValue(clazz: Class<T>): T {
         return java.lang.reflect.Array.get(java.lang.reflect.Array.newInstance(clazz, 1), 0) as T
     }
@@ -1024,6 +1066,7 @@ object Tuils {
         } else EMPTYSTRING
     }
 
+    @JvmStatic
     fun filesToPlanString(files: List<File>?, separator: String): String? {
         if (files.isNullOrEmpty()) {
             return null
@@ -1058,10 +1101,12 @@ object Tuils {
     }
 
     private val unnecessarySpaces = Pattern.compile("\\s{2,}")
+    @JvmStatic
     fun removeUnncesarySpaces(string: String): String {
         return unnecessarySpaces.matcher(string).replaceAll(SPACE)
     }
 
+    @JvmStatic
     fun getStackTrace(throwable: Throwable): String {
         val sw = StringWriter()
         val pw = PrintWriter(sw, true)
@@ -1069,6 +1114,7 @@ object Tuils {
         return sw.buffer.toString()
     }
 
+    @JvmStatic
     fun isAlpha(s: String?): Boolean {
         if (s == null) return false
         val chars = s.toCharArray()
@@ -1076,6 +1122,7 @@ object Tuils {
         return true
     }
 
+    @JvmStatic
     fun isPhoneNumber(s: String?): Boolean {
         if (s == null) return false
         val chars = s.toCharArray()
@@ -1083,6 +1130,7 @@ object Tuils {
         return true
     }
 
+    @JvmStatic
     fun firstNonDigit(s: String?): Char {
         if (s == null) return 0.toChar()
         val chars = s.toCharArray()
@@ -1144,6 +1192,7 @@ object Tuils {
         return File(base, TUI_FOLDER)
     }
 
+    @JvmStatic
     fun eval(str: String): Double {
         return object {
             var pos = -1
@@ -1218,6 +1267,7 @@ object Tuils {
         }.parse()
     }
 
+    @JvmStatic
     fun getTextFromClipboard(context: Context): String? {
         return try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR2) {
@@ -1285,6 +1335,7 @@ object Tuils {
     }
 
     private const val SPACE_REGEXP = "\\s"
+    @JvmStatic
     fun removeSpaces(string: String): String {
         return string.replace(SPACE_REGEXP.toRegex(), EMPTYSTRING)
     }
@@ -1303,6 +1354,7 @@ object Tuils {
     }
 
     @SuppressLint("DiscouragedPrivateApi", "SoonBlockedPrivateApi")
+    @JvmStatic
     fun setCursorDrawableColor(editText: EditText, color: Int) {
         try {
             val fCursorDrawableRes = TextView::class.java.getDeclaredField("mCursorDrawableRes")
@@ -1324,6 +1376,7 @@ object Tuils {
         }
     }
 
+    @JvmStatic
     fun nOfBytes(file: File): Int {
         var count = 0
         try {
@@ -1336,6 +1389,7 @@ object Tuils {
         return count
     }
 
+    @JvmStatic
     fun sendXMLParseError(context: Context, path: String, e: SAXParseException) {
         sendOutput(
             Color.RED,
@@ -1347,6 +1401,7 @@ object Tuils {
         )
     }
 
+    @JvmStatic
     fun sendXMLParseError(context: Context, path: String) {
         sendOutput(Color.RED, context, context.getString(R.string.output_xmlproblem1) + SPACE + path + context.getString(R.string.output_xmlproblem2))
     }
