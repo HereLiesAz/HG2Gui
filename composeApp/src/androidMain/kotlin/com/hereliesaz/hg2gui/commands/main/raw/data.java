@@ -35,7 +35,7 @@ public class data implements APICommand, CommandAbstraction {
         boolean mobileConnected;
 
         if (info.wifi == null)
-            info.wifi = (WifiManager) info.getContext().getSystemService(Context.WIFI_SERVICE);
+            info.wifi = (WifiManager) info.androidContext.getSystemService(Context.WIFI_SERVICE);
 
         if (info.wifi.isWifiEnabled())
             mobileConnected = true;
@@ -55,7 +55,7 @@ public class data implements APICommand, CommandAbstraction {
     }
 
     private void init(MainPack info) throws Exception {
-        info.connectivityMgr = (ConnectivityManager) info.getContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+        info.connectivityMgr = (ConnectivityManager) info.androidContext.getSystemService(Context.CONNECTIVITY_SERVICE);
         Class<?> conmanClass = Class.forName(info.connectivityMgr.getClass().getName());
         Field iConnectivityManagerField = conmanClass.getDeclaredField("mService");
         iConnectivityManagerField.setAccessible(true);

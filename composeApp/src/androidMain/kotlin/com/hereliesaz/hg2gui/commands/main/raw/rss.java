@@ -325,7 +325,7 @@ public class rss extends ParamCommand {
         file {
             @Override
             public String exec(ExecutePack pack) {
-                pack.getContext().startActivity(Tuils.openFile(pack.getContext(), new File(Tuils.getFolder(), RssManager.PATH)));
+                ((MainPack) pack).androidContext.startActivity(Tuils.openFile(((MainPack) pack).androidContext, new File(Tuils.getFolder(), RssManager.PATH)));
                 return null;
             }
 
