@@ -2,10 +2,12 @@ package com.hereliesaz.hg2gui.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -38,31 +40,25 @@ private val PageYellow = Brush.linearGradient(
 @Composable
 fun TerminalScreen(
     tree: List<MenuNode>,
-    sessions: List<String> = listOf("main", "tuixt", "rss"),
-    cwd: String,
+    sessions: List<SessionUiState>,
+    activeSessionId: String,
+    onSessionPick: (String) -> Unit,
+    onNewSession: () -> Unit,
+    onCloseSession: (String) -> Unit,
     fullscreen: Boolean,
     onOpenSettings: () -> Unit,
     onOpenGuide: () -> Unit,
-    onRun: suspend (String, (String) -> Unit) -> Unit
+    onRun: suspend (sessionId: String, line: String, onOutput: (String) -> Unit) -> Unit
 ) {
-    var active by remember { mutableStateOf(sessions.first()) }
-    var tokens by remember { mutableStateOf(listOf<String>()) }
-    var inputText by remember { mutableStateOf("") }
-    
-    var commandHistory by remember { mutableStateOf(listOf<String>()) }
-    var historyIndex by remember { mutableStateOf(-1) }
-    
-    var buffer by remember { mutableStateOf(listOf<TerminalHistoryEntry>()) }
-    
-    var running by remember { mutableStateOf(false) }
+    val active = sessions.first { it.id == activeSessionId }
     var showGuide by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
-    val listState = rememberLazyListState()
+    val listState = remember(active.id) { LazyListState() }
 
     if (showGuide) {
         CommandGuideScreen(
-            onCommandSelected = { cmd -> 
-                inputText = cmd
+            onCommandSelected = { cmd ->
+                active.inputText = cmd
             },
             onClose = { showGuide = false }
         )
@@ -70,33 +66,34 @@ fun TerminalScreen(
     }
 
     val executeCommand = {
+        val session = active
         val fullLine = buildString {
-            if (tokens.isNotEmpty()) append(tokens.joinToString(" "))
-            if (inputText.isNotBlank()) {
+            if (session.tokens.isNotEmpty()) append(session.tokens.joinToString(" "))
+            if (session.inputText.isNotBlank()) {
                 if (isNotEmpty()) append(" ")
-                append(inputText.trim())
+                append(session.inputText.trim())
             }
         }.trim()
 
-        if (fullLine.isNotEmpty() && !running) {
-            running = true
-            if (commandHistory.isEmpty() || commandHistory.last() != fullLine) {
-                commandHistory = commandHistory + fullLine
+        if (fullLine.isNotEmpty() && !session.running) {
+            session.running = true
+            if (session.commandHistory.isEmpty() || session.commandHistory.last() != fullLine) {
+                session.commandHistory = session.commandHistory + fullLine
             }
-            historyIndex = -1
+            session.historyIndex = -1
             val lineToRun = fullLine
-            tokens = emptyList()
-            inputText = ""
-            
+            session.tokens = emptyList()
+            session.inputText = ""
+
             // Add initial entry
-            val entryId = buffer.size
-            buffer = buffer + TerminalHistoryEntry(command = lineToRun, isRunning = true)
-            
+            val entryId = session.buffer.size
+            session.buffer = session.buffer + TerminalHistoryEntry(command = lineToRun, isRunning = true)
+
             scope.launch {
                 try {
-                    onRun(lineToRun) { outputChunk ->
+                    onRun(session.id, lineToRun) { outputChunk ->
                         // Update the buffer with the streaming output
-                        buffer = buffer.mapIndexed { index, entry ->
+                        session.buffer = session.buffer.mapIndexed { index, entry ->
                             if (index == entryId) {
                                 entry.copy(output = outputChunk)
                             } else {
@@ -105,7 +102,7 @@ fun TerminalScreen(
                         }
                     }
                 } catch (e: Exception) {
-                    buffer = buffer.mapIndexed { index, entry ->
+                    session.buffer = session.buffer.mapIndexed { index, entry ->
                         if (index == entryId) {
                             entry.copy(output = entry.output + "\nerror: ${e.message}")
                         } else {
@@ -113,14 +110,14 @@ fun TerminalScreen(
                         }
                     }
                 } finally {
-                    buffer = buffer.mapIndexed { index, entry ->
+                    session.buffer = session.buffer.mapIndexed { index, entry ->
                         if (index == entryId) entry.copy(isRunning = false) else entry
                     }
-                    running = false
+                    session.running = false
                 }
-                
-                if (buffer.isNotEmpty()) {
-                    listState.animateScrollToItem(buffer.size - 1)
+
+                if (session.buffer.isNotEmpty()) {
+                    listState.animateScrollToItem(session.buffer.size - 1)
                 }
             }
         }
@@ -133,10 +130,18 @@ fun TerminalScreen(
             .then(if (fullscreen) Modifier else Modifier.windowInsetsPadding(WindowInsets.systemBars))
     ) {
 
-        SessionTabs(sessions, active, onOpenSettings, { showGuide = true }) { active = it }
+        SessionTabs(
+            sessions = sessions,
+            activeId = activeSessionId,
+            onOpenSettings = onOpenSettings,
+            onOpenGuide = { showGuide = true },
+            onPick = onSessionPick,
+            onNew = onNewSession,
+            onClose = onCloseSession
+        )
 
         Text(
-            cwd,
+            active.cwd,
             style = MaterialTheme.typography.labelSmall.copy(
                 color = Azphalt.Ink.copy(alpha = .45f),
                 fontSize = 11.sp,
@@ -145,7 +150,7 @@ fun TerminalScreen(
             modifier = Modifier.padding(start = 20.dp, top = 10.dp)
         )
 
-        if (buffer.isNotEmpty()) {
+        if (active.buffer.isNotEmpty()) {
             Eyebrow("00 — Buffer")
             LazyColumn(
                 state = listState,
@@ -156,7 +161,7 @@ fun TerminalScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = PaddingValues(bottom = 8.dp)
             ) {
-                items(buffer) { entry ->
+                items(active.buffer) { entry ->
                     BufferEntry(entry)
                 }
             }
@@ -166,24 +171,24 @@ fun TerminalScreen(
 
         PillMenu(
             roots = tree,
-            modifier = Modifier.weight(if (buffer.isEmpty()) 1f else 0.6f).padding(horizontal = 20.dp, vertical = 12.dp),
+            modifier = Modifier.weight(if (active.buffer.isEmpty()) 1f else 0.6f).padding(horizontal = 20.dp, vertical = 12.dp),
             onRun = {
-                tokens = it
-                inputText = ""
+                active.tokens = it
+                active.inputText = ""
             }
         )
 
         CommandLine(
-            tokens = tokens,
-            inputText = inputText,
-            onInputTextChange = { inputText = it },
+            tokens = active.tokens,
+            inputText = active.inputText,
+            onInputTextChange = { active.inputText = it },
             hint = when {
-                running -> "Running…"
-                tokens.isNotEmpty() || inputText.isNotBlank() -> "Ready — press run"
-                tokens.isEmpty() -> "Pick a category"
+                active.running -> "Running…"
+                active.tokens.isNotEmpty() || active.inputText.isNotBlank() -> "Ready — press run"
+                active.tokens.isEmpty() -> "Pick a category"
                 else -> "Pick a command"
             },
-            enabled = !running && (tokens.isNotEmpty() || inputText.isNotBlank()),
+            enabled = !active.running && (active.tokens.isNotEmpty() || active.inputText.isNotBlank()),
             onRun = executeCommand
         )
 
@@ -191,33 +196,33 @@ fun TerminalScreen(
             onKeyClick = { key ->
                 when (key) {
                     "↑" -> {
-                        if (commandHistory.isNotEmpty()) {
-                            val nextIdx = if (historyIndex == -1) commandHistory.size - 1 else (historyIndex - 1).coerceAtLeast(0)
-                            historyIndex = nextIdx
-                            inputText = commandHistory[nextIdx]
-                            tokens = emptyList()
+                        if (active.commandHistory.isNotEmpty()) {
+                            val nextIdx = if (active.historyIndex == -1) active.commandHistory.size - 1 else (active.historyIndex - 1).coerceAtLeast(0)
+                            active.historyIndex = nextIdx
+                            active.inputText = active.commandHistory[nextIdx]
+                            active.tokens = emptyList()
                         }
                     }
                     "↓" -> {
-                        if (historyIndex >= 0) {
-                            val nextIdx = historyIndex + 1
-                            if (nextIdx < commandHistory.size) {
-                                historyIndex = nextIdx
-                                inputText = commandHistory[nextIdx]
+                        if (active.historyIndex >= 0) {
+                            val nextIdx = active.historyIndex + 1
+                            if (nextIdx < active.commandHistory.size) {
+                                active.historyIndex = nextIdx
+                                active.inputText = active.commandHistory[nextIdx]
                             } else {
-                                historyIndex = -1
-                                inputText = ""
+                                active.historyIndex = -1
+                                active.inputText = ""
                             }
-                            tokens = emptyList()
+                            active.tokens = emptyList()
                         }
                     }
                     "esc" -> {
-                        tokens = emptyList()
-                        inputText = ""
+                        active.tokens = emptyList()
+                        active.inputText = ""
                     }
                     "tab" -> {
-                        if (inputText.isNotEmpty() && !inputText.endsWith(" ")) {
-                            inputText += " "
+                        if (active.inputText.isNotEmpty() && !active.inputText.endsWith(" ")) {
+                            active.inputText += " "
                         }
                     }
                 }
@@ -272,36 +277,71 @@ private fun BufferEntry(entry: TerminalHistoryEntry) {
 
 @Composable
 private fun SessionTabs(
-    sessions: List<String>,
-    active: String,
+    sessions: List<SessionUiState>,
+    activeId: String,
     onOpenSettings: () -> Unit,
     onOpenGuide: () -> Unit,
-    onPick: (String) -> Unit
+    onPick: (String) -> Unit,
+    onNew: () -> Unit,
+    onClose: (String) -> Unit
 ) {
     Row(
         Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 18.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        sessions.forEach { s ->
-            val on = s == active
+        Row(
+            Modifier.weight(1f).horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            sessions.forEach { s ->
+                val on = s.id == activeId
+                Box(
+                    Modifier
+                        .clip(RoundedCornerShape(percent = 50))
+                        .background(if (on) Azphalt.Ink else Azphalt.Ink.copy(alpha = .14f))
+                        .clickable { onPick(s.id) }
+                        .padding(horizontal = 10.dp, vertical = 5.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            s.name.uppercase(),
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                color = if (on) Azphalt.Yellow else Azphalt.Ink.copy(alpha = .55f),
+                                fontSize = 8.sp
+                            )
+                        )
+                        if (on && sessions.size > 1) {
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                "×",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    color = Azphalt.Yellow,
+                                    fontSize = 10.sp
+                                ),
+                                modifier = Modifier.clickable { onClose(s.id) }
+                            )
+                        }
+                    }
+                }
+            }
             Box(
                 Modifier
                     .clip(RoundedCornerShape(percent = 50))
-                    .background(if (on) Azphalt.Ink else Azphalt.Ink.copy(alpha = .14f))
-                    .clickable { onPick(s) }
+                    .background(Azphalt.Ink.copy(alpha = .14f))
+                    .clickable(onClick = onNew)
                     .padding(horizontal = 10.dp, vertical = 5.dp)
             ) {
                 Text(
-                    s.uppercase(),
+                    "+",
                     style = MaterialTheme.typography.titleMedium.copy(
-                        color = if (on) Azphalt.Yellow else Azphalt.Ink.copy(alpha = .55f),
-                        fontSize = 8.sp
+                        color = Azphalt.Ink.copy(alpha = .55f),
+                        fontSize = 10.sp
                     )
                 )
             }
         }
-        Spacer(Modifier.weight(1f))
         Box(
             Modifier
                 .size(22.dp)
