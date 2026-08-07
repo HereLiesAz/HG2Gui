@@ -167,12 +167,12 @@ private fun StackPill(
     }
 
     // The row this pill rests on is reached the same way HostPill reaches its own row: a single
-    // Animatable driving translationY, nothing else places it there. It starts one pitch below
-    // its resting row so entering the stack is what puts it on that row, not a side effect of it
-    // already being there.
+    // Animatable driving translationY, nothing else places it there. Every pill starts from the
+    // same shared origin - row 0, the bottom of the stack - and rises to its own row, so it reads
+    // as pills flying up into a stack rather than each one nudging up off the pill below it.
     val density = LocalDensity.current
     val pitchPx = with(density) { ROW_PITCH.toPx() }
-    val lift = remember { Animatable(-pitchPx * (row - 1)) }
+    val lift = remember { Animatable(0f) }
     LaunchedEffect(entering) {
         if (entering) lift.animateTo(
             -pitchPx * row,
@@ -288,12 +288,13 @@ private fun ChildPill(
     val pitchPx = with(density) { ROW_PITCH.toPx() }
 
     val absoluteRow = baseRow + localIndex
-    // The row this pill sits behind until its own turn: the anchor's row for the first child
-    // of a band, otherwise the row the pill immediately before it lands on.
-    val predecessorRow = baseRow + (localIndex - 1).coerceAtLeast(0)
 
     val turn = remember(node.id) { Animatable(if (localIndex % 2 == 0) -360f else 360f) }
-    val lift = remember(node.id) { Animatable(-pitchPx * predecessorRow) }
+    // Every pill in a band rises from the same place: the anchor's own row, exactly where
+    // HostPill (or the parent pill that opened this band) already rests. That shared origin is
+    // what makes it read as pills flying up out of the anchor into a stack, rather than each one
+    // nudging up off the pill before it.
+    val lift = remember(node.id) { Animatable(-pitchPx * baseRow) }
     val leaveOffset = remember(node.id) { Animatable(0f) }
 
     LaunchedEffect(node.id) {
@@ -307,7 +308,10 @@ private fun ChildPill(
             })
         }
         launch {
-            lift.animateTo(-pitchPx * absoluteRow, tween(Azphalt.SWING_MS, easing = LinearEasing))
+            lift.animateTo(-pitchPx * absoluteRow, keyframes {
+                durationMillis = Azphalt.SWING_MS
+                (-pitchPx * (absoluteRow - 1).coerceAtLeast(baseRow)) at (Azphalt.SWING_MS * 0.9f).toInt() using LinearEasing
+            })
         }
     }
 
