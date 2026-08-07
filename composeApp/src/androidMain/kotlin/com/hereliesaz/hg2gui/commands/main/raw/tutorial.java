@@ -5,6 +5,7 @@ import android.content.Intent;
 import com.hereliesaz.hg2gui.R;
 import com.hereliesaz.hg2gui.commands.CommandAbstraction;
 import com.hereliesaz.hg2gui.commands.ExecutePack;
+import com.hereliesaz.hg2gui.commands.main.MainPack;
 import com.hereliesaz.hg2gui.tuils.Tuils;
 
 /**
@@ -18,7 +19,7 @@ public class tutorial implements CommandAbstraction {
     @Override
     public String exec(ExecutePack pack) throws Exception {
         Intent intent = Tuils.webPage(url);
-        if(intent != null) pack.getContext().startActivity(intent);
+        if(intent != null) ((MainPack) pack).androidContext.startActivity(intent);
         return null;
     }
 

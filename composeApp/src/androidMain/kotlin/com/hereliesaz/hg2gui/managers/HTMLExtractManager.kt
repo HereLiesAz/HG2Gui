@@ -421,6 +421,7 @@ class HTMLExtractManager(context: Context, private val client: OkHttpClient) {
         const val PATH = "htmlextract.xml"
         const val NAME = "HTMLEXTRACT"
 
+        @JvmField
         var broadcastCount: Int = 0
 
         private fun output(s: CharSequence, context: Context, weatherArea: Boolean, category: Int = Int.MAX_VALUE) {

@@ -29,7 +29,7 @@ public class theme extends ParamCommand {
             public String exec(ExecutePack pack) {
                 Intent intent = new Intent(ThemeManager.ACTION_APPLY);
                 intent.putExtra(ThemeManager.NAME, pack.getString());
-                LocalBroadcastManager.getInstance(pack.getContext().getApplicationContext()).sendBroadcast(intent);
+                LocalBroadcastManager.getInstance(((MainPack) pack).androidContext.getApplicationContext()).sendBroadcast(intent);
                 return null;
             }
         },
@@ -41,35 +41,35 @@ public class theme extends ParamCommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                LocalBroadcastManager.getInstance(pack.getContext().getApplicationContext()).sendBroadcast(new Intent(ThemeManager.ACTION_STANDARD));
+                LocalBroadcastManager.getInstance(((MainPack) pack).androidContext.getApplicationContext()).sendBroadcast(new Intent(ThemeManager.ACTION_STANDARD));
                 return null;
             }
         },
         view {
             @Override
             public String exec(ExecutePack pack) {
-                pack.getContext().startActivity(Tuils.webPage("https://tui.tarunshankerpandey.com"));
+                ((MainPack) pack).androidContext.startActivity(Tuils.webPage("https://tui.tarunshankerpandey.com"));
                 return null;
             }
         },
         create {
             @Override
             public String exec(ExecutePack pack) {
-                pack.getContext().startActivity(Tuils.webPage("https://tui.tarunshankerpandey.com/create.php"));
+                ((MainPack) pack).androidContext.startActivity(Tuils.webPage("https://tui.tarunshankerpandey.com/create.php"));
                 return null;
             }
         },
         old {
             @Override
             public String exec(ExecutePack pack) {
-                LocalBroadcastManager.getInstance(pack.getContext().getApplicationContext()).sendBroadcast(new Intent(ThemeManager.ACTION_REVERT));
+                LocalBroadcastManager.getInstance(((MainPack) pack).androidContext.getApplicationContext()).sendBroadcast(new Intent(ThemeManager.ACTION_REVERT));
                 return null;
             }
         },
         tutorial {
             @Override
             public String exec(ExecutePack pack) {
-                pack.getContext().startActivity(Tuils.webPage("https://github.com/Andre1299/TUI-ConsoleLauncher/wiki/Themes"));
+                ((MainPack) pack).androidContext.startActivity(Tuils.webPage("https://github.com/Andre1299/TUI-ConsoleLauncher/wiki/Themes"));
                 return null;
             }
         };

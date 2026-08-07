@@ -19,8 +19,8 @@ public class share implements CommandAbstraction {
         if (f.isDirectory())
             return info.res.getString(R.string.output_isdirectory);
 
-        Intent sharingIntent = Tuils.shareFile(pack.getContext(), f);
-        info.getContext().startActivity(Intent.createChooser(sharingIntent, info.res.getString(R.string.share_label)));
+        Intent sharingIntent = Tuils.shareFile(info.androidContext, f);
+        info.androidContext.startActivity(Intent.createChooser(sharingIntent, info.res.getString(R.string.share_label)));
 
         return Tuils.EMPTYSTRING;
     }
