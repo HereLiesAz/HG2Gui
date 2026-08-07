@@ -13,6 +13,7 @@ class SwitchOsTest {
             override fun getString(resId: Int): String = ""
             override fun getString(resId: Int, vararg args: Any): String = ""
         }
+        override val commandGroup: Any? = null
         override fun getPrefsSave(): Any? = null
         override fun getLaunchInfo(): Any? = null
     }
@@ -26,7 +27,7 @@ class SwitchOsTest {
         val result = cmd.exec(mockPack)
 
         assertNotNull(result)
-        assertTrue(result.contains("KERNEL SWITCHED TO: MACOS"))
+        assertTrue(result!!.contains("KERNEL SWITCHED TO: MACOS"))
         assertEquals(SystemContext.OSType.MACOS, SystemContext.getInstance().os)
     }
 
@@ -38,7 +39,7 @@ class SwitchOsTest {
 
         val result = cmd.exec(mockPack)
 
-        assertTrue(result.contains("KERNEL SWITCHED TO: WINDOWS"))
+        assertTrue(result!!.contains("KERNEL SWITCHED TO: WINDOWS"))
         assertEquals(SystemContext.OSType.WINDOWS, SystemContext.getInstance().os)
     }
 
@@ -50,6 +51,6 @@ class SwitchOsTest {
 
         val result = cmd.exec(mockPack)
 
-        assertTrue(result.contains("NOT FOUND"))
+        assertTrue(result!!.contains("NOT FOUND"))
     }
 }

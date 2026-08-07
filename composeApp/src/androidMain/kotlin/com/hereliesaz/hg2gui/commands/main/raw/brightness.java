@@ -11,6 +11,7 @@ import android.view.WindowManager;
 import com.hereliesaz.hg2gui.R;
 import com.hereliesaz.hg2gui.commands.CommandAbstraction;
 import com.hereliesaz.hg2gui.commands.ExecutePack;
+import com.hereliesaz.hg2gui.commands.main.MainPack;
 
 import static android.provider.Settings.System.SCREEN_BRIGHTNESS;
 import static android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE;
@@ -24,14 +25,14 @@ import static android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL;
 public class brightness implements CommandAbstraction {
     @Override
     public String exec(final ExecutePack pack) throws Exception {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.System.canWrite(pack.getContext())) {
-            pack.getContext().startActivity(new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS));
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.System.canWrite(((MainPack) pack).androidContext)) {
+            ((MainPack) pack).androidContext.startActivity(new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS));
             return pack.getContext().getString(R.string.output_waitingpermission);
         }
 
         final int brightness = pack.getInt();
 
-        ((Activity) pack.getContext()).runOnUiThread(() -> {
+        ((Activity) ((MainPack) pack).androidContext).runOnUiThread(() -> {
             int b = brightness;
 
             if(b < 0) b = 0;
@@ -41,17 +42,17 @@ public class brightness implements CommandAbstraction {
 
             int autobrightnessState;
             try {
-                autobrightnessState = Settings.System.getInt(pack.getContext().getContentResolver(), SCREEN_BRIGHTNESS_MODE);
+                autobrightnessState = Settings.System.getInt(((MainPack) pack).androidContext.getContentResolver(), SCREEN_BRIGHTNESS_MODE);
             } catch (Exception e) {
                 autobrightnessState = SCREEN_BRIGHTNESS_MODE_MANUAL;
             }
 
-            if(autobrightnessState == SCREEN_BRIGHTNESS_MODE_AUTOMATIC) Settings.System.putInt(pack.getContext().getContentResolver(), SCREEN_BRIGHTNESS_MODE, SCREEN_BRIGHTNESS_MODE_MANUAL);
+            if(autobrightnessState == SCREEN_BRIGHTNESS_MODE_AUTOMATIC) Settings.System.putInt(((MainPack) pack).androidContext.getContentResolver(), SCREEN_BRIGHTNESS_MODE, SCREEN_BRIGHTNESS_MODE_MANUAL);
 
-            ContentResolver cResolver = pack.getContext().getApplicationContext().getContentResolver();
+            ContentResolver cResolver = ((MainPack) pack).androidContext.getApplicationContext().getContentResolver();
             Settings.System.putInt(cResolver, SCREEN_BRIGHTNESS, b);
 
-            refreshBrightness(((Activity) pack.getContext()).getWindow(), b);
+            refreshBrightness(((Activity) ((MainPack) pack).androidContext).getWindow(), b);
 
 //                if(autobrightnessState == SCREEN_BRIGHTNESS_MODE_AUTOMATIC) setAutoBrightness((Activity) pack.getContext(), true);
         });

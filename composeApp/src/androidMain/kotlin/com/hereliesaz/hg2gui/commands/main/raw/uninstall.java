@@ -7,6 +7,7 @@ import com.hereliesaz.hg2gui.R;
 import com.hereliesaz.hg2gui.commands.CommandAbstraction;
 import com.hereliesaz.hg2gui.commands.ExecutePack;
 import com.hereliesaz.hg2gui.commands.main.MainPack;
+import com.hereliesaz.hg2gui.managers.AppsManager;
 import com.hereliesaz.hg2gui.tuils.Tuils;
 
 public class uninstall implements CommandAbstraction {
@@ -15,11 +16,11 @@ public class uninstall implements CommandAbstraction {
     public String exec(ExecutePack pack) {
         MainPack info = (MainPack) pack;
 
-        String packageName = info.getLaunchInfo().componentName.getPackageName();
+        String packageName = ((AppsManager.LaunchInfo) info.getLaunchInfo()).componentName.getPackageName();
 
         Uri packageURI = Uri.parse("package:" + packageName);
         Intent uninstallIntent = new Intent(Intent.ACTION_DELETE, packageURI);
-        info.getContext().startActivity(uninstallIntent);
+        info.androidContext.startActivity(uninstallIntent);
 
         return Tuils.EMPTYSTRING;
     }

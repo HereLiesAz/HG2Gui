@@ -10,6 +10,7 @@ import com.hereliesaz.hg2gui.commands.ExecutePack;
 import com.hereliesaz.hg2gui.commands.main.MainPack;
 import com.hereliesaz.hg2gui.commands.main.specific.APICommand;
 import com.hereliesaz.hg2gui.commands.main.specific.ParamCommand;
+import com.hereliesaz.hg2gui.managers.AppsManager;
 import com.hereliesaz.hg2gui.managers.notifications.reply.ReplyManager;
 import com.hereliesaz.hg2gui.tuils.Tuils;
 
@@ -34,7 +35,7 @@ public class reply extends ParamCommand implements APICommand {
                 intent.putExtra(ReplyManager.ID, pack.getString());
                 intent.putExtra(ReplyManager.WHAT, pack.getString());
 
-                LocalBroadcastManager.getInstance(pack.getContext()).sendBroadcast(intent);
+                LocalBroadcastManager.getInstance(((MainPack) pack).androidContext).sendBroadcast(intent);
                 return null;
             }
         },
@@ -46,8 +47,8 @@ public class reply extends ParamCommand implements APICommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                String output = ReplyManager.bind(pack.getLaunchInfo().componentName.getPackageName());
-                LocalBroadcastManager.getInstance(pack.getContext()).sendBroadcast(new Intent(ReplyManager.ACTION_UPDATE));
+                String output = ReplyManager.bind(((AppsManager.LaunchInfo) pack.getLaunchInfo()).componentName.getPackageName());
+                LocalBroadcastManager.getInstance(((MainPack) pack).androidContext).sendBroadcast(new Intent(ReplyManager.ACTION_UPDATE));
                 return output;
             }
         },
@@ -62,7 +63,7 @@ public class reply extends ParamCommand implements APICommand {
                 Intent intent = new Intent(ReplyManager.ACTION);
                 intent.putExtra(ReplyManager.ID, pack.getString());
 
-                LocalBroadcastManager.getInstance(pack.getContext()).sendBroadcast(intent);
+                LocalBroadcastManager.getInstance(((MainPack) pack).androidContext).sendBroadcast(intent);
                 return null;
             }
         },
@@ -74,10 +75,10 @@ public class reply extends ParamCommand implements APICommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                String output = ReplyManager.unbind(pack.getLaunchInfo().componentName.getPackageName());
-                LocalBroadcastManager.getInstance(pack.getContext()).sendBroadcast(new Intent(ReplyManager.ACTION_UPDATE));
+                String output = ReplyManager.unbind(((AppsManager.LaunchInfo) pack.getLaunchInfo()).componentName.getPackageName());
+                LocalBroadcastManager.getInstance(((MainPack) pack).androidContext).sendBroadcast(new Intent(ReplyManager.ACTION_UPDATE));
 
-                if(output != null && output.length() == 0) return pack.getContext().getString(R.string.reply_app_not_found) + pack.getLaunchInfo().componentName.getPackageName();
+                if(output != null && output.length() == 0) return pack.getContext().getString(R.string.reply_app_not_found) + ((AppsManager.LaunchInfo) pack.getLaunchInfo()).componentName.getPackageName();
                 return output;
             }
         },
@@ -90,7 +91,7 @@ public class reply extends ParamCommand implements APICommand {
             @Override
             public String exec(ExecutePack pack) {
                 Intent intent = new Intent(ReplyManager.ACTION_LS);
-                LocalBroadcastManager.getInstance(pack.getContext()).sendBroadcast(intent);
+                LocalBroadcastManager.getInstance(((MainPack) pack).androidContext).sendBroadcast(intent);
                 return null;
             }
         },
@@ -102,7 +103,7 @@ public class reply extends ParamCommand implements APICommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                pack.getContext().startActivity(Tuils.webPage("https://github.com/Andre1299/TUI-ConsoleLauncher/wiki/Reply"));
+                ((MainPack) pack).androidContext.startActivity(Tuils.webPage("https://github.com/Andre1299/TUI-ConsoleLauncher/wiki/Reply"));
                 return null;
             }
         };

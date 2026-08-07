@@ -811,6 +811,7 @@ class RssManager(private val context: Context, private val client: OkHttpClient)
         val values = XMLPrefsList()
         const val PATH = "rss.xml"
         const val NAME = "RSS"
+        @JvmField
         var instance: RssManager? = null
     }
 }

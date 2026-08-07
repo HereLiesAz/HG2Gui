@@ -16,3 +16,5 @@
 /.artifacts/
 /captures/
 /composeApp/build/
+/terminal-emulator/build/
+/termux-shared/build/
