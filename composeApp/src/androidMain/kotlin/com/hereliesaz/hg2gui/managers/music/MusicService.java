@@ -160,7 +160,7 @@ public class MusicService extends Service implements
 
     public static Notification buildNotification(Context context, String songTitle) {
         Intent notIntent = new Intent(context, TerminalActivity.class);
-        PendingIntent pendInt = PendingIntent.getActivity(context, 0, notIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+        PendingIntent pendInt = PendingIntent.getActivity(context, 0, notIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         Notification not;
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context);
@@ -181,7 +181,7 @@ public class MusicService extends Service implements
             i.putExtra(MainManager.MUSIC_SERVICE, true);
 
             NotificationCompat.Action action = new NotificationCompat.Action.Builder(R.mipmap.ic_launcher, label,
-                    PendingIntent.getBroadcast(context.getApplicationContext(), 10, i, PendingIntent.FLAG_UPDATE_CURRENT))
+                    PendingIntent.getBroadcast(context.getApplicationContext(), 10, i, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE))
                     .addRemoteInput(remoteInput)
                     .build();
 
