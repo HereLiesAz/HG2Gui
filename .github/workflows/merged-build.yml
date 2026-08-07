@@ -47,13 +47,22 @@ jobs:
           # Inject ARCore API Key into local.properties for build.gradle.kts to pick up
           echo "ARCORE_API_KEY=$ARCORE_API_KEY" >> local.properties
 
-      - name: Generate Keystore from Secrets
-        env:
-          KEYSTORE_RAW: ${{ secrets.KEYSTORE_RAW }}
-        run: |
-          echo "Generating keystore from raw base64 secret..."
-          echo "$KEYSTORE_RAW" | base64 --decode > composeApp/keystore.jks
-          echo "Keystore generated successfully at composeApp/keystore.jks"
+      # Was a bare `echo "$KEYSTORE_RAW" | base64 --decode > composeApp/keystore.jks`. Any
+      # whitespace irregularity in how the secret was stored (a trailing newline, embedded
+      # \r from a Windows-authored copy, etc.) survives that pipeline and corrupts the
+      # decoded bytes just enough that keytool can still open the file but chokes deep in
+      # ASN.1 parsing with "Tag number over 30 is not supported" — the failure this
+      # replaced. The composite action strips whitespace before decoding, verifies the
+      # result against KEY_ALIAS before the build ever starts, and fails with a clear
+      # message instead of a cryptic BouncyCastle error from inside packageDebug.
+      - name: Prepare Android Keystore
+        id: keystore
+        uses: ./.github/actions/android-keystore
+        with:
+          keystore-raw: ${{ secrets.KEYSTORE_RAW }}
+          keystore-password: ${{ secrets.KEYSTORE_PASSWORD }}
+          key-alias: ${{ secrets.KEY_ALIAS }}
+          key-password: ${{ secrets.KEY_PASSWORD }}
 
       # Must match sourceCompatibility/targetCompatibility in composeApp/build.gradle.kts. On 17 the
       # build fails with "invalid source release: 21" before compiling a single file.
@@ -102,6 +111,8 @@ jobs:
       - name: Build with Gradle
         id: gradle-build
         env:
+          KEYSTORE_PATH: ${{ steps.keystore.outputs.keystore-path }}
+          KEYSTORE_STORE_TYPE: ${{ steps.keystore.outputs.store-type }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
@@ -111,7 +122,8 @@ jobs:
           # Build the APK. versionName/versionBuild come from the Compute Version step, so the
           # APK reports exactly what the release filename claims.
           ./gradlew assembleDebug -PversionBuild=$BUILD_NUMBER -PversionName=$VERSION_NAME --build-cache \
-            -Pandroid.injected.signing.store.file=$(pwd)/composeApp/keystore.jks \
+            -Pandroid.injected.signing.store.file=$KEYSTORE_PATH \
+            -Pandroid.injected.signing.store.type=$KEYSTORE_STORE_TYPE \
             -Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD \
             -Pandroid.injected.signing.key.alias=$KEY_ALIAS \
             -Pandroid.injected.signing.key.password=$KEY_PASSWORD > build.log 2>&1
