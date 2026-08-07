@@ -50,7 +50,7 @@ public class help implements CommandAbstraction {
     @Override
     public String onNotArgEnough(ExecutePack pack, int nArgs) {
         TuixtPack info = (TuixtPack) pack;
-        List<String> toPrint = new ArrayList<>(Arrays.asList(info.commandGroup.getCommandNames()));
+        List<String> toPrint = new ArrayList<>(Arrays.asList(info.getCommandGroup().getCommandNames()));
 
         Collections.sort(toPrint, Tuils::alphabeticCompare);
 

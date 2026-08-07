@@ -4,14 +4,15 @@ import android.content.Intent;
 import com.hereliesaz.hg2gui.GuideActivity;
 import com.hereliesaz.hg2gui.commands.CommandAbstraction;
 import com.hereliesaz.hg2gui.commands.ExecutePack;
+import com.hereliesaz.hg2gui.commands.main.MainPack;
 
 public class guide implements CommandAbstraction {
 
     @Override
     public String exec(ExecutePack pack) throws Exception {
-        Intent intent = new Intent(pack.getContext(), GuideActivity.class);
+        Intent intent = new Intent(((MainPack) pack).androidContext, GuideActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        pack.getContext().startActivity(intent);
+        ((MainPack) pack).androidContext.startActivity(intent);
         return null;
     }
 

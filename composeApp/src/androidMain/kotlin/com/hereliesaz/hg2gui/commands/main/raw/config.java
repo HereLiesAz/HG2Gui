@@ -45,16 +45,16 @@ public class config extends ParamCommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                XMLPrefsSave save = pack.getPrefsSave();
+                XMLPrefsSave save = (XMLPrefsSave) pack.getPrefsSave();
                 String value = pack.getString();
                 save.parent().write(save, value);
 
-                ((Reloadable) pack.getContext()).addMessage(save.parent().path(), save.label() + " -> " + value);
+                ((Reloadable) ((MainPack) pack).androidContext).addMessage(save.parent().path(), save.label() + " -> " + value);
 
                 if(save.label().startsWith("default_app_n")) {
                     return pack.getContext().getString(R.string.output_usedefapp);
                 } else if(save == Behavior.unlock_counter_cycle_start) {
-                    SharedPreferences preferences = pack.getContext().getSharedPreferences(PREFS_NAME, 0);
+                    SharedPreferences preferences = ((MainPack) pack).androidContext.getSharedPreferences(PREFS_NAME, 0);
                     preferences.edit()
                             .putLong(UIManager.NEXT_UNLOCK_CYCLE_RESTART, 0)
                             .putInt(UIManager.UNLOCK_KEY, 0)
@@ -78,7 +78,7 @@ public class config extends ParamCommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                XMLPrefsSave save = pack.getPrefsSave();
+                XMLPrefsSave save = (XMLPrefsSave) pack.getPrefsSave();
 
                 return "Type:" + Tuils.SPACE + save.type() + Tuils.NEWLINE
                         + "Default:" + Tuils.SPACE + save.defaultValue() + Tuils.NEWLINE
@@ -96,7 +96,7 @@ public class config extends ParamCommand {
                 File file = new File(Tuils.getFolder(), pack.getString());
 
                 try {
-                    pack.getContext().startActivity(Tuils.openFile(pack.getContext(), file));
+                    ((MainPack) pack).androidContext.startActivity(Tuils.openFile(((MainPack) pack).androidContext, file));
                 } catch (ActivityNotFoundException e) {
                     Tuils.log("nf");
                     Tuils.toFile(e);
@@ -121,12 +121,12 @@ public class config extends ParamCommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                XMLPrefsSave save = pack.getPrefsSave();
+                XMLPrefsSave save = (XMLPrefsSave) pack.getPrefsSave();
                 String value = XMLPrefsManager.get(save) + pack.getString();
 
                 save.parent().write(save, value);
 
-                ((Reloadable) pack.getContext()).addMessage(save.parent().path(), save.label() + " -> " + value);
+                ((Reloadable) ((MainPack) pack).androidContext).addMessage(save.parent().path(), save.label() + " -> " + value);
 
                 return null;
             }
@@ -145,10 +145,10 @@ public class config extends ParamCommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                XMLPrefsSave save = pack.getPrefsSave();
+                XMLPrefsSave save = (XMLPrefsSave) pack.getPrefsSave();
                 save.parent().write(save, Tuils.EMPTYSTRING);
 
-                ((Reloadable) pack.getContext()).addMessage(save.parent().path(), save.label() + " -> " + "\"\"");
+                ((Reloadable) ((MainPack) pack).androidContext).addMessage(save.parent().path(), save.label() + " -> " + "\"\"");
 
                 return null;
             }
@@ -161,7 +161,7 @@ public class config extends ParamCommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                XMLPrefsSave save = pack.getPrefsSave();
+                XMLPrefsSave save = (XMLPrefsSave) pack.getPrefsSave();
                 String s = XMLPrefsManager.get(String.class, save);
                 if(s.length() == 0) return "\"\"";
                 return s;
@@ -179,10 +179,10 @@ public class config extends ParamCommand {
                 String name = file.getName();
 
                 for(XMLPrefsManager.XMLPrefsRoot r : XMLPrefsManager.XMLPrefsRoot.values()) {
-                    if(name.equalsIgnoreCase(r.path)) {
+                    if(name.equalsIgnoreCase(r.getPath())) {
                         List<String> strings = r.getValues().values();
                         Tuils.addPrefix(strings, Tuils.DOUBLE_SPACE);
-                        strings.add(0, r.path);
+                        strings.add(0, r.getPath());
                         return Tuils.toPlanString(strings, Tuils.NEWLINE);
                     }
                 }
@@ -221,8 +221,8 @@ public class config extends ParamCommand {
                 List<String> ss = new ArrayList<>();
 
                 for(XMLPrefsManager.XMLPrefsRoot element : XMLPrefsManager.XMLPrefsRoot.values()) {
-                    ss.add(element.path);
-                    for(XMLPrefsSave save : element.enums) {
+                    ss.add(element.getPath());
+                    for(XMLPrefsSave save : element.getEnums()) {
                         ss.add(Tuils.DOUBLE_SPACE + save.label());
                     }
                 }
@@ -276,10 +276,10 @@ public class config extends ParamCommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                XMLPrefsSave save = pack.getPrefsSave();
+                XMLPrefsSave save = (XMLPrefsSave) pack.getPrefsSave();
                 save.parent().write(save, save.defaultValue());
 
-                ((Reloadable) pack.getContext()).addMessage(save.parent().path(), save.label() + " -> " + save.defaultValue());
+                ((Reloadable) ((MainPack) pack).androidContext).addMessage(save.parent().path(), save.label() + " -> " + save.defaultValue());
 
                 return null;
             }
@@ -325,7 +325,7 @@ public class config extends ParamCommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                pack.getContext().startActivity(Tuils.webPage("https://github.com/Andre1299/TUI-ConsoleLauncher/wiki/Customize-T_UI"));
+                ((MainPack) pack).androidContext.startActivity(Tuils.webPage("https://github.com/Andre1299/TUI-ConsoleLauncher/wiki/Customize-T_UI"));
                 return null;
             }
         };
