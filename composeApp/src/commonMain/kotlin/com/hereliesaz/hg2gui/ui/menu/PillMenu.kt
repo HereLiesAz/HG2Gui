@@ -73,7 +73,7 @@ data class MenuNode(
 private sealed interface Phase {
     object Browsing : Phase
     data class Leaving(val hostId: String) : Phase
-    data class Open(val hostId: String, val selectedChild: String?) : Phase
+    data class Open(val hostId: String) : Phase
 }
 
 @Composable
@@ -107,7 +107,7 @@ fun PillMenu(
                                 onRun(tokens)
                                 scope.launch {
                                     delay(Azphalt.SLIDE_MS.toLong())
-                                    phase = Phase.Open(node.id, null)
+                                    phase = Phase.Open(node.id)
                                 }
                             }
                         )
@@ -118,25 +118,15 @@ fun PillMenu(
             is Phase.Open -> {
                 val host = roots.first { it.id == p.hostId }
                 val rowsBelow = roots.size - 1 - roots.indexOf(host)
-                val chain = buildList {
-                    host.children.forEach { child ->
-                        add(child to false)
-                        if (child.id == p.selectedChild) child.children.forEach { add(it to true) }
-                    }
-                }
 
                 ChildChain(
-                    chain = chain,
+                    parent = host,
+                    baseRow = 0,
                     hueOwner = host.id,
-                    onPick = { node, isLeaf ->
-                        tokens = if (isLeaf) {
-                            val parentNode = host.children.firstOrNull { it.id == p.selectedChild }
-                            if (parentNode != null) listOf(parentNode.label, node.label) else listOf(node.label)
-                        } else {
-                            listOf(node.label)
-                        }
+                    pathPrefix = emptyList(),
+                    onPick = { path ->
+                        tokens = path.map { it.label }
                         onRun(tokens)
-                        if (!isLeaf) phase = Phase.Open(host.id, node.id)
                     }
                 )
 
@@ -213,57 +203,125 @@ private fun HostPill(node: MenuNode, rowsBelow: Int, onClick: () -> Unit) {
     }
 }
 
+/*
+ * A band of sibling pills cascading up from `parent`'s own row (`baseRow`), exactly like the
+ * very first band cascades up from the host. Tapping a pill with children makes it the new
+ * anchor: its siblings play the same "leaving" motion the root stack uses when a host is
+ * chosen, and a fresh ChildChain recurses for its children — based at that pill's own row, so
+ * the new band stacks next to it rather than growing the total height. Tapping the anchor
+ * again undoes the drill: its siblings slide back in, mirroring the stack's own re-entry.
+ */
 @Composable
 private fun ChildChain(
-    chain: List<Pair<MenuNode, Boolean>>,
+    parent: MenuNode,
+    baseRow: Int,
     hueOwner: String,
-    onPick: (MenuNode, Boolean) -> Unit
+    pathPrefix: List<MenuNode>,
+    onPick: (path: List<MenuNode>) -> Unit
+) {
+    var selected by remember(parent.id) { mutableStateOf<String?>(null) }
+
+    Box(Modifier.fillMaxSize()) {
+        parent.children.forEachIndexed { idx, child ->
+            key(child.id) {
+                val isSelected = child.id == selected
+                ChildPill(
+                    node = child,
+                    localIndex = idx,
+                    baseRow = baseRow,
+                    hueOwner = hueOwner,
+                    leaving = selected != null && !isSelected,
+                    onClick = {
+                        if (isSelected) {
+                            selected = null
+                            onPick(pathPrefix)
+                        } else {
+                            onPick(pathPrefix + child)
+                            if (child.children.isNotEmpty()) selected = child.id
+                        }
+                    }
+                )
+            }
+        }
+    }
+
+    val sel = selected
+    if (sel != null) {
+        val selIdx = parent.children.indexOfFirst { it.id == sel }
+        val selNode = parent.children[selIdx]
+        ChildChain(
+            parent = selNode,
+            baseRow = baseRow + selIdx,
+            hueOwner = hueOwner,
+            pathPrefix = pathPrefix + selNode,
+            onPick = onPick
+        )
+    }
+}
+
+@Composable
+private fun ChildPill(
+    node: MenuNode,
+    localIndex: Int,
+    baseRow: Int,
+    hueOwner: String,
+    leaving: Boolean,
+    onClick: () -> Unit
 ) {
     val density = LocalDensity.current
     val pitchPx = with(density) { ROW_PITCH.toPx() }
 
-    Box(Modifier.fillMaxSize()) {
-        chain.forEachIndexed { i, (node, isLeaf) ->
-            val turn = remember(node.id, i) { Animatable(if (i % 2 == 0) -360f else 360f) }
-            val lift = remember(node.id, i) { Animatable(0f) }
+    val absoluteRow = baseRow + localIndex
+    // The row this pill sits behind until its own turn: the anchor's row for the first child
+    // of a band, otherwise the row the pill immediately before it lands on.
+    val predecessorRow = baseRow + (localIndex - 1).coerceAtLeast(0)
 
-            LaunchedEffect(node.id, i) {
-                delay((Azphalt.DROP_MS + i * Azphalt.SWING_MS).toLong())
-                launch {
-                    turn.animateTo(0f, keyframes {
-                        durationMillis = Azphalt.SWING_MS
-                        (if (i % 2 == 0) -360f else 360f) at 0 using LinearEasing
-                        (if (i % 2 == 0) -36f else 36f) at (Azphalt.SWING_MS * 0.9f).toInt() using LinearEasing
-                        0f at Azphalt.SWING_MS
-                    })
-                }
-                launch {
-                    lift.animateTo(-pitchPx * i, keyframes {
-                        durationMillis = Azphalt.SWING_MS
-                        (-pitchPx * (i - 1).coerceAtLeast(0)) at (Azphalt.SWING_MS * 0.9f).toInt() using LinearEasing
-                    })
-                }
-            }
+    val turn = remember(node.id) { Animatable(if (localIndex % 2 == 0) -360f else 360f) }
+    val lift = remember(node.id) { Animatable(-pitchPx * predecessorRow) }
+    val leaveOffset = remember(node.id) { Animatable(0f) }
 
-            Pill(
-                label = node.label,
-                cap = node.cap,
-                hue = Azphalt.hueOf(hueOwner),
-                selected = false,
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .fillMaxWidth(CHILD_WIDTH)
-                    .offsetByFractionOfParent(CHILD_LEFT)
-                    .zIndex(50f - i)
-                    .graphicsLayer {
-                        transformOrigin =
-                            if (i % 2 == 0) TransformOrigin(0f, 0.5f) else TransformOrigin(1f, 0.5f)
-                        rotationZ = turn.value
-                        translationY = lift.value
-                    }
-                    .clickable { onPick(node, isLeaf) }
-            )
+    LaunchedEffect(node.id) {
+        delay((Azphalt.DROP_MS + localIndex * Azphalt.SWING_MS).toLong())
+        launch {
+            turn.animateTo(0f, keyframes {
+                durationMillis = Azphalt.SWING_MS
+                (if (localIndex % 2 == 0) -360f else 360f) at 0 using LinearEasing
+                (if (localIndex % 2 == 0) -36f else 36f) at (Azphalt.SWING_MS * 0.9f).toInt() using LinearEasing
+                0f at Azphalt.SWING_MS
+            })
         }
+        launch {
+            lift.animateTo(-pitchPx * absoluteRow, keyframes {
+                durationMillis = Azphalt.SWING_MS
+                (-pitchPx * predecessorRow) at (Azphalt.SWING_MS * 0.9f).toInt() using LinearEasing
+            })
+        }
+    }
+
+    // Siblings of a newly-chosen pill leave exactly like the root stack's unselected pills do;
+    // toggling the choice off brings them back the same way the stack re-enters.
+    LaunchedEffect(leaving) {
+        leaveOffset.animateTo(if (leaving) -1.7f else 0f, tween(Azphalt.SLIDE_MS, easing = LinearEasing))
+    }
+
+    Box(Modifier.fillMaxSize().zIndex(50f - absoluteRow)) {
+        Pill(
+            label = node.label,
+            cap = node.cap,
+            hue = Azphalt.hueOf(hueOwner),
+            selected = false,
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .fillMaxWidth(CHILD_WIDTH)
+                .offsetByFractionOfParent(CHILD_LEFT + leaveOffset.value)
+                .graphicsLayer {
+                    transformOrigin =
+                        if (localIndex % 2 == 0) TransformOrigin(0f, 0.5f) else TransformOrigin(1f, 0.5f)
+                    rotationZ = turn.value
+                    translationY = lift.value
+                }
+                .clickable(onClick = onClick)
+        )
     }
 }
 

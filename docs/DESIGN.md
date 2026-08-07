@@ -32,7 +32,15 @@ so only its label and end-cap remain visible. It then **drops to the bottom of t
 
 Children cascade **upward** from the host, all the same size (34% wide, starting at 30% —
 just inside the host's right end). The first child sits on the host's own row, so the two read
-as one bent shape. Arguments continue the same chain upward from their command.
+as one bent shape.
+
+Arguments repeat this exact choreography, one level at a time, however deep the tree goes.
+Tapping a pill with its own children makes it the new anchor: its siblings **leave**, the same
+motion the root stack uses when a host is chosen, while its children cascade in next to it —
+the first sitting on *its* row, just as the first child always sits on its own anchor's row. A
+band's height never grows with depth: each level is its own fresh cascade, not more pills piled
+onto the one before it. Tapping the anchor again undoes the drill — its siblings **enter** back,
+the same motion the root stack uses to re-enter.
 
 The children are their own scroll region; the host does not move.
 
