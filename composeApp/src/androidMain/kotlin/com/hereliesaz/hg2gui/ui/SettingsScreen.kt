@@ -34,7 +34,12 @@ fun SettingsScreen(
     onFontScalePercentChange: (Int) -> Unit,
     onBack: () -> Unit
 ) {
-    Column(Modifier.fillMaxSize().background(PageYellow)) {
+    Column(
+        Modifier
+            .fillMaxSize()
+            .background(PageYellow)
+            .then(if (fullscreen) Modifier else Modifier.windowInsetsPadding(WindowInsets.systemBars))
+    ) {
         Row(
             Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 18.dp),
             verticalAlignment = Alignment.CenterVertically
