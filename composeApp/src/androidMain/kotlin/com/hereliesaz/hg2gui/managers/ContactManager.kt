@@ -13,7 +13,7 @@ import android.provider.ContactsContract
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
-import com.hereliesaz.hg2gui.LauncherActivity
+import com.hereliesaz.hg2gui.PermissionCodes
 import com.hereliesaz.hg2gui.tuils.StoppableThread
 import com.hereliesaz.hg2gui.tuils.Tuils
 import it.andreuzzi.comparestring2.StringableObject
@@ -58,7 +58,7 @@ class ContactManager(private val context: Context) {
     fun refreshContacts(context: Context) {
         // Request permission if missing
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(context as Activity, arrayOf(Manifest.permission.READ_CONTACTS), LauncherActivity.COMMAND_SUGGESTION_REQUEST_PERMISSION)
+            ActivityCompat.requestPermissions(context as Activity, arrayOf(Manifest.permission.READ_CONTACTS), PermissionCodes.COMMAND_SUGGESTION_REQUEST_PERMISSION)
             return
         }
 

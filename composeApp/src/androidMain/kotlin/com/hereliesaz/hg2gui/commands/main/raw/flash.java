@@ -6,7 +6,7 @@ import android.content.pm.PackageManager;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-import com.hereliesaz.hg2gui.LauncherActivity;
+import com.hereliesaz.hg2gui.PermissionCodes;
 import com.hereliesaz.hg2gui.R;
 import com.hereliesaz.hg2gui.commands.CommandAbstraction;
 import com.hereliesaz.hg2gui.commands.ExecutePack;
@@ -18,7 +18,7 @@ public class flash implements CommandAbstraction {
     public String exec(ExecutePack pack) {
         if (ContextCompat.checkSelfPermission(pack.getContext(), Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
 
-            ActivityCompat.requestPermissions((Activity) pack.getContext(), new String[]{Manifest.permission.CAMERA}, LauncherActivity.COMMAND_REQUEST_PERMISSION);
+            ActivityCompat.requestPermissions((Activity) pack.getContext(), new String[]{Manifest.permission.CAMERA}, PermissionCodes.COMMAND_REQUEST_PERMISSION);
             return pack.getContext().getString(R.string.output_waitingpermission);
         }
 

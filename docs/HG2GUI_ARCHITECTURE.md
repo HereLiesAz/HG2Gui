@@ -20,9 +20,9 @@ Replaces `LauncherActivity` as the entry point. Those launcher-only flags
 (`clearTaskOnLaunch`, `excludeFromRecents`, `stateNotNeeded`, `taskAffinity=""`,
 `launchMode="singleTask"`) are gone.
 
-`LauncherActivity` itself is still declared, unexported and iconless. `MusicService` targets it
-from its playback notification, and the command classes still reference its permission request
-codes. Retiring it means rehoming those first; until then it is dead weight, not the front door.
+`LauncherActivity` has been removed. `MusicService` now targets `TerminalActivity` from its
+playback notification, and the runtime permission request codes the command classes use live in
+`PermissionCodes`.
 
 ### 2. `TerminalScreen` (Compose)
 *   **Role**: The whole terminal surface.
@@ -71,9 +71,8 @@ codes. Retiring it means rehoming those first; until then it is dead weight, not
 5.  **Feedback**: The collected string becomes screen state and renders in a record tile.
 
 ## Differences from T-UI
-*   **Removed**: The launcher identity — the launcher lifecycle flags, and the second app icon
-    that `TentacleActivity` carried.
-*   **Still present, pending removal**: `FakeLauncherActivity` and the Mitosis / Snake / Magnet
-    / Origami menus. The `menu` and `surface` commands still start them, so they cannot be
-    deleted until those commands are.
+*   **Removed**: The launcher identity — `LauncherActivity`, the launcher lifecycle flags, the
+    second app icon that `TentacleActivity` carried, `FakeLauncherActivity`'s launcher-chooser
+    trick, and the Mitosis / Snake / Magnet / Origami menus along with the `menu` and `surface`
+    commands that launched them.
 *   **Added**: a real shell session; the pill menu; sessions; Compose.

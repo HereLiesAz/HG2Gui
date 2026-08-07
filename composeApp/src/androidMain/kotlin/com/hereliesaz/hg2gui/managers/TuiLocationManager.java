@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 // import com.hereliesaz.hg2gui.BuildConfig;
-import com.hereliesaz.hg2gui.LauncherActivity;
+import com.hereliesaz.hg2gui.PermissionCodes;
 import com.hereliesaz.hg2gui.managers.xml.XMLPrefsManager;
 import com.hereliesaz.hg2gui.managers.xml.options.Behavior;
 import com.hereliesaz.hg2gui.tuils.Tuils;
@@ -118,7 +118,7 @@ public class TuiLocationManager {
     private void register() {
         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
                 ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions((Activity) context, new String[] {Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION}, LauncherActivity.LOCATION_REQUEST_PERMISSION);
+            ActivityCompat.requestPermissions((Activity) context, new String[] {Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION}, PermissionCodes.LOCATION_REQUEST_PERMISSION);
             return;
         }
 

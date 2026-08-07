@@ -6,7 +6,7 @@ import android.content.Intent;
 import java.io.File;
 import java.io.IOException;
 
-import com.hereliesaz.hg2gui.LauncherActivity;
+import com.hereliesaz.hg2gui.PermissionCodes;
 import com.hereliesaz.hg2gui.R;
 import com.hereliesaz.hg2gui.commands.tuixt.TuixtActivity;
 import com.hereliesaz.hg2gui.commands.CommandAbstraction;
@@ -32,7 +32,7 @@ public class tuixt implements CommandAbstraction {
         Intent intent = new Intent(info.getContext(), TuixtActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         intent.putExtra(TuixtActivity.PATH, file.getAbsolutePath());
-        ((Activity) info.getContext()).startActivityForResult(intent, LauncherActivity.TUIXT_REQUEST);
+        ((Activity) info.getContext()).startActivityForResult(intent, PermissionCodes.TUIXT_REQUEST);
 
         return Tuils.EMPTYSTRING;
     }
@@ -76,7 +76,7 @@ public class tuixt implements CommandAbstraction {
 
         Intent intent = new Intent(info.getContext(), TuixtActivity.class);
         intent.putExtra(TuixtActivity.PATH, file.getAbsolutePath());
-        ((Activity) info.getContext()).startActivityForResult(intent, LauncherActivity.TUIXT_REQUEST);
+        ((Activity) info.getContext()).startActivityForResult(intent, PermissionCodes.TUIXT_REQUEST);
 
         return Tuils.EMPTYSTRING;
     }

@@ -10,7 +10,7 @@ import androidx.core.content.ContextCompat;
 
 import java.util.List;
 
-import com.hereliesaz.hg2gui.LauncherActivity;
+import com.hereliesaz.hg2gui.PermissionCodes;
 import com.hereliesaz.hg2gui.R;
 import com.hereliesaz.hg2gui.commands.CommandAbstraction;
 import com.hereliesaz.hg2gui.commands.ExecutePack;
@@ -59,7 +59,7 @@ public class cntcts extends ParamCommand {
             @Override
             public String exec(ExecutePack pack) {
                 if (ContextCompat.checkSelfPermission(pack.getContext(), Manifest.permission.WRITE_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
-                    ActivityCompat.requestPermissions((Activity) pack.getContext(), new String[]{Manifest.permission.WRITE_CONTACTS}, LauncherActivity.COMMAND_REQUEST_PERMISSION);
+                    ActivityCompat.requestPermissions((Activity) pack.getContext(), new String[]{Manifest.permission.WRITE_CONTACTS}, PermissionCodes.COMMAND_REQUEST_PERMISSION);
                     return pack.getContext().getString(R.string.output_waitingpermission);
                 }
 
@@ -171,7 +171,7 @@ public class cntcts extends ParamCommand {
     @Override
     protected String doThings(ExecutePack pack) {
         if (ContextCompat.checkSelfPermission(pack.getContext(), Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions((Activity) pack.getContext(), new String[]{Manifest.permission.READ_CONTACTS}, LauncherActivity.COMMAND_REQUEST_PERMISSION);
+            ActivityCompat.requestPermissions((Activity) pack.getContext(), new String[]{Manifest.permission.READ_CONTACTS}, PermissionCodes.COMMAND_REQUEST_PERMISSION);
             return pack.getContext().getString(R.string.output_waitingpermission);
         }
         return null;

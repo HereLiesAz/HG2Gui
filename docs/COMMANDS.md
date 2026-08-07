@@ -48,7 +48,6 @@ as the headings below — see `ui/menu/CommandTree.kt`.
 *   `regex`: Regex testing utility.
 *   `rss`: RSS feed reader.
 *   `session`: Create, switch or close terminal sessions.
-*   `surface`: Manage surface/window settings.
 *   `switchos`: Switch the simulated OS theme/context.
 *   `theme`: Apply or manage themes.
 *   `tui`: About T-UI.
@@ -57,5 +56,5 @@ as the headings below — see `ui/menu/CommandTree.kt`.
 
 ## Removed
 
-`menu` opened the graphical app-picker menus (Mitosis, Snake, Magnet, Origami). Those are
-launcher surfaces for choosing apps from a home screen; the command tree replaces them.
+`menu` and `surface` opened the graphical app-picker menus (Mitosis, Snake, Magnet, Origami).
+Those are launcher surfaces for choosing apps from a home screen; the command tree replaces them.

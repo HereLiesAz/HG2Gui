@@ -8,7 +8,7 @@ import android.net.Uri;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-import com.hereliesaz.hg2gui.LauncherActivity;
+import com.hereliesaz.hg2gui.PermissionCodes;
 import com.hereliesaz.hg2gui.R;
 import com.hereliesaz.hg2gui.commands.CommandAbstraction;
 import com.hereliesaz.hg2gui.commands.ExecutePack;
@@ -23,7 +23,7 @@ public class call implements CommandAbstraction {
         if (ContextCompat.checkSelfPermission(info.getContext(), Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED ||
                 ContextCompat.checkSelfPermission(info.getContext(), Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
 
-            ActivityCompat.requestPermissions((Activity) info.getContext(), new String[]{Manifest.permission.READ_CONTACTS, Manifest.permission.CALL_PHONE}, LauncherActivity.COMMAND_REQUEST_PERMISSION);
+            ActivityCompat.requestPermissions((Activity) info.getContext(), new String[]{Manifest.permission.READ_CONTACTS, Manifest.permission.CALL_PHONE}, PermissionCodes.COMMAND_REQUEST_PERMISSION);
             return info.getContext().getString(R.string.output_waitingpermission);
         }
 
