@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
-import com.hereliesaz.hg2gui.LauncherActivity;
+import com.hereliesaz.hg2gui.TerminalActivity;
 import com.hereliesaz.hg2gui.MainManager;
 import com.hereliesaz.hg2gui.R;
 import com.hereliesaz.hg2gui.tuils.PrivateIOReceiver;
@@ -159,7 +159,7 @@ public class MusicService extends Service implements
     }
 
     public static Notification buildNotification(Context context, String songTitle) {
-        Intent notIntent = new Intent(context, LauncherActivity.class);
+        Intent notIntent = new Intent(context, TerminalActivity.class);
         PendingIntent pendInt = PendingIntent.getActivity(context, 0, notIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
         Notification not;

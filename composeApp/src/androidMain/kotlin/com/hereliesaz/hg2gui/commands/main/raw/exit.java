@@ -1,18 +1,15 @@
 package com.hereliesaz.hg2gui.commands.main.raw;
 
+import android.app.Activity;
+
 import com.hereliesaz.hg2gui.R;
 import com.hereliesaz.hg2gui.commands.CommandAbstraction;
 import com.hereliesaz.hg2gui.commands.ExecutePack;
-import com.hereliesaz.hg2gui.tuils.Tuils;
-
-/**
- * Created by francescoandreuzzi on 21/05/2017.
- */
 
 public class exit implements CommandAbstraction {
     @Override
     public String exec(ExecutePack pack) throws Exception {
-        Tuils.resetPreferredLauncherAndOpenChooser(pack.getContext());
+        ((Activity) pack.getContext()).finishAndRemoveTask();
         return null;
     }
 

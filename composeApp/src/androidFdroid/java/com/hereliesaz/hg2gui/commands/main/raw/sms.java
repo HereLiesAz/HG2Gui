@@ -7,7 +7,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import android.telephony.SmsManager;
 
-import com.hereliesaz.hg2gui.LauncherActivity;
+import com.hereliesaz.hg2gui.PermissionCodes;
 import com.hereliesaz.hg2gui.R;
 import com.hereliesaz.hg2gui.commands.CommandAbstraction;
 import com.hereliesaz.hg2gui.commands.ExecutePack;
@@ -25,7 +25,7 @@ public class sms extends RedirectCommand {
         MainPack info = (MainPack) pack;
         if (ContextCompat.checkSelfPermission(info.context, Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
 
-            ActivityCompat.requestPermissions((Activity) info.context, new String[]{Manifest.permission.READ_CONTACTS}, LauncherActivity.COMMAND_REQUEST_PERMISSION);
+            ActivityCompat.requestPermissions((Activity) info.context, new String[]{Manifest.permission.READ_CONTACTS}, PermissionCodes.COMMAND_REQUEST_PERMISSION);
             return info.context.getString(R.string.output_waitingpermission);
         }
 
@@ -78,7 +78,7 @@ public class sms extends RedirectCommand {
         }
 
         if (ContextCompat.checkSelfPermission(info.context, Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions((Activity) info.context, new String[]{Manifest.permission.SEND_SMS}, LauncherActivity.COMMAND_REQUEST_PERMISSION);
+            ActivityCompat.requestPermissions((Activity) info.context, new String[]{Manifest.permission.SEND_SMS}, PermissionCodes.COMMAND_REQUEST_PERMISSION);
             return info.context.getString(R.string.output_waitingpermission);
         }
 

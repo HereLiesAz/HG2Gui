@@ -10,7 +10,6 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import java.io.File;
 
 // import com.hereliesaz.hg2gui.BuildConfig;
-import com.hereliesaz.hg2gui.LauncherActivity;
 import com.hereliesaz.hg2gui.R;
 import com.hereliesaz.hg2gui.UIManager;
 import com.hereliesaz.hg2gui.commands.CommandAbstraction;
@@ -131,7 +130,7 @@ public class tui extends ParamCommand {
             public String exec(ExecutePack pack) {
                 Tuils.deleteContentOnly(Tuils.getFolder());
 
-                ((LauncherActivity) pack.getContext()).addMessage(pack.getContext().getString(R.string.tui_reset), null);
+                ((Reloadable) pack.getContext()).addMessage(pack.getContext().getString(R.string.tui_reset), null);
                 ((Reloadable) pack.getContext()).reload();
                 return null;
             }

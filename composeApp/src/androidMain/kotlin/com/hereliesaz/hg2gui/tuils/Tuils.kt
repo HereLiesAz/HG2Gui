@@ -49,7 +49,6 @@ import com.hereliesaz.hg2gui.managers.xml.classes.XMLPrefsSave
 import com.hereliesaz.hg2gui.managers.xml.options.Behavior
 import com.hereliesaz.hg2gui.managers.xml.options.Ui
 import com.hereliesaz.hg2gui.tuils.interfaces.OnBatteryUpdate
-import com.hereliesaz.hg2gui.tuils.stuff.FakeLauncherActivity
 import dalvik.system.DexFile
 import org.w3c.dom.Node
 import org.xml.sax.SAXParseException
@@ -338,18 +337,6 @@ object Tuils {
         return false
     }
 
-    fun resetPreferredLauncherAndOpenChooser(context: Context) {
-        val packageManager = context.packageManager
-        val componentName = ComponentName(context, FakeLauncherActivity::class.java)
-        packageManager.setComponentEnabledSetting(componentName, PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP)
-
-        val selector = Intent(Intent.ACTION_MAIN)
-        selector.addCategory(Intent.CATEGORY_HOME)
-        selector.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-        context.startActivity(selector)
-
-        packageManager.setComponentEnabledSetting(componentName, PackageManager.COMPONENT_ENABLED_STATE_DEFAULT, PackageManager.DONT_KILL_APP)
-    }
 
     @TargetApi(Build.VERSION_CODES.GINGERBREAD)
     fun openSettingsPage(c: Context, packageName: String) {

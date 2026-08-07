@@ -109,21 +109,7 @@
             </intent-filter>
         </activity>
 
-        <!--
-          The old launcher UI. No longer an entry point and no longer exported, but still
-          declared: MusicService targets it from its playback notification, and MainManager
-          can still host it. It keeps the runtime permission request codes the command
-          classes reference.
-        -->
-        <activity
-            android:name=".LauncherActivity"
-            android:configChanges="keyboardHidden|orientation|screenSize|keyboard|navigation"
-            android:enabled="true"
-            android:exported="false"
-            android:launchMode="singleTop"
-            android:windowSoftInputMode="stateUnchanged|adjustResize" />
-
-        <receiver
+<receiver
             android:name=".tuils.stuff.PolicyReceiver"
             android:description="@string/admin_permission"
             android:exported="true"
@@ -157,7 +143,7 @@
             android:windowSoftInputMode="stateAlwaysVisible|adjustResize">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
-                android:value=".LauncherActivity" />
+                android:value=".TerminalActivity" />
 
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
@@ -186,11 +172,6 @@
             </intent-filter>
         </activity>
 
-        <activity
-            android:name=".MitosisMenuActivity"
-            android:label="Menu"
-            android:theme="@style/Custom.Solid"
-            android:screenOrientation="portrait"/>
 
         <service
             android:name=".managers.notifications.NotificationService"
@@ -203,9 +184,6 @@
         </service>
         <service android:name=".managers.notifications.NotificationMonitorService" />
 
-        <activity android:name=".SnakeMenuActivity" />
-        <activity android:name=".MagnetMenuActivity" android:theme="@style/Custom.Solid" />
-        <activity android:name=".OrigamiMenuActivity" android:theme="@style/Theme.AppCompat.NoActionBar"/>
 
         <activity
             android:name=".DontPanicActivity"
@@ -213,14 +191,6 @@
             android:launchMode="singleTop"
             android:screenOrientation="portrait"/>
 
-        <activity
-            android:name=".tuils.stuff.FakeLauncherActivity"
-            android:enabled="false"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-            </intent-filter>
-        </activity>
 
         <activity
             android:name=".GuideActivity"
@@ -232,15 +202,6 @@
             android:name=".PanicActivity"
             android:theme="@style/Custom.Solid" />
 
-        <!--
-          Reached by command, never by icon. It carried a second category.LAUNCHER filter,
-          which put a second HG2Gui entry in the app drawer: one icon, one entry.
-        -->
-        <activity
-            android:name=".commands.tentacle.TentacleActivity"
-            android:label="Tentacle Menu"
-            android:exported="false"
-            android:theme="@style/Custom.Solid" />
     </application>
 
 </manifest>
