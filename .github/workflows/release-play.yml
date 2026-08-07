@@ -240,7 +240,7 @@ jobs:
       - name: Verify the bundle is signed by the expected key
         run: |
           set -euo pipefail
-          aab=$(find app/build/outputs/bundle/release -name "*.aab" | head -n1)
+          aab=$(find composeApp/build/outputs/bundle/release -name "*.aab" | head -n1)
           [ -n "$aab" ] || { echo "::error::No .aab was produced."; exit 1; }
           echo "AAB_PATH=$aab" >> "$GITHUB_ENV"
 
@@ -287,7 +287,7 @@ jobs:
         with:
           name: quicloc-release-aab-${{ env.VERSION_NAME }}
           path: |
-            app/build/outputs/bundle/release/*.aab
+            composeApp/build/outputs/bundle/release/*.aab
             version.properties
           if-no-files-found: error
 
