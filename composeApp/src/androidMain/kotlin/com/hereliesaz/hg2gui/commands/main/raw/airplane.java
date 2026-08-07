@@ -20,12 +20,12 @@ public class airplane implements APICommand, CommandAbstraction {
     public String exec(ExecutePack pack) {
         MainPack info = (MainPack) pack;
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN_MR1) {
-            boolean isEnabled = isEnabled(info.getContext());
-            Settings.System.putInt(info.getContext().getContentResolver(), Settings.System.AIRPLANE_MODE_ON, isEnabled ? 0 : 1);
+            boolean isEnabled = isEnabled(info.androidContext);
+            Settings.System.putInt(info.androidContext.getContentResolver(), Settings.System.AIRPLANE_MODE_ON, isEnabled ? 0 : 1);
 
             Intent intent = new Intent(Intent.ACTION_AIRPLANE_MODE_CHANGED);
             intent.putExtra("state", !isEnabled);
-            info.getContext().sendBroadcast(intent);
+            info.androidContext.sendBroadcast(intent);
 
             return info.res.getString(R.string.output_airplane) + !isEnabled;
         }

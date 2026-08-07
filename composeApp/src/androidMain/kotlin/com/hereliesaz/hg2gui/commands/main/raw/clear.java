@@ -7,6 +7,7 @@ import com.hereliesaz.hg2gui.R;
 import com.hereliesaz.hg2gui.UIManager;
 import com.hereliesaz.hg2gui.commands.CommandAbstraction;
 import com.hereliesaz.hg2gui.commands.ExecutePack;
+import com.hereliesaz.hg2gui.commands.main.MainPack;
 
 /**
  * Created by andre on 07/11/15.
@@ -15,7 +16,7 @@ public class clear implements CommandAbstraction {
 
     @Override
     public String exec(ExecutePack info) throws Exception {
-        LocalBroadcastManager.getInstance(info.getContext().getApplicationContext()).sendBroadcast(new Intent(UIManager.ACTION_CLEAR));
+        LocalBroadcastManager.getInstance(((MainPack) info).androidContext.getApplicationContext()).sendBroadcast(new Intent(UIManager.ACTION_CLEAR));
         return null;
     }
 

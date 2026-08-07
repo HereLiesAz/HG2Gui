@@ -92,7 +92,7 @@ public class apps extends ParamCommand {
                 try {
                     AppsManager.LaunchInfo i = (AppsManager.LaunchInfo) pack.getLaunchInfo();
 
-                    PackageInfo info = ((MainPack) pack).context.getPackageManager().getPackageInfo(i.componentName.getPackageName(), PackageManager.GET_PERMISSIONS | PackageManager.GET_ACTIVITIES | PackageManager.GET_SERVICES | PackageManager.GET_RECEIVERS);
+                    PackageInfo info = ((MainPack) pack).androidContext.getPackageManager().getPackageInfo(i.componentName.getPackageName(), PackageManager.GET_PERMISSIONS | PackageManager.GET_ACTIVITIES | PackageManager.GET_SERVICES | PackageManager.GET_RECEIVERS);
                     return AppsManager.AppUtils.format(i, info);
                 } catch (PackageManager.NameNotFoundException e) {
                     return e.toString();
@@ -107,7 +107,7 @@ public class apps extends ParamCommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                openPlaystore(((MainPack) pack).context, ((AppsManager.LaunchInfo) pack.getLaunchInfo()).componentName.getPackageName());
+                openPlaystore(((MainPack) pack).androidContext, ((AppsManager.LaunchInfo) pack.getLaunchInfo()).componentName.getPackageName());
                 return null;
             }
         },
@@ -136,7 +136,7 @@ public class apps extends ParamCommand {
                     save.parent().write(save, marker);
                     return null;
                 } catch (Exception e) {
-                    return ((MainPack) pack).context.getString(R.string.invalid_integer);
+                    return ((MainPack) pack).getContext().getString(R.string.invalid_integer);
                 }
             }
 
@@ -146,7 +146,7 @@ public class apps extends ParamCommand {
                 if(index == 1) res = R.string.invalid_integer;
                 else res = R.string.output_appnotfound;
 
-                return ((MainPack) pack).context.getString(res);
+                return ((MainPack) pack).getContext().getString(res);
             }
         },
         st {
@@ -157,7 +157,7 @@ public class apps extends ParamCommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                openSettings(((MainPack) pack).context, ((AppsManager.LaunchInfo) pack.getLaunchInfo()).componentName.getPackageName());
+                openSettings(((MainPack) pack).androidContext, ((AppsManager.LaunchInfo) pack.getLaunchInfo()).componentName.getPackageName());
                 return null;
             }
         },
@@ -170,7 +170,7 @@ public class apps extends ParamCommand {
             @Override
             public String exec(ExecutePack pack) {
                 Intent intent = ((MainPack) pack).appsManager.getIntent((AppsManager.LaunchInfo) pack.getLaunchInfo());
-                ((MainPack) pack).context.startActivity(intent);
+                ((MainPack) pack).androidContext.startActivity(intent);
 
                 return null;
             }
@@ -183,7 +183,7 @@ public class apps extends ParamCommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                ((MainPack) pack).context.startActivity(Tuils.openFile(((MainPack) pack).context, new File(Tuils.getFolder(), AppsManager.PATH)));
+                ((MainPack) pack).androidContext.startActivity(Tuils.openFile(((MainPack) pack).androidContext, new File(Tuils.getFolder(), AppsManager.PATH)));
                 return null;
             }
         },
@@ -411,7 +411,7 @@ public class apps extends ParamCommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                ((MainPack) pack).context.startActivity(Tuils.webPage("https://github.com/Andre1299/TUI-ConsoleLauncher/wiki/Apps"));
+                ((MainPack) pack).androidContext.startActivity(Tuils.webPage("https://github.com/Andre1299/TUI-ConsoleLauncher/wiki/Apps"));
                 return null;
             }
         };
@@ -443,12 +443,12 @@ public class apps extends ParamCommand {
 
         @Override
         public String onNotArgEnough(ExecutePack pack, int n) {
-            return ((MainPack) pack).context.getString(R.string.help_apps);
+            return ((MainPack) pack).getContext().getString(R.string.help_apps);
         }
 
         @Override
         public String onArgNotFound(ExecutePack pack, int index) {
-            return ((MainPack) pack).context.getString(R.string.output_appnotfound);
+            return ((MainPack) pack).getContext().getString(R.string.output_appnotfound);
         }
     }
 

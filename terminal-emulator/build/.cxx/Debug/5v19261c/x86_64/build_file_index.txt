@@ -1,1 +1,0 @@
-C:\Users\azrie\StudioProjects\HG2Gui\terminal-emulator\src\main\jni\Android.mk
