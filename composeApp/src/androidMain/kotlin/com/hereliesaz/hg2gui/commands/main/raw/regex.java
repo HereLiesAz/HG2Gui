@@ -64,7 +64,7 @@ public class regex extends ParamCommand {
                 CharSequence s = RegexManager.instance.test(pack.getInt(), pack.getString());
                 if(s.length() == 0) return pack.getContext().getString(R.string.id_notfound);
 
-                Tuils.sendOutput(pack.getContext(), s);
+                Tuils.sendOutput(((MainPack) pack).androidContext, s);
                 return null;
             }
 

@@ -29,10 +29,10 @@ public class tuixt implements CommandAbstraction {
             return info.res.getString(R.string.output_isdirectory);
         }
 
-        Intent intent = new Intent(info.getContext(), TuixtActivity.class);
+        Intent intent = new Intent(info.androidContext, TuixtActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         intent.putExtra(TuixtActivity.PATH, file.getAbsolutePath());
-        ((Activity) info.getContext()).startActivityForResult(intent, PermissionCodes.TUIXT_REQUEST);
+        ((Activity) info.androidContext).startActivityForResult(intent, PermissionCodes.TUIXT_REQUEST);
 
         return Tuils.EMPTYSTRING;
     }
@@ -74,9 +74,9 @@ public class tuixt implements CommandAbstraction {
             return e.toString();
         }
 
-        Intent intent = new Intent(info.getContext(), TuixtActivity.class);
+        Intent intent = new Intent(info.androidContext, TuixtActivity.class);
         intent.putExtra(TuixtActivity.PATH, file.getAbsolutePath());
-        ((Activity) info.getContext()).startActivityForResult(intent, PermissionCodes.TUIXT_REQUEST);
+        ((Activity) info.androidContext).startActivityForResult(intent, PermissionCodes.TUIXT_REQUEST);
 
         return Tuils.EMPTYSTRING;
     }

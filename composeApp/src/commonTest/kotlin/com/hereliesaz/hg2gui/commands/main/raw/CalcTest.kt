@@ -12,6 +12,7 @@ class CalcTest {
             override fun getString(resId: Int): String = ""
             override fun getString(resId: Int, vararg args: Any): String = ""
         }
+        override val commandGroup: Any? = null
         override fun getPrefsSave(): Any? = null
         override fun getLaunchInfo(): Any? = null
     }

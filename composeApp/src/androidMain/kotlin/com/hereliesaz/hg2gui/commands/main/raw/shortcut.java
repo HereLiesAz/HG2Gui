@@ -60,7 +60,7 @@ public class shortcut extends ParamCommand implements APICommand {
 
                 if(shortcut == null) return pack.getContext().getString(R.string.id_notfound);
 
-                startShortcut(shortcut, pack.getContext());
+                startShortcut(shortcut, ((MainPack) pack).androidContext);
                 return null;
             }
 
@@ -86,7 +86,7 @@ public class shortcut extends ParamCommand implements APICommand {
                     }
                 }
 
-                return startShortcut(info, pack.getContext());
+                return startShortcut(info, ((MainPack) pack).androidContext);
             }
 
             private String startShortcut(ShortcutInfo info, Context context) {

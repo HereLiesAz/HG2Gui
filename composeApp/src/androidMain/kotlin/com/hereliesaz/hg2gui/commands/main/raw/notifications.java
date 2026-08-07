@@ -10,6 +10,7 @@ import com.hereliesaz.hg2gui.commands.ExecutePack;
 import com.hereliesaz.hg2gui.commands.main.MainPack;
 import com.hereliesaz.hg2gui.commands.main.specific.APICommand;
 import com.hereliesaz.hg2gui.commands.main.specific.ParamCommand;
+import com.hereliesaz.hg2gui.managers.AppsManager;
 import com.hereliesaz.hg2gui.managers.notifications.NotificationManager;
 import com.hereliesaz.hg2gui.tuils.Tuils;
 
@@ -31,7 +32,7 @@ public class notifications extends ParamCommand implements APICommand {
         inc {
             @Override
             public String exec(ExecutePack pack) {
-                String output = NotificationManager.setState(pack.getLaunchInfo().componentName.getPackageName(), true);
+                String output = NotificationManager.setState(((AppsManager.LaunchInfo) pack.getLaunchInfo()).componentName.getPackageName(), true);
                 if(output == null || output.length() == 0) return null;
                 return output;
             }
@@ -49,7 +50,7 @@ public class notifications extends ParamCommand implements APICommand {
         exc {
             @Override
             public String exec(ExecutePack pack) {
-                String output = NotificationManager.setState(pack.getLaunchInfo().componentName.getPackageName(), false);
+                String output = NotificationManager.setState(((AppsManager.LaunchInfo) pack.getLaunchInfo()).componentName.getPackageName(), false);
                 if(output == null || output.length() == 0) return null;
                 return output;
             }
@@ -68,7 +69,7 @@ public class notifications extends ParamCommand implements APICommand {
             @Override
             public String exec(ExecutePack pack) {
                 String color = pack.getString();
-                String output = NotificationManager.setColor(pack.getLaunchInfo().componentName.getPackageName(), color);
+                String output = NotificationManager.setColor(((AppsManager.LaunchInfo) pack.getLaunchInfo()).componentName.getPackageName(), color);
                 if(output == null || output.length() == 0) return null;
                 return output;
             }
@@ -91,7 +92,7 @@ public class notifications extends ParamCommand implements APICommand {
             @Override
             public String exec(ExecutePack pack) {
                 String s = pack.getString();
-                String output = NotificationManager.setFormat(pack.getLaunchInfo().componentName.getPackageName(), s);
+                String output = NotificationManager.setFormat(((AppsManager.LaunchInfo) pack.getLaunchInfo()).componentName.getPackageName(), s);
                 if(output == null || output.length() == 0) return null;
                 return output;
             }
@@ -188,7 +189,7 @@ public class notifications extends ParamCommand implements APICommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                pack.getContext().startActivity(Tuils.openFile(pack.getContext(), new File(Tuils.getFolder(), NotificationManager.PATH)));
+                ((MainPack) pack).androidContext.startActivity(Tuils.openFile(((MainPack) pack).androidContext, new File(Tuils.getFolder(), NotificationManager.PATH)));
                 return null;
             }
         },
@@ -201,7 +202,7 @@ public class notifications extends ParamCommand implements APICommand {
             @Override
             public String exec(ExecutePack pack) {
                 try {
-                    pack.getContext().startActivity(new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"));
+                    ((MainPack) pack).androidContext.startActivity(new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"));
                 } catch (Exception e) {
                     return pack.getContext().getString(R.string.activity_not_found);
                 }
@@ -216,7 +217,7 @@ public class notifications extends ParamCommand implements APICommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                pack.getContext().startActivity(Tuils.webPage("https://github.com/Andre1299/TUI-ConsoleLauncher/wiki/Notifications"));
+                ((MainPack) pack).androidContext.startActivity(Tuils.webPage("https://github.com/Andre1299/TUI-ConsoleLauncher/wiki/Notifications"));
                 return null;
             }
         };

@@ -16,7 +16,7 @@ public class open implements CommandAbstraction {
         MainPack info = (MainPack) pack;
         File file = info.get(File.class);
 
-        int result = FileManager.openFile(info.getContext(), file);
+        int result = FileManager.openFile(info.androidContext, file);
 
         if (result == FileManager.ISDIRECTORY) return info.res.getString(R.string.output_isdirectory);
         if (result == FileManager.IOERROR) return info.res.getString(R.string.output_error);

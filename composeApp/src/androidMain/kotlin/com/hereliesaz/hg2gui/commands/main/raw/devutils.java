@@ -32,8 +32,8 @@ public class devutils extends ParamCommand {
                     if(text.size() >= 2) txt = Tuils.toPlanString(text, Tuils.SPACE);
                 }
 
-                NotificationManagerCompat.from(pack.getContext()).notify(200,
-                        new NotificationCompat.Builder(pack.getContext())
+                NotificationManagerCompat.from(((MainPack) pack).androidContext).notify(200,
+                        new NotificationCompat.Builder(((MainPack) pack).androidContext)
                             .setSmallIcon(R.mipmap.ic_launcher)
                             .setContentTitle(title)
                             .setContentText(txt)
@@ -55,7 +55,7 @@ public class devutils extends ParamCommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                return "Notification access: " + NotificationManagerCompat.getEnabledListenerPackages(pack.getContext()).contains("com.hereliesaz.hg2gui") + Tuils.NEWLINE + "Notification service running: " + Tuils.notificationServiceIsRunning(pack.getContext());
+                return "Notification access: " + NotificationManagerCompat.getEnabledListenerPackages(((MainPack) pack).androidContext).contains("com.hereliesaz.hg2gui") + Tuils.NEWLINE + "Notification service running: " + Tuils.notificationServiceIsRunning(((MainPack) pack).androidContext);
             }
         };
 

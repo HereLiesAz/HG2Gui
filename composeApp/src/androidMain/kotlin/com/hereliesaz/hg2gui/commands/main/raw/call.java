@@ -20,10 +20,10 @@ public class call implements CommandAbstraction {
     @Override
     public String exec(ExecutePack pack) {
         final MainPack info = (MainPack) pack;
-        if (ContextCompat.checkSelfPermission(info.getContext(), Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED ||
-                ContextCompat.checkSelfPermission(info.getContext(), Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(info.androidContext, Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(info.androidContext, Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
 
-            ActivityCompat.requestPermissions((Activity) info.getContext(), new String[]{Manifest.permission.READ_CONTACTS, Manifest.permission.CALL_PHONE}, PermissionCodes.COMMAND_REQUEST_PERMISSION);
+            ActivityCompat.requestPermissions((Activity) info.androidContext, new String[]{Manifest.permission.READ_CONTACTS, Manifest.permission.CALL_PHONE}, PermissionCodes.COMMAND_REQUEST_PERMISSION);
             return info.getContext().getString(R.string.output_waitingpermission);
         }
 
@@ -42,7 +42,7 @@ public class call implements CommandAbstraction {
         final Intent intent = new Intent(Intent.ACTION_CALL, uri);
 
         try {
-            ((Activity) pack.getContext()).runOnUiThread(() -> info.getContext().startActivity(intent));
+            ((Activity) info.androidContext).runOnUiThread(() -> info.androidContext.startActivity(intent));
         } catch (SecurityException e) {
             return info.res.getString(R.string.output_nopermissions);
         }

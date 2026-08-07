@@ -5,11 +5,12 @@ import android.app.Activity;
 import com.hereliesaz.hg2gui.R;
 import com.hereliesaz.hg2gui.commands.CommandAbstraction;
 import com.hereliesaz.hg2gui.commands.ExecutePack;
+import com.hereliesaz.hg2gui.commands.main.MainPack;
 
 public class exit implements CommandAbstraction {
     @Override
     public String exec(ExecutePack pack) throws Exception {
-        ((Activity) pack.getContext()).finishAndRemoveTask();
+        ((Activity) ((MainPack) pack).androidContext).finishAndRemoveTask();
         return null;
     }
 

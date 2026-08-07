@@ -36,7 +36,7 @@ public class htmlextract extends ParamCommand {
                 i.putExtra(HTMLExtractManager.FORMAT_ID, pack.getInt());
                 i.putExtra(XMLPrefsManager.VALUE_ATTRIBUTE, pack.getString());
                 i.putExtra(HTMLExtractManager.BROADCAST_COUNT, HTMLExtractManager.broadcastCount);
-                LocalBroadcastManager.getInstance(pack.getContext().getApplicationContext()).sendBroadcast(i);
+                LocalBroadcastManager.getInstance(((MainPack) pack).androidContext.getApplicationContext()).sendBroadcast(i);
 
                 return null;
             }
@@ -55,7 +55,7 @@ public class htmlextract extends ParamCommand {
                     i.putExtra(HTMLExtractManager.ID, pack.getInt());
                     i.putExtra(XMLPrefsManager.VALUE_ATTRIBUTE, pack.getString());
                     i.putExtra(HTMLExtractManager.BROADCAST_COUNT, HTMLExtractManager.broadcastCount);
-                    LocalBroadcastManager.getInstance(pack.getContext().getApplicationContext()).sendBroadcast(i);
+                    LocalBroadcastManager.getInstance(((MainPack) pack).androidContext.getApplicationContext()).sendBroadcast(i);
 
                     return null;
                 }
@@ -76,7 +76,7 @@ public class htmlextract extends ParamCommand {
                 i.putExtra(HTMLExtractManager.ID, pack.getInt());
                 i.putExtra(XMLPrefsManager.VALUE_ATTRIBUTE, pack.getString());
                 i.putExtra(HTMLExtractManager.BROADCAST_COUNT, HTMLExtractManager.broadcastCount);
-                LocalBroadcastManager.getInstance(pack.getContext().getApplicationContext()).sendBroadcast(i);
+                LocalBroadcastManager.getInstance(((MainPack) pack).androidContext.getApplicationContext()).sendBroadcast(i);
 
                 return null;
             }
@@ -98,7 +98,7 @@ public class htmlextract extends ParamCommand {
                 Intent i = new Intent(HTMLExtractManager.ACTION_RM);
                 i.putExtra(HTMLExtractManager.ID, pack.getInt());
                 i.putExtra(HTMLExtractManager.BROADCAST_COUNT, HTMLExtractManager.broadcastCount);
-                LocalBroadcastManager.getInstance(pack.getContext().getApplicationContext()).sendBroadcast(i);
+                LocalBroadcastManager.getInstance(((MainPack) pack).androidContext.getApplicationContext()).sendBroadcast(i);
 
                 return null;
             }
@@ -115,7 +115,7 @@ public class htmlextract extends ParamCommand {
                 i.putExtra(HTMLExtractManager.ID, pack.getInt());
                 i.putExtra(HTMLExtractManager.BROADCAST_COUNT, HTMLExtractManager.broadcastCount);
                 i.putExtra(XMLPrefsManager.VALUE_ATTRIBUTE, pack.getString());
-                LocalBroadcastManager.getInstance(pack.getContext().getApplicationContext()).sendBroadcast(i);
+                LocalBroadcastManager.getInstance(((MainPack) pack).androidContext.getApplicationContext()).sendBroadcast(i);
 
                 return null;
             }
@@ -131,7 +131,7 @@ public class htmlextract extends ParamCommand {
                 Intent i = new Intent(HTMLExtractManager.ACTION_LS);
                 i.putExtra(HTMLExtractManager.BROADCAST_COUNT, HTMLExtractManager.broadcastCount);
                 i.putExtra(HTMLExtractManager.TAG_NAME, pack.getString());
-                LocalBroadcastManager.getInstance(pack.getContext().getApplicationContext()).sendBroadcast(i);
+                LocalBroadcastManager.getInstance(((MainPack) pack).androidContext.getApplicationContext()).sendBroadcast(i);
 
                 return null;
             }
@@ -140,7 +140,7 @@ public class htmlextract extends ParamCommand {
             public String onNotArgEnough(ExecutePack pack, int n) {
                 Intent i = new Intent(HTMLExtractManager.ACTION_LS);
                 i.putExtra(HTMLExtractManager.BROADCAST_COUNT, HTMLExtractManager.broadcastCount);
-                LocalBroadcastManager.getInstance(pack.getContext().getApplicationContext()).sendBroadcast(i);
+                LocalBroadcastManager.getInstance(((MainPack) pack).androidContext.getApplicationContext()).sendBroadcast(i);
 
                 return null;
             }
@@ -158,7 +158,7 @@ public class htmlextract extends ParamCommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                pack.getContext().startActivity(Tuils.webPage("https://github.com/Andre1299/TUI-ConsoleLauncher/wiki/HTMLExtract"));
+                ((MainPack) pack).androidContext.startActivity(Tuils.webPage("https://github.com/Andre1299/TUI-ConsoleLauncher/wiki/HTMLExtract"));
                 return null;
             }
         },
@@ -171,7 +171,7 @@ public class htmlextract extends ParamCommand {
             @Override
             public String exec(ExecutePack pack) {
                 File file = new File(Tuils.getFolder(), HTMLExtractManager.PATH);
-                pack.getContext().startActivity(Tuils.openFile(pack.getContext(), file));
+                ((MainPack) pack).androidContext.startActivity(Tuils.openFile(((MainPack) pack).androidContext, file));
                 return null;
             }
         };

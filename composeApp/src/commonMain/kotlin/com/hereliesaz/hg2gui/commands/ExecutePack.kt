@@ -23,6 +23,12 @@ abstract class ExecutePack {
         return if (index < currentArgs.size) currentArgs[index] else null
     }
 
+    @Suppress("UNCHECKED_CAST")
+    fun <T> get(c: Class<T>): T? = get() as? T
+
+    @Suppress("UNCHECKED_CAST")
+    fun <T> get(c: Class<T>, index: Int): T? = get(index) as? T
+
     fun getString(): String? = get() as? String
 
     fun getInt(): Int = get() as? Int ?: 0
