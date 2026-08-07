@@ -57,16 +57,19 @@ Compose. There is no `UIManager`; a screen is a function of state.
 *   **root**: `TerminalActivity` (Kotlin), plus `GuideActivity`, `PanicActivity` — feature
     screens reached by command, never by icon.
 *   **`ui/`**: Compose UI and the pill menu.
+    *   `ui/files/FilesScreen.kt`: the graphical explorer over `VfsManager`'s sandbox.
 *   **`managers/`**: Logic for specific domains.
     *   `AppsManager`: launching installed apps (as a command, not a drawer).
-    *   `FileManager`: file system operations.
+    *   `FileManager`: file system operations against real Android storage.
+    *   `VfsManager`: a second, sandboxed file layer rooted at `filesDir/vfs` — real files, but
+        confined to the app's private storage and never touched by the real shell.
     *   `TerminalManager`: core terminal state — scrollback, history, sessions.
     *   `SystemContext`: OS/environment emulation.
 *   **`commands/`**: The command pattern.
     *   `CommandAbstraction`: interface for all commands.
     *   `CommandRepository`: index of available commands — also the source of the menu tree.
-    *   `main/`: core system commands.
-    *   `tuixt/`: the built-in text editor.
+    *   `main/`: core system commands, including `vfs` (the command-line face of `VfsManager`).
+    *   `tuixt/`: the built-in text editor — also how `FilesScreen` opens a file.
 *   **`tuils/`**: Utilities.
 
 ## Data Flow

@@ -1,5 +1,6 @@
 package com.hereliesaz.hg2gui
 
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -22,6 +23,8 @@ import androidx.compose.ui.Modifier
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.hereliesaz.hg2gui.commands.BaseCommandGroup
+import com.hereliesaz.hg2gui.commands.tuixt.TuixtActivity
+import com.hereliesaz.hg2gui.managers.VfsManager
 import com.hereliesaz.hg2gui.managers.xml.XMLPrefsManager
 import com.hereliesaz.hg2gui.managers.xml.options.Ui
 import com.hereliesaz.hg2gui.terminal.TerminalEngine
@@ -31,6 +34,8 @@ import com.hereliesaz.hg2gui.ui.HG2GuiTheme
 import com.hereliesaz.hg2gui.ui.SessionUiState
 import com.hereliesaz.hg2gui.ui.SettingsScreen
 import com.hereliesaz.hg2gui.ui.TerminalScreen
+import com.hereliesaz.hg2gui.ui.files.FilesScreen
+import com.hereliesaz.hg2gui.ui.files.VfsEntry
 import com.hereliesaz.hg2gui.ui.guide.CommandGuideScreen
 import com.hereliesaz.hg2gui.ui.menu.CommandTree
 import com.hereliesaz.hg2gui.ui.menu.MenuNode
@@ -47,7 +52,7 @@ class TerminalActivity : ComponentActivity(), Reloadable {
     private var sessions by mutableStateOf(listOf<TerminalSession>())
     private var nextSessionNumber = 2
 
-    private enum class Screen { Terminal, Settings, Guide }
+    private enum class Screen { Terminal, Settings, Guide, Files }
 
     private data class InitResult(
         val main: MainManager,
@@ -69,7 +74,21 @@ class TerminalActivity : ComponentActivity(), Reloadable {
             var screen by remember { mutableStateOf(Screen.Terminal) }
             var fullscreen by remember { mutableStateOf(false) }
             var fontScalePercent by remember { mutableStateOf(100) }
+            var filesPath by remember { mutableStateOf("/") }
+            var filesEntries by remember { mutableStateOf(listOf<VfsEntry>()) }
             val scope = rememberCoroutineScope()
+
+            fun refreshFiles() {
+                scope.launch {
+                    val result = withContext(Dispatchers.IO) {
+                        VfsManager.currentPath() to VfsManager.list(this@TerminalActivity).map { f ->
+                            VfsEntry(f.name, f.isDirectory, if (f.isFile) f.length() else 0L)
+                        }
+                    }
+                    filesPath = result.first
+                    filesEntries = result.second
+                }
+            }
 
             LaunchedEffect(Unit) {
                 val built = withContext(Dispatchers.Default) {
@@ -130,6 +149,49 @@ class TerminalActivity : ComponentActivity(), Reloadable {
                         modifier = Modifier.windowInsetsPadding(WindowInsets.systemBars)
                     )
 
+                    screen == Screen.Files -> FilesScreen(
+                        path = filesPath,
+                        entries = filesEntries,
+                        onNavigate = { target ->
+                            scope.launch {
+                                withContext(Dispatchers.IO) { VfsManager.cd(this@TerminalActivity, target) }
+                                refreshFiles()
+                            }
+                        },
+                        onOpenFile = { name ->
+                            scope.launch {
+                                val file = withContext(Dispatchers.IO) {
+                                    VfsManager.resolve(this@TerminalActivity, name)
+                                }
+                                if (file != null) {
+                                    val intent = Intent(this@TerminalActivity, TuixtActivity::class.java)
+                                    intent.putExtra(TuixtActivity.PATH, file.absolutePath)
+                                    startActivity(intent)
+                                }
+                            }
+                        },
+                        onCreateFolder = { name ->
+                            scope.launch {
+                                withContext(Dispatchers.IO) { VfsManager.mkdir(this@TerminalActivity, name) }
+                                refreshFiles()
+                            }
+                        },
+                        onCreateFile = { name ->
+                            scope.launch {
+                                withContext(Dispatchers.IO) { VfsManager.touch(this@TerminalActivity, name) }
+                                refreshFiles()
+                            }
+                        },
+                        onDelete = { name ->
+                            scope.launch {
+                                withContext(Dispatchers.IO) { VfsManager.delete(this@TerminalActivity, name) }
+                                refreshFiles()
+                            }
+                        },
+                        onBack = { screen = Screen.Terminal },
+                        modifier = Modifier.windowInsetsPadding(WindowInsets.systemBars)
+                    )
+
                     sessions.isNotEmpty() && currentTree != null -> TerminalScreen(
                         tree = currentTree,
                         sessions = sessions.map { it.ui },
@@ -167,6 +229,10 @@ class TerminalActivity : ComponentActivity(), Reloadable {
                         fullscreen = fullscreen,
                         onOpenSettings = { screen = Screen.Settings },
                         onOpenGuide = { screen = Screen.Guide },
+                        onOpenFiles = {
+                            refreshFiles()
+                            screen = Screen.Files
+                        },
                         onRun = { sessionId, line, onOutput ->
                             val session = sessions.first { it.ui.id == sessionId }
                             session.engine.run(line).collect { output -> onOutput(output) }
