@@ -53,6 +53,7 @@ class RssManager(private val context: Context, private val client: OkHttpClient)
     private val feeds: MutableList<Rss> = ArrayList()
     private val formats: MutableList<XMLPrefsManager.IdValue> = ArrayList()
     private val cmdRegexes: MutableList<CmdableRegex> = ArrayList()
+    private val values: XMLPrefsList = XMLPrefsList()
 
     private var hideTagPatterns: Array<Pattern>? = null
     private var urlPattern: Pattern? = null
@@ -808,7 +809,6 @@ class RssManager(private val context: Context, private val client: OkHttpClient)
         private const val LINK_CHILD = "link"
         private const val HREF_ATTRIBUTE = "href"
 
-        val values = XMLPrefsList()
         const val PATH = "rss.xml"
         const val NAME = "RSS"
         @JvmField
