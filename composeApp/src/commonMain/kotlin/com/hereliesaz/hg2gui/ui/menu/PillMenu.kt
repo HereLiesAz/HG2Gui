@@ -62,6 +62,13 @@ private val OVERHANG = 62.dp
 private const val HOST_RIGHT_EDGE = 0.34f
 private const val CHILD_LEFT = 0.30f
 private const val CHILD_WIDTH = 0.34f
+// Where a child band starts, expressed as a fraction of the full width rather than of a
+// CHILD_WIDTH-constrained box - so the trail row (which isn't itself width-constrained, since
+// it has to grow as picks pile up) still lines up under the same origin the band above it uses.
+private const val CHILD_LEFT_OF_FULL = CHILD_WIDTH * CHILD_LEFT
+// Row 0 is reserved for the host and the trail of picks below it; every band of choices fans
+// out starting one row above that, never on top of it.
+private const val BAND_BASE_ROW = 1
 
 data class MenuNode(
     val id: String,
@@ -83,6 +90,11 @@ fun PillMenu(
     onRun: (List<String>) -> Unit = {}
 ) {
     var phase by remember { mutableStateOf<Phase>(Phase.Browsing) }
+    // Everything picked below the root host. Each pick drops out of the band it was chosen
+    // from and settles here for good; the band above always cascades fresh for whatever is
+    // currently last, so drilling deeper never grows the total height - it just swaps what's
+    // fanned out for the next choice's own children.
+    var trail by remember { mutableStateOf<List<MenuNode>>(emptyList()) }
     var tokens by remember { mutableStateOf(listOf<String>()) }
     val scope = rememberCoroutineScope()
 
@@ -105,6 +117,7 @@ fun PillMenu(
                                 onRun(tokens)
                                 scope.launch {
                                     delay(Azphalt.SLIDE_MS.toLong())
+                                    trail = emptyList()
                                     phase = Phase.Open(node.id)
                                 }
                             }
@@ -116,24 +129,46 @@ fun PillMenu(
             is Phase.Open -> {
                 val host = roots.first { it.id == p.hostId }
                 val rowsBelow = roots.size - 1 - roots.indexOf(host)
+                val anchor = trail.lastOrNull() ?: host
 
-                ChildChain(
-                    parent = host,
-                    baseRow = 0,
-                    hueOwner = host.id,
-                    pathPrefix = emptyList(),
-                    onPick = { path ->
-                        tokens = path.map { it.label }
-                        onRun(tokens)
+                if (anchor.children.isNotEmpty()) {
+                    key(anchor.id) {
+                        ChildBand(
+                            parent = anchor,
+                            hueOwner = host.id,
+                            onPick = { child ->
+                                tokens = trail.map { it.label } + child.label
+                                onRun(tokens)
+                                scope.launch {
+                                    // Let the pick's own drop-and-grow finish, plus one beat to
+                                    // settle, before swapping the band for its children - so the
+                                    // next cascade always starts after the hand-off is visible,
+                                    // never on top of it.
+                                    delay((Azphalt.DROP_MS + Azphalt.SWING_MS).toLong())
+                                    trail = trail + child
+                                }
+                            }
+                        )
                     }
-                )
+                }
 
                 HostPill(
                     node = host,
                     rowsBelow = rowsBelow,
                     onClick = {
                         phase = Phase.Browsing
+                        trail = emptyList()
                         tokens = emptyList()
+                        onRun(tokens)
+                    }
+                )
+
+                TrailRow(
+                    trail = trail,
+                    hueOwner = host.id,
+                    onTapCrumb = { i ->
+                        trail = trail.take(i)
+                        tokens = trail.map { it.label }
                         onRun(tokens)
                     }
                 )
@@ -220,20 +255,20 @@ private fun HostPill(node: MenuNode, rowsBelow: Int, onClick: () -> Unit) {
 }
 
 /*
- * A band of sibling pills cascading up from `parent`'s own row (`baseRow`), exactly like the
- * very first band cascades up from the host. Tapping a pill with children makes it the new
- * anchor: its siblings play the same "leaving" motion the root stack uses when a host is
- * chosen, and a fresh ChildChain recurses for its children — based at that pill's own row, so
- * the new band stacks next to it rather than growing the total height. Tapping the anchor
- * again undoes the drill: its siblings slide back in, mirroring the stack's own re-entry.
+ * A single band of sibling pills fanning up from BAND_BASE_ROW, exactly like the root stack
+ * fans up from the host. Tapping a pill hands it off to the trail below: its siblings play the
+ * same "leaving" motion the root stack uses when a host is chosen, and the picked pill itself
+ * drops to the shared bottom row and grows a little as it settles there - the same "become the
+ * anchor" motion HostPill already plays - instead of sliding away like an unpicked sibling.
+ * PillMenu swaps this whole band for a fresh one over the pick's own children once that
+ * hand-off finishes, so drilling deeper always looks like this exact same band, never a taller
+ * one.
  */
 @Composable
-private fun ChildChain(
+private fun ChildBand(
     parent: MenuNode,
-    baseRow: Int,
     hueOwner: String,
-    pathPrefix: List<MenuNode>,
-    onPick: (path: List<MenuNode>) -> Unit
+    onPick: (MenuNode) -> Unit
 ) {
     var selected by remember(parent.id) { mutableStateOf<String?>(null) }
 
@@ -244,34 +279,18 @@ private fun ChildChain(
                 ChildPill(
                     node = child,
                     localIndex = idx,
-                    baseRow = baseRow,
                     hueOwner = hueOwner,
                     leaving = selected != null && !isSelected,
+                    droppingOut = isSelected,
                     onClick = {
-                        if (isSelected) {
-                            selected = null
-                            onPick(pathPrefix)
-                        } else {
-                            onPick(pathPrefix + child)
-                            if (child.children.isNotEmpty()) selected = child.id
+                        if (selected == null) {
+                            selected = child.id
+                            onPick(child)
                         }
                     }
                 )
             }
         }
-    }
-
-    val sel = selected
-    if (sel != null) {
-        val selIdx = parent.children.indexOfFirst { it.id == sel }
-        val selNode = parent.children[selIdx]
-        ChildChain(
-            parent = selNode,
-            baseRow = baseRow + selIdx,
-            hueOwner = hueOwner,
-            pathPrefix = pathPrefix + selNode,
-            onPick = onPick
-        )
     }
 }
 
@@ -279,23 +298,24 @@ private fun ChildChain(
 private fun ChildPill(
     node: MenuNode,
     localIndex: Int,
-    baseRow: Int,
     hueOwner: String,
     leaving: Boolean,
+    droppingOut: Boolean,
     onClick: () -> Unit
 ) {
     val density = LocalDensity.current
     val pitchPx = with(density) { ROW_PITCH.toPx() }
 
-    val absoluteRow = baseRow + localIndex
+    val absoluteRow = BAND_BASE_ROW + localIndex
 
     val turn = remember(node.id) { Animatable(if (localIndex % 2 == 0) -360f else 360f) }
     // Every pill in a band rises from the same place: the anchor's own row, exactly where
     // HostPill (or the parent pill that opened this band) already rests. That shared origin is
     // what makes it read as pills flying up out of the anchor into a stack, rather than each one
     // nudging up off the pill before it.
-    val lift = remember(node.id) { Animatable(-pitchPx * baseRow) }
+    val lift = remember(node.id) { Animatable(-pitchPx * BAND_BASE_ROW) }
     val leaveOffset = remember(node.id) { Animatable(0f) }
+    val scale = remember(node.id) { Animatable(1f) }
 
     LaunchedEffect(node.id) {
         delay((Azphalt.DROP_MS + localIndex * Azphalt.SWING_MS).toLong())
@@ -310,18 +330,27 @@ private fun ChildPill(
         launch {
             lift.animateTo(-pitchPx * absoluteRow, keyframes {
                 durationMillis = Azphalt.SWING_MS
-                (-pitchPx * (absoluteRow - 1).coerceAtLeast(baseRow)) at (Azphalt.SWING_MS * 0.9f).toInt() using LinearEasing
+                (-pitchPx * (absoluteRow - 1).coerceAtLeast(BAND_BASE_ROW)) at (Azphalt.SWING_MS * 0.9f).toInt() using LinearEasing
             })
         }
     }
 
-    // Siblings of a newly-chosen pill leave exactly like the root stack's unselected pills do;
-    // toggling the choice off brings them back the same way the stack re-enters.
-    LaunchedEffect(leaving) {
-        leaveOffset.animateTo(if (leaving) -1.7f else 0f, tween(Azphalt.SLIDE_MS, easing = LinearEasing))
+    // A newly-chosen pill drops to the shared bottom row and grows a little as it settles there;
+    // its siblings leave exactly like the root stack's unselected pills do.
+    LaunchedEffect(leaving, droppingOut) {
+        if (droppingOut) {
+            launch { turn.animateTo(0f, tween(Azphalt.DROP_MS, easing = LinearEasing)) }
+            launch { lift.animateTo(0f, tween(Azphalt.DROP_MS, easing = LinearEasing)) }
+            launch {
+                scale.animateTo(1.15f, tween(Azphalt.DROP_MS * 2 / 3, easing = LinearEasing))
+                scale.animateTo(1f, tween(Azphalt.DROP_MS / 3, easing = LinearEasing))
+            }
+        } else if (leaving) {
+            leaveOffset.animateTo(-1.7f, tween(Azphalt.SLIDE_MS, easing = LinearEasing))
+        }
     }
 
-    Box(Modifier.fillMaxSize().zIndex(50f - absoluteRow)) {
+    Box(Modifier.fillMaxSize().zIndex(if (droppingOut) 100f else 50f - absoluteRow)) {
         Pill(
             label = node.label,
             cap = node.cap,
@@ -336,10 +365,49 @@ private fun ChildPill(
                         if (localIndex % 2 == 0) TransformOrigin(0f, 0.5f) else TransformOrigin(1f, 0.5f)
                     rotationZ = turn.value
                     translationY = lift.value
+                    scaleX = scale.value
+                    scaleY = scale.value
                 }
                 .clickable(onClick = onClick)
         )
     }
+}
+
+/*
+ * The chain of picks made below the root host, settled into one row alongside it. Each entry
+ * only ever animates once, on the hand-off from ChildPill's own drop-and-grow (which finishes
+ * before PillMenu swaps the band in for this), so it reads as one continuous motion rather than
+ * a second animation stacked on the first. Tapping any crumb pops the trail back to just before
+ * it, re-opening that pill's own band of choices.
+ */
+@Composable
+private fun TrailRow(trail: List<MenuNode>, hueOwner: String, onTapCrumb: (Int) -> Unit) {
+    if (trail.isEmpty()) return
+    Box(Modifier.fillMaxSize()) {
+        Row(
+            Modifier
+                .align(Alignment.BottomStart)
+                .offsetByFractionOfParent(CHILD_LEFT_OF_FULL),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            trail.forEachIndexed { i, node ->
+                key(node.id) {
+                    TrailCrumb(node = node, hueOwner = hueOwner, onClick = { onTapCrumb(i) })
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TrailCrumb(node: MenuNode, hueOwner: String, onClick: () -> Unit) {
+    Pill(
+        label = node.label,
+        cap = node.cap,
+        hue = Azphalt.hueOf(hueOwner),
+        selected = false,
+        modifier = Modifier.clickable(onClick = onClick)
+    )
 }
 
 @Composable
