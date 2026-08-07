@@ -28,6 +28,7 @@ import com.hereliesaz.hg2gui.terminal.TerminalEngine
 import com.hereliesaz.hg2gui.tuils.Tuils
 import com.hereliesaz.hg2gui.tuils.interfaces.Reloadable
 import com.hereliesaz.hg2gui.ui.HG2GuiTheme
+import com.hereliesaz.hg2gui.ui.SessionUiState
 import com.hereliesaz.hg2gui.ui.SettingsScreen
 import com.hereliesaz.hg2gui.ui.TerminalScreen
 import com.hereliesaz.hg2gui.ui.guide.CommandGuideScreen
@@ -37,10 +38,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+/** A live shell paired with the UI state (scrollback, history, cwd) that only it owns. */
+private class TerminalSession(val ui: SessionUiState, val engine: TerminalEngine)
+
 class TerminalActivity : ComponentActivity(), Reloadable {
 
     private var main: MainManager? = null
-    private var engine: TerminalEngine? = null
+    private var sessions by mutableStateOf(listOf<TerminalSession>())
+    private var nextSessionNumber = 2
 
     private enum class Screen { Terminal, Settings, Guide }
 
@@ -60,7 +65,7 @@ class TerminalActivity : ComponentActivity(), Reloadable {
 
         setContent {
             var tree by remember { mutableStateOf<List<MenuNode>?>(null) }
-            var cwd by remember { mutableStateOf("") }
+            var activeSessionId by remember { mutableStateOf("") }
             var screen by remember { mutableStateOf(Screen.Terminal) }
             var fullscreen by remember { mutableStateOf(false) }
             var fontScalePercent by remember { mutableStateOf(100) }
@@ -87,8 +92,9 @@ class TerminalActivity : ComponentActivity(), Reloadable {
                 }
 
                 main = built.main
-                engine = built.engine
-                cwd = built.engine.workingDirectory
+                val firstUi = SessionUiState(id = "1", name = "main", cwd = built.engine.workingDirectory)
+                sessions = listOf(TerminalSession(firstUi, built.engine))
+                activeSessionId = firstUi.id
                 tree = built.tree
                 fullscreen = built.fullscreen
                 fontScalePercent = built.fontScalePercent
@@ -99,7 +105,6 @@ class TerminalActivity : ComponentActivity(), Reloadable {
             }
 
             HG2GuiTheme(scale = fontScalePercent / 100f) {
-                val currentEngine = engine
                 val currentTree = tree
                 when {
                     screen == Screen.Settings -> SettingsScreen(
@@ -125,17 +130,47 @@ class TerminalActivity : ComponentActivity(), Reloadable {
                         modifier = Modifier.windowInsetsPadding(WindowInsets.systemBars)
                     )
 
-                    currentEngine != null && currentTree != null -> TerminalScreen(
+                    sessions.isNotEmpty() && currentTree != null -> TerminalScreen(
                         tree = currentTree,
-                        cwd = cwd,
+                        sessions = sessions.map { it.ui },
+                        activeSessionId = activeSessionId,
+                        onSessionPick = { activeSessionId = it },
+                        onNewSession = {
+                            val m = main
+                            if (m != null) {
+                                scope.launch {
+                                    val newEngine = withContext(Dispatchers.Default) {
+                                        TerminalEngine(this@TerminalActivity, m, m.mainPack?.currentDirectory)
+                                    }
+                                    val id = (nextSessionNumber++).toString()
+                                    val newUi = SessionUiState(
+                                        id = id, name = "session $id", cwd = newEngine.workingDirectory
+                                    )
+                                    sessions = sessions + TerminalSession(newUi, newEngine)
+                                    activeSessionId = id
+                                }
+                            }
+                        },
+                        onCloseSession = { id ->
+                            if (sessions.size > 1) {
+                                val closing = sessions.firstOrNull { it.ui.id == id }
+                                if (closing != null) {
+                                    val remaining = sessions.filterNot { it.ui.id == id }
+                                    sessions = remaining
+                                    if (activeSessionId == id) {
+                                        activeSessionId = remaining.first().ui.id
+                                    }
+                                    closing.engine.destroy()
+                                }
+                            }
+                        },
                         fullscreen = fullscreen,
                         onOpenSettings = { screen = Screen.Settings },
                         onOpenGuide = { screen = Screen.Guide },
-                        onRun = { line, onOutput ->
-                            currentEngine.run(line).collect { output ->
-                                onOutput(output)
-                            }
-                            cwd = currentEngine.workingDirectory
+                        onRun = { sessionId, line, onOutput ->
+                            val session = sessions.first { it.ui.id == sessionId }
+                            session.engine.run(line).collect { output -> onOutput(output) }
+                            session.ui.cwd = session.engine.workingDirectory
                         }
                     )
 
@@ -184,7 +219,7 @@ class TerminalActivity : ComponentActivity(), Reloadable {
     }
 
     override fun onDestroy() {
-        engine?.destroy()
+        sessions.forEach { it.engine.destroy() }
         main?.destroy()
         super.onDestroy()
     }

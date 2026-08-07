@@ -21,12 +21,16 @@ the menu *is* the interface. Every command, subcommand and argument is a pill yo
 -   [x] Adopt the Azphalt visual system — the capsule as the only primitive.
 
 ### Phase 2: Enhanced Simulation
--   **Sessions:** Named sessions with independent scrollback, working directory and history;
-    each a separate entry in recents.
--   **Virtual Filesystem:** A persistent virtual filesystem so users can `mkdir`, `touch` and
-    edit files without cluttering real Android storage, unless they explicitly mount it.
--   **Scripting:** A custom scripting language or deeper Python integration for automating
-    tasks within the terminal.
+-   [x] **Sessions:** Named sessions with independent scrollback, working directory and
+        history — switched via tabs inside the one terminal screen. Not a separate recents
+        entry per session: that would reintroduce the multi-task/launcher-lifecycle
+        complexity Phase 1 deliberately dropped, for a benefit real terminal apps (Termux
+        included) don't bother with either.
+-   [ ] **Virtual Filesystem:** A persistent virtual filesystem so users can `mkdir`, `touch`
+        and edit files without cluttering real Android storage, unless they explicitly mount
+        it.
+-   [ ] **Scripting:** A custom scripting language or deeper Python integration for
+        automating tasks within the terminal.
 
 ### Phase 3: Connectivity
 -   **SSH Client:** A full SSH client in the terminal, remote servers managed with the same

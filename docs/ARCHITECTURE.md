@@ -36,9 +36,17 @@ listening, not by a return value — see `TerminalEngine` below.
     `MainManager` and its broadcast output is captured; anything else goes to the shell.
     Built-ins win ties, so `apps` is the app list rather than whatever is on `PATH`.
 
+Sessions are one `ShellSession` + `TerminalEngine` pair each, so scrollback, command history
+and working directory never leak between tabs. Built-ins still route through the single
+shared `MainManager` — app-wide settings (`theme`, `alias`, …) apply everywhere, only the
+shell itself is per-session. `TerminalActivity` owns the list and switches which pair is
+"active"; nothing below the UI layer knows sessions exist.
+
 ### 4. UI layer (`ui/`)
 Compose. There is no `UIManager`; a screen is a function of state.
-*   `TerminalScreen.kt` — sessions, working directory, command line, modifier keys, output.
+*   `TerminalScreen.kt` — session tabs, working directory, command line, modifier keys, output.
+    Reads and writes through `SessionUiState`, one instance per session, so switching tabs
+    never touches another session's scrollback or in-progress input.
 *   `ui/menu/PillMenu.kt` — the suggestion tree and its motion.
 *   `ui/menu/CommandTree.kt` — builds the tree from the live `CommandGroup`, plus a Shell
     category for verbs that run in `ShellSession`.
