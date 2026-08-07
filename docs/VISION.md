@@ -26,9 +26,25 @@ the menu *is* the interface. Every command, subcommand and argument is a pill yo
         entry per session: that would reintroduce the multi-task/launcher-lifecycle
         complexity Phase 1 deliberately dropped, for a benefit real terminal apps (Termux
         included) don't bother with either.
--   [ ] **Virtual Filesystem:** A persistent virtual filesystem so users can `mkdir`, `touch`
-        and edit files without cluttering real Android storage, unless they explicitly mount
-        it.
+-   [x] **Virtual Filesystem:** A sandbox rooted at the app's private storage (`VfsManager`,
+        `filesDir/vfs`) — real files, but invisible to every other app and cleared on
+        uninstall. Reached two ways: the **Files** screen (graphical, tree-style, Azphalt
+        capsules — no icons, folders read by a trailing `/` and a hue) for browsing/creating/
+        deleting, and the `vfs` command (`vfs mkdir`, `vfs ls`, `vfs cat`, …) for the same
+        operations from the command line.
+
+        This does **not** virtualize the real shell. `ls`, `cat`, `rm` and friends still run
+        for real against real storage — `TerminalEngine` only intercepts a command whose verb
+        exactly matches an app builtin, and there is no pty/FUSE layer to intercept anything
+        else. A literal transparent VFS underneath arbitrary shell input isn't buildable on a
+        non-rooted phone, which is why the sandbox is namespaced under `vfs` rather than
+        shadowing `ls`/`cd`/`cat` — those verbs are already offered as real-shell pills, and
+        shadowing them would have silently broken that.
+
+        "Mount" is real, not simulated, but conditional: `vfs mount <path>` bind-mounts the
+        sandbox onto a real path with `su`, and only runs when root is available
+        (`Shell.SU.available()`, from the vendored `libsuperuser`). Without root it says so
+        plainly rather than pretending to work.
 -   [ ] **Scripting:** A custom scripting language or deeper Python integration for
         automating tasks within the terminal.
 

@@ -48,6 +48,7 @@ fun TerminalScreen(
     fullscreen: Boolean,
     onOpenSettings: () -> Unit,
     onOpenGuide: () -> Unit,
+    onOpenFiles: () -> Unit,
     onRun: suspend (sessionId: String, line: String, onOutput: (String) -> Unit) -> Unit
 ) {
     val active = sessions.first { it.id == activeSessionId }
@@ -135,6 +136,7 @@ fun TerminalScreen(
             activeId = activeSessionId,
             onOpenSettings = onOpenSettings,
             onOpenGuide = { showGuide = true },
+            onOpenFiles = onOpenFiles,
             onPick = onSessionPick,
             onNew = onNewSession,
             onClose = onCloseSession
@@ -281,6 +283,7 @@ private fun SessionTabs(
     activeId: String,
     onOpenSettings: () -> Unit,
     onOpenGuide: () -> Unit,
+    onOpenFiles: () -> Unit,
     onPick: (String) -> Unit,
     onNew: () -> Unit,
     onClose: (String) -> Unit
@@ -347,13 +350,26 @@ private fun SessionTabs(
                 .size(22.dp)
                 .clip(RoundedCornerShape(percent = 50))
                 .background(Azphalt.Ink.copy(alpha = .14f))
+                .clickable(onClick = onOpenFiles),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                "F",
+                style = MaterialTheme.typography.titleMedium.copy(color = Azphalt.Ink, fontSize = 11.sp, fontWeight = FontWeight.Black)
+            )
+        }
+        Box(
+            Modifier
+                .size(22.dp)
+                .clip(RoundedCornerShape(percent = 50))
+                .background(Azphalt.Ink.copy(alpha = .14f))
                 .clickable(onClick = onOpenSettings),
             contentAlignment = Alignment.Center
-        ) { 
+        ) {
             Text(
-                "⚙", 
+                "⚙",
                 style = MaterialTheme.typography.titleMedium.copy(color = Azphalt.Ink, fontSize = 12.sp)
-            ) 
+            )
         }
         Box(
             Modifier
