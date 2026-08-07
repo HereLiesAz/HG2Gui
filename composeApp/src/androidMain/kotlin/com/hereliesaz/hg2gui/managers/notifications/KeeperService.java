@@ -156,7 +156,7 @@ public class KeeperService extends Service {
                     c,
                     0,
                     startMain,
-                    PendingIntent.FLAG_CANCEL_CURRENT
+                    PendingIntent.FLAG_CANCEL_CURRENT | PendingIntent.FLAG_IMMUTABLE
             );
         } else if(clickCmd != null && clickCmd.length() > 0) {
             Intent cmdIntent = new Intent(PublicIOReceiver.ACTION_CMD);
@@ -166,7 +166,7 @@ public class KeeperService extends Service {
                     c,
                     0,
                     cmdIntent,
-                    0
+                    PendingIntent.FLAG_IMMUTABLE
             );
         } else {
             pendingIntent = null;
@@ -223,7 +223,7 @@ public class KeeperService extends Service {
             NotificationCompat.Action.Builder actionBuilder = new NotificationCompat.Action.Builder(
                     R.mipmap.ic_launcher,
                     cmdLabel,
-                    PendingIntent.getBroadcast(c.getApplicationContext(), 40, i, PendingIntent.FLAG_UPDATE_CURRENT))
+                    PendingIntent.getBroadcast(c.getApplicationContext(), 40, i, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE))
                         .addRemoteInput(remoteInput);
 
             builder.addAction(actionBuilder.build());
