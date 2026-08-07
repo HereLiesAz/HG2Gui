@@ -45,7 +45,7 @@ public class cntcts extends ParamCommand {
             public String exec(ExecutePack pack) {
                 Intent intent = new Intent(ContactsContract.Intents.Insert.ACTION);
                 intent.setType(ContactsContract.RawContacts.CONTENT_TYPE);
-                pack.getContext().startActivity(intent);
+                ((MainPack) pack).androidContext.startActivity(intent);
 
                 return null;
             }
@@ -58,8 +58,8 @@ public class cntcts extends ParamCommand {
         rm {
             @Override
             public String exec(ExecutePack pack) {
-                if (ContextCompat.checkSelfPermission(pack.getContext(), Manifest.permission.WRITE_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
-                    ActivityCompat.requestPermissions((Activity) pack.getContext(), new String[]{Manifest.permission.WRITE_CONTACTS}, PermissionCodes.COMMAND_REQUEST_PERMISSION);
+                if (ContextCompat.checkSelfPermission(((MainPack) pack).androidContext, Manifest.permission.WRITE_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
+                    ActivityCompat.requestPermissions((Activity) ((MainPack) pack).androidContext, new String[]{Manifest.permission.WRITE_CONTACTS}, PermissionCodes.COMMAND_REQUEST_PERMISSION);
                     return pack.getContext().getString(R.string.output_waitingpermission);
                 }
 
@@ -82,7 +82,7 @@ public class cntcts extends ParamCommand {
             public String exec(ExecutePack pack) {
                 Intent editIntent = new Intent(Intent.ACTION_EDIT);
                 editIntent.setDataAndType(((MainPack) pack).contacts.fromPhone(pack.getString()), ContactsContract.Contacts.CONTENT_ITEM_TYPE);
-                pack.getContext().startActivity(editIntent);
+                ((MainPack) pack).androidContext.startActivity(editIntent);
 
                 return null;
             }
@@ -170,8 +170,8 @@ public class cntcts extends ParamCommand {
 
     @Override
     protected String doThings(ExecutePack pack) {
-        if (ContextCompat.checkSelfPermission(pack.getContext(), Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions((Activity) pack.getContext(), new String[]{Manifest.permission.READ_CONTACTS}, PermissionCodes.COMMAND_REQUEST_PERMISSION);
+        if (ContextCompat.checkSelfPermission(((MainPack) pack).androidContext, Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions((Activity) ((MainPack) pack).androidContext, new String[]{Manifest.permission.READ_CONTACTS}, PermissionCodes.COMMAND_REQUEST_PERMISSION);
             return pack.getContext().getString(R.string.output_waitingpermission);
         }
         return null;

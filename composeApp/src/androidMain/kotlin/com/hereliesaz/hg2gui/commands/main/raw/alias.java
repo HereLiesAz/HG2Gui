@@ -22,9 +22,9 @@ public class alias extends ParamCommand {
             @Override
             public String exec(ExecutePack pack) {
                 ArrayList<String> args = (ArrayList<String>) pack.getList();
-                if(args.size() < 2) return ((MainPack) pack).context.getString(R.string.output_lessarg);
+                if(args.size() < 2) return ((MainPack) pack).getContext().getString(R.string.output_lessarg);
 
-                ((MainPack) pack).aliasManager.add(((MainPack) pack).context, args.remove(0), Tuils.toPlanString(args, Tuils.SPACE));
+                ((MainPack) pack).aliasManager.add(((MainPack) pack).androidContext, args.remove(0), Tuils.toPlanString(args, Tuils.SPACE));
                 return null;
             }
 
@@ -37,8 +37,8 @@ public class alias extends ParamCommand {
             @Override
             public String exec(ExecutePack pack) {
                 ArrayList<String> args = (ArrayList<String>) pack.getList();
-                if(args.size() < 1) return ((MainPack) pack).context.getString(R.string.output_lessarg);
-                ((MainPack) pack).aliasManager.remove(((MainPack) pack).context, args.get(0));
+                if(args.size() < 1) return ((MainPack) pack).getContext().getString(R.string.output_lessarg);
+                ((MainPack) pack).aliasManager.remove(((MainPack) pack).androidContext, args.get(0));
                 return null;
             }
 
@@ -50,7 +50,7 @@ public class alias extends ParamCommand {
         file {
             @Override
             public String exec(ExecutePack pack) {
-                ((MainPack) pack).context.startActivity(Tuils.openFile(((MainPack) pack).context, new File(Tuils.getFolder(), AliasManager.PATH)));
+                ((MainPack) pack).androidContext.startActivity(Tuils.openFile(((MainPack) pack).androidContext, new File(Tuils.getFolder(), AliasManager.PATH)));
                 return null;
             }
 
@@ -78,7 +78,7 @@ public class alias extends ParamCommand {
 
             @Override
             public String exec(ExecutePack pack) {
-                ((MainPack) pack).context.startActivity(Tuils.webPage("https://github.com/Andre1299/TUI-ConsoleLauncher/wiki/Alias"));
+                ((MainPack) pack).androidContext.startActivity(Tuils.webPage("https://github.com/Andre1299/TUI-ConsoleLauncher/wiki/Alias"));
                 return null;
             }
         };
@@ -110,7 +110,7 @@ public class alias extends ParamCommand {
 
         @Override
         public String onNotArgEnough(ExecutePack pack, int index) {
-            return ((MainPack) pack).context.getString(R.string.help_alias);
+            return ((MainPack) pack).getContext().getString(R.string.help_alias);
         }
 
         @Override

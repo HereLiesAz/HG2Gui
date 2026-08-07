@@ -17,7 +17,7 @@ public class exit implements CommandAbstraction {
     public String exec(ExecutePack info) throws Exception {
         TuixtPack pack = (TuixtPack) info;
 
-        ((Activity) pack.getContext()).finish();
+        ((Activity) pack.androidContext).finish();
         return null;
     }
 

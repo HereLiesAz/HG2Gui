@@ -6,12 +6,13 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import com.hereliesaz.hg2gui.UIManager;
 import com.hereliesaz.hg2gui.commands.CommandAbstraction;
 import com.hereliesaz.hg2gui.commands.ExecutePack;
+import com.hereliesaz.hg2gui.commands.main.MainPack;
 
 public class panic implements CommandAbstraction {
 
     @Override
     public String exec(ExecutePack pack) throws Exception {
-        LocalBroadcastManager.getInstance(pack.getContext()).sendBroadcast(new Intent(UIManager.ACTION_PANIC));
+        LocalBroadcastManager.getInstance(((MainPack) pack).androidContext).sendBroadcast(new Intent(UIManager.ACTION_PANIC));
         return null;
     }
 
