@@ -90,14 +90,12 @@ fun PillMenu(
         when (val p = phase) {
             is Phase.Browsing, is Phase.Leaving -> {
                 val leavingHost = (p as? Phase.Leaving)?.hostId
-                Column(
-                    Modifier.fillMaxSize().padding(bottom = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(3.dp, Alignment.Bottom)
-                ) {
+                Box(Modifier.fillMaxSize().padding(bottom = 12.dp)) {
                     roots.forEachIndexed { i, node ->
                         StackPill(
                             node = node,
                             index = i,
+                            row = roots.size - 1 - i,
                             leaving = leavingHost != null,
                             isHost = node.id == leavingHost,
                             entering = leavingHost == null,
@@ -148,6 +146,7 @@ fun PillMenu(
 private fun StackPill(
     node: MenuNode,
     index: Int,
+    row: Int,
     leaving: Boolean,
     isHost: Boolean,
     entering: Boolean,
@@ -167,18 +166,35 @@ private fun StackPill(
         ) else offset.animateTo(target, tween(Azphalt.SLIDE_MS, easing = LinearEasing))
     }
 
-    Pill(
-        label = node.label,
-        cap = node.cap,
-        hue = Azphalt.hueOf(node.id),
-        selected = leaving && isHost,
-        modifier = Modifier
-            .fillMaxWidth(0.66f)
-            .offsetByFractionOfParent(offset.value)
-            .padding(start = 0.dp)
-            .absoluteBleed(OVERHANG)
-            .clickable(enabled = !leaving, onClick = onClick)
-    )
+    // The row this pill rests on is reached the same way HostPill reaches its own row: a single
+    // Animatable driving translationY, nothing else places it there. It starts one pitch below
+    // its resting row so entering the stack is what puts it on that row, not a side effect of it
+    // already being there.
+    val density = LocalDensity.current
+    val pitchPx = with(density) { ROW_PITCH.toPx() }
+    val lift = remember { Animatable(-pitchPx * (row - 1)) }
+    LaunchedEffect(entering) {
+        if (entering) lift.animateTo(
+            -pitchPx * row,
+            tween(Azphalt.SLIDE_MS, delayMillis = index * 70, easing = LinearEasing)
+        )
+    }
+
+    Box(Modifier.fillMaxSize()) {
+        Pill(
+            label = node.label,
+            cap = node.cap,
+            hue = Azphalt.hueOf(node.id),
+            selected = leaving && isHost,
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .fillMaxWidth(0.66f)
+                .offsetByFractionOfParent(offset.value)
+                .absoluteBleed(OVERHANG)
+                .graphicsLayer { translationY = lift.value }
+                .clickable(enabled = !leaving, onClick = onClick)
+        )
+    }
 }
 
 @Composable
@@ -291,10 +307,7 @@ private fun ChildPill(
             })
         }
         launch {
-            lift.animateTo(-pitchPx * absoluteRow, keyframes {
-                durationMillis = Azphalt.SWING_MS
-                (-pitchPx * predecessorRow) at (Azphalt.SWING_MS * 0.9f).toInt() using LinearEasing
-            })
+            lift.animateTo(-pitchPx * absoluteRow, tween(Azphalt.SWING_MS, easing = LinearEasing))
         }
     }
 
