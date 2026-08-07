@@ -193,7 +193,7 @@ public class SuggestionRunnable implements Runnable {
                     if(o != null && o instanceof AppsManager.LaunchInfo) {
                         AppsManager.LaunchInfo i = (AppsManager.LaunchInfo) o;
 
-                        for(AppsManager.Group g : pack.getAppsManager().getGroups()) {
+                        for(AppsManager.Group g : pack.appsManager.getGroups()) {
                             if(g.contains(i)) {
                                 o = g;
                                 break;
@@ -208,7 +208,7 @@ public class SuggestionRunnable implements Runnable {
                 }
 
                 if(bgColor != Integer.MAX_VALUE) sggView.setBackgroundColor(bgColor);
-                else sggView.setBackgroundDrawable(getSuggestionBg(pack.getContext(), s.type));
+                else sggView.setBackgroundDrawable(getSuggestionBg(pack.androidContext, s.type));
                 if(foreColor != Integer.MAX_VALUE) sggView.setTextColor(foreColor);
                 else sggView.setTextColor(getSuggestionTextColor(s.type));
 //                end bg and fore

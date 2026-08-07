@@ -14,11 +14,11 @@ public class rate implements CommandAbstraction {
     public String exec(ExecutePack pack) {
         final MainPack info = (MainPack) pack;
         try {
-            info.getContext().startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=" +
-                    info.getContext().getPackageName())));
+            info.androidContext.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=" +
+                    info.androidContext.getPackageName())));
         } catch (android.content.ActivityNotFoundException anfe) {
-            info.getContext().startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=" +
-                    info.getContext().getPackageName())));
+            info.androidContext.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=" +
+                    info.androidContext.getPackageName())));
         }
 
         return info.res.getString(R.string.output_rate);

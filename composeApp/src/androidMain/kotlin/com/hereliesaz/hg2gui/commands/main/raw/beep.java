@@ -48,6 +48,6 @@ public class beep implements CommandAbstraction {
 
     @Override
     public String onNotArgEnough(ExecutePack pack, int nArgs) {
-        return ((MainPack) pack).context.getString(helpRes());
+        return ((MainPack) pack).getContext().getString(helpRes());
     }
 }

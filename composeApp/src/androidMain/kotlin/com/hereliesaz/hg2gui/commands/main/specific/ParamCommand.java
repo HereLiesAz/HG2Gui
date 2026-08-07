@@ -75,8 +75,8 @@ public abstract class ParamCommand implements CommandAbstraction {
         if(param == null) {
             Object o1 = pack.get(Object.class, 0);
 
-            if(o1 == null || o1.toString().length() == 0) return ((MainPack) pack).context.getString(helpRes());
-            else return ((MainPack) pack).context.getString(R.string.output_invalid_param) + Tuils.SPACE + o1.toString();
+            if(o1 == null || o1.toString().length() == 0) return ((MainPack) pack).getContext().getString(helpRes());
+            else return ((MainPack) pack).getContext().getString(R.string.output_invalid_param) + Tuils.SPACE + o1.toString();
         }
         return param.exec(pack);
     }
@@ -97,7 +97,7 @@ public abstract class ParamCommand implements CommandAbstraction {
 
     @Override
     public String onNotArgEnough(ExecutePack pack, int nArgs) {
-        return ((MainPack) pack).context.getString(helpRes());
+        return ((MainPack) pack).getContext().getString(helpRes());
     }
 
     @Override
@@ -107,11 +107,11 @@ public abstract class ParamCommand implements CommandAbstraction {
             try {
                 Tuils.log("last");
                 String param = (String) pack.get(String.class, 0);
-                return ((MainPack) pack).context.getString(R.string.output_invalid_param) + Tuils.SPACE + param;
+                return ((MainPack) pack).getContext().getString(R.string.output_invalid_param) + Tuils.SPACE + param;
             } catch (Exception e) {}
         }
 
-        return ((MainPack) pack).context.getString(helpRes());
+        return ((MainPack) pack).getContext().getString(helpRes());
     }
 
     public abstract String[] params();
