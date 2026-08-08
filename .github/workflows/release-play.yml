@@ -125,7 +125,7 @@ jobs:
               }
           }
           EOF
-          echo "APP_ID=$(./gradlew -q --init-script get-app-id.gradle help | grep '^QUICLOC_APP_ID=' | cut -d= -f2)" >> "$GITHUB_ENV"
+          echo "APP_ID=$(./gradlew -q --init-script get-app-id.gradle help | grep '^APP_ID=' | cut -d= -f2)" >> "$GITHUB_ENV"
 
       # Everything Play-related is hand-rolled against the API (curl + jq +
       # openssl, all on ubuntu-latest) rather than delegated to a third-party

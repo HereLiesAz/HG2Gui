@@ -29,25 +29,25 @@ val resolvedVersionName = project.findProperty("versionName")?.toString() ?: Str
 
 // Populated by .github/actions/android-keystore in CI (release-play.yml); absent for a plain
 // local `assembleRelease`, which then just builds unsigned like it always has. When
-// QUICLOC_REQUIRE_SIGNING is set, a missing/incomplete keystore fails the build here, at
+// REQUIRE_SIGNING is set, a missing/incomplete keystore fails the build here, at
 // configuration time, instead of producing an unsigned bundle that only fails later, in
 // ./.github/actions/verify-android-signature or at the Play upload itself.
-val quiclocKeystoreFile = System.getenv("QUICLOC_KEYSTORE_FILE")
-val quiclocKeystoreType = System.getenv("QUICLOC_KEYSTORE_TYPE")
-val quiclocKeystorePassword = System.getenv("QUICLOC_KEYSTORE_PASSWORD")
-val quiclocKeyAlias = System.getenv("QUICLOC_KEY_ALIAS")
-val quiclocKeyPassword = System.getenv("QUICLOC_KEY_PASSWORD")
-val quiclocRequireSigning = System.getenv("QUICLOC_REQUIRE_SIGNING").toBoolean()
+val releaseKeystoreFile = System.getenv("KEYSTORE_FILE")
+val releaseKeystoreType = System.getenv("KEYSTORE_TYPE")
+val releaseKeystorePassword = System.getenv("KEYSTORE_PASSWORD")
+val releaseKeyAlias = System.getenv("KEY_ALIAS")
+val releaseKeyPassword = System.getenv("KEY_PASSWORD")
+val releaseRequireSigning = System.getenv("REQUIRE_SIGNING").toBoolean()
 
-val hasReleaseSigningEnv = !quiclocKeystoreFile.isNullOrBlank() &&
-    !quiclocKeystorePassword.isNullOrBlank() &&
-    !quiclocKeyAlias.isNullOrBlank() &&
-    !quiclocKeyPassword.isNullOrBlank()
+val hasReleaseSigningEnv = !releaseKeystoreFile.isNullOrBlank() &&
+    !releaseKeystorePassword.isNullOrBlank() &&
+    !releaseKeyAlias.isNullOrBlank() &&
+    !releaseKeyPassword.isNullOrBlank()
 
-if (quiclocRequireSigning && !hasReleaseSigningEnv) {
+if (releaseRequireSigning && !hasReleaseSigningEnv) {
     error(
-        "QUICLOC_REQUIRE_SIGNING is set but one or more of QUICLOC_KEYSTORE_FILE / " +
-            "QUICLOC_KEYSTORE_PASSWORD / QUICLOC_KEY_ALIAS / QUICLOC_KEY_PASSWORD is missing."
+        "REQUIRE_SIGNING is set but one or more of KEYSTORE_FILE / " +
+            "KEYSTORE_PASSWORD / KEY_ALIAS / KEY_PASSWORD is missing."
     )
 }
 
@@ -119,11 +119,11 @@ android {
     signingConfigs {
         if (hasReleaseSigningEnv) {
             create("release") {
-                storeFile = file(quiclocKeystoreFile!!)
-                storePassword = quiclocKeystorePassword
-                keyAlias = quiclocKeyAlias
-                keyPassword = quiclocKeyPassword
-                if (!quiclocKeystoreType.isNullOrBlank()) storeType = quiclocKeystoreType
+                storeFile = file(releaseKeystoreFile!!)
+                storePassword = releaseKeystorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+                if (!releaseKeystoreType.isNullOrBlank()) storeType = releaseKeystoreType
             }
         }
     }
