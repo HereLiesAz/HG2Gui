@@ -57,6 +57,14 @@ object CommandTree {
     // an unbounded list.
     private const val MAX_SHELL_ENTRIES = 300
 
+    /** Guaranteed baseline so Shell is never empty. SELinux commonly denies directory *listing*
+     *  on /system/bin to non-privileged apps even though the binaries themselves stay directly
+     *  executable, so a scan turning up nothing (or throwing) is an expected outcome on plenty
+     *  of real devices, not just a theoretical edge case - this is what actually still runs. */
+    private val FALLBACK_SHELL = listOf(
+        "ls", "cd", "pwd", "cat", "ps", "df", "id", "uname", "getprop", "ping"
+    )
+
     private fun pickerRoot(context: Context): File =
         if (DistroManager.isInstalled(context)) DistroManager.homeDir(context)
         else context.getExternalFilesDir(null) ?: context.filesDir
@@ -90,11 +98,15 @@ object CommandTree {
         } else {
             File("/system/bin")
         }
-        val names = (binDir.listFiles() ?: emptyArray())
-            .filter { it.isFile && it.canExecute() }
-            .map { it.name }
-            .distinct()
-            .sorted()
+        val scanned = try {
+            (binDir.listFiles() ?: emptyArray())
+                .filter { it.isFile && it.canExecute() }
+                .map { it.name }
+        } catch (e: SecurityException) {
+            emptyList()
+        }
+
+        val names = scanned.ifEmpty { FALLBACK_SHELL }.distinct().sorted()
 
         val capped = names.take(MAX_SHELL_ENTRIES)
         val nodes = capped.map { name ->
