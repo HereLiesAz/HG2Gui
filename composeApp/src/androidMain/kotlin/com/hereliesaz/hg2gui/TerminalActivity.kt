@@ -26,10 +26,12 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.hereliesaz.hg2gui.commands.BaseCommandGroup
 import com.hereliesaz.hg2gui.commands.tuixt.TuixtActivity
 import com.hereliesaz.hg2gui.managers.ContactManager
+import com.hereliesaz.hg2gui.managers.TerminalHistoryEntry
 import com.hereliesaz.hg2gui.managers.TuiLocationManager
 import com.hereliesaz.hg2gui.managers.VfsManager
 import com.hereliesaz.hg2gui.managers.xml.XMLPrefsManager
 import com.hereliesaz.hg2gui.managers.xml.options.Ui
+import com.hereliesaz.hg2gui.terminal.DistroManager
 import com.hereliesaz.hg2gui.terminal.TerminalEngine
 import com.hereliesaz.hg2gui.tuils.Tuils
 import com.hereliesaz.hg2gui.tuils.interfaces.Reloadable
@@ -121,6 +123,30 @@ class TerminalActivity : ComponentActivity(), Reloadable {
                 tree = built.tree
                 fullscreen = built.fullscreen
                 fontScalePercent = built.fontScalePercent
+
+                // Real Termux never shows an empty shell either - it installs its own bootstrap
+                // automatically, once, before the first prompt appears. Match that instead of
+                // leaving Shell showing only the one pill that fixes it, waiting to be found.
+                if (!DistroManager.isInstalled(this@TerminalActivity)) {
+                    firstUi.running = true
+                    val entryId = firstUi.buffer.size
+                    firstUi.buffer = firstUi.buffer + TerminalHistoryEntry(command = "bootstrap", isRunning = true)
+                    built.engine.run("bootstrap") { "" }.collect { output ->
+                        firstUi.buffer = firstUi.buffer.mapIndexed { i, e ->
+                            if (i == entryId) e.copy(output = output) else e
+                        }
+                    }
+                    firstUi.buffer = firstUi.buffer.mapIndexed { i, e ->
+                        if (i == entryId) e.copy(isRunning = false) else e
+                    }
+                    firstUi.running = false
+                    tree = withContext(Dispatchers.IO) {
+                        CommandTree.from(
+                            built.main.mainPack?.commandGroup?.commands?.toList().orEmpty(),
+                            this@TerminalActivity
+                        )
+                    }
+                }
             }
 
             LaunchedEffect(fullscreen) {

@@ -27,6 +27,10 @@ class TerminalEngine(
     home: File? = null
 ) {
 
+    private companion object {
+        private const val BUILTIN_TIMEOUT_MINUTES = 5L
+    }
+
     private val shell = ShellSession.forAndroid(home, context)
 
     private val builtins: Set<String> =
@@ -102,7 +106,12 @@ class TerminalEngine(
         main.setCommandCompletionListener { done.countDown() }
         try {
             main.onCommand(line, null as String?, false)
-            val completed = done.await(8, TimeUnit.SECONDS)
+            // 8s was sized for ordinary near-instant builtins (toggle wifi, adjust volume) and
+            // silently truncated anything actually long-running - a StreamableCommand like
+            // bootstrap downloading and extracting a real rootfs can easily take longer than
+            // that. This still returns as soon as the command actually finishes; it's only a
+            // backstop against one that never signals completion at all.
+            val completed = done.await(BUILTIN_TIMEOUT_MINUTES, TimeUnit.MINUTES)
             if (completed) {
                 Thread.sleep(50L)
             }

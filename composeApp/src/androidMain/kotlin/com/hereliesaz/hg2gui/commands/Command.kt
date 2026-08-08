@@ -5,6 +5,8 @@ import com.hereliesaz.hg2gui.commands.main.MainPack
 import com.hereliesaz.hg2gui.commands.main.Param
 import com.hereliesaz.hg2gui.commands.main.specific.ParamCommand
 import com.hereliesaz.hg2gui.tuils.Tuils
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 
 /**
  * Wrapper class for Executing Commands.
@@ -31,15 +33,13 @@ class Command {
     var indexNotFound: Int = -1
 
     /**
-     * Validates arguments and executes the command.
-     * @param info The execution context/pack.
-     * @return Output string.
-     * @throws Exception If execution fails.
+     * Runs the same argument validation [exec] and [execStream] both need. Returns the error
+     * output to show instead of executing, or null once validation passes and it's safe to
+     * actually run the command.
      */
-    @Throws(Exception::class)
-    fun exec(info: ExecutePack): String? {
+    private fun validationError(info: ExecutePack): String? {
         val command = cmd ?: return null
-        
+
         // Pass the arguments to the execution pack
         info.set(mArgs)
 
@@ -81,8 +81,32 @@ class Command {
             }
         }
 
+        return null
+    }
+
+    /**
+     * Validates arguments and executes the command.
+     * @param info The execution context/pack.
+     * @return Output string.
+     * @throws Exception If execution fails.
+     */
+    @Throws(Exception::class)
+    fun exec(info: ExecutePack): String? {
+        val command = cmd ?: return null
+        validationError(info)?.let { return it }
         // Execution is safe
         return command.exec(info)
+    }
+
+    /**
+     * Like [exec], but for a command that streams its output over time (e.g. bootstrap's
+     * download) instead of returning one final string. Null if [cmd] isn't a [StreamableCommand]
+     * - callers should fall back to [exec] in that case.
+     */
+    fun execStream(info: ExecutePack): Flow<String>? {
+        val command = cmd as? StreamableCommand ?: return null
+        validationError(info)?.let { return flowOf(it) }
+        return command.execStream(info)
     }
 
     /**

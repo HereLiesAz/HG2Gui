@@ -31,6 +31,7 @@ import com.hereliesaz.hg2gui.tuils.interfaces.Redirectator
 import com.hereliesaz.hg2gui.tuils.interfaces.Reloadable
 import com.hereliesaz.hg2gui.tuils.libsuperuser.Shell
 import com.hereliesaz.hg2gui.tuils.libsuperuser.ShellHolder
+import kotlinx.coroutines.runBlocking
 import okhttp3.Cache
 import okhttp3.OkHttpClient
 import java.io.File
@@ -540,9 +541,22 @@ class MainManager(private val mContext: Activity, reloadable: Reloadable) {
                 override fun run() {
                     super.run()
                     try {
-                        val output = command.exec(info)
-                        if (output != null) {
-                            Tuils.sendOutput(info, output, TerminalManager.CATEGORY_OUTPUT)
+                        // execStream() was declared on StreamableCommand but nothing ever called
+                        // it - this always fell through to exec() below instead, so a
+                        // StreamableCommand's real work (e.g. bootstrap's download) never
+                        // happened; its exec() only ever returns a placeholder string.
+                        val stream = command.execStream(info)
+                        if (stream != null) {
+                            runBlocking {
+                                stream.collect { line ->
+                                    Tuils.sendOutput(info, line, TerminalManager.CATEGORY_OUTPUT)
+                                }
+                            }
+                        } else {
+                            val output = command.exec(info)
+                            if (output != null) {
+                                Tuils.sendOutput(info, output, TerminalManager.CATEGORY_OUTPUT)
+                            }
                         }
                     } catch (e: Exception) {
                         Tuils.sendOutput(mContext, Tuils.getStackTrace(e))
