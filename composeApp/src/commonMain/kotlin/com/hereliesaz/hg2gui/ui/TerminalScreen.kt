@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.hereliesaz.hg2gui.managers.TerminalHistoryEntry
+import com.hereliesaz.hg2gui.terminal.ShellAliases
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
 import com.hereliesaz.hg2gui.ui.menu.MenuNode
 import com.hereliesaz.hg2gui.ui.menu.PillMenu
@@ -72,6 +73,10 @@ fun TerminalScreen(
             }
             session.historyIndex = -1
             val lineToRun = fullLine
+            // Aliases are expanded only for what actually reaches the shell - hintForRanCommand
+            // needs the line the user actually typed, unexpanded, to know whether they already
+            // used the shortcut.
+            val execLine = ShellAliases.expand(lineToRun)
             session.tokens = emptyList()
             session.inputText = ""
 
@@ -81,7 +86,7 @@ fun TerminalScreen(
 
             scope.launch {
                 try {
-                    onRun(session.id, lineToRun) { outputChunk ->
+                    onRun(session.id, execLine) { outputChunk ->
                         // Update the buffer with the streaming output
                         session.buffer = session.buffer.mapIndexed { index, entry ->
                             if (index == entryId) {
@@ -182,6 +187,22 @@ fun TerminalScreen(
             enabled = !active.running && (active.tokens.isNotEmpty() || active.inputText.isNotBlank()),
             onRun = executeCommand
         )
+
+        val suggestionTree = suggestionTreeFor(active)
+        if (suggestionTree.isNotEmpty()) {
+            PillMenu(
+                roots = suggestionTree,
+                modifier = Modifier.height(72.dp).fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
+                onRun = { picked ->
+                    // Every leaf's label IS the literal command text to adopt - same convention
+                    // the main command tree already uses for its own pills.
+                    picked.lastOrNull()?.let { chosen ->
+                        active.inputText = chosen
+                        active.tokens = emptyList()
+                    }
+                }
+            )
+        }
 
         ModifierKeys(
             onKeyClick = { key ->
@@ -461,6 +482,44 @@ private fun CommandLine(
             }
         }
     }
+}
+
+/*
+ * The Kotlin-native stand-ins for what a live zsh line editor would offer - autosuggestion,
+ * "did you mean", alias hints - built as an ordinary MenuNode host+children, so they render
+ * through the exact same PillMenu stack every other command uses, instead of a bespoke row of
+ * pills. Each leaf's label is the literal input text a tap should adopt, matching the
+ * convention the real command tree already uses for its own pills. There's no live PTY for a
+ * real shell line editor to attach to - ShellSession only ever sends one complete line at a
+ * time and reads a complete result back - so this is the delivery mechanism instead.
+ */
+private fun suggestionTreeFor(session: SessionUiState): List<MenuNode> {
+    val children = buildList {
+        if (session.inputText.isNotBlank()) {
+            ShellAliases.autosuggest(session.inputText, session.commandHistory)?.let { rest ->
+                add(MenuNode(id = "suggest-tab", label = session.inputText + rest, cap = "TAB"))
+            }
+        }
+
+        val idle = !session.running && session.inputText.isBlank() && session.tokens.isEmpty()
+        if (idle) {
+            session.commandHistory.lastOrNull()
+                ?.let { ShellAliases.hintForRanCommand(it) }
+                ?.let { (key, _) -> add(MenuNode(id = "suggest-alias", label = key, cap = "ALIAS")) }
+
+            session.buffer.lastOrNull()?.let { lastEntry ->
+                if (ShellAliases.looksLikeNotFound(lastEntry.output)) {
+                    val failedWord = lastEntry.command.substringBefore(' ')
+                    val known = session.commandHistory.map { it.substringBefore(' ') }.distinct()
+                    ShellAliases.didYouMean(failedWord, known)?.let { fix ->
+                        val corrected = fix + lastEntry.command.removePrefix(failedWord)
+                        add(MenuNode(id = "suggest-fix", label = corrected, cap = "FIX"))
+                    }
+                }
+            }
+        }
+    }
+    return if (children.isEmpty()) emptyList() else listOf(MenuNode(id = "suggest", label = "Suggest", children = children))
 }
 
 @Composable

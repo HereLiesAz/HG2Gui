@@ -418,7 +418,7 @@ private fun TrailCrumb(node: MenuNode, hueOwner: String, onClick: () -> Unit) {
 }
 
 @Composable
-private fun Pill(
+internal fun Pill(
     label: String,
     cap: String?,
     hue: Int,

@@ -34,10 +34,14 @@ actual class ShellSession private constructor(
         private const val TIMEOUT_MS = 15_000L
         private const val STARTUP_PROBE_MS = 300L
 
-        // zsh's own interactive features - autosuggestions, syntax highlighting, fuzzy history
-        // search, fzf - are what make typing on a touch keyboard bearable, so this is the
-        // preferred shell whenever the bundled static zsh binary is available; oh-my-zsh and its
-        // plugins are cloned once, on first use, rather than shipped in the APK.
+        // zsh's own interactive features - autosuggestions, fuzzy/prefix history search,
+        // command-not-found hints - are what make typing on a touch keyboard bearable, so this
+        // is the preferred shell whenever the bundled static zsh binary is available. These are
+        // hand-written against zsh's own built-in mechanisms (ZLE's POSTDISPLAY, the stock
+        // up-line-or-beginning-search widget, the command_not_found_handler/preexec hooks) - the
+        // same primitives the equivalent third-party plugins (zsh-autosuggestions,
+        // zsh-history-substring-search, you-should-use) build on - rather than a first-run
+        // `git clone` of those plugins, which needs network + git and can fail or go stale.
         private fun setupZshrc(home: File?) {
             if (home == null) return
             try {
@@ -45,52 +49,92 @@ actual class ShellSession private constructor(
                 val zshrc = File(home, ".zshrc")
                 if (!zshrc.exists()) {
                     zshrc.writeText(
-                        "export ZSH=\"\$HOME/.oh-my-zsh\"\n" +
-                        "if command -v git &> /dev/null; then\n" +
-                        "  if [ ! -d \"\$ZSH\" ]; then\n" +
-                        "      git clone https://github.com/ohmyzsh/ohmyzsh.git \"\$ZSH\"\n" +
+                        "# --- Completion ---\n" +
+                        "autoload -Uz compinit\n" +
+                        "compinit -C\n" +
+                        "zstyle ':completion:*' menu select\n" +
+                        "\n" +
+                        "# --- History search on the arrow keys, prefix-aware ---\n" +
+                        "autoload -Uz up-line-or-beginning-search down-line-or-beginning-search\n" +
+                        "zle -N up-line-or-beginning-search\n" +
+                        "zle -N down-line-or-beginning-search\n" +
+                        "bindkey '^[[A' up-line-or-beginning-search\n" +
+                        "bindkey '^[[B' down-line-or-beginning-search\n" +
+                        "\n" +
+                        "# --- command-not-found hints ---\n" +
+                        "command_not_found_handler() {\n" +
+                        "  local cmd=\$1 best=\"\" bestlen=999\n" +
+                        "  for c in \${(k)commands} \${(k)aliases}; do\n" +
+                        "    if [[ \$c == \${cmd}* || \$cmd == \${c}* ]]; then\n" +
+                        "      local len=\${#c}\n" +
+                        "      (( len < bestlen )) && { best=\$c; bestlen=\$len }\n" +
+                        "    fi\n" +
+                        "  done\n" +
+                        "  if [[ -n \$best ]]; then\n" +
+                        "    print -u2 \"zsh: command not found: \$cmd (did you mean: \$best?)\"\n" +
+                        "  else\n" +
+                        "    print -u2 \"zsh: command not found: \$cmd\"\n" +
                         "  fi\n" +
-                        "  ZSH_CUSTOM=\"\$ZSH/custom\"\n" +
-                        "  if [ ! -d \"\$ZSH_CUSTOM/plugins/zsh-completions\" ]; then\n" +
-                        "      git clone https://github.com/zsh-users/zsh-completions \"\$ZSH_CUSTOM/plugins/zsh-completions\"\n" +
+                        "  return 127\n" +
+                        "}\n" +
+                        "\n" +
+                        "# --- Autosuggestions: the most recent matching history entry as dim text\n" +
+                        "#     after the cursor (POSTDISPLAY), right-arrow accepts it. ---\n" +
+                        "_hg2gui_suggest() {\n" +
+                        "  POSTDISPLAY=\"\"\n" +
+                        "  [[ -z \$BUFFER ]] && return\n" +
+                        "  local i\n" +
+                        "  for (( i = HISTCMD; i >= 1; i-- )); do\n" +
+                        "    local h=\${history[\$i]}\n" +
+                        "    if [[ -n \$h && \$h == \${BUFFER}* && \$h != \$BUFFER ]]; then\n" +
+                        "      POSTDISPLAY=\${h#\$BUFFER}\n" +
+                        "      return\n" +
+                        "    fi\n" +
+                        "  done\n" +
+                        "}\n" +
+                        "_hg2gui_suggest_widget() {\n" +
+                        "  zle .\$WIDGET\n" +
+                        "  _hg2gui_suggest\n" +
+                        "}\n" +
+                        "for w in self-insert backward-delete-char delete-char backward-kill-word; do\n" +
+                        "  zle -N \$w _hg2gui_suggest_widget\n" +
+                        "done\n" +
+                        "_hg2gui_accept_suggestion() {\n" +
+                        "  if [[ -n \$POSTDISPLAY && \$CURSOR -eq \${#BUFFER} ]]; then\n" +
+                        "    BUFFER+=\"\$POSTDISPLAY\"\n" +
+                        "    POSTDISPLAY=\"\"\n" +
+                        "    CURSOR=\${#BUFFER}\n" +
+                        "  else\n" +
+                        "    zle forward-char\n" +
                         "  fi\n" +
-                        "  if [ ! -d \"\$ZSH_CUSTOM/plugins/zsh-autosuggestions\" ]; then\n" +
-                        "      git clone https://github.com/zsh-users/zsh-autosuggestions \"\$ZSH_CUSTOM/plugins/zsh-autosuggestions\"\n" +
-                        "  fi\n" +
-                        "  if [ ! -d \"\$ZSH_CUSTOM/plugins/zsh-syntax-highlighting\" ]; then\n" +
-                        "      git clone https://github.com/zsh-users/zsh-syntax-highlighting.git \"\$ZSH_CUSTOM/plugins/zsh-syntax-highlighting\"\n" +
-                        "  fi\n" +
-                        "  if [ ! -d \"\$ZSH_CUSTOM/plugins/zsh-history-substring-search\" ]; then\n" +
-                        "      git clone https://github.com/zsh-users/zsh-history-substring-search \"\$ZSH_CUSTOM/plugins/zsh-history-substring-search\"\n" +
-                        "  fi\n" +
-                        "  if [ ! -d \"\$ZSH_CUSTOM/plugins/you-should-use\" ]; then\n" +
-                        "      git clone https://github.com/MichaelAquilina/zsh-you-should-use.git \"\$ZSH_CUSTOM/plugins/you-should-use\"\n" +
-                        "  fi\n" +
-                        "  if [ ! -d \"\$ZSH_CUSTOM/plugins/zsh-bat\" ]; then\n" +
-                        "      git clone https://github.com/fdellutri/zsh-bat.git \"\$ZSH_CUSTOM/plugins/zsh-bat\"\n" +
-                        "  fi\n" +
-                        "  if [ ! -d \"\$ZSH_CUSTOM/plugins/zsh-defer\" ]; then\n" +
-                        "      git clone https://github.com/romkatv/zsh-defer.git \"\$ZSH_CUSTOM/plugins/zsh-defer\"\n" +
-                        "  fi\n" +
-                        "  if [ ! -d \"\$ZSH_CUSTOM/plugins/fzf-zsh-plugin\" ]; then\n" +
-                        "      git clone https://github.com/unixorn/fzf-zsh-plugin.git \"\$ZSH_CUSTOM/plugins/fzf-zsh-plugin\"\n" +
-                        "  fi\n" +
-                        "fi\n" +
-                        "plugins=(zsh-completions zsh-history-substring-search zsh-autosuggestions zsh-syntax-highlighting thefuck you-should-use sudo zsh-bat copypath copyfile zsh-defer dotenv command-not-found fzf-zsh-plugin extract warp zsh-vi-man zsnapshot)\n" +
-                        "if [ -f \"\$ZSH/oh-my-zsh.sh\" ]; then\n" +
-                        "  source \"\$ZSH/oh-my-zsh.sh\"\n" +
-                        "fi\n" +
-                        "zmodload zsh/parameter\n" +
+                        "}\n" +
+                        "zle -N _hg2gui_accept_suggestion\n" +
+                        "bindkey '^[[C' _hg2gui_accept_suggestion\n" +
+                        "\n" +
+                        "# --- \"you should use\" style alias hints: after running a command, say\n" +
+                        "#     so once if an alias would have shortened it. ---\n" +
+                        "_hg2gui_alias_hint() {\n" +
+                        "  local ran=\"\$1\" name expansion\n" +
+                        "  for name in \${(k)aliases}; do\n" +
+                        "    expansion=\${aliases[\$name]}\n" +
+                        "    if [[ -n \$expansion && \"\$ran\" == \"\$expansion\"* && \"\$ran\" != \"\$name\"* ]]; then\n" +
+                        "      print -u2 \"hint: alias \$name='\$expansion'\"\n" +
+                        "      return\n" +
+                        "    fi\n" +
+                        "  done\n" +
+                        "}\n" +
                         "autoload -Uz add-zsh-hook\n" +
-                        "autoload -Uz zsh-capture-completion\n" +
-                        "autoload -Uz zsh-mime-setup\n" +
-                        "zsh-mime-setup\n" +
-                        "if command -v starship &> /dev/null; then\n" +
-                        "    eval \"\$(starship init zsh)\"\n" +
+                        "add-zsh-hook preexec _hg2gui_alias_hint\n" +
+                        "\n" +
+                        "# --- bat/fzf integration if the real binaries happen to be installed\n" +
+                        "#     (e.g. via a Termux bootstrap's pkg) - a no-op otherwise. ---\n" +
+                        "if command -v bat >/dev/null 2>&1; then\n" +
+                        "  alias cat='bat --paging=never'\n" +
                         "fi\n" +
-                        "if command -v atuin &> /dev/null; then\n" +
-                        "    eval \"\$(atuin init zsh)\"\n" +
+                        "if command -v fzf >/dev/null 2>&1; then\n" +
+                        "  eval \"\$(fzf --zsh 2>/dev/null)\"\n" +
                         "fi\n" +
+                        "\n" +
                         "# Virtual Terminal State Integration (VT Sequences)\n" +
                         "printf '\\033P\$q\"p\\033\\\\'\n"
                     )
