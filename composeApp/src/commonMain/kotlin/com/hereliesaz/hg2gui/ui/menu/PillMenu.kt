@@ -59,13 +59,16 @@ object Azphalt {
 private val PILL_HEIGHT = 17.dp
 private val ROW_PITCH = 20.dp
 private val OVERHANG = 62.dp
+private const val HOST_WIDTH = 0.66f
 private const val HOST_RIGHT_EDGE = 0.34f
 private const val CHILD_LEFT = 0.30f
 private const val CHILD_WIDTH = 0.34f
-// Where a child band starts, expressed as a fraction of the full width rather than of a
-// CHILD_WIDTH-constrained box - so the trail row (which isn't itself width-constrained, since
-// it has to grow as picks pile up) still lines up under the same origin the band above it uses.
-private const val CHILD_LEFT_OF_FULL = CHILD_WIDTH * CHILD_LEFT
+// HostPill is HOST_WIDTH wide, offset left by (1 - HOST_RIGHT_EDGE) * HOST_WIDTH, so its right
+// edge lands at HOST_WIDTH * HOST_RIGHT_EDGE of the full width. A band of children clears that
+// safely by rising into row 1+, but the trail row shares row 0 with the host, so it has to start
+// past that edge instead - lining up with the band's own left edge (which sits well inside that
+// span) would overlap the host it's sitting next to.
+private const val TRAIL_LEFT_OF_FULL = HOST_WIDTH * HOST_RIGHT_EDGE + 0.02f
 // Row 0 is reserved for the host and the trail of picks below it; every band of choices fans
 // out starting one row above that, never on top of it.
 private const val BAND_BASE_ROW = 1
@@ -223,7 +226,7 @@ private fun StackPill(
             selected = leaving && isHost,
             modifier = Modifier
                 .align(Alignment.BottomStart)
-                .fillMaxWidth(0.66f)
+                .fillMaxWidth(HOST_WIDTH)
                 .offsetByFractionOfParent(offset.value)
                 .absoluteBleed(OVERHANG)
                 .graphicsLayer { translationY = lift.value }
@@ -246,7 +249,7 @@ private fun HostPill(node: MenuNode, rowsBelow: Int, onClick: () -> Unit) {
             selected = true,
             modifier = Modifier
                 .align(Alignment.BottomStart)
-                .fillMaxWidth(0.66f)
+                .fillMaxWidth(HOST_WIDTH)
                 .offsetByFractionOfParent(HOST_RIGHT_EDGE - 1f)
                 .graphicsLayer { translationY = drop.value * density }
                 .clickable(onClick = onClick)
@@ -387,7 +390,7 @@ private fun TrailRow(trail: List<MenuNode>, hueOwner: String, onTapCrumb: (Int) 
         Row(
             Modifier
                 .align(Alignment.BottomStart)
-                .offsetByFractionOfParent(CHILD_LEFT_OF_FULL),
+                .offsetByFractionOfParent(TRAIL_LEFT_OF_FULL),
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             trail.forEachIndexed { i, node ->
@@ -406,7 +409,11 @@ private fun TrailCrumb(node: MenuNode, hueOwner: String, onClick: () -> Unit) {
         cap = node.cap,
         hue = Azphalt.hueOf(hueOwner),
         selected = false,
-        modifier = Modifier.clickable(onClick = onClick)
+        // Every other pill in the menu gets its width from fillMaxWidth against a fraction of
+        // the screen; a Row of these can't do that (they'd all fight for the full row), so this
+        // is the one pill sized by content alone - give it a floor so a short label like "ls"
+        // doesn't shrink-wrap into something visibly smaller than everything around it.
+        modifier = Modifier.defaultMinSize(minWidth = 56.dp).clickable(onClick = onClick)
     )
 }
 
