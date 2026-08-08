@@ -14,8 +14,8 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.hereliesaz.hg2gui.PermissionCodes
-import com.hereliesaz.hg2gui.tuils.StoppableThread
-import com.hereliesaz.hg2gui.tuils.Tuils
+import com.hereliesaz.hg2gui.util.StoppableThread
+import com.hereliesaz.hg2gui.util.Utils
 import it.andreuzzi.comparestring2.StringableObject
 import java.util.Collections
 
@@ -138,7 +138,7 @@ class ContactManager(private val context: Context) {
                         }
 
                         // Normalize number to avoid duplicates (e.g. spacing differences)
-                        val normalized = number.replace(Tuils.SPACE.toRegex(), Tuils.EMPTYSTRING)
+                        val normalized = number.replace(Utils.SPACE.toRegex(), Utils.EMPTYSTRING)
                         if (!nrml.contains(normalized)) {
                             nrml.add(normalized)
                             lastNumbers.add(number)
@@ -190,7 +190,7 @@ class ContactManager(private val context: Context) {
                 b.append(cnt.name)
 
                 for (n in cnt.numbers) {
-                    b.append(Tuils.NEWLINE)
+                    b.append(Utils.NEWLINE)
                     b.append("\t")
                     b.append(n)
                 }
@@ -262,7 +262,7 @@ class ContactManager(private val context: Context) {
         }
 
         about[NAME] = mCursor.getString(displayNameCol)
-        about[NUMBERS] = Tuils.EMPTYSTRING
+        about[NUMBERS] = Utils.EMPTYSTRING
 
         var timesContacted = -1
         var lastContacted = Long.MAX_VALUE
@@ -274,7 +274,7 @@ class ContactManager(private val context: Context) {
             if (tempL > 0) lastContacted = if (tempL < lastContacted) tempL else lastContacted
 
             val n = mCursor.getString(numberCol)
-            about[NUMBERS] = (if (about[NUMBERS]!!.isNotEmpty()) about[NUMBERS] + Tuils.NEWLINE else Tuils.EMPTYSTRING) + n
+            about[NUMBERS] = (if (about[NUMBERS]!!.isNotEmpty()) about[NUMBERS] + Utils.NEWLINE else Utils.EMPTYSTRING) + n
         } while (mCursor.moveToNext())
         mCursor.close()
 

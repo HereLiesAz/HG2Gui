@@ -1,45 +1,33 @@
 package com.hereliesaz.hg2gui.ui.menu
 
 import android.content.Context
-import com.hereliesaz.hg2gui.commands.CommandAbstraction
 import com.hereliesaz.hg2gui.terminal.DistroManager
 import com.hereliesaz.hg2gui.terminal.DpkgCatalog
 import java.io.File
 
 /*
- * The suggestion tree, built from the live CommandGroup rather than a hand-written list, so a
- * command added to the `raw` package shows up here without this file being touched.
- *
- * Commands have no name() — CommandGroup identifies them by class simple name, which is also
- * what the user types (`clear` is the class `clear`). That is the identifier used throughout.
+ * The suggestion tree. Shell is discovered live from the Termux bootstrap's own PATH; System,
+ * Apps & nav and Features are a fixed, hand-written list of the ten Builtins verbs (see
+ * `terminal/Builtins.kt`) - there is no reflection-based command framework left to discover
+ * them from, and no plan to grow this list by convention rather than by hand.
  */
 
 object CommandTree {
 
-    private val SYSTEM = setOf(
-        "airplane", "battery", "status", "bluetooth", "brightness", "calc", "call", "clear",
-        "config", "data", "exit", "flash", "location", "music", "notifications", "refresh",
-        "restart", "share", "shell", "time", "vibrate", "volume", "wifi"
-    )
-    private val APPS = setOf("apps", "alias", "cntcts", "open", "uninstall", "search")
+    private val SYSTEM = setOf("wifi", "bluetooth", "airplane", "flash", "volume", "brightness")
+    private val APPS = setOf("call", "contacts")
+    private val FEATURES = setOf("vfs", "edit", "calc")
 
     /** Argument hints for the commands whose arguments are not discoverable at runtime. */
     private val ARGS = mapOf(
-        "wifi" to listOf("on", "off", "status"),
-        "bluetooth" to listOf("on", "off", "scan"),
-        "airplane" to listOf("on", "off"),
-        "flash" to listOf("on", "off"),
-        "brightness" to listOf("auto", "+10", "-10"),
-        "volume" to listOf("media", "ring", "alarm"),
-        "time" to listOf("now", "alarm"),
-        "apps" to listOf("-ls", "-i", "-h"),
-        "cntcts" to listOf("-ls", "-s"),
-        "notes" to listOf("-a", "-ls"),
-        "switchos" to listOf("ubuntu", "macos", "windows")
+        "volume" to listOf("get", "set media", "profile"),
+        "brightness" to listOf("auto", "50", "100"),
+        "contacts" to listOf("ls", "add", "about", "edit", "rm"),
+        "vfs" to listOf("ls", "pwd", "cd", "mkdir", "touch", "cat", "rm", "mv", "cp", "mount")
     )
 
     /** Built-ins whose argument is a file, not a literal choice - they get a file… picker child. */
-    private val FILE_PARAM_COMMANDS = setOf("open", "tuixt")
+    private val FILE_PARAM_COMMANDS = setOf("edit")
 
     /** Curated flag hints for the handful of real shell binaries worth hand-picking for; every
      *  other binary discovered on PATH still gets a plain file… child and can take whatever
@@ -123,8 +111,6 @@ object CommandTree {
             children = children
         )
     }
-
-    private fun CommandAbstraction.commandName(): String = javaClass.simpleName
 
     private fun shellLeaf(fullName: String, label: String, filePickerRoot: File): MenuNode {
         val hints = SHELL_HINTS[fullName].orEmpty().map { MenuNode("sh/$fullName/$it", it) }
@@ -239,20 +225,14 @@ object CommandTree {
         }
     }
 
-    fun from(commands: List<CommandAbstraction>, context: Context): List<MenuNode> {
-        val names = commands.map { it.commandName() }
-
-        val system = names.filter { it in SYSTEM }
-        val apps = names.filter { it in APPS }
-        val features = names.filter { it !in SYSTEM && it !in APPS }
-
+    fun from(context: Context): List<MenuNode> {
         val filePickerRoot = pickerRoot(context)
         val shellRoots = scanShell(context, filePickerRoot)
 
         return shellRoots + listOf(
-            MenuNode("sys", "System", system.size.toString(), system.map { node(it, filePickerRoot) }),
-            MenuNode("apps", "Apps & nav", apps.size.toString(), apps.map { node(it, filePickerRoot) }),
-            MenuNode("feat", "Features", features.size.toString(), features.map { node(it, filePickerRoot) })
+            MenuNode("sys", "System", SYSTEM.size.toString(), SYSTEM.sorted().map { node(it, filePickerRoot) }),
+            MenuNode("apps", "Apps & nav", APPS.size.toString(), APPS.sorted().map { node(it, filePickerRoot) }),
+            MenuNode("feat", "Features", FEATURES.size.toString(), FEATURES.sorted().map { node(it, filePickerRoot) })
         )
     }
 }

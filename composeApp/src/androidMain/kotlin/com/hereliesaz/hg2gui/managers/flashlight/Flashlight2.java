@@ -26,7 +26,7 @@ import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
-import com.hereliesaz.hg2gui.tuils.PrivateIOReceiver;
+import com.hereliesaz.hg2gui.util.PrivateIOReceiver;
 
 /**
  * Created by I327891 on 04-Feb-17.
