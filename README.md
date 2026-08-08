@@ -30,11 +30,14 @@ Inspired by the *Hitchhiker's Guide to the Galaxy* (2005) aesthetic and built on
     command), and alias hints (`gs` for `git status`, and friends) surface as ordinary pills,
     implemented natively rather than as a shell plugin — there's no live PTY for a shell's own
     line editor to attach to.
-*   **Linux-like CLI.** Built-in commands for apps, files and system settings, dispatched ahead
-    of the shell so `apps` means the app list rather than whatever is on `PATH`.
+*   **A fixed set of built-ins for what Android exposes no shell path to.** System toggles
+    (wifi, bluetooth, airplane mode, flashlight, volume, brightness), `call`/`contacts`, a
+    sandboxed `vfs` filesystem, `calc`, and `edit` — a small Compose text editor for files a
+    real terminal editor can't render without a pty. Everything else (`apps`, `alias`, sharing
+    files, and so on) is a real shell binary now, not a reimplementation of one.
 *   **Sessions.** Named terminal sessions, each with its own scrollback and working directory.
-*   **Aliases.** Custom aliases for frequent commands.
-*   **RSS reader**, **`tuixt`** (an in-terminal text editor), and **themes**.
+*   **Aliases.** Native shell aliases plus `ShellAliases.kt`'s own suggestion pills — no
+    duplicate alias system layered on top of the real shell's.
 
 ## Interface
 
@@ -45,35 +48,43 @@ cascades its children upward from it. Output arrives in a record tile, not a scr
 
 ## Project structure
 
-Kotlin Multiplatform (Compose) for the UI and execution layer; the legacy command engine is
-still Java, called through from Kotlin.
+Kotlin Multiplatform (Compose) for the UI and execution layer. There is no separate command
+framework: the ten built-ins are a fixed dispatch table (`terminal/Builtins.kt`), not a
+reflection-discovered plugin system.
 
 *   `composeApp/src/commonMain/kotlin/com/hereliesaz/hg2gui/`
     *   `terminal/ShellSession.kt` — the `expect` shell-session contract, plus
         `ShellAliases.kt` — Kotlin-native alias expansion, history autosuggestion and "did you
         mean", implemented here rather than as a shell plugin because there's no live PTY for a
         real shell line editor to attach to.
+    *   `util/CalculationEngine.kt` — the expression parser behind `calc`.
     *   `ui/` — Compose UI. `TerminalScreen.kt` (the terminal), `SessionUiState.kt` (per-session
-        state, including the pending-prompt hand-off for interactive commands).
+        state, including the pending-prompt hand-off for interactive commands), `ui/editor/` (the
+        `edit` command's text editor screen), `ui/files/` (the `vfs` sandbox's file browser).
     *   `ui/menu/PillMenu.kt` — the suggestion tree and its choreography. `MenuNode` supports
         lazily-resolved children (`resolveChildren`) for live data, like a directory listing.
 *   `composeApp/src/androidMain/kotlin/com/hereliesaz/hg2gui/`
-    *   `TerminalActivity.kt` — the entry point.
+    *   `TerminalActivity.kt` — the entry point. `EditorActivity.kt` — hosts the `edit` screen,
+        and is also the target of another app's VIEW/EDIT intent on a text file.
     *   `terminal/` — execution. `ShellSession.kt` (the `actual` implementation: a long-lived
         shell framed by a sentinel that reports exit status and working directory, with
         idle-based detection of a stalled interactive prompt), `TerminalEngine.kt` (routes a
-        line to a built-in or to the shell), `DistroManager.kt` (downloads and extracts the
-        real Termux bootstrap), `DpkgCatalog.kt` (reads dpkg's own bookkeeping for which package
-        owns a given binary — Termux's packages carry no Debian Section field to read a category
-        from directly, so `CommandTree`'s own hand-curated map turns package into category).
-    *   `ui/menu/CommandTree.kt` — builds the tree: legacy built-ins into System / Apps & nav /
+        line to a built-in, the bootstrap installer, or the shell), `Builtins.kt` (the ten
+        built-ins: system toggles, `call`/`contacts`, `vfs`, `calc`, `edit`), `DistroManager.kt`
+        (downloads and extracts the real Termux bootstrap), `DpkgCatalog.kt` (reads dpkg's own
+        bookkeeping for which package owns a given binary — Termux's packages carry no Debian
+        Section field to read a category from directly, so `CommandTree`'s own hand-curated map
+        turns package into category).
+    *   `ui/menu/CommandTree.kt` — builds the tree: the ten built-ins into System / Apps & nav /
         Features, real PATH binaries by category (Package management, Network, Development, …)
         with hyphenated command families (`apt-get`/`apt-key`/…) nested under their shared
         parent.
     *   `ui/menu/FileBrowser.kt` — the in-stack graphical file picker.
-    *   `commands/` — implementation of all built-in commands.
-    *   `managers/` — suggestions, apps, files, system integration.
-    *   `tuils/` — utilities.
+    *   `managers/` — `ContactManager.kt` (contacts, for `call`/`contacts`), `VfsManager.kt` (the
+        sandboxed filesystem `vfs` and the Files screen operate on), `flashlight/` (the torch
+        implementation behind `flash`).
+    *   `util/` — the handful of shared helpers (logging, crash reporting, the interactive-shell
+        wrapper, `GenericFileProvider`) still in use.
 *   `composeApp/src/androidMain/res/` — resources. Jost lives in `res/font/`.
 
 ## Build

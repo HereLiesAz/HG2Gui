@@ -1,6 +1,7 @@
 package com.hereliesaz.hg2gui
 
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -20,21 +21,17 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.core.content.edit
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
-import com.hereliesaz.hg2gui.commands.BaseCommandGroup
-import com.hereliesaz.hg2gui.commands.tuixt.TuixtActivity
 import com.hereliesaz.hg2gui.managers.ContactManager
 import com.hereliesaz.hg2gui.managers.TerminalHistoryEntry
-import com.hereliesaz.hg2gui.managers.TuiLocationManager
 import com.hereliesaz.hg2gui.managers.VfsManager
-import com.hereliesaz.hg2gui.managers.xml.XMLPrefsManager
-import com.hereliesaz.hg2gui.managers.xml.options.Ui
+import com.hereliesaz.hg2gui.terminal.Builtins
 import com.hereliesaz.hg2gui.terminal.DistroManager
 import com.hereliesaz.hg2gui.terminal.TerminalEngine
-import com.hereliesaz.hg2gui.tuils.Tuils
-import com.hereliesaz.hg2gui.tuils.interfaces.Reloadable
+import com.hereliesaz.hg2gui.util.Utils
 import com.hereliesaz.hg2gui.ui.HG2GuiTheme
 import com.hereliesaz.hg2gui.ui.SessionUiState
 import com.hereliesaz.hg2gui.ui.SettingsScreen
@@ -51,27 +48,31 @@ import kotlinx.coroutines.withContext
 /** A live shell paired with the UI state (scrollback, history, cwd) that only it owns. */
 private class TerminalSession(val ui: SessionUiState, val engine: TerminalEngine)
 
-class TerminalActivity : ComponentActivity(), Reloadable {
+private const val PREFS_NAME = "hg2gui_prefs"
+private const val PREF_FULLSCREEN = "fullscreen"
+private const val PREF_FONT_SCALE_PERCENT = "font_scale_percent"
 
-    private var main: MainManager? = null
+class TerminalActivity : ComponentActivity() {
+
     private var sessions by mutableStateOf(listOf<TerminalSession>())
     private var nextSessionNumber = 2
 
     private enum class Screen { Terminal, Settings, Guide, Files }
 
     private data class InitResult(
-        val main: MainManager,
         val engine: TerminalEngine,
         val tree: List<MenuNode>,
         val fullscreen: Boolean,
         val fontScalePercent: Int
     )
 
+    private val prefs: SharedPreferences by lazy { getSharedPreferences(PREFS_NAME, MODE_PRIVATE) }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
-        Tuils.init(applicationContext)
+        Utils.init(applicationContext)
 
         setContent {
             var tree by remember { mutableStateOf<List<MenuNode>?>(null) }
@@ -97,26 +98,16 @@ class TerminalActivity : ComponentActivity(), Reloadable {
 
             LaunchedEffect(Unit) {
                 val built = withContext(Dispatchers.Default) {
-                    XMLPrefsManager.loadCommons(this@TerminalActivity)
-
-                    val builtMain = MainManager(this@TerminalActivity, this@TerminalActivity)
-                    val builtEngine = TerminalEngine(
-                        this@TerminalActivity, builtMain, builtMain.mainPack?.currentDirectory
-                    )
-                    val builtTree = CommandTree.from(
-                        builtMain.mainPack?.commandGroup?.commands?.toList().orEmpty(),
-                        this@TerminalActivity
-                    )
+                    val builtEngine = TerminalEngine(this@TerminalActivity)
+                    val builtTree = CommandTree.from(this@TerminalActivity)
                     InitResult(
-                        main = builtMain,
                         engine = builtEngine,
                         tree = builtTree,
-                        fullscreen = XMLPrefsManager.getBoolean(Ui.fullscreen),
-                        fontScalePercent = XMLPrefsManager.getInt(Ui.font_scale_percent)
+                        fullscreen = prefs.getBoolean(PREF_FULLSCREEN, false),
+                        fontScalePercent = prefs.getInt(PREF_FONT_SCALE_PERCENT, 100)
                     )
                 }
 
-                main = built.main
                 val firstUi = SessionUiState(id = "1", name = "main", cwd = built.engine.workingDirectory)
                 sessions = listOf(TerminalSession(firstUi, built.engine))
                 activeSessionId = firstUi.id
@@ -140,12 +131,7 @@ class TerminalActivity : ComponentActivity(), Reloadable {
                         if (i == entryId) e.copy(isRunning = false) else e
                     }
                     firstUi.running = false
-                    tree = withContext(Dispatchers.IO) {
-                        CommandTree.from(
-                            built.main.mainPack?.commandGroup?.commands?.toList().orEmpty(),
-                            this@TerminalActivity
-                        )
-                    }
+                    tree = withContext(Dispatchers.IO) { CommandTree.from(this@TerminalActivity) }
                 }
             }
 
@@ -160,16 +146,12 @@ class TerminalActivity : ComponentActivity(), Reloadable {
                         fullscreen = fullscreen,
                         onFullscreenChange = { value ->
                             fullscreen = value
-                            scope.launch(Dispatchers.IO) {
-                                Ui.fullscreen.parent().write(Ui.fullscreen, value.toString())
-                            }
+                            prefs.edit { putBoolean(PREF_FULLSCREEN, value) }
                         },
                         fontScalePercent = fontScalePercent,
                         onFontScalePercentChange = { value ->
                             fontScalePercent = value
-                            scope.launch(Dispatchers.IO) {
-                                Ui.font_scale_percent.parent().write(Ui.font_scale_percent, value.toString())
-                            }
+                            prefs.edit { putInt(PREF_FONT_SCALE_PERCENT, value) }
                         },
                         onBack = { screen = Screen.Terminal }
                     )
@@ -201,8 +183,8 @@ class TerminalActivity : ComponentActivity(), Reloadable {
                                     VfsManager.resolve(this@TerminalActivity, name)
                                 }
                                 if (file != null) {
-                                    val intent = Intent(this@TerminalActivity, TuixtActivity::class.java)
-                                    intent.putExtra(TuixtActivity.PATH, file.absolutePath)
+                                    val intent = Intent(this@TerminalActivity, EditorActivity::class.java)
+                                    intent.putExtra(EditorActivity.PATH, file.absolutePath)
                                     startActivity(intent)
                                 }
                             }
@@ -237,19 +219,16 @@ class TerminalActivity : ComponentActivity(), Reloadable {
                         activeSessionId = activeSessionId,
                         onSessionPick = { activeSessionId = it },
                         onNewSession = {
-                            val m = main
-                            if (m != null) {
-                                scope.launch {
-                                    val newEngine = withContext(Dispatchers.Default) {
-                                        TerminalEngine(this@TerminalActivity, m, m.mainPack?.currentDirectory)
-                                    }
-                                    val id = (nextSessionNumber++).toString()
-                                    val newUi = SessionUiState(
-                                        id = id, name = "session $id", cwd = newEngine.workingDirectory
-                                    )
-                                    sessions = sessions + TerminalSession(newUi, newEngine)
-                                    activeSessionId = id
+                            scope.launch {
+                                val newEngine = withContext(Dispatchers.Default) {
+                                    TerminalEngine(this@TerminalActivity)
                                 }
+                                val id = (nextSessionNumber++).toString()
+                                val newUi = SessionUiState(
+                                    id = id, name = "session $id", cwd = newEngine.workingDirectory
+                                )
+                                sessions = sessions + TerminalSession(newUi, newEngine)
+                                activeSessionId = id
                             }
                         },
                         onCloseSession = { id ->
@@ -279,15 +258,7 @@ class TerminalActivity : ComponentActivity(), Reloadable {
                             // A package manager (pkg/apt/pip/npm) can change what's actually on
                             // PATH; re-scan so the Shell pills reflect that instead of the
                             // snapshot from whenever the tree was last built.
-                            val m = main
-                            if (m != null) {
-                                tree = withContext(Dispatchers.IO) {
-                                    CommandTree.from(
-                                        m.mainPack?.commandGroup?.commands?.toList().orEmpty(),
-                                        this@TerminalActivity
-                                    )
-                                }
-                            }
+                            tree = withContext(Dispatchers.IO) { CommandTree.from(this@TerminalActivity) }
                         }
                     )
 
@@ -310,13 +281,6 @@ class TerminalActivity : ComponentActivity(), Reloadable {
         }
     }
 
-    override fun reload() {
-        finish()
-        startActivity(intent)
-    }
-
-    override fun addMessage(header: String, message: String) {}
-
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<String>,
@@ -324,40 +288,19 @@ class TerminalActivity : ComponentActivity(), Reloadable {
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         val granted = grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }
-        // Three different managers request permissions with three different codes, each
-        // expecting to hear back its own way - only COMMAND_REQUEST_PERMISSION's path was ever
-        // wired up here, so ContactManager's and TuiLocationManager's requests granted the
-        // permission but then never resumed: nothing was listening for either broadcast they
-        // depend on to know it happened.
-        when (requestCode) {
-            PermissionCodes.COMMAND_REQUEST_PERMISSION -> {
-                if (granted) {
-                    val lastCmd = main?.mainPack?.lastCommand
-                    if (!lastCmd.isNullOrBlank()) {
-                        main?.onCommand(lastCmd, null as String?, false)
-                    }
-                } else {
-                    main?.sendPermissionNotGrantedWarning()
-                }
-            }
-            PermissionCodes.COMMAND_SUGGESTION_REQUEST_PERMISSION -> {
-                if (granted) {
-                    LocalBroadcastManager.getInstance(this).sendBroadcast(Intent(ContactManager.ACTION_REFRESH))
-                }
-            }
-            PermissionCodes.LOCATION_REQUEST_PERMISSION -> {
-                val result = Intent(TuiLocationManager.ACTION_GOT_PERMISSION).putExtra(
-                    XMLPrefsManager.VALUE_ATTRIBUTE,
-                    if (granted) PackageManager.PERMISSION_GRANTED else PackageManager.PERMISSION_DENIED
-                )
-                LocalBroadcastManager.getInstance(this).sendBroadcast(result)
-            }
+        if (requestCode == PermissionCodes.COMMAND_SUGGESTION_REQUEST_PERMISSION && granted) {
+            // ContactManager's own refresh is what's listening for this - it's the one builtin
+            // whose permission grant needs to kick off work with no further user input.
+            LocalBroadcastManager.getInstance(this).sendBroadcast(Intent(ContactManager.ACTION_REFRESH))
         }
+        // Every other builtin's permission request (COMMAND_REQUEST_PERMISSION) is answered by
+        // just running the same pill or command again - the system permission dialog itself is
+        // the only feedback needed in the meantime.
     }
 
     override fun onDestroy() {
         sessions.forEach { it.engine.destroy() }
-        main?.destroy()
+        Builtins.destroy(this)
         super.onDestroy()
     }
 }

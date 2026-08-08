@@ -9,7 +9,7 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import java.util.List;
 
-import com.hereliesaz.hg2gui.tuils.PrivateIOReceiver;
+import com.hereliesaz.hg2gui.util.PrivateIOReceiver;
 
 /**
  * Created by francescoandreuzzi on 20/08/2017.

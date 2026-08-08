@@ -68,9 +68,6 @@ kotlin {
             implementation(compose.components.uiToolingPreview)
             
             implementation(libs.okhttp)
-            implementation(libs.htmlcleaner)
-            implementation(libs.json.path)
-            implementation(libs.jsoup)
             implementation(libs.comparestring2)
         }
         androidMain.dependencies {

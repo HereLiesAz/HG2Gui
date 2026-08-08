@@ -1,8 +1,5 @@
 # Command Reference
 
-This document lists the built-in commands in HG2Gui — the legacy `commands/main/raw/` classes,
-grouped exactly as the headings below (see `ui/menu/CommandTree.kt`).
-
 ## Shell
 
 Real shell binaries aren't listed here — they aren't a fixed set. `CommandTree` discovers them
@@ -20,60 +17,36 @@ Before a bootstrap is installed, Shell offers exactly one pill: **`bootstrap`** 
 runs automatically on first launch, the same way the official Termux app installs itself before
 ever showing a prompt.
 
-## System & Utilities
-*   `airplane`: Toggle airplane mode.
-*   `battery` / `status`: Show battery and system status.
-*   `bluetooth`: Toggle or manage Bluetooth.
-*   `brightness`: Adjust screen brightness.
-*   `calc`: Simple calculator.
-*   `call`: Make a phone call.
-*   `clear`: Clear the terminal screen.
-*   `config`: Manage settings.
-*   `data`: Toggle mobile data (root may be required).
-*   `exit`: Close the terminal.
-*   `flash`: Toggle flashlight.
-*   `location`: Manage location services.
-*   `music`: Control music playback.
-*   `notifications`: Read or clear notifications.
-*   `refresh`: Refresh cached data (apps, contacts).
-*   `restart`: Restart the app.
-*   `share`: Share text or files.
-*   `shell`: Execute native shell commands.
-*   `time`: Show time or set alarms.
-*   `vibrate`: Vibrate the device.
-*   `volume`: Adjust volume levels.
-*   `wifi`: Toggle WiFi.
+## Built-in commands
 
-## Apps & Navigation
-*   `apps`: List installed applications.
-*   `alias`: Manage command aliases.
-*   `cntcts`: Search or list contacts.
-*   `open`: Open a file or URL.
-*   `uninstall`: Uninstall an app.
-*   `search`: Web search.
+These ten are the only commands HG2Gui itself implements — see `terminal/Builtins.kt`. Every
+other verb (app launching, file sharing, `alias`, editing with `nano`/`vim`, and so on) is a
+real shell binary now, not a reimplementation of one.
 
-## Features
-*   `bootstrap`: Install the real Termux rootfs (`bash`, `apt`/`pkg`, coreutils). Runs
-    automatically on first launch; only needed by hand to re-run or recover it.
-*   `changelog`: View app changelog.
-*   `devutils`: Developer utilities.
-*   `donate`: Support the developer.
-*   `guide`: Open the Hitchhiker's Guide (Help).
-*   `help`: Show help for commands.
-*   `htmlextract`: Extract content from HTML.
-*   `notes`: Manage simple notes.
-*   `panic`: Trigger the Panic Mode.
-*   `rate`: Rate the app.
-*   `regex`: Regex testing utility.
-*   `rss`: RSS feed reader.
-*   `session`: Create, switch or close terminal sessions.
-*   `switchos`: Switch the simulated OS theme/context.
-*   `theme`: Apply or manage themes.
-*   `tui`: About T-UI.
-*   `tuixt`: In-terminal text editor.
-*   `tutorial`: Run the initial tutorial.
+### System
+*   `wifi`: Show Wi-Fi state and open the quick panel to change it (a third-party app can't
+    toggle Wi-Fi directly on modern Android).
+*   `bluetooth`: Request to enable Bluetooth, or open settings to disable it (no public disable
+    API for third-party apps since Android 13).
+*   `airplane`: Open airplane mode settings — no app can toggle this directly on any supported
+    Android version.
+*   `flash`: Toggle the flashlight (requests camera permission on first use).
+*   `volume`: `volume` / `volume get [stream]` to read levels, `volume set <stream> <0-100>`,
+    `volume profile <normal|vibrate|silent>`. Streams: `call`, `system`, `ring`, `media`,
+    `alarm`, `notification`.
+*   `brightness`: `brightness <0-100>` or `brightness auto` (requests the "modify system
+    settings" permission on first use).
 
-## Removed
+### Apps & navigation
+*   `call <name or number>`: Place a call, resolving a contact name via `ContactManager`.
+*   `contacts <ls|add|about|edit|rm> [number]`: List, add (via the system Contacts app), look up,
+    edit or remove a contact.
 
-`menu` and `surface` opened the graphical app-picker menus (Mitosis, Snake, Magnet, Origami).
-Those are launcher surfaces for choosing apps from a home screen; the command tree replaces them.
+### Features
+*   `vfs <ls|cd|pwd|mkdir|touch|cat|rm|mv|cp|mount> [args]`: The sandboxed filesystem rooted at
+    the app's private storage — also browsable graphically via the Files screen. `vfs mount`
+    bind-mounts it onto a real path and requires root.
+*   `calc <expression>`: Evaluate a math expression (`+ - * / ^ sqrt sin cos tan`).
+*   `edit <file>`: Open the in-app text editor. `ShellSession` has no pty, so a real terminal
+    editor would render garbled if run through it; `edit` is a plain Compose screen instead. Also
+    registers as a `text/*` VIEW/EDIT handler, so other apps can open files in it.

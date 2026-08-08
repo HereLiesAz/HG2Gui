@@ -3,7 +3,7 @@ package com.hereliesaz.hg2gui.terminal
 import android.content.Context
 import android.os.Build
 import android.system.Os
-import com.hereliesaz.hg2gui.tuils.Tuils
+import com.hereliesaz.hg2gui.util.Utils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -100,7 +100,7 @@ object DistroManager {
             emit("Bootstrap successful! You can now use 'apt', 'pkg', and real coreutils.")
         } catch (e: Exception) {
             emit("Error during bootstrap: ${e.message}")
-            Tuils.log(e)
+            Utils.log(e)
         } finally {
             if (destFile.exists()) destFile.delete()
         }
@@ -150,7 +150,7 @@ object DistroManager {
             try {
                 Os.symlink(target, linkFile.absolutePath)
             } catch (e: Exception) {
-                Tuils.log(e)
+                Utils.log(e)
             }
         }
     }
