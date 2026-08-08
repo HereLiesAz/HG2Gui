@@ -43,9 +43,6 @@ capsule, modifier keys (`ctrl` `alt` `esc` `tab` `↑` `↓`), and the command t
 category sends the stack off the left edge, drops that pill to the bottom of the screen, and
 cascades its children upward from it. Output arrives in a record tile, not a scrollback wall.
 
-The visual language matches [Azphalt](https://azphalt.org) — a yellow page, no borders, no shadows,
-no icons; a capsule is the only primitive.
-
 ## Project structure
 
 Kotlin Multiplatform (Compose) for the UI and execution layer; the legacy command engine is
