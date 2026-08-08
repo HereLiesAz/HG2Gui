@@ -27,6 +27,30 @@ val resolvedVersionName = project.findProperty("versionName")?.toString() ?: Str
     buildNumber
 )
 
+// Populated by .github/actions/android-keystore in CI (release-play.yml); absent for a plain
+// local `assembleRelease`, which then just builds unsigned like it always has. When
+// QUICLOC_REQUIRE_SIGNING is set, a missing/incomplete keystore fails the build here, at
+// configuration time, instead of producing an unsigned bundle that only fails later, in
+// ./.github/actions/verify-android-signature or at the Play upload itself.
+val quiclocKeystoreFile = System.getenv("QUICLOC_KEYSTORE_FILE")
+val quiclocKeystoreType = System.getenv("QUICLOC_KEYSTORE_TYPE")
+val quiclocKeystorePassword = System.getenv("QUICLOC_KEYSTORE_PASSWORD")
+val quiclocKeyAlias = System.getenv("QUICLOC_KEY_ALIAS")
+val quiclocKeyPassword = System.getenv("QUICLOC_KEY_PASSWORD")
+val quiclocRequireSigning = System.getenv("QUICLOC_REQUIRE_SIGNING").toBoolean()
+
+val hasReleaseSigningEnv = !quiclocKeystoreFile.isNullOrBlank() &&
+    !quiclocKeystorePassword.isNullOrBlank() &&
+    !quiclocKeyAlias.isNullOrBlank() &&
+    !quiclocKeyPassword.isNullOrBlank()
+
+if (quiclocRequireSigning && !hasReleaseSigningEnv) {
+    error(
+        "QUICLOC_REQUIRE_SIGNING is set but one or more of QUICLOC_KEYSTORE_FILE / " +
+            "QUICLOC_KEYSTORE_PASSWORD / QUICLOC_KEY_ALIAS / QUICLOC_KEY_PASSWORD is missing."
+    )
+}
+
 kotlin {
     androidTarget {
         compilerOptions {
@@ -92,6 +116,18 @@ android {
         }
     }
     
+    signingConfigs {
+        if (hasReleaseSigningEnv) {
+            create("release") {
+                storeFile = file(quiclocKeystoreFile!!)
+                storePassword = quiclocKeystorePassword
+                keyAlias = quiclocKeyAlias
+                keyPassword = quiclocKeyPassword
+                if (!quiclocKeystoreType.isNullOrBlank()) storeType = quiclocKeystoreType
+            }
+        }
+    }
+
     buildTypes {
         getByName("release") {
             isMinifyEnabled = true
@@ -100,6 +136,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfigs.findByName("release")?.let { signingConfig = it }
         }
     }
     
