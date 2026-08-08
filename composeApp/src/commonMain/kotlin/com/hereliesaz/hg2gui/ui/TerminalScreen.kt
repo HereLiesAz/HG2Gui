@@ -50,7 +50,12 @@ fun TerminalScreen(
     onOpenSettings: () -> Unit,
     onOpenGuide: () -> Unit,
     onOpenFiles: () -> Unit,
-    onRun: suspend (sessionId: String, line: String, onOutput: (String) -> Unit) -> Unit
+    onRun: suspend (
+        sessionId: String,
+        line: String,
+        onOutput: (String) -> Unit,
+        onNeedInput: suspend (prompt: String) -> String
+    ) -> Unit
 ) {
     val active = sessions.first { it.id == activeSessionId }
     val scope = rememberCoroutineScope()
@@ -58,61 +63,83 @@ fun TerminalScreen(
 
     val executeCommand = {
         val session = active
-        val fullLine = buildString {
-            if (session.tokens.isNotEmpty()) append(session.tokens.joinToString(" "))
-            if (session.inputText.isNotBlank()) {
-                if (isNotEmpty()) append(" ")
-                append(session.inputText.trim())
-            }
-        }.trim()
-
-        if (fullLine.isNotEmpty() && !session.running) {
-            session.running = true
-            if (session.commandHistory.isEmpty() || session.commandHistory.last() != fullLine) {
-                session.commandHistory = session.commandHistory + fullLine
-            }
-            session.historyIndex = -1
-            val lineToRun = fullLine
-            // Aliases are expanded only for what actually reaches the shell - hintForRanCommand
-            // needs the line the user actually typed, unexpanded, to know whether they already
-            // used the shortcut.
-            val execLine = ShellAliases.expand(lineToRun)
+        val pendingPrompt = session.pendingPrompt
+        if (pendingPrompt != null) {
+            // RUN doubles as SEND while a command is stalled waiting on us - the answer is
+            // whatever's built up exactly like a normal command line would be, just handed to
+            // the running process instead of starting a new one.
+            val answer = buildString {
+                if (session.tokens.isNotEmpty()) append(session.tokens.joinToString(" "))
+                if (session.inputText.isNotBlank()) {
+                    if (isNotEmpty()) append(" ")
+                    append(session.inputText.trim())
+                }
+            }.trim()
             session.tokens = emptyList()
             session.inputText = ""
+            session.answerPrompt(answer)
+        } else {
+            val fullLine = buildString {
+                if (session.tokens.isNotEmpty()) append(session.tokens.joinToString(" "))
+                if (session.inputText.isNotBlank()) {
+                    if (isNotEmpty()) append(" ")
+                    append(session.inputText.trim())
+                }
+            }.trim()
 
-            // Add initial entry
-            val entryId = session.buffer.size
-            session.buffer = session.buffer + TerminalHistoryEntry(command = lineToRun, isRunning = true)
+            if (fullLine.isNotEmpty() && !session.running) {
+                session.running = true
+                if (session.commandHistory.isEmpty() || session.commandHistory.last() != fullLine) {
+                    session.commandHistory = session.commandHistory + fullLine
+                }
+                session.historyIndex = -1
+                val lineToRun = fullLine
+                // Aliases are expanded only for what actually reaches the shell - hintForRanCommand
+                // needs the line the user actually typed, unexpanded, to know whether they already
+                // used the shortcut.
+                val execLine = ShellAliases.expand(lineToRun)
+                session.tokens = emptyList()
+                session.inputText = ""
 
-            scope.launch {
-                try {
-                    onRun(session.id, execLine) { outputChunk ->
-                        // Update the buffer with the streaming output
+                // Add initial entry
+                val entryId = session.buffer.size
+                session.buffer = session.buffer + TerminalHistoryEntry(command = lineToRun, isRunning = true)
+
+                scope.launch {
+                    try {
+                        onRun(
+                            session.id,
+                            execLine,
+                            { outputChunk ->
+                                // Update the buffer with the streaming output
+                                session.buffer = session.buffer.mapIndexed { index, entry ->
+                                    if (index == entryId) {
+                                        entry.copy(output = outputChunk)
+                                    } else {
+                                        entry
+                                    }
+                                }
+                            },
+                            { prompt -> session.awaitPromptAnswer(prompt) }
+                        )
+                    } catch (e: Exception) {
                         session.buffer = session.buffer.mapIndexed { index, entry ->
                             if (index == entryId) {
-                                entry.copy(output = outputChunk)
+                                entry.copy(output = entry.output + "\nerror: ${e.message}")
                             } else {
                                 entry
                             }
                         }
-                    }
-                } catch (e: Exception) {
-                    session.buffer = session.buffer.mapIndexed { index, entry ->
-                        if (index == entryId) {
-                            entry.copy(output = entry.output + "\nerror: ${e.message}")
-                        } else {
-                            entry
+                    } finally {
+                        session.buffer = session.buffer.mapIndexed { index, entry ->
+                            if (index == entryId) entry.copy(isRunning = false) else entry
                         }
+                        session.running = false
                     }
-                } finally {
-                    session.buffer = session.buffer.mapIndexed { index, entry ->
-                        if (index == entryId) entry.copy(isRunning = false) else entry
-                    }
-                    session.running = false
-                }
 
-                if (session.buffer.isNotEmpty()) {
-                    listState.animateScrollToItem(session.buffer.size - 1)
+                    if (session.buffer.isNotEmpty()) {
+                        listState.animateScrollToItem(session.buffer.size - 1)
+                    }
                 }
             }
         }
@@ -165,11 +192,28 @@ fun TerminalScreen(
 
         Eyebrow("01 — Command tree")
 
+        // A stalled command shaped like a yes/no question gets a dedicated Answer stack so the
+        // reply is a tap, not typed text - same stack, same mechanism as everything else: YES
+        // and NO are ordinary terminal leaves, so picking one auto-runs (here, auto-sends) via
+        // the exact same isTerminal path a normal command completes through.
+        val pendingPrompt = active.pendingPrompt
+        val answerNode = if (pendingPrompt != null && ShellAliases.looksLikeYesNo(pendingPrompt)) {
+            MenuNode(
+                id = "answer",
+                label = "Answer",
+                children = listOf(
+                    MenuNode(id = "answer-yes", label = "YES", value = "y"),
+                    MenuNode(id = "answer-no", label = "NO", value = "n")
+                )
+            )
+        } else null
+
         // The suggestion host, when it has anything to offer, rides along as just one more
         // root in the same stack every other command lives in - not a second PillMenu next to
-        // it. It lands last, so it fans out from the row closest to the command line.
+        // it. Whichever of these lands last fans out from the row closest to the command line -
+        // a pending answer takes that spot over a suggestion, since it's the more urgent one.
         val suggestionNode = suggestionNodeFor(active)
-        val effectiveTree = if (suggestionNode != null) tree + suggestionNode else tree
+        val effectiveTree = tree + listOfNotNull(suggestionNode, answerNode)
 
         PillMenu(
             roots = effectiveTree,
@@ -178,7 +222,8 @@ fun TerminalScreen(
                 active.tokens = picked
                 active.inputText = ""
                 // A pick that just fully resolved every parameter a command needs runs right
-                // away instead of waiting for a separate tap on RUN.
+                // away instead of waiting for a separate tap on RUN - or, if a prompt is
+                // pending, sends the pick as that prompt's answer the same way.
                 if (isTerminal) executeCommand()
             }
         )
@@ -188,12 +233,14 @@ fun TerminalScreen(
             inputText = active.inputText,
             onInputTextChange = { active.inputText = it },
             hint = when {
+                pendingPrompt != null -> pendingPrompt.substringAfterLast('\n').ifBlank { "Waiting for input…" }
                 active.running -> "Running…"
                 active.tokens.isNotEmpty() || active.inputText.isNotBlank() -> "Ready — press run"
                 active.tokens.isEmpty() -> "Pick a category"
                 else -> "Pick a command"
             },
-            enabled = !active.running && (active.tokens.isNotEmpty() || active.inputText.isNotBlank()),
+            runLabel = if (pendingPrompt != null) "SEND" else "RUN",
+            enabled = pendingPrompt != null || (!active.running && (active.tokens.isNotEmpty() || active.inputText.isNotBlank())),
             onRun = executeCommand
         )
 
@@ -397,7 +444,8 @@ private fun CommandLine(
     onInputTextChange: (String) -> Unit,
     hint: String,
     enabled: Boolean,
-    onRun: () -> Unit
+    onRun: () -> Unit,
+    runLabel: String = "RUN"
 ) {
     Column(Modifier.padding(horizontal = 20.dp).padding(top = 16.dp)) {
         Text(
@@ -465,9 +513,9 @@ private fun CommandLine(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    "RUN", 
+                    runLabel,
                     style = MaterialTheme.typography.titleMedium.copy(
-                        color = Azphalt.White, 
+                        color = Azphalt.White,
                         fontSize = 9.sp
                     )
                 )

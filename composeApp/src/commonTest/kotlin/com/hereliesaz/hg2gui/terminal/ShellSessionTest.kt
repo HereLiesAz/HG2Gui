@@ -102,4 +102,35 @@ class ShellSessionTest {
         assertEquals("second", s.exec("echo second").output)
         assertEquals("third", s.exec("echo third").output)
     }
+
+    @Test
+    fun surfacesAndAnswersAPromptInsteadOfHanging() {
+        val s = shell ?: return
+        var promptSeen: String? = null
+        var finalOutput = ""
+        val exitCode = s.stream(
+            "printf 'Continue? [y/N] '; read ans; echo \"got:\$ans\"",
+            onLine = { line -> finalOutput = line },
+            onNeedInput = { prompt ->
+                promptSeen = prompt
+                "yes"
+            }
+        )
+        assertEquals(0, exitCode)
+        assertTrue(promptSeen?.contains("Continue?") == true, "expected the stalled prompt text to be surfaced: $promptSeen")
+        assertTrue(finalOutput.contains("got:yes"), "expected the supplied answer to reach the running command: $finalOutput")
+    }
+
+    @Test
+    fun decliningToAnswerLeavesTheSessionAliveAfterTimeout() {
+        val s = shell ?: return
+        var promptOffered = false
+        s.stream(
+            "printf 'Continue? [y/N] '; read ans; echo \"got:\$ans\"",
+            onLine = { },
+            onNeedInput = { promptOffered = true; null }
+        )
+        assertTrue(promptOffered, "expected the stall to still be offered even with no answer available")
+        assertTrue(s.isAlive, "declining an answer must fall through to the existing timeout backstop, not hang forever")
+    }
 }

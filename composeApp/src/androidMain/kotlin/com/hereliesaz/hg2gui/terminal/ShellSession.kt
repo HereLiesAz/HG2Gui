@@ -33,6 +33,10 @@ actual class ShellSession private constructor(
         private const val ZSH_LIB_NAME = "libzsh.so"
         private const val TIMEOUT_MS = 15_000L
         private const val STARTUP_PROBE_MS = 300L
+        // How long output has to sit idle, with no trailing newline and no sentinel in sight,
+        // before an unterminated tail is treated as a live prompt rather than just a command
+        // that's still working - long enough that ordinary output bursts don't misfire this.
+        private const val PROMPT_IDLE_MS = 400L
 
         // zsh's own interactive features - autosuggestions, fuzzy/prefix history search,
         // command-not-found hints - are what make typing on a touch keyboard bearable, so this
@@ -256,11 +260,11 @@ actual class ShellSession private constructor(
         // streams in) - so the final call already holds everything; appending every call on top
         // of itself would restack the same growing transcript into itself.
         var output = ""
-        val exitCode = stream(command) { line -> output = line }
+        val exitCode = stream(command, onLine = { line -> output = line }, onNeedInput = { null })
         return ShellSessionResult(output, exitCode, _workingDirectory)
     }
 
-    actual fun stream(command: String, onLine: (line: String) -> Unit): Int {
+    actual fun stream(command: String, onLine: (line: String) -> Unit, onNeedInput: (prompt: String) -> String?): Int {
         if (!isAlive) {
             onLine("shell is not running")
             return -1
@@ -271,7 +275,7 @@ actual class ShellSession private constructor(
         try {
             val sin = stdin ?: throw IOException("stdin is null")
             val sout = stdout ?: throw IOException("stdout is null")
-            
+
             // Create a headless VT100 parser for this execution
             val emulator = TerminalEmulator(DummyTerminalOutput(), 120, 24, 10, 10, 1000, null)
 
@@ -280,7 +284,15 @@ actual class ShellSession private constructor(
             sin.write("printf '%s%d:%s\\n' \"$SENTINEL\" \"$?\" \"\$PWD\"\n")
             sin.flush()
 
-            val deadline = System.currentTimeMillis() + TIMEOUT_MS
+            // pending accumulates every raw character read since the command started (never
+            // trimmed - the sentinel search and the prompt check both need the full backlog);
+            // emittedUpTo is how much of it has already been handed to the emulator/onLine.
+            val pending = StringBuilder()
+            var emittedUpTo = 0
+            var deadline = System.currentTimeMillis() + TIMEOUT_MS
+            var lastDataAt = System.currentTimeMillis()
+            var promptOfferedForThisStall = false
+            val buf = CharArray(4096)
 
             while (true) {
                 if (System.currentTimeMillis() > deadline) {
@@ -290,7 +302,43 @@ actual class ShellSession private constructor(
                     break
                 }
 
-                if (!sout.ready()) {
+                if (sout.ready()) {
+                    val n = sout.read(buf)
+                    if (n == -1) {
+                        alive.set(false)
+                        break
+                    }
+                    if (n > 0) {
+                        pending.append(buf, 0, n)
+                        lastDataAt = System.currentTimeMillis()
+                        promptOfferedForThisStall = false
+                    }
+                } else {
+                    val marker = pending.indexOf(SENTINEL, emittedUpTo)
+                    val idleMs = System.currentTimeMillis() - lastDataAt
+                    val tailIsUnterminated = pending.length > emittedUpTo &&
+                        pending[pending.length - 1] != '\n' && pending[pending.length - 1] != '\r'
+
+                    // A command genuinely waiting on stdin - "Overwrite file? [y/N] " and the
+                    // like - never prints its own trailing newline while it waits, which is
+                    // exactly what readLine() used to hang forever on. An idle gap with an
+                    // unterminated tail and no sentinel yet is the same shape: ask for an answer
+                    // instead of just continuing to wait on bytes that aren't coming until we do.
+                    if (!promptOfferedForThisStall && marker < 0 && tailIsUnterminated && idleMs > PROMPT_IDLE_MS) {
+                        promptOfferedForThisStall = true
+                        emittedUpTo = flush(pending, emittedUpTo, pending.length, emulator, onLine)
+                        val answer = onNeedInput(pending.substring(0, pending.length))
+                        if (answer != null) {
+                            sin.write(answer)
+                            sin.write("\n")
+                            sin.flush()
+                            lastDataAt = System.currentTimeMillis()
+                            // The stall was ours to resolve, not the shell's - give the command
+                            // a fresh window to respond instead of counting the wait against it.
+                            deadline = System.currentTimeMillis() + TIMEOUT_MS
+                        }
+                    }
+
                     try {
                         Thread.sleep(10L)
                     } catch (e: InterruptedException) {
@@ -304,42 +352,33 @@ actual class ShellSession private constructor(
                     continue
                 }
 
-                val line = sout.readLine()
-                if (line == null) {
-                    alive.set(false)
-                    break
+                val marker = pending.indexOf(SENTINEL, emittedUpTo)
+                if (marker < 0) {
+                    // Hold back a safety tail the length of the sentinel, in case it's been
+                    // split across two reads - everything before that is definitely real output.
+                    val safeEnd = (pending.length - SENTINEL.length).coerceAtLeast(emittedUpTo)
+                    emittedUpTo = flush(pending, emittedUpTo, safeEnd, emulator, onLine)
+                    continue
                 }
 
-                val marker = line.indexOf(SENTINEL)
-                if (marker >= 0) {
-                    if (marker > 0) {
-                        // readLine() already stripped the real line terminator, so this has to
-                        // supply one back - and a real pty would have translated the shell's
-                        // outgoing \n to \r\n (ONLCR), which the emulator relies on to return the
-                        // cursor to column 0. A bare \n only moves it down a row, leaving column
-                        // wherever the previous line ended - a real pty isn't in the loop here,
-                        // so that translation has to happen by hand.
-                        val bytes = (line.substring(0, marker) + "\r\n").toByteArray(Charsets.UTF_8)
-                        emulator.append(bytes, bytes.size)
-                    }
+                // The sentinel itself arrived; wait for the rest of its own line (exit code +
+                // pwd) if it hasn't fully landed yet.
+                val newlineIdx = pending.indexOf("\n", marker + SENTINEL.length)
+                if (newlineIdx < 0) continue
 
-                    val tail = line.substring(marker + SENTINEL.length)
-                    val split = tail.indexOf(':')
-                    if (split > 0) {
-                        try {
-                            exitCode = tail.substring(0, split).toInt()
-                        } catch (ignored: NumberFormatException) {
-                        }
-                        val pwd = tail.substring(split + 1)
-                        if (pwd.isNotEmpty()) _workingDirectory = pwd
+                emittedUpTo = flush(pending, emittedUpTo, marker, emulator, onLine)
+                val tail = pending.substring(marker + SENTINEL.length, newlineIdx).trimEnd('\r')
+                val split = tail.indexOf(':')
+                if (split > 0) {
+                    try {
+                        exitCode = tail.substring(0, split).toInt()
+                    } catch (ignored: NumberFormatException) {
                     }
-                    onLine(emulator.mScreen.transcriptTextWithFullLinesJoined)
-                    break
+                    val pwd = tail.substring(split + 1)
+                    if (pwd.isNotEmpty()) _workingDirectory = pwd
                 }
-
-                val bytes = (line + "\r\n").toByteArray(Charsets.UTF_8)
-                emulator.append(bytes, bytes.size)
                 onLine(emulator.mScreen.transcriptTextWithFullLinesJoined)
+                break
             }
         } catch (e: IOException) {
             alive.set(false)
@@ -348,6 +387,26 @@ actual class ShellSession private constructor(
         }
 
         return exitCode
+    }
+
+    /** Feeds pending[from, to) to the emulator and reports it via onLine; returns the new cursor. */
+    private fun flush(
+        pending: StringBuilder,
+        from: Int,
+        to: Int,
+        emulator: TerminalEmulator,
+        onLine: (String) -> Unit
+    ): Int {
+        if (to <= from) return from
+        val chunk = pending.substring(from, to)
+        // readLine() used to strip real line terminators and this had to supply one back; now
+        // that raw reads keep them, this just has to normalize bare \n the same way a real pty's
+        // ONLCR translation would - the emulator needs \r\n to return the cursor to column 0,
+        // and there's no real pty in this loop to do that translation for it.
+        val bytes = chunk.replace("\r\n", "\n").replace("\n", "\r\n").toByteArray(Charsets.UTF_8)
+        emulator.append(bytes, bytes.size)
+        onLine(emulator.mScreen.transcriptTextWithFullLinesJoined)
+        return to
     }
 
     actual fun close() {

@@ -66,6 +66,11 @@ object ShellAliases {
         return NOT_FOUND_PATTERNS.any { lower.contains(it) }
     }
 
+    // Matches the shapes real prompts actually use: "[y/N]", "(yes/no)", "Y/n?", etc.
+    private val YES_NO_PATTERN = Regex("""(?i)[\[(]\s*y(?:es)?\s*/\s*n(?:o)?\s*[\])]|\by\s*/\s*n\b""")
+
+    fun looksLikeYesNo(prompt: String): Boolean = YES_NO_PATTERN.containsMatchIn(prompt)
+
     /** Closest known command word to [failed], among alias keys/expansions plus [known] extras. */
     fun didYouMean(failed: String, known: List<String> = emptyList()): String? {
         if (failed.isBlank() || table.containsKey(failed)) return null

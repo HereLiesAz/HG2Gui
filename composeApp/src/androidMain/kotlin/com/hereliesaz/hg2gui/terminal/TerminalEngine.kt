@@ -13,6 +13,7 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -59,9 +60,12 @@ class TerminalEngine(
     val workingDirectory: String get() = shell.workingDirectory
 
     /**
-     * Runs [line] and returns a Flow of its output lines.
+     * Runs [line] and returns a Flow of its output lines. [onNeedInput] is asked, suspending,
+     * for an answer whenever the shell looks like it's stalled waiting on stdin - a real prompt,
+     * not a hang. It bridges into ShellSession's blocking callback via runBlocking, which is
+     * safe here since this whole branch already runs on a background dispatcher.
      */
-    fun run(line: String): Flow<String> = callbackFlow {
+    fun run(line: String, onNeedInput: suspend (prompt: String) -> String): Flow<String> = callbackFlow {
         val trimmed = line.trim()
         if (trimmed.isEmpty()) {
             close()
@@ -78,9 +82,11 @@ class TerminalEngine(
             }
         } else {
             launch(Dispatchers.IO) {
-                shell.stream(trimmed) { line ->
-                    trySend(line)
-                }
+                shell.stream(
+                    trimmed,
+                    onLine = { line -> trySend(line) },
+                    onNeedInput = { prompt -> runBlocking { onNeedInput(prompt) } }
+                )
                 close()
             }
         }

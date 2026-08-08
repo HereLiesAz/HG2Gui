@@ -243,9 +243,9 @@ class TerminalActivity : ComponentActivity(), Reloadable {
                             refreshFiles()
                             screen = Screen.Files
                         },
-                        onRun = { sessionId, line, onOutput ->
+                        onRun = { sessionId, line, onOutput, onNeedInput ->
                             val session = sessions.first { it.ui.id == sessionId }
-                            session.engine.run(line).collect { output -> onOutput(output) }
+                            session.engine.run(line, onNeedInput).collect { output -> onOutput(output) }
                             session.ui.cwd = session.engine.workingDirectory
                             // A package manager (pkg/apt/pip/npm) can change what's actually on
                             // PATH; re-scan so the Shell pills reflect that instead of the
