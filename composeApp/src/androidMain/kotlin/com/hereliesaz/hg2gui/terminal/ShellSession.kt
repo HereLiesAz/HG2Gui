@@ -24,7 +24,7 @@ class DummyTerminalOutput : TerminalOutput() {
 actual class ShellSession private constructor(
     home: File?,
     command: Array<String>,
-    ldLibraryPath: String?
+    extraEnv: Map<String, String>
 ) {
 
     companion object {
@@ -34,6 +34,10 @@ actual class ShellSession private constructor(
         private const val TIMEOUT_MS = 15_000L
         private const val STARTUP_PROBE_MS = 300L
 
+        // zsh's own interactive features - autosuggestions, syntax highlighting, fuzzy history
+        // search, fzf - are what make typing on a touch keyboard bearable, so this is the
+        // preferred shell whenever the bundled static zsh binary is available; oh-my-zsh and its
+        // plugins are cloned once, on first use, rather than shipped in the APK.
         private fun setupZshrc(home: File?) {
             if (home == null) return
             try {
@@ -96,16 +100,46 @@ actual class ShellSession private constructor(
             }
         }
 
+        /**
+         * zsh (with oh-my-zsh's autosuggestions/syntax-highlighting/fuzzy-search) is what
+         * actually makes typing on a touch keyboard pleasant, so it's tried first. A real
+         * Termux bootstrap (see DistroManager), if installed, is tried next - genuine `bash`,
+         * `apt`/`pkg`, real coreutils - ahead of bare `/system/bin/sh` (Android's own shell,
+         * toybox-only, no package manager), which is the last resort.
+         */
         fun forAndroid(home: File?, context: Context): ShellSession {
             val zsh = File(context.applicationInfo.nativeLibraryDir, ZSH_LIB_NAME)
             if (zsh.canExecute()) {
                 setupZshrc(home)
-                val session = ShellSession(
-                    home, arrayOf(zsh.absolutePath), zsh.parent
-                )
+                val env = buildMap {
+                    put("LD_LIBRARY_PATH", zsh.parent.orEmpty())
+                    if (home != null) put("HOME", home.absolutePath)
+                }
+                val session = ShellSession(home, arrayOf(zsh.absolutePath), env)
                 if (session.survivedStartup()) return session
                 session.close()
             }
+
+            if (DistroManager.isInstalled(context)) {
+                val prefix = DistroManager.prefixDir(context)
+                val bash = File(prefix, "bin/bash")
+                if (bash.canExecute()) {
+                    val bootstrapHome = home ?: DistroManager.homeDir(context)
+                    if (!bootstrapHome.exists()) bootstrapHome.mkdirs()
+                    val env = mapOf(
+                        "HOME" to bootstrapHome.absolutePath,
+                        "PREFIX" to prefix.absolutePath,
+                        "PATH" to "${prefix.absolutePath}/bin",
+                        "LD_LIBRARY_PATH" to "${prefix.absolutePath}/lib",
+                        "TMPDIR" to "${prefix.absolutePath}/tmp",
+                        "LANG" to "en_US.UTF-8"
+                    )
+                    val session = ShellSession(bootstrapHome, arrayOf(bash.absolutePath, "-l"), env)
+                    if (session.survivedStartup()) return session
+                    session.close()
+                }
+            }
+
             return ShellSession(home)
         }
     }
@@ -125,9 +159,9 @@ actual class ShellSession private constructor(
     actual val isAlive: Boolean
         get() = alive.get() && process != null && processStillRunning()
 
-    constructor(home: File?) : this(home, arrayOf(DEFAULT_SHELL), null)
+    constructor(home: File?) : this(home, arrayOf(DEFAULT_SHELL), emptyMap())
 
-    constructor(home: File?, shellPath: String) : this(home, arrayOf(shellPath), null)
+    constructor(home: File?, shellPath: String) : this(home, arrayOf(shellPath), emptyMap())
 
     actual constructor(homePath: String?) : this(homePath?.let { File(it) })
 
@@ -138,9 +172,8 @@ actual class ShellSession private constructor(
             val builder = ProcessBuilder(*command)
             builder.redirectErrorStream(true)
             if (home != null && home.isDirectory) builder.directory(home)
-            if (ldLibraryPath != null) {
-                builder.environment()["LD_LIBRARY_PATH"] = ldLibraryPath
-                if (home != null) builder.environment()["HOME"] = home.absolutePath
+            if (extraEnv.isNotEmpty()) {
+                builder.environment().putAll(extraEnv)
             }
 
             val p = builder.start()
