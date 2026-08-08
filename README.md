@@ -2,8 +2,7 @@
 
 **HG2Gui** is a touch-optimised terminal designed after Douglas Adams' The Hitchhiker's Guide to the Galaxy — every command, subcommand and argument is an animated pill thinger you tap, with the goal being to use a real shell without a keyboard. 
 
-Inspired by the *Hitchhiker's Guide to the Galaxy* (2005) aesthetic and built on the legacy of
-T-UI Launcher, from which it has been decoupled.
+Inspired by the *Hitchhiker's Guide to the Galaxy* (2005) aesthetic and built on Termux.
 
 ## Features
 
