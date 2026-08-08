@@ -57,14 +57,6 @@ object CommandTree {
     // an unbounded list.
     private const val MAX_SHELL_ENTRIES = 300
 
-    /** Guaranteed baseline so Shell is never empty. SELinux commonly denies directory *listing*
-     *  on /system/bin to non-privileged apps even though the binaries themselves stay directly
-     *  executable, so a scan turning up nothing (or throwing) is an expected outcome on plenty
-     *  of real devices, not just a theoretical edge case - this is what actually still runs. */
-    private val FALLBACK_SHELL = listOf(
-        "ls", "cd", "pwd", "cat", "ps", "df", "id", "uname", "getprop", "ping"
-    )
-
     private fun pickerRoot(context: Context): File =
         if (DistroManager.isInstalled(context)) DistroManager.homeDir(context)
         else context.getExternalFilesDir(null) ?: context.filesDir
@@ -87,26 +79,26 @@ object CommandTree {
     private fun CommandAbstraction.commandName(): String = javaClass.simpleName
 
     /**
-     * The real binaries on the shell's own PATH — the bootstrapped Termux prefix's bin/ if one
-     * is installed, otherwise Android's own /system/bin — so apt/pkg and anything pkg installs
-     * (python, node, pip, whatever) show up automatically instead of needing to be hand-listed
-     * here. Every discovered binary also gets a file… child for picking a real path argument.
+     * The real binaries on the shell's own PATH - which, exactly like real Termux, means only
+     * the bootstrapped prefix's bin/, never Android's own /system/bin. Termux doesn't fall back
+     * to the system shell either: it bootstraps its own coreutils and treats that prefix as the
+     * entire world, so a device's toybox was never meant to stand in for it. Before a bootstrap
+     * is installed there's honestly nothing to list yet - so Shell offers exactly the one real
+     * command available at that point, the one that fixes that.
      */
     private fun scanShell(context: Context, filePickerRoot: File): List<MenuNode> {
-        val binDir = if (DistroManager.isInstalled(context)) {
-            File(DistroManager.prefixDir(context), "bin")
-        } else {
-            File("/system/bin")
+        if (!DistroManager.isInstalled(context)) {
+            return listOf(MenuNode(id = "sh/bootstrap", label = "bootstrap", cap = "run"))
         }
-        val scanned = try {
+
+        val binDir = File(DistroManager.prefixDir(context), "bin")
+        val names = try {
             (binDir.listFiles() ?: emptyArray())
                 .filter { it.isFile && it.canExecute() }
                 .map { it.name }
         } catch (e: SecurityException) {
             emptyList()
-        }
-
-        val names = scanned.ifEmpty { FALLBACK_SHELL }.distinct().sorted()
+        }.distinct().sorted()
 
         val capped = names.take(MAX_SHELL_ENTRIES)
         val nodes = capped.map { name ->
