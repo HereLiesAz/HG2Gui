@@ -76,7 +76,9 @@ fun CommandGuideScreen(
         PillMenu(
             roots = tree,
             modifier = Modifier.weight(1f).padding(horizontal = 20.dp, vertical = 12.dp),
-            onRun = onCommandSelected
+            // The guide only ever writes a pick into the input - see the doc comment above -
+            // so isTerminal (the auto-run signal) is irrelevant here.
+            onRun = { picked, _ -> onCommandSelected(picked) }
         )
     }
 }

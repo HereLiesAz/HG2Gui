@@ -1,6 +1,9 @@
 package com.hereliesaz.hg2gui.ui.menu
 
+import android.content.Context
 import com.hereliesaz.hg2gui.commands.CommandAbstraction
+import com.hereliesaz.hg2gui.terminal.DistroManager
+import java.io.File
 
 /*
  * The suggestion tree, built from the live CommandGroup rather than a hand-written list, so a
@@ -30,63 +33,103 @@ object CommandTree {
         "time" to listOf("now", "alarm"),
         "apps" to listOf("-ls", "-i", "-h"),
         "cntcts" to listOf("-ls", "-s"),
-        "open" to listOf("url", "file"),
         "notes" to listOf("-a", "-ls"),
-        "switchos" to listOf("ubuntu", "macos", "windows"),
-        "tuixt" to listOf("file")
+        "switchos" to listOf("ubuntu", "macos", "windows")
     )
 
-    /**
-     * The shell verbs offered alongside the built-ins. These run in the ShellSession rather
-     * than the Java command engine, so the set is whatever the device's shell actually has —
-     * a stock Android shell is toybox, so this is deliberately conservative.
-     */
-    private val SHELL = listOf(
+    /** Built-ins whose argument is a file, not a literal choice - they get a file… picker child. */
+    private val FILE_PARAM_COMMANDS = setOf("open", "tuixt")
+
+    /** Curated flag hints for the handful of real shell binaries worth hand-picking for; every
+     *  other binary discovered on PATH still gets a plain file… child and can take whatever
+     *  else the user types besides. */
+    private val SHELL_HINTS = mapOf(
         "ls" to listOf("-l", "-a", "-la"),
         "cd" to listOf("..", "/sdcard", "~"),
-        "pwd" to emptyList(),
-        "cat" to emptyList(),
         "ps" to listOf("-A"),
         "df" to listOf("-h"),
-        "id" to emptyList(),
         "uname" to listOf("-a"),
-        "getprop" to emptyList(),
         "ping" to listOf("-c 4 1.1.1.1")
     )
 
-    private fun node(name: String): MenuNode = MenuNode(
-        id = name,
-        label = name,
-        cap = ARGS[name]?.size?.toString() ?: "run",
-        children = ARGS[name].orEmpty().map { MenuNode("$name/$it", it) }
-    )
+    // A busybox-style multicall bin/ can carry far more names than the fan-out animation is
+    // built to show at once; this caps the count rather than silently rendering (or hanging on)
+    // an unbounded list.
+    private const val MAX_SHELL_ENTRIES = 300
+
+    private fun pickerRoot(context: Context): File =
+        if (DistroManager.isInstalled(context)) DistroManager.homeDir(context)
+        else context.getExternalFilesDir(null) ?: context.filesDir
+
+    private fun node(name: String, filePickerRoot: File): MenuNode {
+        val argChildren = ARGS[name].orEmpty().map { MenuNode("$name/$it", it) }
+        val children = if (name in FILE_PARAM_COMMANDS) {
+            argChildren + FileBrowser.pickerNode("$name/file", filePickerRoot)
+        } else {
+            argChildren
+        }
+        return MenuNode(
+            id = name,
+            label = name,
+            cap = if (children.isEmpty()) "run" else children.size.toString(),
+            children = children
+        )
+    }
 
     private fun CommandAbstraction.commandName(): String = javaClass.simpleName
 
-    fun from(commands: List<CommandAbstraction>): List<MenuNode> {
+    /**
+     * The real binaries on the shell's own PATH — the bootstrapped Termux prefix's bin/ if one
+     * is installed, otherwise Android's own /system/bin — so apt/pkg and anything pkg installs
+     * (python, node, pip, whatever) show up automatically instead of needing to be hand-listed
+     * here. Every discovered binary also gets a file… child for picking a real path argument.
+     */
+    private fun scanShell(context: Context, filePickerRoot: File): List<MenuNode> {
+        val binDir = if (DistroManager.isInstalled(context)) {
+            File(DistroManager.prefixDir(context), "bin")
+        } else {
+            File("/system/bin")
+        }
+        val names = (binDir.listFiles() ?: emptyArray())
+            .filter { it.isFile && it.canExecute() }
+            .map { it.name }
+            .distinct()
+            .sorted()
+
+        val capped = names.take(MAX_SHELL_ENTRIES)
+        val nodes = capped.map { name ->
+            val hints = SHELL_HINTS[name].orEmpty().map { MenuNode("sh/$name/$it", it) }
+            val children = hints + FileBrowser.pickerNode("sh/$name/file", filePickerRoot)
+            MenuNode(id = "sh/$name", label = name, cap = children.size.toString(), children = children)
+        }
+
+        return if (names.size > capped.size) {
+            nodes + MenuNode(
+                id = "sh/more",
+                label = "+${names.size - capped.size} more",
+                cap = "…",
+                emitsToken = false
+            )
+        } else {
+            nodes
+        }
+    }
+
+    fun from(commands: List<CommandAbstraction>, context: Context): List<MenuNode> {
         val names = commands.map { it.commandName() }
 
         val system = names.filter { it in SYSTEM }
         val apps = names.filter { it in APPS }
         val features = names.filter { it !in SYSTEM && it !in APPS }
 
-        val shell = SHELL.map { (name, args) ->
-            MenuNode(
-                id = "sh/$name",
-                label = name,
-                cap = if (args.isEmpty()) "run" else args.size.toString(),
-                children = args.map { MenuNode("sh/$name/$it", it) }
-            )
-        }
+        val filePickerRoot = pickerRoot(context)
+        val shell = scanShell(context, filePickerRoot)
 
         return listOf(
             MenuNode("sh", "Shell", shell.size.toString(), shell),
-            MenuNode("sys", "System", system.size.toString(), system.map(::node)),
-            MenuNode("apps", "Apps & nav", apps.size.toString(), apps.map(::node)),
-            MenuNode("feat", "Features", features.size.toString(), features.map(::node))
+            MenuNode("sys", "System", system.size.toString(), system.map { node(it, filePickerRoot) }),
+            MenuNode("apps", "Apps & nav", apps.size.toString(), apps.map { node(it, filePickerRoot) }),
+            MenuNode("feat", "Features", features.size.toString(), features.map { node(it, filePickerRoot) })
         )
     }
-
-    /** Fallback used by previews, and when the command engine has not finished loading. */
-    fun empty(): List<MenuNode> = from(emptyList())
 }

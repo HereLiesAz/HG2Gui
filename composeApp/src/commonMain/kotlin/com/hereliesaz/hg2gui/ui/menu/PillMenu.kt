@@ -77,8 +77,26 @@ data class MenuNode(
     val id: String,
     val label: String,
     val cap: String? = null,
-    val children: List<MenuNode> = emptyList()
+    val children: List<MenuNode> = emptyList(),
+    // Resolves this node's real children on demand - a directory listing, a PATH scan - instead
+    // of a list fully materialized up front. Takes priority over [children] when present. Called
+    // once per navigation into this node (see PillMenu's `effectiveChildren`), not on every
+    // recomposition, since it can do real I/O.
+    val resolveChildren: (() -> List<MenuNode>)? = null,
+    // The token text this node contributes when picked, if different from what's shown on the
+    // pill - e.g. a file leaf displays just its name but contributes its full path.
+    val value: String? = null,
+    // False for purely navigational nodes (a "browse for a file" trigger, a directory on the way
+    // to one) that should never themselves become part of the command line - only the leaf a
+    // pick chain actually resolves to should.
+    val emitsToken: Boolean = true
 )
+
+/** The literal command-line text this node contributes when picked, or null if it never does. */
+private fun MenuNode.tokenValue(): String? = if (emitsToken) (value ?: label) else null
+
+/** True once picking this node fully resolves a parameter - nothing more to drill into. */
+private fun MenuNode.isTerminal(): Boolean = children.isEmpty() && resolveChildren == null
 
 private sealed interface Phase {
     object Browsing : Phase
@@ -90,7 +108,10 @@ private sealed interface Phase {
 fun PillMenu(
     roots: List<MenuNode>,
     modifier: Modifier = Modifier,
-    onRun: (List<String>) -> Unit = {}
+    // isTerminal is true only when this call reports a pick that just fully resolved a
+    // parameter (nothing left to drill into) - the signal a caller needs to auto-run instead of
+    // waiting for a separate confirmation.
+    onRun: (tokens: List<String>, isTerminal: Boolean) -> Unit = { _, _ -> }
 ) {
     var phase by remember { mutableStateOf<Phase>(Phase.Browsing) }
     // Everything picked below the root host. Each pick drops out of the band it was chosen
@@ -123,7 +144,7 @@ fun PillMenu(
                                 onClick = {
                                     phase = Phase.Leaving(node.id)
                                     tokens = emptyList()
-                                    onRun(tokens)
+                                    onRun(tokens, false)
                                     scope.launch {
                                         delay(Azphalt.SLIDE_MS.toLong())
                                         trail = emptyList()
@@ -140,15 +161,19 @@ fun PillMenu(
                 val host = roots.first { it.id == p.hostId }
                 val rowsBelow = roots.size - 1 - roots.indexOf(host)
                 val anchor = trail.lastOrNull() ?: host
+                // Resolved once per anchor, not on every recomposition - resolveChildren can do
+                // real I/O (a directory listing, a PATH scan), and remember(anchor.id) keeps
+                // that to one call per navigation into this node.
+                val effectiveChildren = remember(anchor.id) { anchor.resolveChildren?.invoke() ?: anchor.children }
 
-                if (anchor.children.isNotEmpty()) {
+                if (effectiveChildren.isNotEmpty()) {
                     key(anchor.id) {
                         ChildBand(
-                            parent = anchor,
+                            children = effectiveChildren,
                             hueOwner = host.id,
                             onPick = { child ->
-                                tokens = trail.map { it.label } + child.label
-                                onRun(tokens)
+                                tokens = (trail + child).mapNotNull { it.tokenValue() }
+                                onRun(tokens, child.isTerminal())
                                 scope.launch {
                                     // Let the pick's own drop-and-grow finish, plus one beat to
                                     // settle, before swapping the band for its children - so the
@@ -169,7 +194,7 @@ fun PillMenu(
                         phase = Phase.Browsing
                         trail = emptyList()
                         tokens = emptyList()
-                        onRun(tokens)
+                        onRun(tokens, false)
                     }
                 )
 
@@ -178,8 +203,8 @@ fun PillMenu(
                     hueOwner = host.id,
                     onTapCrumb = { i ->
                         trail = trail.take(i)
-                        tokens = trail.map { it.label }
-                        onRun(tokens)
+                        tokens = trail.mapNotNull { it.tokenValue() }
+                        onRun(tokens, false)
                     }
                 )
             }
@@ -276,14 +301,16 @@ private fun HostPill(node: MenuNode, rowsBelow: Int, onClick: () -> Unit) {
  */
 @Composable
 private fun ChildBand(
-    parent: MenuNode,
+    children: List<MenuNode>,
     hueOwner: String,
     onPick: (MenuNode) -> Unit
 ) {
-    var selected by remember(parent.id) { mutableStateOf<String?>(null) }
+    // No key needed here - the call site already wraps this whole band in key(anchor.id), so a
+    // new anchor tears down and recreates this state automatically.
+    var selected by remember { mutableStateOf<String?>(null) }
 
     Box(Modifier.fillMaxSize()) {
-        parent.children.forEachIndexed { idx, child ->
+        children.forEachIndexed { idx, child ->
             key(child.id) {
                 val isSelected = child.id == selected
                 ChildPill(

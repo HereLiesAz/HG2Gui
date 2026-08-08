@@ -99,7 +99,8 @@ class TerminalActivity : ComponentActivity(), Reloadable {
                         this@TerminalActivity, builtMain, builtMain.mainPack?.currentDirectory
                     )
                     val builtTree = CommandTree.from(
-                        builtMain.mainPack?.commandGroup?.commands?.toList().orEmpty()
+                        builtMain.mainPack?.commandGroup?.commands?.toList().orEmpty(),
+                        this@TerminalActivity
                     )
                     InitResult(
                         main = builtMain,
@@ -246,6 +247,18 @@ class TerminalActivity : ComponentActivity(), Reloadable {
                             val session = sessions.first { it.ui.id == sessionId }
                             session.engine.run(line).collect { output -> onOutput(output) }
                             session.ui.cwd = session.engine.workingDirectory
+                            // A package manager (pkg/apt/pip/npm) can change what's actually on
+                            // PATH; re-scan so the Shell pills reflect that instead of the
+                            // snapshot from whenever the tree was last built.
+                            val m = main
+                            if (m != null) {
+                                tree = withContext(Dispatchers.IO) {
+                                    CommandTree.from(
+                                        m.mainPack?.commandGroup?.commands?.toList().orEmpty(),
+                                        this@TerminalActivity
+                                    )
+                                }
+                            }
                         }
                     )
 

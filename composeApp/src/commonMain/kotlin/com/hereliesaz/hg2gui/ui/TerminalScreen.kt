@@ -174,9 +174,12 @@ fun TerminalScreen(
         PillMenu(
             roots = effectiveTree,
             modifier = Modifier.weight(if (active.buffer.isEmpty()) 1f else 0.6f).padding(horizontal = 20.dp, vertical = 12.dp),
-            onRun = {
-                active.tokens = it
+            onRun = { picked, isTerminal ->
+                active.tokens = picked
                 active.inputText = ""
+                // A pick that just fully resolved every parameter a command needs runs right
+                // away instead of waiting for a separate tap on RUN.
+                if (isTerminal) executeCommand()
             }
         )
 
