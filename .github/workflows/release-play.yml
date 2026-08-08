@@ -120,7 +120,7 @@ jobs:
           allprojects {
               afterEvaluate { project ->
                   if (project.plugins.hasPlugin("com.android.application")) {
-                      println "QUICLOC_APP_ID=" + project.android.defaultConfig.applicationId
+                      println "APP_ID=" + project.android.defaultConfig.applicationId
                   }
               }
           }
@@ -229,14 +229,14 @@ jobs:
 
       - name: Build signed release bundle
         env:
-          QUICLOC_KEYSTORE_FILE: ${{ steps.keystore.outputs.keystore-path }}
-          QUICLOC_KEYSTORE_TYPE: ${{ steps.keystore.outputs.store-type }}
-          QUICLOC_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          QUICLOC_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          QUICLOC_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEYSTORE_FILE: ${{ steps.keystore.outputs.keystore-path }}
+          KEYSTORE_TYPE: ${{ steps.keystore.outputs.store-type }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           # Play rejects an unsigned bundle anyway; fail here with a clear
           # message instead of at upload time with an opaque one.
-          QUICLOC_REQUIRE_SIGNING: 'true'
+          REQUIRE_SIGNING: 'true'
         run: ./gradlew bundleRelease
 
       - name: Verify the bundle is signed by the expected key
@@ -260,15 +260,15 @@ jobs:
           allprojects {
               afterEvaluate { project ->
                   if (project.plugins.hasPlugin("com.android.application")) {
-                      println "QUICLOC_VERSION_NAME=" + project.android.defaultConfig.versionName
-                      println "QUICLOC_VERSION_CODE=" + project.android.defaultConfig.versionCode
+                      println "VERSION_NAME=" + project.android.defaultConfig.versionName
+                      println "VERSION_CODE=" + project.android.defaultConfig.versionCode
                   }
               }
           }
           EOF
           OUTPUT=$(./gradlew -q --init-script get-app-version.gradle help)
-          echo "VERSION_NAME=$(echo "$OUTPUT" | grep '^QUICLOC_VERSION_NAME=' | cut -d= -f2)" >> "$GITHUB_ENV"
-          echo "VERSION_CODE=$(echo "$OUTPUT" | grep '^QUICLOC_VERSION_CODE=' | cut -d= -f2)" >> "$GITHUB_ENV"
+          echo "VERSION_NAME=$(echo "$OUTPUT" | grep '^VERSION_NAME=' | cut -d= -f2)" >> "$GITHUB_ENV"
+          echo "VERSION_CODE=$(echo "$OUTPUT" | grep '^VERSION_CODE=' | cut -d= -f2)" >> "$GITHUB_ENV"
 
       # The pre-build check used the committed versionBuild; this one uses what was
       # actually built. Belt and braces, because the cost of getting it wrong is
@@ -287,7 +287,7 @@ jobs:
       - name: Upload AAB artifact
         uses: actions/upload-artifact@v7
         with:
-          name: quicloc-release-aab-${{ env.VERSION_NAME }}
+          name: hg2gui-release-aab-${{ env.VERSION_NAME }}
           path: |
             composeApp/build/outputs/bundle/playstoreRelease/*.aab
             version.properties
