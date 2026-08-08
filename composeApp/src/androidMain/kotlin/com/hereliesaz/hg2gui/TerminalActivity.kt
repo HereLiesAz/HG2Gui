@@ -145,8 +145,15 @@ class TerminalActivity : ComponentActivity(), Reloadable {
                     )
 
                     screen == Screen.Guide -> CommandGuideScreen(
-                        onBack = { screen = Screen.Terminal },
-                        modifier = Modifier.windowInsetsPadding(WindowInsets.systemBars)
+                        tree = currentTree.orEmpty(),
+                        fullscreen = fullscreen,
+                        onCommandSelected = { tokens ->
+                            sessions.firstOrNull { it.ui.id == activeSessionId }?.let { session ->
+                                session.ui.tokens = tokens
+                                session.ui.inputText = ""
+                            }
+                        },
+                        onBack = { screen = Screen.Terminal }
                     )
 
                     screen == Screen.Files -> FilesScreen(
@@ -189,7 +196,9 @@ class TerminalActivity : ComponentActivity(), Reloadable {
                             }
                         },
                         onBack = { screen = Screen.Terminal },
-                        modifier = Modifier.windowInsetsPadding(WindowInsets.systemBars)
+                        modifier = Modifier.then(
+                            if (fullscreen) Modifier else Modifier.windowInsetsPadding(WindowInsets.systemBars)
+                        )
                     )
 
                     sessions.isNotEmpty() && currentTree != null -> TerminalScreen(

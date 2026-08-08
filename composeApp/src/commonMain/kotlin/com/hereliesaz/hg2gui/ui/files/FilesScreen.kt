@@ -42,6 +42,12 @@ private val PageYellow = Brush.linearGradient(
 
 data class VfsEntry(val name: String, val isDirectory: Boolean, val sizeBytes: Long)
 
+private fun formatFileSize(bytes: Long): String = when {
+    bytes < 1024 -> "$bytes B"
+    bytes < 1024 * 1024 -> "${bytes / 1024} KB"
+    else -> "${bytes / (1024 * 1024)} MB"
+}
+
 @Composable
 fun FilesScreen(
     path: String,
@@ -179,16 +185,24 @@ private fun EntryRow(entry: VfsEntry, onClick: () -> Unit, onDelete: () -> Unit)
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(
-            (entry.name + if (entry.isDirectory) "/" else "").uppercase(),
-            style = MaterialTheme.typography.titleMedium.copy(
-                color = fg,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.ExtraBold,
-                letterSpacing = 0.09.em
-            ),
-            maxLines = 1
-        )
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                (entry.name + if (entry.isDirectory) "/" else "").uppercase(),
+                style = MaterialTheme.typography.titleMedium.copy(
+                    color = fg,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = 0.09.em
+                ),
+                maxLines = 1
+            )
+            if (!entry.isDirectory) {
+                Text(
+                    formatFileSize(entry.sizeBytes),
+                    style = MaterialTheme.typography.labelSmall.copy(color = fg.copy(alpha = .55f), fontSize = 9.sp)
+                )
+            }
+        }
         Text(
             "×",
             style = MaterialTheme.typography.titleMedium.copy(color = fg.copy(alpha = .7f), fontSize = 13.sp),

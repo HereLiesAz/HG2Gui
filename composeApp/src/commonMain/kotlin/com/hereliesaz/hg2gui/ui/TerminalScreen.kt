@@ -52,19 +52,8 @@ fun TerminalScreen(
     onRun: suspend (sessionId: String, line: String, onOutput: (String) -> Unit) -> Unit
 ) {
     val active = sessions.first { it.id == activeSessionId }
-    var showGuide by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val listState = remember(active.id) { LazyListState() }
-
-    if (showGuide) {
-        CommandGuideScreen(
-            onCommandSelected = { cmd ->
-                active.inputText = cmd
-            },
-            onClose = { showGuide = false }
-        )
-        return
-    }
 
     val executeCommand = {
         val session = active
@@ -135,7 +124,7 @@ fun TerminalScreen(
             sessions = sessions,
             activeId = activeSessionId,
             onOpenSettings = onOpenSettings,
-            onOpenGuide = { showGuide = true },
+            onOpenGuide = onOpenGuide,
             onOpenFiles = onOpenFiles,
             onPick = onSessionPick,
             onNew = onNewSession,

@@ -31,6 +31,11 @@ class TerminalEngine(
     private val builtins: Set<String> =
         main.mainPack?.commandGroup?.commandNames?.toSet().orEmpty()
 
+    // Aliases aren't command classes, so they're never in `builtins` - checked separately, and
+    // live (not cached) since `alias add` can create one at any point in the session.
+    private fun isAlias(verb: String): Boolean =
+        main.mainPack?.aliasManager?.getAliases(true)?.any { it.name == verb } == true
+
     private val captured = StringBuilder()
     private var capturing = false
 
@@ -65,7 +70,7 @@ class TerminalEngine(
 
         val verb = trimmed.substringBefore(' ')
 
-        if (verb in builtins) {
+        if (verb in builtins || isAlias(verb)) {
             launch(Dispatchers.IO) {
                 val result = runBuiltin(trimmed)
                 send(result)
