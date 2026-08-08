@@ -2,7 +2,6 @@ package com.termux.shared.reflection
 
 import android.os.Build
 import com.termux.shared.logger.Logger
-import org.lsposed.hiddenapibypass.HiddenApiBypass
 import java.lang.reflect.Constructor
 import java.lang.reflect.Field
 import java.lang.reflect.Method
@@ -14,22 +13,17 @@ object ReflectionUtils {
     private const val LOG_TAG = "ReflectionUtils"
 
     /**
-     * Bypass android hidden API reflection restrictions.
-     * https://github.com/LSPosed/AndroidHiddenApiBypass
-     * https://developer.android.com/guide/app-compatibility/restrictions-non-sdk-interfaces
+     * Used to unconditionally exempt hidden-API reflection via org.lsposed.hiddenapibypass,
+     * which Play flags as crash-prone on current ART (the default runtime from Android 16, and
+     * opt-in on 12+): https://developer.android.com/guide/app-compatibility/restrictions-non-sdk-interfaces
+     *
+     * No longer does anything - callers (PackageUtils, UserUtils, SELinuxUtils,
+     * FeatureFlagUtils) already handle a blocked field/method by catching the
+     * exception and returning null, the same outcome this now produces directly.
      */
     @JvmStatic
     fun bypassHiddenAPIReflectionRestrictions() {
-        if (!HIDDEN_API_REFLECTION_RESTRICTIONS_BYPASSED && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            Logger.logDebug(LOG_TAG, "Bypassing android hidden api reflection restrictions")
-            try {
-                HiddenApiBypass.addHiddenApiExemptions("")
-            } catch (t: Throwable) {
-                Logger.logStackTraceWithMessage(LOG_TAG, "Failed to bypass hidden API reflection restrictions", t)
-            }
-
-            HIDDEN_API_REFLECTION_RESTRICTIONS_BYPASSED = true
-        }
+        HIDDEN_API_REFLECTION_RESTRICTIONS_BYPASSED = true
     }
 
     /** Check if android hidden API reflection restrictions are bypassed. */
