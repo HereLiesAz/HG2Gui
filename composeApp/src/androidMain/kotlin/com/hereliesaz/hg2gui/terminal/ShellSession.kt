@@ -251,12 +251,13 @@ actual class ShellSession private constructor(
     }
 
     actual fun exec(command: String): ShellSessionResult {
-        val collected = StringBuilder()
-        val exitCode = stream(command) { line ->
-            if (collected.isNotEmpty()) collected.append('\n')
-            collected.append(line)
-        }
-        return ShellSessionResult(collected.toString(), exitCode, _workingDirectory)
+        // stream()'s onLine hands back the whole transcript accumulated so far on every call
+        // (that's what lets TerminalScreen just replace a buffer entry's output wholesale as it
+        // streams in) - so the final call already holds everything; appending every call on top
+        // of itself would restack the same growing transcript into itself.
+        var output = ""
+        val exitCode = stream(command) { line -> output = line }
+        return ShellSessionResult(output, exitCode, _workingDirectory)
     }
 
     actual fun stream(command: String, onLine: (line: String) -> Unit): Int {
@@ -283,7 +284,7 @@ actual class ShellSession private constructor(
 
             while (true) {
                 if (System.currentTimeMillis() > deadline) {
-                    val bytes = "\n[timed out after ${TIMEOUT_MS / 1000}s]".toByteArray()
+                    val bytes = "\r\n[timed out after ${TIMEOUT_MS / 1000}s]".toByteArray()
                     emulator.append(bytes, bytes.size)
                     onLine(emulator.mScreen.transcriptTextWithFullLinesJoined)
                     break
@@ -312,7 +313,13 @@ actual class ShellSession private constructor(
                 val marker = line.indexOf(SENTINEL)
                 if (marker >= 0) {
                     if (marker > 0) {
-                        val bytes = (line.substring(0, marker) + "\n").toByteArray(Charsets.UTF_8)
+                        // readLine() already stripped the real line terminator, so this has to
+                        // supply one back - and a real pty would have translated the shell's
+                        // outgoing \n to \r\n (ONLCR), which the emulator relies on to return the
+                        // cursor to column 0. A bare \n only moves it down a row, leaving column
+                        // wherever the previous line ended - a real pty isn't in the loop here,
+                        // so that translation has to happen by hand.
+                        val bytes = (line.substring(0, marker) + "\r\n").toByteArray(Charsets.UTF_8)
                         emulator.append(bytes, bytes.size)
                     }
 
@@ -330,7 +337,7 @@ actual class ShellSession private constructor(
                     break
                 }
 
-                val bytes = (line + "\n").toByteArray(Charsets.UTF_8)
+                val bytes = (line + "\r\n").toByteArray(Charsets.UTF_8)
                 emulator.append(bytes, bytes.size)
                 onLine(emulator.mScreen.transcriptTextWithFullLinesJoined)
             }
