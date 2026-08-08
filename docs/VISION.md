@@ -45,6 +45,18 @@ the menu *is* the interface. Every command, subcommand and argument is a pill yo
         sandbox onto a real path with `su`, and only runs when root is available
         (`Shell.SU.available()`, from the vendored `libsuperuser`). Without root it says so
         plainly rather than pretending to work.
+-   [x] **A real Termux backend.** The shell isn't Android's own toybox pretending to be
+        Linux — `DistroManager` downloads and extracts the actual Termux bootstrap (the same
+        rootfs archive the official app installs), automatically on first launch, giving real
+        `bash`, `apt`/`pkg`, and coreutils. The command tree reflects it live: shell pills are
+        discovered from the bootstrap's own `bin/`, matched to the package that owns each one
+        via dpkg's own bookkeeping, and sorted into a category by hand (Termux's own packages
+        carry no category metadata of their own to read this from), so installing a package
+        adds pills without touching the app. Since the app has no live
+        PTY for a shell's own line editor to attach to, the conveniences one would usually get
+        from shell plugins — autosuggestion, "did you mean", alias hints, a graphical file
+        picker, graphical yes/no answers to an interactive prompt — are implemented natively as
+        pills instead.
 -   [ ] **Scripting:** A custom scripting language or deeper Python integration for
         automating tasks within the terminal.
 

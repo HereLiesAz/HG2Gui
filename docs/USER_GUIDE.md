@@ -16,13 +16,28 @@ From the top:
 -   **Command tree:** the suggestion tree. This is the input method.
 
 ## Building a command by tapping
-1.  Tap a category — `System`, `Apps & nav` or `Features`. The stack slides away and that pill
-    drops to the bottom of the screen; it is now the host.
+1.  Tap a category — a shell category (`Admin`, `Utilities`, `Network`, `Shells`, …, discovered
+    from what's actually installed), `System`, `Apps & nav` or `Features`. The stack slides away
+    and that pill drops to the bottom of the screen; it is now the host.
 2.  Its commands cascade upward from it. Tap one.
 3.  Its arguments cascade upward in turn. Tap one.
-4.  Press **Run**. Output appears in a tile above the command line.
+4.  If that was the last parameter the command needs, it **runs immediately** — no separate
+    confirmation. Otherwise press **Run** whenever you're ready; you don't have to pick every
+    pill a command offers.
 
-Tap the host pill at the bottom to go back a level.
+Tap the host pill at the bottom to go back a level. A `file…` pill anywhere in the tree opens a
+graphical file browser through the same stack — no separate screen, no typing a path.
+
+## When a command needs more from you
+Some commands stop mid-run to ask something. A yes/no question gets a dedicated **Answer**
+stack — tap `YES` or `NO`, same as picking any other pill. Anything else falls back to the
+input field: its hint shows the question, and **Run** becomes **Send**.
+
+## Suggestions
+Below the command tree, a **Suggest** pill appears when there's something to offer: the rest of
+a command you've typed before (tap to complete it), a shorter alias for the command you just
+ran (`gs` for `git status`, and friends), or a correction after a command isn't found. These are
+implemented natively, not by a shell plugin — tap one the same way you'd tap any other pill.
 
 ## Typing instead
 The keyboard is not forced open. Tap the command line to type; suggestions still filter as you
@@ -38,7 +53,10 @@ go, so you can type `git` and tap `commit` rather than spelling it out.
     -   Changing the OS changes the tree: `apt` becomes `brew` becomes `winget`.
 
 ## Advanced Usage
--   **Shell:** standard Android shell commands (`ls`, `cd`, `cat`) work as expected.
+-   **Shell:** a real Termux environment, not Android's own limited toybox shell — genuine
+    `bash`, `apt`/`pkg`, and coreutils. It installs itself automatically the first time you open
+    the app (watch the buffer for progress); `pkg install <package>` afterward adds pills for
+    whatever it installs.
 -   **Root:** on a rooted device, `su` runs privileged commands.
 -   **History:** the `↑` and `↓` modifier keys walk the current session's history.
 -   **Editor:** `tuixt <file>` opens the in-terminal editor. It also registers as a text file

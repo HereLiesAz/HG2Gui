@@ -76,9 +76,13 @@ that inverts: the open pill is yellow with an ink end-cap, so it never disappear
 
 ## 6. Scale
 
-The menu holds fifty-one commands and their arguments, so it is drawn small: a pill is 17dp
-tall with a 6sp label, stacked 20dp apart. This is the one place in Azphalt where type goes
-below 9px — the pill, not the type, is the tap target, and it spans most of the screen.
+The menu's size isn't fixed — the shell categories are discovered live from what's actually
+installed, so a band can hold anywhere from a handful of built-ins to hundreds of real
+binaries. It is drawn small throughout regardless: a pill is 17dp tall with a 6sp label, stacked
+20dp apart. This is the one place in Azphalt where type goes below 9px — the pill, not the
+type, is the tap target, and it spans most of the screen. A category large enough to strain the
+fan-out animation is capped per category rather than rendered (or hung on) unbounded, with a
+trailing "+N more" pill marking what was left out.
 
 Session tabs, command-line tokens and modifier keys sit at 8sp, uppercase, +0.09em.
 

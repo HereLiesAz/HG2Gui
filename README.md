@@ -7,10 +7,29 @@ Inspired by the *Hitchhiker's Guide to the Galaxy* (2005) aesthetic and built on
 ## Features
 
 *   **Point-and-click commands.** The suggestion tree is the input method. Tap a category, tap
-    a command, tap an argument, press Run. The keyboard is optional.
-*   **A real shell.** Shell commands run in a long-lived `/system/bin/sh` process, so `cd`
-    sticks, exported variables survive, and the working directory in the header is the one the
-    shell is actually in. Android's shell is toybox — expect `ls`, `ps`, `getprop`, not `apt`.
+    a command, tap an argument. Picking the last parameter a command needs runs it immediately —
+    no separate confirmation — or press **Run** yourself at any point. The keyboard is optional.
+*   **A real Termux backend.** Shell commands run in a long-lived shell session backed by the
+    actual Termux bootstrap — the same rootfs archive the official Termux app installs — giving
+    real `bash`, `apt`/`pkg`, and real coreutils, not Android's own toybox. It installs itself
+    automatically on first launch, exactly like Termux does, with progress visible in the buffer.
+*   **The tree reflects what's actually installed.** Shell pills are discovered live from the
+    bootstrap's own `bin/`, matched back to the package that owns each one via dpkg's own
+    bookkeeping, and grouped into a category (Package management, Network, Development, …) —
+    `pkg install python` and it shows up as a pill the next time a command finishes, no restart
+    needed. Hyphenated command families (`apt-get`, `apt-key`, `apt-mark`, …) nest under one
+    shared parent pill instead of cluttering the list as unrelated flat entries.
+*   **A graphical file picker.** Any command that takes a file argument gets a `file…` pill that
+    browses the real filesystem through the same pill stack — no separate screen, no typing a
+    path by hand.
+*   **Interactive prompts, answered graphically.** A command that stops mid-run to ask a
+    yes/no question gets a dedicated **Answer** stack (`YES`/`NO`) instead of leaving you to
+    type a blind reply; anything else falls back to the input field, whose Run button becomes
+    Send.
+*   **Kotlin-native suggestions.** Autosuggestion (from history), "did you mean" (after a failed
+    command), and alias hints (`gs` for `git status`, and friends) surface as ordinary pills,
+    implemented natively rather than as a shell plugin — there's no live PTY for a shell's own
+    line editor to attach to.
 *   **Linux-like CLI.** Built-in commands for apps, files and system settings, dispatched ahead
     of the shell so `apps` means the app list rather than whatever is on `PATH`.
 *   **Sessions.** Named terminal sessions, each with its own scrollback and working directory.
@@ -29,21 +48,36 @@ no icons; a capsule is the only primitive.
 
 ## Project structure
 
-Kotlin and Jetpack Compose Multiplatform for the UI; the command engine is still Java.
+Kotlin Multiplatform (Compose) for the UI and execution layer; the legacy command engine is
+still Java, called through from Kotlin.
 
-*   `app/src/main/java/com/hereliesaz/hg2gui/`
+*   `composeApp/src/commonMain/kotlin/com/hereliesaz/hg2gui/`
+    *   `terminal/ShellSession.kt` — the `expect` shell-session contract, plus
+        `ShellAliases.kt` — Kotlin-native alias expansion, history autosuggestion and "did you
+        mean", implemented here rather than as a shell plugin because there's no live PTY for a
+        real shell line editor to attach to.
+    *   `ui/` — Compose UI. `TerminalScreen.kt` (the terminal), `SessionUiState.kt` (per-session
+        state, including the pending-prompt hand-off for interactive commands).
+    *   `ui/menu/PillMenu.kt` — the suggestion tree and its choreography. `MenuNode` supports
+        lazily-resolved children (`resolveChildren`) for live data, like a directory listing.
+*   `composeApp/src/androidMain/kotlin/com/hereliesaz/hg2gui/`
     *   `TerminalActivity.kt` — the entry point.
-    *   `terminal/` — execution. `ShellSession.java` (the long-lived shell, framed into
-        commands by a sentinel that reports exit status and working directory),
-        `TerminalEngine.kt` (routes a line to a built-in or to the shell, and collects the
-        output each one produces).
-    *   `ui/` — Compose UI. `TerminalScreen.kt` (the terminal), `Theme.kt` (Azphalt tokens).
-    *   `ui/menu/` — `PillMenu.kt` (the suggestion tree and its choreography),
-        `CommandTree.kt` (the tree, built from the live `CommandGroup`).
+    *   `terminal/` — execution. `ShellSession.kt` (the `actual` implementation: a long-lived
+        shell framed by a sentinel that reports exit status and working directory, with
+        idle-based detection of a stalled interactive prompt), `TerminalEngine.kt` (routes a
+        line to a built-in or to the shell), `DistroManager.kt` (downloads and extracts the
+        real Termux bootstrap), `DpkgCatalog.kt` (reads dpkg's own bookkeeping for which package
+        owns a given binary — Termux's packages carry no Debian Section field to read a category
+        from directly, so `CommandTree`'s own hand-curated map turns package into category).
+    *   `ui/menu/CommandTree.kt` — builds the tree: legacy built-ins into System / Apps & nav /
+        Features, real PATH binaries by category (Package management, Network, Development, …)
+        with hyphenated command families (`apt-get`/`apt-key`/…) nested under their shared
+        parent.
+    *   `ui/menu/FileBrowser.kt` — the in-stack graphical file picker.
     *   `commands/` — implementation of all built-in commands.
     *   `managers/` — suggestions, apps, files, system integration.
     *   `tuils/` — utilities.
-*   `app/src/main/res/` — resources. Jost lives in `res/font/`.
+*   `composeApp/src/androidMain/res/` — resources. Jost lives in `res/font/`.
 
 ## Build
 

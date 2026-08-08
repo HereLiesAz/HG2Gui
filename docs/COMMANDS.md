@@ -1,7 +1,24 @@
 # Command Reference
 
-This document lists the available commands in HG2Gui. The suggestion tree groups them exactly
-as the headings below — see `ui/menu/CommandTree.kt`.
+This document lists the built-in commands in HG2Gui — the legacy `commands/main/raw/` classes,
+grouped exactly as the headings below (see `ui/menu/CommandTree.kt`).
+
+## Shell
+
+Real shell binaries aren't listed here — they aren't a fixed set. `CommandTree` discovers them
+live from the Termux bootstrap's own `bin/`, matches each one back to the package that owns it
+via dpkg's own bookkeeping (`DpkgCatalog`), and groups them into a root pill category
+(`Package management`, `Network`, `Shells`, `Development`, `Text & files`, …) from a
+hand-curated package → category map in `CommandTree.kt` — Termux's own packages carry no
+Debian Section field to read a category from directly, so there's no live source of truth for
+that part; `pkg install <package>` still makes its binaries appear as pills the next time a
+command finishes, they just fall under "Other" until the map is taught what category they
+belong in. Binaries sharing a hyphenated prefix (`apt-get`, `apt-key`, `apt-mark`, …) nest
+under one shared parent pill instead of appearing as unrelated flat entries.
+
+Before a bootstrap is installed, Shell offers exactly one pill: **`bootstrap`** — which also
+runs automatically on first launch, the same way the official Termux app installs itself before
+ever showing a prompt.
 
 ## System & Utilities
 *   `airplane`: Toggle airplane mode.
@@ -36,6 +53,8 @@ as the headings below — see `ui/menu/CommandTree.kt`.
 *   `search`: Web search.
 
 ## Features
+*   `bootstrap`: Install the real Termux rootfs (`bash`, `apt`/`pkg`, coreutils). Runs
+    automatically on first launch; only needed by hand to re-run or recover it.
 *   `changelog`: View app changelog.
 *   `devutils`: Developer utilities.
 *   `donate`: Support the developer.

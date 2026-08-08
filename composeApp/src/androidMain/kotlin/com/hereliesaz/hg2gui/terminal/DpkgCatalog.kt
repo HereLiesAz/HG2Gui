@@ -3,51 +3,37 @@ package com.hereliesaz.hg2gui.terminal
 import java.io.File
 
 /**
- * Real Debian/dpkg package metadata already sitting in the Termux prefix - which package owns a
- * given binary, and what Debian Section (admin, utils, net, shells, devel, text, ...) that
- * package belongs to. Used to group discovered PATH binaries into real categories instead of
- * guessing at one, since apt/dpkg already know this and record it on disk at install time.
+ * Real dpkg package-ownership metadata already sitting in the Termux prefix - which package
+ * installed a given binary. Read from var/lib/dpkg/info/<package>.list, one file per installed
+ * package listing every path it put down (already on disk, no guessing which binary came from
+ * which package).
+ *
+ * Termux's own packages carry no Debian "Section" field (verified against a real bootstrap - 0
+ * of 82 base packages have one), so there is no live category metadata to read for a binary,
+ * only which package owns it. `CommandTree`'s own hand-curated package→category map is what
+ * actually turns this into a category.
  */
 object DpkgCatalog {
 
-    /** Maps a binary's bare name (e.g. "apt-get") to its owning package's Section, best-effort -
-     *  empty if dpkg's own bookkeeping isn't there (e.g. no bootstrap installed yet). */
-    fun binariesBySection(prefixDir: File): Map<String, String> {
-        val dpkgDir = File(prefixDir, "var/lib/dpkg")
-        val statusFile = File(dpkgDir, "status")
-        val infoDir = File(dpkgDir, "info")
-        if (!statusFile.isFile || !infoDir.isDirectory) return emptyMap()
+    /** Maps each installed package's name to the binaries (bare names, under bin/) it owns. */
+    fun binariesByPackage(prefixDir: File): Map<String, List<String>> {
+        val infoDir = File(prefixDir, "var/lib/dpkg/info")
+        val listFiles = infoDir.listFiles { f -> f.name.endsWith(".list") } ?: return emptyMap()
 
-        val sectionByPackage = mutableMapOf<String, String>()
-        var currentPackage: String? = null
-        try {
-            statusFile.forEachLine { line ->
-                when {
-                    line.startsWith("Package: ") -> currentPackage = line.removePrefix("Package: ").trim()
-                    line.startsWith("Section: ") ->
-                        currentPackage?.let { sectionByPackage[it] = line.removePrefix("Section: ").trim() }
-                    line.isBlank() -> currentPackage = null
-                }
-            }
-        } catch (e: Exception) {
-            return emptyMap()
-        }
-
-        val binaryToSection = mutableMapOf<String, String>()
-        for ((pkg, section) in sectionByPackage) {
-            val listFile = File(infoDir, "$pkg.list")
-            if (!listFile.isFile) continue
+        val result = mutableMapOf<String, MutableList<String>>()
+        for (listFile in listFiles) {
+            val pkg = listFile.name.removeSuffix(".list")
             try {
                 listFile.forEachLine { path ->
-                    if (path.contains("/bin/")) {
+                    if (path.contains("/bin/") && !path.endsWith("/")) {
                         val name = path.substringAfterLast('/')
-                        if (name.isNotBlank()) binaryToSection[name] = section
+                        if (name.isNotBlank()) result.getOrPut(pkg) { mutableListOf() }.add(name)
                     }
                 }
             } catch (e: Exception) {
                 // This package's own listing is unreadable - skip it, keep the rest.
             }
         }
-        return binaryToSection
+        return result
     }
 }

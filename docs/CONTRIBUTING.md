@@ -8,9 +8,13 @@ behaviour — app drawers, widget grids, a `category.HOME` filter, launcher life
 are out of scope, however faithful they are to the T-UI lineage this forked from.
 
 ## Project Structure
-*   **Kotlin / Compose UI:** `app/src/main/java/com/hereliesaz/hg2gui/ui/`
-*   **Java engine:** `app/src/main/java/com/hereliesaz/hg2gui/{commands,managers,tuils}/`
-*   **Resources:** `app/src/main/res/`
+*   **Kotlin shared across platforms:** `composeApp/src/commonMain/kotlin/com/hereliesaz/hg2gui/`
+    — Compose UI (`ui/`), the `ShellSession` contract and `ShellAliases` (`terminal/`).
+*   **Kotlin/Java, Android-specific:** `composeApp/src/androidMain/kotlin/com/hereliesaz/hg2gui/`
+    — the `ShellSession`/`DistroManager`/`TerminalEngine` implementations (`terminal/`), the
+    legacy Java engine (`commands/`, `managers/`, `tuils/`), and the Android-only parts of the UI
+    (`ui/menu/CommandTree.kt`, `ui/menu/FileBrowser.kt`).
+*   **Resources:** `composeApp/src/androidMain/res/`
 
 ## Coding Standards
 *   **Language:** Kotlin for anything new. Java is maintained, not extended — new commands may
