@@ -93,7 +93,3 @@ JDK 21, Gradle 8.13, AGP 8.13, Kotlin 2.2.20. `compileSdk`/`targetSdk` 37, `minS
 *   [Design](docs/DESIGN.md)
 *   [User guide](docs/USER_GUIDE.md)
 *   [Contributing](docs/CONTRIBUTING.md)
-
-## License
-
-GPLv3, inherited from T-UI.
