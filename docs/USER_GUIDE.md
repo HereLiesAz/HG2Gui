@@ -7,8 +7,8 @@ It gives you a real command line that you can drive without typing.
 ## Interface
 From the top:
 
--   **Session tabs:** `main`, `tuixt`, `rss` and any you add with `+`. Each session keeps its
-    own scrollback, history and working directory.
+-   **Session tabs:** `main` and any you add with `+`. Each session keeps its own scrollback,
+    history and working directory.
 -   **Working directory:** the user and path the next command will run in.
 -   **Command line:** the command you are assembling, as pills, and the **Run** capsule.
 -   **Modifier keys:** `ctrl` `alt` `esc` `tab` `↑` `↓` — the keys a terminal needs that a
@@ -44,13 +44,10 @@ The keyboard is not forced open. Tap the command line to type; suggestions still
 go, so you can type `git` and tap `commit` rather than spelling it out.
 
 ## Basic Commands
--   `help`: list available commands.
--   `clear`: clear the session.
--   `status` / `battery`: battery and system status.
--   `apps -ls`: list installed applications.
--   `switch-os <os>`: switch the simulated environment.
-    -   `switch-os ubuntu` (default), `switch-os macos`, `switch-os windows`
-    -   Changing the OS changes the tree: `apt` becomes `brew` becomes `winget`.
+The ten built-in commands are `wifi`, `bluetooth`, `airplane`, `flash`, `volume`, `brightness`,
+`call`, `contacts`, `vfs`, `calc` and `edit` — see [Commands](COMMANDS.md) for what each does.
+Everything else — `apps`, `alias`, `clear`, listing packages, and so on — is a real shell
+binary now, run in the Termux environment below, not a reimplementation of one.
 
 ## Advanced Usage
 -   **Shell:** a real Termux environment, not Android's own limited toybox shell — genuine
@@ -59,5 +56,9 @@ go, so you can type `git` and tap `commit` rather than spelling it out.
     whatever it installs.
 -   **Root:** on a rooted device, `su` runs privileged commands.
 -   **History:** the `↑` and `↓` modifier keys walk the current session's history.
--   **Editor:** `tuixt <file>` opens the in-terminal editor. It also registers as a text file
-    handler, so other apps can open files in it.
+-   **Editor:** `edit <file>` opens the in-terminal editor — `ShellSession` has no pty, so a
+    real terminal editor would render garbled if run through it. It also registers as a text
+    file handler, so other apps can open files in it.
+-   **Files:** the Files screen browses a sandboxed filesystem rooted at the app's private
+    storage (the `vfs` command's backing store) — separate from the real Termux filesystem the
+    shell operates on.

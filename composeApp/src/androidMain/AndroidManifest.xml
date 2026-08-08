@@ -85,7 +85,7 @@
         android:theme="@style/Custom.Solid">
 
         <provider
-            android:name=".tuils.GenericFileProvider"
+            android:name=".util.GenericFileProvider"
             android:authorities="${applicationId}.FILE_PROVIDER"
             android:exported="false"
             android:grantUriPermissions="true">

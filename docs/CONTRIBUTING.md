@@ -5,20 +5,22 @@ Thank you for your interest in contributing.
 ## What this project is
 A **terminal app** for Android. Not a launcher. Contributions that reintroduce home-screen
 behaviour — app drawers, widget grids, a `category.HOME` filter, launcher lifecycle flags —
-are out of scope, however faithful they are to the T-UI lineage this forked from.
+are out of scope.
 
 ## Project Structure
 *   **Kotlin shared across platforms:** `composeApp/src/commonMain/kotlin/com/hereliesaz/hg2gui/`
-    — Compose UI (`ui/`), the `ShellSession` contract and `ShellAliases` (`terminal/`).
-*   **Kotlin/Java, Android-specific:** `composeApp/src/androidMain/kotlin/com/hereliesaz/hg2gui/`
-    — the `ShellSession`/`DistroManager`/`TerminalEngine` implementations (`terminal/`), the
-    legacy Java engine (`commands/`, `managers/`, `tuils/`), and the Android-only parts of the UI
-    (`ui/menu/CommandTree.kt`, `ui/menu/FileBrowser.kt`).
+    — Compose UI (`ui/`), the `ShellSession` contract and `ShellAliases` (`terminal/`), the
+    `calc` expression parser (`util/CalculationEngine.kt`).
+*   **Kotlin, Android-specific:** `composeApp/src/androidMain/kotlin/com/hereliesaz/hg2gui/`
+    — the `ShellSession`/`DistroManager`/`TerminalEngine`/`Builtins` implementations
+    (`terminal/`), `ContactManager`/`VfsManager`/`flashlight/` (`managers/`), a handful of
+    shared helpers (`util/`), and the Android-only parts of the UI (`ui/menu/CommandTree.kt`,
+    `ui/menu/FileBrowser.kt`, `ui/editor/`).
 *   **Resources:** `composeApp/src/androidMain/res/`
 
 ## Coding Standards
-*   **Language:** Kotlin for anything new. Java is maintained, not extended — new commands may
-    be Java to match their neighbours, but new UI is always Compose.
+*   **Language:** Kotlin for everything, old and new. There is no separate legacy engine to
+    match — a new built-in command is a branch in `terminal/Builtins.kt`, not a new class.
 *   **UI:** Compose only. No new XML layouts. A screen is a function of state; a composable
     that reaches for a manager is doing too much — pass a callback instead.
 *   **Design:** Follow the Azphalt system and `docs/DESIGN.md`. Concretely: no borders, no
