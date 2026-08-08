@@ -107,24 +107,31 @@ fun PillMenu(
                 val leavingHost = (p as? Phase.Leaving)?.hostId
                 Box(Modifier.fillMaxSize().padding(bottom = 12.dp)) {
                     roots.forEachIndexed { i, node ->
-                        StackPill(
-                            node = node,
-                            index = i,
-                            row = roots.size - 1 - i,
-                            leaving = leavingHost != null,
-                            isHost = node.id == leavingHost,
-                            entering = leavingHost == null,
-                            onClick = {
-                                phase = Phase.Leaving(node.id)
-                                tokens = emptyList()
-                                onRun(tokens)
-                                scope.launch {
-                                    delay(Azphalt.SLIDE_MS.toLong())
-                                    trail = emptyList()
-                                    phase = Phase.Open(node.id)
+                        // Roots aren't always a fixed static list - a contextual entry like the
+                        // suggestions host can appear or disappear between recompositions - so
+                        // each pill's remembered animation state has to travel with its id, not
+                        // its position in the list, or a size change would hand one pill's
+                        // in-flight state to a different node.
+                        key(node.id) {
+                            StackPill(
+                                node = node,
+                                index = i,
+                                row = roots.size - 1 - i,
+                                leaving = leavingHost != null,
+                                isHost = node.id == leavingHost,
+                                entering = leavingHost == null,
+                                onClick = {
+                                    phase = Phase.Leaving(node.id)
+                                    tokens = emptyList()
+                                    onRun(tokens)
+                                    scope.launch {
+                                        delay(Azphalt.SLIDE_MS.toLong())
+                                        trail = emptyList()
+                                        phase = Phase.Open(node.id)
+                                    }
                                 }
-                            }
-                        )
+                            )
+                        }
                     }
                 }
             }

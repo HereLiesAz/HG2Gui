@@ -165,8 +165,14 @@ fun TerminalScreen(
 
         Eyebrow("01 — Command tree")
 
+        // The suggestion host, when it has anything to offer, rides along as just one more
+        // root in the same stack every other command lives in - not a second PillMenu next to
+        // it. It lands last, so it fans out from the row closest to the command line.
+        val suggestionNode = suggestionNodeFor(active)
+        val effectiveTree = if (suggestionNode != null) tree + suggestionNode else tree
+
         PillMenu(
-            roots = tree,
+            roots = effectiveTree,
             modifier = Modifier.weight(if (active.buffer.isEmpty()) 1f else 0.6f).padding(horizontal = 20.dp, vertical = 12.dp),
             onRun = {
                 active.tokens = it
@@ -187,22 +193,6 @@ fun TerminalScreen(
             enabled = !active.running && (active.tokens.isNotEmpty() || active.inputText.isNotBlank()),
             onRun = executeCommand
         )
-
-        val suggestionTree = suggestionTreeFor(active)
-        if (suggestionTree.isNotEmpty()) {
-            PillMenu(
-                roots = suggestionTree,
-                modifier = Modifier.height(72.dp).fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
-                onRun = { picked ->
-                    // Every leaf's label IS the literal command text to adopt - same convention
-                    // the main command tree already uses for its own pills.
-                    picked.lastOrNull()?.let { chosen ->
-                        active.inputText = chosen
-                        active.tokens = emptyList()
-                    }
-                }
-            )
-        }
 
         ModifierKeys(
             onKeyClick = { key ->
@@ -493,7 +483,7 @@ private fun CommandLine(
  * real shell line editor to attach to - ShellSession only ever sends one complete line at a
  * time and reads a complete result back - so this is the delivery mechanism instead.
  */
-private fun suggestionTreeFor(session: SessionUiState): List<MenuNode> {
+private fun suggestionNodeFor(session: SessionUiState): MenuNode? {
     val children = buildList {
         if (session.inputText.isNotBlank()) {
             ShellAliases.autosuggest(session.inputText, session.commandHistory)?.let { rest ->
@@ -519,7 +509,7 @@ private fun suggestionTreeFor(session: SessionUiState): List<MenuNode> {
             }
         }
     }
-    return if (children.isEmpty()) emptyList() else listOf(MenuNode(id = "suggest", label = "Suggest", children = children))
+    return if (children.isEmpty()) null else MenuNode(id = "suggest", label = "Suggest", children = children)
 }
 
 @Composable
