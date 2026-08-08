@@ -22,8 +22,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.hereliesaz.hg2gui.commands.BaseCommandGroup
 import com.hereliesaz.hg2gui.commands.tuixt.TuixtActivity
+import com.hereliesaz.hg2gui.managers.ContactManager
+import com.hereliesaz.hg2gui.managers.TuiLocationManager
 import com.hereliesaz.hg2gui.managers.VfsManager
 import com.hereliesaz.hg2gui.managers.xml.XMLPrefsManager
 import com.hereliesaz.hg2gui.managers.xml.options.Ui
@@ -294,14 +297,34 @@ class TerminalActivity : ComponentActivity(), Reloadable {
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == 10) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                val lastCmd = main?.mainPack?.lastCommand
-                if (!lastCmd.isNullOrBlank()) {
-                    main?.onCommand(lastCmd, null as String?, false)
+        val granted = grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }
+        // Three different managers request permissions with three different codes, each
+        // expecting to hear back its own way - only COMMAND_REQUEST_PERMISSION's path was ever
+        // wired up here, so ContactManager's and TuiLocationManager's requests granted the
+        // permission but then never resumed: nothing was listening for either broadcast they
+        // depend on to know it happened.
+        when (requestCode) {
+            PermissionCodes.COMMAND_REQUEST_PERMISSION -> {
+                if (granted) {
+                    val lastCmd = main?.mainPack?.lastCommand
+                    if (!lastCmd.isNullOrBlank()) {
+                        main?.onCommand(lastCmd, null as String?, false)
+                    }
+                } else {
+                    main?.sendPermissionNotGrantedWarning()
                 }
-            } else {
-                main?.sendPermissionNotGrantedWarning()
+            }
+            PermissionCodes.COMMAND_SUGGESTION_REQUEST_PERMISSION -> {
+                if (granted) {
+                    LocalBroadcastManager.getInstance(this).sendBroadcast(Intent(ContactManager.ACTION_REFRESH))
+                }
+            }
+            PermissionCodes.LOCATION_REQUEST_PERMISSION -> {
+                val result = Intent(TuiLocationManager.ACTION_GOT_PERMISSION).putExtra(
+                    XMLPrefsManager.VALUE_ATTRIBUTE,
+                    if (granted) PackageManager.PERMISSION_GRANTED else PackageManager.PERMISSION_DENIED
+                )
+                LocalBroadcastManager.getInstance(this).sendBroadcast(result)
             }
         }
     }

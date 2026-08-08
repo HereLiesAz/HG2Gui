@@ -17,6 +17,16 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK"  />
+    <!--
+      Requested at runtime, as-needed, by call.java / cntcts.java / ContactManager.kt /
+      flash.java respectively - but a runtime request for a permission the manifest never
+      declares is refused before the user ever sees a dialog, so declaring these here is what
+      actually makes "ask when needed" possible, not optional polish.
+    -->
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <uses-permission android:name="android.permission.WRITE_CONTACTS" />
+    <uses-permission android:name="android.permission.CALL_PHONE" />
+    <uses-permission android:name="android.permission.CAMERA" />
 
 <!--
       No <permission> declarations here.
