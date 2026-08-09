@@ -163,9 +163,13 @@ dependencies {
 }
 
 // Read by release-play.yml's "Read application id" step (./gradlew -q :composeApp:printApplicationId)
-// to fill in $GITHUB_ENV without hardcoding the id a second time in the workflow itself.
+// to fill in $GITHUB_ENV without hardcoding the id a second time in the workflow itself. Output
+// is prefixed and grepped for on the workflow side, not taken as the command's whole stdout - on
+// a fresh CI checkout this is the first Gradle invocation of the job, and the Android Gradle
+// Plugin's own SDK/NDK auto-license-acceptance path prints straight to stdout outside Gradle's
+// logging (so -q doesn't suppress it), which would otherwise land inside the captured value.
 tasks.register("printApplicationId") {
     doLast {
-        println(android.defaultConfig.applicationId)
+        println("APPLICATION_ID=" + android.defaultConfig.applicationId)
     }
 }

@@ -114,7 +114,16 @@ jobs:
           expected-owner: ${{ secrets.KEYSTORE_OWNER }}
 
       - name: Read application id
-        run: echo "APP_ID=$(./gradlew -q :composeApp:printApplicationId)" >> "$GITHUB_ENV"
+        # Grep our own marker line rather than taking the whole command's stdout: this is the
+        # first Gradle invocation of the job on a fresh checkout, and AGP's SDK/NDK license
+        # auto-acceptance prints straight to stdout outside Gradle's own logging (so -q doesn't
+        # catch it) - e.g. "License for package NDK (Side by side) ... accepted." - which would
+        # otherwise land inside APP_ID and break the $GITHUB_ENV write with a multi-line value.
+        run: |
+          set -euo pipefail
+          app_id=$(./gradlew -q :composeApp:printApplicationId | grep '^APPLICATION_ID=' | tail -n1 | cut -d= -f2-)
+          [ -n "$app_id" ] || { echo "::error::printApplicationId produced no APPLICATION_ID= line."; exit 1; }
+          echo "APP_ID=$app_id" >> "$GITHUB_ENV"
 
       # Everything Play-related is hand-rolled against the API (curl + jq +
       # openssl, all on ubuntu-latest) rather than delegated to a third-party
