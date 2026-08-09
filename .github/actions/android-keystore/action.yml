@@ -241,6 +241,20 @@ runs:
           exit 1
         fi
 
+        # `keytool -list -v -alias` succeeds and prints an identical-looking certificate
+        # block for a trustedCertEntry (a certificate with no private key behind it) as
+        # for a PrivateKeyEntry - the alias/fingerprint checks above cannot tell them
+        # apart. Signing needs the private key: with a trustedCertEntry, Gradle's bundle
+        # signing task has nothing to sign with, yet still reports success and produces
+        # a bundle with no signature block - a failure this action would otherwise miss
+        # entirely, surfacing only ~5 minutes later as "contains no signature block" once
+        # the whole release build has already run.
+        entry_type=$(grep -m1 '^Entry type:' "$work/cert.txt" | sed 's/^Entry type: *//' | tr -d '\r')
+        if [ "$entry_type" != "PrivateKeyEntry" ]; then
+          echo "::error::Alias '$KEY_ALIAS' is a $entry_type, not a PrivateKeyEntry - there is no private key behind it, so nothing can actually sign with it. If this came from KEYSTORE_RAW, that secret holds a certificate-only keystore; if assembled from KEYSTORE_PRIVATE/KEYSTORE_RSA + KEYSTORE_PUBLIC, double-check KEYSTORE_PUBLIC actually holds the certificate that matches the private key (not KEYSTORE_CHAIN's intermediate/root certs) and that the private key secret is the real signing key, not a placeholder."
+          exit 1
+        fi
+
         norm() { tr -d ': \t' | tr '[:lower:]' '[:upper:]'; }
         actual_sha256=$(grep -m1 'SHA256:' "$work/cert.txt" | sed 's/.*SHA256: *//' | tr -d '\r')
         actual_sha1=$(grep -m1 'SHA1:' "$work/cert.txt" | sed 's/.*SHA1: *//' | tr -d '\r')
