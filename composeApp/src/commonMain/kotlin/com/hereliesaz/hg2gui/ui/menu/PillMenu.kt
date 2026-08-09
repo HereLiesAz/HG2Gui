@@ -34,7 +34,11 @@ import kotlinx.coroutines.launch
 
 object Azphalt {
     val Ink = Color(0xFF1E1A17)
-    val Yellow = Color(0xFFE8C81E)
+    // The real Azphalt design-system token is --yellow-bright: #F0D42A - distinct from --page
+    // (#E8C81E, the ground colour). Every existing use of this constant is as a text/accent
+    // colour on ink (selected pills, trail crumbs, badges), which is exactly what --yellow-bright
+    // is for; it was previously set to --page's value by mistake.
+    val Yellow = Color(0xFFF0D42A)
     val White = Color(0xFFFFFFFF)
 
     // Fourteen hues in fixed assignment order (hueOf hashes an id into this list - color carries
