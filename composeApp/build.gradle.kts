@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.jetbrainsCompose)
     alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.kotlinxSerialization)
 }
 
 val versionProps = Properties().apply {
@@ -69,15 +70,18 @@ kotlin {
             
             implementation(libs.okhttp)
             implementation(libs.comparestring2)
+            implementation(libs.kotlinx.serialization.json)
         }
         androidMain.dependencies {
             implementation(libs.androidx.appcompat)
             implementation(libs.androidx.core.ktx)
             implementation(libs.androidx.activity.compose)
+            implementation(libs.androidx.fragment)
+            implementation(libs.androidx.biometric)
             // localbroadcastmanager is legacy, but keeping for now
             implementation("androidx.localbroadcastmanager:localbroadcastmanager:1.1.0")
             implementation("com.google.android.material:material:1.14.0")
-            
+
             implementation(project(":terminal-emulator"))
             implementation(project(":termux-shared"))
         }

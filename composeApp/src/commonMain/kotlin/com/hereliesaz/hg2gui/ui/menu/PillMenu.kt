@@ -89,7 +89,12 @@ data class MenuNode(
     // False for purely navigational nodes (a "browse for a file" trigger, a directory on the way
     // to one) that should never themselves become part of the command line - only the leaf a
     // pick chain actually resolves to should.
-    val emitsToken: Boolean = true
+    val emitsToken: Boolean = true,
+    // Non-null for a pill that launches a multi-step UI-state wizard (e.g. the ssh "new…" leaf,
+    // which collects host/port/key through SessionUiState's prompt machinery) instead of
+    // contributing a token or drilling into more children. Picking it still settles into the
+    // trail like any other pick, but PillMenu calls onWizard instead of onRun for it.
+    val wizardId: String? = null
 )
 
 /** The literal command-line text this node contributes when picked, or null if it never does. */
@@ -111,7 +116,10 @@ fun PillMenu(
     // isTerminal is true only when this call reports a pick that just fully resolved a
     // parameter (nothing left to drill into) - the signal a caller needs to auto-run instead of
     // waiting for a separate confirmation.
-    onRun: (tokens: List<String>, isTerminal: Boolean) -> Unit = { _, _ -> }
+    onRun: (tokens: List<String>, isTerminal: Boolean) -> Unit = { _, _ -> },
+    // Called instead of onRun when the picked child has a wizardId - the caller owns whatever
+    // multi-step flow that id names.
+    onWizard: (wizardId: String) -> Unit = {}
 ) {
     var phase by remember { mutableStateOf<Phase>(Phase.Browsing) }
     // Everything picked below the root host. Each pick drops out of the band it was chosen
@@ -172,8 +180,12 @@ fun PillMenu(
                             children = effectiveChildren,
                             hueOwner = host.id,
                             onPick = { child ->
-                                tokens = (trail + child).mapNotNull { it.tokenValue() }
-                                onRun(tokens, child.isTerminal())
+                                if (child.wizardId != null) {
+                                    onWizard(child.wizardId)
+                                } else {
+                                    tokens = (trail + child).mapNotNull { it.tokenValue() }
+                                    onRun(tokens, child.isTerminal())
+                                }
                                 scope.launch {
                                     // Let the pick's own drop-and-grow finish, plus one beat to
                                     // settle, before swapping the band for its children - so the

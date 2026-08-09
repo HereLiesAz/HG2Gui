@@ -71,6 +71,11 @@ object ShellAliases {
 
     fun looksLikeYesNo(prompt: String): Boolean = YES_NO_PATTERN.containsMatchIn(prompt)
 
+    // Matches ssh/sudo/su's own prompt text: "password:", "Enter passphrase for key '...'", etc.
+    private val PASSWORD_PATTERN = Regex("""(?i)password\s*:|passphrase\s+for\s+key""")
+
+    fun looksLikePassword(prompt: String): Boolean = PASSWORD_PATTERN.containsMatchIn(prompt)
+
     /** Closest known command word to [failed], among alias keys/expansions plus [known] extras. */
     fun didYouMean(failed: String, known: List<String> = emptyList()): String? {
         if (failed.isBlank() || table.containsKey(failed)) return null

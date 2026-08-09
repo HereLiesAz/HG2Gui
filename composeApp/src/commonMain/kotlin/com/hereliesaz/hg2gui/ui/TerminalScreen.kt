@@ -27,6 +27,8 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
@@ -54,6 +56,7 @@ fun TerminalScreen(
     onOpenGuide: () -> Unit,
     onOpenFiles: () -> Unit,
     onFilesButtonPositioned: (Rect) -> Unit = {},
+    onWizard: (wizardId: String) -> Unit = {},
     onRun: suspend (
         sessionId: String,
         line: String,
@@ -230,8 +233,15 @@ fun TerminalScreen(
                 // away instead of waiting for a separate tap on RUN - or, if a prompt is
                 // pending, sends the pick as that prompt's answer the same way.
                 if (isTerminal) executeCommand()
-            }
+            },
+            onWizard = onWizard
         )
+
+        // A password/passphrase prompt (ssh, sudo, su - anything ShellSession's own idle-gap
+        // detector catches) masks the free-text answer field the same way any password field
+        // would; a yes/no prompt never reaches here as text at all, it gets the Answer pill
+        // stack above instead, so no need to exclude it explicitly.
+        val maskInput = pendingPrompt != null && ShellAliases.looksLikePassword(pendingPrompt)
 
         CommandLine(
             tokens = active.tokens,
@@ -246,6 +256,7 @@ fun TerminalScreen(
             },
             runLabel = if (pendingPrompt != null) "SEND" else "RUN",
             enabled = pendingPrompt != null || (!active.running && (active.tokens.isNotEmpty() || active.inputText.isNotBlank())),
+            masked = maskInput,
             onRun = executeCommand
         )
 
@@ -451,7 +462,8 @@ private fun CommandLine(
     hint: String,
     enabled: Boolean,
     onRun: () -> Unit,
-    runLabel: String = "RUN"
+    runLabel: String = "RUN",
+    masked: Boolean = false
 ) {
     Column(Modifier.padding(horizontal = 20.dp).padding(top = 16.dp)) {
         Text(
@@ -505,6 +517,7 @@ private fun CommandLine(
                     ),
                     cursorBrush = SolidColor(Azphalt.Yellow),
                     singleLine = true,
+                    visualTransformation = if (masked) PasswordVisualTransformation() else VisualTransformation.None,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
                     keyboardActions = KeyboardActions(onGo = { onRun() })
                 )

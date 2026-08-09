@@ -74,3 +74,25 @@ binary now, run in the Termux environment below, not a reimplementation of one.
     **THE GUIDE** pill in the top corner, opening a chaptered glossary of real commands paired
     with invented, Hitchhiker's-Guide-style definitions — reading material, not another way to
     run something.
+-   **SSH:** the `ssh` pill (under the Network shell category) opens your saved connections plus
+    a **new…** pill that asks for host, user, port and an optional key file one step at a time,
+    then hands you the assembled command to run. Host-key confirmation and password/passphrase
+    prompts work exactly like any other command's interactive prompts — a tap for yes/no, a
+    masked field for a password.
+-   **MCP server:** Settings → **MCP SERVER** starts a loopback-only server (reachable via
+    `adb forward`, never over the network) that an external AI agent can pair with using a
+    pairing token shown on that screen, to read/write this app's sandboxed files. Running real
+    shell commands through it is a separate switch, off by default, that asks for a biometric
+    confirmation the first time you turn it on — the one setting here that lets a paired agent do
+    more than touch its own sandbox.
+
+## Related Resources
+The shell is genuine Termux underneath, so third-party Termux material works here too:
+
+-   [termux-scripts](https://github.com/schnatterer/termux-scripts) — shell scripts for backing
+    up and restoring Android apps over local, SSH, or cloud storage, with incremental encrypted
+    transfers.
+-   [termux.holehan.org](https://termux.holehan.org/) — an APT repository adding extra packages
+    (Hugo, sift) installable with `pkg install` once added as a source.
+-   [termux-commands-free](https://github.com/Mortarelplait/termux-commands-free) — a free
+    reference collection of 200+ Termux commands and tutorials, organized by category.

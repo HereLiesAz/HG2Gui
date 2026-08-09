@@ -73,6 +73,24 @@ reflection-based command engine underneath it — built-ins are a fixed dispatch
     children are resolved lazily from a real directory listing (`MenuNode.resolveChildren`),
     attached to `edit` and to every discovered shell binary.
 
+### 7. `McpServerService` and the `mcp` package (Kotlin, `androidMain`)
+*   **Role**: An optional, loopback-only JSON-RPC 2.0 server (`mcp/McpServerService.kt`) an
+    external AI agent can pair with — the app-embedded equivalent of a standalone Termux MCP
+    server. Started/stopped only by explicit user action from Settings → MCP server
+    (`ui/McpServerScreen.kt`), never on its own.
+*   **Protocol**: `mcp/McpJsonRpc.kt` frames messages newline-delimited, matching MCP's own stdio
+    transport, over a raw `ServerSocket` bound to `127.0.0.1` — never LAN-exposed. A pairing
+    token (generated fresh per server start, memory-only) is required as one bespoke line before
+    any JSON-RPC traffic is accepted.
+*   **Tools**: `mcp/McpTools.kt` exposes two groups. `vfs.*` (`list`/`read`/`write`/`mkdir`/
+    `delete`/`move`/`copy`) wraps `VfsManager` 1:1, inheriting its sandbox-escape-proof `resolve`
+    for free, and is available whenever the server is running. `shell.*` (`exec`) wraps a
+    Service-owned `TerminalEngine`, kept separate from the user's own visible terminal tabs, and
+    is gated behind a second, explicit toggle — off by default, and only enableable through a
+    `BiometricPrompt` confirmation (`TerminalActivity.requestEnableShellExec`). The gate is
+    enforced server-side, in `McpTools.callTool`, on every `shell.*` invocation — not just by
+    what `tools/list` chooses to advertise (it always advertises both groups).
+
 ## Data Flow
 1.  **Input**: The user taps `wifi`. No text is typed. Since `wifi` leaves no further
     parameters, it runs immediately on that tap.
