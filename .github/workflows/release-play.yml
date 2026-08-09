@@ -190,57 +190,66 @@ jobs:
           echo "PLAY_MAX_VERSION_CODE=$play_max" >> "$GITHUB_ENV"
           echo "Play API access OK — proceeding to build."
 
-      # Gradle increments VERSION_D during the build, so the code this run
-      # would produce is the committed value + 1. If that can't clear what Play
-      # already holds, the release is dead on arrival — Play accepts the upload
-      # and then refuses the rollout.
+      # composeApp/build.gradle.kts uses version.properties' versionBuild directly as
+      # versionCode (resolvedVersionCode = maxOf(buildNumber, legacyVersionCode + 1), no +1
+      # applied to buildNumber itself) - so the code this run would produce is exactly the
+      # committed value, not committed + 1. If that can't clear what Play already holds, the
+      # release is dead on arrival — Play accepts the upload and then refuses the rollout.
       #
-      # The counter drifts by design: the build increments version.properties on
-      # the runner and nothing commits it back, so the file is stale the moment
-      # anything ships. `auto` therefore treats Play as the authority and takes
-      # the next code after whatever it holds, which cannot collide no matter
-      # how far behind the file is. The last step in this job commits the number
-      # back so the repo converges with reality.
+      # The counter drifts by design: nothing commits version.properties back until the very
+      # last step of this job, so the file is stale the moment anything ships. `auto` therefore
+      # treats Play as the authority and takes the next code after whatever it holds, which
+      # cannot collide no matter how far behind the file is.
       - name: Resolve the versionCode
         if: ${{ inputs.publish }}
         run: |
           set -euo pipefail
-          committed=$(grep -E '^VERSION_D=' version.properties | cut -d= -f2 | tr -d '[:space:]')
+          committed=$(grep -E '^versionBuild=' version.properties | cut -d= -f2 | tr -d '[:space:]')
           play_max=${PLAY_MAX_VERSION_CODE:-0}
-          next=$((committed + 1))
-          echo "version.properties VERSION_D=$committed -> would build $next"
+          echo "version.properties versionBuild=$committed (this is the versionCode the build will actually produce)"
           echo "Play's highest versionCode: $play_max"
 
-          if [ "$next" -gt "$play_max" ]; then
-            echo "$next clears Play. Building that."
+          if [ "$committed" -gt "$play_max" ]; then
+            echo "$committed clears Play. Building that."
             exit 0
           fi
 
           if [ "${{ inputs.version_code_mode }}" = "strict" ]; then
-            echo "::error::versionCode $next would not clear Play, which already has $play_max. Set VERSION_D=$play_max in version.properties and commit (the build adds 1), or re-run in auto mode."
+            echo "::error::versionCode $committed would not clear Play, which already has $play_max. Set versionBuild=$((play_max + 1)) in version.properties and commit, or re-run in auto mode."
             exit 1
           fi
 
           # Play is ahead of the file — take the next code after Play's.
-          sed -i "s/^VERSION_D=.*/VERSION_D=$play_max/" version.properties
-          echo "::notice::version.properties was behind Play ($committed vs $play_max). Building versionCode $((play_max + 1)) instead; it will be committed back after publishing."
+          next=$((play_max + 1))
+          sed -i "s/^versionBuild=.*/versionBuild=$next/" version.properties
+          echo "::notice::version.properties was behind Play ($committed vs $play_max). Building versionCode $next instead; it will be committed back after publishing."
 
       - name: Build signed release bundle
         env:
-          QUICLOC_KEYSTORE_FILE: ${{ steps.keystore.outputs.keystore-path }}
-          QUICLOC_KEYSTORE_TYPE: ${{ steps.keystore.outputs.store-type }}
-          QUICLOC_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          QUICLOC_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          QUICLOC_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          # Unprefixed: composeApp/build.gradle.kts reads these exact names
+          # (System.getenv("KEYSTORE_FILE") etc.) to build the release
+          # signingConfig. A prefix mismatch here means hasReleaseSigningEnv
+          # is always false, no signingConfig ever gets attached to the
+          # release build type, and REQUIRE_SIGNING's own guard never fires
+          # either (it reads the same unset name) - the build would silently
+          # produce an unsigned bundle instead of failing loudly.
+          KEYSTORE_FILE: ${{ steps.keystore.outputs.keystore-path }}
+          KEYSTORE_TYPE: ${{ steps.keystore.outputs.store-type }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           # Play rejects an unsigned bundle anyway; fail here with a clear
           # message instead of at upload time with an opaque one.
-          QUICLOC_REQUIRE_SIGNING: 'true'
+          REQUIRE_SIGNING: 'true'
+        # Aggregate task name - resolves to bundlePlaystoreRelease under the hood, since
+        # `playstore` is the only product flavor. Its actual output lands in a
+        # flavor-named subdirectory (outputs/bundle/playstoreRelease/), not outputs/bundle/release/.
         run: ./gradlew bundleRelease
 
       - name: Verify the bundle is signed by the expected key
         run: |
           set -euo pipefail
-          aab=$(find composeApp/build/outputs/bundle/release -name "*.aab" | head -n1)
+          aab=$(find composeApp/build/outputs/bundle/playstoreRelease -name "*.aab" | head -n1)
           [ -n "$aab" ] || { echo "::error::No .aab was produced."; exit 1; }
           echo "AAB_PATH=$aab" >> "$GITHUB_ENV"
 
@@ -250,14 +259,21 @@ jobs:
           artifact: ${{ env.AAB_PATH }}
           expected-sha256: ${{ steps.keystore.outputs.sha256 }}
 
-      # Read AFTER bundleRelease so it reflects the version.properties value the
-      # build just incremented (matches the .aab's versionName/versionCode).
+      # Read AFTER "Resolve the versionCode" (which may have bumped version.properties on
+      # disk) and the build itself, so this matches the .aab's actual versionName/versionCode.
+      # Same marker-grep pattern as "Read application id" - Gradle/AGP can print other
+      # lines to stdout on a given invocation, so the command's whole output isn't trusted.
       - name: Get app version
         run: |
-          echo "VERSION_NAME=$(./gradlew -q :composeApp:printVersionName)" >> "$GITHUB_ENV"
-          echo "VERSION_CODE=$(./gradlew -q :composeApp:printVersionCode)" >> "$GITHUB_ENV"
+          set -euo pipefail
+          name=$(./gradlew -q :composeApp:printVersionName | grep '^VERSION_NAME=' | tail -n1 | cut -d= -f2-)
+          code=$(./gradlew -q :composeApp:printVersionCode | grep '^VERSION_CODE=' | tail -n1 | cut -d= -f2-)
+          [ -n "$name" ] || { echo "::error::printVersionName produced no VERSION_NAME= line."; exit 1; }
+          [ -n "$code" ] || { echo "::error::printVersionCode produced no VERSION_CODE= line."; exit 1; }
+          echo "VERSION_NAME=$name" >> "$GITHUB_ENV"
+          echo "VERSION_CODE=$code" >> "$GITHUB_ENV"
 
-      # The pre-build check used the committed VERSION_D; this one uses what was
+      # The pre-build check used the committed versionBuild; this one uses what was
       # actually built. Belt and braces, because the cost of getting it wrong is
       # a rejected rollout and a burned versionCode.
       - name: Confirm the built versionCode clears Play
@@ -267,16 +283,16 @@ jobs:
           play_max=${PLAY_MAX_VERSION_CODE:-0}
           echo "Built versionCode $VERSION_CODE; Play's highest is $play_max."
           if [ "$VERSION_CODE" -le "$play_max" ]; then
-            echo "::error::The built bundle is versionCode $VERSION_CODE but Play already has $play_max. Refusing to upload — it could not be rolled out to any existing user. Set VERSION_D=$play_max in version.properties and commit."
+            echo "::error::The built bundle is versionCode $VERSION_CODE but Play already has $play_max. Refusing to upload — it could not be rolled out to any existing user. Set versionBuild=$play_max in version.properties and commit."
             exit 1
           fi
 
       - name: Upload AAB artifact
         uses: actions/upload-artifact@v4
         with:
-          name: quicloc-release-aab-${{ env.VERSION_NAME }}
+          name: hg2gui-release-aab-${{ env.VERSION_NAME }}
           path: |
-            composeApp/build/outputs/bundle/release/*.aab
+            composeApp/build/outputs/bundle/playstoreRelease/*.aab
             version.properties
           if-no-files-found: error
 
@@ -331,29 +347,30 @@ jobs:
           set -uo pipefail
           published="${{ steps.play.outputs.version-code }}"
           for attempt in 1 2 3; do
-            git fetch origin main --quiet || true
-            # The build mutated version.properties on disk; start from main.
-            git reset --hard origin/main --quiet
-            current=$(grep -E '^VERSION_D=' version.properties | cut -d= -f2 | tr -d '[:space:]')
+            git fetch origin master --quiet || true
+            # The build mutated version.properties on disk; start from master, this repo's
+            # actual default branch (not main).
+            git reset --hard origin/master --quiet
+            current=$(grep -E '^versionBuild=' version.properties | cut -d= -f2 | tr -d '[:space:]')
             if [ "$current" -ge "$published" ]; then
-              echo "main already has VERSION_D=$current (>= $published) — nothing to commit."
+              echo "master already has versionBuild=$current (>= $published) — nothing to commit."
               exit 0
             fi
-            sed -i "s/^VERSION_D=.*/VERSION_D=$published/" version.properties
+            sed -i "s/^versionBuild=.*/versionBuild=$published/" version.properties
             git -c user.name="github-actions[bot]" \
                 -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
                 commit -q -am "chore: versionCode $published shipped to Play [skip ci]"
-            if git push --quiet origin HEAD:main; then
-              echo "Committed VERSION_D=$published to main."
+            if git push --quiet origin HEAD:master; then
+              echo "Committed versionBuild=$published to master."
               exit 0
             fi
-            echo "Push attempt $attempt failed (main probably moved) — retrying."
+            echo "Push attempt $attempt failed (master probably moved) — retrying."
             sleep $((attempt * 3))
           done
-          echo "::warning::Published versionCode $published but could not commit the bump to main. Set VERSION_D=$published in version.properties by hand. Releases still work without it — auto mode reads the next code from Play."
+          echo "::warning::Published versionCode $published but could not commit the bump to master. Set versionBuild=$published in version.properties by hand. Releases still work without it — auto mode reads the next code from Play."
           {
             echo "### Commit this by hand"
             echo ""
-            echo "versionCode **$published** shipped, but the bump could not be pushed to \`main\`."
-            echo "Set \`VERSION_D=$published\` in \`version.properties\`."
+            echo "versionCode **$published** shipped, but the bump could not be pushed to \`master\`."
+            echo "Set \`versionBuild=$published\` in \`version.properties\`."
           } >> "$GITHUB_STEP_SUMMARY"

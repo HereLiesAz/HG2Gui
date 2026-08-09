@@ -70,7 +70,7 @@ outputs:
     description: Absolute path to the prepared keystore file.
     value: ${{ steps.prepare.outputs.keystore-path }}
   store-type:
-    description: JKS, JCEKS or PKCS12 — pass to Gradle as QUICLOC_KEYSTORE_TYPE.
+    description: JKS, JCEKS or PKCS12 — pass to Gradle as KEYSTORE_TYPE.
     value: ${{ steps.prepare.outputs.store-type }}
   sha256:
     description: The SHA-256 fingerprint of the certificate that will sign the build.

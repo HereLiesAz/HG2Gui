@@ -173,3 +173,18 @@ tasks.register("printApplicationId") {
         println("APPLICATION_ID=" + android.defaultConfig.applicationId)
     }
 }
+
+// Same reasoning and marker-line convention as printApplicationId above. Read by
+// release-play.yml's "Get app version" step, run AFTER bundleRelease so these reflect the
+// version.properties value that build just incremented.
+tasks.register("printVersionName") {
+    doLast {
+        println("VERSION_NAME=$resolvedVersionName")
+    }
+}
+
+tasks.register("printVersionCode") {
+    doLast {
+        println("VERSION_CODE=$resolvedVersionCode")
+    }
+}
