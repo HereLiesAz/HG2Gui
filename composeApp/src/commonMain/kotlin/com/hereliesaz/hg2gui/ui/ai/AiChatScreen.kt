@@ -29,12 +29,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
+import com.hereliesaz.hg2gui.ui.menu.pageBrush
 
 data class AiMessage(val fromUser: Boolean, val text: String, val command: String? = null)
-
-private val PageYellow = Brush.linearGradient(
-    0f to Color(0xFFE8C81E), 0.5f to Color(0xFFD9B615), 1f to Color(0xFFE8C81E)
-)
 
 /**
  * Single-turn natural-language -> command suggestion, styled like every other full-screen
@@ -60,7 +57,7 @@ fun AiChatScreen(
     Column(
         Modifier
             .fillMaxSize()
-            .background(PageYellow)
+            .background(Azphalt.currentGround.pageBrush())
             .then(if (fullscreen) Modifier else Modifier.windowInsetsPadding(WindowInsets.systemBars))
     ) {
         Row(

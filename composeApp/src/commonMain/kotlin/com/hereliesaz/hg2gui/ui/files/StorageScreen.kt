@@ -22,16 +22,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
+import com.hereliesaz.hg2gui.ui.menu.pageBrush
 
 /*
  * Storage broken down by content type - real numbers from a recursive walk of the sandbox, not
  * a device-wide figure the app has no way to actually know. Two tabs: the breakdown, and the
  * worst offenders named.
  */
-
-private val PageYellow = Brush.linearGradient(
-    0f to Color(0xFFE8C81E), 0.5f to Color(0xFFD9B615), 1f to Color(0xFFE8C81E)
-)
 
 private val CATEGORY_HUES = mapOf(
     "Images" to 0, "Documents" to 2, "Code" to 9, "Archives" to 5, "Other" to 4
@@ -52,7 +49,7 @@ fun StorageScreen(
     Column(
         modifier
             .fillMaxSize()
-            .background(PageYellow)
+            .background(Azphalt.currentGround.pageBrush())
             .then(if (fullscreen) Modifier else Modifier.windowInsetsPadding(WindowInsets.systemBars))
     ) {
         Row(

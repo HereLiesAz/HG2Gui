@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
+import com.hereliesaz.hg2gui.ui.menu.pageBrush
 import kotlinx.coroutines.delay
 
 /*
@@ -42,10 +43,6 @@ import kotlinx.coroutines.delay
  * reveal via a left-to-right clip; pills grow their actual width instead, so a rounded end grows
  * into being rather than getting guillotined by a hard clip partway through its curve.
  */
-
-private val PageYellow = Brush.linearGradient(
-    0f to Color(0xFFE8C81E), 0.5f to Color(0xFFD9B615), 1f to Color(0xFFE8C81E)
-)
 
 private val GUIDE_HUES = intArrayOf(6, 5, 4, 2, 9, 0, 7) // red, orange, amber, teal, blue, violet, magenta
 
@@ -64,7 +61,7 @@ fun GuideReaderScreen(
     Column(
         modifier
             .fillMaxSize()
-            .background(PageYellow)
+            .background(Azphalt.currentGround.pageBrush())
             .then(if (fullscreen) Modifier else Modifier.windowInsetsPadding(WindowInsets.systemBars))
     ) {
         when (view) {

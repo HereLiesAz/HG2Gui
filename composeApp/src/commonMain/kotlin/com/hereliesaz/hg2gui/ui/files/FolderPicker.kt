@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
+import com.hereliesaz.hg2gui.ui.menu.pageBrush
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
@@ -70,7 +71,7 @@ fun FolderPicker(
 
     val density = LocalDensity.current
 
-    Column(modifier.fillMaxSize().background(PageYellowBrush)) {
+    Column(modifier.fillMaxSize().background(Azphalt.currentGround.pageBrush())) {
         Row(
             Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 18.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -233,10 +234,6 @@ private suspend fun launchAll(vararg blocks: suspend () -> Unit) {
         blocks.forEach { block -> launch { block() } }
     }
 }
-
-private val PageYellowBrush = Brush.linearGradient(
-    0f to Color(0xFFE8C81E), 0.5f to Color(0xFFD9B615), 1f to Color(0xFFE8C81E)
-)
 
 @Composable
 private fun PickerChip(

@@ -21,12 +21,9 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.hereliesaz.hg2gui.ui.Eyebrow
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
+import com.hereliesaz.hg2gui.ui.menu.pageBrush
 import com.hereliesaz.hg2gui.ui.menu.MenuNode
 import com.hereliesaz.hg2gui.ui.menu.PillMenu
-
-private val PageYellow = Brush.linearGradient(
-    0f to Color(0xFFE8C81E), 0.5f to Color(0xFFD9B615), 1f to Color(0xFFE8C81E)
-)
 
 /*
  * The guide is a read-through of the exact tree PillMenu itself runs on - picking a command
@@ -60,7 +57,7 @@ fun CommandGuideScreen(
     Column(
         modifier
             .fillMaxSize()
-            .background(PageYellow)
+            .background(Azphalt.currentGround.pageBrush())
             .then(if (fullscreen) Modifier else Modifier.windowInsetsPadding(WindowInsets.systemBars))
     ) {
         Row(

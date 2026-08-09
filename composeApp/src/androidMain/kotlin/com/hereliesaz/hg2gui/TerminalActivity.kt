@@ -430,6 +430,10 @@ class TerminalActivity : FragmentActivity() {
                         activeSessionId = activeSessionId,
                         onSessionPick = { activeSessionId = it },
                         onNewSession = {
+                            // A deliberate tap, never mid-gesture - the one place this session
+                            // rerolls the ground (capped at Azphalt.MAX_GROUND_REROLLS regardless
+                            // of how many new tabs get opened).
+                            Azphalt.rerollGround()
                             scope.launch {
                                 val newEngine = withContext(Dispatchers.Default) {
                                     TerminalEngine(this@TerminalActivity)

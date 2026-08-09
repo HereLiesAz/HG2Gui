@@ -150,6 +150,26 @@ reflection-based command engine underneath it — built-ins are a fixed dispatch
     packages are trusted at download time, same posture as this app's other unverified local
     settings (the MCP pairing token, the AI API key).
 
+### 10. Ground rotation (Kotlin, `commonMain`)
+*   **`ui/menu/PillMenu.kt`**: `Azphalt.currentGround` is a process-wide `mutableStateOf(Ground)`
+    (not `remember`-scoped) so every screen agrees on the same background, including
+    `EditorScreen` - which runs in its own Activity (`EditorActivity`) with its own composition,
+    so a per-composition roll would let it disagree with the rest of the app. `Azphalt.grounds`
+    (Mustard weighted heavily as the primary, six others sharing the rest) and
+    `Azphalt.randomGround(exclude)` (weighted pick) predate this; `currentGround` just makes one
+    of those picks the shared, observable one.
+*   `Azphalt.rerollGround()` swaps to a new weighted pick (never repeating the current one),
+    capped at `Azphalt.MAX_GROUND_REROLLS` (2) per app process - "may reroll once, twice at most"
+    per the style guide. The one call site is `TerminalActivity`'s `onNewSession`: opening a new
+    session tab is a deliberate tap, never mid-gesture, so it's a safe moment to swap the
+    background without fighting an in-flight pill animation.
+*   Every screen that used to define its own local `PageYellow` gradient constant now calls the
+    top-level `Azphalt.Ground.pageBrush()` extension (`Brush.linearGradient(page, foldDark,
+    page)`, the same shape the old per-screen constants used) against `Azphalt.currentGround`
+    instead - `TerminalScreen`, `SettingsScreen`, `McpServerScreen`, `AiSettingsScreen`,
+    `AiChatScreen`, `AzpStoreScreen`, `CommandGuideScreen`, `GuideReaderScreen`, `FilesScreen`,
+    `StorageScreen`, `FolderPicker`, `EditorScreen`.
+
 ## Data Flow
 1.  **Input**: The user taps `wifi`. No text is typed. Since `wifi` leaves no further
     parameters, it runs immediately on that tap.
