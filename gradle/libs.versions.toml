@@ -5,6 +5,8 @@ compose-multiplatform = "1.11.1"
 androidx-activityCompose = "1.13.0"
 androidx-appcompat = "1.7.1"
 androidx-core-ktx = "1.19.0"
+androidx-fragment = "1.8.9"
+androidx-biometric = "1.1.0"
 junit = "4.13.2"
 mockito = "5.23.0"
 okhttp = "5.4.0"
@@ -12,11 +14,14 @@ htmlcleaner = "2.29"
 jsonpath = "3.0.0"
 jsoup = "1.23.1"
 comparestring2 = "1.0.9"
+kotlinx-serialization-json = "1.9.0"
 
 [libraries]
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "androidx-activityCompose" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "androidx-appcompat" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "androidx-core-ktx" }
+androidx-fragment = { group = "androidx.fragment", name = "fragment-ktx", version.ref = "androidx-fragment" }
+androidx-biometric = { group = "androidx.biometric", name = "biometric", version.ref = "androidx-biometric" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 mockito-core = { group = "org.mockito", name = "mockito-core", version.ref = "mockito" }
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
@@ -24,6 +29,7 @@ htmlcleaner = { group = "net.sourceforge.htmlcleaner", name = "htmlcleaner", ver
 json-path = { group = "com.jayway.jsonpath", name = "json-path", version.ref = "jsonpath" }
 jsoup = { group = "org.jsoup", name = "jsoup", version.ref = "jsoup" }
 comparestring2 = { group = "it.andreuzzi", name = "CompareString2", version.ref = "comparestring2" }
+kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinx-serialization-json" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
@@ -32,3 +38,4 @@ jetbrainsCompose = { id = "org.jetbrains.compose", version.ref = "compose-multip
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlinAndroid = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlinxSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }

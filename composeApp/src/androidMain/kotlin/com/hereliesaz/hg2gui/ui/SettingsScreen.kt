@@ -32,6 +32,7 @@ fun SettingsScreen(
     onFullscreenChange: (Boolean) -> Unit,
     fontScalePercent: Int,
     onFontScalePercentChange: (Int) -> Unit,
+    onOpenMcpServer: () -> Unit,
     onBack: () -> Unit
 ) {
     Column(
@@ -87,6 +88,25 @@ fun SettingsScreen(
                 label = { "$it%" },
                 onChange = onFontScalePercentChange
             )
+        }
+
+        SettingRow(
+            title = "Developer",
+            description = "A loopback-only MCP server a paired AI agent can connect to, and the " +
+                "biometric-gated switch that lets it run real shell commands."
+        ) {
+            Box(
+                Modifier
+                    .clip(RoundedCornerShape(percent = 50))
+                    .background(Azphalt.Ink)
+                    .clickable(onClick = onOpenMcpServer)
+                    .padding(horizontal = 16.dp, vertical = 9.dp)
+            ) {
+                Text(
+                    "MCP SERVER ›", color = Azphalt.Yellow,
+                    fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em
+                )
+            }
         }
     }
 }

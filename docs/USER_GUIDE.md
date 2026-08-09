@@ -79,6 +79,12 @@ binary now, run in the Termux environment below, not a reimplementation of one.
     then hands you the assembled command to run. Host-key confirmation and password/passphrase
     prompts work exactly like any other command's interactive prompts — a tap for yes/no, a
     masked field for a password.
+-   **MCP server:** Settings → **MCP SERVER** starts a loopback-only server (reachable via
+    `adb forward`, never over the network) that an external AI agent can pair with using a
+    pairing token shown on that screen, to read/write this app's sandboxed files. Running real
+    shell commands through it is a separate switch, off by default, that asks for a biometric
+    confirmation the first time you turn it on — the one setting here that lets a paired agent do
+    more than touch its own sandbox.
 
 ## Related Resources
 The shell is genuine Termux underneath, so third-party Termux material works here too:

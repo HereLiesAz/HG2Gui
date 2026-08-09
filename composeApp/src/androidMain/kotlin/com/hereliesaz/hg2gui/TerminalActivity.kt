@@ -4,9 +4,9 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.biometric.BiometricPrompt
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -22,21 +23,25 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
+import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.core.content.edit
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.fragment.app.FragmentActivity
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.hereliesaz.hg2gui.managers.ContactManager
 import com.hereliesaz.hg2gui.managers.SshPresets
 import com.hereliesaz.hg2gui.managers.TerminalHistoryEntry
 import com.hereliesaz.hg2gui.managers.VfsManager
+import com.hereliesaz.hg2gui.mcp.McpServerService
 import com.hereliesaz.hg2gui.terminal.Builtins
 import com.hereliesaz.hg2gui.terminal.DistroManager
 import com.hereliesaz.hg2gui.terminal.TerminalEngine
 import com.hereliesaz.hg2gui.util.GenericFileProvider
 import com.hereliesaz.hg2gui.util.Utils
 import com.hereliesaz.hg2gui.ui.HG2GuiTheme
+import com.hereliesaz.hg2gui.ui.McpServerScreen
 import com.hereliesaz.hg2gui.ui.SessionUiState
 import com.hereliesaz.hg2gui.ui.SettingsScreen
 import com.hereliesaz.hg2gui.ui.TerminalScreen
@@ -63,12 +68,30 @@ private const val PREFS_NAME = "hg2gui_prefs"
 private const val PREF_FULLSCREEN = "fullscreen"
 private const val PREF_FONT_SCALE_PERCENT = "font_scale_percent"
 
-class TerminalActivity : ComponentActivity() {
+class TerminalActivity : FragmentActivity() {
 
     private var sessions by mutableStateOf(listOf<TerminalSession>())
     private var nextSessionNumber = 2
 
-    private enum class Screen { Terminal, Settings, Guide, Files }
+    private enum class Screen { Terminal, Settings, Guide, Files, Mcp }
+
+    /** Confirms enabling shell.* MCP tools with a biometric prompt before persisting the flag -
+     *  this is the one switch that lets a paired agent run arbitrary commands, so it gets a
+     *  human-present confirmation step, not just a toggle. Disabling never needs this. */
+    private fun requestEnableShellExec() {
+        val executor = ContextCompat.getMainExecutor(this)
+        val prompt = BiometricPrompt(this, executor, object : BiometricPrompt.AuthenticationCallback() {
+            override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                McpServerService.setShellExecEnabled(this@TerminalActivity, true)
+            }
+        })
+        val info = BiometricPrompt.PromptInfo.Builder()
+            .setTitle("Enable shell execution")
+            .setSubtitle("Lets a paired MCP client run real shell commands on this device")
+            .setNegativeButtonText("Cancel")
+            .build()
+        prompt.authenticate(info)
+    }
 
     private data class InitResult(
         val engine: TerminalEngine,
@@ -79,19 +102,39 @@ class TerminalActivity : ComponentActivity() {
 
     private val prefs: SharedPreferences by lazy { getSharedPreferences(PREFS_NAME, MODE_PRIVATE) }
 
+    // TerminalActivity is singleTop/intoExisting, so a notification tap while it's already
+    // running arrives via onNewIntent, not a fresh onCreate - this is how that reaches the
+    // Compose tree to switch screens, since setIntent() alone wouldn't trigger recomposition.
+    private var lastIntentExtra by mutableStateOf<Intent?>(null)
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        lastIntentExtra = intent
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
         Utils.init(applicationContext)
+        McpServerService.ensureInitialized(applicationContext)
 
         setContent {
             var tree by remember { mutableStateOf<List<MenuNode>?>(null) }
             var activeSessionId by remember { mutableStateOf("") }
-            var screen by remember { mutableStateOf(Screen.Terminal) }
+            var screen by remember {
+                mutableStateOf(if (intent?.getBooleanExtra(McpServerService.EXTRA_OPEN_MCP, false) == true) Screen.Mcp else Screen.Terminal)
+            }
             var fullscreen by remember { mutableStateOf(false) }
             var fontScalePercent by remember { mutableStateOf(100) }
             val scope = rememberCoroutineScope()
+
+            LaunchedEffect(lastIntentExtra) {
+                if (lastIntentExtra?.getBooleanExtra(McpServerService.EXTRA_OPEN_MCP, false) == true) {
+                    screen = Screen.Mcp
+                }
+            }
 
             // "The pill becomes the page": the Files pill grows out around the screen edge,
             // then the loop it closes floods with a vertical wipe that reveals the file
@@ -219,8 +262,30 @@ class TerminalActivity : ComponentActivity() {
                             fontScalePercent = value
                             prefs.edit { putInt(PREF_FONT_SCALE_PERCENT, value) }
                         },
+                        onOpenMcpServer = { screen = Screen.Mcp },
                         onBack = { screen = Screen.Terminal }
                     )
+
+                    screen == Screen.Mcp -> {
+                        val running by McpServerService.isRunning.collectAsState()
+                        val token by McpServerService.token.collectAsState()
+                        val port by McpServerService.port.collectAsState()
+                        val shellExecEnabled by McpServerService.shellExecEnabled.collectAsState()
+                        McpServerScreen(
+                            fullscreen = fullscreen,
+                            running = running,
+                            port = port,
+                            token = token,
+                            shellExecEnabled = shellExecEnabled,
+                            onStart = { ContextCompat.startForegroundService(this@TerminalActivity, Intent(this@TerminalActivity, McpServerService::class.java)) },
+                            onStop = {
+                                startService(Intent(this@TerminalActivity, McpServerService::class.java).apply { action = McpServerService.ACTION_STOP })
+                            },
+                            onRequestShellExec = { requestEnableShellExec() },
+                            onDisableShellExec = { McpServerService.setShellExecEnabled(this@TerminalActivity, false) },
+                            onBack = { screen = Screen.Settings }
+                        )
+                    }
 
                     screen == Screen.Guide -> CommandGuideScreen(
                         tree = currentTree.orEmpty(),

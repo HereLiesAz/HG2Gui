@@ -28,6 +28,17 @@
     <uses-permission android:name="android.permission.CALL_PHONE" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <!--
+      For McpServerService: a loopback-only JSON-RPC server an external AI agent can pair with
+      (see docs/HG2GUI_ARCHITECTURE.md). FOREGROUND_SERVICE_SPECIAL_USE is the closest fit
+      Android's typed foreground-service categories offer for "an on-device dev server the user
+      explicitly started" - there's no dedicated category for that. POST_NOTIFICATIONS is
+      requested at runtime, same lazy-request pattern as every other permission here, for the
+      ongoing notification the service shows while running.
+    -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
 <!--
       No <permission> declarations here.
@@ -158,6 +169,21 @@
                 <data android:host="*" android:pathPattern=".*\.xml" android:scheme="file" />
             </intent-filter>
         </activity>
+
+        <!--
+          Loopback-only MCP server: binds 127.0.0.1, never LAN-exposed, gated by a pairing token
+          shown in McpServerScreen. Started/stopped explicitly by the user from Settings, never
+          on its own - a foreground service so the socket survives backgrounding while it runs,
+          with the ongoing notification Android requires for that.
+        -->
+        <service
+            android:name=".mcp.McpServerService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Loopback MCP server for on-device AI agent pairing, user-started" />
+        </service>
 
     </application>
 
