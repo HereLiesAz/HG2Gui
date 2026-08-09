@@ -118,6 +118,11 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            // anthropic-java pulls in Apache HttpClient5, whose jars (httpclient5, httpcore5,
+            // httpcore5-h2) all ship their own copy of this file under the same path - only
+            // the release build's resource-merge step catches this (debug compile doesn't
+            // merge Java resources), which is why it didn't surface locally until bundleRelease.
+            excludes += "/META-INF/DEPENDENCIES"
         }
     }
 
