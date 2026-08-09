@@ -44,19 +44,36 @@ the same motion the root stack uses to re-enter.
 
 The children are their own scroll region; the host does not move.
 
+## 4a. The trail
+
+A picked child doesn't just cascade its own children in — it also drops out of the band and
+settles beside the host as a **trail crumb**, the record of what's been picked so far. The
+trail starts at 24% of the frame, just clear of the host's right end, and runs left to right in
+pick order. Unlike every other pill (sized as a fraction of the screen), a crumb is sized by its
+own content, with a 56dp floor so a short label like `ls` doesn't shrink-wrap smaller than
+everything around it. Tapping a crumb pops the trail back to just before it and re-opens that
+pill's own band — each level is its own fresh cascade, never more pills piled onto the one
+before it.
+
 ## 5. Motion
 
 | | |
 | --- | --- |
-| Slide the stack away | 420ms, `cubic-bezier(.3, .05, .2, 1)` |
-| Host drop | 420ms, `cubic-bezier(0, .9, .1, 1)` |
-| Child turn | 520ms |
+| Slide the stack away | 140ms, linear |
+| Host drop | 140ms, linear |
+| Child turn (swing) | 173ms, linear |
 | Lift | final 10% of the turn |
-| Cascade | strictly sequential — 520ms per step |
+| Cascade | strictly sequential — 173ms per step |
 | Host rests at | 34% of the frame |
 | Child pill | 34% wide, 30% in |
+| Trail starts at | 24% of the frame |
+| Trail crumb | content-sized, 56dp floor |
 | Overhang | 62dp past the left edge |
 | Row pitch | 20dp |
+| Pick grows to | 1.15× before settling back to 1× |
+
+Every motion in the menu is **linear** — there is no easing curve anywhere; an eased pill reads
+as a bug at this speed.
 
 A child begins **exactly behind the pill before it** — the first behind the host, on the host's
 row — so it is invisible at rest. It turns a full **360°** hinged on one end:
@@ -68,11 +85,15 @@ Strictly sequential: a pill does not begin until the one before it has landed. W
 are parked on the host's row underneath it — they do not exist on screen until their turn.
 
 **Every change of stack is animated.** A pill never appears or vanishes on the spot; dismissing
-a host slides the stack back in from off the left edge, 70ms apart.
+a host plays the exact same arrival as opening the app — one column, one clock, no per-pill
+stagger, because returning to a stack and arriving at it are the same event.
 
 Nothing fades. A pill is always fully opaque, even mid-turn. There are no hover or press states
 — state is structural: a pill is a hue, or ink (open), or a 14% wash (idle). On an ink ground
 that inverts: the open pill is yellow with an ink end-cap, so it never disappears into the page.
+
+Animation state is remembered against a node's **id**, never its index — a contextual root can
+appear or vanish between frames, and a keyed-by-position pill would inherit a stranger's motion.
 
 ## 6. Scale
 

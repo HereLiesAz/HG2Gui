@@ -33,6 +33,15 @@ object VfsManager {
 
     fun currentPath(): String = if (relativePath.isEmpty()) "/" else "/$relativePath"
 
+    /** [file]'s own path expressed relative to the sandbox root, e.g. "/Downloads/photo.png" -
+     *  the stable, platform-agnostic identifier the file-manager UI (commonMain, no `File`
+     *  access) keys everything off. */
+    fun pathOf(context: Context, file: File): String {
+        val r = init(context)
+        val relative = file.canonicalPath.removePrefix(r.canonicalPath).trim(File.separatorChar)
+        return if (relative.isEmpty()) "/" else "/$relative"
+    }
+
     /** Resolves [path] against the root (absolute) or the current directory (relative). Returns
      *  null if it would escape the sandbox root. */
     fun resolve(context: Context, path: String): File? {
@@ -109,5 +118,113 @@ object VfsManager {
         } catch (e: Exception) {
             false
         }
+    }
+
+    /** True if [file] is a real path inside the sandbox root - the safety check every File-based
+     *  operation below needs, since these bypass [resolve]'s own name-based containment check. */
+    private fun contains(file: File): Boolean {
+        val r = root ?: return false
+        val rootCanonical = r.canonicalFile
+        val fileCanonical = file.canonicalFile
+        return fileCanonical == rootCanonical || fileCanonical.path.startsWith(rootCanonical.path + File.separator)
+    }
+
+    // --- File-based operations -------------------------------------------------------------
+    // The nested-accordion browser holds real File references for whatever is expanded at each
+    // level, independent of any single "current directory" - so these work directly against a
+    // File rather than resolving a name relative to it.
+
+    fun mkdir(dir: File, name: String): Boolean = contains(dir) && File(dir, name).mkdirs()
+
+    fun touch(dir: File, name: String): Boolean {
+        if (!contains(dir)) return false
+        val f = File(dir, name)
+        return f.exists() || f.createNewFile()
+    }
+
+    fun delete(file: File): Boolean = contains(file) && file.deleteRecursively()
+
+    fun rename(file: File, newName: String): Boolean {
+        if (!contains(file)) return false
+        val parent = file.parentFile ?: return false
+        return file.renameTo(File(parent, newName))
+    }
+
+    fun moveInto(file: File, targetDir: File): Boolean {
+        if (!contains(file) || !contains(targetDir)) return false
+        return file.renameTo(File(targetDir, file.name))
+    }
+
+    fun copyInto(file: File, targetDir: File): Boolean {
+        if (!contains(file) || !contains(targetDir)) return false
+        val target = File(targetDir, file.name)
+        return try {
+            if (file.isDirectory) file.copyRecursively(target, overwrite = true) else { file.copyTo(target, overwrite = true); true }
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    /** Every file and directory under [dir] (or the whole sandbox, by default), depth-first,
+     *  directories before their own contents - the walk every recursive feature below shares. */
+    private fun walk(dir: File, into: MutableList<File>) {
+        val children = dir.listFiles()
+            ?.sortedWith(compareBy({ !it.isDirectory }, { it.name.lowercase() }))
+            ?: return
+        for (child in children) {
+            into.add(child)
+            if (child.isDirectory) walk(child, into)
+        }
+    }
+
+    /** Every name under [dir] (defaulting to the sandbox root) containing [query], case
+     *  insensitive - real recursive search, not just the one open directory. Capped at [limit]
+     *  since a query that matches broadly (a single common letter) shouldn't hang the UI walking
+     *  an unbounded tree. */
+    fun search(context: Context, query: String, dir: File = init(context), limit: Int = 200): List<File> {
+        if (query.isBlank()) return emptyList()
+        val q = query.lowercase()
+        val all = mutableListOf<File>()
+        walk(dir, all)
+        return all.filter { it.name.lowercase().contains(q) }.take(limit)
+    }
+
+    enum class StorageCategory(val label: String) {
+        IMAGES("Images"), DOCUMENTS("Documents"), CODE("Code"), ARCHIVES("Archives"), OTHER("Other")
+    }
+
+    private val IMAGE_EXT = setOf("png", "jpg", "jpeg", "gif", "webp", "bmp", "svg", "heic")
+    private val DOCUMENT_EXT = setOf("pdf", "doc", "docx", "txt", "md", "odt", "xls", "xlsx", "ppt", "pptx", "csv")
+    private val CODE_EXT = setOf("kt", "java", "py", "js", "ts", "kts", "json", "xml", "html", "css", "c", "cpp", "h", "go", "rs", "sh")
+    private val ARCHIVE_EXT = setOf("zip", "tar", "gz", "7z", "rar", "bz2", "xz")
+
+    fun isImage(file: File): Boolean = file.extension.lowercase() in IMAGE_EXT
+
+    private fun categoryOf(file: File): StorageCategory = when (file.extension.lowercase()) {
+        in IMAGE_EXT -> StorageCategory.IMAGES
+        in DOCUMENT_EXT -> StorageCategory.DOCUMENTS
+        in CODE_EXT -> StorageCategory.CODE
+        in ARCHIVE_EXT -> StorageCategory.ARCHIVES
+        else -> StorageCategory.OTHER
+    }
+
+    data class StorageBreakdown(
+        val totalBytes: Long,
+        val byCategory: Map<StorageCategory, Long>,
+        val largestFiles: List<File>
+    )
+
+    /** Recursively sizes the whole sandbox by [StorageCategory] - this is storage used inside
+     *  HG2Gui's own private sandbox, not the device's, since that's the only filesystem [vfs]
+     *  actually models; a device-wide figure would be claiming knowledge this sandbox doesn't
+     *  have. */
+    fun storageByType(context: Context): StorageBreakdown {
+        val all = mutableListOf<File>()
+        walk(init(context), all)
+        val files = all.filter { it.isFile }
+        val byCategory = files.groupingBy { categoryOf(it) }.fold(0L) { acc, f -> acc + f.length() }
+        val total = files.sumOf { it.length() }
+        val largest = files.sortedByDescending { it.length() }.take(10)
+        return StorageBreakdown(total, byCategory, largest)
     }
 }

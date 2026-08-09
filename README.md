@@ -38,6 +38,12 @@ Inspired by the *Hitchhiker's Guide to the Galaxy* (2005) aesthetic and built on
 *   **Sessions.** Named terminal sessions, each with its own scrollback and working directory.
 *   **Aliases.** Native shell aliases plus `ShellAliases.kt`'s own suggestion pills — no
     duplicate alias system layered on top of the real shell's.
+*   **A real file manager.** Search, sort, multi-select batch actions, in-place rename, an
+    automatic media grid, and a storage-by-type breakdown over the `vfs` sandbox — folders are
+    capsules that expand in place, siblings squishing into thin coloured rods beside them.
+*   **The Guide.** A chaptered glossary of real commands paired with invented, Hitchhiker's-
+    Guide-style definitions, reachable from the command picker — reading material, not another
+    way to run something.
 
 ## Interface
 
@@ -60,7 +66,10 @@ reflection-discovered plugin system.
     *   `util/CalculationEngine.kt` — the expression parser behind `calc`.
     *   `ui/` — Compose UI. `TerminalScreen.kt` (the terminal), `SessionUiState.kt` (per-session
         state, including the pending-prompt hand-off for interactive commands), `ui/editor/` (the
-        `edit` command's text editor screen), `ui/files/` (the `vfs` sandbox's file browser).
+        `edit` command's text editor screen), `ui/files/` (the `vfs` sandbox's file manager —
+        `FilesScreen.kt`'s nested-accordion browser, `FolderPicker.kt`'s tile/rod/panel Move/Copy
+        destination picker, `StorageScreen.kt`), `ui/guide/` (`CommandGuideScreen.kt`'s command
+        picker, nesting `GuideReaderScreen.kt` and its content in `GuideContent.kt`).
     *   `ui/menu/PillMenu.kt` — the suggestion tree and its choreography. `MenuNode` supports
         lazily-resolved children (`resolveChildren`) for live data, like a directory listing.
 *   `composeApp/src/androidMain/kotlin/com/hereliesaz/hg2gui/`
