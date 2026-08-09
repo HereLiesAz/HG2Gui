@@ -34,7 +34,10 @@ import androidx.fragment.app.FragmentActivity
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.hereliesaz.hg2gui.ai.AiClient
 import com.hereliesaz.hg2gui.ai.AiReply
+import com.hereliesaz.hg2gui.azp.AzpClient
+import com.hereliesaz.hg2gui.azp.AzpInstaller
 import com.hereliesaz.hg2gui.managers.AiSettings
+import com.hereliesaz.hg2gui.managers.AzpLibrary
 import com.hereliesaz.hg2gui.managers.ContactManager
 import com.hereliesaz.hg2gui.managers.SshPresets
 import com.hereliesaz.hg2gui.managers.TerminalHistoryEntry
@@ -55,6 +58,8 @@ import com.hereliesaz.hg2gui.ui.TerminalScreen
 import com.hereliesaz.hg2gui.ui.WorkflowFlow
 import com.hereliesaz.hg2gui.ui.ai.AiChatScreen
 import com.hereliesaz.hg2gui.ui.ai.AiMessage
+import com.hereliesaz.hg2gui.ui.azp.AzpListing
+import com.hereliesaz.hg2gui.ui.azp.AzpStoreScreen
 import com.hereliesaz.hg2gui.ui.files.FilesScreen
 import com.hereliesaz.hg2gui.ui.files.StorageCategoryStat
 import com.hereliesaz.hg2gui.ui.files.StorageStats
@@ -83,7 +88,7 @@ class TerminalActivity : FragmentActivity() {
     private var sessions by mutableStateOf(listOf<TerminalSession>())
     private var nextSessionNumber = 2
 
-    private enum class Screen { Terminal, Settings, Guide, Files, Mcp, Ai, AiSettings }
+    private enum class Screen { Terminal, Settings, Guide, Files, Mcp, Ai, AiSettings, Azp }
 
     /** Confirms enabling shell.* MCP tools with a biometric prompt before persisting the flag -
      *  this is the one switch that lets a paired agent run arbitrary commands, so it gets a
@@ -141,6 +146,9 @@ class TerminalActivity : FragmentActivity() {
             var aiApiKey by remember { mutableStateOf(AiSettings.apiKey(this@TerminalActivity)) }
             var aiMessages by remember { mutableStateOf<List<AiMessage>>(emptyList()) }
             var aiBusy by remember { mutableStateOf(false) }
+            var azpResults by remember { mutableStateOf<List<AzpListing>>(emptyList()) }
+            var azpBusy by remember { mutableStateOf(false) }
+            var azpInstallingId by remember { mutableStateOf<String?>(null) }
             val scope = rememberCoroutineScope()
 
             LaunchedEffect(lastIntentExtra) {
@@ -310,7 +318,10 @@ class TerminalActivity : FragmentActivity() {
                                 aiBusy = true
                                 scope.launch {
                                     val reply = try {
-                                        AiClient.ask(key, session.ui.cwd, question)
+                                        val skills = withContext(Dispatchers.IO) {
+                                            AzpLibrary.installedSkillTexts(this@TerminalActivity)
+                                        }
+                                        AiClient.ask(key, session.ui.cwd, question, skills)
                                     } catch (e: Exception) {
                                         AiReply(text = "error: ${e.message}", command = null)
                                     }
@@ -329,6 +340,54 @@ class TerminalActivity : FragmentActivity() {
                             screen = Screen.Terminal
                         },
                         onOpenSettings = { screen = Screen.AiSettings },
+                        onBack = { screen = Screen.Terminal }
+                    )
+
+                    screen == Screen.Azp -> AzpStoreScreen(
+                        fullscreen = fullscreen,
+                        results = azpResults,
+                        busy = azpBusy,
+                        installingId = azpInstallingId,
+                        onSearch = { query, kind ->
+                            azpBusy = true
+                            scope.launch {
+                                val response = try {
+                                    AzpClient.search(query, kind.takeUnless { it == "all" })
+                                } catch (e: Exception) {
+                                    null
+                                }
+                                val installed = withContext(Dispatchers.IO) {
+                                    AzpLibrary.installed(this@TerminalActivity).map { it.id }.toSet()
+                                }
+                                azpResults = response?.packages.orEmpty().map { pkg ->
+                                    AzpListing(
+                                        id = pkg.id, name = pkg.name, author = pkg.author,
+                                        description = pkg.description, version = pkg.version,
+                                        kind = pkg.kind, installed = pkg.id in installed
+                                    )
+                                }
+                                azpBusy = false
+                            }
+                        },
+                        onInstall = { listing ->
+                            azpInstallingId = listing.id
+                            scope.launch {
+                                val result = withContext(Dispatchers.IO) {
+                                    val bytes = AzpClient.download(listing.id, listing.version) ?: return@withContext null
+                                    val install = AzpInstaller.install(this@TerminalActivity, listing.id, listing.version, bytes)
+                                        ?: return@withContext null
+                                    AzpLibrary.record(
+                                        this@TerminalActivity, listing.id, listing.name, listing.version,
+                                        install.kind, install.skillIds
+                                    )
+                                    install
+                                }
+                                if (result != null) {
+                                    azpResults = azpResults.map { if (it.id == listing.id) it.copy(installed = true) else it }
+                                }
+                                azpInstallingId = null
+                            }
+                        },
                         onBack = { screen = Screen.Terminal }
                     )
 
@@ -435,6 +494,7 @@ class TerminalActivity : FragmentActivity() {
                                     }
                                 }
                                 wizardId == "ai-chat" -> screen = Screen.Ai
+                                wizardId == "azp-store" -> screen = Screen.Azp
                             }
                         },
                         onRun = { sessionId, line, onOutput, onNeedInput ->

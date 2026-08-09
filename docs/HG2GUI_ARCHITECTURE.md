@@ -114,6 +114,33 @@ reflection-based command engine underneath it — built-ins are a fixed dispatch
     wizard-produced command already follows; this deliberately does not duplicate the MCP server's
     biometric-gated `shell.exec` tool.
 
+### 9. Store (azphalt registry client) (Kotlin, `commonMain`/`androidMain`)
+*   **`azp/AzpClient.kt`** (androidMain): OkHttp client for the azphalt Repository API
+    (`spec/repository-api.md` in `hereliesaz/azphalt`) against the live registry at
+    `https://www.azphalt.store` — `search(query, kind, page)` (`GET /packages`) and
+    `download(id, version)` (`GET /packages/{id}/versions/{version}/download`). Free packages
+    only; paid packages need a Bearer entitlement this client does not obtain.
+*   **`azp/AzpInstaller.kt`** (androidMain): a `.azp` is a plain ZIP archive with `manifest.json`
+    at its root (`spec/package-format.md`) — `install()` unzips it into
+    `filesDir/azp/<id>/<version>/` (rejecting any entry that would escape via `..`), reads
+    `manifest.json`'s `kind`, and for `kind:"skill"` collects the declared `skill.skills[].id`
+    list so the SKILL.md payloads can be found again later.
+*   **`managers/AzpLibrary.kt`** (androidMain): flat-SharedPreferences record of installed
+    packages, same shape as `WorkflowStore`/`SshPresets`. `installedSkillTexts()` reads each
+    installed skill package's `skills/<id>/SKILL.md` off disk, capped to a fixed character budget,
+    for `AiClient` to fold into its system prompt.
+*   **`ui/azp/AzpStoreScreen.kt`** (commonMain): search box, kind-filter pills (all/skill/mcp/
+    code/pack/asset/app), and a result list with an INSTALL/INSTALLED pill per package — same
+    visual idiom as `AiChatScreen`. Reached via a synthesized `azp` root pill
+    (`CommandTree.azpRoot`, `wizardId = "azp-store"` navigates to the screen, same reuse of
+    `onWizard` as the AI pill).
+*   HG2Gui has no `.azp` execution runtime (no WASM sandbox, no MCP client), so "install" for
+    every kind except `skill` is download-and-unpack only — the package sits on-device for the
+    user's own use elsewhere, the same as `apt download` versus `apt install`. Signature
+    verification (the Ed25519 model in `package-format.md`) is **not implemented** in this v1;
+    packages are trusted at download time, same posture as this app's other unverified local
+    settings (the MCP pairing token, the AI API key).
+
 ## Data Flow
 1.  **Input**: The user taps `wifi`. No text is typed. Since `wifi` leaves no further
     parameters, it runs immediately on that tap.

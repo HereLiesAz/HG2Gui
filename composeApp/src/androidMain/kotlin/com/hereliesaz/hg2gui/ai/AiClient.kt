@@ -21,12 +21,23 @@ If the user's request can be satisfied by a single shell command, reply with ONL
  * the MCP server's biometric-gated shell.exec tool, a separate and more guarded surface.
  */
 object AiClient {
-    suspend fun ask(apiKey: String, cwd: String, question: String): AiReply = withContext(Dispatchers.IO) {
+    suspend fun ask(
+        apiKey: String,
+        cwd: String,
+        question: String,
+        skills: List<Pair<String, String>> = emptyList(),
+    ): AiReply = withContext(Dispatchers.IO) {
         val client = AnthropicOkHttpClient.builder().apiKey(apiKey).build()
+        var system = SYSTEM_PROMPT.replace("{cwd}", cwd)
+        if (skills.isNotEmpty()) {
+            system += "\n\nThe user has installed the following skills from the azphalt store. " +
+                "Use them as reference when relevant:\n" +
+                skills.joinToString("\n\n") { (id, text) -> "## Skill: $id\n$text" }
+        }
         val params = MessageCreateParams.builder()
             .model("claude-opus-5")
             .maxTokens(2048L)
-            .system(SYSTEM_PROMPT.replace("{cwd}", cwd))
+            .system(system)
             .outputConfig(OutputConfig.builder().effort(OutputConfig.Effort.LOW).build())
             .addUserMessage(question)
             .build()

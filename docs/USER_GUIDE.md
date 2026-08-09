@@ -108,6 +108,16 @@ binary now, run in the Termux environment below, not a reimplementation of one.
     for review, exactly like everything else — the chat never runs a command by itself. Needs an
     API key first: Settings → **AI SETTINGS ›**. The key is stored unencrypted on this device,
     same as the MCP pairing token and other local settings.
+-   **Store:** the **Store** pill opens a browser for [azphalt.store](https://azphalt.store), the
+    package registry for `.azp` extensions — the same idea as `pkg`/`apt`, but general-purpose:
+    assets, sandboxed code, packs, companion apps, MCP-server headers, and AI-skill bundles all
+    ship as `.azp` packages. Search, filter by kind (skill / mcp / code / pack / asset / app), and
+    tap **INSTALL** to download and unpack one. HG2Gui has no `.azp` execution sandbox, so most
+    kinds are download-only, kept on-device for use elsewhere — the one exception is a **skill**
+    package: its bundled `SKILL.md` is folded into the AI chat's system prompt automatically, so
+    an installed skill actually changes how the AI pill answers. Packages are trusted as
+    downloaded — this v1 does not verify the Ed25519 signature azphalt packages carry, so treat it
+    the same as any other unverified download.
 -   **net-inventory / harden-check / sysinfo:** three more scripts installed alongside
     `osint-lookup`, all local, no arguments needed. `net-inventory` lists this device's own
     network interfaces, routes and DNS config. `harden-check` audits this install's own SSH key

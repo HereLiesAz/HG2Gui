@@ -46,6 +46,12 @@ Two more root pills sit alongside the shell categories, neither backed by a shel
 *   **AI**: one `chat…` pill opening a natural-language-to-command chat screen (requires an
     Anthropic API key set in Settings → AI). Never runs anything itself — a suggested command
     shows a USE pill that hands it to the command line the same way.
+*   **Store**: one `search…` pill opening the azphalt.store package browser — the same idea as
+    `pkg`/`apt`, but for `.azp` extensions (assets, code, packs, companion apps, MCP-server
+    headers, and AI-skill bundles). Filter by kind, then INSTALL downloads and unpacks a package.
+    HG2Gui has no `.azp` execution runtime, so only `skill`-kind packages do anything further —
+    their `SKILL.md` content is folded into the AI chat's system prompt. Everything else is
+    download-only, for use elsewhere, the same as `apt download`. See `docs/USER_GUIDE.md`.
 
 ## Built-in commands
 

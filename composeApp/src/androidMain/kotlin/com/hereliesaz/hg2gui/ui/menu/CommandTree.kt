@@ -183,6 +183,17 @@ object CommandTree {
         )
     )
 
+    /** The Store root pill: azphalt.store package search, plus a leaf listing what's already
+     *  installed. Both navigate to the AzpStoreScreen rather than collecting prompt answers -
+     *  same wizardId-as-navigation reuse as [aiRoot]. */
+    private fun azpRoot(): MenuNode = MenuNode(
+        id = "azp",
+        label = "Store",
+        children = listOf(
+            MenuNode(id = "azp/search", label = "search…", cap = "open", emitsToken = false, wizardId = "azp-store")
+        )
+    )
+
     private fun shellLeaf(fullName: String, label: String, filePickerRoot: File): MenuNode {
         val hints = SHELL_HINTS[fullName].orEmpty().map { MenuNode("sh/$fullName/$it", it) }
         val children = hints + FileBrowser.pickerNode("sh/$fullName/file", filePickerRoot)
@@ -305,7 +316,8 @@ object CommandTree {
             MenuNode("apps", "Apps & nav", APPS.size.toString(), APPS.sorted().map { node(it, filePickerRoot) }),
             MenuNode("feat", "Features", FEATURES.size.toString(), FEATURES.sorted().map { node(it, filePickerRoot) }),
             workflowsRoot(context),
-            aiRoot()
+            aiRoot(),
+            azpRoot()
         )
     }
 }
