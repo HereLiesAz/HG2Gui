@@ -74,3 +74,14 @@ binary now, run in the Termux environment below, not a reimplementation of one.
     **THE GUIDE** pill in the top corner, opening a chaptered glossary of real commands paired
     with invented, Hitchhiker's-Guide-style definitions — reading material, not another way to
     run something.
+
+## Related Resources
+The shell is genuine Termux underneath, so third-party Termux material works here too:
+
+-   [termux-scripts](https://github.com/schnatterer/termux-scripts) — shell scripts for backing
+    up and restoring Android apps over local, SSH, or cloud storage, with incremental encrypted
+    transfers.
+-   [termux.holehan.org](https://termux.holehan.org/) — an APT repository adding extra packages
+    (Hugo, sift) installable with `pkg install` once added as a source.
+-   [termux-commands-free](https://github.com/Mortarelplait/termux-commands-free) — a free
+    reference collection of 200+ Termux commands and tutorials, organized by category.
