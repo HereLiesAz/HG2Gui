@@ -105,6 +105,15 @@ reflection-based command engine underneath it — built-ins are a fixed dispatch
     uses, applied to the density field instead of raster pixels. No model, no network call: it's a
     deterministic, offline algorithm that constructs an actual vector shape from the art's
     character grid rather than reproducing glyphs or a blocky per-cell mosaic.
+*   **Typeset output** (`ui/TypesetOutput.kt` commonMain): `BufferEntry` also checks
+    `looksLikeKeyValueTable()` (only when the output isn't already art) and, when every non-blank
+    line matches `label: value`, renders via `KeyValueTable` instead of plain text - a two-column
+    grid with 16%-ink hairline rules, dimmed uppercase labels, and right-aligned values (tabular
+    figure OpenType feature where the font supports it). A PLAIN TEXT/READING toggle in the same
+    tap-to-reveal row switches back to the raw string. This is a deliberately narrow slice of
+    `HG2Gui_Reading.dc.html`'s "output is set, not echoed" concept - that spec's other views (a
+    manual page, a file index, a diff) each need real semantic parsing of that specific command's
+    output; `label: value` detection is the one generic, command-agnostic case.
 *   **Workflows** (`ui/WorkflowFlow.kt` commonMain, `managers/WorkflowStore.kt` androidMain):
     named command templates with `{placeholder}` substrings, stored the same flat-SharedPreferences
     way as `SshPresets`. Saving and running both reuse the `wizardId`/`onWizard` pill primitive and

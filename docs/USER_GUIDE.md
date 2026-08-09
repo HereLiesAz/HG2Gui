@@ -104,6 +104,11 @@ binary now, run in the Termux environment below, not a reimplementation of one.
     rather than a wall of text. The heuristic is conservative — real prose or a table always falls
     back to plain text. Tap the entry, then **PLAIN TEXT** to see the raw output (and copy/share
     it) any time.
+-   **Typeset output:** output that's a block of `label: value` lines (`ifconfig`, `stat`,
+    `dpkg -s`, and similar — three or more lines, every one of them that shape) is set as a
+    two-column grid instead of raw monospace text — labels dimmed and uppercase, values
+    right-aligned. Tap the entry, then **PLAIN TEXT** to see exactly what the command printed any
+    time — a reading can be wrong.
 -   **Workflows:** the **Workflows** pill (alongside the shell categories) holds saved command
     templates. Picking one asks for any `{placeholder}` values the template uses, then drops the
     assembled command onto the input line, same as everything else here — nothing runs until you

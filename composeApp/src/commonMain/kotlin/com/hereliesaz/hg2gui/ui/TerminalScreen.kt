@@ -319,6 +319,9 @@ private fun BufferEntry(
     // wizard-produced command already follows.
     var expanded by remember { mutableStateOf(false) }
     val isArt = remember(entry.output) { looksLikeAsciiArt(entry.output) }
+    // Checked only when the output isn't already art - a block of `label: value` lines and a
+    // dense symbol-art block are mutually exclusive readings of the same text.
+    val isTable = remember(entry.output) { !isArt && looksLikeKeyValueTable(entry.output) }
     var showRaw by remember(entry.output) { mutableStateOf(false) }
     Column(
         Modifier
@@ -357,6 +360,10 @@ private fun BufferEntry(
                 // Vector-style rendering: flat filled cells sized by character density, not
                 // literal glyphs - a script's ASCII/box-drawing art reads as art, not text.
                 AsciiArtCanvas(entry.output, Azphalt.Ink.copy(alpha = .8f))
+            } else if (isTable && !showRaw) {
+                // "Output is set, not echoed": a block of label: value lines is set on the page
+                // as a two-column grid with hairline rules, not left as raw monospace text.
+                KeyValueTable(entry.output, Azphalt.Ink)
             } else {
                 Text(
                     entry.output,
@@ -377,6 +384,8 @@ private fun BufferEntry(
                 BlockActionPill("SHARE") { onShare(copyText) }
                 if (isArt) {
                     BlockActionPill(if (showRaw) "ART" else "PLAIN TEXT") { showRaw = !showRaw }
+                } else if (isTable) {
+                    BlockActionPill(if (showRaw) "READING" else "PLAIN TEXT") { showRaw = !showRaw }
                 }
             }
         }
