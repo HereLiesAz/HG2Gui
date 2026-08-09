@@ -30,7 +30,10 @@ import androidx.compose.ui.unit.sp
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
 import com.hereliesaz.hg2gui.ui.menu.pageBrush
 
-/** A search result row, or an already-installed package - shared shape for the list. */
+/** A search result row, or an already-installed package - shared shape for the list.
+ *  [trust] mirrors androidMain's `AzpTrust` enum by name (commonMain can't reference it directly,
+ *  since it's platform-specific) - blank until [installed] is true, since trust is only known
+ *  once a package's signature has actually been checked. */
 data class AzpListing(
     val id: String,
     val name: String,
@@ -39,6 +42,7 @@ data class AzpListing(
     val version: String,
     val kind: String,
     val installed: Boolean,
+    val trust: String = "",
 )
 
 private val KINDS = listOf("all", "skill", "mcp", "code", "pack", "asset", "app")
@@ -201,6 +205,14 @@ private fun AzpRow(listing: AzpListing, installing: Boolean, onInstall: (AzpList
                 color = Azphalt.Ink.copy(alpha = .45f), fontSize = 9.sp,
                 modifier = Modifier.padding(top = 2.dp)
             )
+            if (listing.installed && listing.trust.isNotBlank()) {
+                Text(
+                    trustLabel(listing.trust),
+                    color = if (listing.trust == "TRUSTED") Azphalt.hues[3] else Azphalt.Ink.copy(alpha = .45f),
+                    fontSize = 8.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em,
+                    modifier = Modifier.padding(top = 3.dp)
+                )
+            }
         }
         Spacer(Modifier.width(10.dp))
         Box(
@@ -221,6 +233,14 @@ private fun AzpRow(listing: AzpListing, installing: Boolean, onInstall: (AzpList
             )
         }
     }
+}
+
+/** Maps an androidMain `AzpTrust` enum name to the short badge shown under an installed row. */
+private fun trustLabel(trust: String): String = when (trust) {
+    "TRUSTED" -> "✓ TRUSTED SIGNER"
+    "VALID" -> "SIGNED · UNKNOWN SIGNER"
+    "UNVERIFIABLE" -> "SIGNED · UNVERIFIED (OS)"
+    else -> "UNSIGNED"
 }
 
 @Composable

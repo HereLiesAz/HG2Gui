@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.core.content.edit
 import com.hereliesaz.hg2gui.azp.AzpInstalled
 import com.hereliesaz.hg2gui.azp.AzpInstaller
+import com.hereliesaz.hg2gui.azp.AzpTrust
 
 private const val PREFS_NAME = "hg2gui_azp"
 private const val KEY_IDS = "azp_ids"
@@ -29,14 +30,25 @@ object AzpLibrary {
             val name = p.getString("$id.name", null) ?: return@mapNotNull null
             val version = p.getString("$id.version", "") ?: ""
             val kind = p.getString("$id.kind", "asset") ?: "asset"
-            AzpInstalled(id, name, version, kind)
+            val trust = p.getString("$id.trust", null)?.let {
+                runCatching { AzpTrust.valueOf(it) }.getOrDefault(AzpTrust.UNSIGNED)
+            } ?: AzpTrust.UNSIGNED
+            AzpInstalled(id, name, version, kind, trust)
         }.sortedBy { it.name }
     }
 
     fun isInstalled(context: Context, id: String): Boolean =
         prefs(context).getStringSet(KEY_IDS, emptySet()).orEmpty().contains(id)
 
-    fun record(context: Context, id: String, name: String, version: String, kind: String, skillIds: List<String>) {
+    fun record(
+        context: Context,
+        id: String,
+        name: String,
+        version: String,
+        kind: String,
+        skillIds: List<String>,
+        trust: AzpTrust = AzpTrust.UNSIGNED,
+    ) {
         val p = prefs(context)
         val ids = p.getStringSet(KEY_IDS, emptySet()).orEmpty() + id
         p.edit {
@@ -45,6 +57,7 @@ object AzpLibrary {
             putString("$id.version", version)
             putString("$id.kind", kind)
             putString("$id.skillIds", skillIds.joinToString(","))
+            putString("$id.trust", trust.name)
         }
     }
 
@@ -53,7 +66,7 @@ object AzpLibrary {
         val ids = p.getStringSet(KEY_IDS, emptySet()).orEmpty() - id
         p.edit {
             putStringSet(KEY_IDS, ids)
-            remove("$id.name"); remove("$id.version"); remove("$id.kind"); remove("$id.skillIds")
+            remove("$id.name"); remove("$id.version"); remove("$id.kind"); remove("$id.skillIds"); remove("$id.trust")
         }
     }
 

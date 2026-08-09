@@ -59,7 +59,10 @@ Two more root pills sit alongside the shell categories, neither backed by a shel
     headers, and AI-skill bundles). Filter by kind, then INSTALL downloads and unpacks a package.
     HG2Gui has no `.azp` execution runtime, so only `skill`-kind packages do anything further —
     their `SKILL.md` content is folded into the AI chat's system prompt. Everything else is
-    download-only, for use elsewhere, the same as `apt download`. See `docs/USER_GUIDE.md`.
+    download-only, for use elsewhere, the same as `apt download`. Every install verifies the
+    package's Ed25519 signature against the registry's published signing keys and shows a trust
+    badge (TRUSTED / SIGNED / UNSIGNED); a signature that fails to verify is rejected. See
+    `docs/USER_GUIDE.md`.
 
 ## Built-in commands
 

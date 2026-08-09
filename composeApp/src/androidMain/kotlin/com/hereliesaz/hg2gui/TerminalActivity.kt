@@ -118,6 +118,21 @@ class TerminalActivity : FragmentActivity() {
 
     private val prefs: SharedPreferences by lazy { getSharedPreferences(PREFS_NAME, MODE_PRIVATE) }
 
+    // The registry's signingKeys rarely change, so one fetch per process is enough - cached here
+    // rather than re-requested on every install.
+    private var azpTrustedKeysCache: List<String>? = null
+
+    private suspend fun azpTrustedKeys(): List<String> {
+        azpTrustedKeysCache?.let { return it }
+        val keys = try {
+            AzpClient.discovery()?.signingKeys?.map { it.publicKey } ?: emptyList()
+        } catch (e: Exception) {
+            emptyList()
+        }
+        azpTrustedKeysCache = keys
+        return keys
+    }
+
     // TerminalActivity is singleTop/intoExisting, so a notification tap while it's already
     // running arrives via onNewIntent, not a fresh onCreate - this is how that reaches the
     // Compose tree to switch screens, since setIntent() alone wouldn't trigger recomposition.
@@ -358,13 +373,15 @@ class TerminalActivity : FragmentActivity() {
                                     null
                                 }
                                 val installed = withContext(Dispatchers.IO) {
-                                    AzpLibrary.installed(this@TerminalActivity).map { it.id }.toSet()
+                                    AzpLibrary.installed(this@TerminalActivity).associateBy { it.id }
                                 }
                                 azpResults = response?.packages.orEmpty().map { pkg ->
+                                    val inst = installed[pkg.id]
                                     AzpListing(
                                         id = pkg.id, name = pkg.name, author = pkg.author,
                                         description = pkg.description, version = pkg.version,
-                                        kind = pkg.kind, installed = pkg.id in installed
+                                        kind = pkg.kind, installed = inst != null,
+                                        trust = inst?.trust?.name ?: ""
                                     )
                                 }
                                 azpBusy = false
@@ -373,18 +390,22 @@ class TerminalActivity : FragmentActivity() {
                         onInstall = { listing ->
                             azpInstallingId = listing.id
                             scope.launch {
+                                val trustedKeys = azpTrustedKeys()
                                 val result = withContext(Dispatchers.IO) {
                                     val bytes = AzpClient.download(listing.id, listing.version) ?: return@withContext null
-                                    val install = AzpInstaller.install(this@TerminalActivity, listing.id, listing.version, bytes)
-                                        ?: return@withContext null
+                                    val install = AzpInstaller.install(
+                                        this@TerminalActivity, listing.id, listing.version, bytes, trustedKeys
+                                    ) ?: return@withContext null
                                     AzpLibrary.record(
                                         this@TerminalActivity, listing.id, listing.name, listing.version,
-                                        install.kind, install.skillIds
+                                        install.kind, install.skillIds, install.trust
                                     )
                                     install
                                 }
                                 if (result != null) {
-                                    azpResults = azpResults.map { if (it.id == listing.id) it.copy(installed = true) else it }
+                                    azpResults = azpResults.map {
+                                        if (it.id == listing.id) it.copy(installed = true, trust = result.trust.name) else it
+                                    }
                                 }
                                 azpInstallingId = null
                             }

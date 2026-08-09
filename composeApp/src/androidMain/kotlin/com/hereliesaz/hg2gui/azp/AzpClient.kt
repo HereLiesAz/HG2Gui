@@ -50,4 +50,14 @@ object AzpClient {
             resp.body.bytes()
         }
     }
+
+    /** The registry's trust anchor - `signingKeys`, used to tell a [AzpTrust.TRUSTED] package
+     *  from one that's merely internally-consistent ([AzpTrust.VALID]). */
+    suspend fun discovery(): AzpDiscovery? = withContext(Dispatchers.IO) {
+        val request = Request.Builder().url("$REPOSITORY_BASE/.well-known/azphalt-repository.json").get().build()
+        http.newCall(request).execute().use { resp ->
+            if (!resp.isSuccessful) return@withContext null
+            json.decodeFromString(AzpDiscovery.serializer(), resp.body.string())
+        }
+    }
 }
