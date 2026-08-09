@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
+import com.hereliesaz.hg2gui.ui.menu.pageBrush
 
 /*
  * A plain-text editor for files the shell has no pty to hand to a real one - nano is a real
@@ -31,10 +32,6 @@ import com.hereliesaz.hg2gui.ui.menu.Azphalt
  * embedded command line like the old vi-like editor had: Save and Back are real pills, same
  * page, same capsule primitive as the rest of Azphalt.
  */
-
-private val PageYellow = Brush.linearGradient(
-    0f to Color(0xFFE8C81E), 0.5f to Color(0xFFD9B615), 1f to Color(0xFFE8C81E)
-)
 
 @Composable
 fun EditorScreen(
@@ -47,7 +44,7 @@ fun EditorScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier.fillMaxSize().background(PageYellow)) {
+    Column(modifier.fillMaxSize().background(Azphalt.currentGround.pageBrush())) {
         Row(
             Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 18.dp),
             horizontalArrangement = Arrangement.SpaceBetween,

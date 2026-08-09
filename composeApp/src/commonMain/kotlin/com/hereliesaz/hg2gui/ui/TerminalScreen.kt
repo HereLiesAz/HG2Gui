@@ -35,13 +35,10 @@ import androidx.compose.ui.unit.sp
 import com.hereliesaz.hg2gui.managers.TerminalHistoryEntry
 import com.hereliesaz.hg2gui.terminal.ShellAliases
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
+import com.hereliesaz.hg2gui.ui.menu.pageBrush
 import com.hereliesaz.hg2gui.ui.menu.MenuNode
 import com.hereliesaz.hg2gui.ui.menu.PillMenu
 import kotlinx.coroutines.launch
-
-private val PageYellow = Brush.linearGradient(
-    0f to Color(0xFFE8C81E), 0.5f to Color(0xFFD9B615), 1f to Color(0xFFE8C81E)
-)
 
 @Composable
 fun TerminalScreen(
@@ -157,7 +154,7 @@ fun TerminalScreen(
     Column(
         Modifier
             .fillMaxSize()
-            .background(PageYellow)
+            .background(Azphalt.currentGround.pageBrush())
             .then(if (fullscreen) Modifier else Modifier.windowInsetsPadding(WindowInsets.systemBars))
     ) {
 

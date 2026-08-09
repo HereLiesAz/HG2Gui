@@ -16,10 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
-
-private val PageYellow = Brush.linearGradient(
-    0f to Color(0xFFE8C81E), 0.5f to Color(0xFFD9B615), 1f to Color(0xFFE8C81E)
-)
+import com.hereliesaz.hg2gui.ui.menu.pageBrush
 
 /** Bounds match the range the reporter cared about testing: half size to double. */
 const val FONT_SCALE_MIN_PERCENT = 50
@@ -39,7 +36,7 @@ fun SettingsScreen(
     Column(
         Modifier
             .fillMaxSize()
-            .background(PageYellow)
+            .background(Azphalt.currentGround.pageBrush())
             .then(if (fullscreen) Modifier else Modifier.windowInsetsPadding(WindowInsets.systemBars))
     ) {
         Row(

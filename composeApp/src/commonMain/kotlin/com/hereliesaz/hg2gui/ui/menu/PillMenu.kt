@@ -13,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
@@ -101,36 +102,25 @@ object Azphalt {
         return pool.last()
     }
 
-    /** Max grounds rerolls in one app session - "may reroll once, twice at most" per the style
-     *  guide, so a long session doesn't feel static without ever feeling arbitrary. */
+    /** Max ground rerolls in one app session - "may reroll once, twice at most" per the style
+     *  guide, so a long session doesn't feel static without ever feeling arbitrary. Process-wide
+     *  state (not `remember`-scoped) since EditorScreen runs in its own Activity
+     *  (EditorActivity) with its own composition - a per-composition roll would let the editor
+     *  disagree with the rest of the app about what ground is current. */
     const val MAX_GROUND_REROLLS = 2
 
-    /** Session-scoped ground selection, holding the current [Ground] and a reroll budget.
-     *  [reroll] is a no-op past [MAX_GROUND_REROLLS] - callers should only invoke it when no
-     *  pill gesture (drag, swing, cascade) is in flight, same as any other state mutation that
-     *  would fight an in-progress animation. */
-    class GroundState(initial: Ground) {
-        var current by mutableStateOf(initial)
-            private set
-        var rerollsUsed by mutableStateOf(0)
-            private set
+    var currentGround: Ground by mutableStateOf(randomGround())
+        private set
+    private var groundRerollsUsed = 0
 
-        val canReroll: Boolean get() = rerollsUsed < MAX_GROUND_REROLLS
+    val canRerollGround: Boolean get() = groundRerollsUsed < MAX_GROUND_REROLLS
 
-        fun reroll() {
-            if (!canReroll) return
-            current = randomGround(exclude = current)
-            rerollsUsed++
-        }
-    }
-
-    /** One ground roll per composition, persisted across recomposition (not process death) via
-     *  [remember] - a config change or process restart gets a fresh roll, same as any other
-     *  `remember`-scoped session state in this app. */
-    @Composable
-    fun rememberGroundState(): GroundState {
-        val initial = remember { randomGround() }
-        return remember { GroundState(initial) }
+    /** Call only when no pill gesture (drag, swing, cascade) is in flight - a no-op past
+     *  [MAX_GROUND_REROLLS]. */
+    fun rerollGround() {
+        if (!canRerollGround) return
+        currentGround = randomGround(exclude = currentGround)
+        groundRerollsUsed++
     }
 
     /** A coordinated multi-hue combo pulled from a single film scene, for a screen that needs
@@ -153,6 +143,11 @@ object Azphalt {
     const val SWING_MS = 520 / 3
     const val LIFT_FRACTION = 0.90f
 }
+
+/** The flat two-stop page gradient for this ground - page/foldDark/page, the same shape every
+ *  screen's local PageYellow constant used before a shared rotating ground existed. Top-level
+ *  (not nested in [Azphalt]) so it's callable as `Azphalt.currentGround.pageBrush()`. */
+fun Azphalt.Ground.pageBrush(): Brush = Brush.linearGradient(0f to page, 0.5f to foldDark, 1f to page)
 
 private val PILL_HEIGHT = 17.dp
 private val ROW_PITCH = 20.dp

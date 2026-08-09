@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
+import com.hereliesaz.hg2gui.ui.menu.pageBrush
 
 /** A search result row, or an already-installed package - shared shape for the list. */
 data class AzpListing(
@@ -41,10 +42,6 @@ data class AzpListing(
 )
 
 private val KINDS = listOf("all", "skill", "mcp", "code", "pack", "asset", "app")
-
-private val PageYellow = Brush.linearGradient(
-    0f to Color(0xFFE8C81E), 0.5f to Color(0xFFD9B615), 1f to Color(0xFFE8C81E)
-)
 
 /**
  * Browses the azphalt registry (spec/repository-api.md) - the same `pkg`/`apt` idiom, but for
@@ -69,7 +66,7 @@ fun AzpStoreScreen(
     Column(
         Modifier
             .fillMaxSize()
-            .background(PageYellow)
+            .background(Azphalt.currentGround.pageBrush())
             .then(if (fullscreen) Modifier else Modifier.windowInsetsPadding(WindowInsets.systemBars))
     ) {
         Row(
