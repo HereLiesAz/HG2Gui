@@ -40,7 +40,8 @@ object CommandTree {
         "ps" to listOf("-A"),
         "df" to listOf("-h"),
         "uname" to listOf("-a"),
-        "ping" to listOf("-c 4 1.1.1.1")
+        "ping" to listOf("-c 4 1.1.1.1"),
+        "osint-lookup" to listOf("example.com")
     )
 
     // A single category can carry far more names than the fan-out animation is built to show at
