@@ -25,6 +25,7 @@ name: Release to Play
 #   KEYSTORE_PRIVATE / KEYSTORE_RSA / KEYSTORE_PUBLIC / KEYSTORE_CHAIN
 
 on:
+  push:
   # Called by the workflows that publish a GitHub release, so a Play publish
   # follows automatically once the release is out. Also runnable by hand.
   workflow_call:
@@ -37,7 +38,7 @@ on:
         default: internal
       draft_tracks:
         type: string
-        default: alpha beta production
+        default: alpha # beta production
       release_notes:
         type: string
         default: ''
@@ -58,7 +59,7 @@ on:
       draft_tracks:
         description: "Tracks to stage the same bundle in as a draft (space-separated)"
         type: string
-        default: alpha beta production
+        default: alpha # beta production
       release_notes:
         description: "Optional en-US release notes attached to every track's release"
         type: string
