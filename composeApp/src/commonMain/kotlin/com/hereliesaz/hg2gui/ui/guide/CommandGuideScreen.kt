@@ -6,6 +6,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,6 +43,20 @@ fun CommandGuideScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // The real Hitchhiker's Guide - a chapter index of parody command entries, not a picker -
+    // is nested inside this screen rather than replacing it: this remains "pick a command",
+    // that remains "read about one", one pill apart.
+    var readingGuide by remember { mutableStateOf(false) }
+
+    if (readingGuide) {
+        GuideReaderScreen(
+            fullscreen = fullscreen,
+            onBack = { readingGuide = false },
+            modifier = modifier
+        )
+        return
+    }
+
     Column(
         modifier
             .fillMaxSize()
@@ -47,6 +65,7 @@ fun CommandGuideScreen(
     ) {
         Row(
             Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 18.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
@@ -58,6 +77,18 @@ fun CommandGuideScreen(
             ) {
                 Text(
                     "‹ BACK", color = Azphalt.Yellow,
+                    fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em
+                )
+            }
+            Box(
+                Modifier
+                    .clip(RoundedCornerShape(percent = 50))
+                    .background(Azphalt.hues[6])
+                    .clickable { readingGuide = true }
+                    .padding(horizontal = 14.dp, vertical = 7.dp)
+            ) {
+                Text(
+                    "THE GUIDE", color = Azphalt.White,
                     fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em
                 )
             }

@@ -21,6 +21,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.core.content.FileProvider
 import androidx.core.content.edit
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -31,13 +32,17 @@ import com.hereliesaz.hg2gui.managers.VfsManager
 import com.hereliesaz.hg2gui.terminal.Builtins
 import com.hereliesaz.hg2gui.terminal.DistroManager
 import com.hereliesaz.hg2gui.terminal.TerminalEngine
+import com.hereliesaz.hg2gui.util.GenericFileProvider
 import com.hereliesaz.hg2gui.util.Utils
 import com.hereliesaz.hg2gui.ui.HG2GuiTheme
 import com.hereliesaz.hg2gui.ui.SessionUiState
 import com.hereliesaz.hg2gui.ui.SettingsScreen
 import com.hereliesaz.hg2gui.ui.TerminalScreen
 import com.hereliesaz.hg2gui.ui.files.FilesScreen
+import com.hereliesaz.hg2gui.ui.files.StorageCategoryStat
+import com.hereliesaz.hg2gui.ui.files.StorageStats
 import com.hereliesaz.hg2gui.ui.files.VfsEntry
+import com.hereliesaz.hg2gui.ui.files.VfsSearchResult
 import com.hereliesaz.hg2gui.ui.guide.CommandGuideScreen
 import com.hereliesaz.hg2gui.ui.menu.CommandTree
 import com.hereliesaz.hg2gui.ui.menu.MenuNode
@@ -80,20 +85,56 @@ class TerminalActivity : ComponentActivity() {
             var screen by remember { mutableStateOf(Screen.Terminal) }
             var fullscreen by remember { mutableStateOf(false) }
             var fontScalePercent by remember { mutableStateOf(100) }
-            var filesPath by remember { mutableStateOf("/") }
-            var filesEntries by remember { mutableStateOf(listOf<VfsEntry>()) }
             val scope = rememberCoroutineScope()
 
-            fun refreshFiles() {
-                scope.launch {
-                    val result = withContext(Dispatchers.IO) {
-                        VfsManager.currentPath() to VfsManager.list(this@TerminalActivity).map { f ->
-                            VfsEntry(f.name, f.isDirectory, if (f.isFile) f.length() else 0L)
-                        }
+            suspend fun vfsListDir(path: String): List<VfsEntry> = withContext(Dispatchers.IO) {
+                val dir = VfsManager.resolve(this@TerminalActivity, path) ?: return@withContext emptyList()
+                (dir.listFiles() ?: emptyArray())
+                    .sortedWith(compareBy({ !it.isDirectory }, { it.name.lowercase() }))
+                    .map { f ->
+                        VfsEntry(
+                            name = f.name,
+                            path = VfsManager.pathOf(this@TerminalActivity, f),
+                            isDirectory = f.isDirectory,
+                            sizeBytes = if (f.isFile) f.length() else 0L,
+                            modifiedAt = f.lastModified(),
+                            isImage = f.isFile && VfsManager.isImage(f)
+                        )
                     }
-                    filesPath = result.first
-                    filesEntries = result.second
+            }
+
+            suspend fun vfsSearch(query: String): List<VfsSearchResult> = withContext(Dispatchers.IO) {
+                VfsManager.search(this@TerminalActivity, query).map { f ->
+                    VfsSearchResult(
+                        entry = VfsEntry(
+                            name = f.name,
+                            path = VfsManager.pathOf(this@TerminalActivity, f),
+                            isDirectory = f.isDirectory,
+                            sizeBytes = if (f.isFile) f.length() else 0L,
+                            modifiedAt = f.lastModified(),
+                            isImage = f.isFile && VfsManager.isImage(f)
+                        ),
+                        parentPath = VfsManager.pathOf(this@TerminalActivity, f.parentFile ?: f)
+                    )
                 }
+            }
+
+            suspend fun vfsStorageStats(): StorageStats = withContext(Dispatchers.IO) {
+                val breakdown = VfsManager.storageByType(this@TerminalActivity)
+                StorageStats(
+                    totalBytes = breakdown.totalBytes,
+                    byCategory = breakdown.byCategory.map { (category, bytes) -> StorageCategoryStat(category.label, bytes) },
+                    largest = breakdown.largestFiles.map { f ->
+                        VfsEntry(
+                            name = f.name,
+                            path = VfsManager.pathOf(this@TerminalActivity, f),
+                            isDirectory = f.isDirectory,
+                            sizeBytes = f.length(),
+                            modifiedAt = f.lastModified(),
+                            isImage = VfsManager.isImage(f)
+                        )
+                    }
+                )
             }
 
             LaunchedEffect(Unit) {
@@ -169,18 +210,14 @@ class TerminalActivity : ComponentActivity() {
                     )
 
                     screen == Screen.Files -> FilesScreen(
-                        path = filesPath,
-                        entries = filesEntries,
-                        onNavigate = { target ->
-                            scope.launch {
-                                withContext(Dispatchers.IO) { VfsManager.cd(this@TerminalActivity, target) }
-                                refreshFiles()
-                            }
-                        },
-                        onOpenFile = { name ->
+                        fullscreen = fullscreen,
+                        listDir = { path -> vfsListDir(path) },
+                        search = { query -> vfsSearch(query) },
+                        storageStats = { vfsStorageStats() },
+                        onOpenFile = { path ->
                             scope.launch {
                                 val file = withContext(Dispatchers.IO) {
-                                    VfsManager.resolve(this@TerminalActivity, name)
+                                    VfsManager.resolve(this@TerminalActivity, path)
                                 }
                                 if (file != null) {
                                     val intent = Intent(this@TerminalActivity, EditorActivity::class.java)
@@ -189,22 +226,54 @@ class TerminalActivity : ComponentActivity() {
                                 }
                             }
                         },
-                        onCreateFolder = { name ->
-                            scope.launch {
-                                withContext(Dispatchers.IO) { VfsManager.mkdir(this@TerminalActivity, name) }
-                                refreshFiles()
+                        onCreateFolder = { parentPath, name ->
+                            withContext(Dispatchers.IO) {
+                                VfsManager.resolve(this@TerminalActivity, parentPath)?.let { VfsManager.mkdir(it, name) }
                             }
                         },
-                        onCreateFile = { name ->
-                            scope.launch {
-                                withContext(Dispatchers.IO) { VfsManager.touch(this@TerminalActivity, name) }
-                                refreshFiles()
+                        onCreateFile = { parentPath, name ->
+                            withContext(Dispatchers.IO) {
+                                VfsManager.resolve(this@TerminalActivity, parentPath)?.let { VfsManager.touch(it, name) }
                             }
                         },
-                        onDelete = { name ->
+                        onDelete = { path ->
+                            withContext(Dispatchers.IO) {
+                                VfsManager.resolve(this@TerminalActivity, path)?.let { VfsManager.delete(it) }
+                            }
+                        },
+                        onRename = { path, newName ->
+                            withContext(Dispatchers.IO) {
+                                VfsManager.resolve(this@TerminalActivity, path)?.let { VfsManager.rename(it, newName) }
+                            }
+                        },
+                        onMove = { path, targetDirPath ->
+                            withContext(Dispatchers.IO) {
+                                val file = VfsManager.resolve(this@TerminalActivity, path)
+                                val target = VfsManager.resolve(this@TerminalActivity, targetDirPath)
+                                if (file != null && target != null) VfsManager.moveInto(file, target)
+                            }
+                        },
+                        onCopy = { path, targetDirPath ->
+                            withContext(Dispatchers.IO) {
+                                val file = VfsManager.resolve(this@TerminalActivity, path)
+                                val target = VfsManager.resolve(this@TerminalActivity, targetDirPath)
+                                if (file != null && target != null) VfsManager.copyInto(file, target)
+                            }
+                        },
+                        onShare = { path ->
                             scope.launch {
-                                withContext(Dispatchers.IO) { VfsManager.delete(this@TerminalActivity, name) }
-                                refreshFiles()
+                                val file = withContext(Dispatchers.IO) {
+                                    VfsManager.resolve(this@TerminalActivity, path)
+                                }
+                                if (file != null && file.isFile) {
+                                    val uri = FileProvider.getUriForFile(this@TerminalActivity, GenericFileProvider.PROVIDER_NAME, file)
+                                    val intent = Intent(Intent.ACTION_SEND).apply {
+                                        type = "*/*"
+                                        putExtra(Intent.EXTRA_STREAM, uri)
+                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                    }
+                                    startActivity(Intent.createChooser(intent, "Share ${file.name}"))
+                                }
                             }
                         },
                         onBack = { screen = Screen.Terminal },
@@ -247,10 +316,7 @@ class TerminalActivity : ComponentActivity() {
                         fullscreen = fullscreen,
                         onOpenSettings = { screen = Screen.Settings },
                         onOpenGuide = { screen = Screen.Guide },
-                        onOpenFiles = {
-                            refreshFiles()
-                            screen = Screen.Files
-                        },
+                        onOpenFiles = { screen = Screen.Files },
                         onRun = { sessionId, line, onOutput, onNeedInput ->
                             val session = sessions.first { it.ui.id == sessionId }
                             session.engine.run(line, onNeedInput).collect { output -> onOutput(output) }
