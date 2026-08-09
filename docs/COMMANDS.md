@@ -25,11 +25,18 @@ run. Host-key confirmation and password/passphrase prompts surface through the s
 prompt mechanism every other command uses (a Yes/No Answer stack, or a masked free-text field for
 passwords) — nothing ssh-specific happens at the shell layer.
 
-One more binary is installed by the app itself rather than `pkg`: **`osint-lookup <domain>`**,
-written into the bootstrap's `bin/` right after it installs (and backfilled on launch for an
-older install that predates it). Self-scoped, read-only reconnaissance — whois, DNS records, and
-a certificate-transparency search (crt.sh) — for a domain you name, not a generic scanner. See
-`docs/USER_GUIDE.md` for the full description.
+A few more binaries are installed by the app itself rather than `pkg` — written into the
+bootstrap's `bin/` right after it installs, and backfilled on launch for an older install that
+predates them (`DistroManager.ensureBundledScripts`):
+
+*   **`osint-lookup <domain>`**: self-scoped, read-only reconnaissance — whois, DNS records, and
+    a certificate-transparency search (crt.sh) — for a domain you name, not a generic scanner.
+*   **`net-inventory`**: this device's own interfaces, routes and DNS config. No arguments.
+*   **`harden-check`**: audits this install's own SSH key permissions, listening sockets, and
+    world-writable files under `$HOME`. No arguments.
+*   **`sysinfo`**: installed packages, `PATH`, disk usage. No arguments.
+
+See `docs/USER_GUIDE.md` for the full description of each.
 
 ## Built-in commands
 

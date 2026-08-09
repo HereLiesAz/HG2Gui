@@ -206,9 +206,9 @@ class TerminalActivity : FragmentActivity() {
 
             LaunchedEffect(Unit) {
                 val built = withContext(Dispatchers.Default) {
-                    // A no-op before a bootstrap exists; picks up an install from before this
-                    // script existed too, not just a fresh one.
-                    DistroManager.ensureOsintTool(this@TerminalActivity)
+                    // A no-op before a bootstrap exists; picks up an install from before these
+                    // scripts existed too, not just a fresh one.
+                    DistroManager.ensureBundledScripts(this@TerminalActivity)
                     val builtEngine = TerminalEngine(this@TerminalActivity)
                     val builtTree = CommandTree.from(this@TerminalActivity)
                     InitResult(
@@ -243,7 +243,7 @@ class TerminalActivity : FragmentActivity() {
                     }
                     firstUi.running = false
                     tree = withContext(Dispatchers.IO) {
-                        DistroManager.ensureOsintTool(this@TerminalActivity)
+                        DistroManager.ensureBundledScripts(this@TerminalActivity)
                         CommandTree.from(this@TerminalActivity)
                     }
                 }

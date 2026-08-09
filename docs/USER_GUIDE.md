@@ -93,6 +93,13 @@ binary now, run in the Termux environment below, not a reimplementation of one.
     target's own infrastructure, and it isn't a tool for looking up arbitrary third parties.
     Missing tools (`whois`/`dig`/`curl`/`jq`) print a `pkg install` hint instead of failing
     silently.
+-   **net-inventory / harden-check / sysinfo:** three more scripts installed alongside
+    `osint-lookup`, all local, no arguments needed. `net-inventory` lists this device's own
+    network interfaces, routes and DNS config. `harden-check` audits this install's own SSH key
+    permissions, lists what's actually listening locally, and flags any world-writable file under
+    `$HOME`. `sysinfo` reports installed packages, `PATH`, and disk usage. Nothing here touches
+    another host — every check is against files, sockets or config that already belong to this
+    device.
 
 ## Related Resources
 The shell is genuine Termux underneath, so third-party Termux material works here too:

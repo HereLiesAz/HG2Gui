@@ -163,22 +163,29 @@ object DistroManager {
         }
     }
 
-    private const val OSINT_SCRIPT_NAME = "osint-lookup"
+    private data class BundledScript(val name: String, val body: String)
 
-    /** Idempotent: a no-op before a bootstrap exists, and only writes once the script is
+    private val BUNDLED_SCRIPTS: List<BundledScript>
+        get() = listOf(
+            BundledScript("osint-lookup", OSINT_SCRIPT_BODY),
+            BundledScript("net-inventory", NET_INVENTORY_SCRIPT_BODY),
+            BundledScript("harden-check", HARDEN_CHECK_SCRIPT_BODY),
+            BundledScript("sysinfo", SYSINFO_SCRIPT_BODY)
+        )
+
+    /** Idempotent: a no-op before a bootstrap exists, and only writes a script once it's
      *  actually missing - called both right after a fresh bootstrap and on every launch
-     *  thereafter, so an install from before this script existed picks it up too. */
-    fun ensureOsintTool(context: Context) {
+     *  thereafter, so an install from before one of these scripts existed picks it up too. */
+    fun ensureBundledScripts(context: Context) {
         if (!isInstalled(context)) return
         val prefix = prefixDir(context)
-        if (!File(prefix, "bin/$OSINT_SCRIPT_NAME").exists()) installOsintTool(prefix)
-    }
-
-    private fun installOsintTool(prefix: File) {
-        val script = File(prefix, "bin/$OSINT_SCRIPT_NAME")
         val shebang = "#!${File(prefix, "bin/bash").absolutePath}\n"
-        script.writeText(shebang + OSINT_SCRIPT_BODY)
-        script.setExecutable(true)
+        for (script in BUNDLED_SCRIPTS) {
+            val file = File(prefix, "bin/${script.name}")
+            if (file.exists()) continue
+            file.writeText(shebang + script.body)
+            file.setExecutable(true)
+        }
     }
 
     // Self-scoped, read-only recon for a domain YOU name - your own domain, or one you have a
@@ -224,6 +231,156 @@ if command -v curl >/dev/null 2>&1; then
   fi
 else
   echo "(curl not installed - pkg install curl)"
+fi
+"""
+
+    // Local, read-only network self-inventory - interfaces, routes, resolver config on THIS
+    // device. Nothing here sends a packet anywhere or touches another host.
+    private const val NET_INVENTORY_SCRIPT_BODY = """
+set -u
+echo "== interfaces =="
+if command -v ip >/dev/null 2>&1; then
+  ip -brief addr show 2>/dev/null || ip addr show
+elif command -v ifconfig >/dev/null 2>&1; then
+  ifconfig
+else
+  echo "(neither ip nor ifconfig installed - pkg install iproute2 or net-tools)"
+fi
+
+echo
+echo "== routes =="
+if command -v ip >/dev/null 2>&1; then
+  ip route show
+elif command -v route >/dev/null 2>&1; then
+  route -n
+else
+  echo "(neither ip nor route installed - pkg install iproute2 or net-tools)"
+fi
+
+echo
+echo "== DNS =="
+found_resolv=0
+for f in /system/etc/resolv.conf /etc/resolv.conf; do
+  if [ -r "${'$'}f" ]; then
+    echo "-- ${'$'}f --"
+    cat "${'$'}f"
+    found_resolv=1
+  fi
+done
+if [ -x /system/bin/getprop ]; then
+  for p in net.dns1 net.dns2; do
+    v=$(/system/bin/getprop "${'$'}p" 2>/dev/null)
+    if [ -n "${'$'}v" ]; then
+      echo "${'$'}p=${'$'}v"
+      found_resolv=1
+    fi
+  done
+fi
+[ "${'$'}found_resolv" -eq 1 ] || echo "(no resolver config found)"
+"""
+
+    // Self-audit of THIS device's own Termux setup - ssh key permissions, what's actually
+    // listening locally, and any world-writable file under $HOME. Nothing here probes another
+    // host; every check is against files and sockets that already belong to this install.
+    private const val HARDEN_CHECK_SCRIPT_BODY = """
+set -u
+warn=0
+
+echo "== SSH key hygiene (${'$'}HOME/.ssh) =="
+sshdir="${'$'}HOME/.ssh"
+if [ -d "${'$'}sshdir" ]; then
+  dirmode=$(stat -c '%a' "${'$'}sshdir" 2>/dev/null)
+  if [ "${'$'}dirmode" = "700" ]; then
+    echo "  [ok] ${'$'}sshdir is 700"
+  else
+    echo "  [warn] ${'$'}sshdir is ${'$'}dirmode, expected 700 (chmod 700 ${'$'}sshdir)"
+    warn=1
+  fi
+  for f in "${'$'}sshdir"/id_*; do
+    [ -e "${'$'}f" ] || continue
+    case "${'$'}f" in
+      *.pub) continue ;;
+    esac
+    mode=$(stat -c '%a' "${'$'}f" 2>/dev/null)
+    if [ "${'$'}mode" = "600" ]; then
+      echo "  [ok] $(basename "${'$'}f") is 600"
+    else
+      echo "  [warn] $(basename "${'$'}f") is ${'$'}mode, expected 600 (chmod 600 ${'$'}f)"
+      warn=1
+    fi
+  done
+  if [ -e "${'$'}sshdir/authorized_keys" ]; then
+    mode=$(stat -c '%a' "${'$'}sshdir/authorized_keys" 2>/dev/null)
+    case "${'$'}mode" in
+      600|644) echo "  [ok] authorized_keys is ${'$'}mode" ;;
+      *)
+        echo "  [warn] authorized_keys is ${'$'}mode, expected 600 or 644 (chmod 600 ${'$'}sshdir/authorized_keys)"
+        warn=1
+        ;;
+    esac
+  fi
+else
+  echo "  (no ${'$'}sshdir - nothing to check)"
+fi
+
+echo
+echo "== Listening sockets =="
+if command -v ss >/dev/null 2>&1; then
+  ss -tln 2>/dev/null | tail -n +2
+elif command -v netstat >/dev/null 2>&1; then
+  netstat -tln 2>/dev/null | tail -n +3
+else
+  echo "  (neither ss nor netstat installed - pkg install iproute2 or net-tools)"
+fi
+
+echo
+echo "== World-writable files under ${'$'}HOME (top 3 levels) =="
+found=$(find "${'$'}HOME" -maxdepth 3 -type f -perm -0002 2>/dev/null)
+if [ -n "${'$'}found" ]; then
+  echo "${'$'}found" | sed 's/^/  [warn] /'
+  echo "  (chmod o-w on each of the above)"
+  warn=1
+else
+  echo "  [ok] none found"
+fi
+
+echo
+if [ "${'$'}warn" -eq 0 ]; then
+  echo "All checks passed."
+else
+  echo "Some checks need attention - see [warn] lines above."
+fi
+"""
+
+    // A quick "what's actually here" report - installed packages, PATH, disk usage. Local only.
+    private const val SYSINFO_SCRIPT_BODY = """
+set -u
+echo "== Environment =="
+echo "shell:    ${'$'}{SHELL:-unknown}"
+echo "PATH:     ${'$'}PATH"
+if command -v uname >/dev/null 2>&1; then
+  echo "kernel:   $(uname -a)"
+fi
+if command -v dpkg >/dev/null 2>&1; then
+  echo "packages: $(dpkg -l 2>/dev/null | awk '${'$'}1=="ii"' | wc -l) installed"
+else
+  echo "packages: (dpkg not on PATH)"
+fi
+
+echo
+echo "== Disk usage =="
+if command -v df >/dev/null 2>&1; then
+  df -h "${'$'}HOME" 2>/dev/null
+else
+  echo "(df not installed)"
+fi
+
+echo
+echo "== Largest items under ${'$'}HOME =="
+if command -v du >/dev/null 2>&1; then
+  du -sh "${'$'}HOME"/* 2>/dev/null | sort -rh 2>/dev/null | head -n 10
+else
+  echo "(du not installed)"
 fi
 """
 }
