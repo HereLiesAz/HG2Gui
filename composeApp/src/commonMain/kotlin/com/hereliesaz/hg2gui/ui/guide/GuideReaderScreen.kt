@@ -363,9 +363,9 @@ private fun Chip(
 /**
  * One element of the wipe-on sequence: `wide` elements (text/rules) reveal via a left-to-right
  * clip with a slight slide, since the content is already full width - only visibility grows.
- * Non-wide elements are pills/chips, whose actual layout width is animated instead: clip-masking
- * an already-round shape would guillotine its leading curve, where growing the real width lets
- * the rounded end come into being along with everything else.
+ * Non-wide elements are pills/chips, whose actual layout width is animated instead of just
+ * clip-revealing a static full-width shape, so a chip's *slot* in its Row grows along with it
+ * rather than the Row reserving full width for it from the first frame.
  */
 @Composable
 private fun WipeItem(seq: Int, wipeKey: Int, wide: Boolean, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
@@ -387,8 +387,15 @@ private fun Modifier.wipeClip(progress: Float): Modifier = this
     }
     .graphicsLayer { translationX = -14.dp.toPx() * (1f - progress) }
 
-private fun Modifier.wipeGrow(progress: Float): Modifier = this.layout { measurable, constraints ->
-    val placeable = measurable.measure(constraints)
-    val w = (placeable.width * progress).toInt().coerceIn(0, placeable.width)
-    layout(w, placeable.height) { placeable.placeRelative(0, 0) }
-}
+private fun Modifier.wipeGrow(progress: Float): Modifier = this
+    .layout { measurable, constraints ->
+        val placeable = measurable.measure(constraints)
+        val w = (placeable.width * progress).toInt().coerceIn(0, placeable.width)
+        layout(w, placeable.height) { placeable.placeRelative(0, 0) }
+    }
+    // The layout above only shrinks the reported *size* - Compose never clips a child to that
+    // reported size on its own, so without this the full-size pill still drew at every progress
+    // value and overlapped whatever the Row placed next to it. clipToBounds costs the rounded
+    // corner's leading curve mid-animation (a flat edge for a few frames instead), which is a far
+    // smaller cost than two chips rendering on top of each other.
+    .clipToBounds()

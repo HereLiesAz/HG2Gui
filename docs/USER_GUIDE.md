@@ -143,9 +143,14 @@ binary now, run in the Termux environment below, not a reimplementation of one.
     keys — an installed row shows **✓ TRUSTED SIGNER** when the signer is one the registry itself
     vouches for, **SIGNED · UNKNOWN SIGNER** when the signature checks out but the signer isn't
     registry-published, **SIGNED · UNVERIFIED (OS)** on pre-13 devices, or **UNSIGNED** for a
-    package with no `signature.json` at all. A signature that fails to verify is rejected outright
-    — the package is not installed. A valid signature only proves the package wasn't tampered with
-    after signing, not who wrote it; only a **TRUSTED** signer is registry-vouched-for.
+    package with no `signature.json` at all, or **UNCHECKED · REINSTALL TO VERIFY** for one
+    installed before this app version could check at all. A signature that fails to verify — or a
+    `signature.json` too corrupt to even parse — is rejected outright, the package is not
+    installed. A valid signature only proves the package wasn't tampered with after signing, not
+    who wrote it; only a **TRUSTED** signer is registry-vouched-for. As of this writing the live
+    registry's discovery document doesn't publish any `signingKeys` yet, so every signed package
+    currently tops out at **SIGNED · UNKNOWN SIGNER** in practice — TRUSTED becomes reachable the
+    day the registry starts publishing keys, with no app update needed.
 -   **net-inventory / harden-check / sysinfo:** three more scripts installed alongside
     `osint-lookup`, all local, no arguments needed. `net-inventory` lists this device's own
     network interfaces, routes and DNS config. `harden-check` audits this install's own SSH key

@@ -19,7 +19,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontWeight
@@ -208,7 +207,7 @@ private fun AzpRow(listing: AzpListing, installing: Boolean, onInstall: (AzpList
             if (listing.installed && listing.trust.isNotBlank()) {
                 Text(
                     trustLabel(listing.trust),
-                    color = if (listing.trust == "TRUSTED") Azphalt.hues[3] else Azphalt.Ink.copy(alpha = .45f),
+                    color = trustColor(listing.trust),
                     fontSize = 8.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em,
                     modifier = Modifier.padding(top = 3.dp)
                 )
@@ -240,8 +239,15 @@ private fun trustLabel(trust: String): String = when (trust) {
     "TRUSTED" -> "✓ TRUSTED SIGNER"
     "VALID" -> "SIGNED · UNKNOWN SIGNER"
     "UNVERIFIABLE" -> "SIGNED · UNVERIFIED (OS)"
-    else -> "UNSIGNED"
+    "UNSIGNED" -> "UNSIGNED"
+    "UNCHECKED" -> "UNCHECKED · REINSTALL TO VERIFY"
+    else -> "UNCHECKED · REINSTALL TO VERIFY"
 }
+
+/** Single source of truth for "is this the TRUSTED tier" - [trustLabel] and this must never
+ *  disagree about which string means trusted, so both read the same comparison. */
+private fun trustColor(trust: String): Color =
+    if (trust == "TRUSTED") Azphalt.hues[3] else Azphalt.Ink.copy(alpha = .45f)
 
 @Composable
 private fun Eyebrow(text: String) {

@@ -46,45 +46,64 @@ object AzpInstaller {
             val dest = rootDir(context, id, version)
             dest.mkdirs()
 
-            ZipInputStream(bytes.inputStream()).use { zip ->
-                var entry = zip.nextEntry
-                while (entry != null) {
-                    val name = entry.name
-                    // Path containment: refuse any entry that would escape dest via .. or an
-                    // absolute path (package-format.md's own path-containment requirement).
-                    val target = File(dest, name).canonicalFile
-                    if (!target.path.startsWith(dest.canonicalPath + File.separator) && target != dest) {
-                        zip.closeEntry(); entry = zip.nextEntry; continue
+            // A corrupt archive or a manifest that fails to parse must not crash the caller -
+            // any exception past this point is treated as a failed install, same outcome as an
+            // explicit rejection, with the partially-extracted directory cleaned up either way.
+            try {
+                ZipInputStream(bytes.inputStream()).use { zip ->
+                    var entry = zip.nextEntry
+                    while (entry != null) {
+                        val name = entry.name
+                        // Path containment: refuse any entry that would escape dest via .. or an
+                        // absolute path (package-format.md's own path-containment requirement).
+                        val target = File(dest, name).canonicalFile
+                        if (!target.path.startsWith(dest.canonicalPath + File.separator) && target != dest) {
+                            zip.closeEntry(); entry = zip.nextEntry; continue
+                        }
+                        if (entry.isDirectory) {
+                            target.mkdirs()
+                        } else {
+                            target.parentFile?.mkdirs()
+                            target.outputStream().use { out -> zip.copyTo(out) }
+                        }
+                        zip.closeEntry()
+                        entry = zip.nextEntry
                     }
-                    if (entry.isDirectory) {
-                        target.mkdirs()
-                    } else {
-                        target.parentFile?.mkdirs()
-                        target.outputStream().use { out -> zip.copyTo(out) }
-                    }
-                    zip.closeEntry()
-                    entry = zip.nextEntry
                 }
+
+                val manifestFile = File(dest, "manifest.json")
+                if (!manifestFile.exists()) { dest.deleteRecursively(); return@withContext null }
+                val manifestBytes = manifestFile.readBytes()
+                val manifest = json.parseToJsonElement(String(manifestBytes)).jsonObject
+                val kind = manifest["kind"]?.jsonPrimitive?.content ?: "asset"
+                val skillIds = if (kind == "skill") {
+                    manifest["skill"]?.jsonObject?.get("skills")?.jsonArray
+                        ?.mapNotNull { it.jsonObject["id"]?.jsonPrimitive?.content }
+                        ?: emptyList()
+                } else emptyList()
+
+                val signatureFile = File(dest, "signature.json")
+                val trust = if (!signatureFile.exists()) {
+                    AzpTrust.UNSIGNED
+                } else {
+                    val signature = try {
+                        json.decodeFromString(AzpSignature.serializer(), signatureFile.readText())
+                    } catch (e: Exception) {
+                        null
+                    }
+                    // A signature.json that exists but doesn't even parse isn't "no signature" -
+                    // it's a corrupt or tampered one, and gets the same outright rejection as a
+                    // signature that fails cryptographic verification, not the benign UNSIGNED
+                    // tier AzpSignatureVerifier.verify() would otherwise give a null signature.
+                    if (signature == null) AzpTrust.INVALID
+                    else AzpSignatureVerifier.verify(manifestBytes, signature, trustedKeys)
+                }
+                if (trust == AzpTrust.INVALID) { dest.deleteRecursively(); return@withContext null }
+
+                AzpInstallResult(kind, skillIds, trust)
+            } catch (e: Exception) {
+                dest.deleteRecursively()
+                null
             }
-
-            val manifestFile = File(dest, "manifest.json")
-            if (!manifestFile.exists()) { dest.deleteRecursively(); return@withContext null }
-            val manifestBytes = manifestFile.readBytes()
-            val manifest = json.parseToJsonElement(String(manifestBytes)).jsonObject
-            val kind = manifest["kind"]?.jsonPrimitive?.content ?: "asset"
-            val skillIds = if (kind == "skill") {
-                manifest["skill"]?.jsonObject?.get("skills")?.jsonArray
-                    ?.mapNotNull { it.jsonObject["id"]?.jsonPrimitive?.content }
-                    ?: emptyList()
-            } else emptyList()
-
-            val signatureFile = File(dest, "signature.json")
-            val signature = if (signatureFile.exists()) {
-                try { json.decodeFromString(AzpSignature.serializer(), signatureFile.readText()) } catch (e: Exception) { null }
-            } else null
-            val trust = AzpSignatureVerifier.verify(manifestBytes, signature, trustedKeys)
-            if (trust == AzpTrust.INVALID) { dest.deleteRecursively(); return@withContext null }
-
-            AzpInstallResult(kind, skillIds, trust)
         }
 }

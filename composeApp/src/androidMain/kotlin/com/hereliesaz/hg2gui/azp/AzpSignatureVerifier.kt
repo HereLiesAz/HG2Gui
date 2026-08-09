@@ -9,10 +9,11 @@ import java.security.spec.X509EncodedKeySpec
 /**
  * Ed25519 verification of a package's `manifest.json` against its `signature.json`, per
  * spec/package-format.md § Signing: a detached signature over the exact `manifest.json` bytes as
- * stored in the archive, verbatim - no re-canonicalization. Verified against the real live
- * `azphalt.store` registry's own `packages/azp` implementation (its signed packages verify
- * correctly against these exact bytes with a standard `X509EncodedKeySpec` SPKI key and raw
- * Ed25519 verify - confirmed with `openssl pkeyutl -verify -rawin` before writing this).
+ * stored in the archive, verbatim - no re-canonicalization. Cross-checked against a real signed
+ * package downloaded live from `azphalt.store` (`com.hereliesaz.azphalt.3d-protrusion` 1.0.0):
+ * `openssl pkeyutl -verify -pubin -inkey pub.der -keyform DER -rawin -in manifest.json -sigfile
+ * sig.bin` → `Signature Verified Successfully`, confirming the standard (not URL-safe) base64,
+ * the 44-byte SPKI DER public key shape, and the exact-manifest-bytes assumption this file makes.
  *
  * Uses the platform's own Ed25519 support (`java.security`, API 33+) rather than adding a new
  * crypto dependency - this app's existing anthropic-java dependency already showed how much

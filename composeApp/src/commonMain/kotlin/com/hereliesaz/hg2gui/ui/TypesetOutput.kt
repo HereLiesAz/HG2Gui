@@ -25,31 +25,40 @@ import androidx.compose.ui.unit.sp
  * because a printer once did. Where output is genuinely structured - not prose, not a one-off
  * value - it's set on the page instead: hierarchy from weight/size, a two-column grid, rules at
  * 16% ink, figures right-aligned. This covers the one broadly, safely detectable case: a block of
- * `label: value` lines, the convention a lot of real command output already follows (`ifconfig`,
- * `stat`, `dpkg -s`, and similar). The spec's other views (a manual page, a file index, a diff)
- * each need real semantic parsing of that specific command's output and are out of scope here -
- * this is the one generic, command-agnostic slice. A Plain text toggle (BufferEntry) always falls
- * back to exactly what the command printed, because a reading can be wrong.
+ * `label: value` lines - real examples include HTTP response headers (`curl -I`) and single-field-
+ * per-line output like `openssl x509 -noout -subject -issuer`. Multi-value lines packed with 2+
+ * spaces between fields, the way `stat`'s default format does, are split into one row per field.
+ * Output whose colons don't line-delimit cleanly (`ifconfig`, `dpkg -s`'s wrapped Description
+ * field) just doesn't qualify - it falls back to plain monospace text, which is always correct.
+ * The spec's other views (a manual page, a file index, a diff) each need real semantic parsing of
+ * that specific command's output and are out of scope here - this is the one generic,
+ * command-agnostic slice. A Plain text toggle (BufferEntry) always falls back to exactly what the
+ * command printed, because a reading can be wrong.
  */
 
 private val KEY_VALUE_LINE = Regex("^([^:\\n]{1,32}):\\s+(.+)$")
+// Finds every `label: value` field within one line, where a field ends at a 2+ space gap (the
+// next field's start) or end of line - lets a single-line, multi-field record like `stat`'s
+// `Size: 2843  Blocks: 8  IO Block: 4096  regular file` become three rows instead of one row
+// whose value swallows the rest of the line from the first colon on.
+private val KEY_VALUE_FIELD = Regex("([^:\\n]{1,32}):\\s+(\\S.*?)(?=\\s{2,}|$)")
 
-/** Conservative on purpose: every non-blank line must match `label: value`, or this returns
- *  false - prose and code essentially never satisfy that on every line, so a false positive
- *  (typesetting something that wasn't actually a table) is unlikely. */
+/** Conservative on purpose: every non-blank line must match `label: value` at least once, or
+ *  this returns false - prose and code essentially never satisfy that on every line, so a false
+ *  positive (typesetting something that wasn't actually a table) is unlikely. */
 fun looksLikeKeyValueTable(text: String): Boolean {
     val lines = text.lines().filter { it.isNotBlank() }
     if (lines.size < 3) return false
     return lines.all { KEY_VALUE_LINE.matches(it.trim()) }
 }
 
-private data class KeyValueRow(val label: String, val value: String)
+internal data class KeyValueRow(val label: String, val value: String)
 
-private fun parseKeyValueTable(text: String): List<KeyValueRow> =
-    text.lines().filter { it.isNotBlank() }.mapNotNull { line ->
-        KEY_VALUE_LINE.matchEntire(line.trim())?.let { m ->
+internal fun parseKeyValueTable(text: String): List<KeyValueRow> =
+    text.lines().filter { it.isNotBlank() }.flatMap { line ->
+        KEY_VALUE_FIELD.findAll(line.trim()).map { m ->
             KeyValueRow(m.groupValues[1].trim(), m.groupValues[2].trim())
-        }
+        }.toList()
     }
 
 @Composable

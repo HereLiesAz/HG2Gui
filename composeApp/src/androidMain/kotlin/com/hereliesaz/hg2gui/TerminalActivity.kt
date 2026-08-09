@@ -118,19 +118,21 @@ class TerminalActivity : FragmentActivity() {
 
     private val prefs: SharedPreferences by lazy { getSharedPreferences(PREFS_NAME, MODE_PRIVATE) }
 
-    // The registry's signingKeys rarely change, so one fetch per process is enough - cached here
-    // rather than re-requested on every install.
+    // The registry's signingKeys rarely change, so a successful fetch is cached for the rest of
+    // the process rather than re-requested on every install. A *failed* fetch (offline, 5xx,
+    // malformed response) is deliberately never cached - caching it would mean no package could
+    // ever come back TRUSTED again this process, even once the network recovers.
     private var azpTrustedKeysCache: List<String>? = null
 
     private suspend fun azpTrustedKeys(): List<String> {
         azpTrustedKeysCache?.let { return it }
         val keys = try {
-            AzpClient.discovery()?.signingKeys?.map { it.publicKey } ?: emptyList()
+            AzpClient.discovery()?.signingKeys?.map { it.publicKey }
         } catch (e: Exception) {
-            emptyList()
+            null
         }
-        azpTrustedKeysCache = keys
-        return keys
+        if (keys != null) azpTrustedKeysCache = keys
+        return keys ?: emptyList()
     }
 
     // TerminalActivity is singleTop/intoExisting, so a notification tap while it's already
@@ -391,16 +393,22 @@ class TerminalActivity : FragmentActivity() {
                             azpInstallingId = listing.id
                             scope.launch {
                                 val trustedKeys = azpTrustedKeys()
-                                val result = withContext(Dispatchers.IO) {
-                                    val bytes = AzpClient.download(listing.id, listing.version) ?: return@withContext null
-                                    val install = AzpInstaller.install(
-                                        this@TerminalActivity, listing.id, listing.version, bytes, trustedKeys
-                                    ) ?: return@withContext null
-                                    AzpLibrary.record(
-                                        this@TerminalActivity, listing.id, listing.name, listing.version,
-                                        install.kind, install.skillIds, install.trust
-                                    )
-                                    install
+                                val result = try {
+                                    withContext(Dispatchers.IO) {
+                                        val bytes = AzpClient.download(listing.id, listing.version) ?: return@withContext null
+                                        val install = AzpInstaller.install(
+                                            this@TerminalActivity, listing.id, listing.version, bytes, trustedKeys
+                                        ) ?: return@withContext null
+                                        AzpLibrary.record(
+                                            this@TerminalActivity, listing.id, listing.name, listing.version,
+                                            install.kind, install.skillIds, install.trust
+                                        )
+                                        install
+                                    }
+                                } catch (e: Exception) {
+                                    // A dropped connection or a malformed archive/manifest must
+                                    // not crash the app - the row just stays on INSTALL.
+                                    null
                                 }
                                 if (result != null) {
                                     azpResults = azpResults.map {

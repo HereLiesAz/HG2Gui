@@ -18,7 +18,7 @@ import androidx.compose.ui.unit.dp
 // in this ramp is read as its "ink density" for AsciiArtCanvas, not rendered as a literal glyph.
 private const val DENSITY_RAMP = " .'`^\",:;Il!i><~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@\$"
 
-private fun charDensity(c: Char): Float {
+internal fun charDensity(c: Char): Float {
     if (c.isWhitespace()) return 0f
     // Box-drawing (U+2500-U+257F) and block elements (U+2580-U+259F) are literal solid/partial
     // blocks already, not glyphs to rank - treat them as fully dense.
@@ -43,7 +43,14 @@ fun looksLikeAsciiArt(text: String): Boolean {
     return alnum.toFloat() / chars.length < 0.35f
 }
 
-private const val ISO_LEVEL = 0.42f
+// DENSITY_RAMP is a photo-to-ASCII print-density ramp, so most of the punctuation hand-drawn line
+// art actually leans on - |, \, /, _, -, (, ), <, >, brackets - sits in its low-to-mid range, not
+// near the top: those characters cover little of their own cell, but they're still the lines that
+// draw a shape. 0.42 (this file's original threshold) sat above nearly all of them, so detected
+// art rendered as a near-blank canvas. 0.1 draws the line just past the handful of characters that
+// really do read as visually empty (space, '.', "'", '`', '^', '"', ',') and treats everything
+// denser than that - which is most of an ASCII picture's actual linework - as ink.
+internal const val ISO_LEVEL = 0.1f
 
 /** Linearly interpolates the point along a-b where the density field crosses [ISO_LEVEL]. */
 private fun edgePoint(pa: Offset, va: Float, pb: Offset, vb: Float): Offset {
@@ -134,9 +141,19 @@ fun AsciiArtCanvas(text: String, ink: Color, modifier: Modifier = Modifier, maxC
         }
     }
 
-    BoxWithConstraints(modifier.horizontalScroll(rememberScrollState())) {
+    // maxWidth has to be read from constraints BoxWithConstraints itself is measured with, which
+    // means horizontalScroll can't be on this Box - horizontalScroll always hands its child
+    // Constraints.Infinity, so a BoxWithConstraints inside one never sees a real width to fit to.
+    // Scrolling only kicks in on the Canvas below, once cell has already been sized against the
+    // real available width.
+    BoxWithConstraints(modifier) {
         val cell = min(maxCell, maxWidth / cols)
-        Canvas(Modifier.width(cell * (cols + 2)).height(cell * (rows + 2))) {
+        Canvas(
+            Modifier
+                .horizontalScroll(rememberScrollState())
+                .width(cell * (cols + 2))
+                .height(cell * (rows + 2))
+        ) {
             val path = buildContourPath(density, cell.toPx())
             drawPath(path, color = ink)
         }

@@ -322,7 +322,10 @@ private fun BufferEntry(
     // Checked only when the output isn't already art - a block of `label: value` lines and a
     // dense symbol-art block are mutually exclusive readings of the same text.
     val isTable = remember(entry.output) { !isArt && looksLikeKeyValueTable(entry.output) }
-    var showRaw by remember(entry.output) { mutableStateOf(false) }
+    // Keyed on the command, not the output - entry.output mutates on every streamed chunk while
+    // a command is still running, and re-keying on it reset this toggle out from under anyone
+    // reading the raw text of a long-running command.
+    var showRaw by remember(entry.command) { mutableStateOf(false) }
     Column(
         Modifier
             .fillMaxWidth()

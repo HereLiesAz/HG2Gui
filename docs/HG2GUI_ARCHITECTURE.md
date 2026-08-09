@@ -149,8 +149,15 @@ reflection-based command engine underneath it — built-ins are a fixed dispatch
     verify yields `AzpTrust.INVALID`; verifying against a key the registry's `discovery()`
     publishes yields `AzpTrust.TRUSTED`, otherwise `AzpTrust.VALID` — "tamper-evidence, not
     identity" per the spec, since counter-signature chains aren't implemented. Cross-checked
-    against a real signed package pulled from the live registry with `openssl pkeyutl -verify
-    -rawin` before being wired in.
+    against a real signed package (`com.hereliesaz.azphalt.3d-protrusion`) downloaded live from
+    `azphalt.store` with `openssl pkeyutl -verify -pubin -inkey pub.der -keyform DER -rawin -in
+    manifest.json -sigfile sig.bin` → `Signature Verified Successfully`, confirming the exact
+    wire assumptions this file makes: standard (not URL-safe) base64, a 44-byte SPKI DER key
+    (`X509EncodedKeySpec`), and the manifest's exact stored bytes with no re-canonicalization. As
+    of that same check, the live registry's `.well-known/azphalt-repository.json` doesn't publish
+    a `signingKeys` field at all yet — `AzpDiscovery.signingKeys` defaults to empty and decodes
+    that response fine, but it means every signed package currently tops out at `AzpTrust.VALID`
+    in practice; `TRUSTED` is real code, just not yet reachable against the live registry.
 *   **`azp/AzpInstaller.kt`** (androidMain): a `.azp` is a plain ZIP archive with `manifest.json`
     at its root (`spec/package-format.md`) — `install()` unzips it into
     `filesDir/azp/<id>/<version>/` (rejecting any entry that would escape via `..`), reads
@@ -206,8 +213,9 @@ reflection-based command engine underneath it — built-ins are a fixed dispatch
 *   **`ui/guide/GuideReaderScreen.kt`**: an entry never just appears - each field wipes on in
     reading order via `WipeItem`, sequenced `120 + seq*110` ms apart with
     `CubicBezierEasing(0f, .9f, .1f, 1f)` (the Azphalt "unfold" easing). Text/rules reveal via a
-    left-to-right `clipRect`; capsules/pills instead animate their real layout width from 0, since
-    clip-masking an already-round shape would guillotine its leading curve.
+    left-to-right `clipRect`; capsules/pills instead animate their real layout width from 0 (so a
+    chip's Row slot grows along with it), clipped to that reported width so an in-flight chip
+    never overlaps whatever the Row places next to it.
 *   `GuideWash`: a faint, oversized echo of the entry's own command name (9% ink, ~100sp) behind
     the content, drifting in from the right over 2400ms on the same easing - "depth is speed," no
     blur or dimming. Tied to the same `wipeKey` as every `WipeItem`, so Prev/Next/Replay restart

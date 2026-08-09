@@ -89,7 +89,7 @@ object Azphalt {
     fun randomGround(exclude: Ground? = null): Ground {
         val pool = grounds.filter { it !== exclude }.ifEmpty { grounds }
         val total = pool.sumOf { it.weight }
-        var roll = (0 until total).random()
+        val roll = (0 until total).random()
         return groundFrom(pool, roll)
     }
 
@@ -156,6 +156,12 @@ private const val HOST_WIDTH = 0.66f
 private const val HOST_RIGHT_EDGE = 0.34f
 private const val CHILD_LEFT = 0.30f
 private const val CHILD_WIDTH = 0.34f
+// Menu Style Guide rule 8 (4%-per-depth width variation) is NOT implemented here. StackPill's
+// resting-state math was confirmed safe to vary by hand-derivation, but HostPill's constraint
+// propagation (offsetByFractionOfParent / fillMaxWidth / absoluteBleed interacting to park the
+// host at HOST_RIGHT_EDGE = 34%) couldn't be confidently resolved without a device to verify
+// against - HostPill's width/offset has been hand-tuned across two prior PRs (#91/#92), and this
+// gap is left open rather than risk regressing it on an unverified derivation.
 // HostPill is HOST_WIDTH wide, offset left by (1 - HOST_RIGHT_EDGE) * HOST_WIDTH, so its right
 // edge lands at HOST_WIDTH * HOST_RIGHT_EDGE of the full width. A band of children clears that
 // safely by rising into row 1+, but the trail row shares row 0 with the host, so it has to start
@@ -237,7 +243,6 @@ fun PillMenu(
                         key(node.id) {
                             StackPill(
                                 node = node,
-                                index = i,
                                 row = roots.size - 1 - i,
                                 leaving = leavingHost != null,
                                 isHost = node.id == leavingHost,
@@ -259,59 +264,70 @@ fun PillMenu(
             }
 
             is Phase.Open -> {
-                val host = roots.first { it.id == p.hostId }
-                val rowsBelow = roots.size - 1 - roots.indexOf(host)
-                val anchor = trail.lastOrNull() ?: host
-                // Resolved once per anchor, not on every recomposition - resolveChildren can do
-                // real I/O (a directory listing, a PATH scan), and remember(anchor.id) keeps
-                // that to one call per navigation into this node.
-                val effectiveChildren = remember(anchor.id) { anchor.resolveChildren?.invoke() ?: anchor.children }
-
-                if (effectiveChildren.isNotEmpty()) {
-                    key(anchor.id) {
-                        ChildBand(
-                            children = effectiveChildren,
-                            hueOwner = host.id,
-                            onPick = { child ->
-                                if (child.wizardId != null) {
-                                    onWizard(child.wizardId)
-                                } else {
-                                    tokens = (trail + child).mapNotNull { it.tokenValue() }
-                                    onRun(tokens, child.isTerminal())
-                                }
-                                scope.launch {
-                                    // Let the pick's own drop-and-grow finish, plus one beat to
-                                    // settle, before swapping the band for its children - so the
-                                    // next cascade always starts after the hand-off is visible,
-                                    // never on top of it.
-                                    delay((Azphalt.DROP_MS + Azphalt.SWING_MS).toLong())
-                                    trail = trail + child
-                                }
-                            }
-                        )
-                    }
-                }
-
-                HostPill(
-                    node = host,
-                    rowsBelow = rowsBelow,
-                    onClick = {
-                        phase = Phase.Browsing
+                // A contextual root (the suggestion/answer host) can vanish from `roots` between
+                // recompositions - e.g. picking it clears the input text that made it appear -
+                // while this phase is still mid-animation toward it. Closing back to Browsing
+                // here avoids crashing on a lookup that can no longer succeed.
+                val host = roots.firstOrNull { it.id == p.hostId }
+                if (host == null) {
+                    LaunchedEffect(p.hostId) {
                         trail = emptyList()
-                        tokens = emptyList()
-                        onRun(tokens, false)
+                        phase = Phase.Browsing
                     }
-                )
+                } else {
+                    val rowsBelow = roots.size - 1 - roots.indexOf(host)
+                    val anchor = trail.lastOrNull() ?: host
+                    // Resolved once per anchor, not on every recomposition - resolveChildren can do
+                    // real I/O (a directory listing, a PATH scan), and remember(anchor.id) keeps
+                    // that to one call per navigation into this node.
+                    val effectiveChildren = remember(anchor.id) { anchor.resolveChildren?.invoke() ?: anchor.children }
 
-                TrailRow(
-                    trail = trail,
-                    hueOwner = host.id,
-                    onTapCrumb = { i ->
-                        trail = trail.take(i)
-                        tokens = trail.mapNotNull { it.tokenValue() }
-                        onRun(tokens, false)
+                    if (effectiveChildren.isNotEmpty()) {
+                        key(anchor.id) {
+                            ChildBand(
+                                children = effectiveChildren,
+                                hueOwner = host.id,
+                                onPick = { child ->
+                                    if (child.wizardId != null) {
+                                        onWizard(child.wizardId)
+                                    } else {
+                                        tokens = (trail + child).mapNotNull { it.tokenValue() }
+                                        onRun(tokens, child.isTerminal())
+                                    }
+                                    scope.launch {
+                                        // Let the pick's own drop-and-grow finish, plus one beat to
+                                        // settle, before swapping the band for its children - so the
+                                        // next cascade always starts after the hand-off is visible,
+                                        // never on top of it.
+                                        delay((Azphalt.DROP_MS + Azphalt.SWING_MS).toLong())
+                                        trail = trail + child
+                                    }
+                                }
+                            )
+                        }
                     }
-                )
+
+                    HostPill(
+                        node = host,
+                        rowsBelow = rowsBelow,
+                        onClick = {
+                            phase = Phase.Browsing
+                            trail = emptyList()
+                            tokens = emptyList()
+                            onRun(tokens, false)
+                        }
+                    )
+
+                    TrailRow(
+                        trail = trail,
+                        hueOwner = host.id,
+                        onTapCrumb = { i ->
+                            trail = trail.take(i)
+                            tokens = trail.mapNotNull { it.tokenValue() }
+                            onRun(tokens, false)
+                        }
+                    )
+                }
             }
         }
     }
@@ -320,7 +336,6 @@ fun PillMenu(
 @Composable
 private fun StackPill(
     node: MenuNode,
-    index: Int,
     row: Int,
     leaving: Boolean,
     isHost: Boolean,

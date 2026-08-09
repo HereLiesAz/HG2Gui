@@ -30,9 +30,12 @@ object AzpLibrary {
             val name = p.getString("$id.name", null) ?: return@mapNotNull null
             val version = p.getString("$id.version", "") ?: ""
             val kind = p.getString("$id.kind", "asset") ?: "asset"
+            // No stored trust means this record predates signature verification - that's
+            // UNCHECKED, a distinct (unknown) state, not the positive claim UNSIGNED makes
+            // ("checked, and there was no signature.json").
             val trust = p.getString("$id.trust", null)?.let {
-                runCatching { AzpTrust.valueOf(it) }.getOrDefault(AzpTrust.UNSIGNED)
-            } ?: AzpTrust.UNSIGNED
+                runCatching { AzpTrust.valueOf(it) }.getOrDefault(AzpTrust.UNCHECKED)
+            } ?: AzpTrust.UNCHECKED
             AzpInstalled(id, name, version, kind, trust)
         }.sortedBy { it.name }
     }

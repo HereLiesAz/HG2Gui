@@ -65,9 +65,14 @@ data class AzpDiscovery(
 /** The outcome of verifying a package's `signature.json` against its `manifest.json` bytes -
  *  see [com.hereliesaz.hg2gui.azp.AzpSignatureVerifier]. */
 enum class AzpTrust {
+    /** No trust was ever recorded for this install - it predates signature verification, so
+     *  nothing is actually known here (not the same claim as [UNSIGNED]). Re-installing checks
+     *  it for real. */
+    UNCHECKED,
     /** No `signature.json` in the package. */
     UNSIGNED,
-    /** `signature.json` present but the signature does not verify - tampered or corrupt. */
+    /** `signature.json` present but the signature does not verify (or the file itself is corrupt
+     *  and doesn't even parse) - tampered or corrupt either way. */
     INVALID,
     /** Signature verifies, but the signer key isn't one the registry publishes - "tamper-evidence,
      *  not identity" per spec: internally consistent, provenance not established. */
