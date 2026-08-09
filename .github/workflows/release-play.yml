@@ -244,8 +244,8 @@ jobs:
       # build just incremented (matches the .aab's versionName/versionCode).
       - name: Get app version
         run: |
-          echo "VERSION_NAME=$(./gradlew -q :app:printVersionName)" >> "$GITHUB_ENV"
-          echo "VERSION_CODE=$(./gradlew -q :app:printVersionCode)" >> "$GITHUB_ENV"
+          echo "VERSION_NAME=$(./gradlew -q :composeApp:printVersionName)" >> "$GITHUB_ENV"
+          echo "VERSION_CODE=$(./gradlew -q :composeApp:printVersionCode)" >> "$GITHUB_ENV"
 
       # The pre-build check used the committed VERSION_D; this one uses what was
       # actually built. Belt and braces, because the cost of getting it wrong is
