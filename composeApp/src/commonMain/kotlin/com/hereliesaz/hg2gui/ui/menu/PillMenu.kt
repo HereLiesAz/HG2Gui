@@ -89,11 +89,48 @@ object Azphalt {
         val pool = grounds.filter { it !== exclude }.ifEmpty { grounds }
         val total = pool.sumOf { it.weight }
         var roll = (0 until total).random()
+        return groundFrom(pool, roll)
+    }
+
+    private fun groundFrom(pool: List<Ground>, rollIn: Int): Ground {
+        var roll = rollIn
         for (g in pool) {
             if (roll < g.weight) return g
             roll -= g.weight
         }
         return pool.last()
+    }
+
+    /** Max grounds rerolls in one app session - "may reroll once, twice at most" per the style
+     *  guide, so a long session doesn't feel static without ever feeling arbitrary. */
+    const val MAX_GROUND_REROLLS = 2
+
+    /** Session-scoped ground selection, holding the current [Ground] and a reroll budget.
+     *  [reroll] is a no-op past [MAX_GROUND_REROLLS] - callers should only invoke it when no
+     *  pill gesture (drag, swing, cascade) is in flight, same as any other state mutation that
+     *  would fight an in-progress animation. */
+    class GroundState(initial: Ground) {
+        var current by mutableStateOf(initial)
+            private set
+        var rerollsUsed by mutableStateOf(0)
+            private set
+
+        val canReroll: Boolean get() = rerollsUsed < MAX_GROUND_REROLLS
+
+        fun reroll() {
+            if (!canReroll) return
+            current = randomGround(exclude = current)
+            rerollsUsed++
+        }
+    }
+
+    /** One ground roll per composition, persisted across recomposition (not process death) via
+     *  [remember] - a config change or process restart gets a fresh roll, same as any other
+     *  `remember`-scoped session state in this app. */
+    @Composable
+    fun rememberGroundState(): GroundState {
+        val initial = remember { randomGround() }
+        return remember { GroundState(initial) }
     }
 
     /** A coordinated multi-hue combo pulled from a single film scene, for a screen that needs
