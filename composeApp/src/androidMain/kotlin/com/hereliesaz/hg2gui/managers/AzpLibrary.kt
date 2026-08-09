@@ -51,6 +51,10 @@ object AzpLibrary {
         kind: String,
         skillIds: List<String>,
         trust: AzpTrust = AzpTrust.UNSIGNED,
+        /** For `kind:"script"` only - the name it's callable as on PATH once [ScriptInstaller]
+         *  has written its wrapper, so the store row can show it. Blank if installation didn't
+         *  reach that point (e.g. no Termux bootstrap yet - see [ScriptInstaller.Result]). */
+        scriptCommand: String? = null,
     ) {
         val p = prefs(context)
         val ids = p.getStringSet(KEY_IDS, emptySet()).orEmpty() + id
@@ -61,8 +65,11 @@ object AzpLibrary {
             putString("$id.kind", kind)
             putString("$id.skillIds", skillIds.joinToString(","))
             putString("$id.trust", trust.name)
+            if (scriptCommand != null) putString("$id.scriptCommand", scriptCommand) else remove("$id.scriptCommand")
         }
     }
+
+    fun scriptCommand(context: Context, id: String): String? = prefs(context).getString("$id.scriptCommand", null)
 
     fun remove(context: Context, id: String) {
         val p = prefs(context)
@@ -70,6 +77,7 @@ object AzpLibrary {
         p.edit {
             putStringSet(KEY_IDS, ids)
             remove("$id.name"); remove("$id.version"); remove("$id.kind"); remove("$id.skillIds"); remove("$id.trust")
+            remove("$id.scriptCommand")
         }
     }
 
