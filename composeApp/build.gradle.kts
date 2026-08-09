@@ -161,3 +161,11 @@ dependencies {
     debugImplementation(compose.uiTooling)
     implementation("com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava")
 }
+
+// Read by release-play.yml's "Read application id" step (./gradlew -q :composeApp:printApplicationId)
+// to fill in $GITHUB_ENV without hardcoding the id a second time in the workflow itself.
+tasks.register("printApplicationId") {
+    doLast {
+        println(android.defaultConfig.applicationId)
+    }
+}
