@@ -1,6 +1,7 @@
 package com.hereliesaz.hg2gui.ui.menu
 
 import android.content.Context
+import com.hereliesaz.hg2gui.managers.OsContextStore
 import com.hereliesaz.hg2gui.managers.SshPresets
 import com.hereliesaz.hg2gui.managers.WorkflowStore
 import com.hereliesaz.hg2gui.terminal.DistroManager
@@ -194,6 +195,68 @@ object CommandTree {
         )
     )
 
+    // Reference-only command sets for a foreign OS - not live-discovered like Shell, since these
+    // aren't necessarily real local binaries. For working over an active `ssh` connection into a
+    // host of that kind, where the local Termux PATH tells you nothing about what's actually
+    // there. git/ls/ssh genuinely overlap with what's locally real; the package/service managers
+    // don't - that's the whole point of picking a context.
+    private data class OsCmd(val label: String, val args: List<String>)
+    private val OS_COMMANDS: Map<String, List<OsCmd>> = mapOf(
+        "ubuntu" to listOf(
+            OsCmd("apt", listOf("install", "update", "upgrade", "search")),
+            OsCmd("systemctl", listOf("status", "start", "restart")),
+            OsCmd("ls", listOf("-la", "-lh", "~")),
+            OsCmd("git", listOf("status", "pull", "commit", "push")),
+            OsCmd("ssh", listOf("user@host"))
+        ),
+        "macos" to listOf(
+            OsCmd("brew", listOf("install", "update", "upgrade", "list")),
+            OsCmd("launchctl", listOf("list", "load", "unload")),
+            OsCmd("ls", listOf("-la", "-lh", "~")),
+            OsCmd("git", listOf("status", "pull", "commit", "push")),
+            OsCmd("ssh", listOf("user@host"))
+        ),
+        "windows" to listOf(
+            OsCmd("winget", listOf("install", "upgrade", "search", "list")),
+            OsCmd("sc", listOf("query", "start", "stop")),
+            OsCmd("dir", listOf("/a", "/b", "%USERPROFILE%")),
+            OsCmd("git", listOf("status", "pull", "commit", "push")),
+            OsCmd("ssh", listOf("user@host"))
+        )
+    )
+    private val OS_LABELS = mapOf("ubuntu" to "Ubuntu", "macos" to "macOS", "windows" to "Windows")
+
+    /** The reference tree for the currently-picked foreign OS context - swapped in alongside the
+     *  real Shell categories, never replacing them. Pure token-emitting leaves, same as any Shell
+     *  pill: picking one just assembles the command onto the input line for review. */
+    private fun osReferenceRoot(os: String): MenuNode {
+        val children = OS_COMMANDS[os].orEmpty().map { c ->
+            MenuNode(
+                id = "ctx/$os/${c.label}",
+                label = c.label,
+                cap = c.args.size.toString(),
+                children = c.args.map { a -> MenuNode(id = "ctx/$os/${c.label}/$a", label = a) }
+            )
+        }
+        return MenuNode(id = "ctx/$os", label = OS_LABELS[os] ?: os, cap = children.size.toString(), children = children)
+    }
+
+    /** The Context root pill: pick which OS's commands the reference tree above should offer,
+     *  or "local" to turn it off. Picking one is a state change, not a token - same
+     *  wizardId-as-navigation reuse as [aiRoot]/[azpRoot], handled by re-fetching [from]. */
+    private fun contextRoot(context: Context): MenuNode {
+        val current = OsContextStore.current(context)
+        val choices = listOf("local", "ubuntu", "macos", "windows").map { os ->
+            MenuNode(
+                id = "ctx-pick/$os",
+                label = (OS_LABELS[os] ?: os.replaceFirstChar { it.uppercase() }) + if (os == current) " (current)" else "",
+                emitsToken = false,
+                wizardId = "switchos:$os"
+            )
+        }
+        return MenuNode(id = "ctx", label = "Context", cap = (OS_LABELS[current] ?: current), children = choices)
+    }
+
     private fun shellLeaf(fullName: String, label: String, filePickerRoot: File): MenuNode {
         val hints = SHELL_HINTS[fullName].orEmpty().map { MenuNode("sh/$fullName/$it", it) }
         val children = hints + FileBrowser.pickerNode("sh/$fullName/file", filePickerRoot)
@@ -310,14 +373,17 @@ object CommandTree {
     fun from(context: Context): List<MenuNode> {
         val filePickerRoot = pickerRoot(context)
         val shellRoots = scanShell(context, filePickerRoot)
+        val os = OsContextStore.current(context)
+        val osRoots = if (os == "local") emptyList() else listOf(osReferenceRoot(os))
 
-        return shellRoots + listOf(
+        return shellRoots + osRoots + listOf(
             MenuNode("sys", "System", SYSTEM.size.toString(), SYSTEM.sorted().map { node(it, filePickerRoot) }),
             MenuNode("apps", "Apps & nav", APPS.size.toString(), APPS.sorted().map { node(it, filePickerRoot) }),
             MenuNode("feat", "Features", FEATURES.size.toString(), FEATURES.sorted().map { node(it, filePickerRoot) }),
             workflowsRoot(context),
             aiRoot(),
-            azpRoot()
+            azpRoot(),
+            contextRoot(context)
         )
     }
 }

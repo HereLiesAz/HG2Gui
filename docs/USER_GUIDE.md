@@ -104,6 +104,11 @@ binary now, run in the Termux environment below, not a reimplementation of one.
     rather than a wall of text. The heuristic is conservative — real prose or a table always falls
     back to plain text. Tap the entry, then **PLAIN TEXT** to see the raw output (and copy/share
     it) any time.
+-   **Typeset output:** output that's a block of `label: value` lines (`ifconfig`, `stat`,
+    `dpkg -s`, and similar — three or more lines, every one of them that shape) is set as a
+    two-column grid instead of raw monospace text — labels dimmed and uppercase, values
+    right-aligned. Tap the entry, then **PLAIN TEXT** to see exactly what the command printed any
+    time — a reading can be wrong.
 -   **Workflows:** the **Workflows** pill (alongside the shell categories) holds saved command
     templates. Picking one asks for any `{placeholder}` values the template uses, then drops the
     assembled command onto the input line, same as everything else here — nothing runs until you
@@ -114,7 +119,17 @@ binary now, run in the Termux environment below, not a reimplementation of one.
     Anthropic API. A suggested command shows a **USE ▸** pill that drops it onto the input line
     for review, exactly like everything else — the chat never runs a command by itself. Needs an
     API key first: Settings → **AI SETTINGS ›**. The key is stored unencrypted on this device,
-    same as the MCP pairing token and other local settings.
+    same as the MCP pairing token and other local settings. A command reply may also show a
+    **what each part does** panel — a short explanation per flag, when the command has enough of
+    them to be worth breaking down.
+-   **Context:** the **Context** pill sets which OS's commands the tree offers alongside the real
+    Shell categories — pick `ubuntu`, `macos`, or `windows` and a reference root appears with that
+    OS's package manager, service manager, and a few overlapping basics (`git`, `ls`, `ssh`).
+    Meant for working over an active `ssh` connection into a host of that kind, where the local
+    Termux `PATH` doesn't tell you what's actually there. Pick **local** to turn it off again.
+    Picking a pill just assembles the command onto the input line, same as everywhere else —
+    nothing runs by itself, and most of these commands (`apt`, `brew`, `winget`, and friends)
+    aren't real local binaries, so this is reference, not live discovery like Shell.
 -   **Store:** the **Store** pill opens a browser for [azphalt.store](https://azphalt.store), the
     package registry for `.azp` extensions — the same idea as `pkg`/`apt`, but general-purpose:
     assets, sandboxed code, packs, companion apps, MCP-server headers, and AI-skill bundles all

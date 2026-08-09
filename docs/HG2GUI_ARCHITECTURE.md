@@ -105,6 +105,15 @@ reflection-based command engine underneath it — built-ins are a fixed dispatch
     uses, applied to the density field instead of raster pixels. No model, no network call: it's a
     deterministic, offline algorithm that constructs an actual vector shape from the art's
     character grid rather than reproducing glyphs or a blocky per-cell mosaic.
+*   **Typeset output** (`ui/TypesetOutput.kt` commonMain): `BufferEntry` also checks
+    `looksLikeKeyValueTable()` (only when the output isn't already art) and, when every non-blank
+    line matches `label: value`, renders via `KeyValueTable` instead of plain text - a two-column
+    grid with 16%-ink hairline rules, dimmed uppercase labels, and right-aligned values (tabular
+    figure OpenType feature where the font supports it). A PLAIN TEXT/READING toggle in the same
+    tap-to-reveal row switches back to the raw string. This is a deliberately narrow slice of
+    `HG2Gui_Reading.dc.html`'s "output is set, not echoed" concept - that spec's other views (a
+    manual page, a file index, a diff) each need real semantic parsing of that specific command's
+    output; `label: value` detection is the one generic, command-agnostic case.
 *   **Workflows** (`ui/WorkflowFlow.kt` commonMain, `managers/WorkflowStore.kt` androidMain):
     named command templates with `{placeholder}` substrings, stored the same flat-SharedPreferences
     way as `SshPresets`. Saving and running both reuse the `wizardId`/`onWizard` pill primitive and
@@ -169,6 +178,45 @@ reflection-based command engine underneath it — built-ins are a fixed dispatch
     instead - `TerminalScreen`, `SettingsScreen`, `McpServerScreen`, `AiSettingsScreen`,
     `AiChatScreen`, `AzpStoreScreen`, `CommandGuideScreen`, `GuideReaderScreen`, `FilesScreen`,
     `StorageScreen`, `FolderPicker`, `EditorScreen`.
+
+### 11. Guide reader motion (Kotlin, `commonMain`)
+*   **`ui/guide/GuideReaderScreen.kt`**: an entry never just appears - each field wipes on in
+    reading order via `WipeItem`, sequenced `120 + seq*110` ms apart with
+    `CubicBezierEasing(0f, .9f, .1f, 1f)` (the Azphalt "unfold" easing). Text/rules reveal via a
+    left-to-right `clipRect`; capsules/pills instead animate their real layout width from 0, since
+    clip-masking an already-round shape would guillotine its leading curve.
+*   `GuideWash`: a faint, oversized echo of the entry's own command name (9% ink, ~100sp) behind
+    the content, drifting in from the right over 2400ms on the same easing - "depth is speed," no
+    blur or dimming. Tied to the same `wipeKey` as every `WipeItem`, so Prev/Next/Replay restart
+    it along with everything else. This is the one piece of `HG2Gui_Guide_Motion.dc.html`'s "01 -
+    Entry" demo the screen was missing; the wipe-in cascade itself already matched. The spec's "02
+    - Parallax" scroll-driven variant (a background wash plane at 0.2x scroll speed, mid-plane
+    rods at 0.5x) isn't implemented - the real `GuideEntryReader` is a single fixed screen with
+    Prev/Next, not a long scrolling page, so there's no scroll position for it to drive against.
+
+### 12. Context (OS-reference tree) and AI part breakdown (Kotlin, `androidMain`/`commonMain`)
+*   **`managers/OsContextStore.kt`** (androidMain): flat SharedPreferences, one string key,
+    `current()`/`set()` - the OS a session is mentally "in" (`local`, the default, or
+    `ubuntu`/`macos`/`windows`). Persisted, not session-scoped, since a device is usually SSH'd
+    into the same kind of host repeatedly.
+*   **`CommandTree.kt`**: `contextRoot()` is a synthesized root pill (like `workflowsRoot`/
+    `aiRoot`) with one leaf per OS choice, each `wizardId = "switchos:<os>"` - picking one is a
+    state change, not a token, handled by `TerminalActivity`'s `onWizard` (sets
+    `OsContextStore`, then re-fetches `CommandTree.from`). When the current OS isn't `local`,
+    `from()` adds one more root, `osReferenceRoot()`: a static (not live-discovered) reference
+    tree for that OS's package manager, service manager, and the commands that genuinely overlap
+    with the local Termux install (`git`, `ls`, `ssh`). This is `HG2Gui_Redesign.dc.html`'s "2b -
+    context-aware" demo, scoped to what's actually useful without a live remote-shell-awareness
+    mechanism this app doesn't have: a reference tree for working over an `ssh` connection, not a
+    live suggestion set that knows what's really installed on the far end.
+*   **AI part breakdown** (`ai/AiClient.kt`, `ui/ai/AiChatScreen.kt`): the system prompt now asks
+    the model to optionally follow a `CMD:` reply with a `PARTS:` block, one `<token>|<what it
+    does>` line per flag, for commands worth breaking down. `AiClient.parse` splits this into
+    `AiReply.parts`, rendered as a "WHAT EACH PART DOES" panel under the USE pill
+    (`AiChatScreen.kt`'s `AiBubble`). This is the tractable slice of `HG2Gui_Redesign.dc.html`'s
+    "2c - Phase 4" concept - the breakdown panel, not the full separate screen with per-token
+    tap-to-swap-from-the-tree editing, which would need a way to re-enter the pill tree from an
+    arbitrary token position and is out of scope here.
 
 ## Data Flow
 1.  **Input**: The user taps `wifi`. No text is typed. Since `wifi` leaves no further

@@ -334,10 +334,13 @@ private fun StackPill(
     }
     val offset = remember { Animatable(if (entering) -1.7f else 0f) }
 
+    // One shared clock, no per-pill stagger - "dismissing the host plays the exact same arrival
+    // as opening the app... because returning to a stack and arriving at it are the same event."
+    // Every root pill's entrance and leaving-stack animation shares this same unstaggered timing.
     LaunchedEffect(leaving, entering) {
         if (entering) offset.animateTo(
             0f,
-            tween(Azphalt.SLIDE_MS, delayMillis = index * 70, easing = LinearEasing)
+            tween(Azphalt.SLIDE_MS, easing = LinearEasing)
         ) else offset.animateTo(target, tween(Azphalt.SLIDE_MS, easing = LinearEasing))
     }
 
@@ -351,7 +354,7 @@ private fun StackPill(
     LaunchedEffect(entering) {
         if (entering) lift.animateTo(
             -pitchPx * row,
-            tween(Azphalt.SLIDE_MS, delayMillis = index * 70, easing = LinearEasing)
+            tween(Azphalt.SLIDE_MS, easing = LinearEasing)
         )
     }
 
@@ -465,14 +468,14 @@ private fun ChildPill(
             turn.animateTo(0f, keyframes {
                 durationMillis = Azphalt.SWING_MS
                 (if (localIndex % 2 == 0) -360f else 360f) at 0 using LinearEasing
-                (if (localIndex % 2 == 0) -36f else 36f) at (Azphalt.SWING_MS * 0.9f).toInt() using LinearEasing
+                (if (localIndex % 2 == 0) -36f else 36f) at (Azphalt.SWING_MS * Azphalt.LIFT_FRACTION).toInt() using LinearEasing
                 0f at Azphalt.SWING_MS
             })
         }
         launch {
             lift.animateTo(-pitchPx * absoluteRow, keyframes {
                 durationMillis = Azphalt.SWING_MS
-                (-pitchPx * (absoluteRow - 1).coerceAtLeast(BAND_BASE_ROW)) at (Azphalt.SWING_MS * 0.9f).toInt() using LinearEasing
+                (-pitchPx * (absoluteRow - 1).coerceAtLeast(BAND_BASE_ROW)) at (Azphalt.SWING_MS * Azphalt.LIFT_FRACTION).toInt() using LinearEasing
             })
         }
     }
@@ -576,7 +579,9 @@ internal fun Pill(
             .background(bg)
             .padding(start = 12.dp, end = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(5.dp, Alignment.End)
+        // "Label and end-cap sit together at the right end of the pill, in that order, 9px
+        // apart" - the style guide's own literal gap value.
+        horizontalArrangement = Arrangement.spacedBy(9.dp, Alignment.End)
     ) {
         Text(
             text = label.uppercase(),
