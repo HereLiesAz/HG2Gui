@@ -8,6 +8,8 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import java.io.File
+import java.security.DigestOutputStream
+import java.security.MessageDigest
 import java.util.zip.ZipInputStream
 
 data class AzpInstallResult(val kind: String, val skillIds: List<String>, val trust: AzpTrust)
@@ -17,17 +19,29 @@ data class AzpInstallResult(val kind: String, val skillIds: List<String>, val tr
  * at the root - into `filesDir/azp/<id>/<version>/`. HG2Gui has no `.azp` code/WASM runtime, so
  * for every kind except `skill` this is just "download and keep, for use elsewhere" - the same
  * as `apt download` versus `apt install`. A `skill` package's `SKILL.md` files are real usable
- * content here: AzpLibrary reads them back to extend the AI chat's system prompt.
+ * content here: AzpLibrary reads them back to extend the AI chat's system prompt - which is
+ * exactly why per-file integrity matters more here than it might look: a package's Ed25519
+ * signature (see [AzpSignatureVerifier]) only covers `manifest.json`'s bytes, never the payload.
+ * A signature check alone confirms the *manifest* wasn't altered after signing; it says nothing
+ * about whether the `SKILL.md` bytes sitting next to it are the ones the signer actually shipped.
+ * Without a per-file digest check, a tampered `SKILL.md` - content that lands verbatim in this
+ * app's own AI system prompt - would verify as TRUSTED right alongside a swapped-in prompt
+ * injection. So every extracted payload file's SHA-256 is checked against `manifest.files[path]`
+ * (package-format.md's own integrity contract - the same check `@azphalt/azp`'s `verifyAzp` runs),
+ * and any file present in the archive but absent from `manifest.files` is rejected outright,
+ * mirroring `verifyAzp`'s "unlisted payload" check (a ZIP-confusion / signature-bypass vector:
+ * an entry nothing hashed is an entry nothing can vouch for).
  *
- * Signature verification (see [AzpSignatureVerifier]) runs when the package carries a
- * `signature.json`; a package whose signature fails to verify is rejected outright (the
- * extracted files are deleted and `install()` returns null) - package-format.md's own mandate:
- * "verify the signature... and reject on mismatch". An unsigned package still installs, same
- * trust posture as this app's other locally-stored, unverified settings (e.g. the MCP pairing
- * token) - only its [AzpTrust] is [AzpTrust.UNSIGNED] instead of [AzpTrust.VALID]/[AzpTrust.TRUSTED].
- * Per-file integrity against `manifest.files`' digests is not implemented - only the manifest
- * signature itself. Only free packages are supported; paid packages need a Bearer entitlement
- * this client does not yet obtain.
+ * Signature verification runs when the package carries a `signature.json`; a package whose
+ * signature fails to verify, whose `signature.json` is too corrupt to even parse, or whose
+ * payload fails the digest check above, is rejected outright (the extracted files are deleted and
+ * `install()` returns null) - package-format.md's own mandate: "verify the signature... and
+ * reject on mismatch". An unsigned package still installs, same trust posture as this app's other
+ * locally-stored, unverified settings (e.g. the MCP pairing token) - only its [AzpTrust] is
+ * [AzpTrust.UNSIGNED] instead of [AzpTrust.VALID]/[AzpTrust.TRUSTED]; the digest check still
+ * applies regardless of signing, since `manifest.files` is a plain integrity contract independent
+ * of trust. Only free packages are supported; paid packages need a Bearer entitlement this client
+ * does not yet obtain.
  */
 object AzpInstaller {
     private val json = Json { ignoreUnknownKeys = true }
@@ -50,6 +64,11 @@ object AzpInstaller {
             // any exception past this point is treated as a failed install, same outcome as an
             // explicit rejection, with the partially-extracted directory cleaned up either way.
             try {
+                // path (as stored in the archive, "/"-separated) -> lowercase-hex SHA-256 digest
+                // of the bytes actually written to disk. Computed inline via DigestOutputStream
+                // so the check costs no extra read pass over what was just extracted.
+                val extractedDigests = mutableMapOf<String, String>()
+
                 ZipInputStream(bytes.inputStream()).use { zip ->
                     var entry = zip.nextEntry
                     while (entry != null) {
@@ -64,7 +83,9 @@ object AzpInstaller {
                             target.mkdirs()
                         } else {
                             target.parentFile?.mkdirs()
-                            target.outputStream().use { out -> zip.copyTo(out) }
+                            val digest = MessageDigest.getInstance("SHA-256")
+                            DigestOutputStream(target.outputStream(), digest).use { out -> zip.copyTo(out) }
+                            extractedDigests[name] = digest.digest().joinToString("") { "%02x".format(it) }
                         }
                         zip.closeEntry()
                         entry = zip.nextEntry
@@ -81,6 +102,19 @@ object AzpInstaller {
                         ?.mapNotNull { it.jsonObject["id"]?.jsonPrimitive?.content }
                         ?: emptyList()
                 } else emptyList()
+
+                // Integrity: every payload entry's digest must match `manifest.files`, and every
+                // entry (besides the detached `signature.json`, which is exempt - it's the
+                // signature, not a signed payload file, mirroring @azphalt/azp's verifyAzp) must
+                // be listed there. A digest mismatch or an unlisted payload file both fail
+                // installation the same way a bad signature does: reject and delete, don't
+                // install partially-trusted content.
+                val declaredFiles = manifest["files"]?.jsonObject
+                    ?.mapValues { (_, v) -> v.jsonPrimitive.content.removePrefix("sha256-") }
+                    ?: emptyMap()
+                if (!filesMatchDigests(extractedDigests, declaredFiles)) {
+                    dest.deleteRecursively(); return@withContext null
+                }
 
                 val signatureFile = File(dest, "signature.json")
                 val trust = if (!signatureFile.exists()) {
@@ -106,4 +140,21 @@ object AzpInstaller {
                 null
             }
         }
+}
+
+/**
+ * True iff every non-manifest, non-signature entry in [extracted] (path -> lowercase-hex SHA-256
+ * of the bytes actually on disk) has a matching digest in [declared] (path -> lowercase-hex
+ * SHA-256, `manifest.files` with its `sha256-` prefix already stripped). A path present in
+ * [extracted] but absent from [declared] fails ("unlisted payload"), as does any digest mismatch.
+ * Pure and Context-free by design, specifically so it's unit-testable without a Robolectric/
+ * instrumented Android runtime - see AzpInstallerDigestTest.
+ */
+internal fun filesMatchDigests(extracted: Map<String, String>, declared: Map<String, String>): Boolean {
+    for ((path, actualDigest) in extracted) {
+        if (path == "manifest.json" || path == "signature.json") continue
+        val wantDigest = declared[path] ?: return false
+        if (!wantDigest.equals(actualDigest, ignoreCase = true)) return false
+    }
+    return true
 }
