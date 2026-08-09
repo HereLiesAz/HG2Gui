@@ -85,6 +85,14 @@ binary now, run in the Termux environment below, not a reimplementation of one.
     shell commands through it is a separate switch, off by default, that asks for a biometric
     confirmation the first time you turn it on — the one setting here that lets a paired agent do
     more than touch its own sandbox.
+-   **osint-lookup:** installed automatically alongside the bootstrap, under Shell → Other (it
+    isn't part of any package, so it doesn't get a curated category). `osint-lookup <domain>`
+    runs whois, DNS records (A/AAAA/MX/TXT/NS) and a certificate-transparency search (crt.sh) for
+    a domain you name — your own, or one you have a legitimate reason to look up. All three are
+    passive lookups against publicly published data; it never scans, brute-forces or contacts the
+    target's own infrastructure, and it isn't a tool for looking up arbitrary third parties.
+    Missing tools (`whois`/`dig`/`curl`/`jq`) print a `pkg install` hint instead of failing
+    silently.
 
 ## Related Resources
 The shell is genuine Termux underneath, so third-party Termux material works here too:

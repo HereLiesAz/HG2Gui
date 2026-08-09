@@ -25,6 +25,12 @@ run. Host-key confirmation and password/passphrase prompts surface through the s
 prompt mechanism every other command uses (a Yes/No Answer stack, or a masked free-text field for
 passwords) — nothing ssh-specific happens at the shell layer.
 
+One more binary is installed by the app itself rather than `pkg`: **`osint-lookup <domain>`**,
+written into the bootstrap's `bin/` right after it installs (and backfilled on launch for an
+older install that predates it). Self-scoped, read-only reconnaissance — whois, DNS records, and
+a certificate-transparency search (crt.sh) — for a domain you name, not a generic scanner. See
+`docs/USER_GUIDE.md` for the full description.
+
 ## Built-in commands
 
 These ten are the only commands HG2Gui itself implements — see `terminal/Builtins.kt`. Every

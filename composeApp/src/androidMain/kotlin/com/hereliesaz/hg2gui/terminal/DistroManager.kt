@@ -162,4 +162,68 @@ object DistroManager {
             }
         }
     }
+
+    private const val OSINT_SCRIPT_NAME = "osint-lookup"
+
+    /** Idempotent: a no-op before a bootstrap exists, and only writes once the script is
+     *  actually missing - called both right after a fresh bootstrap and on every launch
+     *  thereafter, so an install from before this script existed picks it up too. */
+    fun ensureOsintTool(context: Context) {
+        if (!isInstalled(context)) return
+        val prefix = prefixDir(context)
+        if (!File(prefix, "bin/$OSINT_SCRIPT_NAME").exists()) installOsintTool(prefix)
+    }
+
+    private fun installOsintTool(prefix: File) {
+        val script = File(prefix, "bin/$OSINT_SCRIPT_NAME")
+        val shebang = "#!${File(prefix, "bin/bash").absolutePath}\n"
+        script.writeText(shebang + OSINT_SCRIPT_BODY)
+        script.setExecutable(true)
+    }
+
+    // Self-scoped, read-only recon for a domain YOU name - your own domain, or one you have a
+    // legitimate reason to research (due diligence, checking your own exposure). Whois, DNS
+    // records, and certificate-transparency logs (crt.sh) are all passive lookups against
+    // publicly published data; nothing here scans, brute-forces, or contacts the target's own
+    // infrastructure. Not a tool for surveilling arbitrary third parties.
+    private const val OSINT_SCRIPT_BODY = """
+set -u
+target="${'$'}{1:-}"
+if [ -z "${'$'}target" ]; then
+  echo "usage: osint-lookup <domain>" >&2
+  exit 1
+fi
+
+echo "== whois: ${'$'}target =="
+if command -v whois >/dev/null 2>&1; then
+  whois "${'$'}target" 2>&1 | head -n 40
+else
+  echo "(whois not installed - pkg install whois)"
+fi
+
+echo
+echo "== DNS records: ${'$'}target =="
+if command -v dig >/dev/null 2>&1; then
+  for rtype in A AAAA MX TXT NS; do
+    echo "-- ${'$'}rtype --"
+    dig +short "${'$'}target" "${'$'}rtype"
+  done
+else
+  echo "(dig not installed - pkg install dnsutils)"
+fi
+
+echo
+echo "== certificate transparency (crt.sh): ${'$'}target =="
+if command -v curl >/dev/null 2>&1; then
+  if command -v jq >/dev/null 2>&1; then
+    curl -s "https://crt.sh/?q=%25.${'$'}target&output=json" | jq -r '.[].name_value' | sort -u | head -n 40
+  else
+    curl -s "https://crt.sh/?q=%25.${'$'}target&output=json" | head -c 2000
+    echo
+    echo "(install jq for readable output - pkg install jq)"
+  fi
+else
+  echo "(curl not installed - pkg install curl)"
+fi
+"""
 }
