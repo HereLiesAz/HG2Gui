@@ -95,7 +95,11 @@ reflection-based command engine underneath it — built-ins are a fixed dispatch
 *   **Blocks**: no new state layer — `TerminalScreen`'s existing `BufferEntry` gained tap-to-
     reveal COPY/RE-RUN/SHARE actions. Copy/share are androidMain hooks (`ClipboardManager`,
     `Intent.ACTION_SEND`) passed down from `TerminalActivity`; re-run is pure `SessionUiState`
-    mutation (writes the entry's command into `inputText`, never runs it).
+    mutation (writes the entry's command into `inputText`, never runs it). `BufferEntry` also
+    calls `ui/AsciiArt.kt`'s `looksLikeAsciiArt()` on the entry's output and, when it matches,
+    renders via `AsciiArtCanvas` (a `Canvas` drawing one flat filled rect per character, sized by
+    a light-to-dense character ramp) instead of the plain monospace `Text` — a PLAIN TEXT toggle
+    in the same tap-to-reveal row always falls back to the raw string.
 *   **Workflows** (`ui/WorkflowFlow.kt` commonMain, `managers/WorkflowStore.kt` androidMain):
     named command templates with `{placeholder}` substrings, stored the same flat-SharedPreferences
     way as `SshPresets`. Saving and running both reuse the `wizardId`/`onWizard` pill primitive and

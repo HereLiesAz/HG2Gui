@@ -321,6 +321,8 @@ private fun BufferEntry(
     // fires the command itself - same "assemble, then let the user press Run" rule every
     // wizard-produced command already follows.
     var expanded by remember { mutableStateOf(false) }
+    val isArt = remember(entry.output) { looksLikeAsciiArt(entry.output) }
+    var showRaw by remember(entry.output) { mutableStateOf(false) }
     Column(
         Modifier
             .fillMaxWidth()
@@ -352,14 +354,20 @@ private fun BufferEntry(
         }
         if (entry.output.isNotEmpty()) {
             Spacer(Modifier.height(4.dp))
-            Text(
-                entry.output,
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    color = Azphalt.Ink.copy(alpha = .8f),
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 12.sp
+            if (isArt && !showRaw) {
+                // Vector-style rendering: flat filled cells sized by character density, not
+                // literal glyphs - a script's ASCII/box-drawing art reads as art, not text.
+                AsciiArtCanvas(entry.output, Azphalt.Ink.copy(alpha = .8f))
+            } else {
+                Text(
+                    entry.output,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        color = Azphalt.Ink.copy(alpha = .8f),
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 12.sp
+                    )
                 )
-            )
+            }
         }
         if (expanded) {
             Spacer(Modifier.height(8.dp))
@@ -368,6 +376,9 @@ private fun BufferEntry(
                 BlockActionPill("COPY") { onCopy(copyText) }
                 BlockActionPill("RE-RUN") { onRerun(entry.command) }
                 BlockActionPill("SHARE") { onShare(copyText) }
+                if (isArt) {
+                    BlockActionPill(if (showRaw) "ART" else "PLAIN TEXT") { showRaw = !showRaw }
+                }
             }
         }
     }
