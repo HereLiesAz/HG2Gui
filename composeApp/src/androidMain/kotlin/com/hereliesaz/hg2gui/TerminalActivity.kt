@@ -36,6 +36,7 @@ import com.hereliesaz.hg2gui.ai.AiClient
 import com.hereliesaz.hg2gui.ai.AiReply
 import com.hereliesaz.hg2gui.azp.AzpClient
 import com.hereliesaz.hg2gui.azp.AzpInstaller
+import com.hereliesaz.hg2gui.azp.ScriptInstaller
 import com.hereliesaz.hg2gui.managers.AiSettings
 import com.hereliesaz.hg2gui.managers.AzpLibrary
 import com.hereliesaz.hg2gui.managers.ContactManager
@@ -383,7 +384,8 @@ class TerminalActivity : FragmentActivity() {
                                         id = pkg.id, name = pkg.name, author = pkg.author,
                                         description = pkg.description, version = pkg.version,
                                         kind = pkg.kind, installed = inst != null,
-                                        trust = inst?.trust?.name ?: ""
+                                        trust = inst?.trust?.name ?: "",
+                                        scriptCommand = inst?.let { AzpLibrary.scriptCommand(this@TerminalActivity, it.id) }.orEmpty()
                                     )
                                 }
                                 azpBusy = false
@@ -399,11 +401,17 @@ class TerminalActivity : FragmentActivity() {
                                         val install = AzpInstaller.install(
                                             this@TerminalActivity, listing.id, listing.version, bytes, trustedKeys
                                         ) ?: return@withContext null
+                                        val scriptCommand = install.script?.let { script ->
+                                            val outcome = ScriptInstaller.install(
+                                                this@TerminalActivity, listing.id, listing.version, script
+                                            )
+                                            (outcome as? ScriptInstaller.Result.Installed)?.command
+                                        }
                                         AzpLibrary.record(
                                             this@TerminalActivity, listing.id, listing.name, listing.version,
-                                            install.kind, install.skillIds, install.trust
+                                            install.kind, install.skillIds, install.trust, scriptCommand
                                         )
-                                        install
+                                        install to scriptCommand
                                     }
                                 } catch (e: Exception) {
                                     // A dropped connection or a malformed archive/manifest must
@@ -411,8 +419,11 @@ class TerminalActivity : FragmentActivity() {
                                     null
                                 }
                                 if (result != null) {
+                                    val (install, scriptCommand) = result
                                     azpResults = azpResults.map {
-                                        if (it.id == listing.id) it.copy(installed = true, trust = result.trust.name) else it
+                                        if (it.id == listing.id) {
+                                            it.copy(installed = true, trust = install.trust.name, scriptCommand = scriptCommand.orEmpty())
+                                        } else it
                                     }
                                 }
                                 azpInstallingId = null

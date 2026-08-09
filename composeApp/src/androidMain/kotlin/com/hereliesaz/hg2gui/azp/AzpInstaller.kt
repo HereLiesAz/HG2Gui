@@ -4,6 +4,7 @@ import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -12,7 +13,13 @@ import java.security.DigestOutputStream
 import java.security.MessageDigest
 import java.util.zip.ZipInputStream
 
-data class AzpInstallResult(val kind: String, val skillIds: List<String>, val trust: AzpTrust)
+data class AzpInstallResult(
+    val kind: String,
+    val skillIds: List<String>,
+    val trust: AzpTrust,
+    /** Present only for `kind:"script"` - see [ScriptDto] and `ScriptInstaller`. */
+    val script: ScriptDto? = null,
+)
 
 /**
  * Unpacks a downloaded `.azp` - a plain ZIP archive per spec/package-format.md, `manifest.json`
@@ -102,6 +109,11 @@ object AzpInstaller {
                         ?.mapNotNull { it.jsonObject["id"]?.jsonPrimitive?.content }
                         ?: emptyList()
                 } else emptyList()
+                val script = if (kind == "script") {
+                    manifest["script"]?.jsonObject?.let {
+                        try { json.decodeFromJsonElement(ScriptDto.serializer(), it) } catch (e: Exception) { null }
+                    }
+                } else null
 
                 // Integrity: every payload entry's digest must match `manifest.files`, and every
                 // entry (besides the detached `signature.json`, which is exempt - it's the
@@ -134,7 +146,7 @@ object AzpInstaller {
                 }
                 if (trust == AzpTrust.INVALID) { dest.deleteRecursively(); return@withContext null }
 
-                AzpInstallResult(kind, skillIds, trust)
+                AzpInstallResult(kind, skillIds, trust, script)
             } catch (e: Exception) {
                 dest.deleteRecursively()
                 null

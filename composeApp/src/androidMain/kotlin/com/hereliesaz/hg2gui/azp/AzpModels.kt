@@ -62,6 +62,22 @@ data class AzpDiscovery(
     val signingKeys: List<AzpSigningKeyInfo> = emptyList(),
 )
 
+/**
+ * The `script` block of a `kind:"script"` package (`spec/script.md`) - a native script installed
+ * and run the way a package manager installs its own package. `dependencies` maps a
+ * package-manager namespace to the packages it needs; only `"apt"` means anything to this
+ * Termux-backed app (any other namespace is present-but-unusable here, same as an unrecognized
+ * `mcp` `grants` entry), resolved by [ScriptInstaller] before the script is made runnable.
+ */
+@Serializable
+data class ScriptDto(
+    val interpreter: String = "",
+    val entry: String = "",
+    val command: String? = null,
+    val args: List<String> = emptyList(),
+    val dependencies: Map<String, List<String>> = emptyMap(),
+)
+
 /** The outcome of verifying a package's `signature.json` against its `manifest.json` bytes -
  *  see [com.hereliesaz.hg2gui.azp.AzpSignatureVerifier]. */
 enum class AzpTrust {

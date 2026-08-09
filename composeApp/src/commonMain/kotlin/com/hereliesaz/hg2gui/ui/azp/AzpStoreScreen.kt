@@ -42,9 +42,13 @@ data class AzpListing(
     val kind: String,
     val installed: Boolean,
     val trust: String = "",
+    /** For an installed `kind:"script"` package - the name it's callable as on PATH once
+     *  `ScriptInstaller` has resolved its dependencies. Blank if not a script, not yet installed,
+     *  or the host has no Termux bootstrap to wire it onto PATH with yet. */
+    val scriptCommand: String = "",
 )
 
-private val KINDS = listOf("all", "skill", "mcp", "code", "pack", "asset", "app")
+private val KINDS = listOf("all", "skill", "mcp", "code", "pack", "asset", "app", "script")
 
 /**
  * Browses the azphalt registry (spec/repository-api.md) - the same `pkg`/`apt` idiom, but for
@@ -208,6 +212,14 @@ private fun AzpRow(listing: AzpListing, installing: Boolean, onInstall: (AzpList
                 Text(
                     trustLabel(listing.trust),
                     color = trustColor(listing.trust),
+                    fontSize = 8.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em,
+                    modifier = Modifier.padding(top = 3.dp)
+                )
+            }
+            if (listing.installed && listing.kind == "script") {
+                Text(
+                    if (listing.scriptCommand.isNotBlank()) "→ ${listing.scriptCommand}" else "AWAITING BOOTSTRAP",
+                    color = Azphalt.Ink.copy(alpha = .45f),
                     fontSize = 8.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em,
                     modifier = Modifier.padding(top = 3.dp)
                 )
