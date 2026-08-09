@@ -99,10 +99,11 @@ binary now, run in the Termux environment below, not a reimplementation of one.
     and share hands the same text to the system share sheet.
 -   **ASCII art rendering:** output that looks like ASCII or box-drawing art (three or more lines,
     heavy on symbols rather than letters — `cowsay`, `figlet`, `jp2a`, `chafa`, and the like)
-    renders as flat filled cells sized by character density instead of literal monospace glyphs,
-    so it reads as art rather than a wall of text. The heuristic is conservative — real prose or a
-    table always falls back to plain text. Tap the entry, then **PLAIN TEXT** to see the raw
-    output (and copy/share it) any time.
+    is traced into one smooth flat vector shape (the same contour-tracing idea a Potrace-style
+    vectorizer uses) instead of literal monospace glyphs, so it reads as a constructed picture
+    rather than a wall of text. The heuristic is conservative — real prose or a table always falls
+    back to plain text. Tap the entry, then **PLAIN TEXT** to see the raw output (and copy/share
+    it) any time.
 -   **Workflows:** the **Workflows** pill (alongside the shell categories) holds saved command
     templates. Picking one asks for any `{placeholder}` values the template uses, then drops the
     assembled command onto the input line, same as everything else here — nothing runs until you

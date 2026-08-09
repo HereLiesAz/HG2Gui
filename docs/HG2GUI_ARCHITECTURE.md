@@ -97,9 +97,14 @@ reflection-based command engine underneath it — built-ins are a fixed dispatch
     `Intent.ACTION_SEND`) passed down from `TerminalActivity`; re-run is pure `SessionUiState`
     mutation (writes the entry's command into `inputText`, never runs it). `BufferEntry` also
     calls `ui/AsciiArt.kt`'s `looksLikeAsciiArt()` on the entry's output and, when it matches,
-    renders via `AsciiArtCanvas` (a `Canvas` drawing one flat filled rect per character, sized by
-    a light-to-dense character ramp) instead of the plain monospace `Text` — a PLAIN TEXT toggle
-    in the same tap-to-reveal row always falls back to the raw string.
+    renders via `AsciiArtCanvas` instead of the plain monospace `Text` — a PLAIN TEXT toggle in
+    the same tap-to-reveal row always falls back to the raw string. `AsciiArtCanvas` maps each
+    character to a density (a light-to-dense ramp; box-drawing/block Unicode is treated as fully
+    dense), then runs marching squares over that density grid (`buildContourPath`) to trace one
+    smooth filled vector `Path` - the same contour-tracing approach a Potrace-style vectorizer
+    uses, applied to the density field instead of raster pixels. No model, no network call: it's a
+    deterministic, offline algorithm that constructs an actual vector shape from the art's
+    character grid rather than reproducing glyphs or a blocky per-cell mosaic.
 *   **Workflows** (`ui/WorkflowFlow.kt` commonMain, `managers/WorkflowStore.kt` androidMain):
     named command templates with `{placeholder}` substrings, stored the same flat-SharedPreferences
     way as `SshPresets`. Saving and running both reuse the `wizardId`/`onWizard` pill primitive and

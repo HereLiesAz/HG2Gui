@@ -9,8 +9,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -43,34 +43,102 @@ fun looksLikeAsciiArt(text: String): Boolean {
     return alnum.toFloat() / chars.length < 0.35f
 }
 
+private const val ISO_LEVEL = 0.42f
+
+/** Linearly interpolates the point along a-b where the density field crosses [ISO_LEVEL]. */
+private fun edgePoint(pa: Offset, va: Float, pb: Offset, vb: Float): Offset {
+    val t = if (vb == va) 0.5f else ((ISO_LEVEL - va) / (vb - va)).coerceIn(0f, 1f)
+    return Offset(pa.x + (pb.x - pa.x) * t, pa.y + (pb.y - pa.y) * t)
+}
+
+private fun Path.polygon(points: List<Offset>) {
+    if (points.isEmpty()) return
+    moveTo(points[0].x, points[0].y)
+    for (i in 1 until points.size) lineTo(points[i].x, points[i].y)
+    close()
+}
+
 /**
- * Renders a block of ASCII/box-drawing art as flat filled cells sized by character density,
- * instead of literal monospace glyphs - matching Azphalt's flat, no-gradient, no-blur look
- * rather than trying to reproduce a font's actual letterforms at a tiny size.
+ * Traces the character-density field into a single filled vector silhouette via marching squares
+ * - the same contour-tracing idea Potrace-style vectorizers use, applied to the density grid
+ * instead of raster pixels. No model, no network call: each 2x2 neighborhood of sample points is
+ * classified against [ISO_LEVEL] and contributes an interpolated sub-polygon, so the traced edges
+ * come out smooth rather than stair-stepped along the character grid. All sub-polygons are filled
+ * with one flat color into one [Path] - Azphalt's flat, no-gradient, no-blur look, constructed as
+ * an actual vector shape rather than reproduced glyph-by-glyph.
+ */
+private fun buildContourPath(density: Array<FloatArray>, cellPx: Float): Path {
+    val path = Path()
+    val rows = density.size
+    val cols = density[0].size
+    for (r in 0 until rows - 1) {
+        for (c in 0 until cols - 1) {
+            val a = density[r][c]         // top-left
+            val b = density[r][c + 1]     // top-right
+            val cc = density[r + 1][c + 1] // bottom-right
+            val d = density[r + 1][c]     // bottom-left
+            val case = (if (a >= ISO_LEVEL) 1 else 0) or (if (b >= ISO_LEVEL) 2 else 0) or
+                (if (cc >= ISO_LEVEL) 4 else 0) or (if (d >= ISO_LEVEL) 8 else 0)
+            if (case == 0) continue
+
+            val tl = Offset(c * cellPx, r * cellPx)
+            val tr = Offset((c + 1) * cellPx, r * cellPx)
+            val br = Offset((c + 1) * cellPx, (r + 1) * cellPx)
+            val bl = Offset(c * cellPx, (r + 1) * cellPx)
+            val top = edgePoint(tl, a, tr, b)
+            val right = edgePoint(tr, b, br, cc)
+            val bottom = edgePoint(bl, d, br, cc)
+            val left = edgePoint(tl, a, bl, d)
+
+            val polygon = when (case) {
+                1 -> listOf(tl, top, left)
+                2 -> listOf(top, tr, right)
+                3 -> listOf(tl, tr, right, left)
+                4 -> listOf(right, br, bottom)
+                // 5 and 10 are the ambiguous saddle cases - resolved as two separate corners
+                // joined by the path, a fixed (not topologically "correct") choice that's fine
+                // for decorative tracing.
+                5 -> { path.polygon(listOf(tl, top, left)); listOf(right, br, bottom) }
+                6 -> listOf(top, tr, br, bottom)
+                7 -> listOf(tl, tr, br, bottom, left)
+                8 -> listOf(left, bl, bottom)
+                9 -> listOf(tl, top, bottom, bl)
+                10 -> { path.polygon(listOf(top, tr, right)); listOf(left, bl, bottom) }
+                11 -> listOf(tl, tr, right, bottom, bl)
+                12 -> listOf(left, bl, br, right)
+                13 -> listOf(tl, top, right, br, bl)
+                14 -> listOf(top, tr, br, bl, left)
+                else -> listOf(tl, tr, br, bl) // 15: fully inside
+            }
+            path.polygon(polygon)
+        }
+    }
+    return path
+}
+
+/**
+ * Renders a block of ASCII/box-drawing art as one traced flat vector silhouette instead of
+ * literal monospace glyphs - see [buildContourPath].
  */
 @Composable
 fun AsciiArtCanvas(text: String, ink: Color, modifier: Modifier = Modifier, maxCell: Dp = 7.dp) {
     val lines = text.lines()
     val cols = lines.maxOf { it.length }.coerceAtLeast(1)
     val rows = lines.size
+    // A 1-sample zero border on every side so art touching the block's edge still closes into a
+    // shape instead of being cut off mid-contour.
+    val density = Array(rows + 2) { r ->
+        FloatArray(cols + 2) { c ->
+            if (r == 0 || c == 0 || r == rows + 1 || c == cols + 1) 0f
+            else charDensity(lines[r - 1].getOrElse(c - 1) { ' ' })
+        }
+    }
 
     BoxWithConstraints(modifier.horizontalScroll(rememberScrollState())) {
         val cell = min(maxCell, maxWidth / cols)
-        Canvas(Modifier.width(cell * cols).height(cell * rows)) {
-            val cellPx = cell.toPx()
-            lines.forEachIndexed { row, line ->
-                line.forEachIndexed { col, c ->
-                    val density = charDensity(c)
-                    if (density <= 0f) return@forEachIndexed
-                    val side = cellPx * (0.35f + 0.65f * density)
-                    val offset = (cellPx - side) / 2f
-                    drawRect(
-                        color = ink.copy(alpha = density.coerceIn(0.15f, 1f)),
-                        topLeft = Offset(col * cellPx + offset, row * cellPx + offset),
-                        size = Size(side, side)
-                    )
-                }
-            }
+        Canvas(Modifier.width(cell * (cols + 2)).height(cell * (rows + 2))) {
+            val path = buildContourPath(density, cell.toPx())
+            drawPath(path, color = ink)
         }
     }
 }
