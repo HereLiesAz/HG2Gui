@@ -137,9 +137,15 @@ binary now, run in the Termux environment below, not a reimplementation of one.
     tap **INSTALL** to download and unpack one. HG2Gui has no `.azp` execution sandbox, so most
     kinds are download-only, kept on-device for use elsewhere — the one exception is a **skill**
     package: its bundled `SKILL.md` is folded into the AI chat's system prompt automatically, so
-    an installed skill actually changes how the AI pill answers. Packages are trusted as
-    downloaded — this v1 does not verify the Ed25519 signature azphalt packages carry, so treat it
-    the same as any other unverified download.
+    an installed skill actually changes how the AI pill answers. Every install checks the
+    package's Ed25519 signature (on Android 13+; older devices can't check it and the package is
+    marked unverified rather than silently trusted) against azphalt.store's own published signing
+    keys — an installed row shows **✓ TRUSTED SIGNER** when the signer is one the registry itself
+    vouches for, **SIGNED · UNKNOWN SIGNER** when the signature checks out but the signer isn't
+    registry-published, **SIGNED · UNVERIFIED (OS)** on pre-13 devices, or **UNSIGNED** for a
+    package with no `signature.json` at all. A signature that fails to verify is rejected outright
+    — the package is not installed. A valid signature only proves the package wasn't tampered with
+    after signing, not who wrote it; only a **TRUSTED** signer is registry-vouched-for.
 -   **net-inventory / harden-check / sysinfo:** three more scripts installed alongside
     `osint-lookup`, all local, no arguments needed. `net-inventory` lists this device's own
     network interfaces, routes and DNS config. `harden-check` audits this install's own SSH key

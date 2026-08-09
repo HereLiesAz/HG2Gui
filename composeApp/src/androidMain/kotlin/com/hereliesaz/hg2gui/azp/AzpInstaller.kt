@@ -10,7 +10,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import java.io.File
 import java.util.zip.ZipInputStream
 
-data class AzpInstallResult(val kind: String, val skillIds: List<String>)
+data class AzpInstallResult(val kind: String, val skillIds: List<String>, val trust: AzpTrust)
 
 /**
  * Unpacks a downloaded `.azp` - a plain ZIP archive per spec/package-format.md, `manifest.json`
@@ -19,10 +19,15 @@ data class AzpInstallResult(val kind: String, val skillIds: List<String>)
  * as `apt download` versus `apt install`. A `skill` package's `SKILL.md` files are real usable
  * content here: AzpLibrary reads them back to extend the AI chat's system prompt.
  *
- * Signature verification (package-format.md's Ed25519 model) is NOT implemented in this v1 -
- * packages are trusted at the same level as this app's other locally-stored, unverified settings
- * (e.g. the MCP pairing token). Only free packages are supported; paid packages need a Bearer
- * entitlement this client does not yet obtain.
+ * Signature verification (see [AzpSignatureVerifier]) runs when the package carries a
+ * `signature.json`; a package whose signature fails to verify is rejected outright (the
+ * extracted files are deleted and `install()` returns null) - package-format.md's own mandate:
+ * "verify the signature... and reject on mismatch". An unsigned package still installs, same
+ * trust posture as this app's other locally-stored, unverified settings (e.g. the MCP pairing
+ * token) - only its [AzpTrust] is [AzpTrust.UNSIGNED] instead of [AzpTrust.VALID]/[AzpTrust.TRUSTED].
+ * Per-file integrity against `manifest.files`' digests is not implemented - only the manifest
+ * signature itself. Only free packages are supported; paid packages need a Bearer entitlement
+ * this client does not yet obtain.
  */
 object AzpInstaller {
     private val json = Json { ignoreUnknownKeys = true }
@@ -30,7 +35,13 @@ object AzpInstaller {
     fun rootDir(context: Context, id: String, version: String): File =
         File(File(context.filesDir, "azp"), "$id/$version")
 
-    suspend fun install(context: Context, id: String, version: String, bytes: ByteArray): AzpInstallResult? =
+    suspend fun install(
+        context: Context,
+        id: String,
+        version: String,
+        bytes: ByteArray,
+        trustedKeys: List<String> = emptyList(),
+    ): AzpInstallResult? =
         withContext(Dispatchers.IO) {
             val dest = rootDir(context, id, version)
             dest.mkdirs()
@@ -57,8 +68,9 @@ object AzpInstaller {
             }
 
             val manifestFile = File(dest, "manifest.json")
-            if (!manifestFile.exists()) return@withContext null
-            val manifest = json.parseToJsonElement(manifestFile.readText()).jsonObject
+            if (!manifestFile.exists()) { dest.deleteRecursively(); return@withContext null }
+            val manifestBytes = manifestFile.readBytes()
+            val manifest = json.parseToJsonElement(String(manifestBytes)).jsonObject
             val kind = manifest["kind"]?.jsonPrimitive?.content ?: "asset"
             val skillIds = if (kind == "skill") {
                 manifest["skill"]?.jsonObject?.get("skills")?.jsonArray
@@ -66,6 +78,13 @@ object AzpInstaller {
                     ?: emptyList()
             } else emptyList()
 
-            AzpInstallResult(kind, skillIds)
+            val signatureFile = File(dest, "signature.json")
+            val signature = if (signatureFile.exists()) {
+                try { json.decodeFromString(AzpSignature.serializer(), signatureFile.readText()) } catch (e: Exception) { null }
+            } else null
+            val trust = AzpSignatureVerifier.verify(manifestBytes, signature, trustedKeys)
+            if (trust == AzpTrust.INVALID) { dest.deleteRecursively(); return@withContext null }
+
+            AzpInstallResult(kind, skillIds, trust)
         }
 }
