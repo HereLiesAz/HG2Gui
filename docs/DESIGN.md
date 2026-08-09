@@ -1,7 +1,7 @@
 # Design
 
-The visual system is **Azphalt**: a warm printed yellow page, ink text, ten capsule hues, one
-typeface (Jost), and a single primitive — the capsule. No borders. No shadows. No blur. No
+The visual system is **Azphalt**: a warm printed yellow page, ink text, fourteen capsule hues,
+one typeface (Jost), and a single primitive — the capsule. No borders. No shadows. No blur. No
 icons. No emoji. Radii are 999px for anything pressable, 26px for a record tile.
 
 This document specifies the one place HG2Gui departs from base Azphalt: the **pill menu**,
@@ -127,6 +127,7 @@ Session tabs, command-line tokens and modifier keys sit at 8sp, uppercase, +0.09
 
 ## 7. Unchanged from Azphalt
 
-Hue by hash, ten hues in assignment order, the darker mate on the end-cap. Ink for the open
-pill, yellow for its label and cap. Record tile at 26dp radius, 9% ink. No borders, no shadows,
-no blur, no icons, no hover states.
+Hue by hash, fourteen hues in assignment order (the original ten sit on the default ground; four
+more - gray, sage, tan, brown - extend the set for the rarer grounds and category recolors), the
+darker mate on the end-cap. Ink for the open pill, yellow for its label and cap. Record tile at
+26dp radius, 9% ink. No borders, no shadows, no blur, no icons, no hover states.

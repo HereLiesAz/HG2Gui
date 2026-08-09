@@ -323,8 +323,10 @@ private fun BufferEntry(
     Column(
         Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(Azphalt.Ink.copy(alpha = .05f))
+            // "Radii are 999px for anything pressable, 26px for a record tile" - DESIGN.md's own
+            // literal figures for this exact element.
+            .clip(RoundedCornerShape(26.dp))
+            .background(Azphalt.Ink.copy(alpha = .09f))
             .clickable { expanded = !expanded }
             .padding(12.dp)
     ) {
