@@ -87,6 +87,7 @@ kotlin {
             implementation(libs.androidx.activity.compose)
             implementation(libs.androidx.fragment)
             implementation(libs.androidx.biometric)
+            implementation(libs.anthropic.java)
             // localbroadcastmanager is legacy, but keeping for now
             implementation("androidx.localbroadcastmanager:localbroadcastmanager:1.1.0")
             implementation("com.google.android.material:material:1.14.0")

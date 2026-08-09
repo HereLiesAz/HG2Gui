@@ -33,6 +33,7 @@ fun SettingsScreen(
     fontScalePercent: Int,
     onFontScalePercentChange: (Int) -> Unit,
     onOpenMcpServer: () -> Unit,
+    onOpenAiSettings: () -> Unit,
     onBack: () -> Unit
 ) {
     Column(
@@ -88,6 +89,25 @@ fun SettingsScreen(
                 label = { "$it%" },
                 onChange = onFontScalePercentChange
             )
+        }
+
+        SettingRow(
+            title = "AI",
+            description = "The API key AI command search/chat uses to suggest shell commands. " +
+                "Off until a key is set."
+        ) {
+            Box(
+                Modifier
+                    .clip(RoundedCornerShape(percent = 50))
+                    .background(Azphalt.Ink)
+                    .clickable(onClick = onOpenAiSettings)
+                    .padding(horizontal = 16.dp, vertical = 9.dp)
+            ) {
+                Text(
+                    "AI SETTINGS ›", color = Azphalt.Yellow,
+                    fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em
+                )
+            }
         }
 
         SettingRow(

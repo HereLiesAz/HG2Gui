@@ -91,6 +91,29 @@ reflection-based command engine underneath it — built-ins are a fixed dispatch
     enforced server-side, in `McpTools.callTool`, on every `shell.*` invocation — not just by
     what `tools/list` chooses to advertise (it always advertises both groups).
 
+### 8. Blocks, Workflows, AI chat (Kotlin, `commonMain`/`androidMain`)
+*   **Blocks**: no new state layer — `TerminalScreen`'s existing `BufferEntry` gained tap-to-
+    reveal COPY/RE-RUN/SHARE actions. Copy/share are androidMain hooks (`ClipboardManager`,
+    `Intent.ACTION_SEND`) passed down from `TerminalActivity`; re-run is pure `SessionUiState`
+    mutation (writes the entry's command into `inputText`, never runs it).
+*   **Workflows** (`ui/WorkflowFlow.kt` commonMain, `managers/WorkflowStore.kt` androidMain):
+    named command templates with `{placeholder}` substrings, stored the same flat-SharedPreferences
+    way as `SshPresets`. Saving and running both reuse the `wizardId`/`onWizard` pill primitive and
+    `SessionUiState.awaitPromptAnswer` exactly like the ssh wizard — a run asks one question per
+    placeholder, then writes the rendered command into the input line for the user to review and
+    press Run. `CommandTree.workflowsRoot` is a synthesized root pill (like `sys`/`apps`/`feat`),
+    not a shell binary.
+*   **AI chat** (`ai/AiClient.kt`, `managers/AiSettings.kt` androidMain; `ui/ai/AiChatScreen.kt`
+    commonMain; `ui/AiSettingsScreen.kt` androidMain): single-turn natural-language → shell-command
+    suggestion via the official Anthropic Java SDK (`com.anthropic:anthropic-java`), reached
+    through a synthesized `ai` root pill (`wizardId = "ai-chat"`, used to navigate screens rather
+    than collect prompt answers — a valid second use of the `onWizard` hook). The API key is
+    user-supplied and stored in plain `SharedPreferences`, same posture as the MCP pairing token
+    and SSH key paths. A suggested command is never executed automatically — the chat screen's
+    USE pill hands it to the terminal's input line, same "assemble, don't auto-run" rule every
+    wizard-produced command already follows; this deliberately does not duplicate the MCP server's
+    biometric-gated `shell.exec` tool.
+
 ## Data Flow
 1.  **Input**: The user taps `wifi`. No text is typed. Since `wifi` leaves no further
     parameters, it runs immediately on that tap.

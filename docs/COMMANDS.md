@@ -38,6 +38,15 @@ predates them (`DistroManager.ensureBundledScripts`):
 
 See `docs/USER_GUIDE.md` for the full description of each.
 
+Two more root pills sit alongside the shell categories, neither backed by a shell binary:
+
+*   **Workflows**: saved command templates. Each saved one is a pill that asks for any
+    `{placeholder}` values the template needs, then drops the assembled command onto the command
+    line to review and run — a `new…` pill saves one from a name plus a template string.
+*   **AI**: one `chat…` pill opening a natural-language-to-command chat screen (requires an
+    Anthropic API key set in Settings → AI). Never runs anything itself — a suggested command
+    shows a USE pill that hands it to the command line the same way.
+
 ## Built-in commands
 
 These ten are the only commands HG2Gui itself implements — see `terminal/Builtins.kt`. Every

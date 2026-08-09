@@ -57,6 +57,8 @@ fun TerminalScreen(
     onOpenFiles: () -> Unit,
     onFilesButtonPositioned: (Rect) -> Unit = {},
     onWizard: (wizardId: String) -> Unit = {},
+    onCopy: (String) -> Unit = {},
+    onShare: (String) -> Unit = {},
     onRun: suspend (
         sessionId: String,
         line: String,
@@ -193,7 +195,15 @@ fun TerminalScreen(
                 contentPadding = PaddingValues(bottom = 8.dp)
             ) {
                 items(active.buffer) { entry ->
-                    BufferEntry(entry)
+                    BufferEntry(
+                        entry = entry,
+                        onCopy = onCopy,
+                        onShare = onShare,
+                        onRerun = { command ->
+                            active.tokens = emptyList()
+                            active.inputText = command
+                        }
+                    )
                 }
             }
         }
@@ -300,12 +310,23 @@ fun TerminalScreen(
 }
 
 @Composable
-private fun BufferEntry(entry: TerminalHistoryEntry) {
+private fun BufferEntry(
+    entry: TerminalHistoryEntry,
+    onCopy: (String) -> Unit,
+    onShare: (String) -> Unit,
+    onRerun: (String) -> Unit
+) {
+    // Blocks: tap an entry to reveal COPY/RE-RUN/SHARE - the tap-to-reveal idiom already used
+    // for the MCP pairing token. Re-run only ever populates the input line for review, never
+    // fires the command itself - same "assemble, then let the user press Run" rule every
+    // wizard-produced command already follows.
+    var expanded by remember { mutableStateOf(false) }
     Column(
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
             .background(Azphalt.Ink.copy(alpha = .05f))
+            .clickable { expanded = !expanded }
             .padding(12.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -340,6 +361,35 @@ private fun BufferEntry(entry: TerminalHistoryEntry) {
                 )
             )
         }
+        if (expanded) {
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                val copyText = entry.output.ifEmpty { entry.command }
+                BlockActionPill("COPY") { onCopy(copyText) }
+                BlockActionPill("RE-RUN") { onRerun(entry.command) }
+                BlockActionPill("SHARE") { onShare(copyText) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BlockActionPill(label: String, onClick: () -> Unit) {
+    Box(
+        Modifier
+            .clip(RoundedCornerShape(percent = 50))
+            .background(Azphalt.Ink.copy(alpha = .14f))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 10.dp, vertical = 5.dp)
+    ) {
+        Text(
+            label,
+            style = MaterialTheme.typography.titleMedium.copy(
+                color = Azphalt.Ink,
+                fontSize = 8.sp,
+                fontWeight = FontWeight.Black
+            )
+        )
     }
 }
 
