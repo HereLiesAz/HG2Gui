@@ -37,18 +37,75 @@ object Azphalt {
     val Yellow = Color(0xFFE8C81E)
     val White = Color(0xFFFFFFFF)
 
+    // Fourteen hues in fixed assignment order (hueOf hashes an id into this list - color carries
+    // no meaning beyond telling a stack of pills apart). The first ten sit on the default yellow
+    // ground; gray/sage/tan/brown extend the set for the rarer grounds and category recolors -
+    // per the HG2Gui style guide's "01 - Ground" / "02 - Palette" sections.
     val hues = listOf(
         Color(0xFF6B4FBB), Color(0xFF2FA9C4), Color(0xFF1F9E86), Color(0xFF5AAE34),
         Color(0xFFD9A21C), Color(0xFFD9762A), Color(0xFFC6392F), Color(0xFFB03A6E),
-        Color(0xFF8E4FA8), Color(0xFF2E6FB7)
+        Color(0xFF8E4FA8), Color(0xFF2E6FB7),
+        Color(0xFF8A9296), Color(0xFF4E7D6E), Color(0xFFC9A45C), Color(0xFF8C6E4E)
     )
     val caps = listOf(
         Color(0xFF4B3489), Color(0xFF1F7B90), Color(0xFF137060), Color(0xFF3E7D22),
         Color(0xFFA2760F), Color(0xFFA6551A), Color(0xFF93251D), Color(0xFF7F2A4D),
-        Color(0xFF653578), Color(0xFF1E4E85)
+        Color(0xFF653578), Color(0xFF1E4E85),
+        Color(0xFF616A6E), Color(0xFF365A4E), Color(0xFF96762F), Color(0xFF634B31)
+    )
+    val hueNames = listOf(
+        "violet", "cyan", "teal", "green", "amber", "orange", "red", "magenta", "purple", "blue",
+        "gray", "sage", "tan", "brown"
     )
 
     fun hueOf(id: String) = (id.hashCode().let { if (it < 0) -it else it }) % hues.size
+
+    /** A named background - "the page is yellow. Not black, not white." - plus its own fold
+     *  gradient. [weight] controls how often [randomGround] picks it; Mustard is weighted far
+     *  heavier since it's the primary. */
+    data class Ground(val name: String, val page: Color, val foldLight: Color, val foldDark: Color, val weight: Int = 1)
+
+    // Mustard's fold-light/fold-dark are the style guide's own literal tokens. The other six
+    // grounds are given as a single reference swatch each (no separate fold tokens in the
+    // source) - foldLight/foldDark are derived from that one swatch with a fixed lighten/darken
+    // step, matching Mustard's own light/dark offset, until real per-ground tokens exist.
+    val grounds: List<Ground> = listOf(
+        Ground("Mustard", Color(0xFFE8C81E), Color(0xFFF2D82C), Color(0xFFD9B615), weight = 6),
+        Ground("Maroon", Color(0xFF8F1F34), Color(0xFFA22940), Color(0xFF7A1A2C)),
+        Ground("Navy", Color(0xFF163A63), Color(0xFF204B7C), Color(0xFF0F2C4C)),
+        Ground("Cerulean", Color(0xFF2D6EA8), Color(0xFF3C82C2), Color(0xFF215A8C)),
+        Ground("Teal", Color(0xFF1D6B62), Color(0xFF267F74), Color(0xFF14554E)),
+        Ground("Pink", Color(0xFFD4728F), Color(0xFFDD879F), Color(0xFFC15D7A)),
+        Ground("Olive", Color(0xFF8F8A2E), Color(0xFFA29C36), Color(0xFF747024))
+    )
+
+    /** Picks a ground, weighted per [Ground.weight], optionally never returning [exclude] - used
+     *  for a mid-session reroll so it doesn't just pick the same ground back. */
+    fun randomGround(exclude: Ground? = null): Ground {
+        val pool = grounds.filter { it !== exclude }.ifEmpty { grounds }
+        val total = pool.sumOf { it.weight }
+        var roll = (0 until total).random()
+        for (g in pool) {
+            if (roll < g.weight) return g
+            roll -= g.weight
+        }
+        return pool.last()
+    }
+
+    /** A coordinated multi-hue combo pulled from a single film scene, for a screen that needs
+     *  more than one hue to cohere (a header plus its pills) - see the style guide's "02b -
+     *  Reference groupings". Picking freehand is the thing this replaces. */
+    data class Grouping(val headerBg: Color, val hues: List<Color>)
+
+    val groupings: Map<String, Grouping> = mapOf(
+        "Vogon stage" to Grouping(Color(0xFF8B6420), listOf(Color(0xFFC6392F), Color(0xFF2E6FB7), Color(0xFF0F2447))),
+        "Oolon Colluphid" to Grouping(Color(0xFF8B3350), listOf(Color(0xFF2E6FB7), Color(0xFFD9A21C), Color(0xFFC9A45C))),
+        "Babel fish" to Grouping(Color(0xFF8B0021), listOf(Color(0xFFB03A6E), Color(0xFFD9762A), Color(0xFF8C6E4E))),
+        "Improbability party" to Grouping(Color(0xFF123A52), listOf(Color(0xFF5AAE34), Color(0xFFC6392F), Color(0xFF8E4FA8))),
+        "Improbability den" to Grouping(Color(0xFF4E7D6E), listOf(Color(0xFF8C6E4E), Color(0xFF8A9296), Color(0xFF365A4E))),
+        "Hyperspace" to Grouping(Color(0xFF163A63), listOf(Color(0xFF8A9296), Color(0xFFC9A45C), Color(0xFFC6392F))),
+        "Point-of-View Gun" to Grouping(Color(0xFFB03A6E), listOf(Color(0xFFC6392F), Color(0xFF5AAE34), Color(0xFF8B6420)))
+    )
 
     const val SLIDE_MS = 420 / 3
     const val DROP_MS = 420 / 3
