@@ -1,8 +1,10 @@
 package com.hereliesaz.hg2gui.ui.menu
 
 import android.content.Context
+import com.hereliesaz.hg2gui.managers.SshPresets
 import com.hereliesaz.hg2gui.terminal.DistroManager
 import com.hereliesaz.hg2gui.terminal.DpkgCatalog
+import com.hereliesaz.hg2gui.ui.ssh.SshFlow
 import java.io.File
 
 /*
@@ -112,6 +114,34 @@ object CommandTree {
         )
     }
 
+    /** The ssh pill: saved connection presets as picks, plus a "new…" leaf that launches the
+     *  host/user/port/key wizard (PillMenu's onWizard) instead of drilling into more pills - ssh
+     *  needs to accumulate several fields, which a plain pill chain can't do (see PillMenu.kt).
+     *  resolveChildren (not eager children) means a freshly-saved preset shows up the next time
+     *  this pill opens, without waiting on the next unrelated command's tree rebuild. */
+    private fun sshLeaf(context: Context): MenuNode = MenuNode(
+        id = "sh/ssh",
+        label = "ssh",
+        value = "ssh",
+        resolveChildren = {
+            val presets = SshPresets.list(context).map { p ->
+                MenuNode(
+                    id = "sh/ssh/preset/${p.name}",
+                    label = p.name,
+                    cap = "pick",
+                    value = SshFlow.argsFor(p.user, p.host, p.port, p.keyPath)
+                )
+            }
+            presets + MenuNode(
+                id = "sh/ssh/new",
+                label = "new…",
+                cap = "new",
+                emitsToken = false,
+                wizardId = "ssh-new"
+            )
+        }
+    )
+
     private fun shellLeaf(fullName: String, label: String, filePickerRoot: File): MenuNode {
         val hints = SHELL_HINTS[fullName].orEmpty().map { MenuNode("sh/$fullName/$it", it) }
         val children = hints + FileBrowser.pickerNode("sh/$fullName/file", filePickerRoot)
@@ -131,7 +161,7 @@ object CommandTree {
      * siblings count toward the "at least 2" threshold: a lone hyphenated name isn't worth a
      * parent of its own, and a name with no hyphen was never part of a family to begin with.
      */
-    private fun groupByFamily(names: List<String>, filePickerRoot: File): List<MenuNode> {
+    private fun groupByFamily(context: Context, names: List<String>, filePickerRoot: File): List<MenuNode> {
         val families = names.filter { it.contains('-') }
             .groupBy { it.substringBefore('-') }
             .filterValues { it.size >= 2 }
@@ -161,7 +191,7 @@ object CommandTree {
 
         for (name in names) {
             if (name in consumed) continue
-            nodes.add(shellLeaf(name, name, filePickerRoot))
+            nodes.add(if (name == "ssh") sshLeaf(context) else shellLeaf(name, name, filePickerRoot))
         }
 
         return nodes.sortedBy { it.label }
@@ -204,7 +234,7 @@ object CommandTree {
 
         return byCategory.entries.sortedBy { it.key }.map { (category, members) ->
             val capped = members.take(MAX_SHELL_ENTRIES)
-            val children = groupByFamily(capped, filePickerRoot) + if (members.size > capped.size) {
+            val children = groupByFamily(context, capped, filePickerRoot) + if (members.size > capped.size) {
                 listOf(
                     MenuNode(
                         id = "sh/$category/more",

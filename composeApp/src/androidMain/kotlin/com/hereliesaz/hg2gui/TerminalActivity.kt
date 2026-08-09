@@ -28,6 +28,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.hereliesaz.hg2gui.managers.ContactManager
+import com.hereliesaz.hg2gui.managers.SshPresets
 import com.hereliesaz.hg2gui.managers.TerminalHistoryEntry
 import com.hereliesaz.hg2gui.managers.VfsManager
 import com.hereliesaz.hg2gui.terminal.Builtins
@@ -50,6 +51,7 @@ import com.hereliesaz.hg2gui.ui.menu.CommandTree
 import com.hereliesaz.hg2gui.ui.menu.MenuNode
 import com.hereliesaz.hg2gui.ui.menu.PillWrapReveal
 import com.hereliesaz.hg2gui.ui.menu.PillWrapRevealState
+import com.hereliesaz.hg2gui.ui.ssh.SshFlow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -268,6 +270,17 @@ class TerminalActivity : ComponentActivity() {
                         onOpenGuide = { screen = Screen.Guide },
                         onOpenFiles = { openFiles() },
                         onFilesButtonPositioned = { filesOrigin = it },
+                        onWizard = { wizardId ->
+                            if (wizardId == "ssh-new") {
+                                sessions.firstOrNull { it.ui.id == activeSessionId }?.let { session ->
+                                    scope.launch {
+                                        SshFlow.runNewConnectionWizard(session.ui) { preset ->
+                                            withContext(Dispatchers.IO) { SshPresets.save(this@TerminalActivity, preset) }
+                                        }
+                                    }
+                                }
+                            }
+                        },
                         onRun = { sessionId, line, onOutput, onNeedInput ->
                             val session = sessions.first { it.ui.id == sessionId }
                             session.engine.run(line, onNeedInput).collect { output -> onOutput(output) }

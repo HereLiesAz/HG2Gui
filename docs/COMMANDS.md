@@ -17,6 +17,14 @@ Before a bootstrap is installed, Shell offers exactly one pill: **`bootstrap`** 
 runs automatically on first launch, the same way the official Termux app installs itself before
 ever showing a prompt.
 
+One binary gets a dedicated pill instead of the generic hint/file-picker treatment: **`ssh`**
+(under Network) opens saved connection presets plus a **new…** pill that walks a short prompt
+sequence — host, user, port, an optional private key path, and an optional preset name to save
+it under — then drops the assembled `ssh` command onto the command line for you to review and
+run. Host-key confirmation and password/passphrase prompts surface through the same interactive-
+prompt mechanism every other command uses (a Yes/No Answer stack, or a masked free-text field for
+passwords) — nothing ssh-specific happens at the shell layer.
+
 ## Built-in commands
 
 These ten are the only commands HG2Gui itself implements — see `terminal/Builtins.kt`. Every

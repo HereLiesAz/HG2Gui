@@ -74,6 +74,11 @@ binary now, run in the Termux environment below, not a reimplementation of one.
     **THE GUIDE** pill in the top corner, opening a chaptered glossary of real commands paired
     with invented, Hitchhiker's-Guide-style definitions — reading material, not another way to
     run something.
+-   **SSH:** the `ssh` pill (under the Network shell category) opens your saved connections plus
+    a **new…** pill that asks for host, user, port and an optional key file one step at a time,
+    then hands you the assembled command to run. Host-key confirmation and password/passphrase
+    prompts work exactly like any other command's interactive prompts — a tap for yes/no, a
+    masked field for a password.
 
 ## Related Resources
 The shell is genuine Termux underneath, so third-party Termux material works here too:
