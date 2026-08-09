@@ -79,6 +79,38 @@ The Guide notes that HG2Gui also ships four small oracles of its own, bootstrapp
 - **`harden-check`** (harden check) — Halfheartedly hunts for holes in your own home, then hands you a list of horrors you now cannot un-know.
 - **`sysinfo`** (system information) — Surveys the sprawling, sorry state of everything you've installed, and solemnly informs you exactly how much storage it cost you.
 
+## Chapter 12 — Version Control
+
+The Guide notes that git is the closest thing this galaxy has invented to a time machine — one that only ever travels backward, and only ever to show you exactly how you broke everything.
+
+- **`git init`** (git initialize) — Initiates an empty, innocent void, blissfully unaware of the catastrophic commit history about to be inflicted upon it.
+- **`git commit`** (git commit) — Commits you, irrevocably and in writing, to whatever questionable decision you just made, timestamped for future ridicule.
+- **`git push`** (git push) — Propels your private embarrassments into a public, permanent, and painfully searchable record for the rest of the team to find.
+
+## Chapter 13 — Reconnaissance & Security
+
+Before harden-check was written, the Guide notes, curious users simply pointed these three tools at things and hoped for the best. It does not recommend abandoning that tradition, only supplementing it.
+
+- **`nmap`** (network mapper) — Methodically maps every open, oblivious port on a machine, mostly so you can stare at the results and still not know what to do next.
+- **`whois`** (who is) — Whispers back exactly who is responsible for a domain, so you finally have someone specific to blame.
+- **`openssl`** (open secure sockets layer) — Offers one thousand ways to encrypt, decrypt, sign, and verify, exactly none of which you will remember the flags for tomorrow.
+
+## Chapter 14 — Automation
+
+The Guide observes that automation is simply the art of making your mistakes happen on a schedule, unattended, and without a witness.
+
+- **`cron`** (chronos) — Commits your future self to unattended, unsupervised chaos, precisely on schedule, forever, until you remember it exists.
+- **`xargs`** (extended arguments) — Extracts every argument you piped it and hurls them at the next command, whether or not that command was prepared to catch them.
+- **`watch`** (watch) — Watches a command fail, again and again, at an interval you chose specifically so you wouldn't have to.
+
+## Chapter 15 — Artificial Wisdom
+
+The Guide is famously ambivalent about artificial intelligence, mostly because every civilization that built one eventually asked it a shell command and got a very confident, occasionally correct, answer. Note: none of the following are typed commands — they are pills, tapped, like everything else here.
+
+- **`AI chat`** (natural-language to command) — Answers plain, foolish English with a command it is fairly, if not entirely, confident about, then has the decency to make you press the button yourself.
+- **`Store`** (azphalt package browser) — Sells you a stranger's skills, agents, and extensions by the package, most of which this particular Guide has absolutely no way to run.
+- **`skill`** (installed skill package) — Quietly reads a stranger's homework over your assistant's shoulder, then lets it answer your next question as though it always knew.
+
 ## chapter_01 — The Absurdity of Redundancy
 
 It is a well-documented phenomenon that any sufficiently advanced filesystem will spontaneously generate duplicate files with slightly altered casing, just to see if the user is paying attention.
