@@ -2,6 +2,9 @@
 
 package com.hereliesaz.hg2gui.ui.files
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -97,6 +100,12 @@ fun FilesScreen(
 
     var storage by remember { mutableStateOf<StorageStats?>(null) }
 
+    // The frame around the wrap-reveal that opened this screen already carries the "screen
+    // arriving" beat - this is the header/footer chrome's own arrival on top of that: the top
+    // bar drops in from above the top edge, the bottom bar pops up from below the bottom edge.
+    val chromeIn = remember { Animatable(0f) }
+    LaunchedEffect(Unit) { chromeIn.animateTo(1f, tween(360, easing = CubicBezierEasing(0f, .9f, .1f, 1f))) }
+
     val scope = rememberCoroutineScope()
     fun refresh() { refreshTick++ }
 
@@ -171,7 +180,9 @@ fun FilesScreen(
             .background(PageYellow)
             .then(if (fullscreen) Modifier else Modifier.windowInsetsPadding(WindowInsets.systemBars))
     ) {
-        // --- Header ---------------------------------------------------------------------
+        // --- Header --------------------------------------------------------------------
+        // Dropped in from above the top edge as one unit, rather than appearing in place.
+        Column(Modifier.offset(y = (-90).dp * (1f - chromeIn.value))) {
         Row(
             Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 18.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -180,7 +191,14 @@ fun FilesScreen(
             if (selectMode) {
                 Chip("‹ ${selected.size} SELECTED", onClick = { selectMode = false; selected = emptySet() })
             } else {
-                Chip("‹ CLOSE", onClick = onBack)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Chip("‹ CLOSE", onClick = onBack)
+                    // Drops in alongside the rest of the header, but only once there is
+                    // somewhere to go up to - the root level has no parent of its own.
+                    if (openChain.isNotEmpty()) {
+                        Chip("…", background = Azphalt.Yellow, foreground = Azphalt.Ink, onClick = { openChain = openChain.dropLast(1) })
+                    }
+                }
                 val count = rootEntries.size + l0Entries.size + recordEntries.size
                 Chip("$count THINGS HERE", filled = false, clickable = false)
             }
@@ -254,6 +272,7 @@ fun FilesScreen(
                     }
                 }
             }
+        }
         }
 
         // --- Content ------------------------------------------------------------------------
@@ -367,8 +386,12 @@ fun FilesScreen(
         }
 
         // --- Bottom bar ---------------------------------------------------------------------
+        // Popped up from below the bottom edge, mirroring the header's drop from above.
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 14.dp),
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 14.dp)
+                .offset(y = 90.dp * (1f - chromeIn.value)),
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             if (selectMode) {

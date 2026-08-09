@@ -95,6 +95,24 @@ that inverts: the open pill is yellow with an ink end-cap, so it never disappear
 Animation state is remembered against a node's **id**, never its index — a contextual root can
 appear or vanish between frames, and a keyed-by-position pill would inherit a stranger's motion.
 
+## 5a. The pill becomes the page
+
+Opening the Files screen doesn't cut to a new screen — the **FILES** pill itself grows into it.
+Simplified from the source spec's own multi-stage "stretch, snap, fly, run the perimeter, flood"
+sequence into two continuous beats (`PillWrapReveal.kt`):
+
+| | |
+| --- | --- |
+| Wrap | 640ms, `cubic-bezier(0,.9,.1,1)` — the pill's own rect interpolates out to the full screen, closing a hue-coloured frame around it |
+| Flood | 420ms, same easing — a bottom-to-top wipe reveals the file explorer already inside the closed frame |
+| Header drop | 360ms — the top bar (close/parent/count chips) drops in from above the top edge |
+| Footer pop | 360ms, same clock — the bottom action bar rises in from below the bottom edge |
+
+The frame's border stays visible for as long as the screen is open, tying its hue back to
+whichever pill opened it. Closing plays the same two beats in reverse. Whenever there's a level
+open above the root, a yellow **…** chip drops in with the rest of the header — tap it to close
+the deepest open level, same as tapping its own capsule again.
+
 ## 6. Scale
 
 The menu's size isn't fixed — the shell categories are discovered live from what's actually

@@ -18,9 +18,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -50,6 +53,7 @@ fun TerminalScreen(
     onOpenSettings: () -> Unit,
     onOpenGuide: () -> Unit,
     onOpenFiles: () -> Unit,
+    onFilesButtonPositioned: (Rect) -> Unit = {},
     onRun: suspend (
         sessionId: String,
         line: String,
@@ -158,6 +162,7 @@ fun TerminalScreen(
             onOpenSettings = onOpenSettings,
             onOpenGuide = onOpenGuide,
             onOpenFiles = onOpenFiles,
+            onFilesButtonPositioned = onFilesButtonPositioned,
             onPick = onSessionPick,
             onNew = onNewSession,
             onClose = onCloseSession
@@ -334,6 +339,7 @@ private fun SessionTabs(
     onOpenSettings: () -> Unit,
     onOpenGuide: () -> Unit,
     onOpenFiles: () -> Unit,
+    onFilesButtonPositioned: (Rect) -> Unit,
     onPick: (String) -> Unit,
     onNew: () -> Unit,
     onClose: (String) -> Unit
@@ -397,15 +403,15 @@ private fun SessionTabs(
         }
         Box(
             Modifier
-                .size(22.dp)
                 .clip(RoundedCornerShape(percent = 50))
-                .background(Azphalt.Ink.copy(alpha = .14f))
-                .clickable(onClick = onOpenFiles),
-            contentAlignment = Alignment.Center
+                .background(Azphalt.hues[Azphalt.hueOf("/")])
+                .onGloballyPositioned { onFilesButtonPositioned(it.boundsInRoot()) }
+                .clickable(onClick = onOpenFiles)
+                .padding(horizontal = 10.dp, vertical = 5.dp)
         ) {
             Text(
-                "F",
-                style = MaterialTheme.typography.titleMedium.copy(color = Azphalt.Ink, fontSize = 11.sp, fontWeight = FontWeight.Black)
+                "FILES",
+                style = MaterialTheme.typography.titleMedium.copy(color = Azphalt.White, fontSize = 8.sp, fontWeight = FontWeight.Black)
             )
         }
         Box(
