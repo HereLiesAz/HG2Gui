@@ -21,6 +21,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
 import androidx.core.content.FileProvider
 import androidx.core.content.edit
 import androidx.core.view.WindowInsetsCompat
@@ -44,8 +45,11 @@ import com.hereliesaz.hg2gui.ui.files.StorageStats
 import com.hereliesaz.hg2gui.ui.files.VfsEntry
 import com.hereliesaz.hg2gui.ui.files.VfsSearchResult
 import com.hereliesaz.hg2gui.ui.guide.CommandGuideScreen
+import com.hereliesaz.hg2gui.ui.menu.Azphalt
 import com.hereliesaz.hg2gui.ui.menu.CommandTree
 import com.hereliesaz.hg2gui.ui.menu.MenuNode
+import com.hereliesaz.hg2gui.ui.menu.PillWrapReveal
+import com.hereliesaz.hg2gui.ui.menu.PillWrapRevealState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -86,6 +90,24 @@ class TerminalActivity : ComponentActivity() {
             var fullscreen by remember { mutableStateOf(false) }
             var fontScalePercent by remember { mutableStateOf(100) }
             val scope = rememberCoroutineScope()
+
+            // "The pill becomes the page": the Files pill grows out around the screen edge,
+            // then the loop it closes floods with a vertical wipe that reveals the file
+            // explorer already open on its root - see PillWrapReveal.
+            val filesWrap = remember { PillWrapRevealState() }
+            var filesOrigin by remember { mutableStateOf(Rect.Zero) }
+            val filesHue = remember { Azphalt.hues[Azphalt.hueOf("/")] }
+            fun openFiles() {
+                filesWrap.origin = filesOrigin
+                screen = Screen.Files
+                scope.launch { filesWrap.open() }
+            }
+            fun closeFiles() {
+                scope.launch {
+                    filesWrap.close()
+                    screen = Screen.Terminal
+                }
+            }
 
             suspend fun vfsListDir(path: String): List<VfsEntry> = withContext(Dispatchers.IO) {
                 val dir = VfsManager.resolve(this@TerminalActivity, path) ?: return@withContext emptyList()
@@ -182,6 +204,7 @@ class TerminalActivity : ComponentActivity() {
 
             HG2GuiTheme(scale = fontScalePercent / 100f) {
                 val currentTree = tree
+                Box(Modifier.fillMaxSize()) {
                 when {
                     screen == Screen.Settings -> SettingsScreen(
                         fullscreen = fullscreen,
@@ -207,79 +230,6 @@ class TerminalActivity : ComponentActivity() {
                             }
                         },
                         onBack = { screen = Screen.Terminal }
-                    )
-
-                    screen == Screen.Files -> FilesScreen(
-                        fullscreen = fullscreen,
-                        listDir = { path -> vfsListDir(path) },
-                        search = { query -> vfsSearch(query) },
-                        storageStats = { vfsStorageStats() },
-                        onOpenFile = { path ->
-                            scope.launch {
-                                val file = withContext(Dispatchers.IO) {
-                                    VfsManager.resolve(this@TerminalActivity, path)
-                                }
-                                if (file != null) {
-                                    val intent = Intent(this@TerminalActivity, EditorActivity::class.java)
-                                    intent.putExtra(EditorActivity.PATH, file.absolutePath)
-                                    startActivity(intent)
-                                }
-                            }
-                        },
-                        onCreateFolder = { parentPath, name ->
-                            withContext(Dispatchers.IO) {
-                                VfsManager.resolve(this@TerminalActivity, parentPath)?.let { VfsManager.mkdir(it, name) }
-                            }
-                        },
-                        onCreateFile = { parentPath, name ->
-                            withContext(Dispatchers.IO) {
-                                VfsManager.resolve(this@TerminalActivity, parentPath)?.let { VfsManager.touch(it, name) }
-                            }
-                        },
-                        onDelete = { path ->
-                            withContext(Dispatchers.IO) {
-                                VfsManager.resolve(this@TerminalActivity, path)?.let { VfsManager.delete(it) }
-                            }
-                        },
-                        onRename = { path, newName ->
-                            withContext(Dispatchers.IO) {
-                                VfsManager.resolve(this@TerminalActivity, path)?.let { VfsManager.rename(it, newName) }
-                            }
-                        },
-                        onMove = { path, targetDirPath ->
-                            withContext(Dispatchers.IO) {
-                                val file = VfsManager.resolve(this@TerminalActivity, path)
-                                val target = VfsManager.resolve(this@TerminalActivity, targetDirPath)
-                                if (file != null && target != null) VfsManager.moveInto(file, target)
-                            }
-                        },
-                        onCopy = { path, targetDirPath ->
-                            withContext(Dispatchers.IO) {
-                                val file = VfsManager.resolve(this@TerminalActivity, path)
-                                val target = VfsManager.resolve(this@TerminalActivity, targetDirPath)
-                                if (file != null && target != null) VfsManager.copyInto(file, target)
-                            }
-                        },
-                        onShare = { path ->
-                            scope.launch {
-                                val file = withContext(Dispatchers.IO) {
-                                    VfsManager.resolve(this@TerminalActivity, path)
-                                }
-                                if (file != null && file.isFile) {
-                                    val uri = FileProvider.getUriForFile(this@TerminalActivity, GenericFileProvider.PROVIDER_NAME, file)
-                                    val intent = Intent(Intent.ACTION_SEND).apply {
-                                        type = "*/*"
-                                        putExtra(Intent.EXTRA_STREAM, uri)
-                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                    }
-                                    startActivity(Intent.createChooser(intent, "Share ${file.name}"))
-                                }
-                            }
-                        },
-                        onBack = { screen = Screen.Terminal },
-                        modifier = Modifier.then(
-                            if (fullscreen) Modifier else Modifier.windowInsetsPadding(WindowInsets.systemBars)
-                        )
                     )
 
                     sessions.isNotEmpty() && currentTree != null -> TerminalScreen(
@@ -316,7 +266,8 @@ class TerminalActivity : ComponentActivity() {
                         fullscreen = fullscreen,
                         onOpenSettings = { screen = Screen.Settings },
                         onOpenGuide = { screen = Screen.Guide },
-                        onOpenFiles = { screen = Screen.Files },
+                        onOpenFiles = { openFiles() },
+                        onFilesButtonPositioned = { filesOrigin = it },
                         onRun = { sessionId, line, onOutput, onNeedInput ->
                             val session = sessions.first { it.ui.id == sessionId }
                             session.engine.run(line, onNeedInput).collect { output -> onOutput(output) }
@@ -332,8 +283,86 @@ class TerminalActivity : ComponentActivity() {
                         Text("Loading…")
                     }
                 }
+
+                if (screen == Screen.Files || filesWrap.active) {
+                    PillWrapReveal(state = filesWrap, hue = filesHue) {
+                        FilesScreen(
+                            fullscreen = fullscreen,
+                            listDir = { path -> vfsListDir(path) },
+                            search = { query -> vfsSearch(query) },
+                            storageStats = { vfsStorageStats() },
+                            onOpenFile = { path ->
+                                scope.launch {
+                                    val file = withContext(Dispatchers.IO) {
+                                        VfsManager.resolve(this@TerminalActivity, path)
+                                    }
+                                    if (file != null) {
+                                        val intent = Intent(this@TerminalActivity, EditorActivity::class.java)
+                                        intent.putExtra(EditorActivity.PATH, file.absolutePath)
+                                        startActivity(intent)
+                                    }
+                                }
+                            },
+                            onCreateFolder = { parentPath, name ->
+                                withContext(Dispatchers.IO) {
+                                    VfsManager.resolve(this@TerminalActivity, parentPath)?.let { VfsManager.mkdir(it, name) }
+                                }
+                            },
+                            onCreateFile = { parentPath, name ->
+                                withContext(Dispatchers.IO) {
+                                    VfsManager.resolve(this@TerminalActivity, parentPath)?.let { VfsManager.touch(it, name) }
+                                }
+                            },
+                            onDelete = { path ->
+                                withContext(Dispatchers.IO) {
+                                    VfsManager.resolve(this@TerminalActivity, path)?.let { VfsManager.delete(it) }
+                                }
+                            },
+                            onRename = { path, newName ->
+                                withContext(Dispatchers.IO) {
+                                    VfsManager.resolve(this@TerminalActivity, path)?.let { VfsManager.rename(it, newName) }
+                                }
+                            },
+                            onMove = { path, targetDirPath ->
+                                withContext(Dispatchers.IO) {
+                                    val file = VfsManager.resolve(this@TerminalActivity, path)
+                                    val target = VfsManager.resolve(this@TerminalActivity, targetDirPath)
+                                    if (file != null && target != null) VfsManager.moveInto(file, target)
+                                }
+                            },
+                            onCopy = { path, targetDirPath ->
+                                withContext(Dispatchers.IO) {
+                                    val file = VfsManager.resolve(this@TerminalActivity, path)
+                                    val target = VfsManager.resolve(this@TerminalActivity, targetDirPath)
+                                    if (file != null && target != null) VfsManager.copyInto(file, target)
+                                }
+                            },
+                            onShare = { path ->
+                                scope.launch {
+                                    val file = withContext(Dispatchers.IO) {
+                                        VfsManager.resolve(this@TerminalActivity, path)
+                                    }
+                                    if (file != null && file.isFile) {
+                                        val uri = FileProvider.getUriForFile(this@TerminalActivity, GenericFileProvider.PROVIDER_NAME, file)
+                                        val intent = Intent(Intent.ACTION_SEND).apply {
+                                            type = "*/*"
+                                            putExtra(Intent.EXTRA_STREAM, uri)
+                                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                        }
+                                        startActivity(Intent.createChooser(intent, "Share ${file.name}"))
+                                    }
+                                }
+                            },
+                            onBack = { closeFiles() },
+                            modifier = Modifier.then(
+                                if (fullscreen) Modifier else Modifier.windowInsetsPadding(WindowInsets.systemBars)
+                            )
+                        )
+                    }
+                }
             }
         }
+    }
     }
 
     private fun applyFullscreen(fullscreen: Boolean) {
