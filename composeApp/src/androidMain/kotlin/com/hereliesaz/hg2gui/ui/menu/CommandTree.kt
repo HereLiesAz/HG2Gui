@@ -2,6 +2,7 @@ package com.hereliesaz.hg2gui.ui.menu
 
 import android.content.Context
 import com.hereliesaz.hg2gui.managers.SshPresets
+import com.hereliesaz.hg2gui.managers.WorkflowStore
 import com.hereliesaz.hg2gui.terminal.DistroManager
 import com.hereliesaz.hg2gui.terminal.DpkgCatalog
 import com.hereliesaz.hg2gui.ui.ssh.SshFlow
@@ -143,6 +144,56 @@ object CommandTree {
         }
     )
 
+    /** The Workflows root pill: saved templates as picks (each launches its own fill-in-the-
+     *  placeholders wizard), plus a "new…" leaf that launches the save wizard. Same lazy
+     *  resolveChildren reasoning as [sshLeaf] - a freshly-saved workflow shows up next time this
+     *  pill opens. This is a synthesized root like sys/apps/feat, not a shell binary, so it's
+     *  added in [from] rather than discovered from PATH. */
+    private fun workflowsRoot(context: Context): MenuNode = MenuNode(
+        id = "wf",
+        label = "Workflows",
+        resolveChildren = {
+            val saved = WorkflowStore.list(context).map { workflow ->
+                MenuNode(
+                    id = "wf/${workflow.name}",
+                    label = workflow.name,
+                    cap = "run",
+                    emitsToken = false,
+                    wizardId = "workflow-run:${workflow.name}"
+                )
+            }
+            saved + MenuNode(
+                id = "wf/new",
+                label = "new…",
+                cap = "new",
+                emitsToken = false,
+                wizardId = "workflow-new"
+            )
+        }
+    )
+
+    /** The AI root pill: one leaf that opens the AI chat screen (a wizardId consumer that
+     *  navigates rather than collecting prompt answers - a valid reuse of the same "the tree
+     *  wants this id handled outside normal token emission" hook). */
+    private fun aiRoot(): MenuNode = MenuNode(
+        id = "ai",
+        label = "AI",
+        children = listOf(
+            MenuNode(id = "ai/chat", label = "chat…", cap = "open", emitsToken = false, wizardId = "ai-chat")
+        )
+    )
+
+    /** The Store root pill: azphalt.store package search, plus a leaf listing what's already
+     *  installed. Both navigate to the AzpStoreScreen rather than collecting prompt answers -
+     *  same wizardId-as-navigation reuse as [aiRoot]. */
+    private fun azpRoot(): MenuNode = MenuNode(
+        id = "azp",
+        label = "Store",
+        children = listOf(
+            MenuNode(id = "azp/search", label = "search…", cap = "open", emitsToken = false, wizardId = "azp-store")
+        )
+    )
+
     private fun shellLeaf(fullName: String, label: String, filePickerRoot: File): MenuNode {
         val hints = SHELL_HINTS[fullName].orEmpty().map { MenuNode("sh/$fullName/$it", it) }
         val children = hints + FileBrowser.pickerNode("sh/$fullName/file", filePickerRoot)
@@ -263,7 +314,10 @@ object CommandTree {
         return shellRoots + listOf(
             MenuNode("sys", "System", SYSTEM.size.toString(), SYSTEM.sorted().map { node(it, filePickerRoot) }),
             MenuNode("apps", "Apps & nav", APPS.size.toString(), APPS.sorted().map { node(it, filePickerRoot) }),
-            MenuNode("feat", "Features", FEATURES.size.toString(), FEATURES.sorted().map { node(it, filePickerRoot) })
+            MenuNode("feat", "Features", FEATURES.size.toString(), FEATURES.sorted().map { node(it, filePickerRoot) }),
+            workflowsRoot(context),
+            aiRoot(),
+            azpRoot()
         )
     }
 }

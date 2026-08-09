@@ -91,6 +91,65 @@ reflection-based command engine underneath it — built-ins are a fixed dispatch
     enforced server-side, in `McpTools.callTool`, on every `shell.*` invocation — not just by
     what `tools/list` chooses to advertise (it always advertises both groups).
 
+### 8. Blocks, Workflows, AI chat (Kotlin, `commonMain`/`androidMain`)
+*   **Blocks**: no new state layer — `TerminalScreen`'s existing `BufferEntry` gained tap-to-
+    reveal COPY/RE-RUN/SHARE actions. Copy/share are androidMain hooks (`ClipboardManager`,
+    `Intent.ACTION_SEND`) passed down from `TerminalActivity`; re-run is pure `SessionUiState`
+    mutation (writes the entry's command into `inputText`, never runs it). `BufferEntry` also
+    calls `ui/AsciiArt.kt`'s `looksLikeAsciiArt()` on the entry's output and, when it matches,
+    renders via `AsciiArtCanvas` instead of the plain monospace `Text` — a PLAIN TEXT toggle in
+    the same tap-to-reveal row always falls back to the raw string. `AsciiArtCanvas` maps each
+    character to a density (a light-to-dense ramp; box-drawing/block Unicode is treated as fully
+    dense), then runs marching squares over that density grid (`buildContourPath`) to trace one
+    smooth filled vector `Path` - the same contour-tracing approach a Potrace-style vectorizer
+    uses, applied to the density field instead of raster pixels. No model, no network call: it's a
+    deterministic, offline algorithm that constructs an actual vector shape from the art's
+    character grid rather than reproducing glyphs or a blocky per-cell mosaic.
+*   **Workflows** (`ui/WorkflowFlow.kt` commonMain, `managers/WorkflowStore.kt` androidMain):
+    named command templates with `{placeholder}` substrings, stored the same flat-SharedPreferences
+    way as `SshPresets`. Saving and running both reuse the `wizardId`/`onWizard` pill primitive and
+    `SessionUiState.awaitPromptAnswer` exactly like the ssh wizard — a run asks one question per
+    placeholder, then writes the rendered command into the input line for the user to review and
+    press Run. `CommandTree.workflowsRoot` is a synthesized root pill (like `sys`/`apps`/`feat`),
+    not a shell binary.
+*   **AI chat** (`ai/AiClient.kt`, `managers/AiSettings.kt` androidMain; `ui/ai/AiChatScreen.kt`
+    commonMain; `ui/AiSettingsScreen.kt` androidMain): single-turn natural-language → shell-command
+    suggestion via the official Anthropic Java SDK (`com.anthropic:anthropic-java`), reached
+    through a synthesized `ai` root pill (`wizardId = "ai-chat"`, used to navigate screens rather
+    than collect prompt answers — a valid second use of the `onWizard` hook). The API key is
+    user-supplied and stored in plain `SharedPreferences`, same posture as the MCP pairing token
+    and SSH key paths. A suggested command is never executed automatically — the chat screen's
+    USE pill hands it to the terminal's input line, same "assemble, don't auto-run" rule every
+    wizard-produced command already follows; this deliberately does not duplicate the MCP server's
+    biometric-gated `shell.exec` tool.
+
+### 9. Store (azphalt registry client) (Kotlin, `commonMain`/`androidMain`)
+*   **`azp/AzpClient.kt`** (androidMain): OkHttp client for the azphalt Repository API
+    (`spec/repository-api.md` in `hereliesaz/azphalt`) against the live registry at
+    `https://www.azphalt.store` — `search(query, kind, page)` (`GET /packages`) and
+    `download(id, version)` (`GET /packages/{id}/versions/{version}/download`). Free packages
+    only; paid packages need a Bearer entitlement this client does not obtain.
+*   **`azp/AzpInstaller.kt`** (androidMain): a `.azp` is a plain ZIP archive with `manifest.json`
+    at its root (`spec/package-format.md`) — `install()` unzips it into
+    `filesDir/azp/<id>/<version>/` (rejecting any entry that would escape via `..`), reads
+    `manifest.json`'s `kind`, and for `kind:"skill"` collects the declared `skill.skills[].id`
+    list so the SKILL.md payloads can be found again later.
+*   **`managers/AzpLibrary.kt`** (androidMain): flat-SharedPreferences record of installed
+    packages, same shape as `WorkflowStore`/`SshPresets`. `installedSkillTexts()` reads each
+    installed skill package's `skills/<id>/SKILL.md` off disk, capped to a fixed character budget,
+    for `AiClient` to fold into its system prompt.
+*   **`ui/azp/AzpStoreScreen.kt`** (commonMain): search box, kind-filter pills (all/skill/mcp/
+    code/pack/asset/app), and a result list with an INSTALL/INSTALLED pill per package — same
+    visual idiom as `AiChatScreen`. Reached via a synthesized `azp` root pill
+    (`CommandTree.azpRoot`, `wizardId = "azp-store"` navigates to the screen, same reuse of
+    `onWizard` as the AI pill).
+*   HG2Gui has no `.azp` execution runtime (no WASM sandbox, no MCP client), so "install" for
+    every kind except `skill` is download-and-unpack only — the package sits on-device for the
+    user's own use elsewhere, the same as `apt download` versus `apt install`. Signature
+    verification (the Ed25519 model in `package-format.md`) is **not implemented** in this v1;
+    packages are trusted at download time, same posture as this app's other unverified local
+    settings (the MCP pairing token, the AI API key).
+
 ## Data Flow
 1.  **Input**: The user taps `wifi`. No text is typed. Since `wifi` leaves no further
     parameters, it runs immediately on that tap.

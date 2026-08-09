@@ -93,6 +93,38 @@ binary now, run in the Termux environment below, not a reimplementation of one.
     target's own infrastructure, and it isn't a tool for looking up arbitrary third parties.
     Missing tools (`whois`/`dig`/`curl`/`jq`) print a `pkg install` hint instead of failing
     silently.
+-   **Blocks:** tap any entry in the buffer to reveal **COPY**, **RE-RUN** and **SHARE** — copy
+    grabs the output (or the command itself, if there's no output yet), re-run drops the command
+    back onto the input line for you to review and press Run (it never runs again on its own),
+    and share hands the same text to the system share sheet.
+-   **ASCII art rendering:** output that looks like ASCII or box-drawing art (three or more lines,
+    heavy on symbols rather than letters — `cowsay`, `figlet`, `jp2a`, `chafa`, and the like)
+    is traced into one smooth flat vector shape (the same contour-tracing idea a Potrace-style
+    vectorizer uses) instead of literal monospace glyphs, so it reads as a constructed picture
+    rather than a wall of text. The heuristic is conservative — real prose or a table always falls
+    back to plain text. Tap the entry, then **PLAIN TEXT** to see the raw output (and copy/share
+    it) any time.
+-   **Workflows:** the **Workflows** pill (alongside the shell categories) holds saved command
+    templates. Picking one asks for any `{placeholder}` values the template uses, then drops the
+    assembled command onto the input line, same as everything else here — nothing runs until you
+    press Run. A **new…** pill saves one: give it a name, then a template like
+    `git commit -m "{message}"`.
+-   **AI:** the **AI** pill opens a chat screen — type a request in plain English and it suggests
+    a shell command (or a short plain-text answer if the request isn't command-shaped), via the
+    Anthropic API. A suggested command shows a **USE ▸** pill that drops it onto the input line
+    for review, exactly like everything else — the chat never runs a command by itself. Needs an
+    API key first: Settings → **AI SETTINGS ›**. The key is stored unencrypted on this device,
+    same as the MCP pairing token and other local settings.
+-   **Store:** the **Store** pill opens a browser for [azphalt.store](https://azphalt.store), the
+    package registry for `.azp` extensions — the same idea as `pkg`/`apt`, but general-purpose:
+    assets, sandboxed code, packs, companion apps, MCP-server headers, and AI-skill bundles all
+    ship as `.azp` packages. Search, filter by kind (skill / mcp / code / pack / asset / app), and
+    tap **INSTALL** to download and unpack one. HG2Gui has no `.azp` execution sandbox, so most
+    kinds are download-only, kept on-device for use elsewhere — the one exception is a **skill**
+    package: its bundled `SKILL.md` is folded into the AI chat's system prompt automatically, so
+    an installed skill actually changes how the AI pill answers. Packages are trusted as
+    downloaded — this v1 does not verify the Ed25519 signature azphalt packages carry, so treat it
+    the same as any other unverified download.
 -   **net-inventory / harden-check / sysinfo:** three more scripts installed alongside
     `osint-lookup`, all local, no arguments needed. `net-inventory` lists this device's own
     network interfaces, routes and DNS config. `harden-check` audits this install's own SSH key

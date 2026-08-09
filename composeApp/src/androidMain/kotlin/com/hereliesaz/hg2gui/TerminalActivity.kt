@@ -1,5 +1,7 @@
 package com.hereliesaz.hg2gui
 
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
@@ -30,21 +32,34 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import com.hereliesaz.hg2gui.ai.AiClient
+import com.hereliesaz.hg2gui.ai.AiReply
+import com.hereliesaz.hg2gui.azp.AzpClient
+import com.hereliesaz.hg2gui.azp.AzpInstaller
+import com.hereliesaz.hg2gui.managers.AiSettings
+import com.hereliesaz.hg2gui.managers.AzpLibrary
 import com.hereliesaz.hg2gui.managers.ContactManager
 import com.hereliesaz.hg2gui.managers.SshPresets
 import com.hereliesaz.hg2gui.managers.TerminalHistoryEntry
 import com.hereliesaz.hg2gui.managers.VfsManager
+import com.hereliesaz.hg2gui.managers.WorkflowStore
 import com.hereliesaz.hg2gui.mcp.McpServerService
 import com.hereliesaz.hg2gui.terminal.Builtins
 import com.hereliesaz.hg2gui.terminal.DistroManager
 import com.hereliesaz.hg2gui.terminal.TerminalEngine
 import com.hereliesaz.hg2gui.util.GenericFileProvider
 import com.hereliesaz.hg2gui.util.Utils
+import com.hereliesaz.hg2gui.ui.AiSettingsScreen
 import com.hereliesaz.hg2gui.ui.HG2GuiTheme
 import com.hereliesaz.hg2gui.ui.McpServerScreen
 import com.hereliesaz.hg2gui.ui.SessionUiState
 import com.hereliesaz.hg2gui.ui.SettingsScreen
 import com.hereliesaz.hg2gui.ui.TerminalScreen
+import com.hereliesaz.hg2gui.ui.WorkflowFlow
+import com.hereliesaz.hg2gui.ui.ai.AiChatScreen
+import com.hereliesaz.hg2gui.ui.ai.AiMessage
+import com.hereliesaz.hg2gui.ui.azp.AzpListing
+import com.hereliesaz.hg2gui.ui.azp.AzpStoreScreen
 import com.hereliesaz.hg2gui.ui.files.FilesScreen
 import com.hereliesaz.hg2gui.ui.files.StorageCategoryStat
 import com.hereliesaz.hg2gui.ui.files.StorageStats
@@ -73,7 +88,7 @@ class TerminalActivity : FragmentActivity() {
     private var sessions by mutableStateOf(listOf<TerminalSession>())
     private var nextSessionNumber = 2
 
-    private enum class Screen { Terminal, Settings, Guide, Files, Mcp }
+    private enum class Screen { Terminal, Settings, Guide, Files, Mcp, Ai, AiSettings, Azp }
 
     /** Confirms enabling shell.* MCP tools with a biometric prompt before persisting the flag -
      *  this is the one switch that lets a paired agent run arbitrary commands, so it gets a
@@ -128,6 +143,12 @@ class TerminalActivity : FragmentActivity() {
             }
             var fullscreen by remember { mutableStateOf(false) }
             var fontScalePercent by remember { mutableStateOf(100) }
+            var aiApiKey by remember { mutableStateOf(AiSettings.apiKey(this@TerminalActivity)) }
+            var aiMessages by remember { mutableStateOf<List<AiMessage>>(emptyList()) }
+            var aiBusy by remember { mutableStateOf(false) }
+            var azpResults by remember { mutableStateOf<List<AzpListing>>(emptyList()) }
+            var azpBusy by remember { mutableStateOf(false) }
+            var azpInstallingId by remember { mutableStateOf<String?>(null) }
             val scope = rememberCoroutineScope()
 
             LaunchedEffect(lastIntentExtra) {
@@ -269,6 +290,104 @@ class TerminalActivity : FragmentActivity() {
                             prefs.edit { putInt(PREF_FONT_SCALE_PERCENT, value) }
                         },
                         onOpenMcpServer = { screen = Screen.Mcp },
+                        onOpenAiSettings = { screen = Screen.AiSettings },
+                        onBack = { screen = Screen.Terminal }
+                    )
+
+                    screen == Screen.AiSettings -> AiSettingsScreen(
+                        fullscreen = fullscreen,
+                        apiKey = aiApiKey,
+                        onSave = { newKey ->
+                            aiApiKey = newKey
+                            AiSettings.setApiKey(this@TerminalActivity, newKey)
+                            screen = Screen.Settings
+                        },
+                        onBack = { screen = Screen.Settings }
+                    )
+
+                    screen == Screen.Ai -> AiChatScreen(
+                        fullscreen = fullscreen,
+                        messages = aiMessages,
+                        apiKeyConfigured = !aiApiKey.isNullOrBlank(),
+                        busy = aiBusy,
+                        onAsk = { question ->
+                            val key = aiApiKey
+                            val session = sessions.firstOrNull { it.ui.id == activeSessionId }
+                            if (key != null && session != null) {
+                                aiMessages = aiMessages + AiMessage(fromUser = true, text = question)
+                                aiBusy = true
+                                scope.launch {
+                                    val reply = try {
+                                        val skills = withContext(Dispatchers.IO) {
+                                            AzpLibrary.installedSkillTexts(this@TerminalActivity)
+                                        }
+                                        AiClient.ask(key, session.ui.cwd, question, skills)
+                                    } catch (e: Exception) {
+                                        AiReply(text = "error: ${e.message}", command = null)
+                                    }
+                                    aiMessages = aiMessages + AiMessage(
+                                        fromUser = false, text = reply.text, command = reply.command
+                                    )
+                                    aiBusy = false
+                                }
+                            }
+                        },
+                        onUseCommand = { command ->
+                            sessions.firstOrNull { it.ui.id == activeSessionId }?.let { session ->
+                                session.ui.tokens = emptyList()
+                                session.ui.inputText = command
+                            }
+                            screen = Screen.Terminal
+                        },
+                        onOpenSettings = { screen = Screen.AiSettings },
+                        onBack = { screen = Screen.Terminal }
+                    )
+
+                    screen == Screen.Azp -> AzpStoreScreen(
+                        fullscreen = fullscreen,
+                        results = azpResults,
+                        busy = azpBusy,
+                        installingId = azpInstallingId,
+                        onSearch = { query, kind ->
+                            azpBusy = true
+                            scope.launch {
+                                val response = try {
+                                    AzpClient.search(query, kind.takeUnless { it == "all" })
+                                } catch (e: Exception) {
+                                    null
+                                }
+                                val installed = withContext(Dispatchers.IO) {
+                                    AzpLibrary.installed(this@TerminalActivity).map { it.id }.toSet()
+                                }
+                                azpResults = response?.packages.orEmpty().map { pkg ->
+                                    AzpListing(
+                                        id = pkg.id, name = pkg.name, author = pkg.author,
+                                        description = pkg.description, version = pkg.version,
+                                        kind = pkg.kind, installed = pkg.id in installed
+                                    )
+                                }
+                                azpBusy = false
+                            }
+                        },
+                        onInstall = { listing ->
+                            azpInstallingId = listing.id
+                            scope.launch {
+                                val result = withContext(Dispatchers.IO) {
+                                    val bytes = AzpClient.download(listing.id, listing.version) ?: return@withContext null
+                                    val install = AzpInstaller.install(this@TerminalActivity, listing.id, listing.version, bytes)
+                                        ?: return@withContext null
+                                    AzpLibrary.record(
+                                        this@TerminalActivity, listing.id, listing.name, listing.version,
+                                        install.kind, install.skillIds
+                                    )
+                                    install
+                                }
+                                if (result != null) {
+                                    azpResults = azpResults.map { if (it.id == listing.id) it.copy(installed = true) else it }
+                                }
+                                azpInstallingId = null
+                            }
+                        },
                         onBack = { screen = Screen.Terminal }
                     )
 
@@ -341,15 +460,41 @@ class TerminalActivity : FragmentActivity() {
                         onOpenGuide = { screen = Screen.Guide },
                         onOpenFiles = { openFiles() },
                         onFilesButtonPositioned = { filesOrigin = it },
+                        onCopy = { text ->
+                            val clipboard = getSystemService(ClipboardManager::class.java)
+                            clipboard?.setPrimaryClip(ClipData.newPlainText("HG2Gui", text))
+                        },
+                        onShare = { text ->
+                            val intent = Intent(Intent.ACTION_SEND).apply {
+                                type = "text/plain"
+                                putExtra(Intent.EXTRA_TEXT, text)
+                            }
+                            startActivity(Intent.createChooser(intent, "Share"))
+                        },
                         onWizard = { wizardId ->
-                            if (wizardId == "ssh-new") {
-                                sessions.firstOrNull { it.ui.id == activeSessionId }?.let { session ->
-                                    scope.launch {
-                                        SshFlow.runNewConnectionWizard(session.ui) { preset ->
-                                            withContext(Dispatchers.IO) { SshPresets.save(this@TerminalActivity, preset) }
-                                        }
+                            val session = sessions.firstOrNull { it.ui.id == activeSessionId }
+                            when {
+                                wizardId == "ssh-new" && session != null -> scope.launch {
+                                    SshFlow.runNewConnectionWizard(session.ui) { preset ->
+                                        withContext(Dispatchers.IO) { SshPresets.save(this@TerminalActivity, preset) }
                                     }
                                 }
+                                wizardId == "workflow-new" && session != null -> scope.launch {
+                                    WorkflowFlow.runNewWorkflowWizard(session.ui) { workflow ->
+                                        withContext(Dispatchers.IO) { WorkflowStore.save(this@TerminalActivity, workflow) }
+                                    }
+                                }
+                                wizardId.startsWith("workflow-run:") && session != null -> {
+                                    val name = wizardId.removePrefix("workflow-run:")
+                                    scope.launch {
+                                        val workflow = withContext(Dispatchers.IO) {
+                                            WorkflowStore.list(this@TerminalActivity).find { it.name == name }
+                                        }
+                                        if (workflow != null) WorkflowFlow.runWorkflowWizard(session.ui, workflow)
+                                    }
+                                }
+                                wizardId == "ai-chat" -> screen = Screen.Ai
+                                wizardId == "azp-store" -> screen = Screen.Azp
                             }
                         },
                         onRun = { sessionId, line, onOutput, onNeedInput ->

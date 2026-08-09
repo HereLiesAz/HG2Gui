@@ -15,6 +15,7 @@ jsonpath = "3.0.0"
 jsoup = "1.23.1"
 comparestring2 = "1.0.9"
 kotlinx-serialization-json = "1.9.0"
+anthropic-java = "2.34.0"
 
 [libraries]
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "androidx-activityCompose" }
@@ -30,6 +31,7 @@ json-path = { group = "com.jayway.jsonpath", name = "json-path", version.ref = "
 jsoup = { group = "org.jsoup", name = "jsoup", version.ref = "jsoup" }
 comparestring2 = { group = "it.andreuzzi", name = "CompareString2", version.ref = "comparestring2" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinx-serialization-json" }
+anthropic-java = { group = "com.anthropic", name = "anthropic-java", version.ref = "anthropic-java" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
