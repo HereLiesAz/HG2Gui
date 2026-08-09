@@ -94,6 +94,16 @@ private val CHAPTERS = listOf(
         )
     ),
     Chapter(
+        "Chapter 11", "Self-Knowledge",
+        "The Guide notes that HG2Gui also ships four small oracles of its own, bootstrapped straight into the shell rather than fetched by any package manager. Three turn the lens inward. One dares to look outward, but only ever as far as the single address you hand it.",
+        listOf(
+            Triple("osint-lookup", "open-source intelligence lookup", "Obsessively obtains obscure open-source omens about the one domain you dared to name, then offers them up without a shred of context or comfort."),
+            Triple("net-inventory", "network inventory", "Narrates the naked, humiliating truth of your own network - every interface, route, and DNS server you never bothered to name."),
+            Triple("harden-check", "harden check", "Halfheartedly hunts for holes in your own home, then hands you a list of horrors you now cannot un-know."),
+            Triple("sysinfo", "system information", "Surveys the sprawling, sorry state of everything you've installed, and solemnly informs you exactly how much storage it cost you.")
+        )
+    ),
+    Chapter(
         "chapter_01", "The Absurdity of Redundancy",
         "It is a well-documented phenomenon that any sufficiently advanced filesystem will spontaneously generate duplicate files with slightly altered casing, just to see if the user is paying attention.",
         listOf(Triple("ls -a", "list, all", "Lifts the veil on the lurking, hidden files, highlighting the horrific reality that your system has secrets."))

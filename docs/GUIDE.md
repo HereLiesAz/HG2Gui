@@ -70,6 +70,15 @@ Connecting to the internet from a terminal emulator is much like shouting into a
 - **`ping`** (packet internet groper) — Pokes the pitch-black abyss of the internet, praying something out there pokes back.
 - **`ssh`** (secure shell) — Sends your consciousness hurtling through hyperspace, solely so you can shatter systems from the safety of your sofa.
 
+## Chapter 11 — Self-Knowledge
+
+The Guide notes that HG2Gui also ships four small oracles of its own, bootstrapped straight into the shell rather than fetched by any package manager. Three turn the lens inward. One dares to look outward, but only ever as far as the single address you hand it.
+
+- **`osint-lookup`** (open-source intelligence lookup) — Obsessively obtains obscure open-source omens about the one domain you dared to name, then offers them up without a shred of context or comfort.
+- **`net-inventory`** (network inventory) — Narrates the naked, humiliating truth of your own network — every interface, route, and DNS server you never bothered to name.
+- **`harden-check`** (harden check) — Halfheartedly hunts for holes in your own home, then hands you a list of horrors you now cannot un-know.
+- **`sysinfo`** (system information) — Surveys the sprawling, sorry state of everything you've installed, and solemnly informs you exactly how much storage it cost you.
+
 ## chapter_01 — The Absurdity of Redundancy
 
 It is a well-documented phenomenon that any sufficiently advanced filesystem will spontaneously generate duplicate files with slightly altered casing, just to see if the user is paying attention.
