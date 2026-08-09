@@ -19,6 +19,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -41,7 +42,9 @@ import kotlinx.coroutines.delay
  *
  * Every screen change wipes on: one axis, reading order, no fade, never loops. Text and rules
  * reveal via a left-to-right clip; pills grow their actual width instead, so a rounded end grows
- * into being rather than getting guillotined by a hard clip partway through its curve.
+ * into being rather than getting guillotined by a hard clip partway through its curve. A faint,
+ * oversized echo of the entry's own word drifts in behind everything else - depth is speed, not
+ * blur (GuideWash).
  */
 
 private val GUIDE_HUES = intArrayOf(6, 5, 4, 2, 9, 0, 7) // red, orange, amber, teal, blue, violet, magenta
@@ -189,6 +192,8 @@ private fun ColumnScope.GuideEntryReader(
 ) {
     val hue = GUIDE_HUES[GuideBook.entries.indexOf(entry) % GUIDE_HUES.size]
 
+    Box(Modifier.fillMaxSize().clipToBounds()) {
+    GuideWash(entry.cmd.uppercase(), wipeKey)
     Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
         Row(
             Modifier.fillMaxWidth().padding(top = 18.dp),
@@ -284,6 +289,34 @@ private fun ColumnScope.GuideEntryReader(
             }
         }
     }
+    }
+}
+
+/**
+ * The faint oversized echo of the entry's own word, drifting in from the right at a fraction of
+ * the entry's own pace - "depth is speed," not blur or dimming. Plays once per [wipeKey], same as
+ * every WipeItem, so Replay restarts it too.
+ */
+@Composable
+private fun GuideWash(word: String, wipeKey: Int) {
+    val drift = remember(wipeKey) { Animatable(40f) }
+    LaunchedEffect(wipeKey) {
+        drift.snapTo(40f)
+        drift.animateTo(0f, tween(2400, easing = CubicBezierEasing(0f, .9f, .1f, 1f)))
+    }
+    Text(
+        word,
+        color = Azphalt.Ink.copy(alpha = .09f),
+        fontSize = 100.sp,
+        lineHeight = 84.sp,
+        fontWeight = FontWeight.Black,
+        letterSpacing = (-0.04).em,
+        maxLines = 1,
+        softWrap = false,
+        modifier = Modifier
+            .padding(top = 64.dp, start = 4.dp)
+            .graphicsLayer { translationX = drift.value.dp.toPx() }
+    )
 }
 
 @Composable

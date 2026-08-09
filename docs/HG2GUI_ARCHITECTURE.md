@@ -170,6 +170,21 @@ reflection-based command engine underneath it — built-ins are a fixed dispatch
     `AiChatScreen`, `AzpStoreScreen`, `CommandGuideScreen`, `GuideReaderScreen`, `FilesScreen`,
     `StorageScreen`, `FolderPicker`, `EditorScreen`.
 
+### 11. Guide reader motion (Kotlin, `commonMain`)
+*   **`ui/guide/GuideReaderScreen.kt`**: an entry never just appears - each field wipes on in
+    reading order via `WipeItem`, sequenced `120 + seq*110` ms apart with
+    `CubicBezierEasing(0f, .9f, .1f, 1f)` (the Azphalt "unfold" easing). Text/rules reveal via a
+    left-to-right `clipRect`; capsules/pills instead animate their real layout width from 0, since
+    clip-masking an already-round shape would guillotine its leading curve.
+*   `GuideWash`: a faint, oversized echo of the entry's own command name (9% ink, ~100sp) behind
+    the content, drifting in from the right over 2400ms on the same easing - "depth is speed," no
+    blur or dimming. Tied to the same `wipeKey` as every `WipeItem`, so Prev/Next/Replay restart
+    it along with everything else. This is the one piece of `HG2Gui_Guide_Motion.dc.html`'s "01 -
+    Entry" demo the screen was missing; the wipe-in cascade itself already matched. The spec's "02
+    - Parallax" scroll-driven variant (a background wash plane at 0.2x scroll speed, mid-plane
+    rods at 0.5x) isn't implemented - the real `GuideEntryReader` is a single fixed screen with
+    Prev/Next, not a long scrolling page, so there's no scroll position for it to drive against.
+
 ## Data Flow
 1.  **Input**: The user taps `wifi`. No text is typed. Since `wifi` leaves no further
     parameters, it runs immediately on that tap.
