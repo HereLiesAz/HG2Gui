@@ -39,6 +39,7 @@ import com.hereliesaz.hg2gui.azp.AzpInstaller
 import com.hereliesaz.hg2gui.managers.AiSettings
 import com.hereliesaz.hg2gui.managers.AzpLibrary
 import com.hereliesaz.hg2gui.managers.ContactManager
+import com.hereliesaz.hg2gui.managers.OsContextStore
 import com.hereliesaz.hg2gui.managers.SshPresets
 import com.hereliesaz.hg2gui.managers.TerminalHistoryEntry
 import com.hereliesaz.hg2gui.managers.VfsManager
@@ -326,7 +327,7 @@ class TerminalActivity : FragmentActivity() {
                                         AiReply(text = "error: ${e.message}", command = null)
                                     }
                                     aiMessages = aiMessages + AiMessage(
-                                        fromUser = false, text = reply.text, command = reply.command
+                                        fromUser = false, text = reply.text, command = reply.command, parts = reply.parts
                                     )
                                     aiBusy = false
                                 }
@@ -499,6 +500,13 @@ class TerminalActivity : FragmentActivity() {
                                 }
                                 wizardId == "ai-chat" -> screen = Screen.Ai
                                 wizardId == "azp-store" -> screen = Screen.Azp
+                                wizardId.startsWith("switchos:") -> {
+                                    val os = wizardId.removePrefix("switchos:")
+                                    scope.launch {
+                                        OsContextStore.set(this@TerminalActivity, os)
+                                        tree = withContext(Dispatchers.IO) { CommandTree.from(this@TerminalActivity) }
+                                    }
+                                }
                             }
                         },
                         onRun = { sessionId, line, onOutput, onNeedInput ->

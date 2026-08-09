@@ -194,6 +194,30 @@ reflection-based command engine underneath it — built-ins are a fixed dispatch
     rods at 0.5x) isn't implemented - the real `GuideEntryReader` is a single fixed screen with
     Prev/Next, not a long scrolling page, so there's no scroll position for it to drive against.
 
+### 12. Context (OS-reference tree) and AI part breakdown (Kotlin, `androidMain`/`commonMain`)
+*   **`managers/OsContextStore.kt`** (androidMain): flat SharedPreferences, one string key,
+    `current()`/`set()` - the OS a session is mentally "in" (`local`, the default, or
+    `ubuntu`/`macos`/`windows`). Persisted, not session-scoped, since a device is usually SSH'd
+    into the same kind of host repeatedly.
+*   **`CommandTree.kt`**: `contextRoot()` is a synthesized root pill (like `workflowsRoot`/
+    `aiRoot`) with one leaf per OS choice, each `wizardId = "switchos:<os>"` - picking one is a
+    state change, not a token, handled by `TerminalActivity`'s `onWizard` (sets
+    `OsContextStore`, then re-fetches `CommandTree.from`). When the current OS isn't `local`,
+    `from()` adds one more root, `osReferenceRoot()`: a static (not live-discovered) reference
+    tree for that OS's package manager, service manager, and the commands that genuinely overlap
+    with the local Termux install (`git`, `ls`, `ssh`). This is `HG2Gui_Redesign.dc.html`'s "2b -
+    context-aware" demo, scoped to what's actually useful without a live remote-shell-awareness
+    mechanism this app doesn't have: a reference tree for working over an `ssh` connection, not a
+    live suggestion set that knows what's really installed on the far end.
+*   **AI part breakdown** (`ai/AiClient.kt`, `ui/ai/AiChatScreen.kt`): the system prompt now asks
+    the model to optionally follow a `CMD:` reply with a `PARTS:` block, one `<token>|<what it
+    does>` line per flag, for commands worth breaking down. `AiClient.parse` splits this into
+    `AiReply.parts`, rendered as a "WHAT EACH PART DOES" panel under the USE pill
+    (`AiChatScreen.kt`'s `AiBubble`). This is the tractable slice of `HG2Gui_Redesign.dc.html`'s
+    "2c - Phase 4" concept - the breakdown panel, not the full separate screen with per-token
+    tap-to-swap-from-the-tree editing, which would need a way to re-enter the pill tree from an
+    arbitrary token position and is out of scope here.
+
 ## Data Flow
 1.  **Input**: The user taps `wifi`. No text is typed. Since `wifi` leaves no further
     parameters, it runs immediately on that tap.

@@ -45,7 +45,15 @@ Two more root pills sit alongside the shell categories, neither backed by a shel
     line to review and run — a `new…` pill saves one from a name plus a template string.
 *   **AI**: one `chat…` pill opening a natural-language-to-command chat screen (requires an
     Anthropic API key set in Settings → AI). Never runs anything itself — a suggested command
-    shows a USE pill that hands it to the command line the same way.
+    shows a USE pill that hands it to the command line the same way. A command reply may also
+    include a "what each part does" breakdown, one line per flag.
+*   **Context**: pick which OS's commands the tree should also offer — `local` (the default,
+    turns this off) or a reference set for `ubuntu`/`macos`/`windows` (a synthesized root pill
+    alongside the shell categories, e.g. `apt`/`systemctl`/`git`/`ssh` for Ubuntu). For working
+    over an active `ssh` connection into a host of that kind, where the local Termux PATH tells
+    you nothing about what's actually there — `git`/`ls`/`ssh` genuinely overlap with what's
+    locally real, the package/service managers don't. Picking one just assembles the command onto
+    the command line like any other pill; nothing runs automatically.
 *   **Store**: one `search…` pill opening the azphalt.store package browser — the same idea as
     `pkg`/`apt`, but for `.azp` extensions (assets, code, packs, companion apps, MCP-server
     headers, and AI-skill bundles). Filter by kind, then INSTALL downloads and unpacks a package.

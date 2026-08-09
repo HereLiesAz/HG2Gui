@@ -31,7 +31,14 @@ import androidx.compose.ui.unit.sp
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
 import com.hereliesaz.hg2gui.ui.menu.pageBrush
 
-data class AiMessage(val fromUser: Boolean, val text: String, val command: String? = null)
+/** [parts] is a flag-by-flag "what each part does" breakdown for a command reply - see
+ *  HG2Gui_Redesign.dc.html's "Phase 4" concept. Empty when the model didn't include one. */
+data class AiMessage(
+    val fromUser: Boolean,
+    val text: String,
+    val command: String? = null,
+    val parts: List<Pair<String, String>> = emptyList()
+)
 
 /**
  * Single-turn natural-language -> command suggestion, styled like every other full-screen
@@ -190,6 +197,38 @@ private fun AiBubble(message: AiMessage, onUseCommand: (String) -> Unit) {
                     "USE ▸", color = Azphalt.Yellow,
                     fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em
                 )
+            }
+        }
+        if (message.parts.isNotEmpty()) {
+            Spacer(Modifier.height(10.dp))
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(Azphalt.Ink.copy(alpha = .09f))
+                    .padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    "WHAT EACH PART DOES",
+                    color = Azphalt.Ink.copy(alpha = .45f),
+                    fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.18.em
+                )
+                message.parts.forEach { (token, explanation) ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text(
+                            token,
+                            color = Azphalt.Ink,
+                            fontSize = 12.sp, fontWeight = FontWeight.ExtraBold,
+                            modifier = Modifier.widthIn(min = 34.dp)
+                        )
+                        Text(
+                            explanation,
+                            color = Azphalt.Ink.copy(alpha = .78f),
+                            fontSize = 12.sp, lineHeight = 16.sp
+                        )
+                    }
+                }
             }
         }
     }
