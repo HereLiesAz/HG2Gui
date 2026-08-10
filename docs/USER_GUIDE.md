@@ -25,8 +25,14 @@ From the top:
     confirmation. Otherwise press **Run** whenever you're ready; you don't have to pick every
     pill a command offers.
 
-Tap the host pill at the bottom to go back a level. A `file…` pill anywhere in the tree opens a
-graphical file browser through the same stack — no separate screen, no typing a path.
+Tap the host pill at the bottom to go back a level. A `file…` pill anywhere in the tree opens the
+graphical Select File/Folder browser — no typing a path. The pill itself becomes the screen: it
+drops into the trail at the bottom, then runs the full edge of the display — right along the
+bottom to the corner, up the right side, across the top, down the left — closing the loop back
+over where it started. The instant it starts down that last edge, the frame it's traced fills
+with its own colour and the browser fades in underneath, showing the working directory's
+contents. Tap a folder to go inside it, tap a file to pick it, or tap **SELECT THIS FOLDER** if
+the command wants a directory rather than a file.
 
 ## When a command needs more from you
 Some commands stop mid-run to ask something. A yes/no question gets a dedicated **Answer**

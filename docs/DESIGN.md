@@ -113,6 +113,13 @@ whichever pill opened it. Closing plays the same two beats in reverse. Whenever 
 open above the root, a yellow **…** chip drops in with the rest of the header — tap it to close
 the deepest open level, same as tapping its own capsule again.
 
+The Select File/Folder pill runs the fuller, un-simplified version of the same source sequence
+(`PillPerimeterReveal.kt`) instead: from the pill's own trail crumb, one edge grows at a time -
+bottom, right, top, left, 260ms apiece - closing the loop back over its own start, with the flood
+wipe (this time top-to-bottom) starting the instant that last edge does. It gets the closer read
+because it opens from an arbitrary crumb position rather than a fixed root pill, so a single
+rect-interpolation (as `PillWrapReveal` does) would visibly cut a corner instead of tracing one.
+
 ## 6. Scale
 
 The menu's size isn't fixed — the shell categories are discovered live from what's actually

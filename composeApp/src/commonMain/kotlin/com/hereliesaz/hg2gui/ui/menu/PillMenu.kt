@@ -13,11 +13,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -193,7 +196,12 @@ data class MenuNode(
     // which collects host/port/key through SessionUiState's prompt machinery) instead of
     // contributing a token or drilling into more children. Picking it still settles into the
     // trail like any other pick, but PillMenu calls onWizard instead of onRun for it.
-    val wizardId: String? = null
+    val wizardId: String? = null,
+    // True for a wizard that anchors its own animation to where this pick's trail crumb lands
+    // (e.g. the Select File/Folder pill running the screen's perimeter from that exact spot) -
+    // onWizard fires only after the crumb has actually settled into the trail and reported its
+    // position via onCrumbPositioned, instead of firing immediately like every other wizard.
+    val settleBeforeWizard: Boolean = false,
 )
 
 /** The literal command-line text this node contributes when picked, or null if it never does. */
@@ -218,7 +226,10 @@ fun PillMenu(
     onRun: (tokens: List<String>, isTerminal: Boolean) -> Unit = { _, _ -> },
     // Called instead of onRun when the picked child has a wizardId - the caller owns whatever
     // multi-step flow that id names.
-    onWizard: (wizardId: String) -> Unit = {}
+    onWizard: (wizardId: String) -> Unit = {},
+    // Reports a trail crumb's on-screen rect (root coordinates) every time it's laid out - only
+    // consumed by a settleBeforeWizard pick that needs to anchor an animation to it.
+    onCrumbPositioned: (id: String, rect: Rect) -> Unit = { _, _ -> }
 ) {
     var phase by remember { mutableStateOf<Phase>(Phase.Browsing) }
     // Everything picked below the root host. Each pick drops out of the band it was chosen
@@ -288,19 +299,34 @@ fun PillMenu(
                                 children = effectiveChildren,
                                 hueOwner = host.id,
                                 onPick = { child ->
-                                    if (child.wizardId != null) {
-                                        onWizard(child.wizardId)
+                                    if (child.wizardId != null && child.settleBeforeWizard) {
+                                        // This wizard anchors an animation to the crumb's actual
+                                        // landing spot, so it can't fire until the crumb exists and
+                                        // has reported its position - unlike every other wizard,
+                                        // which fires immediately below.
+                                        scope.launch {
+                                            delay((Azphalt.DROP_MS + Azphalt.SWING_MS).toLong())
+                                            trail = trail + child
+                                            // One extra beat so the new crumb actually gets laid
+                                            // out and reports its position before onWizard reads it.
+                                            delay(32)
+                                            onWizard(child.wizardId)
+                                        }
                                     } else {
-                                        tokens = (trail + child).mapNotNull { it.tokenValue() }
-                                        onRun(tokens, child.isTerminal())
-                                    }
-                                    scope.launch {
-                                        // Let the pick's own drop-and-grow finish, plus one beat to
-                                        // settle, before swapping the band for its children - so the
-                                        // next cascade always starts after the hand-off is visible,
-                                        // never on top of it.
-                                        delay((Azphalt.DROP_MS + Azphalt.SWING_MS).toLong())
-                                        trail = trail + child
+                                        if (child.wizardId != null) {
+                                            onWizard(child.wizardId)
+                                        } else {
+                                            tokens = (trail + child).mapNotNull { it.tokenValue() }
+                                            onRun(tokens, child.isTerminal())
+                                        }
+                                        scope.launch {
+                                            // Let the pick's own drop-and-grow finish, plus one beat
+                                            // to settle, before swapping the band for its children -
+                                            // so the next cascade always starts after the hand-off is
+                                            // visible, never on top of it.
+                                            delay((Azphalt.DROP_MS + Azphalt.SWING_MS).toLong())
+                                            trail = trail + child
+                                        }
                                     }
                                 }
                             )
@@ -325,7 +351,8 @@ fun PillMenu(
                             trail = trail.take(i)
                             tokens = trail.mapNotNull { it.tokenValue() }
                             onRun(tokens, false)
-                        }
+                        },
+                        onCrumbPositioned = onCrumbPositioned
                     )
                 }
             }
@@ -541,7 +568,12 @@ private fun ChildPill(
  * it, re-opening that pill's own band of choices.
  */
 @Composable
-private fun TrailRow(trail: List<MenuNode>, hueOwner: String, onTapCrumb: (Int) -> Unit) {
+private fun TrailRow(
+    trail: List<MenuNode>,
+    hueOwner: String,
+    onTapCrumb: (Int) -> Unit,
+    onCrumbPositioned: (id: String, rect: Rect) -> Unit = { _, _ -> }
+) {
     if (trail.isEmpty()) return
     Box(Modifier.fillMaxSize()) {
         Row(
@@ -552,7 +584,12 @@ private fun TrailRow(trail: List<MenuNode>, hueOwner: String, onTapCrumb: (Int) 
         ) {
             trail.forEachIndexed { i, node ->
                 key(node.id) {
-                    TrailCrumb(node = node, hueOwner = hueOwner, onClick = { onTapCrumb(i) })
+                    TrailCrumb(
+                        node = node,
+                        hueOwner = hueOwner,
+                        onClick = { onTapCrumb(i) },
+                        onPositioned = { onCrumbPositioned(node.id, it) }
+                    )
                 }
             }
         }
@@ -560,7 +597,7 @@ private fun TrailRow(trail: List<MenuNode>, hueOwner: String, onTapCrumb: (Int) 
 }
 
 @Composable
-private fun TrailCrumb(node: MenuNode, hueOwner: String, onClick: () -> Unit) {
+private fun TrailCrumb(node: MenuNode, hueOwner: String, onClick: () -> Unit, onPositioned: (Rect) -> Unit = {}) {
     Pill(
         label = node.label,
         cap = node.cap,
@@ -570,7 +607,10 @@ private fun TrailCrumb(node: MenuNode, hueOwner: String, onClick: () -> Unit) {
         // the screen; a Row of these can't do that (they'd all fight for the full row), so this
         // is the one pill sized by content alone - give it a floor so a short label like "ls"
         // doesn't shrink-wrap into something visibly smaller than everything around it.
-        modifier = Modifier.defaultMinSize(minWidth = 56.dp).clickable(onClick = onClick)
+        modifier = Modifier
+            .defaultMinSize(minWidth = 56.dp)
+            .clickable(onClick = onClick)
+            .onGloballyPositioned { onPositioned(it.boundsInRoot()) }
     )
 }
 

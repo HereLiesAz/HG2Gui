@@ -69,9 +69,9 @@ reflection-based command engine underneath it — built-ins are a fixed dispatch
     binaries sharing a hyphenated prefix (`apt-get`, `apt-key`, `apt-mark`) nest under one host
     node instead of appearing as unrelated flat entries. Before a bootstrap exists, Shell offers
     exactly one pill: `bootstrap`.
-*   `FileBrowser` (also `androidMain`) supplies the file-argument case: a `file…` node whose
-    children are resolved lazily from a real directory listing (`MenuNode.resolveChildren`),
-    attached to `edit` and to every discovered shell binary.
+*   `FileBrowser` (also `androidMain`) supplies the file-argument case: a `file…` node (attached
+    to `edit` and to every discovered shell binary) whose `wizardId` opens the graphical Select
+    File/Folder picker instead of drilling further into the pill stack - see section 13 below.
 
 ### 7. `McpServerService` and the `mcp` package (Kotlin, `androidMain`)
 *   **Role**: An optional, loopback-only JSON-RPC 2.0 server (`mcp/McpServerService.kt`) an
@@ -248,6 +248,52 @@ reflection-based command engine underneath it — built-ins are a fixed dispatch
     "2c - Phase 4" concept - the breakdown panel, not the full separate screen with per-token
     tap-to-swap-from-the-tree editing, which would need a way to re-enter the pill tree from an
     arbitrary token position and is out of scope here.
+
+### 13. Select File/Folder: the graphical path picker (Kotlin, `commonMain`/`androidMain`)
+*   **`ui/menu/FileBrowser.kt`** (androidMain): the `file…` pill attached to `edit` and to every
+    discovered shell binary. Unlike an ordinary pill it carries a `wizardId` (`"pick-path:<node
+    id>"`) and `settleBeforeWizard = true` instead of `resolveChildren` - picking it doesn't drill
+    further into the stack, it hands off to `TerminalActivity`'s `onWizard`, and only after its own
+    trail crumb has actually settled and reported where it landed.
+*   **`PillMenu.kt`'s `settleBeforeWizard`**: a wizard pick normally fires `onWizard` immediately,
+    with its trail-crumb drop animating separately and unobserved. A `settleBeforeWizard` pick
+    instead waits for `Azphalt.DROP_MS + Azphalt.SWING_MS` (the crumb's own drop-and-settle time)
+    plus one short buffer, adds the crumb to the trail, *then* fires `onWizard` - so by the time the
+    caller acts, `onCrumbPositioned(id, rect)` has already reported that crumb's real on-screen
+    rect (`TrailCrumb`'s own `Modifier.onGloballyPositioned`, in root coordinates).
+    `TerminalActivity` keeps every reported rect in `crumbRects`, keyed by node id, and recovers
+    the right one by stripping `FileBrowser.WIZARD_PREFIX` back off the wizardId string.
+*   **`PillPerimeterReveal.kt`** (commonMain): the entrance/exit motion. Where `PillWrapReveal`
+    (section 5a of `DESIGN.md`, used only for the fixed `FILES` root pill) simplifies "run the
+    perimeter" into one continuous rect interpolation, this is the fuller, edge-by-edge version:
+    from the crumb's own rect, a `hue`-coloured bar grows right along the bottom edge to the
+    bottom-right corner, up the right edge to the top-right corner, left across the top to the
+    top-left corner, then down the left edge - closing the loop back over the crumb's own start.
+    The moment that last leg begins, a downward wipe (`clipRect(bottom = ...)`) starts filling the
+    now-enclosed frame with `hue` and revealing whatever's rendered inside it as it descends -
+    `PerimeterRevealState.open()`/`close()` sequence the four `Animatable` leg progresses (`bottom
+    Leg`/`rightLeg`/`topLeg`/`leftLeg`, 260ms each) and the `flood` progress (420ms, launched
+    alongside `leftLeg`) explicitly, rather than the single `wrap`/`flood` pair `PillWrapReveal`
+    uses.
+*   **`ui/files/PathPickerScreen.kt`** (commonMain): the browser rendered inside the reveal - a
+    real (not VFS-sandboxed) directory listing via a caller-supplied `listDir`, folders tap-to-
+    descend, files tap-to-select-immediately, and a fixed **SELECT THIS FOLDER** pill so a
+    folder-typed parameter can be satisfied by the open directory itself - nothing here knows
+    ahead of time whether the command it's filling in wants a file or a directory, since
+    `FileBrowser` offers the same one pill for both cases.
+*   **Browsing root**: `TerminalActivity.realFsListDir` walks the real filesystem with plain
+    `java.io.File` (unlike `FilesScreen`'s `vfsListDir`, which is sandboxed to `VfsManager`'s
+    app-private root) - "the working directory's contents are shown" means the *session's own live
+    cwd* (`SessionUiState.cwd`, kept in sync with the shell after every command), falling back to
+    `CommandTree.pickerRoot()` (the Termux home dir, or app-external-files before a bootstrap
+    exists) only when a session has no cwd yet.
+*   **Handing the pick back**: selecting a file or folder appends its absolute path straight onto
+    `session.ui.tokens` - the same list `CommandLine`'s chip row and `RUN` both read from - and
+    clears `inputText`, then closes the reveal. `PillMenu` keeps its own separate `trail`/`tokens`
+    for the pill stack's own display, unaware of this external append; every command offering this
+    picker today treats the file/folder as its last argument, so no further pick ever overwrites
+    it, but a future multi-arg-after-file command would need `PillMenu` to expose a trail-sync hook
+    to stay safe.
 
 ## Data Flow
 1.  **Input**: The user taps `wifi`. No text is typed. Since `wifi` leaves no further
