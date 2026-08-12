@@ -18,6 +18,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -63,6 +64,7 @@ import com.hereliesaz.hg2gui.ui.ai.AiMessage
 import com.hereliesaz.hg2gui.ui.azp.AzpListing
 import com.hereliesaz.hg2gui.ui.azp.AzpStoreScreen
 import com.hereliesaz.hg2gui.ui.files.FilesScreen
+import com.hereliesaz.hg2gui.ui.files.PathPickerScreen
 import com.hereliesaz.hg2gui.ui.files.StorageCategoryStat
 import com.hereliesaz.hg2gui.ui.files.StorageStats
 import com.hereliesaz.hg2gui.ui.files.VfsEntry
@@ -70,10 +72,14 @@ import com.hereliesaz.hg2gui.ui.files.VfsSearchResult
 import com.hereliesaz.hg2gui.ui.guide.CommandGuideScreen
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
 import com.hereliesaz.hg2gui.ui.menu.CommandTree
+import com.hereliesaz.hg2gui.ui.menu.FileBrowser
 import com.hereliesaz.hg2gui.ui.menu.MenuNode
+import com.hereliesaz.hg2gui.ui.menu.PerimeterRevealState
+import com.hereliesaz.hg2gui.ui.menu.PillPerimeterReveal
 import com.hereliesaz.hg2gui.ui.menu.PillWrapReveal
 import com.hereliesaz.hg2gui.ui.menu.PillWrapRevealState
 import com.hereliesaz.hg2gui.ui.ssh.SshFlow
+import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -192,6 +198,34 @@ class TerminalActivity : FragmentActivity() {
                     filesWrap.close()
                     screen = Screen.Terminal
                 }
+            }
+
+            // The Select File/Folder pill: same "the pill becomes the page" family as Files, but
+            // running the screen's full perimeter edge by edge from wherever this pick's own
+            // trail crumb lands - see PillPerimeterReveal. onCrumbPositioned (wired into
+            // TerminalScreen below) keeps this map fresh with every trail crumb's own rect.
+            val pathPickerState = remember { PerimeterRevealState() }
+            var pathPickerRoot by remember { mutableStateOf("") }
+            val pathPickerHue = remember { Azphalt.hues[Azphalt.hueOf(FileBrowser.WIZARD_PREFIX)] }
+            val crumbRects = remember { mutableStateMapOf<String, Rect>() }
+
+            fun closePathPicker() {
+                scope.launch { pathPickerState.close() }
+            }
+
+            suspend fun realFsListDir(path: String): List<VfsEntry> = withContext(Dispatchers.IO) {
+                val dir = File(path)
+                (dir.listFiles() ?: emptyArray())
+                    .sortedWith(compareBy({ !it.isDirectory }, { it.name.lowercase() }))
+                    .map { f ->
+                        VfsEntry(
+                            name = f.name,
+                            path = f.absolutePath,
+                            isDirectory = f.isDirectory,
+                            sizeBytes = if (f.isFile) f.length() else 0L,
+                            modifiedAt = f.lastModified()
+                        )
+                    }
             }
 
             suspend fun vfsListDir(path: String): List<VfsEntry> = withContext(Dispatchers.IO) {
@@ -505,6 +539,7 @@ class TerminalActivity : FragmentActivity() {
                         onOpenGuide = { screen = Screen.Guide },
                         onOpenFiles = { openFiles() },
                         onFilesButtonPositioned = { filesOrigin = it },
+                        onCrumbPositioned = { id, rect -> crumbRects[id] = rect },
                         onCopy = { text ->
                             val clipboard = getSystemService(ClipboardManager::class.java)
                             clipboard?.setPrimaryClip(ClipData.newPlainText("HG2Gui", text))
@@ -546,6 +581,13 @@ class TerminalActivity : FragmentActivity() {
                                         OsContextStore.set(this@TerminalActivity, os)
                                         tree = withContext(Dispatchers.IO) { CommandTree.from(this@TerminalActivity) }
                                     }
+                                }
+                                wizardId.startsWith(FileBrowser.WIZARD_PREFIX) -> {
+                                    val crumbId = wizardId.removePrefix(FileBrowser.WIZARD_PREFIX)
+                                    pathPickerRoot = session?.ui?.cwd?.takeIf { it.isNotBlank() }
+                                        ?: CommandTree.pickerRoot(this@TerminalActivity).absolutePath
+                                    pathPickerState.origin = crumbRects[crumbId] ?: Rect.Zero
+                                    scope.launch { pathPickerState.open() }
                                 }
                             }
                         },
@@ -635,6 +677,41 @@ class TerminalActivity : FragmentActivity() {
                                 }
                             },
                             onBack = { closeFiles() },
+                            modifier = Modifier.then(
+                                if (fullscreen) Modifier else Modifier.windowInsetsPadding(WindowInsets.systemBars)
+                            )
+                        )
+                    }
+                }
+
+                if (pathPickerState.active) {
+                    // Appends straight to session.ui.tokens, same slot PillMenu's own picks feed
+                    // - CommandLine's chip row and RUN both read from it directly. The one gap:
+                    // PillMenu keeps its own separate trail/tokens for the pill stack's own
+                    // display, unaware of this external append, so if a pill were picked again
+                    // after this it would overwrite active.tokens with its own (file-less) view.
+                    // Harmless today - every command offering this picker treats it as the last
+                    // argument - but would need PillMenu to expose a trail-sync hook to stay safe
+                    // if a future command sequenced more pills after a file/folder pick.
+                    PillPerimeterReveal(state = pathPickerState, hue = pathPickerHue) {
+                        PathPickerScreen(
+                            startPath = pathPickerRoot,
+                            listDir = { path -> realFsListDir(path) },
+                            onSelectFile = { path ->
+                                sessions.firstOrNull { it.ui.id == activeSessionId }?.let { session ->
+                                    session.ui.tokens = session.ui.tokens + path
+                                    session.ui.inputText = ""
+                                }
+                                closePathPicker()
+                            },
+                            onSelectFolder = { path ->
+                                sessions.firstOrNull { it.ui.id == activeSessionId }?.let { session ->
+                                    session.ui.tokens = session.ui.tokens + path
+                                    session.ui.inputText = ""
+                                }
+                                closePathPicker()
+                            },
+                            onCancel = { closePathPicker() },
                             modifier = Modifier.then(
                                 if (fullscreen) Modifier else Modifier.windowInsetsPadding(WindowInsets.systemBars)
                             )
