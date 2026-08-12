@@ -42,7 +42,9 @@ band's height never grows with depth: each level is its own fresh cascade, not m
 onto the one before it. Tapping the anchor again undoes the drill — its siblings **enter** back,
 the same motion the root stack uses to re-enter.
 
-The children are their own scroll region; the host does not move.
+The children are their own scroll region; the host does not move. A category (or the root stack
+itself) can hold more pills than one screen's height at the stack's own row pitch - drag up or
+down to reach the rest (`rememberStackScroll` in `PillMenu.kt`).
 
 ## 4a. The trail
 
@@ -112,6 +114,13 @@ The frame's border stays visible for as long as the screen is open, tying its hu
 whichever pill opened it. Closing plays the same two beats in reverse. Whenever there's a level
 open above the root, a yellow **…** chip drops in with the rest of the header — tap it to close
 the deepest open level, same as tapping its own capsule again.
+
+The Select File/Folder pill runs the fuller, un-simplified version of the same source sequence
+(`PillPerimeterReveal.kt`) instead: from the pill's own trail crumb, one edge grows at a time -
+bottom, right, top, left, 260ms apiece - closing the loop back over its own start, with the flood
+wipe (this time top-to-bottom) starting the instant that last edge does. It gets the closer read
+because it opens from an arbitrary crumb position rather than a fixed root pill, so a single
+rect-interpolation (as `PillWrapReveal` does) would visibly cut a corner instead of tracing one.
 
 ## 6. Scale
 
