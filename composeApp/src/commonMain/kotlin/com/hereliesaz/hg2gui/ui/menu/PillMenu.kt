@@ -6,6 +6,9 @@ import androidx.compose.animation.core.keyframes
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.rememberScrollableState
+import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -175,6 +178,44 @@ private const val TRAIL_LEFT_OF_FULL = HOST_WIDTH * HOST_RIGHT_EDGE + 0.02f
 // out starting one row above that, never on top of it.
 private const val BAND_BASE_ROW = 1
 
+/**
+ * A stack (root pills or a child band) fans up row by row from a shared base with no cap on how
+ * many rows exist - a category discovered live from PATH can easily hold more than one screen's
+ * height at [ROW_PITCH] apart. Since every pill in a stack is positioned by an absolute animated
+ * `translationY` rather than real flow layout (so the "fly up from a shared anchor" entrance
+ * motion works), a stock `verticalScroll`/`LazyColumn` can't be dropped in - Compose would size
+ * the scroll region to each pill's own (viewport-sized) Box, not to the stack's actual extent.
+ * This adds a plain drag-tracked offset instead, applied on top of each pill's own animated lift.
+ * Drag direction is "content follows the finger" (drag down reveals rows further up the stack,
+ * same as pulling down to see earlier messages in a chat) - unverified on a real device, since
+ * none was available while building this; a backwards feel is a one-line sign flip, not a
+ * structural fix.
+ */
+private class StackScroll(val modifier: Modifier, val offsetPx: Float)
+
+@Composable
+private fun rememberStackScroll(itemCount: Int, baseRow: Int, viewportHeightPx: Float): StackScroll {
+    val density = LocalDensity.current
+    val pitchPx = with(density) { ROW_PITCH.toPx() }
+    val pillHeightPx = with(density) { PILL_HEIGHT.toPx() }
+    var offsetPx by remember { mutableStateOf(0f) }
+    val maxOverflowPx = remember(itemCount, viewportHeightPx) {
+        val totalExtentPx = pitchPx * (itemCount - 1 + baseRow).coerceAtLeast(0) + pillHeightPx
+        (totalExtentPx - viewportHeightPx).coerceAtLeast(0f)
+    }
+    // Clamp whenever the bound itself shrinks (e.g. fewer roots after a recomposition) so a
+    // stale offset never leaves the stack scrolled past its own new end.
+    if (offsetPx > maxOverflowPx) offsetPx = maxOverflowPx
+    val scrollState = rememberScrollableState { delta ->
+        val next = (offsetPx + delta).coerceIn(0f, maxOverflowPx)
+        val consumed = next - offsetPx
+        offsetPx = next
+        consumed
+    }
+    val modifier = Modifier.scrollable(orientation = Orientation.Vertical, state = scrollState)
+    return StackScroll(modifier, offsetPx)
+}
+
 data class MenuNode(
     val id: String,
     val label: String,
@@ -240,11 +281,13 @@ fun PillMenu(
     var tokens by remember { mutableStateOf(listOf<String>()) }
     val scope = rememberCoroutineScope()
 
-    Box(modifier.fillMaxSize()) {
+    BoxWithConstraints(modifier.fillMaxSize()) {
+        val viewportHeightPx = with(LocalDensity.current) { maxHeight.toPx() }
         when (val p = phase) {
             is Phase.Browsing, is Phase.Leaving -> {
                 val leavingHost = (p as? Phase.Leaving)?.hostId
-                Box(Modifier.fillMaxSize().padding(bottom = 12.dp)) {
+                val stackScroll = rememberStackScroll(itemCount = roots.size, baseRow = 0, viewportHeightPx = viewportHeightPx)
+                Box(Modifier.fillMaxSize().padding(bottom = 12.dp).then(stackScroll.modifier)) {
                     roots.forEachIndexed { i, node ->
                         // Roots aren't always a fixed static list - a contextual entry like the
                         // suggestions host can appear or disappear between recompositions - so
@@ -255,6 +298,7 @@ fun PillMenu(
                             StackPill(
                                 node = node,
                                 row = roots.size - 1 - i,
+                                scrollOffsetPx = stackScroll.offsetPx,
                                 leaving = leavingHost != null,
                                 isHost = node.id == leavingHost,
                                 entering = leavingHost == null,
@@ -298,6 +342,7 @@ fun PillMenu(
                             ChildBand(
                                 children = effectiveChildren,
                                 hueOwner = host.id,
+                                viewportHeightPx = viewportHeightPx,
                                 onPick = { child ->
                                     if (child.wizardId != null && child.settleBeforeWizard) {
                                         // This wizard anchors an animation to the crumb's actual
@@ -364,6 +409,7 @@ fun PillMenu(
 private fun StackPill(
     node: MenuNode,
     row: Int,
+    scrollOffsetPx: Float,
     leaving: Boolean,
     isHost: Boolean,
     entering: Boolean,
@@ -411,7 +457,7 @@ private fun StackPill(
                 .fillMaxWidth(HOST_WIDTH)
                 .offsetByFractionOfParent(offset.value)
                 .absoluteBleed(OVERHANG)
-                .graphicsLayer { translationY = lift.value }
+                .graphicsLayer { translationY = lift.value + scrollOffsetPx }
                 .clickable(enabled = !leaving, onClick = onClick)
         )
     }
@@ -453,13 +499,15 @@ private fun HostPill(node: MenuNode, rowsBelow: Int, onClick: () -> Unit) {
 private fun ChildBand(
     children: List<MenuNode>,
     hueOwner: String,
+    viewportHeightPx: Float,
     onPick: (MenuNode) -> Unit
 ) {
     // No key needed here - the call site already wraps this whole band in key(anchor.id), so a
     // new anchor tears down and recreates this state automatically.
     var selected by remember { mutableStateOf<String?>(null) }
+    val stackScroll = rememberStackScroll(itemCount = children.size, baseRow = BAND_BASE_ROW, viewportHeightPx = viewportHeightPx)
 
-    Box(Modifier.fillMaxSize()) {
+    Box(Modifier.fillMaxSize().then(stackScroll.modifier)) {
         children.forEachIndexed { idx, child ->
             key(child.id) {
                 val isSelected = child.id == selected
@@ -467,6 +515,7 @@ private fun ChildBand(
                     node = child,
                     localIndex = idx,
                     hueOwner = hueOwner,
+                    scrollOffsetPx = stackScroll.offsetPx,
                     leaving = selected != null && !isSelected,
                     droppingOut = isSelected,
                     onClick = {
@@ -486,6 +535,7 @@ private fun ChildPill(
     node: MenuNode,
     localIndex: Int,
     hueOwner: String,
+    scrollOffsetPx: Float,
     leaving: Boolean,
     droppingOut: Boolean,
     onClick: () -> Unit
@@ -551,7 +601,7 @@ private fun ChildPill(
                     transformOrigin =
                         if (localIndex % 2 == 0) TransformOrigin(0f, 0.5f) else TransformOrigin(1f, 0.5f)
                     rotationZ = turn.value
-                    translationY = lift.value
+                    translationY = lift.value + scrollOffsetPx
                     scaleX = scale.value
                     scaleY = scale.value
                 }

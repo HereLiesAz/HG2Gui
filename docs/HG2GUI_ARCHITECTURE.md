@@ -57,18 +57,34 @@ reflection-based command engine underneath it — built-ins are a fixed dispatch
 
 ### 6. `CommandTree` (Kotlin, `androidMain`)
 *   **Role**: Turns the fixed `Builtins` list and the shell's own PATH into the menu.
-*   **Responsibility**: The ten built-ins group into System / Apps & nav / Features from a fixed
-    list, with argument hints from a static map, per [COMMANDS.md](COMMANDS.md). Real shell
-    binaries are discovered live from the Termux bootstrap's `bin/` (never Android's own
-    `/system/bin` — Termux itself never depends on that either), matched back to the package that
-    owns each one via dpkg's own bookkeeping (`DpkgCatalog.binariesByPackage`), and grouped into
-    one root category per a hand-curated package → category map in `CommandTree.kt` itself —
-    Termux's own packages carry no Debian Section field to read a category from directly
+*   **Responsibility**: The ten built-ins group into Device / Apps & nav / Features from a fixed
+    list, with argument hints from a static map, per [COMMANDS.md](COMMANDS.md). "Device" (the
+    hardware toggles: wifi/bluetooth/airplane/flash/volume/brightness) is deliberately not called
+    "System" - a shell-discovered category is also named "System" (procps/tmux/htop/util-linux and
+    the like), and the two used to collide: two root pills both reading SYSTEM, distinguishable
+    only by hue. Real shell binaries are discovered live from the Termux bootstrap's `bin/` (never
+    Android's own `/system/bin` — Termux itself never depends on that either), matched back to the
+    package that owns each one via dpkg's own bookkeeping (`DpkgCatalog.binariesByPackage`), and
+    grouped into one root category per a hand-curated package → category map in `CommandTree.kt`
+    itself — Termux's own packages carry no Debian Section field to read a category from directly
     (verified against a real bootstrap: none of its 82 base packages have one), so there is no
-    live source of truth for this part, only for which package owns a binary. Within a category,
+    live source of truth for this part, only for which package owns a binary. A small
+    `CATEGORY_OF_BINARY` override map, checked after the package-level one, exists for the rare
+    binary whose package doesn't reflect its actual role - `pkg` ships in `termux-tools` (which
+    correctly maps to "System" for its other utility binaries), but `pkg` itself is Termux's own
+    wrapper around `apt`/`dpkg`, and belongs in "Package management" with them. Within a category,
     binaries sharing a hyphenated prefix (`apt-get`, `apt-key`, `apt-mark`) nest under one host
-    node instead of appearing as unrelated flat entries. Before a bootstrap exists, Shell offers
+    node instead of appearing as unrelated flat entries; `SHELL_HINTS` seeds a curated set of
+    argument pills for the handful of binaries worth hand-picking for (`apt`/`apt-get`/`pkg`/
+    `dpkg`'s own subcommands among them - a bare family host like `apt` shows its own hints
+    *and* its hyphenated siblings, not just the siblings). Before a bootstrap exists, Shell offers
     exactly one pill: `bootstrap`.
+*   **Overflow**: a category or a root stack can hold more pills than one screen's height at
+    `PillMenu.kt`'s `ROW_PITCH` - `rememberStackScroll` (in `PillMenu.kt`) tracks a plain drag
+    offset applied on top of every pill's own animated position, since the stack's absolute-
+    `translationY` positioning can't use a stock `verticalScroll`/`LazyColumn` (Compose would size
+    the scroll region to each pill's own viewport-sized Box, not to the stack's real extent). Used
+    for both the root stack and any `ChildBand`.
 *   `FileBrowser` (also `androidMain`) supplies the file-argument case: a `file…` node (attached
     to `edit` and to every discovered shell binary) whose `wizardId` opens the graphical Select
     File/Folder picker instead of drilling further into the pill stack - see section 13 below.

@@ -73,12 +73,18 @@ Compose. A screen is a function of state; there is no view-hierarchy manager cla
     position (`onCrumbPositioned`) - for a wizard whose entrance animation needs to grow out from
     that exact spot, like the Select File/Folder pill.
 *   `ui/menu/CommandTree.kt` — builds the tree: the ten `Builtins` verbs (fixed lists, not
-    discovered) into System / Apps & nav / Features, and the shell's real PATH binaries into one
+    discovered) into Device / Apps & nav / Features, and the shell's real PATH binaries into one
     root category per package category — `DpkgCatalog` reads which package owns a binary from
     dpkg's own bookkeeping, and a hand-curated map (Termux's packages carry no Debian Section
     field to read a category from directly) turns that into "Package management", "Network",
-    "Development", and so on — with hyphenated command families nested under a shared parent. See
-    [COMMANDS.md](COMMANDS.md).
+    "System", "Development", and so on — with hyphenated command families nested under a shared
+    parent. "Device" (the fixed hardware-toggle builtins: wifi/bluetooth/airplane/flash/volume/
+    brightness) is named apart from the shell-discovered "System" category (procps/tmux/htop and
+    the like) on purpose - both used to be labelled "System", two identically-named root pills
+    with nothing but hue to tell them apart. A small `CATEGORY_OF_BINARY` override map takes
+    priority over the package-level map for binaries whose package doesn't reflect their actual
+    role (`pkg` ships in `termux-tools`, mapped to "System", but belongs with `apt`/`dpkg` in
+    "Package management"). See [COMMANDS.md](COMMANDS.md).
 *   `ui/menu/FileBrowser.kt` — the Select File/Folder pill: a `file…` trigger (`wizardId`,
     `settleBeforeWizard = true`) that opens the graphical path picker (`ui/files/
     PathPickerScreen.kt`) rather than drilling further into the pill stack, wrapped in

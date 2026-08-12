@@ -42,7 +42,9 @@ band's height never grows with depth: each level is its own fresh cascade, not m
 onto the one before it. Tapping the anchor again undoes the drill — its siblings **enter** back,
 the same motion the root stack uses to re-enter.
 
-The children are their own scroll region; the host does not move.
+The children are their own scroll region; the host does not move. A category (or the root stack
+itself) can hold more pills than one screen's height at the stack's own row pitch - drag up or
+down to reach the rest (`rememberStackScroll` in `PillMenu.kt`).
 
 ## 4a. The trail
 
