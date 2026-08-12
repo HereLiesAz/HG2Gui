@@ -10,8 +10,12 @@ hand-curated package → category map in `CommandTree.kt` — Termux's own packa
 Debian Section field to read a category from directly, so there's no live source of truth for
 that part; `pkg install <package>` still makes its binaries appear as pills the next time a
 command finishes, they just fall under "Other" until the map is taught what category they
-belong in. Binaries sharing a hyphenated prefix (`apt-get`, `apt-key`, `apt-mark`, …) nest
-under one shared parent pill instead of appearing as unrelated flat entries.
+belong in — `pkg` itself is one deliberate exception to the package-level rule: it ships as part
+of `termux-tools` (mapped to "System"), but is filed under "Package management" instead, next to
+`apt`/`dpkg`, since that's what it actually is. Binaries sharing a hyphenated prefix (`apt-get`,
+`apt-key`, `apt-mark`, …) nest under one shared parent pill instead of appearing as unrelated flat
+entries; `apt`, `apt-get`, `pkg`, and `dpkg` also seed a curated set of their own common
+subcommands (`update`/`upgrade`/`install`/…) as pills, the same treatment `ls`/`cd`/`ps` get.
 
 Before a bootstrap is installed, Shell offers exactly one pill: **`bootstrap`** — which also
 runs automatically on first launch, the same way the official Termux app installs itself before
@@ -70,7 +74,7 @@ These ten are the only commands HG2Gui itself implements — see `terminal/Built
 other verb (app launching, file sharing, `alias`, editing with `nano`/`vim`, and so on) is a
 real shell binary now, not a reimplementation of one.
 
-### System
+### Device
 *   `wifi`: Show Wi-Fi state and open the quick panel to change it (a third-party app can't
     toggle Wi-Fi directly on modern Android).
 *   `bluetooth`: Request to enable Bluetooth, or open settings to disable it (no public disable
