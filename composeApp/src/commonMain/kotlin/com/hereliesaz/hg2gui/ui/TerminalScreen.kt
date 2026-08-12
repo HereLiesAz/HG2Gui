@@ -54,6 +54,7 @@ fun TerminalScreen(
     onOpenFiles: () -> Unit,
     onFilesButtonPositioned: (Rect) -> Unit = {},
     onWizard: (wizardId: String) -> Unit = {},
+    onCrumbPositioned: (id: String, rect: Rect) -> Unit = { _, _ -> },
     onCopy: (String) -> Unit = {},
     onShare: (String) -> Unit = {},
     onRun: suspend (
@@ -241,7 +242,8 @@ fun TerminalScreen(
                 // pending, sends the pick as that prompt's answer the same way.
                 if (isTerminal) executeCommand()
             },
-            onWizard = onWizard
+            onWizard = onWizard,
+            onCrumbPositioned = onCrumbPositioned
         )
 
         // A password/passphrase prompt (ssh, sudo, su - anything ShellSession's own idle-gap

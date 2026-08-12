@@ -18,6 +18,10 @@ import java.io.File
 
 object CommandTree {
 
+    // Labelled "Device", not "System" - a shell category also named "System" is discovered live
+    // from PATH (procps/tmux/htop/util-linux and friends), and the two used to collide: two root
+    // pills both reading SYSTEM, one for hardware toggles and one for OS utilities, with nothing
+    // but hue to tell them apart.
     private val SYSTEM = setOf("wifi", "bluetooth", "airplane", "flash", "volume", "brightness")
     private val APPS = setOf("call", "contacts")
     private val FEATURES = setOf("vfs", "edit", "calc")
@@ -43,7 +47,11 @@ object CommandTree {
         "df" to listOf("-h"),
         "uname" to listOf("-a"),
         "ping" to listOf("-c 4 1.1.1.1"),
-        "osint-lookup" to listOf("example.com")
+        "osint-lookup" to listOf("example.com"),
+        "pkg" to listOf("update", "upgrade", "install", "search", "list-installed", "uninstall"),
+        "apt" to listOf("update", "upgrade", "install", "search", "list --installed", "remove"),
+        "apt-get" to listOf("update", "upgrade", "install", "remove", "autoremove"),
+        "dpkg" to listOf("-l", "-L", "-S", "-i")
     )
 
     // A single category can carry far more names than the fan-out animation is built to show at
@@ -96,16 +104,26 @@ object CommandTree {
         "sqlite" to "Database", "postgresql" to "Database", "mariadb" to "Database",
         "redis" to "Database"
     )
+
+    /** Per-binary overrides, checked before [CATEGORY_OF_PACKAGE] - for a binary whose package
+     *  doesn't reflect what it's actually for. `pkg` ships as part of `termux-tools` (mapped to
+     *  "System" above, correctly, for that package's other utility binaries), but `pkg` itself is
+     *  Termux's own package-manager wrapper around `apt` and belongs with it. */
+    private val CATEGORY_OF_BINARY = mapOf("pkg" to "Package management")
+
     private const val UNCATEGORIZED = "Other"
 
-    private fun pickerRoot(context: Context): File =
+    /** Fallback browsing root for the Select File/Folder pill when a session has no live working
+     *  directory yet (e.g. before its first command runs) - TerminalActivity prefers the actual
+     *  session cwd over this whenever one is available. */
+    fun pickerRoot(context: Context): File =
         if (DistroManager.isInstalled(context)) DistroManager.homeDir(context)
         else context.getExternalFilesDir(null) ?: context.filesDir
 
-    private fun node(name: String, filePickerRoot: File): MenuNode {
+    private fun node(name: String): MenuNode {
         val argChildren = ARGS[name].orEmpty().map { MenuNode("$name/$it", it) }
         val children = if (name in FILE_PARAM_COMMANDS) {
-            argChildren + FileBrowser.pickerNode("$name/file", filePickerRoot)
+            argChildren + FileBrowser.pickerNode("$name/file")
         } else {
             argChildren
         }
@@ -257,9 +275,9 @@ object CommandTree {
         return MenuNode(id = "ctx", label = "Context", cap = (OS_LABELS[current] ?: current), children = choices)
     }
 
-    private fun shellLeaf(fullName: String, label: String, filePickerRoot: File): MenuNode {
+    private fun shellLeaf(fullName: String, label: String): MenuNode {
         val hints = SHELL_HINTS[fullName].orEmpty().map { MenuNode("sh/$fullName/$it", it) }
-        val children = hints + FileBrowser.pickerNode("sh/$fullName/file", filePickerRoot)
+        val children = hints + FileBrowser.pickerNode("sh/$fullName/file")
         return MenuNode(
             id = "sh/$fullName",
             label = label,
@@ -276,7 +294,7 @@ object CommandTree {
      * siblings count toward the "at least 2" threshold: a lone hyphenated name isn't worth a
      * parent of its own, and a name with no hyphen was never part of a family to begin with.
      */
-    private fun groupByFamily(context: Context, names: List<String>, filePickerRoot: File): List<MenuNode> {
+    private fun groupByFamily(context: Context, names: List<String>): List<MenuNode> {
         val families = names.filter { it.contains('-') }
             .groupBy { it.substringBefore('-') }
             .filterValues { it.size >= 2 }
@@ -289,7 +307,16 @@ object CommandTree {
             val hasBare = prefix in names
             if (hasBare) consumed.add(prefix)
 
-            val children = members.sorted().map { full -> shellLeaf(full, full.removePrefix("$prefix-"), filePickerRoot) }
+            // The bare command's own hints (e.g. "apt" -> update/upgrade/install) lead, followed
+            // by its hyphenated family (apt-get/apt-key/apt-mark) - otherwise a bare command with
+            // real SHELL_HINTS of its own would never be able to show them, since this host's
+            // children were always just the family list.
+            val bareHints = if (hasBare) {
+                SHELL_HINTS[prefix].orEmpty().map { MenuNode("sh/$prefix/$it", it) }
+            } else {
+                emptyList()
+            }
+            val children = bareHints + members.sorted().map { full -> shellLeaf(full, full.removePrefix("$prefix-")) }
             nodes.add(
                 MenuNode(
                     id = "sh/$prefix",
@@ -306,7 +333,7 @@ object CommandTree {
 
         for (name in names) {
             if (name in consumed) continue
-            nodes.add(if (name == "ssh") sshLeaf(context) else shellLeaf(name, name, filePickerRoot))
+            nodes.add(if (name == "ssh") sshLeaf(context) else shellLeaf(name, name))
         }
 
         return nodes.sortedBy { it.label }
@@ -325,7 +352,7 @@ object CommandTree {
      * root category. A binary from a package not in that map - or not owned by dpkg at all -
      * still shows up, just under "Other".
      */
-    private fun scanShell(context: Context, filePickerRoot: File): List<MenuNode> {
+    private fun scanShell(context: Context): List<MenuNode> {
         if (!DistroManager.isInstalled(context)) {
             return listOf(MenuNode("sh", "Shell", "1", listOf(MenuNode(id = "sh/bootstrap", label = "bootstrap", cap = "run"))))
         }
@@ -345,11 +372,12 @@ object CommandTree {
             val category = CATEGORY_OF_PACKAGE[pkg] ?: continue
             for (b in binaries) categoryOf[b] = category
         }
+        categoryOf.putAll(CATEGORY_OF_BINARY)
         val byCategory = names.groupBy { categoryOf[it] ?: UNCATEGORIZED }
 
         return byCategory.entries.sortedBy { it.key }.map { (category, members) ->
             val capped = members.take(MAX_SHELL_ENTRIES)
-            val children = groupByFamily(context, capped, filePickerRoot) + if (members.size > capped.size) {
+            val children = groupByFamily(context, capped) + if (members.size > capped.size) {
                 listOf(
                     MenuNode(
                         id = "sh/$category/more",
@@ -371,15 +399,14 @@ object CommandTree {
     }
 
     fun from(context: Context): List<MenuNode> {
-        val filePickerRoot = pickerRoot(context)
-        val shellRoots = scanShell(context, filePickerRoot)
+        val shellRoots = scanShell(context)
         val os = OsContextStore.current(context)
         val osRoots = if (os == "local") emptyList() else listOf(osReferenceRoot(os))
 
         return shellRoots + osRoots + listOf(
-            MenuNode("sys", "System", SYSTEM.size.toString(), SYSTEM.sorted().map { node(it, filePickerRoot) }),
-            MenuNode("apps", "Apps & nav", APPS.size.toString(), APPS.sorted().map { node(it, filePickerRoot) }),
-            MenuNode("feat", "Features", FEATURES.size.toString(), FEATURES.sorted().map { node(it, filePickerRoot) }),
+            MenuNode("sys", "Device", SYSTEM.size.toString(), SYSTEM.sorted().map { node(it) }),
+            MenuNode("apps", "Apps & nav", APPS.size.toString(), APPS.sorted().map { node(it) }),
+            MenuNode("feat", "Features", FEATURES.size.toString(), FEATURES.sorted().map { node(it) }),
             workflowsRoot(context),
             aiRoot(),
             azpRoot(),

@@ -63,22 +63,40 @@ Compose. A screen is a function of state; there is no view-hierarchy manager cla
     `answerPrompt`, a `CompletableDeferred` pair) that lets a stalled interactive command
     suspend the UI without a second channel.
 *   `ui/menu/PillMenu.kt` — the suggestion tree and its motion. `MenuNode` children can be
-    static (`children`) or resolved lazily on first navigation into a node
-    (`resolveChildren`) — used by the file picker and by nothing else needing eager
-    materialization of a combinatorially large subtree. A node's `value` is the token text it
-    contributes if different from its display `label`; `emitsToken = false` marks a purely
-    navigational pick (a directory on the way to a file, a "browse for a file" trigger) that
-    should never itself land on the command line.
+    static (`children`) or resolved lazily on first navigation into a node (`resolveChildren`,
+    e.g. the ssh/workflow presets lists) instead of eager materialization of a combinatorially
+    large subtree. A node's `value` is the token text it contributes if different from its
+    display `label`; `emitsToken = false` marks a purely navigational pick that should never
+    itself land on the command line. `wizardId` hands a pick off to the caller's own multi-step
+    flow instead of drilling into more children or emitting a token; `settleBeforeWizard` delays
+    that hand-off until the pick's own trail crumb has actually settled and reported its on-screen
+    position (`onCrumbPositioned`) - for a wizard whose entrance animation needs to grow out from
+    that exact spot, like the Select File/Folder pill.
 *   `ui/menu/CommandTree.kt` — builds the tree: the ten `Builtins` verbs (fixed lists, not
-    discovered) into System / Apps & nav / Features, and the shell's real PATH binaries into one
+    discovered) into Device / Apps & nav / Features, and the shell's real PATH binaries into one
     root category per package category — `DpkgCatalog` reads which package owns a binary from
     dpkg's own bookkeeping, and a hand-curated map (Termux's packages carry no Debian Section
     field to read a category from directly) turns that into "Package management", "Network",
-    "Development", and so on — with hyphenated command families nested under a shared parent. See
-    [COMMANDS.md](COMMANDS.md).
-*   `ui/menu/FileBrowser.kt` — the in-stack graphical file picker: a `file…` trigger whose
-    children are resolved from a real directory listing, navigated through the same pill stack
-    rather than a separate screen.
+    "System", "Development", and so on — with hyphenated command families nested under a shared
+    parent. "Device" (the fixed hardware-toggle builtins: wifi/bluetooth/airplane/flash/volume/
+    brightness) is named apart from the shell-discovered "System" category (procps/tmux/htop and
+    the like) on purpose - both used to be labelled "System", two identically-named root pills
+    with nothing but hue to tell them apart. A small `CATEGORY_OF_BINARY` override map takes
+    priority over the package-level map for binaries whose package doesn't reflect their actual
+    role (`pkg` ships in `termux-tools`, mapped to "System", but belongs with `apt`/`dpkg` in
+    "Package management"). See [COMMANDS.md](COMMANDS.md).
+*   `ui/menu/FileBrowser.kt` — the Select File/Folder pill: a `file…` trigger (`wizardId`,
+    `settleBeforeWizard = true`) that opens the graphical path picker (`ui/files/
+    PathPickerScreen.kt`) rather than drilling further into the pill stack, wrapped in
+    `PillPerimeterReveal` (see below) so the pill itself runs the screen's perimeter and becomes
+    the browser.
+*   `ui/menu/PillPerimeterReveal.kt` — the entrance/exit motion for the Select File/Folder pill:
+    from wherever its trail crumb landed, a `hue`-coloured bar grows right along the bottom edge
+    to the bottom-right corner, up the right edge, left across the top, then down the left edge -
+    closing the loop back over its own start. The instant that last leg begins, a downward wipe
+    fills the enclosed frame and reveals the browser underneath. The fuller, edge-by-edge sibling
+    of `PillWrapReveal`'s single-rect "run the perimeter" simplification, used specifically here
+    because the file picker's origin is a trail crumb, not a fixed root pill.
 *   `ui/editor/EditorScreen.kt` — the `edit` command's text editor: a plain Compose screen (Save/
     Back pills, a text field), hosted by `EditorActivity` so it's also a valid target for another
     app's VIEW/EDIT intent on a text file.

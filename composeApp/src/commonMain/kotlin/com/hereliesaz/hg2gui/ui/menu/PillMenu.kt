@@ -6,6 +6,9 @@ import androidx.compose.animation.core.keyframes
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.rememberScrollableState
+import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -13,11 +16,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -172,6 +178,44 @@ private const val TRAIL_LEFT_OF_FULL = HOST_WIDTH * HOST_RIGHT_EDGE + 0.02f
 // out starting one row above that, never on top of it.
 private const val BAND_BASE_ROW = 1
 
+/**
+ * A stack (root pills or a child band) fans up row by row from a shared base with no cap on how
+ * many rows exist - a category discovered live from PATH can easily hold more than one screen's
+ * height at [ROW_PITCH] apart. Since every pill in a stack is positioned by an absolute animated
+ * `translationY` rather than real flow layout (so the "fly up from a shared anchor" entrance
+ * motion works), a stock `verticalScroll`/`LazyColumn` can't be dropped in - Compose would size
+ * the scroll region to each pill's own (viewport-sized) Box, not to the stack's actual extent.
+ * This adds a plain drag-tracked offset instead, applied on top of each pill's own animated lift.
+ * Drag direction is "content follows the finger" (drag down reveals rows further up the stack,
+ * same as pulling down to see earlier messages in a chat) - unverified on a real device, since
+ * none was available while building this; a backwards feel is a one-line sign flip, not a
+ * structural fix.
+ */
+private class StackScroll(val modifier: Modifier, val offsetPx: Float)
+
+@Composable
+private fun rememberStackScroll(itemCount: Int, baseRow: Int, viewportHeightPx: Float): StackScroll {
+    val density = LocalDensity.current
+    val pitchPx = with(density) { ROW_PITCH.toPx() }
+    val pillHeightPx = with(density) { PILL_HEIGHT.toPx() }
+    var offsetPx by remember { mutableStateOf(0f) }
+    val maxOverflowPx = remember(itemCount, viewportHeightPx) {
+        val totalExtentPx = pitchPx * (itemCount - 1 + baseRow).coerceAtLeast(0) + pillHeightPx
+        (totalExtentPx - viewportHeightPx).coerceAtLeast(0f)
+    }
+    // Clamp whenever the bound itself shrinks (e.g. fewer roots after a recomposition) so a
+    // stale offset never leaves the stack scrolled past its own new end.
+    if (offsetPx > maxOverflowPx) offsetPx = maxOverflowPx
+    val scrollState = rememberScrollableState { delta ->
+        val next = (offsetPx + delta).coerceIn(0f, maxOverflowPx)
+        val consumed = next - offsetPx
+        offsetPx = next
+        consumed
+    }
+    val modifier = Modifier.scrollable(orientation = Orientation.Vertical, state = scrollState)
+    return StackScroll(modifier, offsetPx)
+}
+
 data class MenuNode(
     val id: String,
     val label: String,
@@ -193,7 +237,12 @@ data class MenuNode(
     // which collects host/port/key through SessionUiState's prompt machinery) instead of
     // contributing a token or drilling into more children. Picking it still settles into the
     // trail like any other pick, but PillMenu calls onWizard instead of onRun for it.
-    val wizardId: String? = null
+    val wizardId: String? = null,
+    // True for a wizard that anchors its own animation to where this pick's trail crumb lands
+    // (e.g. the Select File/Folder pill running the screen's perimeter from that exact spot) -
+    // onWizard fires only after the crumb has actually settled into the trail and reported its
+    // position via onCrumbPositioned, instead of firing immediately like every other wizard.
+    val settleBeforeWizard: Boolean = false,
 )
 
 /** The literal command-line text this node contributes when picked, or null if it never does. */
@@ -218,7 +267,10 @@ fun PillMenu(
     onRun: (tokens: List<String>, isTerminal: Boolean) -> Unit = { _, _ -> },
     // Called instead of onRun when the picked child has a wizardId - the caller owns whatever
     // multi-step flow that id names.
-    onWizard: (wizardId: String) -> Unit = {}
+    onWizard: (wizardId: String) -> Unit = {},
+    // Reports a trail crumb's on-screen rect (root coordinates) every time it's laid out - only
+    // consumed by a settleBeforeWizard pick that needs to anchor an animation to it.
+    onCrumbPositioned: (id: String, rect: Rect) -> Unit = { _, _ -> }
 ) {
     var phase by remember { mutableStateOf<Phase>(Phase.Browsing) }
     // Everything picked below the root host. Each pick drops out of the band it was chosen
@@ -229,11 +281,13 @@ fun PillMenu(
     var tokens by remember { mutableStateOf(listOf<String>()) }
     val scope = rememberCoroutineScope()
 
-    Box(modifier.fillMaxSize()) {
+    BoxWithConstraints(modifier.fillMaxSize()) {
+        val viewportHeightPx = with(LocalDensity.current) { maxHeight.toPx() }
         when (val p = phase) {
             is Phase.Browsing, is Phase.Leaving -> {
                 val leavingHost = (p as? Phase.Leaving)?.hostId
-                Box(Modifier.fillMaxSize().padding(bottom = 12.dp)) {
+                val stackScroll = rememberStackScroll(itemCount = roots.size, baseRow = 0, viewportHeightPx = viewportHeightPx)
+                Box(Modifier.fillMaxSize().padding(bottom = 12.dp).then(stackScroll.modifier)) {
                     roots.forEachIndexed { i, node ->
                         // Roots aren't always a fixed static list - a contextual entry like the
                         // suggestions host can appear or disappear between recompositions - so
@@ -244,6 +298,7 @@ fun PillMenu(
                             StackPill(
                                 node = node,
                                 row = roots.size - 1 - i,
+                                scrollOffsetPx = stackScroll.offsetPx,
                                 leaving = leavingHost != null,
                                 isHost = node.id == leavingHost,
                                 entering = leavingHost == null,
@@ -287,20 +342,36 @@ fun PillMenu(
                             ChildBand(
                                 children = effectiveChildren,
                                 hueOwner = host.id,
+                                viewportHeightPx = viewportHeightPx,
                                 onPick = { child ->
-                                    if (child.wizardId != null) {
-                                        onWizard(child.wizardId)
+                                    if (child.wizardId != null && child.settleBeforeWizard) {
+                                        // This wizard anchors an animation to the crumb's actual
+                                        // landing spot, so it can't fire until the crumb exists and
+                                        // has reported its position - unlike every other wizard,
+                                        // which fires immediately below.
+                                        scope.launch {
+                                            delay((Azphalt.DROP_MS + Azphalt.SWING_MS).toLong())
+                                            trail = trail + child
+                                            // One extra beat so the new crumb actually gets laid
+                                            // out and reports its position before onWizard reads it.
+                                            delay(32)
+                                            onWizard(child.wizardId)
+                                        }
                                     } else {
-                                        tokens = (trail + child).mapNotNull { it.tokenValue() }
-                                        onRun(tokens, child.isTerminal())
-                                    }
-                                    scope.launch {
-                                        // Let the pick's own drop-and-grow finish, plus one beat to
-                                        // settle, before swapping the band for its children - so the
-                                        // next cascade always starts after the hand-off is visible,
-                                        // never on top of it.
-                                        delay((Azphalt.DROP_MS + Azphalt.SWING_MS).toLong())
-                                        trail = trail + child
+                                        if (child.wizardId != null) {
+                                            onWizard(child.wizardId)
+                                        } else {
+                                            tokens = (trail + child).mapNotNull { it.tokenValue() }
+                                            onRun(tokens, child.isTerminal())
+                                        }
+                                        scope.launch {
+                                            // Let the pick's own drop-and-grow finish, plus one beat
+                                            // to settle, before swapping the band for its children -
+                                            // so the next cascade always starts after the hand-off is
+                                            // visible, never on top of it.
+                                            delay((Azphalt.DROP_MS + Azphalt.SWING_MS).toLong())
+                                            trail = trail + child
+                                        }
                                     }
                                 }
                             )
@@ -325,7 +396,8 @@ fun PillMenu(
                             trail = trail.take(i)
                             tokens = trail.mapNotNull { it.tokenValue() }
                             onRun(tokens, false)
-                        }
+                        },
+                        onCrumbPositioned = onCrumbPositioned
                     )
                 }
             }
@@ -337,6 +409,7 @@ fun PillMenu(
 private fun StackPill(
     node: MenuNode,
     row: Int,
+    scrollOffsetPx: Float,
     leaving: Boolean,
     isHost: Boolean,
     entering: Boolean,
@@ -384,7 +457,7 @@ private fun StackPill(
                 .fillMaxWidth(HOST_WIDTH)
                 .offsetByFractionOfParent(offset.value)
                 .absoluteBleed(OVERHANG)
-                .graphicsLayer { translationY = lift.value }
+                .graphicsLayer { translationY = lift.value + scrollOffsetPx }
                 .clickable(enabled = !leaving, onClick = onClick)
         )
     }
@@ -426,13 +499,15 @@ private fun HostPill(node: MenuNode, rowsBelow: Int, onClick: () -> Unit) {
 private fun ChildBand(
     children: List<MenuNode>,
     hueOwner: String,
+    viewportHeightPx: Float,
     onPick: (MenuNode) -> Unit
 ) {
     // No key needed here - the call site already wraps this whole band in key(anchor.id), so a
     // new anchor tears down and recreates this state automatically.
     var selected by remember { mutableStateOf<String?>(null) }
+    val stackScroll = rememberStackScroll(itemCount = children.size, baseRow = BAND_BASE_ROW, viewportHeightPx = viewportHeightPx)
 
-    Box(Modifier.fillMaxSize()) {
+    Box(Modifier.fillMaxSize().then(stackScroll.modifier)) {
         children.forEachIndexed { idx, child ->
             key(child.id) {
                 val isSelected = child.id == selected
@@ -440,6 +515,7 @@ private fun ChildBand(
                     node = child,
                     localIndex = idx,
                     hueOwner = hueOwner,
+                    scrollOffsetPx = stackScroll.offsetPx,
                     leaving = selected != null && !isSelected,
                     droppingOut = isSelected,
                     onClick = {
@@ -459,6 +535,7 @@ private fun ChildPill(
     node: MenuNode,
     localIndex: Int,
     hueOwner: String,
+    scrollOffsetPx: Float,
     leaving: Boolean,
     droppingOut: Boolean,
     onClick: () -> Unit
@@ -524,7 +601,7 @@ private fun ChildPill(
                     transformOrigin =
                         if (localIndex % 2 == 0) TransformOrigin(0f, 0.5f) else TransformOrigin(1f, 0.5f)
                     rotationZ = turn.value
-                    translationY = lift.value
+                    translationY = lift.value + scrollOffsetPx
                     scaleX = scale.value
                     scaleY = scale.value
                 }
@@ -541,7 +618,12 @@ private fun ChildPill(
  * it, re-opening that pill's own band of choices.
  */
 @Composable
-private fun TrailRow(trail: List<MenuNode>, hueOwner: String, onTapCrumb: (Int) -> Unit) {
+private fun TrailRow(
+    trail: List<MenuNode>,
+    hueOwner: String,
+    onTapCrumb: (Int) -> Unit,
+    onCrumbPositioned: (id: String, rect: Rect) -> Unit = { _, _ -> }
+) {
     if (trail.isEmpty()) return
     Box(Modifier.fillMaxSize()) {
         Row(
@@ -552,7 +634,12 @@ private fun TrailRow(trail: List<MenuNode>, hueOwner: String, onTapCrumb: (Int) 
         ) {
             trail.forEachIndexed { i, node ->
                 key(node.id) {
-                    TrailCrumb(node = node, hueOwner = hueOwner, onClick = { onTapCrumb(i) })
+                    TrailCrumb(
+                        node = node,
+                        hueOwner = hueOwner,
+                        onClick = { onTapCrumb(i) },
+                        onPositioned = { onCrumbPositioned(node.id, it) }
+                    )
                 }
             }
         }
@@ -560,7 +647,7 @@ private fun TrailRow(trail: List<MenuNode>, hueOwner: String, onTapCrumb: (Int) 
 }
 
 @Composable
-private fun TrailCrumb(node: MenuNode, hueOwner: String, onClick: () -> Unit) {
+private fun TrailCrumb(node: MenuNode, hueOwner: String, onClick: () -> Unit, onPositioned: (Rect) -> Unit = {}) {
     Pill(
         label = node.label,
         cap = node.cap,
@@ -570,7 +657,10 @@ private fun TrailCrumb(node: MenuNode, hueOwner: String, onClick: () -> Unit) {
         // the screen; a Row of these can't do that (they'd all fight for the full row), so this
         // is the one pill sized by content alone - give it a floor so a short label like "ls"
         // doesn't shrink-wrap into something visibly smaller than everything around it.
-        modifier = Modifier.defaultMinSize(minWidth = 56.dp).clickable(onClick = onClick)
+        modifier = Modifier
+            .defaultMinSize(minWidth = 56.dp)
+            .clickable(onClick = onClick)
+            .onGloballyPositioned { onPositioned(it.boundsInRoot()) }
     )
 }
 
