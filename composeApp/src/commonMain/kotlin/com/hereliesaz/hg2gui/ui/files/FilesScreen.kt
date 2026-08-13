@@ -574,7 +574,7 @@ private fun FileRows(
                     Box(
                         Modifier
                             .aspectRatio(1f)
-                            .clip(RoundedCornerShape(9.dp))
+                            .clip(RoundedCornerShape(7.dp))
                             .background(if (img.path in selected) Azphalt.Ink else Azphalt.hues[Azphalt.hueOf(img.path)])
                             .clickable { onTap(img) },
                         contentAlignment = Alignment.BottomStart
@@ -603,7 +603,10 @@ private fun FileRows(
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         if (selectMode) SelectMark(f.path in selected, dark = f.path !in selected)
                         val fg = if (f.path in selected) Azphalt.Yellow else Azphalt.Ink
-                        Text(f.name.uppercase(), color = fg, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em, maxLines = 1)
+                        // Filenames are literal, not labels - the one place real case survives
+                        // outside body copy, same as every other identifier here that names an
+                        // actual leaf item rather than a folder/chrome label.
+                        Text(f.name, color = fg, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em, maxLines = 1)
                         Text(formatFileSize(f.sizeBytes), color = fg.copy(alpha = .55f), fontSize = 9.sp)
                     }
                     if (!selectMode) EntryMenu(f, onRename, onDelete, onShare, tint = Azphalt.Ink)
@@ -656,7 +659,7 @@ private fun ColumnScope.SearchResults(results: List<VfsSearchResult>, onOpen: (V
                 Modifier.fillMaxWidth().clickable { onOpen(r) }.padding(vertical = 10.dp)
             ) {
                 Text(
-                    (r.entry.name + if (r.entry.isDirectory) "/" else "").uppercase(),
+                    r.entry.name + if (r.entry.isDirectory) "/" else "",
                     color = Azphalt.Ink, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold
                 )
                 Text(r.parentPath, color = Azphalt.Ink.copy(alpha = .5f), fontSize = 10.sp)
