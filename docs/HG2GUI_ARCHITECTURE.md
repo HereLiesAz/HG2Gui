@@ -238,8 +238,18 @@ reflection-based command engine underneath it — built-ins are a fixed dispatch
     it along with everything else. This is the one piece of `HG2Gui_Guide_Motion.dc.html`'s "01 -
     Entry" demo the screen was missing; the wipe-in cascade itself already matched. The spec's "02
     - Parallax" scroll-driven variant (a background wash plane at 0.2x scroll speed, mid-plane
-    rods at 0.5x) isn't implemented - the real `GuideEntryReader` is a single fixed screen with
-    Prev/Next, not a long scrolling page, so there's no scroll position for it to drive against.
+    rods at 0.5x) still isn't implemented, though the reader gained a real scroll position to
+    eventually drive it from (see below) - `GuideWash` itself stays a fixed, non-scrolling layer.
+*   **`ui/guide/GuideContent.kt`**: the source text (`Hitchhiker's Guide to Termux`, revised
+    master) runs to multi-paragraph entries now, each with an optional "Animation candidate" scene
+    and an optional trailing editorial note (`GuideEntry.animation`/`.note`, both nullable - most
+    entries carry neither). A chapter with no command entries at all (`Chapter 5`'s "the chapter
+    that went missing" gag) renders its intro directly in the index instead of behind a pick that
+    would otherwise never exist. To fit the longer entries, `GuideEntryReader` split into three
+    tiers: the header (title, hue bar) and the Prev/Next row stay fixed, and only the body between
+    them - blurb, animation block, note, chapter recap - scrolls (`verticalScroll` on a
+    `weight(1f)` middle `Column`), so a long entry no longer risks clipping off the bottom of a
+    single fixed screen the way a short one-paragraph blurb never did.
 
 ### 12. Context (OS-reference tree) and AI part breakdown (Kotlin, `androidMain`/`commonMain`)
 *   **`managers/OsContextStore.kt`** (androidMain): flat SharedPreferences, one string key,

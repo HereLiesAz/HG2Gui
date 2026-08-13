@@ -8,7 +8,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -45,6 +47,11 @@ import kotlinx.coroutines.delay
  * into being rather than getting guillotined by a hard clip partway through its curve. A faint,
  * oversized echo of the entry's own word drifts in behind everything else - depth is speed, not
  * blur (GuideWash).
+ *
+ * An entry's header (title, hue bar) and its PREV/NEXT row stay fixed; only the body between
+ * them scrolls, since entries run long enough now - multi-paragraph blurbs, an optional
+ * animation-candidate scene, an optional trailing editorial note - that a screen's worth was
+ * never going to hold one.
  */
 
 private val GUIDE_HUES = intArrayOf(6, 5, 4, 2, 9, 0, 7) // red, orange, amber, teal, blue, violet, magenta
@@ -146,6 +153,18 @@ private fun ColumnScope.GuideIndex(onBack: () -> Unit, onOpenEntry: (Int) -> Uni
                     )
                     Spacer(Modifier.height(2.dp))
                     Box(Modifier.fillMaxWidth().height(1.dp).background(Azphalt.Ink.copy(alpha = .16f)))
+                    if (chapter.entries.isEmpty()) {
+                        // A chapter that never earns a command entry (the missing Chapter 5 gag) -
+                        // its intro is the whole chapter, so it reads right here instead of behind
+                        // a pick that would otherwise never exist.
+                        Text(
+                            chapter.intro,
+                            color = Azphalt.Ink.copy(alpha = .7f),
+                            fontSize = 12.sp,
+                            lineHeight = 18.sp,
+                            modifier = Modifier.padding(vertical = 11.dp)
+                        )
+                    }
                     chapter.entries.forEach { entry ->
                         val globalIndex = GuideBook.entries.indexOf(entry)
                         Row(
@@ -191,6 +210,7 @@ private fun ColumnScope.GuideEntryReader(
     onReplay: () -> Unit
 ) {
     val hue = GUIDE_HUES[GuideBook.entries.indexOf(entry) % GUIDE_HUES.size]
+    var seq = 4
 
     Box(Modifier.fillMaxSize().clipToBounds()) {
     GuideWash(entry.cmd.uppercase(), wipeKey)
@@ -229,55 +249,97 @@ private fun ColumnScope.GuideEntryReader(
             )
         }
 
-        WipeItem(4, wipeKey, wide = true, modifier = Modifier.padding(top = 16.dp)) {
-            Text(
-                entry.blurb,
-                color = Azphalt.Ink.copy(alpha = .78f),
-                fontSize = 15.sp,
-                lineHeight = 21.sp
-            )
-        }
-
-        WipeItem(5, wipeKey, wide = true, modifier = Modifier.padding(top = 10.dp)) {
-            Text(
-                "STANDS FOR “${entry.full.uppercase()}”",
-                color = Azphalt.Ink.copy(alpha = .45f),
-                fontSize = 10.sp,
-                fontWeight = FontWeight.ExtraBold,
-                letterSpacing = 0.14.em
-            )
-        }
-
-        WipeItem(6, wipeKey, wide = true, modifier = Modifier.padding(top = 20.dp)) {
-            Column {
-                FactRow("Chapter", entry.chapterTitle)
-                FactRow("Actually does something", "Yes")
-            }
-        }
-
-        WipeItem(7, wipeKey, wide = true, modifier = Modifier.padding(top = 20.dp)) {
-            Column {
+        // Entries now run long enough (multi-paragraph blurbs, an optional animation-candidate
+        // scene, an optional trailing editorial note) that the fixed header above and the
+        // PREV/NEXT row below stay put while only this middle stretch scrolls.
+        Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+            WipeItem(seq++, wipeKey, wide = true, modifier = Modifier.padding(top = 16.dp)) {
                 Text(
-                    "FROM THE CHAPTER",
-                    color = Azphalt.Ink.copy(alpha = .45f),
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = 0.18.em
-                )
-                Text(
-                    entry.chapterIntro,
+                    entry.blurb,
                     color = Azphalt.Ink.copy(alpha = .78f),
-                    fontSize = 12.sp,
-                    lineHeight = 17.sp,
-                    modifier = Modifier.padding(top = 6.dp)
+                    fontSize = 15.sp,
+                    lineHeight = 21.sp
                 )
             }
-        }
 
-        Spacer(Modifier.weight(1f))
+            WipeItem(seq++, wipeKey, wide = true, modifier = Modifier.padding(top = 10.dp)) {
+                Text(
+                    "STANDS FOR “${entry.full.uppercase()}”",
+                    color = Azphalt.Ink.copy(alpha = .45f),
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = 0.14.em
+                )
+            }
+
+            WipeItem(seq++, wipeKey, wide = true, modifier = Modifier.padding(top = 20.dp)) {
+                Column {
+                    FactRow("Chapter", entry.chapterTitle)
+                    FactRow("Actually does something", "Yes")
+                }
+            }
+
+            entry.animation?.let { anim ->
+                WipeItem(seq++, wipeKey, wide = true, modifier = Modifier.padding(top = 20.dp)) {
+                    Column(
+                        Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(18.dp))
+                            .background(Azphalt.Ink.copy(alpha = .06f))
+                            .padding(16.dp)
+                    ) {
+                        Text(
+                            "ANIMATION CANDIDATE",
+                            color = Azphalt.hues[hue],
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 0.18.em
+                        )
+                        Text(
+                            anim,
+                            color = Azphalt.Ink.copy(alpha = .78f),
+                            fontSize = 13.sp,
+                            lineHeight = 19.sp,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+                    }
+                }
+            }
+
+            entry.note?.let { note ->
+                WipeItem(seq++, wipeKey, wide = true, modifier = Modifier.padding(top = 16.dp)) {
+                    Text(
+                        note,
+                        color = Azphalt.Ink.copy(alpha = .55f),
+                        fontSize = 12.sp,
+                        lineHeight = 17.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+
+            WipeItem(seq++, wipeKey, wide = true, modifier = Modifier.padding(top = 20.dp, bottom = 20.dp)) {
+                Column {
+                    Text(
+                        "FROM THE CHAPTER",
+                        color = Azphalt.Ink.copy(alpha = .45f),
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = 0.18.em
+                    )
+                    Text(
+                        entry.chapterIntro,
+                        color = Azphalt.Ink.copy(alpha = .78f),
+                        fontSize = 12.sp,
+                        lineHeight = 17.sp,
+                        modifier = Modifier.padding(top = 6.dp)
+                    )
+                }
+            }
+        }
 
         Row(
-            Modifier.fillMaxWidth().padding(bottom = 22.dp),
+            Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 22.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             WipeItem(8, wipeKey, wide = false) { Chip("PREV", onClick = onPrev) }
