@@ -52,10 +52,16 @@ it's still moving fast, more the slower it gets, so a hard flick spins several r
 the same tick lands it on one and a gentle release snaps almost immediately
 (`rememberSlotFlingBehavior`). Row 0 - the fixed spot where a host's own trail of picks lives - is
 a second way to reach a pill besides tapping it directly: scroll until the one you want parks
-itself there and it goes ink, the same "primed" look a pill gets from anywhere else in the menu,
-though it still takes an actual tap to fire - scrolling only ever positions a pill, never picks
-one by itself. This is what makes an unbounded category (every real binary on `PATH`, say) stay
-usable without a search box of its own.
+itself there and it goes ink, the same "primed" look a pill gets from anywhere else in the menu.
+This is what makes an unbounded category (every real binary on `PATH`, say) stay usable without a
+search box of its own.
+
+Sitting parked there for 550ms (`DWELL_MS`) without the row changing again counts as picking it -
+but only when picking it just cascades to more children (opening a host, or a child with children
+of its own): the same act tapping it would already trigger, just reached by scrolling and pausing
+instead. A pick with nothing further to drill into, or one that hands off to a wizard, never
+auto-fires this way - it only ever gets parked and left primed there, still waiting on the actual
+tap that already runs it. Scrolling can bring you to the final choice; it can't make it for you.
 
 ## 4a. The trail
 

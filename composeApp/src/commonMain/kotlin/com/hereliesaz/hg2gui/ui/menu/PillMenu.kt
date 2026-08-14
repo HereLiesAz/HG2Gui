@@ -187,6 +187,14 @@ private const val TRAIL_LEFT_OF_FULL = HOST_WIDTH * HOST_RIGHT_EDGE + 0.02f
 // Row 0 is reserved for the host and the trail of picks below it; every band of choices fans
 // out starting one row above that, never on top of it.
 private const val BAND_BASE_ROW = 1
+// How long a pill has to sit aligned on row 0 before scrolling counts as picking it, rather than
+// just passing through on the way to somewhere else - deliberately longer than any other timing
+// in the menu (the longest of which, SWING_MS, is ~173ms) so it reads as a pause the user meant,
+// not a stutter mid-scroll. Only ever used to *auto-advance navigation* (open a host, cascade
+// into a pick's own children) - never to fire a command. A pick with nothing further to drill
+// into still needs an actual tap; dwell only parks it at the easy-to-reach spot and leaves it
+// primed there, the same as any other terminal pick already works.
+private const val DWELL_MS = 550L
 
 /**
  * A stack (root pills or a child band) fans up row by row from a shared base with no cap on how
@@ -347,12 +355,34 @@ fun PillMenu(
     var tokens by remember { mutableStateOf(listOf<String>()) }
     val scope = rememberCoroutineScope()
 
+    // Opening a host is pure navigation - reversible with one tap on "..." - so it's the "not the
+    // final stack" case scrolling is allowed to advance on its own once dwell settles on it.
+    fun openHost(node: MenuNode) {
+        phase = Phase.Leaving(node.id)
+        tokens = emptyList()
+        onRun(tokens, false)
+        scope.launch {
+            delay(Azphalt.SLIDE_MS.toLong())
+            trail = emptyList()
+            phase = Phase.Open(node.id)
+        }
+    }
+
     BoxWithConstraints(modifier.fillMaxSize()) {
         val viewportHeightPx = with(LocalDensity.current) { maxHeight.toPx() }
         when (val p = phase) {
             is Phase.Browsing, is Phase.Leaving -> {
                 val leavingHost = (p as? Phase.Leaving)?.hostId
                 val stackScroll = rememberStackScroll(itemCount = roots.size, baseRow = 0, viewportHeightPx = viewportHeightPx)
+
+                if (p is Phase.Browsing) {
+                    LaunchedEffect(stackScroll.alignedRow) {
+                        val aligned = roots.getOrNull(roots.size - 1 - stackScroll.alignedRow) ?: return@LaunchedEffect
+                        delay(DWELL_MS)
+                        openHost(aligned)
+                    }
+                }
+
                 Box(Modifier.fillMaxSize().padding(bottom = 12.dp).then(stackScroll.modifier)) {
                     roots.forEachIndexed { i, node ->
                         // Roots aren't always a fixed static list - a contextual entry like the
@@ -370,16 +400,7 @@ fun PillMenu(
                                 isHost = node.id == leavingHost,
                                 entering = leavingHost == null,
                                 aligned = row == stackScroll.alignedRow,
-                                onClick = {
-                                    phase = Phase.Leaving(node.id)
-                                    tokens = emptyList()
-                                    onRun(tokens, false)
-                                    scope.launch {
-                                        delay(Azphalt.SLIDE_MS.toLong())
-                                        trail = emptyList()
-                                        phase = Phase.Open(node.id)
-                                    }
-                                }
+                                onClick = { openHost(node) }
                             )
                         }
                     }
@@ -578,6 +599,20 @@ private fun ChildBand(
     // new anchor tears down and recreates this state automatically.
     var selected by remember { mutableStateOf<String?>(null) }
     val stackScroll = rememberStackScroll(itemCount = children.size, baseRow = BAND_BASE_ROW, viewportHeightPx = viewportHeightPx)
+
+    // Dwelling on a pick that only cascades to more children auto-advances, same as tapping it -
+    // there's nothing to run yet, so nothing is lost by scrolling past it before it acts. A pick
+    // that's already the final stack (nothing left to drill into, or a wizard taking over the
+    // screen) never auto-fires from this - it only ever gets parked here, primed, waiting for the
+    // actual tap that already runs it today.
+    LaunchedEffect(stackScroll.alignedRow) {
+        if (selected != null) return@LaunchedEffect
+        val aligned = children.getOrNull(stackScroll.alignedRow - BAND_BASE_ROW) ?: return@LaunchedEffect
+        if (aligned.isTerminal() || aligned.wizardId != null) return@LaunchedEffect
+        delay(DWELL_MS)
+        selected = aligned.id
+        onPick(aligned)
+    }
 
     Box(Modifier.fillMaxSize().then(stackScroll.modifier)) {
         children.forEachIndexed { idx, child ->
