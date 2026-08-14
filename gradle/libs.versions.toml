@@ -33,6 +33,7 @@ runtime = "1.11.1"
 termuxAmLibrary = "v2.0.0"
 uiTooling = "1.11.1"
 window = "1.5.1"
+uiautomatorShell = "2.4.0"
 
 [libraries]
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "androidx-activityCompose" }
@@ -72,6 +73,7 @@ termux-am-library = { module = "com.termux:termux-am-library", version.ref = "te
 ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "uiTooling" }
 ui-tooling = { module = "org.jetbrains.compose.ui:ui-tooling", version.ref = "uiTooling" }
 ui-tooling-preview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "uiTooling" }
+androidx-uiautomator-shell = { group = "androidx.test.uiautomator", name = "uiautomator-shell", version.ref = "uiautomatorShell" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

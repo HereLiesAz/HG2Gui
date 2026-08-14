@@ -14,6 +14,7 @@ import android.os.Build
 import android.provider.ContactsContract
 import android.provider.Settings
 import android.view.WindowManager
+import androidx.annotation.RequiresPermission
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.hereliesaz.hg2gui.PermissionCodes
@@ -80,6 +81,7 @@ object Builtins {
         }
     }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     private fun bluetooth(context: Context): String {
         val adapter = BluetoothAdapter.getDefaultAdapter() ?: return "This device has no Bluetooth adapter."
 
