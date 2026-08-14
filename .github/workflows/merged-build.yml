@@ -85,18 +85,10 @@ jobs:
       # the version the workflow advertised was never the version compiled into the APK.
       - name: Compute Version
         run: |
-          BUILD_NUMBER=$(git rev-list --count HEAD)
-
           MAJOR=$(grep 'versionMajor=' version.properties | cut -d'=' -f2)
           MINOR=$(grep 'versionMinor=' version.properties | cut -d'=' -f2)
-
-          # Patch counts commits since versionMinor last changed.
-          MINOR_COMMIT=$(git blame -L '/versionMinor=/',+1 version.properties 2>/dev/null | awk '{print $1}' | tr -d '^' || true)
-          if [ -n "$MINOR_COMMIT" ]; then
-            PATCH=$(git rev-list --count "$MINOR_COMMIT"..HEAD)
-          else
-            PATCH=$(grep 'versionPatch=' version.properties | cut -d'=' -f2)
-          fi
+          PATCH=$(($(grep 'versionPatch=' version.properties | cut -d'=' -f2) + 1))
+          BUILD_NUMBER=$(($(grep 'versionBuild=' version.properties | cut -d'=' -f2) + 1))
 
           VERSION_NAME="$MAJOR.$MINOR.$PATCH.$BUILD_NUMBER"
 
@@ -132,6 +124,15 @@ jobs:
           echo "exit_code=$EXIT_CODE" >> $GITHUB_OUTPUT
           cat build.log
           exit $EXIT_CODE
+
+      - name: Commit and push version bump
+        if: success() && github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add version.properties
+          git commit -m "chore: bump version to $VERSION_NAME [skip ci]"
+          git push origin HEAD:${{ github.ref }}
 
       # ------------------------------------------------------------------
       # FAILURE HANDLING

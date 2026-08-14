@@ -15,8 +15,8 @@ val versionProps = Properties().apply {
 }
 
 val legacyVersionCode = 205
-val buildNumber = project.findProperty("versionBuild")?.toString()?.toIntOrNull()
-    ?: versionProps.getProperty("versionBuild", "0").toIntOrNull() ?: 0
+val buildNumberFromProp = project.findProperty("versionBuild")?.toString()?.toIntOrNull()
+val buildNumber = buildNumberFromProp ?: ((versionProps.getProperty("versionBuild", "0").toIntOrNull() ?: 0) + 1)
 
 val resolvedVersionCode = maxOf(buildNumber, legacyVersionCode + 1)
 
@@ -24,7 +24,7 @@ val resolvedVersionName = project.findProperty("versionName")?.toString() ?: Str
     "%s.%s.%s.%d",
     versionProps.getProperty("versionMajor", "0"),
     versionProps.getProperty("versionMinor", "0"),
-    versionProps.getProperty("versionPatch", "0"),
+    (versionProps.getProperty("versionPatch", "0").toIntOrNull() ?: 0) + 1,
     buildNumber
 )
 
@@ -177,30 +177,31 @@ tasks.register("incrementVersionBuild") {
             git("reset", "--hard", "origin/master", "--quiet")
 
             val freshProps = Properties().apply { versionFile.inputStream().use { load(it) } }
-            val current = freshProps.getProperty("versionBuild", "0").toIntOrNull() ?: 0
+            val currentBuild = freshProps.getProperty("versionBuild", "0").toIntOrNull() ?: 0
+            val currentPatch = freshProps.getProperty("versionPatch", "0").toIntOrNull() ?: 0
 
-            if (versionCodeMode == "strict" && current <= playMax) {
+            if (versionCodeMode == "strict" && currentBuild <= playMax) {
                 throw GradleException(
-                    "versionCode $current would not clear Play, which already has $playMax. " +
+                    "versionCode $currentBuild would not clear Play, which already has $playMax. " +
                         "Set versionBuild=$playMax in version.properties and commit, or use auto mode."
                 )
             }
 
-            val next = maxOf(current, playMax) + 1
-            val versionBuildLine = Regex("(?m)^versionBuild=.*$")
-            val text = versionFile.readText()
-            versionFile.writeText(
-                if (versionBuildLine.containsMatchIn(text)) {
-                    text.replace(versionBuildLine, "versionBuild=$next")
-                } else {
-                    text.trimEnd('\n') + "\nversionBuild=$next\n"
-                }
-            )
+            val nextBuild = maxOf(currentBuild, playMax) + 1
+            val nextPatch = currentPatch + 1
 
-            git("commit", "-q", "-am", "chore: bump versionBuild to $next [skip ci]")
+            val text = versionFile.readText()
+            val updatedText = text
+                .replace(Regex("versionPatch\\s*=\\s*\\d+"), "versionPatch=$nextPatch")
+                .replace(Regex("versionBuild\\s*=\\s*\\d+"), "versionBuild=$nextBuild")
+            
+            versionFile.writeText(updatedText)
+
+            git("commit", "-q", "-am", "chore: bump version to $nextPatch.$nextBuild [skip ci]")
             try {
                 git("push", "-q", "origin", "HEAD:master")
-                println("VERSION_BUILD=$next")
+                println("VERSION_BUILD=$nextBuild")
+                println("VERSION_PATCH=$nextPatch")
                 break
             } catch (e: GradleException) {
                 if (attempt == maxAttempts) throw e
