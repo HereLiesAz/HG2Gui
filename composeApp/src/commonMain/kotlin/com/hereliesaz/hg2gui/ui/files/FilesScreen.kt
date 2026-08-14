@@ -455,21 +455,28 @@ private fun ExpandableLevel(
                 Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(18.dp))
-                    .background(if (selectMode && openEntry.path in selected) Azphalt.Ink else Azphalt.hues[Azphalt.hueOf(openEntry.path)])
+                    // The row's own hue never changes on selection - only the mark does, same
+                    // as every other selectable row in this screen.
+                    .background(Azphalt.hues[Azphalt.hueOf(openEntry.path)])
                     .clickable { onTap(openEntry) }
                     .padding(14.dp)
             ) {
                 Column {
                     Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                        Text(
-                            openEntry.name.uppercase(), color = Azphalt.White,
-                            fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.06.em
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            if (selectMode) SelectMark(openEntry.path in selected, dark = true)
+                            Text(
+                                openEntry.name.uppercase(), color = Azphalt.White,
+                                fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.06.em
+                            )
+                        }
                         EntryMenu(openEntry, onRename, onDelete, onShare, tint = Azphalt.White)
                     }
                     Box(Modifier.padding(start = 14.dp, top = 10.dp)) { nestedContent() }
                 }
             }
+        } else if (folders.isEmpty() && files.isEmpty()) {
+            EmptyLabel()
         } else if (folders.isNotEmpty()) {
             Text(
                 "FOLDERS · ${folders.size}", color = Azphalt.Ink.copy(alpha = .45f),
@@ -505,9 +512,18 @@ private fun RecordList(
     val folders = entries.filter { it.isDirectory }
     val files = entries.filter { !it.isDirectory }
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        if (folders.isEmpty() && files.isEmpty()) EmptyLabel()
         folders.forEach { f -> key(f.path) { FolderRow(f, selectMode, f.path in selected, onTap, onLongPress, onRename, onDelete, onShare) } }
         if (files.isNotEmpty()) FileRows(files, selectMode, selected, onTap, onLongPress, onRename, onDelete, onShare)
     }
+}
+
+@Composable
+private fun EmptyLabel() {
+    Text(
+        "NOTHING HERE", color = Azphalt.Ink.copy(alpha = .4f),
+        fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.14.em
+    )
 }
 
 @Composable
@@ -525,7 +541,8 @@ private fun FolderRow(
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(percent = 50))
-            .background(if (isSelected) Azphalt.Ink else Azphalt.hues[Azphalt.hueOf(entry.path)])
+            // The row's own hue never changes on selection - only the mark does.
+            .background(Azphalt.hues[Azphalt.hueOf(entry.path)])
             .combinedClickable(onClick = { onTap(entry) }, onLongClick = { onLongPress(entry) })
             .padding(start = 16.dp, end = 8.dp, top = 10.dp, bottom = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -575,15 +592,20 @@ private fun FileRows(
                         Modifier
                             .aspectRatio(1f)
                             .clip(RoundedCornerShape(7.dp))
-                            .background(if (img.path in selected) Azphalt.Ink else Azphalt.hues[Azphalt.hueOf(img.path)])
-                            .clickable { onTap(img) },
-                        contentAlignment = Alignment.BottomStart
+                            // The tile's own hue never changes on selection - only the mark does.
+                            .background(Azphalt.hues[Azphalt.hueOf(img.path)])
+                            .clickable { onTap(img) }
                     ) {
                         Text(
                             img.name, color = Azphalt.White.copy(alpha = .8f), fontSize = 7.sp,
                             fontWeight = FontWeight.Bold, maxLines = 1,
-                            modifier = Modifier.padding(6.dp)
+                            modifier = Modifier.align(Alignment.BottomStart).padding(6.dp)
                         )
+                        if (selectMode) {
+                            Box(Modifier.align(Alignment.TopEnd).padding(4.dp)) {
+                                SelectMark(img.path in selected, dark = true)
+                            }
+                        }
                     }
                 }
             }
@@ -594,20 +616,20 @@ private fun FileRows(
                     Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(percent = 50))
-                        .background(if (f.path in selected) Azphalt.Ink else Azphalt.Ink.copy(alpha = .09f))
+                        // The row's own wash never changes on selection - only the mark does.
+                        .background(Azphalt.Ink.copy(alpha = .09f))
                         .combinedClickable(onClick = { onTap(f) }, onLongClick = { onLongPress(f) })
                         .padding(start = 16.dp, end = 8.dp, top = 10.dp, bottom = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        if (selectMode) SelectMark(f.path in selected, dark = f.path !in selected)
-                        val fg = if (f.path in selected) Azphalt.Yellow else Azphalt.Ink
+                        if (selectMode) SelectMark(f.path in selected, dark = false)
                         // Filenames are literal, not labels - the one place real case survives
                         // outside body copy, same as every other identifier here that names an
                         // actual leaf item rather than a folder/chrome label.
-                        Text(f.name, color = fg, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em, maxLines = 1)
-                        Text(formatFileSize(f.sizeBytes), color = fg.copy(alpha = .55f), fontSize = 9.sp)
+                        Text(f.name, color = Azphalt.Ink, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em, maxLines = 1)
+                        Text(formatFileSize(f.sizeBytes), color = Azphalt.Ink.copy(alpha = .55f), fontSize = 9.sp)
                     }
                     if (!selectMode) EntryMenu(f, onRename, onDelete, onShare, tint = Azphalt.Ink)
                 }
