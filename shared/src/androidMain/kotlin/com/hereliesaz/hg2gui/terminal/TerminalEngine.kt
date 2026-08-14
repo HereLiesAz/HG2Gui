@@ -75,9 +75,11 @@ class TerminalEngine(
      * code - for headless one-shot commands (e.g. `pkg install` while resolving a `kind:"script"`
      * package's dependencies, see `azp/ScriptInstaller.kt`) that need to know whether the command
      * actually succeeded, unlike [run]'s `Flow<String>` (which streams the transcript but
-     * discards the exit code `ShellSession.stream` itself returns). Always answers a stalled
-     * interactive prompt with `null` (bail rather than hang) - there's no UI here to ask a human,
-     * and a one-shot dependency install has no business waiting on one. Bypasses the
+     * discards the exit code `ShellSession.stream` itself returns). Always declines a stalled
+     * interactive prompt with `null` - there's no UI here to ask a human, and a one-shot
+     * dependency install has no business waiting on one - but declining doesn't bail immediately:
+     * [ShellSession.stream]'s own timeout is what actually ends it, so a stalled prompt here still
+     * runs out the same clock a real hang would before this returns. Bypasses the
      * `bootstrap`/[Builtins] branches [run] has, since neither is a real shell command this needs
      * to route through.
      */

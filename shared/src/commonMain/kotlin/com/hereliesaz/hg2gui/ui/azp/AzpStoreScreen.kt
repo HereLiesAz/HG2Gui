@@ -52,10 +52,12 @@ private val KINDS = listOf("all", "skill", "mcp", "code", "pack", "asset", "app"
 
 /**
  * Browses the azphalt registry (spec/repository-api.md) - the same `pkg`/`apt` idiom, but for
- * `.azp` extensions: search, filter by kind, install. HG2Gui has no `.azp` execution runtime, so
- * "install" downloads + unpacks the archive; only `kind:"skill"` packages do anything further
- * (their SKILL.md content feeds the AI chat's system prompt - see AiClient/AzpLibrary). Every
- * other kind is downloaded for the user's own use elsewhere, same as `apt download`.
+ * `.azp` extensions: search, filter by kind, install. HG2Gui has no `.azp` code/WASM execution
+ * runtime, so "install" downloads + unpacks the archive for most kinds - but two do something
+ * further: `kind:"skill"` packages fold their SKILL.md into the AI chat's system prompt (see
+ * AiClient/AzpLibrary), and `kind:"script"` packages resolve their declared Termux dependencies
+ * and wire an executable wrapper onto PATH (see ScriptInstaller). Every other kind is downloaded
+ * for the user's own use elsewhere, same as `apt download`.
  */
 @Composable
 fun AzpStoreScreen(

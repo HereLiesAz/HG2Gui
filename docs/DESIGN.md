@@ -2,7 +2,10 @@
 
 The visual system is **Azphalt**: a warm printed yellow page, ink text, fourteen capsule hues,
 one typeface (Jost), and a single primitive — the capsule. No borders. No shadows. No blur. No
-icons. No emoji. Radii are 999px for anything pressable, 26px for a record tile.
+icons. No emoji. The two canonical radii are 999px for anything pressable and 26px for a record
+tile - the rest of the codebase isn't yet reconciled to just those two: several screens still
+carry their own ad hoc radii (mostly 12-18dp, chosen per element rather than from a shared scale),
+a gap this document doesn't paper over.
 
 This document specifies the one place HG2Gui departs from base Azphalt: the **pill menu**,
 where the capsule stops being a row in a list and becomes a key.
@@ -24,15 +27,16 @@ changes. A pill with no end-cap still right-aligns its label.
 ## 3. Selecting a host
 
 Tapping a host sends the entire stack further left: every unselected pill leaves the screen,
-and the host stops with its **right end parked at 34%** of the frame — whatever its length —
-so only its label and end-cap remain visible. It then **drops to the bottom of the screen**,
-`rowsBelow × pitch`, and stays pinned there.
+and the host stops with its **right end parked at 22.44%** of the frame — whatever its length —
+so only its label and end-cap remain visible. (`HOST_WIDTH × HOST_RIGHT_EDGE` in `PillMenu.kt` -
+`HOST_RIGHT_EDGE` names a factor in that product, not the resting position itself.) It then
+**drops to the bottom of the screen**, `rowsBelow × pitch`, and stays pinned there.
 
 ## 4. Children cascade upward
 
 Children cascade **upward** from the host, all the same size (34% wide, starting at 30% —
-just inside the host's right end). The first child sits on the host's own row, so the two read
-as one bent shape.
+just inside the host's right end). Row 0 is reserved for the host and its own trail of picks,
+so the first child fans out from row 1, one pitch above the host - not sharing its row.
 
 Arguments repeat this exact choreography, one level at a time, however deep the tree goes.
 Tapping a pill with its own children makes it the new anchor: its siblings **leave**, the same
@@ -50,18 +54,16 @@ Scrolling coasts and settles on a row boundary rather than stopping wherever the
 it, the deceleration a slot-machine reel or a wheel-of-fortune wheel has: no extra pull while
 it's still moving fast, more the slower it gets, so a hard flick spins several rows past before
 the same tick lands it on one and a gentle release snaps almost immediately
-(`rememberSlotFlingBehavior`). Row 0 - the fixed spot where a host's own trail of picks lives - is
-a second way to reach a pill besides tapping it directly: scroll until the one you want parks
-itself there and it goes ink, the same "primed" look a pill gets from anywhere else in the menu.
-This is what makes an unbounded category (every real binary on `PATH`, say) stay usable without a
-search box of its own.
+(`rememberSlotFlingBehavior`). Row 0 - the fixed spot where a host's own trail of picks lives -
+goes ink, the same "primed" look a pill gets from anywhere else in the menu, whenever a pill
+scrolls to rest there: a purely cosmetic marker of what's nearest the front of the stack. It
+never fires anything by itself - every pill is tappable wherever it sits in the band, and
+scrolling one to row 0 doesn't substitute for that tap.
 
-Sitting parked there for 550ms (`DWELL_MS`) without the row changing again counts as picking it -
-but only when picking it just cascades to more children (opening a host, or a child with children
-of its own): the same act tapping it would already trigger, just reached by scrolling and pausing
-instead. A pick with nothing further to drill into, or one that hands off to a wizard, never
-auto-fires this way - it only ever gets parked and left primed there, still waiting on the actual
-tap that already runs it. Scrolling can bring you to the final choice; it can't make it for you.
+Scrolling isn't bounded to the stack's own content either: a drag or a fling can carry the stack
+past its first or last row, leaving blank space above the top or below the bottom. Nothing
+snaps it back - it stays wherever the gesture leaves it, the same as a settled fling stays on
+whatever row it lands on.
 
 ## 4a. The trail
 
@@ -83,7 +85,7 @@ before it.
 | Child turn (swing) | 173ms, linear |
 | Lift | final 10% of the turn |
 | Cascade | strictly sequential — 173ms per step |
-| Host rests at | 34% of the frame |
+| Host rests at | 22.44% of the frame |
 | Child pill | 34% wide, 30% in |
 | Trail starts at | 24% of the frame |
 | Trail crumb | content-sized, 56dp floor |
@@ -91,11 +93,14 @@ before it.
 | Row pitch | 20dp |
 | Pick grows to | 1.15× before settling back to 1× |
 
-Every motion in the menu is **linear** — there is no easing curve anywhere; an eased pill reads
-as a bug at this speed.
+Every motion in the menu is **linear** — there is no easing curve anywhere on the entry/exit
+choreography above; an eased pill reads as a bug at this speed. The exception is scroll settle
+(`rememberSlotFlingBehavior`), a critically-damped spring rather than a linear tween — see §4's
+scroll-settle paragraph.
 
-A child begins **exactly behind the pill before it** — the first behind the host, on the host's
-row — so it is invisible at rest. It turns a full **360°** hinged on one end:
+A child begins **exactly behind the pill before it** — the first one row above the host, since
+row 0 belongs to the host's own trail — so it is invisible at rest. It turns a full **360°**
+hinged on one end:
 `TransformOrigin(0f, .5f)` for the first, `TransformOrigin(1f, .5f)` for the next, alternating
 up the chain. It holds its predecessor's row for 90% of the arc and lifts exactly one row in
 the final 10%, so the lift and the turn finish on the same frame.
@@ -144,8 +149,11 @@ rect-interpolation (as `PillWrapReveal` does) would visibly cut a corner instead
 The menu's size isn't fixed — the shell categories are discovered live from what's actually
 installed, so a band can hold anywhere from a handful of built-ins to hundreds of real
 binaries. It is drawn small throughout regardless: a pill is 17dp tall with a 6sp label, stacked
-20dp apart. This is the one place in Azphalt where type goes below 9px — the pill, not the
-type, is the tap target, and it spans most of the screen. A category large enough to strain the
+20dp apart. This is the most aggressive type gets in Azphalt - the pill, not the
+type, is the tap target, and it spans most of the screen - but not the only place below 9px:
+a handful of dense screens (session tabs, the azp store, the file browser) drop to 8sp, and one
+spot in the file browser to 7sp, without that same "the tap target is something else" reasoning
+behind it. A category large enough to strain the
 fan-out animation is capped per category rather than rendered (or hung on) unbounded, with a
 trailing "+N more" pill marking what was left out.
 

@@ -32,8 +32,10 @@ import com.hereliesaz.hg2gui.ui.menu.Azphalt
 import com.hereliesaz.hg2gui.ui.menu.pageBrush
 
 /**
- * A single masked API-key field + Save, same tap-to-reveal idiom McpServerScreen uses for its
- * pairing token. Stored unencrypted (see AiSettings' own doc comment) - flagged in USER_GUIDE.md
+ * A single masked API-key field + Save - unlike McpServerScreen's pairing token, tapping this
+ * never reveals the plaintext key, only unmasks the field enough to edit it (still dotted out via
+ * PasswordVisualTransformation while a value is present). The safer of the two, not a shared
+ * idiom with it. Stored unencrypted (see AiSettings' own doc comment) - flagged in USER_GUIDE.md
  * the same way the MCP token risk is, not hidden as a non-issue.
  */
 @Composable
