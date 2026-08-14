@@ -1,11 +1,15 @@
 package com.hereliesaz.hg2gui
 
+import android.Manifest
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
+import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.biometric.BiometricPrompt
@@ -26,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.core.content.edit
@@ -37,6 +42,7 @@ import com.hereliesaz.hg2gui.ai.AiClient
 import com.hereliesaz.hg2gui.ai.AiReply
 import com.hereliesaz.hg2gui.azp.AzpClient
 import com.hereliesaz.hg2gui.azp.AzpInstaller
+import com.hereliesaz.hg2gui.azp.AzpTrust
 import com.hereliesaz.hg2gui.azp.ScriptInstaller
 import com.hereliesaz.hg2gui.managers.AiSettings
 import com.hereliesaz.hg2gui.managers.AzpLibrary
@@ -53,6 +59,7 @@ import com.hereliesaz.hg2gui.terminal.TerminalEngine
 import com.hereliesaz.hg2gui.util.GenericFileProvider
 import com.hereliesaz.hg2gui.util.Utils
 import com.hereliesaz.hg2gui.ui.AiSettingsScreen
+import com.hereliesaz.hg2gui.ui.ConfirmDialog
 import com.hereliesaz.hg2gui.ui.HG2GuiTheme
 import com.hereliesaz.hg2gui.ui.McpServerScreen
 import com.hereliesaz.hg2gui.ui.SessionUiState
@@ -80,6 +87,7 @@ import com.hereliesaz.hg2gui.ui.menu.PillWrapReveal
 import com.hereliesaz.hg2gui.ui.menu.PillWrapRevealState
 import com.hereliesaz.hg2gui.ui.ssh.SshFlow
 import java.io.File
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -107,6 +115,14 @@ class TerminalActivity : FragmentActivity() {
             override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                 McpServerService.setShellExecEnabled(this@TerminalActivity, true)
             }
+
+            // MCP-6: only onAuthenticationSucceeded was ever overridden - on a device with no
+            // enrolled biometric (the common case for this to fail on), the prompt errors out
+            // immediately and this switch was permanently unreachable with zero feedback that
+            // anything had even been tapped.
+            override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                Toast.makeText(this@TerminalActivity, "Couldn't confirm: $errString", Toast.LENGTH_LONG).show()
+            }
         })
         val info = BiometricPrompt.PromptInfo.Builder()
             .setTitle("Enable shell execution")
@@ -114,6 +130,22 @@ class TerminalActivity : FragmentActivity() {
             .setNegativeButtonText("Cancel")
             .build()
         prompt.authenticate(info)
+    }
+
+    /** POST_NOTIFICATIONS gates whether the foreground-service notification - the only visible
+     *  sign a shell is exposed to a paired agent - can actually show. The manifest declares it,
+     *  but only requesting it here, at the moment the server would start, makes that declaration
+     *  do anything; starting the service without ever asking is how it ends up running with no
+     *  visible indicator at all on a device where the permission was never granted. */
+    private fun startMcpServer() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            ActivityCompat.requestPermissions(
+                this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), PermissionCodes.MCP_NOTIFICATION_REQUEST_PERMISSION
+            )
+        }
+        ContextCompat.startForegroundService(this, Intent(this, McpServerService::class.java))
     }
 
     private data class InitResult(
@@ -131,7 +163,13 @@ class TerminalActivity : FragmentActivity() {
     // ever come back TRUSTED again this process, even once the network recovers.
     private var azpTrustedKeysCache: List<String>? = null
 
-    private suspend fun azpTrustedKeys(): List<String> {
+    // AZP-4: null here means "couldn't reach the registry to check" (offline, a 404, a malformed
+    // response) - a real signal, distinct from a *successful* fetch that legitimately came back
+    // empty (true today: the live registry doesn't publish signingKeys yet). Collapsing both to
+    // emptyList() used to make a failed check look identical to "confirmed, nothing to trust
+    // yet," and a VALID verdict built on that failure would overstate exactly the confidence a
+    // failed check can't back up.
+    private suspend fun azpTrustedKeys(): List<String>? {
         azpTrustedKeysCache?.let { return it }
         val keys = try {
             AzpClient.discovery()?.signingKeys?.map { it.publicKey }
@@ -139,7 +177,7 @@ class TerminalActivity : FragmentActivity() {
             null
         }
         if (keys != null) azpTrustedKeysCache = keys
-        return keys ?: emptyList()
+        return keys
     }
 
     // TerminalActivity is singleTop/intoExisting, so a notification tap while it's already
@@ -174,6 +212,23 @@ class TerminalActivity : FragmentActivity() {
             var azpResults by remember { mutableStateOf<List<AzpListing>>(emptyList()) }
             var azpBusy by remember { mutableStateOf(false) }
             var azpInstallingId by remember { mutableStateOf<String?>(null) }
+            // AZP-2: a script package's dependency/wrapper step (ScriptInstaller.install, which
+            // can run `pkg install -y` unconfirmed) only proceeds without asking first when the
+            // signature is TRUSTED or VALID - anything else (most saliently UNSIGNED, since only
+            // a corrupted signature was ever rejected outright) pauses on this and waits for a tap.
+            var azpTrustConfirm by remember { mutableStateOf<Pair<AzpListing, CompletableDeferred<Boolean>>?>(null) }
+            // UX-4: closing a tab with a command actually running kills that process mid-run with
+            // no warning today - this pauses on a tap first; a tab that's just sitting idle still
+            // closes immediately, same as before.
+            var closeSessionConfirm by remember { mutableStateOf<TerminalSession?>(null) }
+            fun closeSession(closing: TerminalSession) {
+                val remaining = sessions.filterNot { it.ui.id == closing.ui.id }
+                sessions = remaining
+                if (activeSessionId == closing.ui.id) {
+                    activeSessionId = remaining.first().ui.id
+                }
+                closing.engine.destroy()
+            }
             val scope = rememberCoroutineScope()
 
             LaunchedEffect(lastIntentExtra) {
@@ -327,6 +382,24 @@ class TerminalActivity : FragmentActivity() {
                 applyFullscreen(fullscreen)
             }
 
+            // UI-1: nothing in the app previously intercepted system back or the edge-swipe
+            // gesture, so either one closed the whole app from any secondary screen instead of
+            // navigating up a level. This mirrors exactly what each screen's own BACK pill
+            // already does - deepest overlay first (the path picker, then Files), then whichever
+            // screen the visible one's own onBack already targets - so system back and the
+            // in-screen pill always agree. Disabled at the true root (Terminal, nothing open)
+            // so system back still backgrounds/exits the app there, same as before.
+            val atRoot = screen == Screen.Terminal && !filesWrap.active && !pathPickerState.active
+            BackHandler(enabled = !atRoot) {
+                when {
+                    pathPickerState.active -> closePathPicker()
+                    screen == Screen.Files || filesWrap.active -> closeFiles()
+                    screen == Screen.AiSettings -> screen = Screen.Settings
+                    screen == Screen.Mcp -> screen = Screen.Settings
+                    else -> screen = Screen.Terminal
+                }
+            }
+
             HG2GuiTheme(scale = fontScalePercent / 100f) {
                 val currentTree = tree
                 Box(Modifier.fillMaxSize()) {
@@ -430,21 +503,49 @@ class TerminalActivity : FragmentActivity() {
                             scope.launch {
                                 val trustedKeys = azpTrustedKeys()
                                 val result = try {
-                                    withContext(Dispatchers.IO) {
+                                    val rawInstall = withContext(Dispatchers.IO) {
                                         val bytes = AzpClient.download(listing.id, listing.version) ?: return@withContext null
-                                        val install = AzpInstaller.install(
-                                            this@TerminalActivity, listing.id, listing.version, bytes, trustedKeys
-                                        ) ?: return@withContext null
-                                        val scriptCommand = install.script?.let { script ->
-                                            val outcome = ScriptInstaller.install(
-                                                this@TerminalActivity, listing.id, listing.version, script
-                                            )
-                                            (outcome as? ScriptInstaller.Result.Installed)?.command
-                                        }
-                                        AzpLibrary.record(
-                                            this@TerminalActivity, listing.id, listing.name, listing.version,
-                                            install.kind, install.skillIds, install.trust, scriptCommand
+                                        AzpInstaller.install(
+                                            this@TerminalActivity, listing.id, listing.version, bytes, trustedKeys.orEmpty()
                                         )
+                                    }
+                                    // A failed key fetch (trustedKeys == null) can only ever have
+                                    // checked a package against zero keys - VALID under those
+                                    // conditions means "the check couldn't rule anything in or
+                                    // out," not "confirmed internally consistent."
+                                    val install = if (trustedKeys == null && rawInstall?.trust == AzpTrust.VALID) {
+                                        rawInstall.copy(trust = AzpTrust.UNVERIFIABLE)
+                                    } else {
+                                        rawInstall
+                                    }
+                                    if (install == null) {
+                                        null
+                                    } else {
+                                        // Only a TRUSTED or VALID signature (an internally-consistent
+                                        // one, whether or not the signer is registry-vouched-for)
+                                        // proceeds unconfirmed - UNSIGNED and anything else pauses
+                                        // here for an explicit tap before running the dependency
+                                        // install and wiring an executable onto PATH.
+                                        val scriptCommand = install.script?.let { script ->
+                                            val proceed = install.trust == AzpTrust.TRUSTED || install.trust == AzpTrust.VALID ||
+                                                run {
+                                                    val decision = CompletableDeferred<Boolean>()
+                                                    azpTrustConfirm = listing to decision
+                                                    decision.await()
+                                                }
+                                            if (proceed) {
+                                                val outcome = withContext(Dispatchers.IO) {
+                                                    ScriptInstaller.install(this@TerminalActivity, listing.id, listing.version, script)
+                                                }
+                                                (outcome as? ScriptInstaller.Result.Installed)?.command
+                                            } else null
+                                        }
+                                        withContext(Dispatchers.IO) {
+                                            AzpLibrary.record(
+                                                this@TerminalActivity, listing.id, listing.name, listing.version,
+                                                install.kind, install.skillIds, install.trust, scriptCommand
+                                            )
+                                        }
                                         install to scriptCommand
                                     }
                                 } catch (e: Exception) {
@@ -477,7 +578,7 @@ class TerminalActivity : FragmentActivity() {
                             port = port,
                             token = token,
                             shellExecEnabled = shellExecEnabled,
-                            onStart = { ContextCompat.startForegroundService(this@TerminalActivity, Intent(this@TerminalActivity, McpServerService::class.java)) },
+                            onStart = { startMcpServer() },
                             onStop = {
                                 startService(Intent(this@TerminalActivity, McpServerService::class.java).apply { action = McpServerService.ACTION_STOP })
                             },
@@ -525,12 +626,11 @@ class TerminalActivity : FragmentActivity() {
                             if (sessions.size > 1) {
                                 val closing = sessions.firstOrNull { it.ui.id == id }
                                 if (closing != null) {
-                                    val remaining = sessions.filterNot { it.ui.id == id }
-                                    sessions = remaining
-                                    if (activeSessionId == id) {
-                                        activeSessionId = remaining.first().ui.id
+                                    if (closing.ui.running) {
+                                        closeSessionConfirm = closing
+                                    } else {
+                                        closeSession(closing)
                                     }
-                                    closing.engine.destroy()
                                 }
                             }
                         },
@@ -607,6 +707,28 @@ class TerminalActivity : FragmentActivity() {
                     }
                 }
 
+                azpTrustConfirm?.let { (listing, decision) ->
+                    ConfirmDialog(
+                        title = "INSTALL UNVERIFIED PACKAGE?",
+                        message = "${listing.name} isn't signed by a trusted key. Installing it will run " +
+                            "\"pkg install\" for whatever dependencies it declares and add its command to " +
+                            "this device's PATH.",
+                        confirmLabel = "INSTALL",
+                        onConfirm = { decision.complete(true); azpTrustConfirm = null },
+                        onDismiss = { decision.complete(false); azpTrustConfirm = null }
+                    )
+                }
+
+                closeSessionConfirm?.let { closing ->
+                    ConfirmDialog(
+                        title = "CLOSE ${closing.ui.name}?",
+                        message = "A command is still running in this session - closing it now kills that process.",
+                        confirmLabel = "CLOSE",
+                        onConfirm = { closeSession(closing); closeSessionConfirm = null },
+                        onDismiss = { closeSessionConfirm = null }
+                    )
+                }
+
                 if (screen == Screen.Files || filesWrap.active) {
                     PillWrapReveal(state = filesWrap, hue = filesHue) {
                         FilesScreen(
@@ -629,36 +751,36 @@ class TerminalActivity : FragmentActivity() {
                             },
                             onCreateFolder = { parentPath, name ->
                                 withContext(Dispatchers.IO) {
-                                    VfsManager.resolve(this@TerminalActivity, parentPath)?.let { VfsManager.mkdir(it, name) }
+                                    VfsManager.resolve(this@TerminalActivity, parentPath)?.let { VfsManager.mkdir(it, name) } ?: false
                                 }
                             },
                             onCreateFile = { parentPath, name ->
                                 withContext(Dispatchers.IO) {
-                                    VfsManager.resolve(this@TerminalActivity, parentPath)?.let { VfsManager.touch(it, name) }
+                                    VfsManager.resolve(this@TerminalActivity, parentPath)?.let { VfsManager.touch(it, name) } ?: false
                                 }
                             },
                             onDelete = { path ->
                                 withContext(Dispatchers.IO) {
-                                    VfsManager.resolve(this@TerminalActivity, path)?.let { VfsManager.delete(it) }
+                                    VfsManager.resolve(this@TerminalActivity, path)?.let { VfsManager.delete(it) } ?: false
                                 }
                             },
                             onRename = { path, newName ->
                                 withContext(Dispatchers.IO) {
-                                    VfsManager.resolve(this@TerminalActivity, path)?.let { VfsManager.rename(it, newName) }
+                                    VfsManager.resolve(this@TerminalActivity, path)?.let { VfsManager.rename(it, newName) } ?: false
                                 }
                             },
                             onMove = { path, targetDirPath ->
                                 withContext(Dispatchers.IO) {
                                     val file = VfsManager.resolve(this@TerminalActivity, path)
                                     val target = VfsManager.resolve(this@TerminalActivity, targetDirPath)
-                                    if (file != null && target != null) VfsManager.moveInto(file, target)
+                                    if (file != null && target != null) VfsManager.moveInto(file, target) else false
                                 }
                             },
                             onCopy = { path, targetDirPath ->
                                 withContext(Dispatchers.IO) {
                                     val file = VfsManager.resolve(this@TerminalActivity, path)
                                     val target = VfsManager.resolve(this@TerminalActivity, targetDirPath)
-                                    if (file != null && target != null) VfsManager.copyInto(file, target)
+                                    if (file != null && target != null) VfsManager.copyInto(file, target) else false
                                 }
                             },
                             onShare = { path ->
@@ -674,6 +796,25 @@ class TerminalActivity : FragmentActivity() {
                                             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                                         }
                                         startActivity(Intent.createChooser(intent, "Share ${file.name}"))
+                                    }
+                                }
+                            },
+                            onShareMultiple = { paths ->
+                                scope.launch {
+                                    val uris = withContext(Dispatchers.IO) {
+                                        paths.mapNotNull { path ->
+                                            VfsManager.resolve(this@TerminalActivity, path)?.takeIf { it.isFile }?.let { file ->
+                                                FileProvider.getUriForFile(this@TerminalActivity, GenericFileProvider.PROVIDER_NAME, file)
+                                            }
+                                        }
+                                    }
+                                    if (uris.isNotEmpty()) {
+                                        val intent = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+                                            type = "*/*"
+                                            putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(uris))
+                                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                        }
+                                        startActivity(Intent.createChooser(intent, "Share ${uris.size} items"))
                                     }
                                 }
                             },
