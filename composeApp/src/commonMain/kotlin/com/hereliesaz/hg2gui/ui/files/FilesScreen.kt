@@ -42,8 +42,9 @@ import com.hereliesaz.hg2gui.ui.menu.pageBrush
 import kotlinx.coroutines.launch
 
 /*
- * The file manager: search, sort, multi-select batch actions, in-place rename, an automatic
- * media grid, and a real storage-by-type breakdown, all built on Azphalt's capsule primitive.
+ * The file manager: search, sort, filter (kind/hidden/recency), multi-select batch actions,
+ * in-place rename, an automatic media grid, and a real storage-by-type breakdown, all built on
+ * Azphalt's capsule primitive.
  * No icons: a folder is a whole rounded rectangle in its own hue; tapping one expands it while
  * its siblings squish into thin coloured rods beside it, its children living inside it as
  * smaller rectangles - two accordion levels deep, then a plain record of what's inside.
@@ -53,14 +54,47 @@ private enum class SortMode(val label: String) { NAME("Name"), NEWEST("Newest") 
 private enum class FMScreen { Browse, Search, Storage, PickMove, PickCopy }
 private enum class CreateMode { FOLDER, FILE }
 
+// Cycled with a tap, same as SortMode - each one a single always-visible chip rather than a
+// picker sheet, since a folder listing is small enough on a phone that a menu would cost more
+// taps than it saves.
+private enum class KindFilter(val label: String) { ALL("All"), FOLDERS("Folders"), FILES("Files"), IMAGES("Images") }
+private enum class RecencyFilter(val label: String) { ANY("Any time"), TODAY("Today"), WEEK("This week") }
+
+private const val DAY_MS = 24L * 60 * 60 * 1000
+private const val WEEK_MS = 7 * DAY_MS
+
 private fun sortEntries(list: List<VfsEntry>, mode: SortMode): List<VfsEntry> = when (mode) {
     SortMode.NAME -> list.sortedWith(compareBy({ !it.isDirectory }, { it.name.lowercase() }))
     SortMode.NEWEST -> list.sortedWith(compareBy({ !it.isDirectory }, { -it.modifiedAt }))
 }
 
+/**
+ * Hidden dotfiles are stripped first regardless of [kind]/[recency], same as every real Unix
+ * file manager. [recency] only ever hides *files* - a folder's own mtime tracks its last touched
+ * child, not something meaningful to filter a folder's own presence by, so folders always pass
+ * through it untouched.
+ */
+private fun List<VfsEntry>.filtered(kind: KindFilter, showHidden: Boolean, recency: RecencyFilter, nowMillis: Long): List<VfsEntry> {
+    var out: List<VfsEntry> = this
+    if (!showHidden) out = out.filter { !it.name.startsWith(".") }
+    out = when (kind) {
+        KindFilter.ALL -> out
+        KindFilter.FOLDERS -> out.filter { it.isDirectory }
+        KindFilter.FILES -> out.filter { !it.isDirectory }
+        KindFilter.IMAGES -> out.filter { it.isImage }
+    }
+    val recencyFloor = when (recency) {
+        RecencyFilter.ANY -> return out
+        RecencyFilter.TODAY -> DAY_MS
+        RecencyFilter.WEEK -> WEEK_MS
+    }
+    return out.filter { it.isDirectory || nowMillis - it.modifiedAt <= recencyFloor }
+}
+
 @Composable
 fun FilesScreen(
     fullscreen: Boolean,
+    nowMillis: Long,
     listDir: suspend (path: String) -> List<VfsEntry>,
     search: suspend (query: String) -> List<VfsSearchResult>,
     storageStats: suspend () -> StorageStats,
@@ -81,6 +115,9 @@ fun FilesScreen(
     var l0Entries by remember { mutableStateOf<List<VfsEntry>>(emptyList()) }
     var recordEntries by remember { mutableStateOf<List<VfsEntry>>(emptyList()) }
     var sortMode by remember { mutableStateOf(SortMode.NAME) }
+    var kindFilter by remember { mutableStateOf(KindFilter.ALL) }
+    var recencyFilter by remember { mutableStateOf(RecencyFilter.ANY) }
+    var showHidden by remember { mutableStateOf(false) }
     var refreshTick by remember { mutableStateOf(0) }
 
     var searchActive by remember { mutableStateOf(false) }
@@ -108,15 +145,20 @@ fun FilesScreen(
 
     val currentTargetDir = openChain.lastOrNull()?.path ?: "/"
 
-    LaunchedEffect(refreshTick) { rootEntries = sortEntries(listDir("/"), sortMode) }
-    LaunchedEffect(openChain.getOrNull(0)?.path, sortMode, refreshTick) {
-        l0Entries = openChain.getOrNull(0)?.let { sortEntries(listDir(it.path), sortMode) } ?: emptyList()
+    fun List<VfsEntry>.filteredAndSorted() = sortEntries(filtered(kindFilter, showHidden, recencyFilter, nowMillis), sortMode)
+
+    LaunchedEffect(refreshTick, sortMode, kindFilter, recencyFilter, showHidden) {
+        rootEntries = listDir("/").filteredAndSorted()
     }
-    LaunchedEffect(openChain.getOrNull(1)?.path, sortMode, refreshTick) {
-        recordEntries = openChain.getOrNull(1)?.let { sortEntries(listDir(it.path), sortMode) } ?: emptyList()
+    LaunchedEffect(openChain.getOrNull(0)?.path, sortMode, kindFilter, recencyFilter, showHidden, refreshTick) {
+        l0Entries = openChain.getOrNull(0)?.let { listDir(it.path).filteredAndSorted() } ?: emptyList()
     }
-    LaunchedEffect(searchQuery, refreshTick) {
-        searchResults = if (searchQuery.isNotBlank()) search(searchQuery) else emptyList()
+    LaunchedEffect(openChain.getOrNull(1)?.path, sortMode, kindFilter, recencyFilter, showHidden, refreshTick) {
+        recordEntries = openChain.getOrNull(1)?.let { listDir(it.path).filteredAndSorted() } ?: emptyList()
+    }
+    LaunchedEffect(searchQuery, showHidden, refreshTick) {
+        val results = if (searchQuery.isNotBlank()) search(searchQuery) else emptyList()
+        searchResults = if (showHidden) results else results.filter { !it.entry.name.startsWith(".") }
     }
 
     fun openEntry(depth: Int, entry: VfsEntry) {
@@ -268,6 +310,37 @@ fun FilesScreen(
                         )
                     }
                 }
+            }
+        }
+
+        // --- Filter row --------------------------------------------------------------------
+        // Its own row rather than folded into the search/sort one above - a folder listing on a
+        // phone is narrow enough that three more chips there would start wrapping or crowding
+        // the search well. Horizontally scrollable so a later filter never has to fight the
+        // ones already here for room.
+        if (!selectMode && !searchActive) {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(start = 20.dp, end = 20.dp, top = 8.dp)
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                FilterChip(
+                    kindFilter.label.uppercase(), active = kindFilter != KindFilter.ALL,
+                    onClick = {
+                        val values = KindFilter.entries
+                        kindFilter = values[(kindFilter.ordinal + 1) % values.size]
+                    }
+                )
+                FilterChip(
+                    recencyFilter.label.uppercase(), active = recencyFilter != RecencyFilter.ANY,
+                    onClick = {
+                        val values = RecencyFilter.entries
+                        recencyFilter = values[(recencyFilter.ordinal + 1) % values.size]
+                    }
+                )
+                FilterChip("HIDDEN", active = showHidden, onClick = { showHidden = !showHidden })
             }
         }
         }
@@ -715,6 +788,22 @@ private fun NamePrompt(label: String, name: String, onNameChange: (String) -> Un
         )
         Text("OK", color = Azphalt.Yellow, fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.clickable(onClick = onConfirm).padding(horizontal = 8.dp, vertical = 6.dp))
         Text("X", color = Azphalt.Yellow.copy(alpha = .6f), fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.clickable(onClick = onCancel).padding(horizontal = 8.dp, vertical = 6.dp))
+    }
+}
+
+@Composable
+private fun FilterChip(label: String, active: Boolean, onClick: () -> Unit) {
+    Row(
+        Modifier
+            .clip(RoundedCornerShape(percent = 50))
+            .background(if (active) Azphalt.Ink else Azphalt.Ink.copy(alpha = .10f))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 8.dp)
+    ) {
+        Text(
+            label, color = if (active) Azphalt.Yellow else Azphalt.Ink.copy(alpha = .55f),
+            fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.1.em
+        )
     }
 }
 

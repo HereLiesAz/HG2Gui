@@ -46,6 +46,17 @@ The children are their own scroll region; the host does not move. A category (or
 itself) can hold more pills than one screen's height at the stack's own row pitch - drag up or
 down to reach the rest (`rememberStackScroll` in `PillMenu.kt`).
 
+Scrolling coasts and settles on a row boundary rather than stopping wherever the drag let go of
+it, the deceleration a slot-machine reel or a wheel-of-fortune wheel has: no extra pull while
+it's still moving fast, more the slower it gets, so a hard flick spins several rows past before
+the same tick lands it on one and a gentle release snaps almost immediately
+(`rememberSlotFlingBehavior`). Row 0 - the fixed spot where a host's own trail of picks lives - is
+a second way to reach a pill besides tapping it directly: scroll until the one you want parks
+itself there and it goes ink, the same "primed" look a pill gets from anywhere else in the menu,
+though it still takes an actual tap to fire - scrolling only ever positions a pill, never picks
+one by itself. This is what makes an unbounded category (every real binary on `PATH`, say) stay
+usable without a search box of its own.
+
 ## 4a. The trail
 
 A picked child doesn't just cascade its own children in — it also drops out of the band and

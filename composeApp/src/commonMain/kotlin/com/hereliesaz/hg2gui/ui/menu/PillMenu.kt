@@ -1,12 +1,21 @@
 package com.hereliesaz.hg2gui.ui.menu
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.AnimationState
+import androidx.compose.animation.core.DecayAnimationSpec
+import androidx.compose.animation.core.calculateTargetValue
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateTo
 import androidx.compose.animation.core.keyframes
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.rememberSplineBasedDecay
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.FlingBehavior
 import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.ScrollScope
 import androidx.compose.foundation.gestures.rememberScrollableState
 import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.*
@@ -34,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 /*
  * The HG2Gui suggestion menu — the Azphalt capsule as a key.
@@ -191,7 +201,15 @@ private const val BAND_BASE_ROW = 1
  * none was available while building this; a backwards feel is a one-line sign flip, not a
  * structural fix.
  */
-private class StackScroll(val modifier: Modifier, val offsetPx: Float)
+// Row 0 - where a stack's front pill rests - is also where a host's trail of picks lives once
+// one is open. [StackScroll.alignedRow] names whichever row currently sits at that fixed spot,
+// so a long stack (hundreds of real PATH binaries, say) can be scrolled until the wanted pill
+// parks itself right there instead of being hunted down wherever it happens to have fanned out
+// to - "leaving an option lined up with the rest of the breadcrumb line" as its own way to reach
+// a pill, alongside just tapping it directly. Scrolling only ever *positions* a pill there; a
+// tap still fires the pick, the same as everywhere else in the menu, so a flick that overshoots
+// or a scroll that stops mid-gesture never fires a command by itself.
+private class StackScroll(val modifier: Modifier, val offsetPx: Float, val alignedRow: Int)
 
 @Composable
 private fun rememberStackScroll(itemCount: Int, baseRow: Int, viewportHeightPx: Float): StackScroll {
@@ -212,8 +230,56 @@ private fun rememberStackScroll(itemCount: Int, baseRow: Int, viewportHeightPx: 
         offsetPx = next
         consumed
     }
-    val modifier = Modifier.scrollable(orientation = Orientation.Vertical, state = scrollState)
-    return StackScroll(modifier, offsetPx)
+    val flingBehavior = rememberSlotFlingBehavior(pitchPx = pitchPx) { offsetPx.coerceIn(0f, maxOverflowPx) }
+    val modifier = Modifier.scrollable(
+        orientation = Orientation.Vertical,
+        state = scrollState,
+        flingBehavior = flingBehavior
+    )
+    val alignedRow = if (pitchPx > 0f) (offsetPx / pitchPx).roundToInt() else 0
+    return StackScroll(modifier, offsetPx, alignedRow)
+}
+
+/**
+ * Coasts on the same natural deceleration any fling has - no extra pull while it's still moving
+ * fast - then settles onto the nearest row boundary, the tick a slot-machine reel or a
+ * wheel-of-fortune wheel has as it slows down. The trick is computing where a plain, un-snapped
+ * coast would already come to rest and rounding *that* to the nearest row, rather than stopping
+ * the coast early to snap separately: a hard flick's natural stopping point is many rows away, so
+ * rounding it barely nudges where a long coast ends up landing; a gentle release's stopping point
+ * is right where the finger let go, so the same rounding snaps it onto the nearest row almost
+ * immediately. One formula, and the "less effect the faster it's going" feel falls out of it for
+ * free instead of needing a separate velocity threshold.
+ */
+@Composable
+private fun rememberSlotFlingBehavior(pitchPx: Float, currentOffsetPx: () -> Float): FlingBehavior {
+    val decay = rememberSplineBasedDecay<Float>()
+    return remember(pitchPx, decay) { SlotFlingBehavior(pitchPx, currentOffsetPx, decay) }
+}
+
+private class SlotFlingBehavior(
+    private val pitchPx: Float,
+    private val currentOffsetPx: () -> Float,
+    private val decay: DecayAnimationSpec<Float>
+) : FlingBehavior {
+    override suspend fun ScrollScope.performFling(initialVelocity: Float): Float {
+        if (pitchPx <= 0f) return initialVelocity
+        val current = currentOffsetPx()
+        val naturalTarget = decay.calculateTargetValue(0f, initialVelocity)
+        val snapped = ((current + naturalTarget) / pitchPx).roundToInt() * pitchPx
+        val distance = snapped - current
+        var traveled = 0f
+        // No bounce: the house rule is nothing in this menu ever overshoots and corrects, and a
+        // spring with any bounce would visibly overshoot the row it's settling onto.
+        AnimationState(initialValue = 0f, initialVelocity = initialVelocity).animateTo(
+            targetValue = distance,
+            animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow)
+        ) {
+            scrollBy(value - traveled)
+            traveled = value
+        }
+        return 0f
+    }
 }
 
 data class MenuNode(
@@ -295,13 +361,15 @@ fun PillMenu(
                         // its position in the list, or a size change would hand one pill's
                         // in-flight state to a different node.
                         key(node.id) {
+                            val row = roots.size - 1 - i
                             StackPill(
                                 node = node,
-                                row = roots.size - 1 - i,
+                                row = row,
                                 scrollOffsetPx = stackScroll.offsetPx,
                                 leaving = leavingHost != null,
                                 isHost = node.id == leavingHost,
                                 entering = leavingHost == null,
+                                aligned = row == stackScroll.alignedRow,
                                 onClick = {
                                     phase = Phase.Leaving(node.id)
                                     tokens = emptyList()
@@ -413,6 +481,7 @@ private fun StackPill(
     leaving: Boolean,
     isHost: Boolean,
     entering: Boolean,
+    aligned: Boolean,
     onClick: () -> Unit
 ) {
     val target = when {
@@ -451,7 +520,10 @@ private fun StackPill(
             label = node.label,
             cap = node.cap,
             hue = Azphalt.hueOf(node.id),
-            selected = leaving && isHost,
+            // Ink is already what "open"/selected reads as everywhere in the menu; a pill that's
+            // scrolled into the fixed row-0 spot gets the same treatment - primed to be tapped
+            // next, not yet picked.
+            selected = (leaving && isHost) || (aligned && !leaving),
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .fillMaxWidth(HOST_WIDTH)
@@ -518,6 +590,7 @@ private fun ChildBand(
                     scrollOffsetPx = stackScroll.offsetPx,
                     leaving = selected != null && !isSelected,
                     droppingOut = isSelected,
+                    alignedRow = stackScroll.alignedRow,
                     onClick = {
                         if (selected == null) {
                             selected = child.id
@@ -538,12 +611,14 @@ private fun ChildPill(
     scrollOffsetPx: Float,
     leaving: Boolean,
     droppingOut: Boolean,
+    alignedRow: Int,
     onClick: () -> Unit
 ) {
     val density = LocalDensity.current
     val pitchPx = with(density) { ROW_PITCH.toPx() }
 
     val absoluteRow = BAND_BASE_ROW + localIndex
+    val aligned = absoluteRow == alignedRow && !leaving && !droppingOut
 
     val turn = remember(node.id) { Animatable(if (localIndex % 2 == 0) -360f else 360f) }
     // Every pill in a band rises from the same place: the anchor's own row, exactly where
@@ -592,7 +667,8 @@ private fun ChildPill(
             label = node.label,
             cap = node.cap,
             hue = Azphalt.hueOf(hueOwner),
-            selected = false,
+            // Same "ink means primed" treatment StackPill gives its own row-0-aligned pill.
+            selected = aligned,
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .fillMaxWidth(CHILD_WIDTH)

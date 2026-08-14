@@ -611,6 +611,7 @@ class TerminalActivity : FragmentActivity() {
                     PillWrapReveal(state = filesWrap, hue = filesHue) {
                         FilesScreen(
                             fullscreen = fullscreen,
+                            nowMillis = System.currentTimeMillis(),
                             listDir = { path -> vfsListDir(path) },
                             search = { query -> vfsSearch(query) },
                             storageStats = { vfsStorageStats() },

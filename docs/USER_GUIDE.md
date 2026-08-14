@@ -72,10 +72,12 @@ binary now, run in the Termux environment below, not a reimplementation of one.
     on. A folder is a capsule: tap one to expand it while its siblings squish into thin coloured
     rods beside it, two levels deep before you're looking at a plain list of what's inside; a
     yellow **…** chip drops in next to **Close** whenever there's a level open, to step back up
-    one. From there: search across the whole sandbox, sort by name or newest, tap **Select** to
-    multi-select for a batch Move, Copy, Share or Delete, rename anything in place, and a folder
-    that's mostly photos renders itself as a thumbnail grid automatically — no manual list/grid
-    toggle. **Storage** breaks down what's using space by type, and names the largest files.
+    one. From there: search across the whole sandbox, sort by name or newest, filter by kind
+    (folders/files/images), recency (today/this week), and whether dotfiles show at all, tap
+    **Select** to multi-select for a batch Move, Copy, Share or Delete, rename anything in place,
+    and a folder that's mostly photos renders itself as a thumbnail grid automatically — no
+    manual list/grid toggle. **Storage** breaks down what's using space by type, and names the
+    largest files.
 -   **The Guide:** the command picker (reached the same way as the Files screen) has its own
     **THE GUIDE** pill in the top corner, opening a chaptered glossary of real commands paired
     with invented, Hitchhiker's-Guide-style definitions — reading material, not another way to
