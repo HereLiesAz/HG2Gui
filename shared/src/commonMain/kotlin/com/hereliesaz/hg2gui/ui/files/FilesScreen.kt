@@ -37,6 +37,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import com.hereliesaz.hg2gui.ui.ConfirmDialog
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
 import com.hereliesaz.hg2gui.ui.menu.pageBrush
 import kotlinx.coroutines.launch
@@ -99,13 +100,21 @@ fun FilesScreen(
     search: suspend (query: String) -> List<VfsSearchResult>,
     storageStats: suspend () -> StorageStats,
     onOpenFile: (path: String) -> Unit,
-    onCreateFolder: suspend (parentPath: String, name: String) -> Unit,
-    onCreateFile: suspend (parentPath: String, name: String) -> Unit,
-    onDelete: suspend (path: String) -> Unit,
-    onRename: suspend (path: String, newName: String) -> Unit,
-    onMove: suspend (path: String, targetDirPath: String) -> Unit,
-    onCopy: suspend (path: String, targetDirPath: String) -> Unit,
+    // VFS-13: every one of these used to discard its own success/failure - create-with-an-
+    // existing-name reported fake success (the underlying call is a no-op that still returns
+    // true), and every other failure (permission denied, sandbox containment) simply vanished.
+    // Returning Boolean lets this screen tell the user when a tap didn't do what it looked like.
+    onCreateFolder: suspend (parentPath: String, name: String) -> Boolean,
+    onCreateFile: suspend (parentPath: String, name: String) -> Boolean,
+    onDelete: suspend (path: String) -> Boolean,
+    onRename: suspend (path: String, newName: String) -> Boolean,
+    onMove: suspend (path: String, targetDirPath: String) -> Boolean,
+    onCopy: suspend (path: String, targetDirPath: String) -> Boolean,
     onShare: (path: String) -> Unit,
+    // VFS-4: a batch share used to just forEach the single-file callback, firing N independent
+    // ACTION_SEND choosers in a row instead of one ACTION_SEND_MULTIPLE - only the last one was
+    // ever actually reachable.
+    onShareMultiple: (paths: Set<String>) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -133,6 +142,16 @@ fun FilesScreen(
     var createInput by remember { mutableStateOf("") }
 
     var storage by remember { mutableStateOf<StorageStats?>(null) }
+    var opError by remember { mutableStateOf<String?>(null) }
+
+    // VFS-2/VFS-3: every one of these gates a call into onDelete/onRename/onMove/onCopy behind a
+    // ConfirmDialog rather than firing on the tap itself - deleteTarget and batchDeleteConfirm for
+    // the two delete entry points, pendingRenameOverwrite/pendingBatchOverwrite for the silent-
+    // clobber case where a rename/move/copy resolves onto a name that's already there.
+    var deleteTarget by remember { mutableStateOf<VfsEntry?>(null) }
+    var batchDeleteConfirm by remember { mutableStateOf(false) }
+    var pendingRenameOverwrite by remember { mutableStateOf<Pair<VfsEntry, String>?>(null) }
+    var pendingBatchOverwrite by remember { mutableStateOf<Triple<Set<String>, String, Boolean>?>(null) }
 
     // The frame around the wrap-reveal that opened this screen already carries the "screen
     // arriving" beat - this is the header/footer chrome's own arrival on top of that: the top
@@ -158,14 +177,30 @@ fun FilesScreen(
     }
     LaunchedEffect(searchQuery, showHidden, refreshTick) {
         val results = if (searchQuery.isNotBlank()) search(searchQuery) else emptyList()
-        searchResults = if (showHidden) results else results.filter { !it.entry.name.startsWith(".") }
+        // Hidden means "living inside a dotted path," the same rule the browse view applies to
+        // every ancestor - checking only the leaf's own name let a result surface here that the
+        // browse view would never show, since a file itself can be plainly named while every
+        // folder above it is dotted.
+        searchResults = if (showHidden) {
+            results
+        } else {
+            results.filter { r ->
+                !r.entry.name.startsWith(".") &&
+                    r.parentPath.split('/').none { segment -> segment.startsWith(".") }
+            }
+        }
     }
 
     fun openEntry(depth: Int, entry: VfsEntry) {
         openChain = when (depth) {
+            // Two accordion levels deep, then a plain record of what's inside - depth 1 and any
+            // deeper tap (a folder found inside the record list) both just replace level 1, never
+            // rolling level 0 out. Dropping level 0 here used to rebase the chain onto a folder
+            // that was never actually one of the true root's own children - the root panel's own
+            // sibling rods (computed against rootEntries) would then never find it, and the "…"
+            // back chip landed on a chain no longer reachable from the root.
             0 -> if (openChain.getOrNull(0)?.path == entry.path) emptyList() else listOf(entry)
-            1 -> if (openChain.getOrNull(1)?.path == entry.path) openChain.take(1) else openChain.take(1) + entry
-            else -> listOf(openChain[1], entry) // descending past the 2-level window
+            else -> if (openChain.getOrNull(1)?.path == entry.path) openChain.take(1) else openChain.take(1) + entry
         }
     }
 
@@ -179,6 +214,30 @@ fun FilesScreen(
         }
     }
 
+    // Rendered ahead of the PickMove/PickCopy early-return below so it still shows once a
+    // collision flips [screen] back to Browse - VfsManager's own move/copy always overwrite
+    // silently (VFS-3), so this is the only gate standing between a same-named destination file
+    // and losing it.
+    pendingBatchOverwrite?.let { (paths, target, isMove) ->
+        ConfirmDialog(
+            title = if (isMove) "OVERWRITE ON MOVE?" else "OVERWRITE ON COPY?",
+            message = "Something already named the same as one of these lives in the destination - " +
+                (if (isMove) "moving" else "copying") + " here replaces it. This can't be undone.",
+            confirmLabel = if (isMove) "MOVE" else "COPY",
+            onConfirm = {
+                scope.launch {
+                    val failed = paths.count { path -> !(if (isMove) onMove(path, target) else onCopy(path, target)) }
+                    opError = if (failed > 0) "$failed of ${paths.size} didn't ${if (isMove) "move" else "copy"}." else null
+                    selected = emptySet()
+                    selectMode = false
+                    refresh()
+                }
+                pendingBatchOverwrite = null
+            },
+            onDismiss = { pendingBatchOverwrite = null }
+        )
+    }
+
     if (screen == FMScreen.PickMove || screen == FMScreen.PickCopy) {
         FolderPicker(
             title = if (screen == FMScreen.PickMove) "Move to…" else "Copy to…",
@@ -187,13 +246,19 @@ fun FilesScreen(
             onConfirm = { target ->
                 scope.launch {
                     val isMove = screen == FMScreen.PickMove
-                    for (path in selected) {
-                        if (isMove) onMove(path, target) else onCopy(path, target)
+                    val destNames = listDir(target).map { it.name }.toSet()
+                    val collides = selected.any { it.trimEnd('/').substringAfterLast('/') in destNames }
+                    if (collides) {
+                        screen = FMScreen.Browse
+                        pendingBatchOverwrite = Triple(selected, target, isMove)
+                    } else {
+                        val failed = selected.count { path -> !(if (isMove) onMove(path, target) else onCopy(path, target)) }
+                        opError = if (failed > 0) "$failed of ${selected.size} didn't ${if (isMove) "move" else "copy"}." else null
+                        selected = emptySet()
+                        selectMode = false
+                        screen = FMScreen.Browse
+                        refresh()
                     }
-                    selected = emptySet()
-                    selectMode = false
-                    screen = FMScreen.Browse
-                    refresh()
                 }
             },
             modifier = modifier
@@ -205,7 +270,12 @@ fun FilesScreen(
         LaunchedEffect(Unit) { storage = storageStats() }
         StorageScreen(
             stats = storage,
-            onDelete = { path -> scope.launch { onDelete(path); storage = storageStats(); refresh() } },
+            onDelete = { path ->
+                scope.launch {
+                    if (!onDelete(path)) opError = "Couldn't delete that."
+                    storage = storageStats(); refresh()
+                }
+            },
             onBack = { screen = FMScreen.Browse },
             fullscreen = fullscreen,
             modifier = modifier
@@ -238,7 +308,14 @@ fun FilesScreen(
                         Chip("…", background = Azphalt.Yellow, foreground = Azphalt.Ink, onClick = { openChain = openChain.dropLast(1) })
                     }
                 }
-                val count = rootEntries.size + l0Entries.size + recordEntries.size
+                // "Here" is wherever the chain has actually drilled to - the three lists are
+                // different depths, not siblings, so summing them (a former bug) counted a
+                // folder's own contents as though they sat beside it at the level above.
+                val count = when (openChain.size) {
+                    0 -> rootEntries.size
+                    1 -> l0Entries.size
+                    else -> recordEntries.size
+                }
                 Chip("$count THINGS HERE", filled = false, clickable = false)
             }
         }
@@ -263,7 +340,7 @@ fun FilesScreen(
                     if (searchActive) {
                         BasicTextField(
                             value = searchQuery,
-                            onValueChange = { searchQuery = it; screen = FMScreen.Search },
+                            onValueChange = { searchQuery = it; screen = if (it.isBlank()) FMScreen.Browse else FMScreen.Search },
                             modifier = Modifier.weight(1f),
                             textStyle = androidx.compose.ui.text.TextStyle(
                                 color = Azphalt.Ink, fontSize = 13.sp, fontWeight = FontWeight.SemiBold
@@ -345,6 +422,22 @@ fun FilesScreen(
         }
         }
 
+        // VFS-13: the one place a failed file operation becomes visible instead of vanishing
+        // silently - tap to dismiss, same as any other transient chip in this screen.
+        opError?.let { message ->
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(start = 20.dp, end = 20.dp, top = 8.dp)
+                    .clip(RoundedCornerShape(percent = 50))
+                    .background(Azphalt.hues[6])
+                    .clickable { opError = null }
+                    .padding(horizontal = 16.dp, vertical = 10.dp)
+            ) {
+                Text(message, color = Azphalt.White, fontSize = 10.sp, fontWeight = FontWeight.ExtraBold)
+            }
+        }
+
         // --- Content ------------------------------------------------------------------------
         if (screen == FMScreen.Search) {
             SearchResults(
@@ -372,9 +465,12 @@ fun FilesScreen(
                         selectMode = selectMode,
                         selected = selected,
                         onTap = { tapEntry(0, it) },
-                        onLongPress = { selectMode = true; selected = setOf(it.path) },
+                        // Long-pressing while already selecting adds to the set, same as tapping
+                        // a row already does in select mode - replacing it wiped everything else
+                        // picked so far the moment a second long-press landed on a new row.
+                        onLongPress = { selectMode = true; selected = selected + it.path },
                         onRename = { renameTarget = it; renameInput = it.name },
-                        onDelete = { scope.launch { onDelete(it.path); refresh() } },
+                        onDelete = { deleteTarget = it },
                         onShare = { onShare(it.path) }
                     ) {
                         if (openChain.isNotEmpty()) {
@@ -385,9 +481,12 @@ fun FilesScreen(
                                 selectMode = selectMode,
                                 selected = selected,
                                 onTap = { tapEntry(1, it) },
-                                onLongPress = { selectMode = true; selected = setOf(it.path) },
+                                // Long-pressing while already selecting adds to the set, same as tapping
+                        // a row already does in select mode - replacing it wiped everything else
+                        // picked so far the moment a second long-press landed on a new row.
+                        onLongPress = { selectMode = true; selected = selected + it.path },
                                 onRename = { renameTarget = it; renameInput = it.name },
-                                onDelete = { scope.launch { onDelete(it.path); refresh() } },
+                                onDelete = { deleteTarget = it },
                                 onShare = { onShare(it.path) }
                             ) {
                                 if (openChain.size == 2) {
@@ -396,9 +495,12 @@ fun FilesScreen(
                                         selectMode = selectMode,
                                         selected = selected,
                                         onTap = { tapEntry(2, it) },
-                                        onLongPress = { selectMode = true; selected = setOf(it.path) },
+                                        // Long-pressing while already selecting adds to the set, same as tapping
+                        // a row already does in select mode - replacing it wiped everything else
+                        // picked so far the moment a second long-press landed on a new row.
+                        onLongPress = { selectMode = true; selected = selected + it.path },
                                         onRename = { renameTarget = it; renameInput = it.name },
-                                        onDelete = { scope.launch { onDelete(it.path); refresh() } },
+                                        onDelete = { deleteTarget = it },
                                         onShare = { onShare(it.path) }
                                     )
                                 }
@@ -418,11 +520,12 @@ fun FilesScreen(
                     val name = createInput.trim()
                     if (name.isNotEmpty()) {
                         scope.launch {
-                            when (creating) {
+                            val ok = when (creating) {
                                 CreateMode.FOLDER -> onCreateFolder(currentTargetDir, name)
                                 CreateMode.FILE -> onCreateFile(currentTargetDir, name)
-                                null -> {}
+                                null -> true
                             }
+                            opError = if (!ok) "$name already exists here." else null
                             refresh()
                         }
                     }
@@ -445,14 +548,39 @@ fun FilesScreen(
                     onNameChange = { renameInput = it },
                     onConfirm = {
                         val name = renameInput.trim()
-                        if (name.isNotEmpty()) {
-                            scope.launch { onRename(target.path, name); refresh() }
+                        if (name.isNotEmpty() && name != target.name) {
+                            scope.launch {
+                                val siblingNames = listDir(vfsParentPath(target.path)).map { it.name }.toSet()
+                                if (name in siblingNames) {
+                                    pendingRenameOverwrite = target to name
+                                } else {
+                                    opError = if (!onRename(target.path, name)) "Couldn't rename that." else null
+                                    refresh()
+                                }
+                            }
                         }
                         renameTarget = null
                     },
                     onCancel = { renameTarget = null }
                 )
             }
+        }
+
+        pendingRenameOverwrite?.let { (target, newName) ->
+            ConfirmDialog(
+                title = "OVERWRITE $newName?",
+                message = "$newName already exists here - renaming ${target.name} onto it replaces " +
+                    "whatever's there now. This can't be undone.",
+                confirmLabel = "OVERWRITE",
+                onConfirm = {
+                    scope.launch {
+                        opError = if (!onRename(target.path, newName)) "Couldn't rename that." else null
+                        refresh()
+                    }
+                    pendingRenameOverwrite = null
+                },
+                onDismiss = { pendingRenameOverwrite = null }
+            )
         }
 
         // --- Bottom bar ---------------------------------------------------------------------
@@ -467,13 +595,10 @@ fun FilesScreen(
             if (selectMode) {
                 Chip("MOVE", onClick = { screen = FMScreen.PickMove })
                 Chip("COPY", onClick = { screen = FMScreen.PickCopy })
-                Chip("SHARE", onClick = { selected.forEach(onShare) })
+                Chip("SHARE", onClick = { onShareMultiple(selected) })
                 Spacer(Modifier.weight(1f))
                 Chip("DELETE", background = Azphalt.hues[6], foreground = Azphalt.White, onClick = {
-                    scope.launch {
-                        selected.forEach { onDelete(it) }
-                        selected = emptySet(); selectMode = false; refresh()
-                    }
+                    batchDeleteConfirm = true
                 })
             } else {
                 Chip("+ NEW FOLDER", filled = false, onClick = { creating = CreateMode.FOLDER; createInput = "" })
@@ -481,6 +606,44 @@ fun FilesScreen(
                 Spacer(Modifier.weight(1f))
                 Chip("SELECT", onClick = { selectMode = true })
             }
+        }
+
+        deleteTarget?.let { entry ->
+            ConfirmDialog(
+                title = "DELETE ${entry.name}?",
+                message = if (entry.isDirectory) {
+                    "This deletes ${entry.name} and everything inside it. This can't be undone."
+                } else {
+                    "This deletes ${entry.name}. This can't be undone."
+                },
+                confirmLabel = "DELETE",
+                onConfirm = {
+                    scope.launch {
+                        opError = if (!onDelete(entry.path)) "Couldn't delete ${entry.name}." else null
+                        refresh()
+                    }
+                    deleteTarget = null
+                },
+                onDismiss = { deleteTarget = null }
+            )
+        }
+
+        if (batchDeleteConfirm) {
+            ConfirmDialog(
+                title = "DELETE ${selected.size} THINGS?",
+                message = "This deletes everything selected, including the contents of any selected " +
+                    "folders. This can't be undone.",
+                confirmLabel = "DELETE",
+                onConfirm = {
+                    scope.launch {
+                        val failed = selected.count { !onDelete(it) }
+                        opError = if (failed > 0) "$failed of ${selected.size} didn't delete." else null
+                        selected = emptySet(); selectMode = false; refresh()
+                    }
+                    batchDeleteConfirm = false
+                },
+                onDismiss = { batchDeleteConfirm = false }
+            )
         }
     }
 }
@@ -543,7 +706,10 @@ private fun ExpandableLevel(
                                 fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.06.em
                             )
                         }
-                        EntryMenu(openEntry, onRename, onDelete, onShare, tint = Azphalt.White)
+                        // Guarded the same as every sibling row's own menu (FolderRow, FileRows) -
+                        // this was the one place still left live during select mode, so its ×
+                        // could delete the very folder whose contents you were selecting inside.
+                        if (!selectMode) EntryMenu(openEntry, onRename, onDelete, onShare, tint = Azphalt.White)
                     }
                     Box(Modifier.padding(start = 14.dp, top = 10.dp)) { nestedContent() }
                 }
