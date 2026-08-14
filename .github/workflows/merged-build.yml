@@ -27,7 +27,6 @@ jobs:
       signing_enabled: true
       inject_google_services: true
     secrets:
-      KEYSTORE_RAW: ${{ secrets.KEYSTORE_RAW }}
       KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
       KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
       KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
