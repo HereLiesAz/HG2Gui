@@ -7,10 +7,6 @@
 /build
 /captures
 .externalNativeBuild
-/shared/build/
-/composeApp/build/
-/terminal-emulator/build/
-/termux-shared/build/
 **/build/
 
 # JVM heap dumps, e.g. from an OOM during dexing
@@ -18,9 +14,5 @@
 /.kotlin/
 /.idea/
 /.artifacts/
-/captures/
-/composeApp/build/
-/terminal-emulator/build/
-/termux-shared/build/
 /composeApp/playstore/release/composeApp-playstore-release.aab
 /test_write.txt
