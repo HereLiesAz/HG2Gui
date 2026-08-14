@@ -72,7 +72,12 @@ object NotificationUtils {
         notificationMode: Int
     ): Notification.Builder? {
         if (context == null) return null
-        var builder: Notification.Builder? = Notification.Builder(context)
+        var builder: Notification.Builder? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Notification.Builder(context, channelId)
+        } else {
+            @Suppress("DEPRECATION")
+            Notification.Builder(context)
+        }
         builder?.setContentTitle(title)
         builder?.setContentText(notificationText)
         if (notificationBigText != null) {
@@ -81,7 +86,10 @@ object NotificationUtils {
         builder?.setContentIntent(contentIntent)
         builder?.setDeleteIntent(deleteIntent)
 
-        builder?.setPriority(priority)
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            @Suppress("DEPRECATION")
+            builder?.setPriority(priority)
+        }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             builder?.setChannelId(channelId)

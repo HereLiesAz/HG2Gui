@@ -315,10 +315,8 @@ abstract class TermuxSharedProperties(
         val internalPropertiesDump = StringBuilder()
 
         internalPropertiesDump.append(mLabel).append(" Internal Properties:")
-        if (internalProperties != null) {
-            for ((key, value) in internalProperties) {
-                internalPropertiesDump.append("\n").append(key).append(": `").append(value).append("`")
-            }
+        for ((key, value) in internalProperties) {
+            internalPropertiesDump.append("\n").append(key).append(": `").append(value).append("`")
         }
 
         Logger.logVerbose(LOG_TAG, internalPropertiesDump.toString())
@@ -347,6 +345,7 @@ abstract class TermuxSharedProperties(
             )
         }
 
+        @Suppress("DEPRECATION")
         @JvmStatic
         fun replaceUseBlackUIProperty(properties: Properties): Properties {
             val useBlackUIStringValue = properties.getProperty(TermuxPropertyConstants.KEY_USE_BLACK_UI)

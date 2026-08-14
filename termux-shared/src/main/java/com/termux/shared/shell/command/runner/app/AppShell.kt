@@ -336,7 +336,7 @@ class AppShell private constructor(
                 Runtime.getRuntime().exec(
                     commandArray,
                     environmentArray,
-                    File(executionCommand.workingDirectory)
+                    File(workingDirectory)
                 )
             } catch (e: IOException) {
                 executionCommand.setStateFailed(

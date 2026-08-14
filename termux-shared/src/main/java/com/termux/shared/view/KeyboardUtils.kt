@@ -47,6 +47,7 @@ object KeyboardUtils {
     fun toggleSoftKeyboard(context: Context?) {
         if (context == null) return
         val inputMethodManager = context.getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
+        @Suppress("DEPRECATION")
         inputMethodManager?.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0)
     }
 
@@ -118,6 +119,7 @@ object KeyboardUtils {
         // https://developer.android.com/reference/android/view/WindowManager.LayoutParams#SOFT_INPUT_ADJUST_RESIZE
         // https://medium.com/androiddevelopers/animating-your-keyboard-fb776a8fb66d
         // https://stackoverflow.com/a/65194077/14686958
+        @Suppress("DEPRECATION")
         activity?.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
     }
 

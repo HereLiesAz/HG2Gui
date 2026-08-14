@@ -11,9 +11,9 @@ junitVersion = "1.3.0"
 kotlin = "2.4.10"
 compose-multiplatform = "1.11.1"
 androidx-activityCompose = "1.13.0"
-androidx-appcompat = "1.7.1"
+androidx-appcompat = "1.8.0"
 androidx-core-ktx = "1.19.0"
-androidx-fragment = "1.8.9"
+androidx-fragment = "1.9.0"
 androidx-biometric = "1.1.0"
 junit = "4.13.2"
 listenablefuture = "9999.0-empty-to-avoid-conflict-with-guava"
@@ -39,7 +39,6 @@ uiautomatorShell = "2.4.0"
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "androidx-activityCompose" }
 androidx-annotation = { module = "androidx.annotation:annotation", version.ref = "annotation" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "androidx-appcompat" }
-androidx-appcompat-v161 = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
 androidx-core = { module = "androidx.core:core", version.ref = "androidx-core-ktx" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "androidx-core-ktx" }
 androidx-fragment = { group = "androidx.fragment", name = "fragment-ktx", version.ref = "androidx-fragment" }

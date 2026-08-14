@@ -9,7 +9,7 @@ plugins {
 }
 
 kotlin {
-    androidLibrary {
+    android {
         namespace = "com.hereliesaz.hg2gui.shared"
         compileSdk = 37
         minSdk = 24

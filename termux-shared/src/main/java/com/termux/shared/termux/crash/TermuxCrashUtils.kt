@@ -435,6 +435,7 @@ class TermuxCrashUtils private constructor(private val mType: TYPE) : CrashHandl
          * @return Returns the [Notification.Builder].
          */
         @JvmStatic
+        @Suppress("DEPRECATION")
         fun getCrashReportsNotificationBuilder(
             currentPackageContext: Context?,
             termuxPackageContext: Context?,

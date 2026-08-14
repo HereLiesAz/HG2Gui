@@ -275,7 +275,7 @@ class ResultSender {
             }
 
             val resultDataErrmsg = if (resultData.isStateFailed()) {
-                ResultData.getErrorsListLogString(resultData) ?: ""
+                ResultData.getErrorsListLogString(resultData)
             } else {
                 ""
             }

@@ -404,17 +404,15 @@ class TermuxUtils {
             val markdownString = StringBuilder()
             val termuxPluginAppPackageNamesList = TermuxConstants.TERMUX_PLUGIN_APP_PACKAGE_NAMES_LIST
 
-            if (termuxPluginAppPackageNamesList != null) {
-                for (i in termuxPluginAppPackageNamesList.indices) {
-                    val termuxPluginAppPackageName = termuxPluginAppPackageNamesList[i]
-                    val termuxPluginAppContext = PackageUtils.getContextForPackage(currentPackageContext, termuxPluginAppPackageName)
-                    // If the package context for the plugin app is not null, then assume its installed and get its info
-                    if (termuxPluginAppContext != null) {
-                        if (i != 0) {
-                            markdownString.append("\n\n")
-                        }
-                        markdownString.append(getAppInfoMarkdownString(termuxPluginAppContext, false))
+            for (i in termuxPluginAppPackageNamesList.indices) {
+                val termuxPluginAppPackageName = termuxPluginAppPackageNamesList[i]
+                val termuxPluginAppContext = PackageUtils.getContextForPackage(currentPackageContext, termuxPluginAppPackageName)
+                // If the package context for the plugin app is not null, then assume its installed and get its info
+                if (termuxPluginAppContext != null) {
+                    if (i != 0) {
+                        markdownString.append("\n\n")
                     }
+                    markdownString.append(getAppInfoMarkdownString(termuxPluginAppContext, false))
                 }
             }
 

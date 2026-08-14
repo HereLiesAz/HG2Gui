@@ -190,10 +190,7 @@ open class ExtraKeysView @JvmOverloads constructor(
 
     /** Get/Set {@link #mRepetitiveKeys}. */
     open var repetitiveKeys: List<String>?
-        get() {
-            val keys = mRepetitiveKeys ?: return null
-            return keys.stream().map { java.lang.String(it) as String }.collect(Collectors.toList())
-        }
+        get() = mRepetitiveKeys
         set(value) {
             mRepetitiveKeys = value
         }
@@ -208,10 +205,7 @@ open class ExtraKeysView @JvmOverloads constructor(
 
     /** Get {@link #mSpecialButtonsKeys}. */
     open val specialButtonsKeys: Set<String>?
-        get() {
-            val keys = mSpecialButtonsKeys ?: return null
-            return keys.stream().map { java.lang.String(it) as String }.collect(Collectors.toSet())
-        }
+        get() = mSpecialButtonsKeys
 
     /** Get/Set {@link #mButtonTextColor}. */
     open var buttonTextColor: Int
@@ -330,7 +324,7 @@ open class ExtraKeysView @JvmOverloads constructor(
         val buttons = extraKeysInfo.matrix
 
         rowCount = buttons.size
-        columnCount = maximumLength(buttons as Array<Array<*>>)
+        columnCount = maximumLength(buttons)
 
         for (row in buttons.indices) {
             for (col in buttons[row].indices) {
@@ -433,6 +427,7 @@ open class ExtraKeysView @JvmOverloads constructor(
             if (mExtraKeysViewClient!!.performExtraKeyButtonHapticFeedback(view, buttonInfo, button)) return
         }
 
+        @Suppress("DEPRECATION")
         if (Settings.System.getInt(context.contentResolver, Settings.System.HAPTIC_FEEDBACK_ENABLED, 0) != 0) {
             if (Build.VERSION.SDK_INT >= 28) {
                 button.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)

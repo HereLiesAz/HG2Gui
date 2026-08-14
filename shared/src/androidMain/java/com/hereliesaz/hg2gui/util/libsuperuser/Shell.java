@@ -25,6 +25,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -139,10 +140,10 @@ public class Shell {
             STDERR.start();
             try {
                 for (String write : commands) {
-                    STDIN.write((write + "\n").getBytes("UTF-8"));
+                    STDIN.write((write + "\n").getBytes(StandardCharsets.UTF_8));
                     STDIN.flush();
                 }
-                STDIN.write("exit\n".getBytes("UTF-8"));
+                STDIN.write("exit\n".getBytes(StandardCharsets.UTF_8));
                 STDIN.flush();
             } catch (IOException e) {
                 if (e.getMessage().contains("EPIPE") || e.getMessage().contains("Stream closed")) {

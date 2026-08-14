@@ -64,7 +64,7 @@ class BellHandler private constructor(vibrator: Vibrator?) {
         fun getInstance(context: Context): BellHandler {
             return instance ?: synchronized(this) {
                 instance ?: BellHandler(
-                    context.applicationContext.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+                    context.applicationContext.getSystemService(Vibrator::class.java)
                 ).also { instance = it }
             }
         }

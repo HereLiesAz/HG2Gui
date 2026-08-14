@@ -31,7 +31,7 @@ import java.util.Locale
  * https://github.com/Chainfire/libsuperuser/blob/1.1.0.201907261845/libsuperuser/src/eu/chainfire/libsuperuser/Shell.java#L141
  * https://github.com/Chainfire/libsuperuser/blob/1.1.0.201907261845/libsuperuser/src/eu/chainfire/libsuperuser/StreamGobbler.java
  */
-@Suppress("WeakerAccess")
+@Suppress("WeakerAccess", "PLATFORM_CLASS_MAPPED_TO_KOTLIN")
 open class StreamGobbler private constructor(
     private val shell: String,
     open val inputStream: InputStream,

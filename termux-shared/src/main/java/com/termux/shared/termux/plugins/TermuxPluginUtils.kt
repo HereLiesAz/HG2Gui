@@ -423,7 +423,8 @@ object TermuxPluginUtils {
      * @return Returns the {@link Notification.Builder}.
      */
     @JvmStatic
-    fun getPluginCommandErrorsNotificationBuilder(currentPackageContext: Context?,
+    @Suppress("DEPRECATION")
+    fun getPluginCommandErrorsNotificationBuilder(currentPackageContext: Context,
                                                   termuxPackageContext: Context?,
                                                   title: CharSequence?,
                                                   notificationText: CharSequence?,

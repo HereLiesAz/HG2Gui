@@ -99,8 +99,10 @@ object ActivityUtils {
                 }
 
                 if (context is AppCompatActivity) {
+                    @Suppress("DEPRECATION")
                     context.startActivityForResult(intent, requestCode)
                 } else if (context is Activity) {
+                    @Suppress("DEPRECATION")
                     context.startActivityForResult(intent, requestCode)
                 } else {
                     val error = FunctionErrno.ERRNO_PARAMETER_NOT_INSTANCE_OF.getError("context", "startActivityForResult", "Activity or AppCompatActivity")

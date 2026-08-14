@@ -12,6 +12,7 @@ import android.os.Build
 import android.os.UserHandle
 import android.os.UserManager
 import androidx.annotation.RequiresApi
+import androidx.core.content.pm.PackageInfoCompat
 import com.termux.shared.R
 import com.termux.shared.data.DataUtils
 import com.termux.shared.interact.MessageDialogUtils
@@ -509,7 +510,7 @@ object PackageUtils {
      */
     @JvmStatic
     fun getVersionCodeForPackage(packageInfo: PackageInfo?): Int? {
-        return packageInfo?.versionCode
+        return packageInfo?.let { PackageInfoCompat.getLongVersionCode(it).toInt() }
     }
 
     /**
@@ -565,19 +566,24 @@ object PackageUtils {
      * @param packageName The package name of the package.
      * @return Returns the `SHA-256 digest`. This will be `null` if an exception is raised.
      */
+    @Suppress("DEPRECATION")
     @JvmStatic
     fun getSigningCertificateSHA256DigestForPackage(context: Context, packageName: String): String? {
         return try {
-            /*
-             * Todo: We may need AndroidManifest queries entries if package is installed but with a different signature on android 11
-             * https://developer.android.com/training/package-visibility
-             * Need a device that allows (manual) installation of apk with mismatched signature of
-             * sharedUserId apps to test. Currently, if its done, PackageManager just doesn't load
-             * the package and removes its apk automatically if its installed as a user app instead of system app
-             * W/PackageManager: Failed to parse /path/to/com.termux.tasker.apk: Signature mismatch for shared user: SharedUserSetting{xxxxxxx com.termux/10xxx}
-             */
-            val packageInfo = getPackageInfoForPackage(context, packageName, PackageManager.GET_SIGNATURES) ?: return null
-            val signatures = packageInfo.signatures ?: return null
+            val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                PackageManager.GET_SIGNING_CERTIFICATES
+            } else {
+                PackageManager.GET_SIGNATURES
+            }
+
+            val packageInfo = getPackageInfoForPackage(context, packageName, flags) ?: return null
+
+            val signatures = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                packageInfo.signingInfo?.apkContentsSigners
+            } else {
+                packageInfo.signatures
+            } ?: return null
+
             if (signatures.isEmpty()) return null
             val signature = signatures[0] ?: return null
             DataUtils.bytesToHex(MessageDigest.getInstance("SHA-256").digest(signature.toByteArray()))
