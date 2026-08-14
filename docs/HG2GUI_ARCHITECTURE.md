@@ -222,7 +222,8 @@ reflection-based command engine underneath it — eleven built-ins are a fixed d
     (not `remember`-scoped) so every screen agrees on the same background, including
     `EditorScreen` - which runs in its own Activity (`EditorActivity`) with its own composition,
     so a per-composition roll would let it disagree with the rest of the app. `Azphalt.grounds`
-    (Mustard weighted heavily as the primary, six others sharing the rest) and
+    (Mustard weighted heavily as the primary, five others sharing the rest - a sixth, Olive, was
+    dropped for reading too close to Mustard's own yellow) and
     `Azphalt.randomGround(exclude)` (weighted pick) predate this; `currentGround` just makes one
     of those picks the shared, observable one.
 *   `Azphalt.rerollGround()` swaps to a new weighted pick (never repeating the current one),
