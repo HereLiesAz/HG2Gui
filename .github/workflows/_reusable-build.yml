@@ -33,8 +33,6 @@ on:
         type: boolean
         default: false
     secrets:
-      KEYSTORE_RAW:
-        required: false
       KEYSTORE_PASSWORD:
         required: false
       KEY_ALIAS:
