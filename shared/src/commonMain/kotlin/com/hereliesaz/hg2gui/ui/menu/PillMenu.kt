@@ -34,6 +34,10 @@ import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -232,15 +236,18 @@ private fun rememberStackScroll(): StackScroll {
 }
 
 /**
- * Coasts on the same natural deceleration any fling has - no extra pull while it's still moving
- * fast - then settles onto the nearest row boundary, the tick a slot-machine reel or a
- * wheel-of-fortune wheel has as it slows down. The trick is computing where a plain, un-snapped
- * coast would already come to rest and rounding *that* to the nearest row, rather than stopping
- * the coast early to snap separately: a hard flick's natural stopping point is many rows away, so
- * rounding it barely nudges where a long coast ends up landing; a gentle release's stopping point
- * is right where the finger let go, so the same rounding snaps it onto the nearest row almost
- * immediately. One formula, and the "less effect the faster it's going" feel falls out of it for
- * free instead of needing a separate velocity threshold.
+ * The *target* row is computed from the same natural-deceleration curve any fling has - no extra
+ * pull while it's still moving fast - then rounded to the nearest row boundary, the tick a
+ * slot-machine reel or a wheel-of-fortune wheel has as it slows down. The trick is computing
+ * where a plain, un-snapped coast would already come to rest and rounding *that* to the nearest
+ * row, rather than stopping the coast early to snap separately: a hard flick's natural stopping
+ * point is many rows away, so rounding it barely nudges where a long coast ends up landing; a
+ * gentle release's stopping point is right where the finger let go, so the same rounding snaps it
+ * onto the nearest row almost immediately. One formula, and the "less effect the faster it's
+ * going" feel falls out of it for free instead of needing a separate velocity threshold. The
+ * actual motion *to* that target is a separate, critically-damped spring (see
+ * [SlotFlingBehavior.performFling]) - the decay curve here only ever picks where the spring is
+ * headed, it doesn't drive the frame-by-frame motion itself.
  */
 @Composable
 private fun rememberSlotFlingBehavior(pitchPx: Float, currentOffsetPx: () -> Float): FlingBehavior {
@@ -260,8 +267,12 @@ private class SlotFlingBehavior(
         val snapped = ((current + naturalTarget) / pitchPx).roundToInt() * pitchPx
         val distance = snapped - current
         var traveled = 0f
-        // No bounce: the house rule is nothing in this menu ever overshoots and corrects, and a
-        // spring with any bounce would visibly overshoot the row it's settling onto.
+        // DampingRatioNoBouncy only rules out a spring that overshoots and corrects *back*; it
+        // doesn't rule out overshoot itself. A release with velocity carrying past `distance`
+        // (e.g. a quick flick that decays to a target just behind where the finger let go) can
+        // still cross the target before the spring pulls it to rest there - it just won't bounce
+        // past it a second time. In practice this reads as "no bounce" because the common case
+        // (velocity already pointed at the target) settles without crossing it.
         AnimationState(initialValue = 0f, initialVelocity = initialVelocity).animateTo(
             targetValue = distance,
             animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow)
@@ -339,6 +350,11 @@ fun PillMenu(
     val scope = rememberCoroutineScope()
 
     fun openHost(node: MenuNode) {
+        // Guards the same race ChildBand's own `selected == null` check guards: without it, a
+        // second root pill tapped while the first is still mid-Leaving would overwrite `phase`
+        // with a new hostId, stranding the first pill's in-flight leave animation and letting two
+        // picks fire from the one gesture.
+        if (phase != Phase.Browsing) return
         phase = Phase.Leaving(node.id)
         tokens = emptyList()
         onRun(tokens, false)
@@ -543,6 +559,7 @@ private fun HostPill(node: MenuNode, rowsBelow: Int, onClick: () -> Unit) {
                 .align(Alignment.BottomStart)
                 .fillMaxWidth(HOST_WIDTH)
                 .offsetByFractionOfParent(HOST_RIGHT_EDGE - 1f)
+                .absoluteBleed(OVERHANG)
                 .graphicsLayer { translationY = drop.value * density }
                 .clickable(onClick = onClick)
         )
@@ -743,10 +760,21 @@ internal fun Pill(
     val fg = if (selected) Azphalt.Yellow else Azphalt.White
     val capBg = if (selected) Azphalt.Yellow else Azphalt.caps[hue]
     val capFg = if (selected) Azphalt.Ink else Azphalt.White
+    // Local copy so the semantics block below reads the parameter, not its own
+    // SemanticsPropertyReceiver.selected property of the same name.
+    val isSelected = selected
 
     Row(
         modifier
             .height(PILL_HEIGHT)
+            // The state that reads as a color shift (ink vs. hue) needs its own semantics entry
+            // to reach a screen reader at all - color alone carries no signal there. Merging
+            // descendants folds the label/cap Text children into one announced unit ("LABEL,
+            // button") instead of TalkBack stopping on each one separately.
+            .semantics(mergeDescendants = true) {
+                this.role = Role.Button
+                this.selected = isSelected
+            }
             .clip(RoundedCornerShape(percent = 50))
             .background(bg)
             .padding(start = 12.dp, end = 6.dp),
