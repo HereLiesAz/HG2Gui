@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="default_input_color">#0f0</color>
+    <color name="default_output_color">#fff</color>
+    <color name="default_bg_color">#000</color>
+    <color name="hint_color">#AAA</color>
+    <color name="react_bg">#111111</color>
+    <color name="react_green">#A4F644</color>
+    <color name="react_orange">#F6A444</color>
+    <color name="react_red">#D92B2B</color>
+    <color name="react_cyan">#44F6F6</color>
+    <color name="react_purple">#9370DB</color>
+    <color name="react_gray">#444444</color>
+    <color name="react_blue">#3B82F6</color>
+    <!-- Panic Screen Colors -->
+    <color name="panic_primary">#f20d0d</color>
+    <color name="panic_secondary">#39ff14</color>
+    <color name="panic_background_dark">#221010</color>
+    <color name="panic_surface_dark">#2a1515</color>
+    <color name="panic_surface_selected_bg">#33f20d0d</color>
+    <!-- Guide Screen Colors -->
+    <color name="guide_primary">#0db9f2</color>
+    <color name="guide_bg">#101e22</color>
+    <color name="guide_red">#ff3b3b</color>
+    <color name="guide_green">#a1d821</color>
+    <color name="term_bg">#111111</color>
+    <color name="term_green">#A4F644</color>
+    <color name="term_orange">#F6A444</color>
+    <color name="term_red">#D92B2B</color>
+    <color name="term_cyan">#44F6F6</color>
+    <color name="term_purple">#9370DB</color>
+    <color name="term_gray">#444444</color>
+    <color name="term_blue">#3B82F6</color>
+    <!-- HG2Gui Palette -->
+    <color name="hg_primary">#0db9f2</color>
+    <color name="hg_secondary">#ff424e</color>
+    <color name="hg_terminal_green">#0bda57</color>
+    <color name="hg_background_light">#f5f8f8</color>
+    <color name="hg_background_dark">#101e23</color>
+    <color name="hg_deep_space">#050a0c</color>
+    <color name="hg_panel_bg">#66182d34</color> <!-- #182d34 with 40% opacity approx -->
+    <color name="hg_border_color">#315a68</color>
+    <color name="hg_text_dim">#90bccb</color>
+    <color name="hg_scanline">#0DB9F2</color>
+    <color name="hg_key_bg">#253941</color>
+    <color name="hg_key_bg_special">#314a53</color>
+</resources>
