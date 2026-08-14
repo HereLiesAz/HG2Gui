@@ -21,6 +21,29 @@ class DummyTerminalOutput : TerminalOutput() {
     override fun onColorsChanged() {}
 }
 
+/**
+ * UX-5: this session's process is a plain [ProcessBuilder] with piped stdin/stdout - not a real
+ * pseudoterminal. The child never gets a controlling tty: `isatty()` reports false, there's no
+ * termios to carry echo/raw-mode state, no SIGWINCH to learn the screen resized, no job-control
+ * signals. Line-buffered tools work fine through a pipe, but anything that draws a full-screen UI
+ * against a tty directly - `vim`, `less`, `top`, an interactive `python3`/`node` REPL - either
+ * falls back to a dumb-terminal mode or breaks outright, since those programs branch on `isatty`
+ * and drive the screen through termios/ioctl calls a plain pipe has no way to answer.
+ *
+ * This isn't a missing feature so much as an unfinished one: the app already bundles a real,
+ * working native pty bridge (`terminal-emulator` module - `JNI.kt`'s `createSubprocess`/
+ * `setPtyWindowSize`, backed by `jni/termux.c`, the same one upstream Termux's own
+ * `TerminalSession` uses to open `/dev/ptmx` and fork the child onto the slave side). The
+ * `TerminalEmulator` this file already constructs (see `stream()` below) is exactly the class
+ * that bridge is designed to feed - today it only ever gets fed after-the-fact, from a pipe, to
+ * flatten output for display, never wired up as the live consumer of a real pty's master fd.
+ * Rewiring ShellSession onto that bridge is a real, bounded task, not a design unknown - but it
+ * replaces the process-I/O path every terminal command in the app runs through, and every change
+ * in this file already carries the same caveat repeated elsewhere in this class: there is no
+ * physical device in this environment to verify behavior on. Swapping the one shared session
+ * backend blind, with no way to catch a regression before it ships, is a worse trade than leaving
+ * this documented and unstarted.
+ */
 actual class ShellSession private constructor(
     home: File?,
     command: Array<String>,

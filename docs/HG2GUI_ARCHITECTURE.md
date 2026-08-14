@@ -49,9 +49,17 @@ reflection-based command engine underneath it — eleven built-ins are a fixed d
     never prints its own trailing newline while it waits for input — an idle gap with an
     unterminated tail is treated as a live prompt and surfaced through a callback instead of
     blocking forever.
-*   **Limit**: no pty. Full-screen, cursor-addressing programs are out of scope; the UI renders
-    discrete records, not a scrollback with a cursor in it. That's why `edit` is its own Compose
-    screen rather than an attempt to run `nano` through this. Autosuggestion, "did you mean", and
+*   **Limit**: no pty - a plain `ProcessBuilder` with piped stdin/stdout, not `/dev/ptmx`. Full-
+    screen, cursor-addressing programs are out of scope; the UI renders discrete records, not a
+    scrollback with a cursor in it. That's why `edit` is its own Compose screen rather than an
+    attempt to run `nano` through this. Unfinished, not undesigned: the `terminal-emulator` module
+    already bundles a real native pty bridge (`JNI.kt`'s `createSubprocess`, backed by
+    `jni/termux.c` - the same one upstream Termux's `TerminalSession` uses) and the
+    `TerminalEmulator` `ShellSession` already builds is exactly what that bridge is meant to feed
+    live, not just replay output through after the fact. See the doc comment on `ShellSession`
+    itself for why rewiring the app's one shared process-I/O path onto it stayed out of scope this
+    round (no device in this environment to verify a change to code every terminal command runs
+    through). Autosuggestion, "did you mean", and
     alias hints are implemented natively in Kotlin (`ShellAliases.kt`) as ordinary pills rather
     than as a shell-side line editor plugin — there's no live PTY for one to attach to.
 
