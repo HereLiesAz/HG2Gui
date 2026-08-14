@@ -268,6 +268,16 @@ actual class ShellSession private constructor(
                     val bytes = "\r\n[timed out after ${TIMEOUT_MS / 1000}s]".toByteArray()
                     emulator.append(bytes, bytes.size)
                     onLine(emulator.mScreen.transcriptTextWithFullLinesJoined)
+                    // The shell is genuinely stuck here - a declined/unanswerable prompt, or
+                    // something that produced no output at all for the whole timeout - so this
+                    // has to actually end it, not just give up on this one call. Leaving the
+                    // process alive but abandoned mid-read means the *next* stream() call writes
+                    // its command straight into that stale read: the new command never runs, and
+                    // its text gets silently consumed as the old prompt's answer instead.
+                    alive.set(false)
+                    process?.destroy()
+                    try { stdin?.close() } catch (ignored: IOException) {}
+                    try { stdout?.close() } catch (ignored: IOException) {}
                     break
                 }
 
@@ -281,6 +291,10 @@ actual class ShellSession private constructor(
                         pending.append(buf, 0, n)
                         lastDataAt = System.currentTimeMillis()
                         promptOfferedForThisStall = false
+                        // Still actively producing output - that's working, not stalled. The
+                        // timeout exists to catch a genuinely stuck process, not to cap how long
+                        // a real job (an install, a clone, a build) is allowed to keep running.
+                        deadline = System.currentTimeMillis() + TIMEOUT_MS
                     }
                 } else {
                     val marker = pending.indexOf(SENTINEL, emittedUpTo)
@@ -370,6 +384,10 @@ actual class ShellSession private constructor(
                 it.flush()
                 it.close()
             }
+        } catch (ignored: IOException) {
+        }
+        try {
+            stdout?.close()
         } catch (ignored: IOException) {
         }
         process?.destroy()

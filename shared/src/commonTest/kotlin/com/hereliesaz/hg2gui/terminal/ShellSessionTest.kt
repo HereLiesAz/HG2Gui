@@ -4,6 +4,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class ShellSessionTest {
@@ -122,7 +123,7 @@ class ShellSessionTest {
     }
 
     @Test
-    fun decliningToAnswerLeavesTheSessionAliveAfterTimeout() {
+    fun decliningToAnswerTearsDownTheSessionInsteadOfDesyncingIt() {
         val s = shell ?: return
         var promptOffered = false
         s.stream(
@@ -131,6 +132,15 @@ class ShellSessionTest {
             onNeedInput = { promptOffered = true; null }
         )
         assertTrue(promptOffered, "expected the stall to still be offered even with no answer available")
-        assertTrue(s.isAlive, "declining an answer must fall through to the existing timeout backstop, not hang forever")
+        assertFalse(
+            s.isAlive,
+            "a declined/timed-out prompt must tear the session down; leaving it alive but abandoned " +
+                "mid-read means the next command silently gets consumed as the old prompt's answer"
+        )
+
+        var nextOutput = ""
+        val exitCode = s.stream("echo next", onLine = { nextOutput = it }, onNeedInput = { null })
+        assertEquals(-1, exitCode, "a torn-down session must not silently swallow the next command")
+        assertTrue(nextOutput.contains("shell is not running"))
     }
 }
