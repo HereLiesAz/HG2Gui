@@ -197,6 +197,8 @@ tasks.register("incrementVersionBuild") {
             
             versionFile.writeText(updatedText)
 
+            git("config", "user.name", "github-actions[bot]")
+            git("config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com")
             git("commit", "-q", "-am", "chore: bump version to $nextPatch.$nextBuild [skip ci]")
             try {
                 git("push", "-q", "origin", "HEAD:master")

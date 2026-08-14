@@ -31,11 +31,62 @@ val autoIncrementVersion = tasks.register("autoIncrementVersion") {
     }
 }
 
+tasks.register("incrementAndPushVersion") {
+    doLast {
+        val versionFile = rootProject.file("version.properties")
+        val branch = project.findProperty("targetBranch")?.toString() ?: "master"
+        
+        fun git(vararg args: String) {
+            val process = ProcessBuilder(listOf("git") + args)
+                .directory(rootProject.projectDir)
+                .redirectErrorStream(true)
+                .start()
+            process.inputStream.bufferedReader().forEachLine { println(it) }
+            val exit = process.waitFor()
+            if (exit != 0) throw GradleException("git ${args.joinToString(" ")} failed (exit $exit)")
+        }
+
+        val maxAttempts = 5
+        for (attempt in 1..maxAttempts) {
+            try {
+                git("fetch", "origin", branch, "--quiet")
+                // Only reset the version file to avoid losing build artifacts if this is run after build
+                git("checkout", "origin/$branch", "--", "version.properties")
+                
+                val props = Properties()
+                versionFile.inputStream().use { props.load(it) }
+                val patch = (props.getProperty("versionPatch")?.toInt() ?: 0) + 1
+                val build = (props.getProperty("versionBuild")?.toInt() ?: 0) + 1
+                
+                val content = versionFile.readText()
+                val updatedContent = content
+                    .replace(Regex("versionPatch\\s*=\\s*\\d+"), "versionPatch=$patch")
+                    .replace(Regex("versionBuild\\s*=\\s*\\d+"), "versionBuild=$build")
+                
+                versionFile.writeText(updatedContent)
+                
+                git("config", "user.name", "github-actions[bot]")
+                git("config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com")
+                git("add", "version.properties")
+                git("commit", "-m", "chore: bump version to $patch.$build [skip ci]")
+                git("push", "origin", "HEAD:$branch")
+                println("Successfully pushed version bump: patch=$patch, build=$build")
+                break
+            } catch (e: Exception) {
+                if (attempt == maxAttempts) throw e
+                println("Push attempt $attempt failed - retrying. Error: ${e.message}")
+                Thread.sleep((attempt * 2000).toLong())
+            }
+        }
+    }
+}
+
 subprojects {
     tasks.configureEach {
         val taskName = name.lowercase()
         if ((taskName.contains("compile") || taskName.contains("assemble") || taskName.contains("bundle") || taskName.contains("kapt"))
             && name != "autoIncrementVersion"
+            && name != "incrementAndPushVersion"
         ) {
             dependsOn(autoIncrementVersion)
         }

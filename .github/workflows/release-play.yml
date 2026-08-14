@@ -26,6 +26,8 @@ name: Release to Play
 
 on:
   push:
+    paths-ignore:
+      - 'version.properties'
   # Called by the workflows that publish a GitHub release, so a Play publish
   # follows automatically once the release is out. Also runnable by hand.
   workflow_call:
