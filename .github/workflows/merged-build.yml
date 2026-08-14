@@ -27,10 +27,13 @@ jobs:
       signing_enabled: true
       inject_google_services: true
     secrets:
-      KEYSTORE_RAW: ${{ secrets.KEYSTORE_RAW }}
       KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
       KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
       KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+      KEYSTORE_PRIVATE: ${{ secrets.KEYSTORE_PRIVATE }}
+      KEYSTORE_RSA: ${{ secrets.KEYSTORE_RSA }}
+      KEYSTORE_PUBLIC: ${{ secrets.KEYSTORE_PUBLIC }}
+      KEYSTORE_CHAIN: ${{ secrets.KEYSTORE_CHAIN }}
       GOOGLE_SERVICES_API_KEY: ${{ secrets.GOOGLE_SERVICES_API_KEY }}
       PROJECT_ID: ${{ secrets.PROJECT_ID }}
       CLIENT_ID: ${{ secrets.CLIENT_ID }}

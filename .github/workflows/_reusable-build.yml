@@ -33,13 +33,19 @@ on:
         type: boolean
         default: false
     secrets:
-      KEYSTORE_RAW:
-        required: false
       KEYSTORE_PASSWORD:
         required: false
       KEY_ALIAS:
         required: false
       KEY_PASSWORD:
+        required: false
+      KEYSTORE_PRIVATE:
+        required: false
+      KEYSTORE_RSA:
+        required: false
+      KEYSTORE_PUBLIC:
+        required: false
+      KEYSTORE_CHAIN:
         required: false
       GOOGLE_SERVICES_API_KEY:
         required: false
@@ -83,7 +89,10 @@ jobs:
         id: keystore
         uses: ./.github/actions/android-keystore
         with:
-          keystore-raw: ${{ secrets.KEYSTORE_RAW }}
+          keystore-private: ${{ secrets.KEYSTORE_PRIVATE }}
+          keystore-rsa: ${{ secrets.KEYSTORE_RSA }}
+          keystore-public: ${{ secrets.KEYSTORE_PUBLIC }}
+          keystore-chain: ${{ secrets.KEYSTORE_CHAIN }}
           keystore-password: ${{ secrets.KEYSTORE_PASSWORD }}
           key-alias: ${{ secrets.KEY_ALIAS }}
           key-password: ${{ secrets.KEY_PASSWORD }}

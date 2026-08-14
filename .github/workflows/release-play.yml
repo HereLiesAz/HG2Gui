@@ -103,7 +103,6 @@ jobs:
         id: keystore
         uses: ./.github/actions/android-keystore
         with:
-          keystore-raw: ${{ secrets.KEYSTORE_RAW }}
           keystore-private: ${{ secrets.KEYSTORE_PRIVATE }}
           keystore-rsa: ${{ secrets.KEYSTORE_RSA }}
           keystore-public: ${{ secrets.KEYSTORE_PUBLIC }}
