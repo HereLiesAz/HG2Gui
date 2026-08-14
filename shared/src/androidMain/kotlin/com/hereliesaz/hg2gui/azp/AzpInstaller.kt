@@ -65,11 +65,21 @@ object AzpInstaller {
     ): AzpInstallResult? =
         withContext(Dispatchers.IO) {
             val dest = rootDir(context, id, version)
-            dest.mkdirs()
+            // AZP-9: extracted and validated into a staging directory first, never straight into
+            // `dest`. A reinstall of an already-installed id/version (e.g. retrying after a
+            // network blip) used to extract directly on top of the working copy; a corrupt
+            // download or a failed digest/signature check then deleted `dest` in the catch block
+            // below, wiping the previously-good install even though AzpLibrary still records it
+            // as installed. `dest` is only ever touched, atomically, once every check below has
+            // already passed.
+            val staging = File(dest.parentFile, "${dest.name}.staging-${System.identityHashCode(bytes)}")
+            staging.deleteRecursively()
+            staging.mkdirs()
 
             // A corrupt archive or a manifest that fails to parse must not crash the caller -
             // any exception past this point is treated as a failed install, same outcome as an
-            // explicit rejection, with the partially-extracted directory cleaned up either way.
+            // explicit rejection, with the partially-extracted staging directory cleaned up
+            // either way - `dest` (the previous working copy, if any) is never touched on failure.
             try {
                 // path (as stored in the archive, "/"-separated) -> lowercase-hex SHA-256 digest
                 // of the bytes actually written to disk. Computed inline via DigestOutputStream
@@ -80,14 +90,14 @@ object AzpInstaller {
                     var entry = zip.nextEntry
                     while (entry != null) {
                         val name = entry.name
-                        // Path containment: refuse any entry that would escape dest via .. or an
-                        // absolute path (package-format.md's own path-containment requirement).
+                        // Path containment: refuse any entry that would escape staging via .. or
+                        // an absolute path (package-format.md's own path-containment requirement).
                         // AZP-8: a package that has to smuggle a zip-slip entry to work at all is
                         // not a package worth installing minus that one entry - silently skipping
                         // it used to let the rest of an otherwise-hostile archive install with no
                         // signal at all, rather than the same hard rejection a bad digest gets.
-                        val target = File(dest, name).canonicalFile
-                        if (!target.path.startsWith(dest.canonicalPath + File.separator) && target != dest) {
+                        val target = File(staging, name).canonicalFile
+                        if (!target.path.startsWith(staging.canonicalPath + File.separator) && target != staging) {
                             throw java.io.IOException("path traversal in archive entry: $name")
                         }
                         if (entry.isDirectory) {
@@ -103,8 +113,8 @@ object AzpInstaller {
                     }
                 }
 
-                val manifestFile = File(dest, "manifest.json")
-                if (!manifestFile.exists()) { dest.deleteRecursively(); return@withContext null }
+                val manifestFile = File(staging, "manifest.json")
+                if (!manifestFile.exists()) { staging.deleteRecursively(); return@withContext null }
                 val manifestBytes = manifestFile.readBytes()
                 val manifest = json.parseToJsonElement(String(manifestBytes)).jsonObject
                 val kind = manifest["kind"]?.jsonPrimitive?.content ?: "asset"
@@ -129,10 +139,10 @@ object AzpInstaller {
                     ?.mapValues { (_, v) -> v.jsonPrimitive.content.removePrefix("sha256-") }
                     ?: emptyMap()
                 if (!filesMatchDigests(extractedDigests, declaredFiles)) {
-                    dest.deleteRecursively(); return@withContext null
+                    staging.deleteRecursively(); return@withContext null
                 }
 
-                val signatureFile = File(dest, "signature.json")
+                val signatureFile = File(staging, "signature.json")
                 val trust = if (!signatureFile.exists()) {
                     AzpTrust.UNSIGNED
                 } else {
@@ -148,11 +158,23 @@ object AzpInstaller {
                     if (signature == null) AzpTrust.INVALID
                     else AzpSignatureVerifier.verify(manifestBytes, signature, trustedKeys)
                 }
-                if (trust == AzpTrust.INVALID) { dest.deleteRecursively(); return@withContext null }
+                if (trust == AzpTrust.INVALID) { staging.deleteRecursively(); return@withContext null }
+
+                // Every check passed - only now does the previous working copy (if any) get
+                // replaced, and only by first deleting `dest` and renaming staging into place, so
+                // there's never a window where `dest` is a half-written mix of old and new files.
+                dest.deleteRecursively()
+                if (!staging.renameTo(dest)) {
+                    // Cross-filesystem renames (or an unlucky race) can make renameTo fail even
+                    // though both dirs are otherwise fine - fall back to a copy, then clean up
+                    // staging either way so it never lingers as an orphaned "<id>/<version>.staging-*".
+                    staging.copyRecursively(dest, overwrite = true)
+                    staging.deleteRecursively()
+                }
 
                 AzpInstallResult(kind, skillIds, trust, script)
             } catch (e: Exception) {
-                dest.deleteRecursively()
+                staging.deleteRecursively()
                 null
             }
         }
