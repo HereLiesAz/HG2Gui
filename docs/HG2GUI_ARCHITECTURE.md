@@ -81,12 +81,14 @@ reflection-based command engine underneath it — eleven built-ins are a fixed d
     exactly one pill: `bootstrap`.
 *   **Overflow**: a category or a root stack can hold more pills than one screen's height at
     `PillMenu.kt`'s `ROW_PITCH` - `rememberStackScroll` tracks drag and decay-fling offsets, then
-    snaps to the nearest row. The offset is applied on top of every pill's animated position,
-    since the stack's absolute-
-    `translationY` positioning can't use a stock `verticalScroll`/`LazyColumn` (Compose would size
-    the scroll region to each pill's own viewport-sized Box, not to the stack's real extent). Used
-    for both the root stack and any `ChildBand`. Dwelling on a newly scrolled-in navigational pill
-    for 550 ms advances into it; terminal leaves and wizard actions never fire from dwell.
+    snaps to the nearest row; the offset is unbounded in both directions, so a drag or fling can
+    carry the stack past its first or last row, leaving blank space, with nothing snapping it
+    back. The offset is applied on top of every pill's animated position, since the stack's
+    absolute-`translationY` positioning can't use a stock `verticalScroll`/`LazyColumn` (Compose
+    would size the scroll region to each pill's own viewport-sized Box, not to the stack's real
+    extent). Used for both the root stack and any `ChildBand`. Whichever pill scrolls to rest at
+    row 0 goes ink ("primed") purely as a cosmetic marker - selecting a pill always requires an
+    explicit tap, never a scroll-and-wait.
 *   `FileBrowser` (also `androidMain`) supplies the file-argument case: a `file…` node (attached
     to `edit` and to every discovered shell binary) whose `wizardId` opens the graphical Select
     File/Folder picker instead of drilling further into the pill stack - see section 13 below.

@@ -187,14 +187,6 @@ private const val TRAIL_LEFT_OF_FULL = HOST_WIDTH * HOST_RIGHT_EDGE + 0.02f
 // Row 0 is reserved for the host and the trail of picks below it; every band of choices fans
 // out starting one row above that, never on top of it.
 private const val BAND_BASE_ROW = 1
-// How long a pill has to sit aligned on row 0 before scrolling counts as picking it, rather than
-// just passing through on the way to somewhere else - deliberately longer than any other timing
-// in the menu (the longest of which, SWING_MS, is ~173ms) so it reads as a pause the user meant,
-// not a stutter mid-scroll. Only ever used to *auto-advance navigation* (open a host, cascade
-// into a pick's own children) - never to fire a command. A pick with nothing further to drill
-// into still needs an actual tap; dwell only parks it at the easy-to-reach spot and leaves it
-// primed there, the same as any other terminal pick already works.
-private const val DWELL_MS = 550L
 
 /**
  * A stack (root pills or a child band) fans up row by row from a shared base with no cap on how
@@ -211,34 +203,25 @@ private const val DWELL_MS = 550L
  */
 // Row 0 - where a stack's front pill rests - is also where a host's trail of picks lives once
 // one is open. [StackScroll.alignedRow] names whichever row currently sits at that fixed spot,
-// so a long stack (hundreds of real PATH binaries, say) can be scrolled until the wanted pill
-// parks itself right there instead of being hunted down wherever it happens to have fanned out
-// to - "leaving an option lined up with the rest of the breadcrumb line" as its own way to reach
-// a pill, alongside just tapping it directly. Scrolling only ever *positions* a pill there; a
-// tap still fires the pick, the same as everywhere else in the menu, so a flick that overshoots
-// or a scroll that stops mid-gesture never fires a command by itself.
+// which reads as "primed" (ink) purely as a cosmetic marker of what's nearest the front of the
+// stack - it never fires anything by itself. Every pill is tappable wherever it sits in the
+// band; scrolling never substitutes for the tap.
 private class StackScroll(val modifier: Modifier, val offsetPx: Float, val alignedRow: Int)
 
 @Composable
-private fun rememberStackScroll(itemCount: Int, baseRow: Int, viewportHeightPx: Float): StackScroll {
+private fun rememberStackScroll(): StackScroll {
     val density = LocalDensity.current
     val pitchPx = with(density) { ROW_PITCH.toPx() }
-    val pillHeightPx = with(density) { PILL_HEIGHT.toPx() }
     var offsetPx by remember { mutableStateOf(0f) }
-    val maxOverflowPx = remember(itemCount, viewportHeightPx) {
-        val totalExtentPx = pitchPx * (itemCount - 1 + baseRow).coerceAtLeast(0) + pillHeightPx
-        (totalExtentPx - viewportHeightPx).coerceAtLeast(0f)
-    }
-    // Clamp whenever the bound itself shrinks (e.g. fewer roots after a recomposition) so a
-    // stale offset never leaves the stack scrolled past its own new end.
-    if (offsetPx > maxOverflowPx) offsetPx = maxOverflowPx
+    // Unbounded on both ends - dragging or flinging past either end of the stack's own content
+    // reveals blank space above the top row or below the bottom one, rather than stopping dead
+    // at the content edge. Nothing auto-corrects it back: it stays wherever the gesture leaves
+    // it, the same "no bounce, no self-correcting" house rule the settle already follows.
     val scrollState = rememberScrollableState { delta ->
-        val next = (offsetPx + delta).coerceIn(0f, maxOverflowPx)
-        val consumed = next - offsetPx
-        offsetPx = next
-        consumed
+        offsetPx += delta
+        delta
     }
-    val flingBehavior = rememberSlotFlingBehavior(pitchPx = pitchPx) { offsetPx.coerceIn(0f, maxOverflowPx) }
+    val flingBehavior = rememberSlotFlingBehavior(pitchPx = pitchPx) { offsetPx }
     val modifier = Modifier.scrollable(
         orientation = Orientation.Vertical,
         state = scrollState,
@@ -355,8 +338,6 @@ fun PillMenu(
     var tokens by remember { mutableStateOf(listOf<String>()) }
     val scope = rememberCoroutineScope()
 
-    // Opening a host is pure navigation - reversible with one tap on "..." - so it's the "not the
-    // final stack" case scrolling is allowed to advance on its own once dwell settles on it.
     fun openHost(node: MenuNode) {
         phase = Phase.Leaving(node.id)
         tokens = emptyList()
@@ -368,20 +349,11 @@ fun PillMenu(
         }
     }
 
-    BoxWithConstraints(modifier.fillMaxSize()) {
-        val viewportHeightPx = with(LocalDensity.current) { maxHeight.toPx() }
+    Box(modifier.fillMaxSize()) {
         when (val p = phase) {
             is Phase.Browsing, is Phase.Leaving -> {
                 val leavingHost = (p as? Phase.Leaving)?.hostId
-                val stackScroll = rememberStackScroll(itemCount = roots.size, baseRow = 0, viewportHeightPx = viewportHeightPx)
-
-                if (p is Phase.Browsing) {
-                    LaunchedEffect(stackScroll.alignedRow) {
-                        val aligned = roots.getOrNull(roots.size - 1 - stackScroll.alignedRow) ?: return@LaunchedEffect
-                        delay(DWELL_MS)
-                        openHost(aligned)
-                    }
-                }
+                val stackScroll = rememberStackScroll()
 
                 Box(Modifier.fillMaxSize().padding(bottom = 12.dp).then(stackScroll.modifier)) {
                     roots.forEachIndexed { i, node ->
@@ -431,7 +403,6 @@ fun PillMenu(
                             ChildBand(
                                 children = effectiveChildren,
                                 hueOwner = host.id,
-                                viewportHeightPx = viewportHeightPx,
                                 onPick = { child ->
                                     if (child.wizardId != null && child.settleBeforeWizard) {
                                         // This wizard anchors an animation to the crumb's actual
@@ -592,27 +563,12 @@ private fun HostPill(node: MenuNode, rowsBelow: Int, onClick: () -> Unit) {
 private fun ChildBand(
     children: List<MenuNode>,
     hueOwner: String,
-    viewportHeightPx: Float,
     onPick: (MenuNode) -> Unit
 ) {
     // No key needed here - the call site already wraps this whole band in key(anchor.id), so a
     // new anchor tears down and recreates this state automatically.
     var selected by remember { mutableStateOf<String?>(null) }
-    val stackScroll = rememberStackScroll(itemCount = children.size, baseRow = BAND_BASE_ROW, viewportHeightPx = viewportHeightPx)
-
-    // Dwelling on a pick that only cascades to more children auto-advances, same as tapping it -
-    // there's nothing to run yet, so nothing is lost by scrolling past it before it acts. A pick
-    // that's already the final stack (nothing left to drill into, or a wizard taking over the
-    // screen) never auto-fires from this - it only ever gets parked here, primed, waiting for the
-    // actual tap that already runs it today.
-    LaunchedEffect(stackScroll.alignedRow) {
-        if (selected != null) return@LaunchedEffect
-        val aligned = children.getOrNull(stackScroll.alignedRow - BAND_BASE_ROW) ?: return@LaunchedEffect
-        if (aligned.isTerminal() || aligned.wizardId != null) return@LaunchedEffect
-        delay(DWELL_MS)
-        selected = aligned.id
-        onPick(aligned)
-    }
+    val stackScroll = rememberStackScroll()
 
     Box(Modifier.fillMaxSize().then(stackScroll.modifier)) {
         children.forEachIndexed { idx, child ->

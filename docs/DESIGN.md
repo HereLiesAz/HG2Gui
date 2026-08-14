@@ -50,18 +50,16 @@ Scrolling coasts and settles on a row boundary rather than stopping wherever the
 it, the deceleration a slot-machine reel or a wheel-of-fortune wheel has: no extra pull while
 it's still moving fast, more the slower it gets, so a hard flick spins several rows past before
 the same tick lands it on one and a gentle release snaps almost immediately
-(`rememberSlotFlingBehavior`). Row 0 - the fixed spot where a host's own trail of picks lives - is
-a second way to reach a pill besides tapping it directly: scroll until the one you want parks
-itself there and it goes ink, the same "primed" look a pill gets from anywhere else in the menu.
-This is what makes an unbounded category (every real binary on `PATH`, say) stay usable without a
-search box of its own.
+(`rememberSlotFlingBehavior`). Row 0 - the fixed spot where a host's own trail of picks lives -
+goes ink, the same "primed" look a pill gets from anywhere else in the menu, whenever a pill
+scrolls to rest there: a purely cosmetic marker of what's nearest the front of the stack. It
+never fires anything by itself - every pill is tappable wherever it sits in the band, and
+scrolling one to row 0 doesn't substitute for that tap.
 
-Sitting parked there for 550ms (`DWELL_MS`) without the row changing again counts as picking it -
-but only when picking it just cascades to more children (opening a host, or a child with children
-of its own): the same act tapping it would already trigger, just reached by scrolling and pausing
-instead. A pick with nothing further to drill into, or one that hands off to a wizard, never
-auto-fires this way - it only ever gets parked and left primed there, still waiting on the actual
-tap that already runs it. Scrolling can bring you to the final choice; it can't make it for you.
+Scrolling isn't bounded to the stack's own content either: a drag or a fling can carry the stack
+past its first or last row, leaving blank space above the top or below the bottom. Nothing
+snaps it back - it stays wherever the gesture leaves it, the same as a settled fling stays on
+whatever row it lands on.
 
 ## 4a. The trail
 

@@ -40,6 +40,10 @@ import com.hereliesaz.hg2gui.ui.menu.MenuNode
 import com.hereliesaz.hg2gui.ui.menu.PillMenu
 import kotlinx.coroutines.launch
 
+// SH-5: each entry's own VT100 scrollback is already capped independently - this bounds the
+// outer list of commands itself, which used to grow without limit for the life of a session.
+private const val MAX_BUFFER_ENTRIES = 200
+
 @Composable
 fun TerminalScreen(
     tree: List<MenuNode>,
@@ -97,7 +101,7 @@ fun TerminalScreen(
             if (fullLine.isNotEmpty() && !session.running) {
                 session.running = true
                 if (session.commandHistory.isEmpty() || session.commandHistory.last() != fullLine) {
-                    session.commandHistory = session.commandHistory + fullLine
+                    session.commandHistory = (session.commandHistory + fullLine).takeLast(MAX_BUFFER_ENTRIES)
                 }
                 session.historyIndex = -1
                 val lineToRun = fullLine
@@ -140,6 +144,14 @@ fun TerminalScreen(
                     } finally {
                         session.buffer = session.buffer.mapIndexed { index, entry ->
                             if (index == entryId) entry.copy(isRunning = false) else entry
+                        }
+                        // SH-5: each entry's own VT100 scrollback is already capped, but nothing
+                        // ever trimmed the *outer* list of commands itself - a long session just
+                        // kept growing it forever. Only safe to trim here, once this entry is no
+                        // longer being updated by its own entryId - trimming mid-run would shift
+                        // every index the streaming/error/finally branches above still target.
+                        if (session.buffer.size > MAX_BUFFER_ENTRIES) {
+                            session.buffer = session.buffer.takeLast(MAX_BUFFER_ENTRIES)
                         }
                         session.running = false
                     }
@@ -217,6 +229,7 @@ fun TerminalScreen(
             MenuNode(
                 id = "answer",
                 label = "Answer",
+                emitsToken = false,
                 children = listOf(
                     MenuNode(id = "answer-yes", label = "YES", value = "y"),
                     MenuNode(id = "answer-no", label = "NO", value = "n")
@@ -653,7 +666,12 @@ private fun suggestionNodeFor(session: SessionUiState): MenuNode? {
             }
         }
     }
-    return if (children.isEmpty()) null else MenuNode(id = "suggest", label = "Suggest", children = children)
+    return if (children.isEmpty()) null else MenuNode(
+        id = "suggest",
+        label = "Suggest",
+        children = children,
+        emitsToken = false
+    )
 }
 
 @Composable

@@ -171,6 +171,7 @@ object CommandTree {
     private fun workflowsRoot(context: Context): MenuNode = MenuNode(
         id = "wf",
         label = "Workflows",
+        emitsToken = false,
         resolveChildren = {
             val saved = WorkflowStore.list(context).map { workflow ->
                 MenuNode(
@@ -197,6 +198,7 @@ object CommandTree {
     private fun aiRoot(): MenuNode = MenuNode(
         id = "ai",
         label = "AI",
+        emitsToken = false,
         children = listOf(
             MenuNode(id = "ai/chat", label = "chat…", cap = "open", emitsToken = false, wizardId = "ai-chat")
         )
@@ -208,6 +210,7 @@ object CommandTree {
     private fun azpRoot(): MenuNode = MenuNode(
         id = "azp",
         label = "Store",
+        emitsToken = false,
         children = listOf(
             MenuNode(id = "azp/search", label = "search…", cap = "open", emitsToken = false, wizardId = "azp-store")
         )
@@ -256,7 +259,13 @@ object CommandTree {
                 children = c.args.map { a -> MenuNode(id = "ctx/$os/${c.label}/$a", label = a) }
             )
         }
-        return MenuNode(id = "ctx/$os", label = OS_LABELS[os] ?: os, cap = children.size.toString(), children = children)
+        return MenuNode(
+            id = "ctx/$os",
+            label = OS_LABELS[os] ?: os,
+            cap = children.size.toString(),
+            children = children,
+            emitsToken = false
+        )
     }
 
     /** The Context root pill: pick which OS's commands the reference tree above should offer,
@@ -272,7 +281,13 @@ object CommandTree {
                 wizardId = "switchos:$os"
             )
         }
-        return MenuNode(id = "ctx", label = "Context", cap = (OS_LABELS[current] ?: current), children = choices)
+        return MenuNode(
+            id = "ctx",
+            label = "Context",
+            cap = (OS_LABELS[current] ?: current),
+            children = choices,
+            emitsToken = false
+        )
     }
 
     private fun shellLeaf(fullName: String, label: String): MenuNode {
@@ -393,7 +408,10 @@ object CommandTree {
                 id = "sh/$category",
                 label = category,
                 cap = children.size.toString(),
-                children = children
+                children = children,
+                // A category is purely navigational - "Development" or "Network" is never
+                // itself a runnable command, only whatever real binary gets picked inside it.
+                emitsToken = false
             )
         }
     }
@@ -404,9 +422,9 @@ object CommandTree {
         val osRoots = if (os == "local") emptyList() else listOf(osReferenceRoot(os))
 
         return shellRoots + osRoots + listOf(
-            MenuNode("sys", "Device", SYSTEM.size.toString(), SYSTEM.sorted().map { node(it) }),
-            MenuNode("apps", "Apps & nav", APPS.size.toString(), APPS.sorted().map { node(it) }),
-            MenuNode("feat", "Features", FEATURES.size.toString(), FEATURES.sorted().map { node(it) }),
+            MenuNode("sys", "Device", SYSTEM.size.toString(), SYSTEM.sorted().map { node(it) }, emitsToken = false),
+            MenuNode("apps", "Apps & nav", APPS.size.toString(), APPS.sorted().map { node(it) }, emitsToken = false),
+            MenuNode("feat", "Features", FEATURES.size.toString(), FEATURES.sorted().map { node(it) }, emitsToken = false),
             workflowsRoot(context),
             aiRoot(),
             azpRoot(),
