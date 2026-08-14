@@ -333,6 +333,9 @@ private fun BufferEntry(
     // fires the command itself - same "assemble, then let the user press Run" rule every
     // wizard-produced command already follows.
     var expanded by remember { mutableStateOf(false) }
+    // entry.output never carries raw ANSI/VT100 escapes to strip here: real shell output is
+    // always pre-flattened through ShellSession's headless TerminalEmulator before it reaches the
+    // buffer, and the bootstrap/Builtins branches only ever emit app-authored plain text.
     val isArt = remember(entry.output) { looksLikeAsciiArt(entry.output) }
     // Checked only when the output isn't already art - a block of `label: value` lines and a
     // dense symbol-art block are mutually exclusive readings of the same text.
@@ -471,14 +474,27 @@ private fun SessionTabs(
                         )
                         if (on && sessions.size > 1) {
                             Spacer(Modifier.width(6.dp))
-                            Text(
-                                "×",
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    color = Azphalt.Yellow,
-                                    fontSize = 10.sp
-                                ),
-                                modifier = Modifier.clickable { onClose(s.id) }
-                            )
+                            // UI-7: a bare glyph-sized clickable here would hit the same well-
+                            // under-48dp problem the guide Chip had. The full 48dp minimum isn't
+                            // used - this sits inside a horizontally-scrolling multi-tab strip,
+                            // and a 48dp close target per tab would make more than two or three
+                            // tabs unreachable on a phone-width screen - but the hitbox is grown
+                            // well past the bare glyph via padding, a deliberate middle ground
+                            // between the two, not an oversight.
+                            Box(
+                                Modifier
+                                    .clickable { onClose(s.id) }
+                                    .padding(8.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    "×",
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        color = Azphalt.Yellow,
+                                        fontSize = 10.sp
+                                    )
+                                )
+                            }
                         }
                     }
                 }

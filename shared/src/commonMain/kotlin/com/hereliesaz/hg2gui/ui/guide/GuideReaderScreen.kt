@@ -135,7 +135,13 @@ private fun ColumnScope.GuideIndex(onBack: () -> Unit, onOpenEntry: (Int) -> Uni
         contentPadding = androidx.compose.foundation.layout.PaddingValues(top = 18.dp, bottom = 40.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
+        // GuideBook.entries is chapters.flatMap { it.entries }, in the same order this loop
+        // visits them - tracking that running offset avoids an indexOf scan (over the whole,
+        // flattened entries list) per entry.
+        var globalOffset = 0
         GuideBook.chapters.forEach { chapter ->
+            val chapterStart = globalOffset
+            globalOffset += chapter.entries.size
             item(key = chapter.label) {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(
@@ -166,8 +172,8 @@ private fun ColumnScope.GuideIndex(onBack: () -> Unit, onOpenEntry: (Int) -> Uni
                             modifier = Modifier.padding(vertical = 11.dp)
                         )
                     }
-                    chapter.entries.forEach { entry ->
-                        val globalIndex = GuideBook.entries.indexOf(entry)
+                    chapter.entries.forEachIndexed { i, entry ->
+                        val globalIndex = chapterStart + i
                         Row(
                             Modifier
                                 .fillMaxWidth()
@@ -210,7 +216,9 @@ private fun ColumnScope.GuideEntryReader(
     onNext: () -> Unit,
     onReplay: () -> Unit
 ) {
-    val hue = GUIDE_HUES[GuideBook.entries.indexOf(entry) % GUIDE_HUES.size]
+    // `number` is already this entry's 1-based global index, handed down by the caller - no need
+    // to re-derive it with a linear GuideBook.entries.indexOf(entry) scan.
+    val hue = GUIDE_HUES[(number - 1) % GUIDE_HUES.size]
     var seq = 4
 
     Box(Modifier.fillMaxSize().clipToBounds()) {
@@ -349,9 +357,13 @@ private fun ColumnScope.GuideEntryReader(
             Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 22.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            WipeItem(8, wipeKey, wide = false) { Chip("PREV", onClick = onPrev) }
+            // Continues the same running `seq` the scrollable content above used, rather than the
+            // hardcoded 8/9 this used to be - an entry with a `note` (or both `animation` and
+            // `note`) pushes the content's own last item past index 8, which used to fire this
+            // row's stagger at the same moment as "FROM THE CHAPTER".
+            WipeItem(seq++, wipeKey, wide = false) { Chip("PREV", onClick = onPrev) }
             WipeItem(
-                9, wipeKey, wide = false,
+                seq++, wipeKey, wide = false,
                 modifier = Modifier.weight(1f)
             ) {
                 Chip("NEXT ENTRY", background = Azphalt.hues[6], foreground = Azphalt.White, onClick = onNext, fillWidth = true)
@@ -416,16 +428,26 @@ private fun Chip(
 ) {
     val bg = if (filled) background else Azphalt.Ink.copy(alpha = .14f)
     val fg = if (filled) foreground else Azphalt.Ink.copy(alpha = .55f)
+    // UI-7: the visible chip (padding(vertical = 8.dp) around 9sp type) renders well under the
+    // 48dp minimum touch target. Rather than growing the chip itself - which would blow up its
+    // whole visual proportions - the clickable region is a separate, invisible 48dp-tall Box the
+    // small chip is centered inside, so the tap target grows without the chip's own look changing.
     Box(
         modifier
             .then(if (fillWidth) Modifier.fillMaxWidth() else Modifier)
-            .clip(RoundedCornerShape(percent = 50))
-            .background(bg)
-            .then(if (clickable) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(horizontal = 14.dp, vertical = 8.dp),
+            .defaultMinSize(minHeight = 48.dp)
+            .then(if (clickable) Modifier.clickable(onClick = onClick) else Modifier),
         contentAlignment = Alignment.Center
     ) {
-        Text(label, color = fg, fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em)
+        Box(
+            Modifier
+                .clip(RoundedCornerShape(percent = 50))
+                .background(bg)
+                .padding(horizontal = 14.dp, vertical = 8.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(label, color = fg, fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em)
+        }
     }
 }
 
