@@ -9,7 +9,7 @@ android {
     namespace = "com.termux.shared"
 
     compileSdk 37
-    ndkVersion = System.getenv("JITPACK_NDK_VERSION") ?: "26.1.10909125"
+    ndkVersion '29.0.14206865'
 
     dependencies {
         implementation libs.androidx.appcompat
@@ -73,6 +73,7 @@ android {
             allVariants()
         }
     }
+    buildToolsVersion '37.0.0'
 }
 
 dependencies {

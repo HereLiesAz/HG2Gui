@@ -6,7 +6,7 @@ android {
     namespace "com.termux.emulator"
 
     compileSdk 37
-    ndkVersion = System.getenv("JITPACK_NDK_VERSION") ?: "26.1.10909125"
+    ndkVersion '29.0.14206865'
 
     defaultConfig {
         minSdkVersion 24
