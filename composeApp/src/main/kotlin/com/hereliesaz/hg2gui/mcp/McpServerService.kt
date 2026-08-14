@@ -29,7 +29,18 @@ import java.io.OutputStreamWriter
 import java.net.InetAddress
 import java.net.ServerSocket
 import java.net.Socket
+import java.security.MessageDigest
 import java.security.SecureRandom
+
+/**
+ * `MessageDigest.isEqual` is specified to run in time independent of where the two arrays first
+ * differ (JDK 6u17+), unlike `String.equals`/`==`, which return as soon as a mismatched byte or
+ * length is found. The pairing token is 192 bits of entropy, so a timing side-channel here isn't
+ * a practical break either way - this closes the hardening gap without pretending it was ever an
+ * exploitable one.
+ */
+private fun constantTimeEquals(a: String, b: String): Boolean =
+    MessageDigest.isEqual(a.toByteArray(Charsets.UTF_8), b.toByteArray(Charsets.UTF_8))
 
 private const val PREFS_NAME = "hg2gui_mcp_prefs"
 private const val PREF_SHELL_EXEC_ENABLED = "shell_exec_enabled"
@@ -207,7 +218,7 @@ class McpServerService : Service() {
             val authLine = reader.readLineBounded(MAX_LINE_CHARS) ?: return
             val authorized = try {
                 val obj = McpJsonRpc.json.parseToJsonElement(authLine) as? JsonObject
-                (obj?.get("token") as? JsonPrimitive)?.content == expectedToken
+                (obj?.get("token") as? JsonPrimitive)?.content?.let { constantTimeEquals(it, expectedToken) } == true
             } catch (e: Exception) {
                 false
             }
