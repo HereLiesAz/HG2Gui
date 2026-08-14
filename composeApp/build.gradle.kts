@@ -2,9 +2,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.util.Properties
 
 plugins {
-    alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidApplication)
-    alias(libs.plugins.jetbrainsCompose)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.kotlinxSerialization)
 }
@@ -17,13 +15,6 @@ val versionProps = Properties().apply {
 }
 
 val legacyVersionCode = 205
-
-// versionBuild in version.properties is versionCode's single source of truth. This is a plain
-// read - incrementing it is a dedicated, standalone task (incrementVersionBuild, below), run as
-// its own separate, earlier Gradle invocation in CI, strictly before ./gradlew bundleRelease is
-// ever invoked. By the time this build configures, whatever's on disk (and already pushed to
-// master) is final. -PversionBuild=<n> remains an explicit override, used by merged-build.yml's
-// debug workflow with its own commit-count-derived number, independent of this file.
 val buildNumber = project.findProperty("versionBuild")?.toString()?.toIntOrNull()
     ?: versionProps.getProperty("versionBuild", "0").toIntOrNull() ?: 0
 
@@ -37,11 +28,6 @@ val resolvedVersionName = project.findProperty("versionName")?.toString() ?: Str
     buildNumber
 )
 
-// Populated by .GitHub/actions/android-keystore in CI (release-play.yml); absent for a plain
-// local `assembleRelease`, which then just builds unsigned like it always has. When
-// REQUIRE_SIGNING is set, a missing/incomplete keystore fails the build here, at
-// configuration time, instead of producing an unsigned bundle that only fails later, in
-// ./.GitHub/actions/verify-android-signature or at the Play upload itself.
 val releaseKeystoreFile = System.getenv("KEYSTORE_FILE")
 val releaseKeystoreType = System.getenv("KEYSTORE_TYPE")
 val releaseKeystorePassword = System.getenv("KEYSTORE_PASSWORD")
@@ -62,44 +48,8 @@ if (releaseRequireSigning && !hasReleaseSigningEnv) {
 }
 
 kotlin {
-    androidTarget {
-        compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_21)
-        }
-    }
-    
-    sourceSets {
-        commonMain.dependencies {
-            implementation(libs.runtime)
-            implementation(libs.foundation)
-            implementation(libs.material3)
-            implementation(libs.ui)
-            implementation(libs.components.resources)
-            implementation(libs.ui.tooling.preview)
-            
-            implementation(libs.okhttp)
-            implementation(libs.comparestring2)
-            implementation(libs.kotlinx.serialization.json)
-        }
-        androidMain.dependencies {
-            implementation(libs.androidx.appcompat)
-            implementation(libs.androidx.core.ktx)
-            implementation(libs.androidx.activity.compose)
-            implementation(libs.androidx.fragment)
-            implementation(libs.androidx.biometric)
-            implementation(libs.anthropic.java)
-            // localbroadcastmanager is legacy, but keeping for now
-            implementation(libs.androidx.localbroadcastmanager)
-            implementation(libs.material)
-
-            implementation(project(":terminal-emulator"))
-            implementation(project(":termux-shared"))
-        }
-        commonTest.dependencies {
-            implementation(kotlin("test"))
-            implementation(libs.junit)
-            implementation(libs.mockito.core)
-        }
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_21)
     }
 }
 
@@ -118,17 +68,7 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
-            // anthropic-java pulls in Apache HttpClient5, whose jars (httpclient5, httpcore5,
-            // httpcore5-h2) all ship their own copy of this file under the same path - only
-            // the release build's resource-merge step catches this (debug compile doesn't
-            // merge Java resources), which is why it didn't surface locally until bundleRelease.
             excludes += "/META-INF/DEPENDENCIES"
-        }
-    }
-
-    sourceSets {
-        getByName("main") {
-            java.srcDirs("src/androidMain/kotlin")
         }
     }
     
@@ -158,7 +98,6 @@ android {
     
     flavorDimensions += "default"
     productFlavors {
-
         create("playstore") {
             dimension = "default"
         }
@@ -174,26 +113,36 @@ android {
 }
 
 dependencies {
+    implementation(project(":shared"))
+    implementation(project(":terminal-emulator"))
+    implementation(project(":termux-shared"))
+    
+    implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.fragment)
+    implementation(libs.androidx.biometric)
+    implementation(libs.androidx.localbroadcastmanager)
+    implementation(libs.material)
+    
+    implementation(libs.runtime)
+    implementation(libs.foundation)
+    implementation(libs.material3)
+    implementation(libs.ui)
+    
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.listenablefuture)
+
     coreLibraryDesugaring(libs.desugar.jdk.libs)
     debugImplementation(libs.ui.tooling)
-    implementation(libs.listenablefuture)
 }
 
-// Read by release-play.yml's "Read application id" step (./gradlew -q :composeApp:printApplicationId)
-// to fill in $GITHUB_ENV without hardcoding the id a second time in the workflow itself. Output
-// is prefixed and grepped for on the workflow side, not taken as the command's whole stdout - on
-// a fresh CI checkout this is the first Gradle invocation of the job, and the Android Gradle
-// Plugin's own SDK/NDK auto-license-acceptance path prints straight to stdout outside Gradle's
-// logging (so -q doesn't suppress it), which would otherwise land inside the captured value.
 tasks.register("printApplicationId") {
     doLast {
         println("APPLICATION_ID=" + android.defaultConfig.applicationId)
     }
 }
 
-// Same reasoning and marker-line convention as printApplicationId above. Read by
-// release-play.yml's "Get app version" step, run after incrementVersionBuild has already run
-// (and bundleRelease has run against that same, already-final value), so these match the .aab.
 tasks.register("printVersionName") {
     doLast {
         println("VERSION_NAME=$resolvedVersionName")
@@ -206,23 +155,6 @@ tasks.register("printVersionCode") {
     }
 }
 
-/**
- * The ONLY place versionBuild is incremented - a standalone task, run as its own explicit,
- * earlier CI step (release-play.yml's "Increment and push versionBuild"), strictly before
- * ./gradlew bundleRelease is ever invoked. Reads the freshest committed version.properties
- * (fetch + reset first, so a concurrent run's push isn't clobbered), decides the next number,
- * writes it to disk, and commits + pushes it to master itself - "push to GitHub before
- * compilation" is the literal requirement this satisfies. It is not a mutation buried in this
- * script's configuration phase, and not a bash script wrapped around Gradle either: the decision
- * of what the next number is, and the act of persisting it, both happen here.
- *
- * -PversionCodeMode=strict fails outright (nothing written, nothing pushed, nothing built) if
- * the committed number wouldn't already clear Play's max. auto (the default) always takes the
- * next code after Play's max, so it can't collide no matter how stale the file is.
- * -PplayMaxVersionCode=<n> supplies that max; CI reads it from the Play API before calling this
- * task, since Gradle has no business making that network call itself - this task only ever
- * consumes the one external fact it cannot know on its own, never decides what to ask Play.
- */
 tasks.register("incrementVersionBuild") {
     doLast {
         val versionCodeMode = project.findProperty("versionCodeMode")?.toString() ?: "auto"
@@ -255,9 +187,6 @@ tasks.register("incrementVersionBuild") {
             }
 
             val next = maxOf(current, playMax) + 1
-            // A targeted line substitution, not Properties.store() - store() rewrites the whole
-            // file with its own field order and an auto-generated timestamp comment, which would
-            // turn every single release into a full-file diff instead of a one-line change.
             val versionBuildLine = Regex("(?m)^versionBuild=.*$")
             val text = versionFile.readText()
             versionFile.writeText(
