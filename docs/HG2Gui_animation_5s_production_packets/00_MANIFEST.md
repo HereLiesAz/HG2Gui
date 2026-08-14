@@ -1,0 +1,37 @@
+# HG2Gui 5-Second Animation Packet Manifest
+
+- `01_pwd_5s_packet.md` — 4 cuts / 20s — `pwd` — print working directory
+- `02_pkg_install_5s_packet.md` — 4 cuts / 20s — `pkg install` — package install
+- `03_apt_get_update_5s_packet.md` — 3 cuts / 15s — `apt-get update` — refresh package indexes
+- `04_nano_5s_packet.md` — 3 cuts / 15s — `nano` — Nano's ANOther editor
+- `05_top_5s_packet.md` — 3 cuts / 15s — `top` — process monitor
+- `06_kill_5s_packet.md` — 3 cuts / 15s — `kill` — send a signal
+- `07_df_5s_packet.md` — 3 cuts / 15s — `df` — filesystem free space
+- `08_rm_5s_packet.md` — 4 cuts / 20s — `rm` — remove
+- `09_source_5s_packet.md` — 4 cuts / 20s — `source` — source
+- `10_ping_5s_packet.md` — 4 cuts / 20s — `ping` — ping
+- `11_ssh_5s_packet.md` — 4 cuts / 20s — `ssh` — secure shell
+- `12_harden_check_5s_packet.md` — 3 cuts / 15s — `harden-check` — harden check
+- `13_git_commit_5s_packet.md` — 3 cuts / 15s — `git commit` — git commit
+- `14_nmap_5s_packet.md` — 3 cuts / 15s — `nmap` — network mapper
+- `15_crond_5s_packet.md` — 4 cuts / 20s — `crond` / `crontab` — scheduled jobs
+- `16_watch_5s_packet.md` — 3 cuts / 15s — `watch` — watch
+- `17_ai_chat_5s_packet.md` — 4 cuts / 20s — `AI chat` — natural language to command
+- `18_skill_5s_packet.md` — 4 cuts / 20s — `skill` — installed skill package
+- `19_ls_a_5s_packet.md` — 4 cuts / 20s — `ls -a` — list all
+- `20_sudo_5s_packet.md` — 3 cuts / 15s — `sudo` — run with another user's privileges
+- `21_rmdir_5s_packet.md` — 4 cuts / 20s — `rmdir` — remove directory
+- `22_find_5s_packet.md` — 4 cuts / 20s — `find` — find
+- `23_cat_5s_packet.md` — 3 cuts / 15s — `cat` — concatenate
+- `24_ps_5s_packet.md` — 3 cuts / 15s — `ps` — process status
+- `25_grep_5s_packet.md` — 3 cuts / 15s — `grep` — pattern search
+- `26_ifconfig_5s_packet.md` — 3 cuts / 15s — `ifconfig` — interface configuration
+- `27_man_5s_packet.md` — 3 cuts / 15s — `man` — manual
+- `28_history_5s_packet.md` — 3 cuts / 15s — `history` — shell history
+- `29_touch_5s_packet.md` — 3 cuts / 15s — `touch` — touch
+- `30_yes_5s_packet.md` — 3 cuts / 15s — `yes` — yes
+- `31_false_5s_packet.md` — 3 cuts / 15s — `false` — false
+- `32_pipe_5s_packet.md` — 3 cuts / 15s — `|` — pipe
+- `33_cp_5s_packet.md` — 3 cuts / 15s — `cp` — copy
+- `34_mv_5s_packet.md` — 3 cuts / 15s — `mv` — move
+- `35_curl_5s_packet.md` — 3 cuts / 15s — `curl` — transfer data with URLs

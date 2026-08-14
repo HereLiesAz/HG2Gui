@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/tokens/colors.css">
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/tokens/typography.css">
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/tokens/motion.css">
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/tokens/base.css">
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/styles.css">
+<script src="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/_ds_bundle.js"></script>
+<style>
+  body{margin:0;background:var(--page-fold-dark);}
+  a{color:var(--link);} a:hover{color:var(--link-hover);}
+  @keyframes s-unfold{from{clip-path:inset(0 100% 0 0);}to{clip-path:inset(0 0 0 0);}}
+  @keyframes s-job{from{clip-path:inset(0 100% 0 0);}to{clip-path:inset(0 0 0 0);}}
+</style>
+</helmet>
+
+<div style="padding:64px;display:flex;flex-direction:column;gap:64px;font-family:var(--font-core);color:var(--ink);">
+
+  <div style="display:flex;flex-direction:column;gap:14px;max-width:720px;">
+    <div style="font:800 11px/1 var(--font-core);letter-spacing:.28em;text-transform:uppercase;color:var(--ink-72);">HG2Gui — surfaces</div>
+    <div style="font:900 64px/0.84 var(--font-core);letter-spacing:-.03em;text-transform:uppercase;color:var(--ink);">Seven screens</div>
+    <p style="margin:0;font:var(--type-body);color:var(--ink-78);text-wrap:pretty;">The menu drives commands; these are what commands open. Each keeps the foundations — capsules, no icons, hue by hash — but takes the layout its own job needs. Three grounds now sort them by kind: gold for system state, magenta-cap for anything you browse, navy for a session doing work. Package manager and the Guide are live — tap a package to install it, tap an argument to build a command and watch it dock as a breadcrumb.</p>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:52px;align-items:flex-start;">
+
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div style="display:flex;align-items:baseline;gap:10px;">
+        <span style="font:900 22px/1 var(--font-core);letter-spacing:-.02em;text-transform:uppercase;">01 · Packages</span>
+        <span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-72);">live — tap a row</span>
+      </div>
+      <div style="width:390px;height:844px;overflow:hidden;background:var(--page-gradient);display:flex;flex-direction:column;">
+        <div style="padding:18px 20px 0;display:flex;align-items:center;gap:8px;">
+          <div style="border-radius:999px;padding:8px 14px;background:var(--ink);font:800 11px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--yellow-bright);">Packages</div>
+          <div style="border-radius:999px;padding:8px 14px;background:var(--ink-14);font:800 11px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--ink-55);">main</div>
+          <div style="flex:1;"></div>
+          <div style="border-radius:999px;padding:8px 14px;background:var(--ink-14);font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-55);">Close</div>
+        </div>
+        <div style="padding:16px 20px 0;">
+          <div style="display:flex;align-items:center;border-radius:999px;padding:14px 14px 14px 22px;background:var(--ink-14);"><span style="font:800 13px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--ink-45);">Search 2,431 packages</span></div>
+        </div>
+        <div style="padding:12px 20px 0;display:flex;gap:6px;">
+          <div style="border-radius:999px;padding:7px 12px;background:var(--ink);font:800 10px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--yellow-bright);">All</div>
+          <div style="border-radius:999px;padding:7px 12px;background:var(--ink-14);font:800 10px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--ink-55);">Installed</div>
+          <div style="border-radius:999px;padding:7px 12px;background:var(--ink-14);font:800 10px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--ink-55);">Upgradable</div>
+        </div>
+        <div style="flex:1;overflow:hidden;padding:16px 20px 20px;display:flex;flex-direction:column;gap:9px;">
+          <sc-for list="{{ pkgs }}" as="p" hint-placeholder-count="7">
+            <div style="display:flex;flex-direction:column;gap:9px;">
+              <button onClick="{{ p.pick }}" style="display:flex;align-items:center;justify-content:space-between;gap:9px;text-align:left;border-radius:999px;box-sizing:border-box;padding:12px 10px 12px 22px;background:{{ p.bg }};width:{{ p.w }};transition:width 420ms cubic-bezier(0,.9,.1,1);">
+                <span style="font:800 13px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:{{ p.fg }};">{{ p.name }}</span>
+                <span style="display:flex;align-items:center;justify-content:center;height:22px;padding:0 9px;border-radius:999px;background:{{ p.capBg }};color:{{ p.capFg }};font:800 9px/1 var(--font-core);letter-spacing:.1em;">{{ p.version }}</span>
+              </button>
+              <sc-if value="{{ p.open }}" hint-placeholder-val="{{ false }}">
+                <div style="background:var(--ink-09);border-radius:26px;padding:20px;display:flex;flex-direction:column;gap:14px;animation:s-unfold 420ms cubic-bezier(0,.9,.1,1) both;">
+                  <span style="font:600 14px/1.45 var(--font-core);color:var(--ink-78);">{{ p.blurb }}</span>
+                  <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                    <div style="display:flex;align-items:center;gap:8px;background:var(--ink-10);border-radius:999px;padding:8px 14px;"><span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-45);">Size</span><span style="font:800 12px/1 var(--font-core);">{{ p.size }}</span></div>
+                    <div style="display:flex;align-items:center;gap:8px;background:var(--ink-10);border-radius:999px;padding:8px 14px;"><span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-45);">Also installs</span><span style="font:800 12px/1 var(--font-core);">{{ p.deps }}</span></div>
+                    <div style="display:flex;align-items:center;gap:8px;background:var(--ink-10);border-radius:999px;padding:8px 14px;"><span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-45);">Source</span><span style="font:800 12px/1 var(--font-core);">main</span></div>
+                  </div>
+                  <sc-if value="{{ idle }}" hint-placeholder-val="{{ true }}">
+                    <button onClick="{{ install }}" style="display:flex;align-items:center;justify-content:space-between;gap:9px;text-align:left;border-radius:999px;box-sizing:border-box;padding:13px 11px 13px 24px;background:var(--hue-red);width:100%;">
+                      <span style="font:800 14px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--white);">Install</span>
+                      <span style="width:24px;height:24px;border-radius:999px;background:var(--hue-red-cap);"></span>
+                    </button>
+                  </sc-if>
+                  <sc-if value="{{ installing }}" hint-placeholder-val="{{ false }}">
+                    <div style="border-radius:999px;box-sizing:border-box;padding:13px 11px 13px 24px;background:var(--ink-14);position:relative;overflow:hidden;">
+                      <div style="position:absolute;inset:0;background:var(--hue-teal);animation:s-job 2600ms linear both;"></div>
+                      <span style="position:relative;font:800 14px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--white);">Installing</span>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ done }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;flex-direction:column;gap:9px;animation:s-unfold 420ms cubic-bezier(0,.9,.1,1) both;">
+                      <div style="display:flex;align-items:center;justify-content:space-between;gap:9px;border-radius:999px;box-sizing:border-box;padding:13px 11px 13px 24px;background:var(--hue-teal);">
+                        <span style="font:800 14px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--white);">Installed</span>
+                        <span style="display:flex;align-items:center;justify-content:center;height:24px;padding:0 10px;border-radius:999px;background:var(--hue-teal-cap);color:var(--white);font:800 9px/1 var(--font-core);letter-spacing:.1em;text-transform:uppercase;">No errors</span>
+                      </div>
+                      <div style="background:var(--ink);border-radius:18px;padding:16px 18px;display:flex;flex-direction:column;gap:5px;">
+                        <span style="font:600 13px/1.5 var(--font-core);color:var(--white);">Setting up {{ p.name }} ({{ p.version }})</span>
+                        <span style="font:600 13px/1.5 var(--font-core);color:var(--white);">{{ p.deps }} more packages, {{ p.size }} of storage</span>
+                      </div>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div style="display:flex;align-items:baseline;gap:10px;">
+        <span style="font:900 22px/1 var(--font-core);letter-spacing:-.02em;text-transform:uppercase;">02 · Files</span>
+        <span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-72);">body opens · cap selects</span>
+      </div>
+      <div style="width:390px;height:844px;overflow:hidden;background:var(--hue-magenta-cap);display:flex;flex-direction:column;">
+        <div style="padding:18px 20px 0;display:flex;align-items:center;gap:8px;">
+          <div style="border-radius:999px;padding:8px 14px;background:var(--ink);font:800 11px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--yellow-bright);">Files</div>
+          <div style="flex:1;"></div>
+          <div style="border-radius:999px;padding:8px 14px;background:var(--white);font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-55);">Sorted by name</div>
+        </div>
+        <div style="padding:14px 20px 0;display:flex;gap:5px;flex-wrap:wrap;align-items:center;">
+          <div style="border-radius:999px;padding:7px 12px;background:var(--white);font:800 10px/1 var(--font-core);letter-spacing:.09em;color:var(--ink-55);">~</div>
+          <div style="border-radius:999px;padding:7px 12px;background:var(--white);font:800 10px/1 var(--font-core);letter-spacing:.09em;color:var(--ink-55);">storage</div>
+          <div style="border-radius:999px;padding:7px 12px;background:var(--white);font:800 10px/1 var(--font-core);letter-spacing:.09em;color:var(--ink-55);">shared</div>
+          <div style="border-radius:999px;padding:7px 12px;background:var(--ink);font:800 10px/1 var(--font-core);letter-spacing:.09em;color:var(--yellow-bright);">Download</div>
+        </div>
+        <div style="flex:1;overflow:hidden;padding:16px 20px 0;display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:9px;border-radius:999px;box-sizing:border-box;padding:11px 9px 11px 22px;background:var(--hue-blue);width:88%;"><span style="font:800 13px/1 var(--font-core);letter-spacing:.05em;color:var(--white);">Up one level</span><span style="display:flex;align-items:center;justify-content:center;height:22px;padding:0 9px;border-radius:999px;background:var(--hue-blue-cap);color:var(--white);font:800 9px/1 var(--font-core);letter-spacing:.1em;text-transform:uppercase;">Back</span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:9px;border-radius:999px;box-sizing:border-box;padding:11px 9px 11px 22px;background:var(--hue-violet);width:76%;"><span style="font:800 13px/1 var(--font-core);letter-spacing:.05em;color:var(--white);">archives</span><span style="display:flex;align-items:center;justify-content:center;height:22px;padding:0 9px;border-radius:999px;background:var(--hue-violet-cap);color:var(--white);font:800 9px/1 var(--font-core);letter-spacing:.1em;">14</span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:9px;border-radius:999px;box-sizing:border-box;padding:11px 9px 11px 22px;background:var(--hue-violet);width:92%;"><span style="font:800 13px/1 var(--font-core);letter-spacing:.05em;color:var(--white);">screenshots</span><span style="display:flex;align-items:center;justify-content:center;height:22px;padding:0 9px;border-radius:999px;background:var(--hue-violet-cap);color:var(--white);font:800 9px/1 var(--font-core);letter-spacing:.1em;">208</span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:9px;border-radius:999px;box-sizing:border-box;padding:11px 9px 11px 22px;background:var(--ink);width:100%;"><span style="font:800 13px/1 var(--font-core);letter-spacing:.05em;color:var(--yellow-bright);">bootstrap.sh</span><span style="display:flex;align-items:center;justify-content:center;height:22px;padding:0 9px;border-radius:999px;background:var(--yellow-bright);color:var(--ink);font:800 9px/1 var(--font-core);letter-spacing:.1em;text-transform:uppercase;">Chosen</span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:9px;border-radius:999px;box-sizing:border-box;padding:11px 9px 11px 22px;background:var(--hue-amber);width:70%;"><span style="font:800 13px/1 var(--font-core);letter-spacing:.05em;color:var(--white);">notes.md</span><span style="display:flex;align-items:center;justify-content:center;height:22px;padding:0 9px;border-radius:999px;background:var(--hue-amber-cap);color:var(--white);font:800 9px/1 var(--font-core);letter-spacing:.1em;">4 KB</span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:9px;border-radius:999px;box-sizing:border-box;padding:11px 9px 11px 22px;background:var(--ink);width:84%;"><span style="font:800 13px/1 var(--font-core);letter-spacing:.05em;color:var(--yellow-bright);">rootfs.tar.gz</span><span style="display:flex;align-items:center;justify-content:center;height:22px;padding:0 9px;border-radius:999px;background:var(--yellow-bright);color:var(--ink);font:800 9px/1 var(--font-core);letter-spacing:.1em;text-transform:uppercase;">Chosen</span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:9px;border-radius:999px;box-sizing:border-box;padding:11px 9px 11px 22px;background:var(--hue-amber);width:64%;"><span style="font:800 13px/1 var(--font-core);letter-spacing:.05em;color:var(--white);">.bashrc</span><span style="display:flex;align-items:center;justify-content:center;height:22px;padding:0 9px;border-radius:999px;background:var(--hue-amber-cap);color:var(--white);font:800 9px/1 var(--font-core);letter-spacing:.1em;">812 B</span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:9px;border-radius:999px;box-sizing:border-box;padding:11px 9px 11px 22px;background:var(--hue-amber);width:80%;"><span style="font:800 13px/1 var(--font-core);letter-spacing:.05em;color:var(--white);">install.log</span><span style="display:flex;align-items:center;justify-content:center;height:22px;padding:0 9px;border-radius:999px;background:var(--hue-amber-cap);color:var(--white);font:800 9px/1 var(--font-core);letter-spacing:.1em;">1.2 MB</span></div>
+          <div style="background:var(--white);border-radius:20px;padding:14px 18px;margin-top:4px;"><span style="font:600 13px/1.45 var(--font-core);color:var(--ink-78);">Filenames keep their own case — they are literal, not labels. This is the only lowercase outside body copy.</span></div>
+        </div>
+        <div style="padding:12px 20px 20px;display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;border-radius:999px;padding:9px 9px 9px 20px;background:var(--white);"><span style="font:800 10px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-55);">2 selected · 1.2 MB</span><span style="display:flex;align-items:center;justify-content:center;height:22px;padding:0 10px;border-radius:999px;background:var(--ink);color:var(--yellow-bright);font:800 9px/1 var(--font-core);letter-spacing:.1em;text-transform:uppercase;">Clear</span></div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <div style="border-radius:999px;padding:10px 16px;background:var(--hue-green);font:800 11px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--white);">Open</div>
+            <div style="border-radius:999px;padding:10px 16px;background:var(--hue-cyan);font:800 11px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--white);">Copy</div>
+            <div style="border-radius:999px;padding:10px 16px;background:var(--hue-cyan);font:800 11px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--white);">Move</div>
+            <div style="border-radius:999px;padding:10px 16px;background:var(--hue-orange);font:800 11px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--white);">Rename</div>
+            <div style="border-radius:999px;padding:10px 16px;background:var(--hue-red);font:800 11px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--white);">Delete</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div style="display:flex;align-items:baseline;gap:10px;">
+        <span style="font:900 22px/1 var(--font-core);letter-spacing:-.02em;text-transform:uppercase;">03 · Processes</span>
+        <span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-72);">width means load</span>
+      </div>
+      <div style="width:390px;height:844px;overflow:hidden;background:var(--page-gradient);display:flex;flex-direction:column;">
+        <div style="padding:18px 20px 0;display:flex;align-items:center;gap:8px;">
+          <div style="border-radius:999px;padding:8px 14px;background:var(--ink);font:800 11px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--yellow-bright);">Processes</div>
+          <div style="flex:1;"></div>
+          <div style="border-radius:999px;padding:8px 14px;background:var(--ink-14);font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-55);">Every 2 seconds</div>
+        </div>
+        <div style="padding:18px 20px 0;display:flex;gap:6px;flex-wrap:wrap;">
+          <div style="display:flex;flex-direction:column;gap:3px;border-radius:999px;padding:12px 22px;background:var(--ink);"><span style="font:900 26px/1 var(--font-core);letter-spacing:-.02em;color:var(--yellow-bright);">38%</span><span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--text-on-ink);">Processor</span></div>
+          <div style="display:flex;flex-direction:column;gap:3px;border-radius:999px;padding:12px 22px;background:var(--ink);"><span style="font:900 26px/1 var(--font-core);letter-spacing:-.02em;color:var(--yellow-bright);">2.1G</span><span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--text-on-ink);">Memory</span></div>
+          <div style="display:flex;flex-direction:column;gap:3px;border-radius:999px;padding:12px 22px;background:var(--ink);"><span style="font:900 26px/1 var(--font-core);letter-spacing:-.02em;color:var(--yellow-bright);">61</span><span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--text-on-ink);">Running</span></div>
+        </div>
+        <div style="padding:20px 20px 0;"><span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-55);">Length is processor share — the one place width carries meaning</span></div>
+        <div style="flex:1;overflow:hidden;padding:12px 20px 0;display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:9px;border-radius:999px;box-sizing:border-box;padding:11px 9px 11px 22px;background:var(--hue-red);width:96%;"><span style="font:800 13px/1 var(--font-core);letter-spacing:.05em;color:var(--white);">gradle</span><span style="display:flex;align-items:center;justify-content:center;height:22px;padding:0 9px;border-radius:999px;background:var(--hue-red-cap);color:var(--white);font:800 9px/1 var(--font-core);letter-spacing:.1em;">64%</span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:9px;border-radius:999px;box-sizing:border-box;padding:11px 9px 11px 22px;background:var(--hue-orange);width:64%;"><span style="font:800 13px/1 var(--font-core);letter-spacing:.05em;color:var(--white);">node</span><span style="display:flex;align-items:center;justify-content:center;height:22px;padding:0 9px;border-radius:999px;background:var(--hue-orange-cap);color:var(--white);font:800 9px/1 var(--font-core);letter-spacing:.1em;">21%</span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:9px;border-radius:999px;box-sizing:border-box;padding:11px 9px 11px 22px;background:var(--hue-amber);width:44%;"><span style="font:800 13px/1 var(--font-core);letter-spacing:.05em;color:var(--white);">sshd</span><span style="display:flex;align-items:center;justify-content:center;height:22px;padding:0 9px;border-radius:999px;background:var(--hue-amber-cap);color:var(--white);font:800 9px/1 var(--font-core);letter-spacing:.1em;">8%</span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:9px;border-radius:999px;box-sizing:border-box;padding:11px 9px 11px 22px;background:var(--hue-green);width:32%;"><span style="font:800 13px/1 var(--font-core);letter-spacing:.05em;color:var(--white);">bash</span><span style="display:flex;align-items:center;justify-content:center;height:22px;padding:0 9px;border-radius:999px;background:var(--hue-green-cap);color:var(--white);font:800 9px/1 var(--font-core);letter-spacing:.1em;">3%</span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:9px;border-radius:999px;box-sizing:border-box;padding:11px 9px 11px 22px;background:var(--hue-teal);width:26%;"><span style="font:800 13px/1 var(--font-core);letter-spacing:.05em;color:var(--white);">tmux</span><span style="display:flex;align-items:center;justify-content:center;height:22px;padding:0 9px;border-radius:999px;background:var(--hue-teal-cap);color:var(--white);font:800 9px/1 var(--font-core);letter-spacing:.1em;">1%</span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:9px;border-radius:999px;box-sizing:border-box;padding:11px 9px 11px 22px;background:var(--hue-cyan);width:22%;"><span style="font:800 13px/1 var(--font-core);letter-spacing:.05em;color:var(--white);">dbus</span><span style="display:flex;align-items:center;justify-content:center;height:22px;padding:0 9px;border-radius:999px;background:var(--hue-cyan-cap);color:var(--white);font:800 9px/1 var(--font-core);letter-spacing:.1em;">0%</span></div>
+          <div style="background:var(--ink-09);border-radius:26px;padding:18px 20px;display:flex;flex-direction:column;gap:12px;margin-top:6px;">
+            <div style="font:900 24px/1 var(--font-core);letter-spacing:-.02em;text-transform:uppercase;">gradle</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <div style="display:flex;align-items:center;gap:8px;background:var(--ink-10);border-radius:999px;padding:8px 14px;"><span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-45);">Process</span><span style="font:800 12px/1 var(--font-core);">8123</span></div>
+              <div style="display:flex;align-items:center;gap:8px;background:var(--ink-10);border-radius:999px;padding:8px 14px;"><span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-45);">Memory</span><span style="font:800 12px/1 var(--font-core);">1.4 GB</span></div>
+              <div style="display:flex;align-items:center;gap:8px;background:var(--ink-10);border-radius:999px;padding:8px 14px;"><span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-45);">Running for</span><span style="font:800 12px/1 var(--font-core);">4 min</span></div>
+            </div>
+            <div style="display:flex;gap:6px;">
+              <div style="border-radius:999px;padding:10px 16px;background:var(--hue-orange);font:800 11px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--white);">Ask to stop</div>
+              <div style="border-radius:999px;padding:10px 16px;background:var(--hue-red);font:800 11px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--white);">Force stop</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div style="display:flex;align-items:baseline;gap:10px;">
+        <span style="font:900 22px/1 var(--font-core);letter-spacing:-.02em;text-transform:uppercase;">04 · Hosts</span>
+        <span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-72);">ssh</span>
+      </div>
+      <div style="width:390px;height:844px;overflow:hidden;background:var(--hue-blue-cap);display:flex;flex-direction:column;">
+        <div style="padding:18px 20px 0;display:flex;align-items:center;gap:8px;">
+          <div style="border-radius:999px;padding:8px 14px;background:var(--ink);font:800 11px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--yellow-bright);">Remote</div>
+          <div style="flex:1;"></div>
+          <div style="border-radius:999px;padding:8px 14px;background:var(--white);font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-55);">Add machine</div>
+        </div>
+        <div style="padding:20px 20px 0;"><span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--white);">Saved machines</span></div>
+        <div style="flex:1;overflow:hidden;padding:12px 20px 0;display:flex;flex-direction:column;gap:9px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:9px;border-radius:999px;box-sizing:border-box;padding:12px 10px 12px 22px;background:var(--hue-teal);width:100%;"><span style="font:800 13px/1 var(--font-core);letter-spacing:.05em;color:var(--white);">heart-of-gold</span><span style="display:flex;align-items:center;justify-content:center;height:22px;padding:0 9px;border-radius:999px;background:var(--hue-teal-cap);color:var(--white);font:800 9px/1 var(--font-core);letter-spacing:.1em;text-transform:uppercase;">Connected</span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:9px;border-radius:999px;box-sizing:border-box;padding:12px 10px 12px 22px;background:var(--hue-blue);width:82%;"><span style="font:800 13px/1 var(--font-core);letter-spacing:.05em;color:var(--white);">pi@10.0.0.7</span><span style="display:flex;align-items:center;justify-content:center;height:22px;padding:0 9px;border-radius:999px;background:var(--hue-blue-cap);color:var(--white);font:800 9px/1 var(--font-core);letter-spacing:.1em;text-transform:uppercase;">2d</span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:9px;border-radius:999px;box-sizing:border-box;padding:12px 10px 12px 22px;background:var(--hue-violet);width:90%;"><span style="font:800 13px/1 var(--font-core);letter-spacing:.05em;color:var(--white);">build-box</span><span style="display:flex;align-items:center;justify-content:center;height:22px;padding:0 9px;border-radius:999px;background:var(--hue-violet-cap);color:var(--white);font:800 9px/1 var(--font-core);letter-spacing:.1em;text-transform:uppercase;">11d</span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:9px;border-radius:999px;box-sizing:border-box;padding:12px 10px 12px 22px;background:var(--hue-magenta);width:70%;"><span style="font:800 13px/1 var(--font-core);letter-spacing:.05em;color:var(--white);">vps-fr</span><span style="display:flex;align-items:center;justify-content:center;height:22px;padding:0 9px;border-radius:999px;background:var(--hue-magenta-cap);color:var(--white);font:800 9px/1 var(--font-core);letter-spacing:.1em;text-transform:uppercase;">Never used</span></div>
+          <div style="background:var(--white);border-radius:26px;padding:20px;display:flex;flex-direction:column;gap:14px;margin-top:6px;">
+            <div style="font:900 26px/1 var(--font-core);letter-spacing:-.02em;text-transform:uppercase;">heart-of-gold</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <div style="display:flex;align-items:center;gap:8px;background:var(--ink-10);border-radius:999px;padding:8px 14px;"><span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-45);">Signs in as</span><span style="font:800 12px/1 var(--font-core);">root</span></div>
+              <div style="display:flex;align-items:center;gap:8px;background:var(--ink-10);border-radius:999px;padding:8px 14px;"><span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-45);">Port</span><span style="font:800 12px/1 var(--font-core);">22</span></div>
+              <div style="display:flex;align-items:center;gap:8px;background:var(--ink-10);border-radius:999px;padding:8px 14px;"><span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-45);">Key</span><span style="font:800 12px/1 var(--font-core);">ed25519</span></div>
+            </div>
+            <div style="background:var(--ink-09);border-radius:20px;padding:14px 16px;"><span style="font:600 13px/1.45 var(--font-core);color:var(--ink-78);">This machine's identity matches the one saved on 12 March. Nothing has changed.</span></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;border-radius:999px;box-sizing:border-box;padding:13px 11px 13px 24px;background:var(--hue-red);"><span style="font:800 14px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--white);">Connect</span><span style="width:24px;height:24px;border-radius:999px;background:var(--hue-red-cap);"></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div style="display:flex;align-items:baseline;gap:10px;">
+        <span style="font:900 22px/1 var(--font-core);letter-spacing:-.02em;text-transform:uppercase;">05 · Scrollback</span>
+        <span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-72);">collapsed · one open</span>
+      </div>
+      <div style="width:390px;height:844px;overflow:hidden;background:var(--hue-blue-cap);display:flex;flex-direction:column;">
+        <div style="padding:18px 20px 0;display:flex;align-items:center;gap:8px;">
+          <div style="border-radius:999px;padding:8px 14px;background:var(--ink);font:800 11px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--yellow-bright);">main</div>
+          <div style="border-radius:999px;padding:8px 14px;background:var(--white);font:800 11px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--ink-55);">build</div>
+          <div style="flex:1;"></div>
+          <div style="border-radius:999px;padding:8px 14px;background:var(--white);font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-55);">Plain text</div>
+        </div>
+        <div style="flex:1;overflow:hidden;padding:18px 20px 0;display:flex;flex-direction:column;gap:9px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:9px;border-radius:999px;box-sizing:border-box;padding:11px 9px 11px 22px;background:var(--hue-teal);width:78%;"><span style="font:800 12px/1 var(--font-core);letter-spacing:.05em;color:var(--white);">git status</span><span style="display:flex;align-items:center;justify-content:center;height:22px;padding:0 9px;border-radius:999px;background:var(--hue-teal-cap);color:var(--white);font:800 9px/1 var(--font-core);letter-spacing:.1em;">16:09</span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:9px;border-radius:999px;box-sizing:border-box;padding:11px 9px 11px 22px;background:var(--hue-red);width:64%;"><span style="font:800 12px/1 var(--font-core);letter-spacing:.05em;color:var(--white);">netstat</span><span style="display:flex;align-items:center;justify-content:center;height:22px;padding:0 9px;border-radius:999px;background:var(--hue-red-cap);color:var(--white);font:800 9px/1 var(--font-core);letter-spacing:.1em;">127</span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:9px;border-radius:999px;box-sizing:border-box;padding:11px 9px 11px 22px;background:var(--ink);width:100%;"><span style="font:800 12px/1 var(--font-core);letter-spacing:.05em;color:var(--yellow-bright);">wifi status</span><span style="display:flex;align-items:center;justify-content:center;height:22px;padding:0 9px;border-radius:999px;background:var(--yellow-bright);color:var(--ink);font:800 9px/1 var(--font-core);letter-spacing:.1em;">16:14</span></div>
+          <div style="background:var(--white);border-radius:26px;padding:18px;display:flex;flex-direction:column;gap:12px;">
+            <div style="background:var(--ink);border-radius:18px;padding:16px 18px;display:flex;flex-direction:column;gap:5px;">
+              <span style="font:600 13px/1.5 var(--font-core);color:var(--white);">wlan0 &nbsp;connected &nbsp;RATTLE-5G</span>
+              <span style="font:600 13px/1.5 var(--font-core);color:var(--white);">inet &nbsp;&nbsp;10.0.0.14/24</span>
+              <span style="font:600 13px/1.5 var(--font-core);color:var(--white);">signal −47 dBm · 866 Mbit/s</span>
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <div style="display:flex;align-items:center;gap:8px;background:var(--ink-10);border-radius:999px;padding:8px 14px;"><span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-45);">Exit</span><span style="font:800 12px/1 var(--font-core);">0</span></div>
+              <div style="display:flex;align-items:center;gap:8px;background:var(--ink-10);border-radius:999px;padding:8px 14px;"><span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-45);">Took</span><span style="font:800 12px/1 var(--font-core);">0.42s</span></div>
+              <div style="border-radius:999px;padding:8px 14px;background:var(--ink);font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--yellow-bright);">Run again</div>
+              <div style="border-radius:999px;padding:8px 14px;background:var(--ink-14);font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-55);">Copy</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:9px;border-radius:999px;box-sizing:border-box;padding:11px 9px 11px 22px;background:var(--hue-amber);width:86%;"><span style="font:800 12px/1 var(--font-core);letter-spacing:.05em;color:var(--white);">pkg upgrade</span><span style="display:flex;align-items:center;justify-content:center;height:22px;padding:0 9px;border-radius:999px;background:var(--hue-amber-cap);color:var(--white);font:800 9px/1 var(--font-core);letter-spacing:.1em;">Now</span></div>
+        </div>
+        <div style="padding:12px 20px 20px;display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;border-radius:999px;box-sizing:border-box;padding:12px 10px 12px 22px;background:var(--ink);"><span style="font:800 13px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--yellow-bright);">$ pkg upgrade</span><span style="display:flex;align-items:center;justify-content:center;height:22px;padding:0 10px;border-radius:999px;background:var(--yellow-bright);color:var(--ink);font:800 9px/1 var(--font-core);letter-spacing:.1em;text-transform:uppercase;">Keyboard</span></div>
+          <div style="display:flex;gap:5px;">
+            <div style="flex:1;text-align:center;border-radius:999px;padding:9px 0;background:var(--white);font:800 9px/1 var(--font-core);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-55);">Ctrl</div>
+            <div style="flex:1;text-align:center;border-radius:999px;padding:9px 0;background:var(--white);font:800 9px/1 var(--font-core);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-55);">Alt</div>
+            <div style="flex:1;text-align:center;border-radius:999px;padding:9px 0;background:var(--white);font:800 9px/1 var(--font-core);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-55);">Close</div>
+            <div style="flex:1;text-align:center;border-radius:999px;padding:9px 0;background:var(--white);font:800 9px/1 var(--font-core);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-55);">Tab</div>
+            <div style="flex:1;text-align:center;border-radius:999px;padding:9px 0;background:var(--white);font:800 9px/1 var(--font-core);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-55);">↑</div>
+            <div style="flex:1;text-align:center;border-radius:999px;padding:9px 0;background:var(--white);font:800 9px/1 var(--font-core);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-55);">↓</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div style="display:flex;align-items:baseline;gap:10px;">
+        <span style="font:900 22px/1 var(--font-core);letter-spacing:-.02em;text-transform:uppercase;">06 · Guide</span>
+        <span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-72);">args are tappable</span>
+      </div>
+      <div id="guide-frame" style="width:390px;height:844px;overflow:hidden;background:var(--hue-magenta-cap);display:flex;flex-direction:column;position:relative;">
+        <div style="padding:18px 20px 0;display:flex;align-items:center;gap:8px;">
+          <div style="border-radius:999px;padding:8px 14px;background:var(--ink);font:800 11px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--yellow-bright);">Guide</div>
+          <div style="flex:1;"></div>
+          <div style="border-radius:999px;padding:8px 14px;background:var(--white);font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-55);">51 commands</div>
+        </div>
+        <div style="padding:22px 20px 0;display:flex;flex-direction:column;gap:10px;">
+          <div style="font:900 44px/0.9 var(--font-core);letter-spacing:-.03em;text-transform:uppercase;">switchos</div>
+          <span style="font:600 15px/1.5 var(--font-core);color:var(--white);">Swaps the simulated environment. The suggestion tree changes with it — apt becomes brew becomes winget.</span>
+        </div>
+        <div style="padding:20px 20px 0;"><span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--white);">Tap a choice to build the command</span></div>
+        <div style="padding:12px 20px 0;display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:9px;border-radius:999px;box-sizing:border-box;padding:11px 9px 11px 22px;background:var(--hue-green);width:72%;"><span style="font:800 13px/1 var(--font-core);letter-spacing:.05em;color:var(--white);">ubuntu</span><span style="display:flex;align-items:center;justify-content:center;height:22px;padding:0 9px;border-radius:999px;background:var(--hue-green-cap);color:var(--white);font:800 9px/1 var(--font-core);letter-spacing:.1em;text-transform:uppercase;">Default</span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:9px;border-radius:999px;box-sizing:border-box;padding:11px 9px 11px 22px;background:var(--hue-cyan);width:60%;"><span style="font:800 13px/1 var(--font-core);letter-spacing:.05em;color:var(--white);">macos</span><span style="width:22px;height:22px;border-radius:999px;background:var(--hue-cyan-cap);"></span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:9px;border-radius:999px;box-sizing:border-box;padding:11px 9px 11px 22px;background:var(--hue-blue);width:66%;"><span style="font:800 13px/1 var(--font-core);letter-spacing:.05em;color:var(--white);">windows</span><span style="width:22px;height:22px;border-radius:999px;background:var(--hue-blue-cap);"></span></div>
+        </div>
+        <div style="padding:22px 20px 0;"><span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--white);">Example</span></div>
+        <div style="padding:12px 20px 0;display:flex;flex-direction:column;gap:9px;">
+          <div style="display:flex;align-items:center;gap:7px;border-radius:999px;box-sizing:border-box;padding:12px 10px 12px 20px;background:var(--ink);"><span style="font:900 15px/1 var(--font-core);color:var(--yellow-bright);">$</span><span style="border-radius:999px;padding:5px 9px;background:var(--yellow-bright);font:800 9px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--ink);">switchos</span><span style="border-radius:999px;padding:5px 9px;background:var(--yellow-bright);font:800 9px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--ink);">macos</span></div>
+          <div style="background:var(--ink);border-radius:18px;padding:16px 18px;display:flex;flex-direction:column;gap:5px;">
+            <span style="font:600 13px/1.5 var(--font-core);color:var(--white);">context → macos</span>
+            <span style="font:600 13px/1.5 var(--font-core);color:var(--white);">tree reloaded · 38 commands</span>
+          </div>
+        </div>
+        <div style="padding:22px 20px 0;"><span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--white);">Related</span></div>
+        <div style="padding:12px 20px 20px;display:flex;gap:6px;flex-wrap:wrap;">
+          <div style="border-radius:999px;padding:9px 15px;background:var(--hue-violet);font:800 11px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--white);">shell</div>
+          <div style="border-radius:999px;padding:9px 15px;background:var(--hue-magenta);font:800 11px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--white);">session</div>
+          <div style="border-radius:999px;padding:9px 15px;background:var(--hue-orange);font:800 11px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--white);">config</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div style="display:flex;align-items:baseline;gap:10px;">
+        <span style="font:900 22px/1 var(--font-core);letter-spacing:-.02em;text-transform:uppercase;">07 · Job</span>
+        <span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-72);">unfold is the progress</span>
+      </div>
+      <div style="width:390px;height:844px;overflow:hidden;background:var(--hue-blue-cap);display:flex;flex-direction:column;">
+        <div style="padding:18px 20px 0;display:flex;align-items:center;gap:8px;">
+          <div style="border-radius:999px;padding:8px 14px;background:var(--ink);font:800 11px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--yellow-bright);">build</div>
+          <div style="border-radius:999px;padding:8px 14px;background:var(--hue-amber);font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--white);">Still running</div>
+          <div style="flex:1;"></div>
+          <div style="border-radius:999px;padding:8px 14px;background:var(--white);font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-55);">4 min 12 s</div>
+        </div>
+        <div style="padding:22px 20px 0;display:flex;flex-direction:column;gap:10px;">
+          <span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--white);">$ ./gradlew assembleDebug</span>
+          <div style="border-radius:999px;box-sizing:border-box;padding:13px 11px 13px 24px;background:var(--white);position:relative;overflow:hidden;">
+            <div style="position:absolute;top:0;left:0;bottom:0;width:62%;background:var(--hue-amber);"></div>
+            <span style="position:relative;font:800 14px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--white);">62% · task 41 of 66</span>
+          </div>
+        </div>
+        <div style="padding:20px 20px 0;"><span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--white);">The last five lines</span></div>
+        <div style="padding:12px 20px 0;">
+          <div style="background:var(--ink);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:6px;">
+            <span style="font:600 13px/1.5 var(--font-core);color:var(--white);">&gt; Task :composeApp:compileKotlin</span>
+            <span style="font:600 13px/1.5 var(--font-core);color:var(--white);">&gt; Task :terminal-emulator:assemble</span>
+            <span style="font:600 13px/1.5 var(--font-core);color:var(--white);">&gt; Task :termux-shared:processRes</span>
+            <span style="font:600 13px/1.5 var(--font-core);color:var(--white);">w: PillMenu.kt:284 unused parameter</span>
+            <span style="font:600 13px/1.5 var(--font-core);color:var(--white);">&gt; Task :composeApp:mergeDebugRes</span>
+          </div>
+        </div>
+        <div style="padding:20px 20px 0;display:flex;gap:6px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:8px;background:var(--white);border-radius:999px;padding:8px 14px;"><span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-45);">Process</span><span style="font:800 12px/1 var(--font-core);">8123</span></div>
+          <div style="display:flex;align-items:center;gap:8px;background:var(--white);border-radius:999px;padding:8px 14px;"><span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-45);">Processor</span><span style="font:800 12px/1 var(--font-core);">64%</span></div>
+          <div style="display:flex;align-items:center;gap:8px;background:var(--white);border-radius:999px;padding:8px 14px;"><span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-45);">Warnings</span><span style="font:800 12px/1 var(--font-core);">3</span></div>
+        </div>
+        <div style="padding:22px 20px 0;">
+          <div style="background:var(--white);border-radius:20px;padding:16px 18px;"><span style="font:600 13px/1.45 var(--font-core);color:var(--ink-78);">Leaving this screen does not stop the job. It keeps running in its session and the tab stays amber until it exits.</span></div>
+        </div>
+        <div style="flex:1;"></div>
+        <div style="padding:12px 20px 20px;display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;gap:6px;">
+            <div style="flex:1;text-align:center;border-radius:999px;padding:12px 0;background:var(--ink);font:800 11px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--yellow-bright);">Leave running</div>
+            <div style="flex:1;text-align:center;border-radius:999px;padding:12px 0;background:var(--hue-red);font:800 11px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--white);">Stop</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:9px;max-width:720px;">
+    <div style="font:800 11px/1 var(--font-core);letter-spacing:.28em;text-transform:uppercase;color:var(--ink-72);">Decisions worth arguing with</div>
+    <p style="margin:0;font:var(--type-body);color:var(--ink-78);text-wrap:pretty;">Files splits the tap: the body opens, the end-cap chooses — so multi-select needs no long-press and no checkbox. Filenames keep their real case, the only lowercase outside body copy. Processes is the one screen where a capsule's length means something: processor share. A running job is a capsule unfolding — the system's own reveal, slowed to the length of the work, so there is still no spinner.</p>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1400,&quot;height&quot;:1100}}">
+const PKGS = [
+  { id: 'ripgrep', name: 'ripgrep', version: '14.1.1', size: '2.6 MB', deps: '2', blurb: 'Recursive line search that respects .gitignore. Faster than grep on a phone, which matters more than it should.' },
+  { id: 'openssh', name: 'openssh', version: '9.8p1', size: '4.1 MB', deps: '6', blurb: 'The SSH client and server. Installing it populates the Hosts surface from ~/.ssh/config.' },
+  { id: 'git', name: 'git', version: '2.46.0', size: '18 MB', deps: '9', blurb: 'Distributed version control. Large on device, and worth it.' },
+  { id: 'python', name: 'python', version: '3.12.5', size: '54 MB', deps: '14', blurb: 'CPython with pip. The biggest thing most people install here.' },
+  { id: 'nodejs', name: 'nodejs', version: '22.7.0', size: '48 MB', deps: '11', blurb: 'Node with npm. Expect a long unpack on slow storage.' },
+  { id: 'tmux', name: 'tmux', version: '3.4', size: '1.1 MB', deps: '3', blurb: 'Terminal multiplexer. Sessions here are already tabs, so this is for remote hosts.' },
+  { id: 'htop', name: 'htop', version: '3.3.0', size: '340 KB', deps: '2', blurb: 'Interactive process viewer. The Processes surface covers most of it.' }
+];
+
+const W = ['100%', '86%', '92%', '78%', '96%', '82%', '88%'];
+
+class Component extends DCLogic {
+  state = { open: null, phase: 'idle' };
+
+  componentWillUnmount() { clearTimeout(this.t); }
+
+  pick(id) {
+    clearTimeout(this.t);
+    this.setState(s => ({ open: s.open === id ? null : id, phase: 'idle' }));
+  }
+
+  install() {
+    this.setState({ phase: 'installing' });
+    this.t = setTimeout(() => this.setState({ phase: 'done' }), 2600);
+  }
+
+  renderVals() {
+    const open = this.state.open;
+    const phase = this.state.phase;
+    return {
+      pkgs: PKGS.map((p, i) => Object.assign({}, p, {
+        open: p.id === open,
+        w: p.id === open ? '100%' : W[i],
+        bg: p.id === open ? 'var(--ink)' : 'var(--hue-' + ['violet', 'cyan', 'teal', 'green', 'amber', 'orange', 'magenta'][i] + ')',
+        fg: p.id === open ? 'var(--yellow-bright)' : 'var(--white)',
+        capBg: p.id === open ? 'var(--yellow-bright)' : 'var(--hue-' + ['violet', 'cyan', 'teal', 'green', 'amber', 'orange', 'magenta'][i] + '-cap)',
+        capFg: p.id === open ? 'var(--ink)' : 'var(--white)',
+        pick: () => this.pick(p.id)
+      })),
+      idle: phase === 'idle',
+      installing: phase === 'installing',
+      done: phase === 'done',
+      install: () => this.install()
+    };
+  }
+}
+</script>
+</body>
+</html>

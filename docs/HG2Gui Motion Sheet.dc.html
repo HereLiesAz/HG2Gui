@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/tokens/colors.css">
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/tokens/typography.css">
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/tokens/motion.css">
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/tokens/base.css">
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/styles.css">
+<script src="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/_ds_bundle.js"></script>
+<style>
+  body{margin:0;background:var(--page-gradient);}
+  a{color:var(--link);} a:hover{color:var(--link-hover);}
+</style>
+</helmet>
+
+<div style="max-width:1180px;margin:0 auto;padding:56px 44px 140px;font-family:var(--font-core);color:var(--ink);display:flex;flex-direction:column;gap:44px;">
+
+  <div style="display:flex;flex-direction:column;gap:14px;max-width:700px;">
+    <div style="font:800 11px/1 var(--font-core);letter-spacing:.28em;text-transform:uppercase;color:var(--ink-55);">HG2Gui — motion sheet</div>
+    <div style="font:900 58px/0.84 var(--font-core);letter-spacing:-.03em;text-transform:uppercase;">Every animation, playing</div>
+    <p style="margin:0;font:var(--type-body);color:var(--ink-78);text-wrap:pretty;">Sixteen specimens, each running its real timing and curve. They play once on arrival — tap any tile to run it again, or play the whole sheet from the top.</p>
+    <div style="display:flex;gap:7px;align-items:center;">
+      <button onClick="{{ playAll }}" style="border-radius:999px;box-sizing:border-box;padding:13px 22px;background:var(--ink);font:800 11px/1 var(--font-core);letter-spacing:.14em;text-transform:uppercase;color:var(--yellow-bright);">Play everything</button>
+      <span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-45);">{{ note }}</span>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px;">
+    <div style="font:800 11px/1 var(--font-core);letter-spacing:.28em;text-transform:uppercase;color:var(--ink-55);">The capsule</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
+
+      <button onClick="{{ plays.unfold }}" data-tile="unfold" style="text-align:left;background:var(--ink-09);border-radius:26px;padding:16px;display:flex;flex-direction:column;gap:12px;">
+        <div data-stage="unfold" style="position:relative;height:150px;border-radius:20px;background:var(--page-gradient);overflow:hidden;">
+          <div data-el="a" style="position:absolute;left:20px;top:62px;height:26px;width:72%;border-radius:999px;background:var(--hue-violet);"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <span style="font:900 17px/1 var(--font-core);letter-spacing:-.01em;text-transform:uppercase;">Unfold</span>
+          <span style="font:600 13px/1.4 var(--font-core);color:var(--ink-78);">420ms · cubic-bezier(0, .9, .1, 1) · it grows in length, keeping both tips</span>
+        </div>
+      </button>
+
+      <button onClick="{{ plays.stagger }}" data-tile="stagger" style="text-align:left;background:var(--ink-09);border-radius:26px;padding:16px;display:flex;flex-direction:column;gap:12px;">
+        <div data-stage="stagger" style="position:relative;height:150px;border-radius:20px;background:var(--page-gradient);overflow:hidden;padding:20px;display:flex;flex-direction:column;gap:9px;">
+          <div data-el="a" style="height:20px;width:82%;border-radius:999px;background:var(--hue-cyan);"></div>
+          <div data-el="a" style="height:20px;width:68%;border-radius:999px;background:var(--hue-amber);"></div>
+          <div data-el="a" style="height:20px;width:90%;border-radius:999px;background:var(--hue-teal);"></div>
+          <div data-el="a" style="height:20px;width:62%;border-radius:999px;background:var(--hue-magenta);"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <span style="font:900 17px/1 var(--font-core);letter-spacing:-.01em;text-transform:uppercase;">Row stagger</span>
+          <span style="font:600 13px/1.4 var(--font-core);color:var(--ink-78);">26ms apart, down the stack — each row grows in length, tips intact</span>
+        </div>
+      </button>
+
+      <button onClick="{{ plays.extend }}" data-tile="extend" style="text-align:left;background:var(--ink-09);border-radius:26px;padding:16px;display:flex;flex-direction:column;gap:12px;">
+        <div data-stage="extend" style="position:relative;height:150px;border-radius:20px;background:var(--page-gradient);overflow:hidden;padding:20px;display:flex;flex-direction:column;gap:9px;">
+          <div data-el="host" style="height:24px;width:62%;border-radius:999px;background:var(--hue-green);"></div>
+          <div data-el="kid" style="height:20px;width:70%;margin-left:24px;border-radius:999px;background:var(--hue-blue);"></div>
+          <div data-el="kid" style="height:20px;width:58%;margin-left:24px;border-radius:999px;background:var(--hue-purple);"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <span style="font:900 17px/1 var(--font-core);letter-spacing:-.01em;text-transform:uppercase;">Press to extend</span>
+          <span style="font:600 13px/1.4 var(--font-core);color:var(--ink-78);">The pressed capsule lengthens to full width; its contents grow in underneath</span>
+        </div>
+      </button>
+
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px;">
+    <div style="font:800 11px/1 var(--font-core);letter-spacing:.28em;text-transform:uppercase;color:var(--ink-55);">The menu</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
+
+      <button onClick="{{ plays.enter }}" data-tile="enter" style="text-align:left;background:var(--ink-09);border-radius:26px;padding:16px;display:flex;flex-direction:column;gap:12px;">
+        <div data-stage="enter" style="position:relative;height:150px;border-radius:20px;background:var(--page-gradient);overflow:hidden;">
+          <div data-el="row" data-row="3" style="position:absolute;left:0;bottom:76px;height:16px;width:76%;border-radius:999px;background:var(--hue-violet);"></div>
+          <div data-el="row" data-row="2" style="position:absolute;left:0;bottom:56px;height:16px;width:64%;border-radius:999px;background:var(--hue-amber);"></div>
+          <div data-el="row" data-row="1" style="position:absolute;left:0;bottom:36px;height:16px;width:82%;border-radius:999px;background:var(--hue-teal);"></div>
+          <div data-el="row" data-row="0" style="position:absolute;left:0;bottom:16px;height:16px;width:58%;border-radius:999px;background:var(--hue-magenta);"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <span style="font:900 17px/1 var(--font-core);letter-spacing:-.01em;text-transform:uppercase;">Stack arrives</span>
+          <span style="font:600 13px/1.4 var(--font-core);color:var(--ink-78);">One column, one clock — the whole stack slides in together, no per-row stagger. The top pill alone overshoots and corrects once it's landed.</span>
+        </div>
+      </button>
+
+      <button onClick="{{ plays.leave }}" data-tile="leave" style="text-align:left;background:var(--ink-09);border-radius:26px;padding:16px;display:flex;flex-direction:column;gap:12px;">
+        <div data-stage="leave" style="position:relative;height:150px;border-radius:20px;background:var(--page-gradient);overflow:hidden;">
+          <div data-el="sib" style="position:absolute;left:0;bottom:76px;height:16px;width:76%;border-radius:999px;background:var(--hue-violet);"></div>
+          <div data-el="sib" style="position:absolute;left:0;bottom:56px;height:16px;width:64%;border-radius:999px;background:var(--hue-amber);"></div>
+          <div data-el="host" style="position:absolute;left:0;bottom:36px;height:16px;width:82%;border-radius:999px;background:var(--ink);"></div>
+          <div data-el="sib" style="position:absolute;left:0;bottom:16px;height:16px;width:58%;border-radius:999px;background:var(--hue-magenta);"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <span style="font:900 17px/1 var(--font-core);letter-spacing:-.01em;text-transform:uppercase;">Stack leaves</span>
+          <span style="font:600 13px/1.4 var(--font-core);color:var(--ink-78);">140ms · a host is chosen, the rest sway off to the left — the exact reverse of arriving</span>
+        </div>
+      </button>
+
+      <button onClick="{{ plays.drop }}" data-tile="drop" style="text-align:left;background:var(--ink-09);border-radius:26px;padding:16px;display:flex;flex-direction:column;gap:12px;">
+        <div data-stage="drop" style="position:relative;height:150px;border-radius:20px;background:var(--page-gradient);overflow:hidden;">
+          <div data-el="host" style="position:absolute;left:-40%;bottom:76px;height:16px;width:82%;border-radius:999px;background:var(--ink);"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <span style="font:900 17px/1 var(--font-core);letter-spacing:-.01em;text-transform:uppercase;">Host drops</span>
+          <span style="font:600 13px/1.4 var(--font-core);color:var(--ink-78);">140ms · it drops to the bottom edge like it weighs something, and stays there</span>
+        </div>
+      </button>
+
+      <button onClick="{{ plays.cascade }}" data-tile="cascade" style="text-align:left;background:var(--ink-09);border-radius:26px;padding:16px;display:flex;flex-direction:column;gap:12px;">
+        <div data-stage="cascade" style="position:relative;height:150px;border-radius:20px;background:var(--page-gradient);overflow:hidden;">
+          <div style="position:absolute;z-index:100;left:-40%;bottom:16px;height:16px;width:82%;border-radius:999px;background:var(--ink);"></div>
+          <div data-el="kid" data-i="0" style="position:absolute;left:30%;bottom:16px;height:16px;width:52%;border-radius:999px;background:var(--hue-cyan);"></div>
+          <div data-el="kid" data-i="1" style="position:absolute;left:30%;bottom:16px;height:16px;width:52%;border-radius:999px;background:var(--hue-cyan);"></div>
+          <div data-el="kid" data-i="2" style="position:absolute;left:30%;bottom:16px;height:16px;width:52%;border-radius:999px;background:var(--hue-cyan);"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <span style="font:900 17px/1 var(--font-core);letter-spacing:-.01em;text-transform:uppercase;">Children cascade</span>
+          <span style="font:600 13px/1.4 var(--font-core);color:var(--ink-78);">360° hinged on alternating ends · lift in the last 10% · 173ms each, in turn</span>
+        </div>
+      </button>
+
+      <button onClick="{{ plays.handoff }}" data-tile="handoff" style="text-align:left;background:var(--ink-09);border-radius:26px;padding:16px;display:flex;flex-direction:column;gap:12px;">
+        <div data-stage="handoff" style="position:relative;height:150px;border-radius:20px;background:var(--page-gradient);overflow:hidden;">
+          <div style="position:absolute;z-index:100;left:-40%;bottom:16px;height:16px;width:82%;border-radius:999px;background:var(--ink);"></div>
+          <div data-el="pick" style="position:absolute;left:30%;bottom:36px;height:16px;width:52%;border-radius:999px;background:var(--hue-orange);"></div>
+          <div data-el="sib" style="position:absolute;left:30%;bottom:56px;height:16px;width:52%;border-radius:999px;background:var(--hue-orange);"></div>
+          <div data-el="sib" style="position:absolute;left:30%;bottom:76px;height:16px;width:52%;border-radius:999px;background:var(--hue-orange);"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <span style="font:900 17px/1 var(--font-core);letter-spacing:-.01em;text-transform:uppercase;">Hand-off</span>
+          <span style="font:600 13px/1.4 var(--font-core);color:var(--ink-78);">The same stretch·snap·fly·jiggle — but the last third of the fall swoops back to land as the breadcrumb</span>
+        </div>
+      </button>
+
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px;">
+    <div style="font:800 11px/1 var(--font-core);letter-spacing:.28em;text-transform:uppercase;color:var(--ink-55);">Running a command</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
+
+      <button onClick="{{ plays.struggle }}" data-tile="struggle" style="text-align:left;background:var(--ink-09);border-radius:26px;padding:16px;display:flex;flex-direction:column;gap:12px;">
+        <div data-stage="struggle" style="position:relative;height:150px;border-radius:20px;background:var(--page-gradient);overflow:hidden;">
+          <div style="position:absolute;left:0;bottom:76px;height:16px;width:34%;border-radius:999px;background:var(--hue-cyan);"></div>
+          <div data-el="pill" style="position:absolute;left:0;bottom:56px;height:16px;width:30%;border-radius:999px;background:var(--hue-cyan);"></div>
+          <div style="position:absolute;left:0;bottom:36px;height:16px;width:28%;border-radius:999px;background:var(--hue-cyan);"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <span style="font:900 17px/1 var(--font-core);letter-spacing:-.01em;text-transform:uppercase;">Stretch · snap · fly · jiggle · fall</span>
+          <span style="font:600 13px/1.4 var(--font-core);color:var(--ink-78);">Stretches right, snaps in from the left, then flies right at that same retracting speed into the far edge. (Neighbours held still on purpose, so the one pill's motion is easy to see.)</span>
+        </div>
+      </button>
+
+      <button onClick="{{ plays.perimeter }}" data-tile="perimeter" style="text-align:left;background:var(--ink-09);border-radius:26px;padding:16px;display:flex;flex-direction:column;gap:12px;">
+        <div data-stage="perimeter" style="position:relative;height:150px;border-radius:20px;background:var(--page-gradient);overflow:hidden;">
+          <div data-el="b" style="position:absolute;background:var(--hue-cyan);"></div>
+          <div data-el="r" style="position:absolute;background:var(--hue-cyan);"></div>
+          <div data-el="t" style="position:absolute;background:var(--hue-cyan);"></div>
+          <div data-el="l" style="position:absolute;background:var(--hue-cyan);"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <span style="font:900 17px/1 var(--font-core);letter-spacing:-.01em;text-transform:uppercase;">Run the perimeter</span>
+          <span style="font:600 13px/1.4 var(--font-core);color:var(--ink-78);">280ms an edge · bottom, right, top, left — counter-clockwise, closing on itself</span>
+        </div>
+      </button>
+
+      <button onClick="{{ plays.fail }}" data-tile="fail" style="text-align:left;background:var(--ink-09);border-radius:26px;padding:16px;display:flex;flex-direction:column;gap:12px;">
+        <div data-stage="fail" style="position:relative;height:150px;border-radius:20px;background:var(--page-gradient);overflow:hidden;">
+          <div data-el="bar" style="position:absolute;background:var(--hue-red);"></div>
+          <div data-el="pill" style="position:absolute;left:0;bottom:16px;height:16px;width:70%;border-radius:999px;background:var(--hue-red);"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <span style="font:900 17px/1 var(--font-core);letter-spacing:-.01em;text-transform:uppercase;">It doesn't make it</span>
+          <span style="font:600 13px/1.4 var(--font-core);color:var(--ink-78);">A command that fails gets partway round, thinks better of it, and falls off the bottom</span>
+        </div>
+      </button>
+
+      <button onClick="{{ plays.flood }}" data-tile="flood" style="text-align:left;background:var(--ink-09);border-radius:26px;padding:16px;display:flex;flex-direction:column;gap:12px;">
+        <div data-stage="flood" style="position:relative;height:150px;border-radius:20px;background:var(--hue-cyan);overflow:hidden;">
+          <div data-el="hole" style="position:absolute;background:var(--page-gradient);"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <span style="font:900 17px/1 var(--font-core);letter-spacing:-.01em;text-transform:uppercase;">Flood</span>
+          <span style="font:600 13px/1.4 var(--font-core);color:var(--ink-78);">420ms · the colour swipes up from the bottom edge until the space is full</span>
+        </div>
+      </button>
+
+      <button onClick="{{ plays.set }}" data-tile="set" style="text-align:left;background:var(--ink-09);border-radius:26px;padding:16px;display:flex;flex-direction:column;gap:12px;">
+        <div data-stage="set" style="position:relative;height:150px;border-radius:20px;background:var(--hue-cyan);overflow:hidden;padding:18px;display:flex;flex-direction:column;gap:8px;">
+          <div data-el="line" style="font:900 26px/0.9 var(--font-core);letter-spacing:-.02em;text-transform:uppercase;color:var(--white);">Rattle 5G</div>
+          <div data-el="line" style="height:1px;background:var(--hue-cyan-cap);"></div>
+          <div data-el="line" style="display:flex;justify-content:space-between;"><span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--white);">Address</span><span style="font:600 13px/1 var(--font-core);color:var(--white);">10.0.0.14</span></div>
+          <div data-el="line" style="height:1px;background:var(--hue-cyan-cap);"></div>
+          <div data-el="line" style="display:flex;justify-content:space-between;"><span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--white);">Signal</span><span style="font:600 13px/1 var(--font-core);color:var(--white);">−47 dBm</span></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <span style="font:900 17px/1 var(--font-core);letter-spacing:-.01em;text-transform:uppercase;">Output sets</span>
+          <span style="font:600 13px/1.4 var(--font-core);color:var(--ink-78);">360ms a line, 90ms apart, in reading order</span>
+        </div>
+      </button>
+
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px;">
+    <div style="font:800 11px/1 var(--font-core);letter-spacing:.28em;text-transform:uppercase;color:var(--ink-55);">Reading</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
+
+      <button onClick="{{ plays.entry }}" data-tile="entry" style="text-align:left;background:var(--ink-09);border-radius:26px;padding:16px;display:flex;flex-direction:column;gap:12px;">
+        <div data-stage="entry" style="position:relative;height:150px;border-radius:20px;background:var(--page-gradient);overflow:hidden;padding:18px;display:flex;flex-direction:column;gap:9px;">
+          <div data-el="line" style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-55);">Guide · entry 14</div>
+          <div data-el="line" style="font:900 34px/0.86 var(--font-core);letter-spacing:-.03em;text-transform:uppercase;">Sessions</div>
+          <div data-el="line" style="height:4px;width:60%;border-radius:999px;background:var(--hue-red);"></div>
+          <div data-el="line" style="font:600 13px/1.35 var(--font-core);color:var(--ink-78);">A room you left something running in.</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <span style="font:900 17px/1 var(--font-core);letter-spacing:-.01em;text-transform:uppercase;">Entry assembles</span>
+          <span style="font:600 13px/1.4 var(--font-core);color:var(--ink-78);">110ms apart, in reading order · a line is revealed whole, never letter by letter</span>
+        </div>
+      </button>
+
+      <button onClick="{{ plays.parallax }}" data-tile="parallax" style="text-align:left;background:var(--ink-09);border-radius:26px;padding:16px;display:flex;flex-direction:column;gap:12px;">
+        <div data-stage="parallax" style="position:relative;height:150px;border-radius:20px;background:var(--page-gradient);overflow:hidden;">
+          <div data-el="back" style="position:absolute;top:8px;left:-10px;font:900 76px/0.8 var(--font-core);letter-spacing:-.04em;text-transform:uppercase;color:var(--ink-09);white-space:nowrap;">Search</div>
+          <div data-el="mid" style="position:absolute;top:60px;left:18px;height:6px;width:52%;border-radius:999px;background:var(--hue-red);"></div>
+          <div data-el="front" style="position:absolute;top:96px;left:18px;font:900 26px/0.9 var(--font-core);letter-spacing:-.02em;text-transform:uppercase;">ripgrep</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <span style="font:900 17px/1 var(--font-core);letter-spacing:-.01em;text-transform:uppercase;">Parallax</span>
+          <span style="font:600 13px/1.4 var(--font-core);color:var(--ink-78);">Depth is speed · wash 0.2, rod 0.5, text 1.0 — nothing is blurred to fake it</span>
+        </div>
+      </button>
+
+      <button onClick="{{ plays.job }}" data-tile="job" style="text-align:left;background:var(--ink-09);border-radius:26px;padding:16px;display:flex;flex-direction:column;gap:12px;">
+        <div data-stage="job" style="position:relative;height:150px;border-radius:20px;background:var(--page-gradient);overflow:hidden;padding:18px;display:flex;flex-direction:column;justify-content:center;gap:10px;">
+          <span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-55);">./gradlew assembleDebug</span>
+          <div style="position:relative;height:34px;border-radius:999px;background:var(--ink-14);overflow:hidden;">
+            <div data-el="fill" style="position:absolute;inset:0;background:var(--hue-amber);"></div>
+            <span style="position:absolute;left:20px;top:11px;font:800 11px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--white);">Building</span>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <span style="font:900 17px/1 var(--font-core);letter-spacing:-.01em;text-transform:uppercase;">A job running</span>
+          <span style="font:600 13px/1.4 var(--font-core);color:var(--ink-78);">The same unfold, slowed to the length of the work — so there is still no spinner</span>
+        </div>
+      </button>
+
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:9px;max-width:700px;">
+    <div style="font:800 11px/1 var(--font-core);letter-spacing:.28em;text-transform:uppercase;color:var(--ink-55);">What holds across all sixteen</div>
+    <p style="margin:0;font:var(--type-body);color:var(--ink-78);text-wrap:pretty;">A stack that moves as one sways: it is a pile, and the higher a pill sits the further it swings, damping out in three diminishing swings. The motion is allowed to be funny, and the joke is always timing rather than a wink — a pill that is stuck and straining, one that leaves late and overshoots, a host that lands like it weighs something, a failed command that gets a third of the way round and thinks better of it. Nothing is ever cute about it: no bouncing, no cartoon squash beyond a hair, no character where a plain move would do. Nothing fades: a capsule is revealed by growing in length — both rounded ends belong to the shape, so neither is ever masked off — and text is wiped so the glyphs never stretch. Nothing loops: a thing plays once and settles, and replay is a button. Nothing idles: there is no spinner anywhere, because a running job is the unfold itself, slowed. Motion in the menu is linear — at those speeds an eased pill reads as a fault — while the page keeps the house curve, fast out and long settle. And every change of state is animated end to end: nothing on this sheet appears or vanishes on the spot.</p>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1180,&quot;height&quot;:1400}}">
+const EASE = 'cubic-bezier(0,.9,.1,1)';
+const LIN = 'linear';
+// Text is revealed by wiping — the glyphs must not stretch.
+const WIPE = [
+  { clipPath: 'inset(0 100% 0 0)' },
+  { clipPath: 'inset(0 0 0 0)' }
+];
+
+// A stack that moves as one is top-heavy: it sways, and the higher a pill sits the further
+// it swings. The sway is hinged on the pill's visible right end and damps out in three
+// diminishing swings — never a loop, never a bounce back into motion.
+function wobble(el, row, delay, ms) {
+  const a = Math.min(0.9 + row * 0.7, 3.4);
+  el.style.transformOrigin = '100% 50%';
+  return el.animate([
+    { rotate: '0deg' },
+    { rotate: a + 'deg', offset: .3 },
+    { rotate: (-a * 0.55) + 'deg', offset: .58 },
+    { rotate: (a * 0.24) + 'deg', offset: .82 },
+    { rotate: '0deg' }
+  ], { duration: ms, delay: delay, easing: 'linear', fill: 'both', composite: 'add' });
+}
+
+// A capsule is revealed by GROWING IN LENGTH, never by masking: both rounded ends belong to
+// the shape, so the leading tip has to be there the whole way out.
+function grow(el, opts) {
+  // measure only after any held animation is cleared — a paused fill would report 0
+  el.getAnimations().forEach(a => a.cancel());
+  const w = el.getBoundingClientRect().width;
+  el.style.clipPath = 'none';
+  return el.animate(
+    [{ width: '0px' }, { width: w + 'px' }],
+    Object.assign({ fill: 'both' }, opts)
+  );
+}
+
+class Component extends DCLogic {
+  componentDidMount() {
+    this.reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // each tile plays itself once, as it comes into view
+    this.io = new IntersectionObserver(entries => {
+      entries.filter(e => e.isIntersecting).forEach((e, i) => {
+        const name = e.target.dataset.tile;
+        setTimeout(() => this.play(name), i * 160);
+        this.io.unobserve(e.target);
+      });
+    }, { threshold: 0.4 });
+    document.querySelectorAll('[data-tile]').forEach(el => this.io.observe(el));
+  }
+
+  componentWillUnmount() { if (this.io) this.io.disconnect(); }
+
+  stage(name) { return document.querySelector('[data-stage="' + name + '"]'); }
+  els(name, key) { return [...this.stage(name).querySelectorAll('[data-el="' + key + '"]')]; }
+
+  q(ms) { return this.reduced ? 0 : ms; }
+
+  play(name) {
+    const s = this.stage(name);
+    if (!s) return;
+    // every specimen starts from a clean slate, so replays measure real geometry
+    s.getAnimations({ subtree: true }).forEach(a => a.cancel());
+    const W = s.clientWidth, H = s.clientHeight;
+    const q = ms => this.q(ms);
+    const A = (el, frames, opts) => el.animate(frames, Object.assign({ fill: 'both' }, opts));
+
+    if (name === 'unfold') {
+      grow(this.els(name, 'a')[0], { duration: q(420), easing: EASE });
+    }
+
+    if (name === 'stagger') {
+      this.els(name, 'a').forEach((el, i) => grow(el, { duration: q(420), delay: q(i * 26), easing: EASE }));
+    }
+
+    if (name === 'extend') {
+      A(this.els(name, 'host')[0], [{ width: '62%' }, { width: '100%' }], { duration: q(420), easing: EASE });
+      this.els(name, 'kid').forEach((el, i) =>
+        grow(el, { duration: q(420), delay: q(420 + i * 26), easing: EASE }));
+    }
+
+    if (name === 'enter') {
+      // It is one column arriving, not four pills each doing their own thing: every row
+      // already sits at its own resting height via CSS, so sliding them all in on the same
+      // clock — same start, same duration, no stagger — reads as a single rigid stack
+      // sliding in from off-left. A second .animate() call on the same element (even a
+      // later flourish) would sit fill:both from t=0 and pre-empt this one, so any texture
+      // on top has to be baked into the same call, not stacked after it — the wobble below
+      // uses the standalone `rotate` property instead of `transform`, so it never collides.
+      const rows = this.els(name, 'row');
+      rows.forEach(el => {
+        const row = +el.dataset.row;
+        A(el, [{ transform: 'translateX(-170%)' }, { transform: 'translateX(0)' }],
+          { duration: q(160), easing: EASE });
+        wobble(el, row, q(160), q(260));
+      });
+    }
+
+
+
+    if (name === 'leave') {
+      this.els(name, 'sib').forEach((el, i) => {
+        A(el, [{ transform: 'translateX(0)' }, { transform: 'translateX(-170%)' }], { duration: q(140), easing: LIN });
+        wobble(el, i + 1, 0, q(200));
+      });
+      A(this.els(name, 'host')[0],
+        [{ transform: 'translateX(0)' }, { transform: 'translateX(-48%)' }],
+        { duration: q(140), easing: LIN });
+    }
+
+    if (name === 'drop') {
+      // It does not float down. It arrives, and the landing knocks a little squash out of it.
+      const host = this.els(name, 'host')[0];
+      A(host, [{ transform: 'translateY(0)' }, { transform: 'translateY(60px)' }],
+        { duration: q(140), easing: LIN });
+      A(host, [
+        { scale: '1 1' },
+        { scale: '1.03 0.78', offset: .12 },
+        { scale: '0.99 1.08', offset: .42 },
+        { scale: '1 1' }
+      ], { duration: q(260), delay: q(140), easing: LIN, composite: 'add' });
+    }
+
+    if (name === 'cascade') {
+      // Each child starts hidden behind the pill BELOW it — the first behind the host, the
+      // next behind the first — so it turns from that pill's row, not from a shared spot.
+      // 360°, hinged on alternating ends; it holds its predecessor's row for 90% of the arc
+      // and lifts exactly one row in the last 10%, so turn and lift land on the same frame.
+      // Translate is written before rotate: in the other order the spin would drag the
+      // offset around with it.
+      const PITCH = 20;
+      this.els(name, 'kid').forEach(el => {
+        const i = +el.dataset.i;
+        const dir = i % 2 === 0 ? -360 : 360;
+        const under = -i * PITCH;             // the row of the pill it hides behind
+        const landed = -(i + 1) * PITCH;      // one row above it
+        el.style.transformOrigin = i % 2 === 0 ? '0 50%' : '100% 50%';
+        el.style.zIndex = String(50 - i);
+        A(el, [
+          { transform: 'translateY(' + under + 'px) rotate(' + dir + 'deg)', offset: 0 },
+          { transform: 'translateY(' + under + 'px) rotate(' + (dir * 0.1) + 'deg)', offset: 0.9 },
+          { transform: 'translateY(' + landed + 'px) rotate(0deg)', offset: 1 }
+        ], { duration: q(173), delay: q(i * 173), easing: LIN });
+      });
+    }
+
+    if (name === 'handoff') {
+      // The same stretch → snap → fly → jiggle as running a command. Length changes are
+      // real `width`/`left` (layout), never transform:scaleX — scaling a 999px-radius
+      // capsule non-uniformly squishes its round tips into ellipses. Transform carries only
+      // translateY and rotate here, neither of which distorts a circle. The last third of
+      // the fall swoops back to the crumb instead of continuing straight down.
+      this.els(name, 'pick').concat(this.els(name, 'sib')).forEach(el => { el.style.zIndex = '10'; });
+
+      const pick = this.els(name, 'pick')[0];
+      const STRETCH_MS = 220, SNAP_MS = 40, JIGGLE_MS = 90, FALL_MS = 300;
+      const leftPx0 = W * 0.30, pillWidth = W * 0.52;
+      const stretchedW = pillWidth * 1.06, shortW = pillWidth * 0.4;
+      const leftEdgeSpeed = (stretchedW - shortW) / SNAP_MS;
+      const rightEdgeConst = leftPx0 + stretchedW;
+      const leftAfterSnap = rightEdgeConst - shortW;
+      const flightDist = (W - 6) - rightEdgeConst;
+      const FLY_MS = Math.max(40, flightDist / leftEdgeSpeed);
+      const leftAfterFly = leftAfterSnap + flightDist;
+      const crumbW = W * 0.22, fallY = 20;
+      const total = STRETCH_MS + SNAP_MS + FLY_MS + JIGGLE_MS + FALL_MS;
+      const t = ms => ms / total;
+
+      const kf = [
+        { offset: 0, left: leftPx0 + 'px', width: pillWidth + 'px', transformOrigin: '100% 50%', transform: 'translateY(0px) rotate(0deg)', easing: 'linear' },
+        { offset: t(STRETCH_MS), left: leftPx0 + 'px', width: stretchedW + 'px', transformOrigin: '100% 50%', transform: 'translateY(0px) rotate(0deg)', easing: 'cubic-bezier(.4,0,.7,.2)' },
+        { offset: t(STRETCH_MS + SNAP_MS), left: leftAfterSnap + 'px', width: shortW + 'px', transformOrigin: '100% 50%', transform: 'translateY(0px) rotate(0deg)', easing: 'linear' },
+        { offset: t(STRETCH_MS + SNAP_MS + FLY_MS), left: leftAfterFly + 'px', width: shortW + 'px', transformOrigin: '100% 50%', transform: 'translateY(0px) rotate(0deg)', easing: 'linear' }
+      ];
+      const rot = [-7, 5, -3.5, 2, -1, 0], frac = [.14, .3, .46, .64, .82, 1];
+      const t0j = STRETCH_MS + SNAP_MS + FLY_MS;
+      rot.forEach((deg, i) => kf.push({
+        offset: t(t0j + frac[i] * JIGGLE_MS), left: leftAfterFly + 'px', width: shortW + 'px', transformOrigin: '100% 50%',
+        transform: 'translateY(0px) rotate(' + deg + 'deg)', easing: i < rot.length - 1 ? 'linear' : EASE
+      }));
+      const t0f = t0j + JIGGLE_MS;
+      kf.push({
+        offset: t(t0f + FALL_MS * (2 / 3)), left: leftAfterFly + 'px', width: shortW + 'px', transformOrigin: '100% 50%',
+        transform: 'translateY(' + (fallY * 2 / 3) + 'px) rotate(0deg)', easing: EASE
+      });
+      kf.push({
+        offset: 1, left: leftPx0 + 'px', width: crumbW + 'px', transformOrigin: '100% 50%',
+        transform: 'translateY(' + fallY + 'px) rotate(0deg)'
+      });
+
+      A(pick, kf, { duration: q(total), easing: 'linear' });
+
+      // The rest of the stack only leaves once the falling pill actually reaches the
+      // breadcrumb — not before, so the two moments read as cause and effect.
+      this.els(name, 'sib').forEach((el, i) =>
+        A(el, [{ transform: 'translateX(0)' }, { transform: 'translateX(-170%)' }],
+          { duration: q(140), delay: q(total) + q(i * 40), easing: LIN }));
+    }
+
+    if (name === 'struggle') {
+      // One continuous motion, ONE animation — a second .animate() call on the same element
+      // has fill:both by default in this file's A() helper, so a later call's own "before"
+      // frame pre-empts every earlier call for the whole time leading up to it. Sequential
+      // motion has to be one call with offset keyframes, not several stacked. Length
+      // changes are real `width`/`left` (layout), never transform:scaleX — scaling a
+      // 999px-radius capsule non-uniformly squishes its round tips into ellipses. Transform
+      // carries only translateY and rotate, neither of which distorts a circle.
+      const STRETCH_MS = 220, SNAP_MS = 40, JIGGLE_MS = 90, FALL_MS = 300;
+      const pill = this.els(name, 'pill')[0];
+      const leftPx0 = 0, pillWidth = W * 0.3;
+      const stretchedW = pillWidth * 1.06, shortW = pillWidth * 0.4;
+      const leftEdgeSpeed = (stretchedW - shortW) / SNAP_MS;
+      const rightEdgeConst = leftPx0 + stretchedW;
+      const leftAfterSnap = rightEdgeConst - shortW;
+      const flightDist = (W - 6) - rightEdgeConst;
+      const FLY_MS = Math.max(40, flightDist / leftEdgeSpeed);
+      const leftAfterFly = leftAfterSnap + flightDist;
+      const total = STRETCH_MS + SNAP_MS + FLY_MS + JIGGLE_MS + FALL_MS;
+      const t = ms => ms / total;
+
+      const kf = [
+        { offset: 0, left: leftPx0 + 'px', width: pillWidth + 'px', transformOrigin: '100% 50%', transform: 'translateY(0px) rotate(0deg)', easing: 'linear' },
+        { offset: t(STRETCH_MS), left: leftPx0 + 'px', width: stretchedW + 'px', transformOrigin: '100% 50%', transform: 'translateY(0px) rotate(0deg)', easing: 'cubic-bezier(.4,0,.7,.2)' },
+        { offset: t(STRETCH_MS + SNAP_MS), left: leftAfterSnap + 'px', width: shortW + 'px', transformOrigin: '100% 50%', transform: 'translateY(0px) rotate(0deg)', easing: 'linear' },
+        { offset: t(STRETCH_MS + SNAP_MS + FLY_MS), left: leftAfterFly + 'px', width: shortW + 'px', transformOrigin: '100% 50%', transform: 'translateY(0px) rotate(0deg)', easing: 'linear' }
+      ];
+      const rot = [-7, 5, -3.5, 2, -1, 0], frac = [.14, .3, .46, .64, .82, 1];
+      const t0j = STRETCH_MS + SNAP_MS + FLY_MS;
+      rot.forEach((deg, i) => kf.push({
+        offset: t(t0j + frac[i] * JIGGLE_MS), left: leftAfterFly + 'px', width: shortW + 'px', transformOrigin: '100% 50%',
+        transform: 'translateY(0px) rotate(' + deg + 'deg)', easing: i < rot.length - 1 ? 'linear' : 'cubic-bezier(.4,0,.9,.5)'
+      }));
+      const t0f = t0j + JIGGLE_MS;
+      kf.push({
+        offset: t(t0f + FALL_MS * (2 / 3)), left: leftAfterFly + 'px', width: shortW + 'px', transformOrigin: '100% 50%',
+        transform: 'translateY(' + (60 * 2 / 3) + 'px) rotate(0deg)', easing: EASE
+      });
+      kf.push({ offset: 1, left: leftAfterFly + 'px', width: shortW + 'px', transformOrigin: '100% 50%', transform: 'translateY(60px) rotate(0deg)' });
+
+      // The pills above and below sit still throughout — this specimen is about the one
+      // pill's own motion, not the stack reacting to it.
+      A(pill, kf, { duration: q(total), easing: 'linear' });
+    }
+
+    if (name === 'perimeter') {
+      const T = 8;
+      const set = (el, box) => Object.assign(el.style, box);
+      const [b, r, t, l] = ['b', 'r', 't', 'l'].map(k => this.els(name, k)[0]);
+      set(b, { top: (H - T) + 'px', left: '0px', width: W + 'px', height: T + 'px', transformOrigin: '0 50%' });
+      set(r, { top: '0px', left: (W - T) + 'px', width: T + 'px', height: H + 'px', transformOrigin: '50% 100%' });
+      set(t, { top: '0px', left: '0px', width: W + 'px', height: T + 'px', transformOrigin: '100% 50%' });
+      set(l, { top: '0px', left: '0px', width: T + 'px', height: H + 'px', transformOrigin: '50% 0' });
+      A(b, [{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], { duration: q(280), easing: EASE });
+      A(r, [{ transform: 'scaleY(0)' }, { transform: 'scaleY(1)' }], { duration: q(280), delay: q(280), easing: EASE });
+      A(t, [{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], { duration: q(280), delay: q(560), easing: EASE });
+      A(l, [{ transform: 'scaleY(0)' }, { transform: 'scaleY(1)' }], { duration: q(280), delay: q(840), easing: EASE });
+    }
+
+    if (name === 'fail') {
+      // The joke is entirely in the pause: it commits, gets a third of the way, and stops
+      // long enough for you to notice it has stopped.
+      const T = 8;
+      const bar = this.els(name, 'bar')[0];
+      const pill = this.els(name, 'pill')[0];
+      Object.assign(bar.style, { top: (H - T) + 'px', left: '0px', width: W + 'px', height: T + 'px', transformOrigin: '0 50%' });
+      A(bar, [{ transform: 'scaleX(0)' }, { transform: 'scaleX(.34)' }], { duration: q(280), easing: EASE });
+      A(bar, [{ transform: 'scaleX(.34)' }, { transform: 'scaleX(0)' }], { duration: q(200), delay: q(760), easing: LIN });
+      A(pill, [
+        { transform: 'translateY(0) rotate(0deg)' },
+        { transform: 'translateY(-3px) rotate(-1deg)', offset: .18 },
+        { transform: 'translateY(0) rotate(0deg)', offset: .34 },
+        { transform: 'translateY(70px) rotate(9deg)' }
+      ], { duration: q(520), delay: q(720), easing: 'cubic-bezier(.4,0,.9,.5)' });
+    }
+
+    if (name === 'flood') {
+      const hole = this.els(name, 'hole')[0];
+      const T = 8;
+      Object.assign(hole.style, { top: T + 'px', left: T + 'px', width: (W - T * 2) + 'px', height: (H - T * 2) + 'px' });
+      // the colour swipes up from the bottom edge: the page retreats toward the top
+      A(hole, [
+        { top: T + 'px', height: (H - T * 2) + 'px' },
+        { top: T + 'px', height: '0px' }
+      ], { duration: q(420), easing: EASE });
+    }
+
+    if (name === 'set' || name === 'entry') {
+      const step = name === 'set' ? 90 : 110;
+      this.els(name, 'line').forEach((el, i) => A(el, [
+        { clipPath: 'inset(0 100% 0 0)', transform: 'translateX(-12px)' },
+        { clipPath: 'inset(0 0 0 0)', transform: 'translateX(0)' }
+      ], { duration: q(360), delay: q(i * step), easing: EASE }));
+    }
+
+    if (name === 'parallax') {
+      const sweep = 90;
+      A(this.els(name, 'back')[0], [{ transform: 'translateY(0)' }, { transform: 'translateY(-' + sweep * 0.2 + 'px)' }],
+        { duration: q(1400), easing: 'cubic-bezier(.4,0,.6,1)', direction: 'alternate', iterations: 2 });
+      A(this.els(name, 'mid')[0], [{ transform: 'translateY(0)' }, { transform: 'translateY(-' + sweep * 0.5 + 'px)' }],
+        { duration: q(1400), easing: 'cubic-bezier(.4,0,.6,1)', direction: 'alternate', iterations: 2 });
+      A(this.els(name, 'front')[0], [{ transform: 'translateY(0)' }, { transform: 'translateY(-' + sweep + 'px)' }],
+        { duration: q(1400), easing: 'cubic-bezier(.4,0,.6,1)', direction: 'alternate', iterations: 2 });
+    }
+
+    if (name === 'job') {
+      grow(this.els(name, 'fill')[0], { duration: q(2600), easing: LIN });
+    }
+  }
+
+  playAll() {
+    const names = ['unfold', 'stagger', 'extend', 'enter', 'leave', 'drop', 'cascade', 'handoff',
+      'struggle', 'perimeter', 'fail', 'flood', 'set', 'entry', 'parallax', 'job'];
+    names.forEach((n, i) => setTimeout(() => this.play(n), i * 140));
+  }
+
+  renderVals() {
+    const plays = {};
+    ['unfold', 'stagger', 'extend', 'enter', 'leave', 'drop', 'cascade', 'handoff',
+      'struggle', 'perimeter', 'fail', 'flood', 'set', 'entry', 'parallax', 'job']
+      .forEach(n => { plays[n] = () => this.play(n); });
+    return { plays, playAll: () => this.playAll(), note: 'Sixteen specimens · tap any tile' };
+  }
+}
+</script>
+</body>
+</html>

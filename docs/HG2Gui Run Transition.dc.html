@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/tokens/colors.css">
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/tokens/typography.css">
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/tokens/motion.css">
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/tokens/base.css">
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/styles.css">
+<script src="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/_ds_bundle.js"></script>
+<style>
+  body{margin:0;background:var(--page-fold-dark);}
+  a{color:var(--link);} a:hover{color:var(--link-hover);}
+</style>
+</helmet>
+
+<div style="padding:64px;display:flex;flex-direction:column;gap:56px;font-family:var(--font-core);color:var(--ink);">
+
+  <div style="display:flex;flex-direction:column;gap:14px;max-width:700px;">
+    <div style="font:800 11px/1 var(--font-core);letter-spacing:.28em;text-transform:uppercase;color:var(--ink-72);">HG2Gui — running a command</div>
+    <div style="font:900 60px/0.84 var(--font-core);letter-spacing:-.03em;text-transform:uppercase;">The pill becomes the page</div>
+    <p style="margin:0;font:var(--type-body);color:var(--ink-78);text-wrap:pretty;">Tap the last choice and it does not hand off to a new screen — it grows. The pill runs out around the edge of the display, closes the loop, then floods the space it has enclosed. Output is set on that flood, so a command's result carries the colour of the command that made it.</p>
+    <p style="margin:0;font:var(--type-body);color:var(--ink-78);text-wrap:pretty;">Tap <strong>status</strong> in the frame. Tap <strong>Back</strong> and the whole thing runs in reverse, back into the pill it came from.</p>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:52px;align-items:flex-start;">
+
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div style="display:flex;align-items:baseline;gap:10px;">
+        <span style="font:900 22px/1 var(--font-core);letter-spacing:-.02em;text-transform:uppercase;">Live</span>
+        <span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-72);">tap status</span>
+      </div>
+      <div id="run-frame" style="width:390px;height:844px;overflow:hidden;background:var(--page-gradient);position:relative;">
+
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;">
+          <div style="padding:22px 24px 0;display:flex;align-items:center;gap:8px;">
+            <div style="border-radius:999px;box-sizing:border-box;padding:8px 14px;background:var(--ink);font:800 11px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--yellow-bright);">main</div>
+            <div style="border-radius:999px;box-sizing:border-box;padding:8px 14px;background:var(--ink-14);font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-55);">root@heart-of-gold</div>
+          </div>
+          <div style="flex:1;"></div>
+          <div style="padding:0 0 26px;display:flex;flex-direction:column;gap:7px;align-items:flex-start;">
+            <div data-sib style="margin-left:-62px;border-radius:999px;box-sizing:border-box;padding:11px 10px 11px 24px;background:var(--hue-cyan);width:74%;display:flex;align-items:center;justify-content:flex-end;gap:8px;"><span style="font:800 12px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--white);">on</span></div>
+            <div data-sib style="margin-left:-62px;border-radius:999px;box-sizing:border-box;padding:11px 10px 11px 24px;background:var(--hue-cyan);width:74%;display:flex;align-items:center;justify-content:flex-end;gap:8px;"><span style="font:800 12px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--white);">off</span></div>
+            <button id="run-pill" onClick="{{ run }}" style="margin-left:-62px;border-radius:999px;box-sizing:border-box;padding:11px 10px 11px 24px;background:var(--hue-cyan);width:74%;display:flex;align-items:center;justify-content:flex-end;gap:8px;">
+              <span style="font:800 12px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--white);">status</span>
+              <span style="width:20px;height:20px;border-radius:999px;background:var(--hue-cyan-cap);"></span>
+            </button>
+            <div data-sib style="margin-left:-62px;margin-top:7px;border-radius:999px;box-sizing:border-box;padding:11px 10px 11px 24px;background:var(--ink);width:52%;display:flex;align-items:center;justify-content:flex-end;gap:8px;"><span style="font:800 12px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--yellow-bright);">wifi</span></div>
+          </div>
+        </div>
+
+        <div id="bar-b" style="position:absolute;display:none;background:var(--hue-cyan);"></div>
+        <div id="bar-r" style="position:absolute;display:none;background:var(--hue-cyan);"></div>
+        <div id="bar-t" style="position:absolute;display:none;background:var(--hue-cyan);"></div>
+        <div id="bar-l" style="position:absolute;display:none;background:var(--hue-cyan);"></div>
+        <div id="run-fill" style="position:absolute;inset:0;display:none;background:var(--hue-cyan);"></div>
+        <div id="run-hole" style="position:absolute;display:none;background:var(--page-gradient);"></div>
+
+        <div id="run-out" style="position:absolute;inset:0;display:none;flex-direction:column;padding:26px 26px 0;">
+          <div data-out style="display:flex;align-items:center;gap:8px;">
+            <div style="border-radius:999px;box-sizing:border-box;padding:8px 14px;background:var(--white);font:800 11px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--hue-cyan);">wifi status</div>
+            <div style="flex:1;"></div>
+            <button onClick="{{ back }}" style="border-radius:999px;box-sizing:border-box;padding:8px 16px;background:var(--hue-cyan-cap);font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--white);">Back</button>
+          </div>
+          <div style="height:40px;"></div>
+          <div data-out style="font:900 56px/0.86 var(--font-core);letter-spacing:-.03em;text-transform:uppercase;color:var(--white);">Rattle<br>5G</div>
+          <div style="height:16px;"></div>
+          <div data-out style="font:600 18px/1.4 var(--font-core);color:var(--white);">Connected for four hours.</div>
+          <div style="height:34px;"></div>
+          <div data-out style="height:1px;background:var(--hue-cyan-cap);"></div>
+          <div data-out style="display:flex;align-items:baseline;justify-content:space-between;padding:14px 0;"><span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--text-on-hue);">Address</span><span style="font:600 19px/1 var(--font-core);color:var(--white);font-variant-numeric:tabular-nums;">10.0.0.14</span></div>
+          <div data-out style="height:1px;background:var(--hue-cyan-cap);"></div>
+          <div data-out style="display:flex;align-items:baseline;justify-content:space-between;padding:14px 0;"><span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--text-on-hue);">Signal</span><span style="font:600 19px/1 var(--font-core);color:var(--white);font-variant-numeric:tabular-nums;">−47 dBm</span></div>
+          <div data-out style="height:1px;background:var(--hue-cyan-cap);"></div>
+          <div data-out style="display:flex;align-items:baseline;justify-content:space-between;padding:14px 0;"><span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--text-on-hue);">Speed</span><span style="font:600 19px/1 var(--font-core);color:var(--white);font-variant-numeric:tabular-nums;">866 Mbit/s</span></div>
+          <div data-out style="height:1px;background:var(--hue-cyan-cap);"></div>
+          <div style="flex:1;"></div>
+          <div data-out style="display:flex;gap:6px;padding-bottom:28px;">
+            <div style="border-radius:999px;box-sizing:border-box;padding:11px 18px;background:var(--white);font:800 11px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--hue-cyan);">Run again</div>
+            <div style="border-radius:999px;box-sizing:border-box;padding:11px 18px;background:var(--hue-cyan-cap);font:800 11px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--white);">Plain text</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;max-width:420px;">
+      <div style="font:900 22px/1 var(--font-core);letter-spacing:-.02em;text-transform:uppercase;">The six beats</div>
+      <div style="display:flex;flex-direction:column;">
+        <div style="height:1px;background:var(--ink-16);"></div>
+        <div style="display:grid;grid-template-columns:46px 1fr;gap:16px;padding:16px 0;align-items:baseline;">
+          <span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-45);">300ms</span>
+          <span style="font:600 16px/1.5 var(--font-core);color:var(--ink-78);text-wrap:pretty;"><strong>Stretch.</strong> The chosen pill gets a little longer to the right, then snaps in from the left down to less than half its width — and flies right at the exact speed that snap was retracting at, one continuous motion into the far edge.</span>
+        </div>
+        <div style="height:1px;background:var(--ink-16);"></div>
+        <div style="display:grid;grid-template-columns:46px 1fr;gap:16px;padding:16px 0;align-items:baseline;">
+          <span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-45);">140ms</span>
+          <span style="font:600 16px/1.5 var(--font-core);color:var(--ink-78);text-wrap:pretty;"><strong>Break free.</strong> On impact the pill rocks rapidly on its right tip — the far edge it just flew into — damping out, then falls straight down to the bottom edge. The rest of the stack sweeps off to the left as it goes.</span>
+        </div>
+        <div style="height:1px;background:var(--ink-16);"></div>
+        <div style="display:grid;grid-template-columns:46px 1fr;gap:16px;padding:16px 0;align-items:baseline;">
+          <span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-45);">300ms</span>
+          <span style="font:600 16px/1.5 var(--font-core);color:var(--ink-78);text-wrap:pretty;"><strong>Fall.</strong> Free of the stack it drops straight down, from exactly where it broke, and lands on the bottom edge.</span>
+        </div>
+        <div style="height:1px;background:var(--ink-16);"></div>
+        <div style="display:grid;grid-template-columns:46px 1fr;gap:16px;padding:16px 0;align-items:baseline;">
+          <span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-45);">840ms</span>
+          <span style="font:600 16px/1.5 var(--font-core);color:var(--ink-78);text-wrap:pretty;"><strong>Run the perimeter.</strong> It stretches along the bottom, then up the right edge, back across the top, down the left — counter-clockwise, one edge at a time, until the loop closes on itself.</span>
+        </div>
+        <div style="height:1px;background:var(--ink-16);"></div>
+        <div style="display:grid;grid-template-columns:46px 1fr;gap:16px;padding:16px 0;align-items:baseline;">
+          <span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-45);">420ms</span>
+          <span style="font:600 16px/1.5 var(--font-core);color:var(--ink-78);text-wrap:pretty;"><strong>Flood.</strong> The colour swipes straight up from the bottom edge until the enclosed space is full. No fade — it rises like a tide.</span>
+        </div>
+        <div style="height:1px;background:var(--ink-16);"></div>
+        <div style="display:grid;grid-template-columns:46px 1fr;gap:16px;padding:16px 0;align-items:baseline;">
+          <span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-45);">90ms</span>
+          <span style="font:600 16px/1.5 var(--font-core);color:var(--ink-78);text-wrap:pretty;"><strong>Set.</strong> Output wipes on in reading order, one line at a time, exactly as it does on the page — only now the ground is the command's own hue.</span>
+        </div>
+        <div style="height:1px;background:var(--ink-16);"></div>
+      </div>
+      <p style="margin:12px 0 0;font:600 15px/1.5 var(--font-core);color:var(--ink-78);text-wrap:pretty;">Going back is the same four beats played backwards, so the result folds down into the pill that produced it. Nothing is ever pushed on or off from somewhere unseen.</p>
+    </div>
+
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1000,&quot;height&quot;:1050}}">
+const EASE = 'cubic-bezier(0,.9,.1,1)';
+const SNAP = 'cubic-bezier(.2,0,.1,1)';
+const FALL_MS = 300;   // used by back()'s own fall-reverse
+const EDGE_MS = 280;   // per edge of the perimeter run
+const FILL_MS = 420;
+const T = 10;          // thickness of the running line
+
+class Component extends DCLogic {
+  componentDidMount() {
+    this.reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  parts() {
+    const frame = document.getElementById('run-frame');
+    return {
+      frame,
+      pill: document.getElementById('run-pill'),
+      sibs: frame ? [...frame.querySelectorAll('[data-sib]')] : [],
+      bars: {
+        b: document.getElementById('bar-b'),
+        r: document.getElementById('bar-r'),
+        t: document.getElementById('bar-t'),
+        l: document.getElementById('bar-l')
+      },
+      fill: document.getElementById('run-fill'),
+      hole: document.getElementById('run-hole'),
+      out: document.getElementById('run-out')
+    };
+  }
+
+  /** The pill's box, in the frame's own coordinates. */
+  pillBox(frame, pill) {
+    const f = frame.getBoundingClientRect();
+    const p = pill.getBoundingClientRect();
+    return { top: p.top - f.top, left: p.left - f.left, width: p.width, height: p.height };
+  }
+
+  run() {
+    const { frame, pill, sibs, bars, fill, hole, out } = this.parts();
+    if (!frame || this.busy) return;
+    this.busy = true;
+    const b = this.pillBox(frame, pill);
+    const W = frame.clientWidth, H = frame.clientHeight;
+    const q = this.reduced ? 0 : 1;   // 0 collapses every duration for reduced motion
+
+    out.style.display = 'none';
+
+    // One animation, one element — a second .animate() call on the same pill would sit
+    // Stretch to the right, snap in from the left, then fly right at the exact speed the
+    // left edge was just retracting at. Length changes are real `width`/`margin-left`
+    // (layout) — never transform:scaleX, which would squish the pill's round tips into
+    // ellipses. Once the width is fixed, transform carries only translateX/Y and rotate,
+    // none of which distort a circle.
+    const STRETCH_MS = 220, SNAP_MS = 40, JIGGLE_MS = 90, FALL_MS = 300;
+    const baseMargin = parseFloat(getComputedStyle(pill).marginLeft) || 0;
+    const stretchedW = b.width * 1.06, shortW = b.width * 0.4;
+    const leftEdgeSpeed = (stretchedW - shortW) / SNAP_MS;   // px/ms during the snap
+    const marginAfterSnap = baseMargin + (stretchedW - shortW);
+    const rightEdgeConst = b.left + stretchedW;               // fixed while snapping
+    const flightX = (W - 6) - rightEdgeConst;
+    const FLY_MS = Math.max(40, flightX / leftEdgeSpeed);
+    const total = STRETCH_MS + SNAP_MS + FLY_MS + JIGGLE_MS + FALL_MS;
+    const fallTo = H - T - b.top - b.height;
+    const t = ms => ms / total;
+    const flownT = 'translateX(' + flightX + 'px)';
+
+    const kf = [
+      { offset: 0, marginLeft: baseMargin + 'px', width: b.width + 'px', transformOrigin: '100% 50%', transform: 'translateX(0px) translateY(0px) rotate(0deg)', easing: 'linear' },
+      { offset: t(STRETCH_MS), marginLeft: baseMargin + 'px', width: stretchedW + 'px', transformOrigin: '100% 50%', transform: 'translateX(0px) translateY(0px) rotate(0deg)', easing: 'cubic-bezier(.4,0,.7,.2)' },
+      { offset: t(STRETCH_MS + SNAP_MS), marginLeft: marginAfterSnap + 'px', width: shortW + 'px', transformOrigin: '100% 50%', transform: 'translateX(0px) translateY(0px) rotate(0deg)', easing: 'linear' },
+      { offset: t(STRETCH_MS + SNAP_MS + FLY_MS), marginLeft: marginAfterSnap + 'px', width: shortW + 'px', transformOrigin: '100% 50%', transform: flownT + ' translateY(0px) rotate(0deg)', easing: 'linear' }
+    ];
+    const rot = [-7, 5, -3.5, 2, -1, 0], frac = [.14, .3, .46, .64, .82, 1];
+    const t0j = STRETCH_MS + SNAP_MS + FLY_MS;
+    rot.forEach((deg, i) => kf.push({
+      offset: t(t0j + frac[i] * JIGGLE_MS), marginLeft: marginAfterSnap + 'px', width: shortW + 'px', transformOrigin: '100% 50%',
+      transform: flownT + ' translateY(0px) rotate(' + deg + 'deg)', easing: i < rot.length - 1 ? 'linear' : 'cubic-bezier(.4,0,.9,.5)'
+    }));
+    kf.push({
+      offset: 1, marginLeft: marginAfterSnap + 'px', width: shortW + 'px', transformOrigin: '100% 50%',
+      transform: flownT + ' translateY(' + fallTo + 'px) rotate(0deg)'
+    });
+
+    pill.animate(kf, { duration: total * q, easing: 'linear', fill: 'both' });
+
+    sibs.forEach((el, i) => el.animate(
+      [{ transform: 'translateX(0)' }, { transform: 'translateX(-190%)' }],
+      { duration: (FALL_MS + 120) * q, delay: (STRETCH_MS + SNAP_MS + i * 60) * q, easing: EASE, fill: 'both' }
+    ));
+
+    // 4 — the perimeter run, counter-clockwise from the bottom: along the bottom edge,
+    //     up the right, back across the top, down the left, closing on itself.
+    const t0 = total * q;
+    const landed = { top: (H - T) + 'px', left: b.left + 'px', width: b.width + 'px', height: T + 'px', borderRadius: '999px' };
+    const bottom = { top: (H - T) + 'px', left: '0px', width: W + 'px', height: T + 'px', borderRadius: '0px' };
+
+    Object.values(bars).forEach(el => { el.style.display = 'block'; });
+    bars.b.animate([landed, bottom], { duration: EDGE_MS * q, delay: t0, easing: EASE, fill: 'both' });
+
+    const edge = (el, box, from, delayAfter) => {
+      Object.assign(el.style, box);
+      el.animate([{ transform: from }, { transform: 'none' }], {
+        duration: EDGE_MS * q, delay: t0 + delayAfter * q, easing: EASE, fill: 'both'
+      });
+    };
+    edge(bars.r, { top: '0px', left: (W - T) + 'px', width: T + 'px', height: H + 'px', transformOrigin: '50% 100%' }, 'scaleY(0)', EDGE_MS);
+    edge(bars.t, { top: '0px', left: '0px', width: W + 'px', height: T + 'px', transformOrigin: '100% 50%' }, 'scaleX(0)', EDGE_MS * 2);
+    edge(bars.l, { top: '0px', left: '0px', width: T + 'px', height: H + 'px', transformOrigin: '50% 0' }, 'scaleY(0)', EDGE_MS * 3);
+
+    // 5 — the loop is closed; the space it encloses shuts like an aperture and floods.
+    const t1 = t0 + EDGE_MS * 4 * q;
+    // the colour swipes up from the bottom edge: the page retreats toward the top
+    const inner = { top: T + 'px', height: (H - T * 2) + 'px' };
+    const swept = { top: T + 'px', height: '0px' };
+    this.t0 = setTimeout(() => {
+      fill.style.display = 'block';
+      hole.style.display = 'block';
+      Object.assign(hole.style, { top: T + 'px', left: T + 'px', width: (W - T * 2) + 'px', height: (H - T * 2) + 'px', borderRadius: '0px' });
+      hole.animate([inner, swept], { duration: FILL_MS * q, easing: EASE, fill: 'both' });
+    }, t1);
+
+    // 6 — output sets on the flood, in reading order.
+    this.t = setTimeout(() => {
+      hole.style.display = 'none';
+      out.style.display = 'flex';
+      [...out.querySelectorAll('[data-out]')].forEach((el, i) => el.animate([
+        { clipPath: 'inset(0 100% 0 0)', transform: 'translateX(-12px)' },
+        { clipPath: 'inset(0 0 0 0)', transform: 'translateX(0)' }
+      ], { duration: 360 * q, delay: i * 90 * q, easing: EASE, fill: 'both' }));
+      this.busy = false;
+    }, t1 + FILL_MS * q);
+  }
+
+  // Going back is the run played backwards: the flood opens, the line retreats the way it
+  // came, and the pill climbs back into the stack that would not let go of it.
+  back() {
+    const { frame, pill, sibs, bars, fill, hole, out } = this.parts();
+    if (!frame || this.busy) return;
+    this.busy = true;
+    const W = frame.clientWidth, H = frame.clientHeight;
+    const b = this.pillBox(frame, pill);
+    const q = this.reduced ? 0 : 1;
+
+    out.style.display = 'none';
+    const inner = { top: T + 'px', height: (H - T * 2) + 'px' };
+    const swept = { top: T + 'px', height: '0px' };
+    hole.style.display = 'block';
+    Object.assign(hole.style, { top: T + 'px', left: T + 'px', width: (W - T * 2) + 'px', height: (H - T * 2) + 'px', borderRadius: '0px' });
+    hole.animate([swept, inner], { duration: FILL_MS * q, easing: EASE, fill: 'both' });
+
+    const t1 = FILL_MS * q;
+    const rev = (el, from, delayAfter) => el.animate(
+      [{ transform: 'none' }, { transform: from }],
+      { duration: EDGE_MS * q, delay: t1 + delayAfter * q, easing: EASE, fill: 'both' }
+    );
+    rev(bars.l, 'scaleY(0)', 0);
+    rev(bars.t, 'scaleX(0)', EDGE_MS);
+    rev(bars.r, 'scaleY(0)', EDGE_MS * 2);
+    const landed = { top: (H - T) + 'px', left: b.left + 'px', width: b.width + 'px', height: T + 'px', borderRadius: '999px' };
+    const bottom = { top: (H - T) + 'px', left: '0px', width: W + 'px', height: T + 'px', borderRadius: '0px' };
+    bars.b.animate([bottom, landed], { duration: EDGE_MS * q, delay: t1 + EDGE_MS * 3 * q, easing: EASE, fill: 'both' });
+
+    const t2 = t1 + EDGE_MS * 4 * q;
+    const fallTo = H - T - b.top - b.height;
+    pill.animate(
+      [{ transform: 'translateY(' + fallTo + 'px)' }, { transform: 'translateY(0)' }],
+      { duration: FALL_MS * q, delay: t2, easing: EASE, fill: 'both' }
+    );
+    sibs.forEach((el, i) => el.animate(
+      [{ transform: 'translateX(-190%)' }, { transform: 'translateX(0)' }],
+      { duration: FALL_MS * q, delay: (t2 + i * 60) * q, easing: EASE, fill: 'both' }
+    ));
+
+    this.t = setTimeout(() => {
+      fill.style.display = 'none';
+      hole.style.display = 'none';
+      Object.values(bars).forEach(el => { el.style.display = 'none'; });
+      this.busy = false;
+    }, t2 + FALL_MS * q);
+  }
+
+  componentWillUnmount() { clearTimeout(this.t); clearTimeout(this.t0); }
+
+  renderVals() {
+    return { run: () => this.run(), back: () => this.back() };
+  }
+}
+</script>
+</body>
+</html>
