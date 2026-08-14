@@ -290,7 +290,7 @@ actual class ShellSession private constructor(
                 if (System.currentTimeMillis() > deadline) {
                     val bytes = "\r\n[timed out after ${TIMEOUT_MS / 1000}s]".toByteArray()
                     emulator.append(bytes, bytes.size)
-                    onLine(emulator.mScreen.transcriptTextWithFullLinesJoined)
+                    onLine(emulator.transcriptText())
                     // The shell is genuinely stuck here - a declined/unanswerable prompt, or
                     // something that produced no output at all for the whole timeout - so this
                     // has to actually end it, not just give up on this one call. Leaving the
@@ -372,7 +372,7 @@ actual class ShellSession private constructor(
                     val pwd = tail.substring(split + 1)
                     if (pwd.isNotEmpty()) _workingDirectory = pwd
                 }
-                onLine(emulator.mScreen.transcriptTextWithFullLinesJoined)
+                onLine(emulator.transcriptText())
                 break
             }
         } catch (e: IOException) {
@@ -395,8 +395,23 @@ actual class ShellSession private constructor(
         val chunk = pending.substring(from, to)
         val bytes = chunk.replace("\r\n", "\n").replace("\n", "\r\n").toByteArray(Charsets.UTF_8)
         emulator.append(bytes, bytes.size)
-        onLine(emulator.mScreen.transcriptTextWithFullLinesJoined)
+        onLine(emulator.transcriptText())
         return to
+    }
+
+    // MCP-13: mScreen is a fixed-size circular scrollback (1000 rows, see the TerminalEmulator
+    // constructor above) - once a command's output exceeds that, the buffer silently starts
+    // overwriting its own oldest lines. An interactive user watching the screen scroll live
+    // barely notices; an MCP caller reading back transcriptTextWithFullLinesJoined() has no way
+    // to tell a short, complete transcript from the tail end of one that lost its beginning.
+    // getActiveTranscriptRows() maxing out at mTotalRows - mScreenRows is exactly that "the
+    // buffer is now full and about to start overwriting" moment, so once true it stays true for
+    // the rest of this stream() call - once truncation can happen it doesn't become un-true.
+    private fun TerminalEmulator.transcriptText(): String {
+        val screen = mScreen
+        val truncated = screen.getActiveTranscriptRows() >= screen.mTotalRows - screen.mScreenRows
+        val text = screen.transcriptTextWithFullLinesJoined
+        return if (truncated) "[earlier output truncated - exceeded ${screen.mTotalRows}-line buffer]\n$text" else text
     }
 
     actual fun close() {

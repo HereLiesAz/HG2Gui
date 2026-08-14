@@ -217,6 +217,18 @@ private fun AzpRow(listing: AzpListing, installing: Boolean, onInstall: (AzpList
                     fontSize = 8.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em,
                     modifier = Modifier.padding(top = 3.dp)
                 )
+            } else if (!listing.installed) {
+                // AZP-7: signature verification needs the actual downloaded manifest.json and
+                // signature.json bytes - the repository's search API never returns anything
+                // signature-related, so there is no real trust verdict to show before installing.
+                // Rather than say nothing (which reads as "already vetted" by omission), this
+                // states that plainly: trust is unknown until install, not silently assumed good.
+                Text(
+                    "TRUST UNKNOWN · CHECKED AT INSTALL",
+                    color = Azphalt.Ink.copy(alpha = .4f),
+                    fontSize = 8.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em,
+                    modifier = Modifier.padding(top = 3.dp)
+                )
             }
             if (listing.installed && listing.kind == "script") {
                 Text(

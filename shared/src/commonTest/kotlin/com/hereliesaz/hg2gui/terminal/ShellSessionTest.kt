@@ -143,4 +143,20 @@ class ShellSessionTest {
         assertEquals(-1, exitCode, "a torn-down session must not silently swallow the next command")
         assertTrue(nextOutput.contains("shell is not running"))
     }
+
+    @Test
+    fun outputExceedingTheScrollbackBufferIsFlaggedAsTruncated() {
+        // MCP-13: the headless TerminalEmulator's scrollback is a fixed-size circular buffer
+        // (1000 rows) - a command producing more lines than that silently loses its earliest
+        // ones with no signal, which matters most for an MCP caller with no live screen to
+        // notice the scroll. 1200 lines comfortably exceeds the buffer without being slow.
+        val s = shell ?: return
+        val r = s.exec("i=1; while [ \$i -le 1200 ]; do echo line\$i; i=\$((i+1)); done")
+        assertEquals(0, r.exitCode)
+        assertTrue(
+            r.output.startsWith("[earlier output truncated"),
+            "expected a truncation marker once output exceeds the scrollback buffer: ${r.output.take(120)}"
+        )
+        assertTrue(r.output.contains("line1200"), "the most recent lines must still be present")
+    }
 }

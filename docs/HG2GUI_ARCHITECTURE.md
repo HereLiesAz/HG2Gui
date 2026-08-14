@@ -206,7 +206,11 @@ reflection-based command engine underneath it — eleven built-ins are a fixed d
     visual idiom as `AiChatScreen`. An installed row also shows a trust badge (TRUSTED SIGNER /
     SIGNED · UNKNOWN SIGNER / SIGNED · UNVERIFIED (OS) / UNSIGNED) — `AzpListing.trust` carries
     the androidMain `AzpTrust` enum's name as a plain string, since commonMain can't reference a
-    platform-specific type directly. Reached via a synthesized `azp` root pill
+    platform-specific type directly. A not-yet-installed row shows "TRUST UNKNOWN · CHECKED AT
+    INSTALL" instead of nothing (AZP-7): the repository's search API (`AzpPackageSummary`) never
+    returns anything signature-related, so there's no real verdict to show before downloading and
+    verifying — the deliberate choice is to say so plainly rather than let the absence of a badge
+    silently read as "already vetted". Reached via a synthesized `azp` root pill
     (`CommandTree.azpRoot`, `wizardId = "azp-store"` navigates to the screen, same reuse of
     `onWizard` as the AI pill).
 *   `AzpInstaller` computes SHA-256 while extracting and rejects a package when a payload is
