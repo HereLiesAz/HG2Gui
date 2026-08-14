@@ -14,6 +14,7 @@ kotlin {
         compileSdk = 37
         minSdk = 24
         
+        withJava()
         withHostTest {}
 
         compilerOptions {

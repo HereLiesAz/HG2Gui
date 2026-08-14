@@ -37,6 +37,7 @@ object Builtins {
         "call", "contacts", "vfs", "edit", "calc"
     )
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     fun run(context: Context, line: String): String {
         val parts = line.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }
         val verb = parts.firstOrNull() ?: return ""
