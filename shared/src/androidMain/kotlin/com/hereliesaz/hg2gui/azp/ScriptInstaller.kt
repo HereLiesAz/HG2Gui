@@ -32,6 +32,10 @@ object ScriptInstaller {
          *  `prefix/bin` to place a wrapper in. The package's bytes are still on disk from
          *  [AzpInstaller.install]; only becoming runnable is deferred. */
         object BootstrapMissing : Result()
+        /** The package's declared `entry` would resolve outside its own extracted/digest-verified
+         *  directory, or its declared `command` would resolve outside `prefix/bin` or collide
+         *  with a name already there - either way, nothing is written or executed. */
+        object Rejected : Result()
     }
 
     suspend fun install(
@@ -53,12 +57,21 @@ object ScriptInstaller {
                 if (exitCode != 0) return Result.DependencyFailed(output)
             }
 
-            val entryFile = File(AzpInstaller.rootDir(context, id, version), script.entry)
+            val packageRoot = AzpInstaller.rootDir(context, id, version)
+            val entryFile = File(packageRoot, script.entry)
+            if (!entryFile.isContainedIn(packageRoot)) return Result.Rejected
+
             val command = script.command?.takeIf { it.isNotBlank() } ?: commandNameFor(script.entry)
             val interpreter = resolveOnPrefix(prefix, script.interpreter)
             val argsSuffix = script.args.joinToString("") { " " + it.shellQuoted() }
 
-            val wrapper = File(prefix, "bin/$command")
+            val binDir = File(prefix, "bin")
+            val wrapper = File(binDir, command)
+            // command is package-declared, unlike entry's already-sanitized filename - it can walk
+            // out of bin/ via ../ the same way a VFS name could, or simply name itself ls/pkg/bash
+            // and overwrite whatever's already on PATH. Containment plus a plain existence check
+            // covers both: a package never gets to replace a binary it didn't itself just install.
+            if (!wrapper.isContainedIn(binDir) || wrapper.exists()) return Result.Rejected
             wrapper.writeText(
                 "#!${File(prefix, "bin/bash").absolutePath}\n" +
                     "exec ${interpreter.shellQuoted()} ${entryFile.absolutePath.shellQuoted()}$argsSuffix \"\$@\"\n"
@@ -90,3 +103,12 @@ internal fun commandNameFor(entry: String): String =
  *  embedded single quote the POSIX-shell way (`'\''`). Pure and Context-free for the same
  *  testability reason as [commandNameFor]. */
 internal fun String.shellQuoted(): String = "'" + replace("'", "'\\''") + "'"
+
+/** True iff [this] canonicalizes to somewhere inside [dir] - the same prefix-after-canonicalize
+ *  check [AzpInstaller.install] already runs on each zip entry, reused here since a package-
+ *  declared name (`script.entry`, `script.command`) is exactly as untrusted as an archive path. */
+internal fun File.isContainedIn(dir: File): Boolean {
+    val target = canonicalFile
+    val root = dir.canonicalFile
+    return target == root || target.path.startsWith(root.path + File.separator)
+}

@@ -70,4 +70,17 @@ class AzpInstallerDigestTest {
     fun emptyPackage_passesVacuously() {
         assertTrue(filesMatchDigests(emptyMap(), emptyMap()))
     }
+
+    @Test
+    fun missingDeclaredFile_fails() {
+        // manifest.files vouches for a file that was deleted from the archive before signing (or
+        // stripped afterward) - the old one-directional check only ever walked what's present,
+        // so it never noticed a declared file's simple absence.
+        val extracted = mapOf("skills/foo/SKILL.md" to digestA)
+        val declared = mapOf(
+            "skills/foo/SKILL.md" to digestA,
+            "skills/foo/scripts/setup.sh" to digestB,
+        )
+        assertFalse(filesMatchDigests(extracted, declared))
+    }
 }

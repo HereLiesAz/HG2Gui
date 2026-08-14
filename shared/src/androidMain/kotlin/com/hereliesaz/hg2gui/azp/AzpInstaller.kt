@@ -82,9 +82,13 @@ object AzpInstaller {
                         val name = entry.name
                         // Path containment: refuse any entry that would escape dest via .. or an
                         // absolute path (package-format.md's own path-containment requirement).
+                        // AZP-8: a package that has to smuggle a zip-slip entry to work at all is
+                        // not a package worth installing minus that one entry - silently skipping
+                        // it used to let the rest of an otherwise-hostile archive install with no
+                        // signal at all, rather than the same hard rejection a bad digest gets.
                         val target = File(dest, name).canonicalFile
                         if (!target.path.startsWith(dest.canonicalPath + File.separator) && target != dest) {
-                            zip.closeEntry(); entry = zip.nextEntry; continue
+                            throw java.io.IOException("path traversal in archive entry: $name")
                         }
                         if (entry.isDirectory) {
                             target.mkdirs()
@@ -157,16 +161,23 @@ object AzpInstaller {
 /**
  * True iff every non-manifest, non-signature entry in [extracted] (path -> lowercase-hex SHA-256
  * of the bytes actually on disk) has a matching digest in [declared] (path -> lowercase-hex
- * SHA-256, `manifest.files` with its `sha256-` prefix already stripped). A path present in
- * [extracted] but absent from [declared] fails ("unlisted payload"), as does any digest mismatch.
- * Pure and Context-free by design, specifically so it's unit-testable without a Robolectric/
- * instrumented Android runtime - see AzpInstallerDigestTest.
+ * SHA-256, `manifest.files` with its `sha256-` prefix already stripped), AND every path in
+ * [declared] actually shows up in [extracted]. A path present in [extracted] but absent from
+ * [declared] fails ("unlisted payload"), as does any digest mismatch - and, AZP-5, so does a
+ * declared path that's simply missing from the archive: the manifest vouching for a file that
+ * was quietly deleted before signing is exactly as much a tamper as swapping one's bytes, but a
+ * check that only ever walked what's present would never have noticed it. Pure and Context-free
+ * by design, specifically so it's unit-testable without a Robolectric/instrumented Android
+ * runtime - see AzpInstallerDigestTest.
  */
 internal fun filesMatchDigests(extracted: Map<String, String>, declared: Map<String, String>): Boolean {
     for ((path, actualDigest) in extracted) {
         if (path == "manifest.json" || path == "signature.json") continue
         val wantDigest = declared[path] ?: return false
         if (!wantDigest.equals(actualDigest, ignoreCase = true)) return false
+    }
+    for (path in declared.keys) {
+        if (path !in extracted) return false
     }
     return true
 }
