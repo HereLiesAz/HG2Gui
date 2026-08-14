@@ -90,18 +90,20 @@ object Azphalt {
      *  heavier since it's the primary. */
     data class Ground(val name: String, val page: Color, val foldLight: Color, val foldDark: Color, val weight: Int = 1)
 
-    // Mustard's fold-light/fold-dark are the style guide's own literal tokens. The other six
+    // Mustard's fold-light/fold-dark are the style guide's own literal tokens. The other five
     // grounds are given as a single reference swatch each (no separate fold tokens in the
     // source) - foldLight/foldDark are derived from that one swatch with a fixed lighten/darken
     // step, matching Mustard's own light/dark offset, until real per-ground tokens exist.
+    // "Olive" (a dark yellow-green, #8F8A2E) used to be here too - close enough to Mustard's own
+    // yellow in hue that rolling it read as "the yellow background is gone" rather than as a
+    // deliberately different ground, so it's been dropped from the rotation entirely.
     val grounds: List<Ground> = listOf(
         Ground("Mustard", Color(0xFFE8C81E), Color(0xFFF2D82C), Color(0xFFD9B615), weight = 6),
         Ground("Maroon", Color(0xFF8F1F34), Color(0xFFA22940), Color(0xFF7A1A2C)),
         Ground("Navy", Color(0xFF163A63), Color(0xFF204B7C), Color(0xFF0F2C4C)),
         Ground("Cerulean", Color(0xFF2D6EA8), Color(0xFF3C82C2), Color(0xFF215A8C)),
         Ground("Teal", Color(0xFF1D6B62), Color(0xFF267F74), Color(0xFF14554E)),
-        Ground("Pink", Color(0xFFD4728F), Color(0xFFDD879F), Color(0xFFC15D7A)),
-        Ground("Olive", Color(0xFF8F8A2E), Color(0xFFA29C36), Color(0xFF747024))
+        Ground("Pink", Color(0xFFD4728F), Color(0xFFDD879F), Color(0xFFC15D7A))
     )
 
     /** Picks a ground, weighted per [Ground.weight], optionally never returning [exclude] - used
