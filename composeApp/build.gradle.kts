@@ -37,11 +37,11 @@ val resolvedVersionName = project.findProperty("versionName")?.toString() ?: Str
     buildNumber
 )
 
-// Populated by .github/actions/android-keystore in CI (release-play.yml); absent for a plain
+// Populated by .GitHub/actions/android-keystore in CI (release-play.yml); absent for a plain
 // local `assembleRelease`, which then just builds unsigned like it always has. When
 // REQUIRE_SIGNING is set, a missing/incomplete keystore fails the build here, at
 // configuration time, instead of producing an unsigned bundle that only fails later, in
-// ./.github/actions/verify-android-signature or at the Play upload itself.
+// ./.GitHub/actions/verify-android-signature or at the Play upload itself.
 val releaseKeystoreFile = System.getenv("KEYSTORE_FILE")
 val releaseKeystoreType = System.getenv("KEYSTORE_TYPE")
 val releaseKeystorePassword = System.getenv("KEYSTORE_PASSWORD")
@@ -70,12 +70,12 @@ kotlin {
     
     sourceSets {
         commonMain.dependencies {
-            implementation(compose.runtime)
-            implementation(compose.foundation)
-            implementation(compose.material3)
-            implementation(compose.ui)
-            implementation(compose.components.resources)
-            implementation(compose.components.uiToolingPreview)
+            implementation(libs.runtime)
+            implementation(libs.foundation)
+            implementation(libs.material3)
+            implementation(libs.ui)
+            implementation(libs.components.resources)
+            implementation(libs.ui.tooling.preview)
             
             implementation(libs.okhttp)
             implementation(libs.comparestring2)
@@ -173,7 +173,7 @@ android {
 
 dependencies {
     coreLibraryDesugaring(libs.desugar.jdk.libs)
-    debugImplementation(compose.uiTooling)
+    debugImplementation(libs.ui.tooling)
     implementation(libs.listenablefuture)
 }
 
