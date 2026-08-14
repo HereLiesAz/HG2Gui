@@ -135,6 +135,12 @@ dependencies {
 
     coreLibraryDesugaring(libs.desugar.jdk.libs)
     debugImplementation(libs.ui.tooling)
+
+    // composeApp is a plain `com.android.application` module, not Kotlin Multiplatform - its
+    // unit-test source root is src/test/, not the KMP-style src/androidUnitTest/ these test
+    // files used to sit in (where they silently never compiled or ran at all: no testImplementation
+    // dependency existed for them either, so even the source-set move alone wasn't enough).
+    testImplementation(libs.junit)
 }
 
 tasks.register("printApplicationId") {

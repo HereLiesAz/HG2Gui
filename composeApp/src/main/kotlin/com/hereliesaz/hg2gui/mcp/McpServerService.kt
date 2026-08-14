@@ -37,10 +37,29 @@ import java.security.SecureRandom
  * differ (JDK 6u17+), unlike `String.equals`/`==`, which return as soon as a mismatched byte or
  * length is found. The pairing token is 192 bits of entropy, so a timing side-channel here isn't
  * a practical break either way - this closes the hardening gap without pretending it was ever an
- * exploitable one.
+ * exploitable one. `internal`, not `private`, so McpServerServiceTest (androidUnitTest) can call
+ * it directly - it's plain java.security, no Robolectric/instrumented runtime needed.
  */
-private fun constantTimeEquals(a: String, b: String): Boolean =
+internal fun constantTimeEquals(a: String, b: String): Boolean =
     MessageDigest.isEqual(a.toByteArray(Charsets.UTF_8), b.toByteArray(Charsets.UTF_8))
+
+/** Same contract as [BufferedReader.readLine] - null at end of stream, otherwise the next line
+ *  with its terminator stripped - except a line longer than [maxChars] throws instead of growing
+ *  an internal buffer without limit; the caller (an unauthenticated socket, in the worst case)
+ *  controls how much gets sent before a newline ever arrives (MCP-3). Top-level and `internal`,
+ *  not a private member of McpServerService, specifically so McpServerServiceTest can construct
+ *  a plain `BufferedReader(StringReader(...))` and exercise it without any Android/Service
+ *  runtime at all. */
+internal fun BufferedReader.readLineBounded(maxChars: Int): String? {
+    val sb = StringBuilder()
+    while (true) {
+        val c = read()
+        if (c == -1) return if (sb.isEmpty()) null else sb.toString()
+        if (c == '\n'.code) return sb.toString()
+        if (c != '\r'.code) sb.append(c.toChar())
+        if (sb.length > maxChars) throw java.io.IOException("line exceeds $maxChars chars")
+    }
+}
 
 private const val PREFS_NAME = "hg2gui_mcp_prefs"
 private const val PREF_SHELL_EXEC_ENABLED = "shell_exec_enabled"
@@ -240,21 +259,6 @@ class McpServerService : Service() {
                 writer.write("\n")
                 writer.flush()
             }
-        }
-    }
-
-    /** Same contract as [BufferedReader.readLine] - null at end of stream, otherwise the next
-     *  line with its terminator stripped - except a line longer than [maxChars] throws instead of
-     *  growing an internal buffer without limit; the caller (an unauthenticated socket, in the
-     *  worst case) controls how much gets sent before a newline ever arrives. */
-    private fun BufferedReader.readLineBounded(maxChars: Int): String? {
-        val sb = StringBuilder()
-        while (true) {
-            val c = read()
-            if (c == -1) return if (sb.isEmpty()) null else sb.toString()
-            if (c == '\n'.code) return sb.toString()
-            if (c != '\r'.code) sb.append(c.toChar())
-            if (sb.length > maxChars) throw java.io.IOException("line exceeds $maxChars chars")
         }
     }
 

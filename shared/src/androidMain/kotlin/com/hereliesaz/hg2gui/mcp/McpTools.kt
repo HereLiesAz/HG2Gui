@@ -203,7 +203,7 @@ class McpTools(
     override suspend fun callTool(name: String, arguments: JsonObject?): ToolCallResult {
         val tool = allTools.firstOrNull { it.name == name }
             ?: return ToolCallResult.Failure(McpJsonRpc.METHOD_NOT_FOUND, "Unknown tool: $name")
-        if (name.startsWith("shell.") && !shellExecEnabled.value) {
+        if (isShellToolGated(name, shellExecEnabled.value)) {
             return ToolCallResult.Failure(McpJsonRpc.SHELL_EXEC_DISABLED, "Shell execution is disabled")
         }
         return tool.handler(arguments)
