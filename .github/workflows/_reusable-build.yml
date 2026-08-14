@@ -118,8 +118,8 @@ jobs:
             -Pandroid.injected.signing.key.password=$KEY_PASSWORD
 
       - name: Commit and push version bump
-        if: success() && github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
-        run: ./gradlew incrementAndPushVersion -PtargetBranch=${{ github.ref_name }}
+        if: success() && github.event_name == 'push'
+        run: ./gradlew incrementAndPushVersion
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v7

@@ -72,7 +72,10 @@ tasks.register("printVersionEnv") {
 tasks.register("incrementAndPushVersion") {
     doLast {
         val versionFile = rootProject.file("version.properties")
-        val branch = project.findProperty("targetBranch")?.toString() ?: "master"
+        // Auto-detect branch from Environment if not provided via -PtargetBranch
+        val branch = project.findProperty("targetBranch")?.toString()
+            ?: System.getenv("GITHUB_REF_NAME")
+            ?: "master"
         val customMessage = project.findProperty("commitMessage")?.toString()
         
         fun git(vararg args: String) {
@@ -89,6 +92,7 @@ tasks.register("incrementAndPushVersion") {
         for (attempt in 1..maxAttempts) {
             try {
                 git("fetch", "origin", branch, "--quiet")
+                // Synchronize version.properties with origin to handle concurrent builds
                 git("checkout", "origin/$branch", "--", "version.properties")
                 
                 val props = Properties()
@@ -109,12 +113,12 @@ tasks.register("incrementAndPushVersion") {
                 val message = customMessage ?: "chore: bump version to $patch.$build [skip ci]"
                 git("commit", "-m", message)
                 git("push", "origin", "HEAD:$branch")
-                println("Successfully pushed version bump: patch=$patch, build=$build")
+                println("Successfully pushed version bump: patch=$patch, build=$build to branch $branch")
                 break
             } catch (e: Exception) {
                 if (attempt == maxAttempts) throw e
-                println("Push attempt $attempt failed - retrying. Error: ${e.message}")
-                Thread.sleep((attempt * 2000).toLong())
+                println("Push attempt $attempt failed (likely a concurrent push) - retrying in 2s... Error: ${e.message}")
+                Thread.sleep(2000)
             }
         }
     }
