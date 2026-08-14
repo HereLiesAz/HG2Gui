@@ -31,10 +31,49 @@ val autoIncrementVersion = tasks.register("autoIncrementVersion") {
     }
 }
 
+/**
+ * Prints the anticipated version information (current + 1) to GITHUB_ENV if available,
+ * or simply to stdout. This ensures CI workflows use the same version numbers as the build.
+ */
+tasks.register("printVersionEnv") {
+    doLast {
+        val versionFile = rootProject.file("version.properties")
+        if (versionFile.exists()) {
+            val props = Properties()
+            versionFile.inputStream().use { props.load(it) }
+
+            val major = props.getProperty("versionMajor", "0")
+            val minor = props.getProperty("versionMinor", "0")
+            val patch = (props.getProperty("versionPatch")?.toInt() ?: 0) + 1
+            val build = (props.getProperty("versionBuild")?.toInt() ?: 0) + 1
+            val versionName = "$major.$minor.$patch.$build"
+
+            val githubEnv = System.getenv("GITHUB_ENV")
+            if (githubEnv != null) {
+                File(githubEnv).appendText(
+                    """
+                    VERSION_MAJOR=$major
+                    VERSION_MINOR=$minor
+                    VERSION_PATCH=$patch
+                    VERSION_BUILD=$build
+                    VERSION_NAME=$versionName
+                    """.trimIndent() + "\n"
+                )
+            }
+            println("VERSION_MAJOR=$major")
+            println("VERSION_MINOR=$minor")
+            println("VERSION_PATCH=$patch")
+            println("VERSION_BUILD=$build")
+            println("VERSION_NAME=$versionName")
+        }
+    }
+}
+
 tasks.register("incrementAndPushVersion") {
     doLast {
         val versionFile = rootProject.file("version.properties")
         val branch = project.findProperty("targetBranch")?.toString() ?: "master"
+        val customMessage = project.findProperty("commitMessage")?.toString()
         
         fun git(vararg args: String) {
             val process = ProcessBuilder(listOf("git") + args)
@@ -50,7 +89,6 @@ tasks.register("incrementAndPushVersion") {
         for (attempt in 1..maxAttempts) {
             try {
                 git("fetch", "origin", branch, "--quiet")
-                // Only reset the version file to avoid losing build artifacts if this is run after build
                 git("checkout", "origin/$branch", "--", "version.properties")
                 
                 val props = Properties()
@@ -68,7 +106,8 @@ tasks.register("incrementAndPushVersion") {
                 git("config", "user.name", "github-actions[bot]")
                 git("config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com")
                 git("add", "version.properties")
-                git("commit", "-m", "chore: bump version to $patch.$build [skip ci]")
+                val message = customMessage ?: "chore: bump version to $patch.$build [skip ci]"
+                git("commit", "-m", message)
                 git("push", "origin", "HEAD:$branch")
                 println("Successfully pushed version bump: patch=$patch, build=$build")
                 break
@@ -87,6 +126,7 @@ subprojects {
         if ((taskName.contains("compile") || taskName.contains("assemble") || taskName.contains("bundle") || taskName.contains("kapt"))
             && name != "autoIncrementVersion"
             && name != "incrementAndPushVersion"
+            && name != "printVersionEnv"
         ) {
             dependsOn(autoIncrementVersion)
         }

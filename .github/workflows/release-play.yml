@@ -145,7 +145,7 @@ jobs:
       #   401 -> bad/blocked credentials
       #   403 -> service account lacks permission, or the Play Developer API
       #          isn't enabled for its project
-      #   404 -> app/package not found, i.e. no manual first release exists yet
+      #   404 -> app/package not found, i.e. no manual first release exists yet,
       # It also reads back the highest versionCode Play holds, which is the
       # number the next step needs.
       - name: Preflight Google Play API access
@@ -192,46 +192,26 @@ jobs:
           echo "PLAY_MAX_VERSION_CODE=$play_max" >> "$GITHUB_ENV"
           echo "Play API access OK — proceeding to build."
 
-      # The actual increment lives in composeApp/build.gradle.kts's incrementVersionBuild task,
-      # not here - this step's only job is invoking it with what only CI knows (Play's current
-      # max) before bundleRelease ever runs, so version.properties is already bumped AND already
-      # pushed to master by the time compilation starts; the versionCode gets "solidified" into
-      # the AAB from a file that's already final, not one a later shell step reverse-engineers.
-      # strict mode omits playMaxVersionCode (defaults to 0 inside the task), so the task fails
-      # outright - nothing written, nothing pushed, nothing built - if the committed number alone
-      # wouldn't already clear Play.
-      - name: Increment and push versionBuild
+      # The actual increment lives in the root build.gradle.kts's incrementAndPushVersion task.
+      # This step's only job is invoking it with what only CI knows (Play's current
+      # max) before bundleRelease ever runs.
+      - name: Increment and push version
         if: ${{ inputs.publish }}
         run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           if [ "${{ inputs.version_code_mode }}" = "strict" ]; then
-            ./gradlew -q :composeApp:incrementVersionBuild -PversionCodeMode=strict
+            ./gradlew -q incrementAndPushVersion -PversionCodeMode=strict
           else
-            ./gradlew -q :composeApp:incrementVersionBuild -PversionCodeMode=auto -PplayMaxVersionCode="${PLAY_MAX_VERSION_CODE:-0}"
+            ./gradlew -q incrementAndPushVersion -PversionCodeMode=auto -PplayMaxVersionCode="${PLAY_MAX_VERSION_CODE:-0}"
           fi
 
       - name: Build signed release bundle
         env:
-          # Unprefixed: composeApp/build.gradle.kts reads these exact names
-          # (System.getenv("KEYSTORE_FILE") etc.) to build the release
-          # signingConfig. A prefix mismatch here means hasReleaseSigningEnv
-          # is always false, no signingConfig ever gets attached to the
-          # release build type, and REQUIRE_SIGNING's own guard never fires
-          # either (it reads the same unset name) - the build would silently
-          # produce an unsigned bundle instead of failing loudly.
           KEYSTORE_FILE: ${{ steps.keystore.outputs.keystore-path }}
           KEYSTORE_TYPE: ${{ steps.keystore.outputs.store-type }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-          # Play rejects an unsigned bundle anyway; fail here with a clear
-          # message instead of at upload time with an opaque one.
           REQUIRE_SIGNING: 'true'
-        # Aggregate task name - resolves to bundlePlaystoreRelease under the hood, since
-        # `playstore` is the only product flavor. Its actual output lands in a
-        # flavor-named subdirectory (outputs/bundle/playstoreRelease/), not outputs/bundle/release/.
         run: ./gradlew bundleRelease
 
       - name: Verify the bundle is signed by the expected key
@@ -247,20 +227,8 @@ jobs:
           artifact: ${{ env.AAB_PATH }}
           expected-sha256: ${{ steps.keystore.outputs.sha256 }}
 
-      # Read AFTER "Increment and push versionBuild" (which already bumped version.properties,
-      # before the build even started) and the build itself, so this matches the .aab's actual
-      # versionName/versionCode. Same marker-grep pattern as "Read application id" - Gradle/AGP
-      # can print other lines to stdout on a given invocation, so the command's whole output
-      # isn't trusted.
       - name: Get app version
-        run: |
-          set -euo pipefail
-          name=$(./gradlew -q :composeApp:printVersionName | grep '^VERSION_NAME=' | tail -n1 | cut -d= -f2-)
-          code=$(./gradlew -q :composeApp:printVersionCode | grep '^VERSION_CODE=' | tail -n1 | cut -d= -f2-)
-          [ -n "$name" ] || { echo "::error::printVersionName produced no VERSION_NAME= line."; exit 1; }
-          [ -n "$code" ] || { echo "::error::printVersionCode produced no VERSION_CODE= line."; exit 1; }
-          echo "VERSION_NAME=$name" >> "$GITHUB_ENV"
-          echo "VERSION_CODE=$code" >> "$GITHUB_ENV"
+        run: ./gradlew -q printVersionEnv
 
       # The pre-build check used the committed versionBuild; this one uses what was
       # actually built. Belt and braces, because the cost of getting it wrong is

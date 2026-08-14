@@ -11,277 +11,36 @@ on:
       - 'version.properties'
   workflow_dispatch:
 
-# ⚡ Concurrency: Cancels the entire job if a new push comes in.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  build-and-release:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      issues: write
-      pull-requests: write
-      checks: read
+  android-debug:
+    uses: ./.github/workflows/_reusable-build.yml
+    with:
+      gradle_task: assembleDebug
+      artifact_name: android-debug-apk
+      artifact_path_pattern: "composeApp/build/outputs/apk/fdroid/*.apk"
+      release_tag_prefix: "latest-debug"
+      publish_to_release: true
+      signing_enabled: true
+      inject_google_services: true
+    secrets:
+      KEYSTORE_RAW: ${{ secrets.KEYSTORE_RAW }}
+      KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+      KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+      KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+      GOOGLE_SERVICES_API_KEY: ${{ secrets.GOOGLE_SERVICES_API_KEY }}
+      PROJECT_ID: ${{ secrets.PROJECT_ID }}
+      CLIENT_ID: ${{ secrets.CLIENT_ID }}
+      ARCORE_API_KEY: ${{ secrets.ARCORE_API_KEY }}
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-        with:
-          node-version: 26
-          fetch-depth: 0
-
-
-
-      - name: Inject Google Services
-        env:
-          GOOGLE_SERVICES_API_KEY: ${{ secrets.GOOGLE_SERVICES_API_KEY }}
-          PROJECT_ID: ${{ secrets.PROJECT_ID }}
-          CLIENT_ID: ${{ secrets.CLIENT_ID }}
-          ARCORE_API_KEY: ${{ secrets.ARCORE_API_KEY }}
-        run: |
-          if [ -f "composeApp/google-services.json.template" ]; then
-            echo "Template found. Injecting secrets..."
-            sed -e 's/{{\([^}]*\)}}/${\1}/g' composeApp/google-services.json.template | envsubst > composeApp/google-services.json
-          else
-            echo "Warning: google-services.json.template not found. Skipping injection."
-          fi
-
-          # Inject ARCore API Key into local.properties for build.gradle.kts to pick up
-          echo "ARCORE_API_KEY=$ARCORE_API_KEY" >> local.properties
-
-      # Was a bare `echo "$KEYSTORE_RAW" | base64 --decode > composeApp/keystore.jks`. Any
-      # whitespace irregularity in how the secret was stored (a trailing newline, embedded
-      # \r from a Windows-authored copy, etc.) survives that pipeline and corrupts the
-      # decoded bytes just enough that keytool can still open the file but chokes deep in
-      # ASN.1 parsing with "Tag number over 30 is not supported" — the failure this
-      # replaced. The composite action strips whitespace before decoding, verifies the
-      # result against KEY_ALIAS before the build ever starts, and fails with a clear
-      # message instead of a cryptic BouncyCastle error from inside packageDebug.
-      - name: Prepare Android Keystore
-        id: keystore
-        uses: ./.github/actions/android-keystore
-        with:
-          keystore-raw: ${{ secrets.KEYSTORE_RAW }}
-          keystore-password: ${{ secrets.KEYSTORE_PASSWORD }}
-          key-alias: ${{ secrets.KEY_ALIAS }}
-          key-password: ${{ secrets.KEY_PASSWORD }}
-
-      # Must match sourceCompatibility/targetCompatibility in composeApp/build.gradle.kts. On 17 the
-      # build fails with "invalid source release: 21" before compiling a single file.
-      - name: Set up JDK 21
-        uses: actions/setup-java@v5
-        with:
-          java-version: '21'
-          distribution: 'temurin'
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v6
-        with:
-          cache-read-only: false
-
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
-
-      # Computed before the build so the same numbers reach both the APK and the release
-      # filename. This used to be worked out after the build, in the release step, which meant
-      # the version the workflow advertised was never the version compiled into the APK.
-      - name: Compute Version
-        run: |
-          MAJOR=$(grep 'versionMajor=' version.properties | cut -d'=' -f2)
-          MINOR=$(grep 'versionMinor=' version.properties | cut -d'=' -f2)
-          PATCH=$(($(grep 'versionPatch=' version.properties | cut -d'=' -f2) + 1))
-          BUILD_NUMBER=$(($(grep 'versionBuild=' version.properties | cut -d'=' -f2) + 1))
-
-          VERSION_NAME="$MAJOR.$MINOR.$PATCH.$BUILD_NUMBER"
-
-          {
-            echo "BUILD_NUMBER=$BUILD_NUMBER"
-            echo "VERSION_NAME=$VERSION_NAME"
-            echo "TAG_NAME=latest-debug-v${MAJOR}.${MINOR}"
-          } >> "$GITHUB_ENV"
-
-          echo "versionName=$VERSION_NAME versionCode=$BUILD_NUMBER"
-
-      - name: Build with Gradle
-        id: gradle-build
-        env:
-          KEYSTORE_PATH: ${{ steps.keystore.outputs.keystore-path }}
-          KEYSTORE_STORE_TYPE: ${{ steps.keystore.outputs.store-type }}
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: |
-          set +e
-
-          # Build the APK. versionName/versionBuild come from the Compute Version step, so the
-          # APK reports exactly what the release filename claims.
-          ./gradlew assembleDebug -PversionBuild=$BUILD_NUMBER -PversionName=$VERSION_NAME --build-cache \
-            -Pandroid.injected.signing.store.file=$KEYSTORE_PATH \
-            -Pandroid.injected.signing.store.type=$KEYSTORE_STORE_TYPE \
-            -Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD \
-            -Pandroid.injected.signing.key.alias=$KEY_ALIAS \
-            -Pandroid.injected.signing.key.password=$KEY_PASSWORD > build.log 2>&1
-          
-          EXIT_CODE=$?
-          echo "exit_code=$EXIT_CODE" >> $GITHUB_OUTPUT
-          cat build.log
-          exit $EXIT_CODE
-
-      - name: Commit and push version bump
-        if: success() && github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
-        run: ./gradlew incrementAndPushVersion -PtargetBranch=${{ github.ref_name }}
-
-      # ------------------------------------------------------------------
-      # FAILURE HANDLING
-      # ------------------------------------------------------------------
-      - name: Report Failure to Jules
-        if: failure() && steps.gradle-build.outcome == 'failure'
-        uses: actions/github-script@v9
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const fs = require('fs');
-            let logTail = 'Log file not found.';
-            try { logTail = fs.readFileSync('build.log', 'utf8').slice(-4000); } catch (e) {}
-            
-            const assignee = 'gemini-code-assist';
-            
-            try {
-              await github.rest.issues.create({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                title: `Build Failure on ${context.eventName === 'pull_request' ? 'PR #' + context.issue.number : context.ref}`,
-                body: `@${assignee} /jules debug this build error\n\n**Log:**\n\`\`\`\n${logTail}\n\`\`\``,
-                labels: ['jules', 'bug'],
-                assignees: [assignee]
-              });
-            } catch (error) {
-              console.log("Failed to create issue with assignee. Retrying without assignee.");
-              await github.rest.issues.create({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                title: `Build Failure on ${context.eventName === 'pull_request' ? 'PR #' + context.issue.number : context.ref}`,
-                body: `@${assignee} /jules debug this build error\n\n**Log:**\n\`\`\`\n${logTail}\n\`\`\``,
-                labels: ['jules', 'bug']
-              });
-            }
-
-      # ------------------------------------------------------------------
-      # RELEASE STEPS
-      #
-      # Default branch only. These steps force-push a single shared tag
-      # (latest-debug-v<major>.<minor>), and the concurrency group above is keyed on
-      # github.ref — so runs for two different branches are in different groups and execute
-      # at the same time. When both reached the tag push, the loser failed with
-      # "cannot lock ref ... is at X but expected Y".
-      #
-      # Restricting releases to the default branch means only one ref ever writes the tag,
-      # and back-to-back pushes to it serialise through the shared concurrency group.
-      # Branch pushes still build; they just no longer publish.
-      # ------------------------------------------------------------------
-      - name: Prepare Release Variables
-        if: success() && github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
-        id: release_vars
-        run: |
-          # VERSION_NAME and TAG_NAME come from the Compute Version step, which ran before the
-          # build. Recomputing them here would risk advertising a version the APK doesn't carry.
-
-          # Dynamic App Name from settings.gradle
-          if [ -f "settings.gradle.kts" ]; then
-             APP_NAME=$(grep 'rootProject.name' settings.gradle.kts | sed -E "s/.*=.*[\"'](.*)[\"']/\1/")
-          elif [ -f "settings.gradle" ]; then
-             APP_NAME=$(grep 'rootProject.name' settings.gradle | sed -E "s/.*=.*[\"'](.*)[\"']/\1/")
-          else
-             APP_NAME="App"
-          fi
-          
-          # Locate built APK. assembleDebug produces one per flavour, so pick deliberately
-          # rather than taking whatever find returns first — that made the released flavour
-          # arbitrary from run to run. fdroid is the sideload build.
-          APK_ORIGINAL=$(find composeApp/build/outputs/apk/fdroid -type f -name "*.apk" | sort | head -n 1)
-
-          if [ -z "$APK_ORIGINAL" ]; then
-             echo "No fdroid APK found; falling back to any flavour."
-             APK_ORIGINAL=$(find composeApp/build/outputs/apk -type f -name "*.apk" | sort | head -n 1)
-          fi
-
-          if [ -z "$APK_ORIGINAL" ]; then
-             echo "Error: No APK found to release!"
-             exit 1
-          fi
-
-          TARGET_NAME="${APP_NAME}-${VERSION_NAME}-debug.apk"
-          
-          # Rename for release
-          mv "$APK_ORIGINAL" "$TARGET_NAME"
-          
-          echo "APK_FILE=$TARGET_NAME" >> $GITHUB_ENV
-          
-          # Package Build Tools (Optional)
-          mkdir -p build_tools_package/tools build_tools_package/native
-          [ -d "composeApp/src/androidMain/assets/tools" ] && cp -r composeApp/src/androidMain/assets/tools/* build_tools_package/tools/ || true
-          [ -d "composeApp/src/androidMain/jniLibs/arm64-v8a" ] && cp -r composeApp/src/androidMain/jniLibs/arm64-v8a/* build_tools_package/native/ || true
-          cd build_tools_package && zip -r ../build-tools.zip . && cd ..
-
-      - name: Publish Release
-        if: success() && github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          # Move the rolling tag to this commit. Refresh local tags first: the checkout's
-          # copy can already be stale, and pushing from a stale ref is what produced
-          # "cannot lock ref ... but expected <old sha>".
-          git fetch origin --tags --force --quiet
-          git tag -fa "$TAG_NAME" -m "Latest Debug Build"
-          git push origin "refs/tags/$TAG_NAME" --force
-
-          BUILD_TOOLS="build-tools.zip"
-
-          if gh release view "$TAG_NAME" > /dev/null 2>&1; then
-             echo "Updating existing release..."
-
-             # Every build names its APK after the commit count, so --clobber never matched
-             # the previous asset and they accumulated — the release had grown to seven APKs
-             # with no obvious one to download. This is a rolling "latest" prerelease, so drop
-             # the old binaries and keep only what this run produced.
-             #
-             # Collected into a variable rather than piped through grep: under pipefail a
-             # grep that matches nothing (an empty release) would fail the whole step.
-             OLD_ASSETS=$(gh release view "$TAG_NAME" --json assets --jq '.assets[].name' || true)
-             for OLD_ASSET in $OLD_ASSETS; do
-               case "$OLD_ASSET" in
-                 *.apk|*.zip)
-                   echo "Removing stale asset: $OLD_ASSET"
-                   gh release delete-asset "$TAG_NAME" "$OLD_ASSET" -y || true
-                   ;;
-               esac
-             done
-
-             gh release edit "$TAG_NAME" --prerelease \
-               --title "Latest Debug Build ($TAG_NAME)" \
-               --notes "Auto-build from commit $GITHUB_SHA" \
-               --target "$GITHUB_SHA"
-
-             gh release upload "$TAG_NAME" "$APK_FILE" --clobber
-             if [ -f "$BUILD_TOOLS" ]; then
-               gh release upload "$TAG_NAME" "$BUILD_TOOLS" --clobber
-             fi
-          else
-             echo "Creating new release..."
-             gh release create "$TAG_NAME" "$APK_FILE" --prerelease \
-               --title "Latest Debug Build ($TAG_NAME)" \
-               --notes "Auto-build from commit $GITHUB_SHA" \
-               --target "$GITHUB_SHA"
-             if [ -f "$BUILD_TOOLS" ]; then
-               gh release upload "$TAG_NAME" "$BUILD_TOOLS" --clobber
-             fi
-          fi
-
-          echo "Published $APK_FILE to $TAG_NAME"
+  # Future Desktop build can be added here easily:
+  # desktop-build:
+  #   uses: ./.github/workflows/_reusable-build.yml
+  #   with:
+  #     gradle_task: package
+  #     artifact_name: desktop-app
+  #     artifact_path_pattern: "composeApp/build/outputs/desktop/*.jar"
+  #     ...
