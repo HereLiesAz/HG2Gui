@@ -89,8 +89,8 @@ kotlin {
             implementation(libs.androidx.biometric)
             implementation(libs.anthropic.java)
             // localbroadcastmanager is legacy, but keeping for now
-            implementation("androidx.localbroadcastmanager:localbroadcastmanager:1.1.0")
-            implementation("com.google.android.material:material:1.14.0")
+            implementation(libs.androidx.localbroadcastmanager)
+            implementation(libs.material)
 
             implementation(project(":terminal-emulator"))
             implementation(project(":termux-shared"))
@@ -172,9 +172,9 @@ android {
 }
 
 dependencies {
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
+    coreLibraryDesugaring(libs.desugar.jdk.libs)
     debugImplementation(compose.uiTooling)
-    implementation("com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava")
+    implementation(libs.listenablefuture)
 }
 
 // Read by release-play.yml's "Read application id" step (./gradlew -q :composeApp:printApplicationId)
