@@ -1,100 +1,39 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
-apply plugin: 'com.android.library'
-apply plugin: 'org.jetbrains.kotlin.android'
-// 
-apply plugin: 'maven-publish'
+﻿plugins {
+    alias(libs.plugins.androidLibrary)
+    alias(libs.plugins.kotlinAndroid)
+}
 
 android {
-    namespace = "com.termux.shared"
-
+    namespace 'com.termux.shared'
     compileSdk 37
-    ndkVersion '29.0.14206865'
-
-    dependencies {
-        implementation libs.androidx.appcompat
-        implementation libs.androidx.annotation
-        implementation libs.androidx.core
-        implementation libs.material
-        implementation libs.guava
-        implementation libs.core
-        implementation libs.ext.strikethrough
-        implementation libs.linkify
-        implementation libs.recycler
-
-        implementation libs.androidx.window
-
-        // Do not increment version higher than 2.5 or there
-        // will be runtime exceptions on android < 8
-        // due to missing classes like java.nio.file.Path.
-        implementation libs.commons.io
-
-        api project(":terminal-emulator")
-
-        implementation libs.termux.am.library
-    }
 
     defaultConfig {
-        minSdkVersion 24
-        targetSdkVersion 37
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-        externalNativeBuild {
-            ndkBuild {
-                cppFlags ''
-            }
-        }
+        minSdk 24
     }
 
-    buildTypes {
-        release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-        }
-    }
-
-    compileOptions {
-        // Flag to enable support for the new language APIs
-        coreLibraryDesugaringEnabled true
-
-        sourceCompatibility JavaVersion.VERSION_21
-        targetCompatibility JavaVersion.VERSION_21
+    androidResources {
+        enable = true
     }
 
     externalNativeBuild {
         ndkBuild {
-            path file('src/main/cpp/Android.mk')
+            path 'src/main/cpp/Android.mk'
         }
     }
-
-    publishing {
-        multipleVariants {
-            withSourcesJar()
-            withJavadocJar()
-            allVariants()
-        }
-    }
-    buildToolsVersion '37.0.0'
 }
 
 dependencies {
-    testImplementation libs.junit
-    androidTestImplementation libs.androidx.junit
-    coreLibraryDesugaring libs.desugar.jdk.libs
+    implementation libs.androidx.appcompat
+    implementation libs.androidx.annotation
+    implementation libs.androidx.core
+    implementation libs.material
+    implementation libs.guava
+    implementation libs.core
+    implementation libs.ext.strikethrough
+    implementation libs.linkify
+    implementation libs.recycler
+    implementation libs.androidx.window
+    implementation libs.commons.io
+    api project(':terminal-emulator')
+    implementation libs.termux.am.library
 }
-
-tasks.register('sourceJar', Jar) {
-    from android.sourceSets.main.java.srcDirs
-    archiveClassifier = "sources"
-}
-
-// removed publishing
-
-kotlin {
-    compilerOptions {
-        jvmTarget = JvmTarget.JVM_21
-    }
-}
-
-
-
-

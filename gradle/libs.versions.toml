@@ -1,4 +1,4 @@
-[versions]
+﻿[versions]
 agp = "9.3.1"
 annotation = "1.10.0"
 appcompat = "1.6.1"
