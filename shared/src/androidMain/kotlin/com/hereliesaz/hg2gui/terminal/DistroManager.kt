@@ -99,6 +99,12 @@ object DistroManager {
 
             emit("Bootstrap successful! You can now use 'apt', 'pkg', and real coreutils.")
         } catch (e: Exception) {
+            // UX-6: isInstalled() is existence-only (prefix/ and prefix/bin/ both exist) - and
+            // extractBootstrap() creates prefix/bin/ the moment its first file lands, long before
+            // the archive finishes. A failure partway through (storage full, backgrounded,
+            // corrupted archive) used to leave exactly that directory behind: "installed" forever,
+            // with no retry, same as AzpInstaller already rolls back a partial install to avoid.
+            prefixDir(context).deleteRecursively()
             emit("Error during bootstrap: ${e.message}")
             Utils.log(e)
         } finally {
@@ -346,7 +352,7 @@ fi
 
 echo
 if [ "${'$'}warn" -eq 0 ]; then
-  echo "All checks passed."
+  echo "No obvious issues found."
 else
   echo "Some checks need attention - see [warn] lines above."
 fi

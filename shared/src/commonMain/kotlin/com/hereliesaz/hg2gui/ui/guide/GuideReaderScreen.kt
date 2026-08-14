@@ -8,6 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -252,7 +253,13 @@ private fun ColumnScope.GuideEntryReader(
         // Entries now run long enough (multi-paragraph blurbs, an optional animation-candidate
         // scene, an optional trailing editorial note) that the fixed header above and the
         // PREV/NEXT row below stay put while only this middle stretch scrolls.
-        Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+        // GD-1: keyed on wipeKey (bumped on every Prev/Next/Replay) rather than the unkeyed
+        // rememberScrollState() this used to be - the composable's own call site never changes
+        // between entries, so an unkeyed ScrollState carried its offset over into whatever
+        // showed up next, landing a short entry on its own footer if the last one ended scrolled
+        // down.
+        val scrollState = remember(wipeKey) { ScrollState(0) }
+        Column(Modifier.weight(1f).verticalScroll(scrollState)) {
             WipeItem(seq++, wipeKey, wide = true, modifier = Modifier.padding(top = 16.dp)) {
                 Text(
                     entry.blurb,
