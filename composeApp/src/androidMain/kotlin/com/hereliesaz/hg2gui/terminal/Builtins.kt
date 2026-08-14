@@ -28,7 +28,7 @@ import java.io.File
 /**
  * The fixed set of commands the real Termux shell has no path to: Android system toggles
  * (there is no shell binary for airplane mode), the sandboxed VFS, and the in-app editor.
- * Dispatched by verb, no reflection - there are exactly these ten, by design, not by convention.
+ * Dispatched by verb, no reflection - there are exactly these eleven, by design, not by convention.
  */
 object Builtins {
 

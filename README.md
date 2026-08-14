@@ -20,8 +20,8 @@ Inspired by the *Hitchhiker's Guide to the Galaxy* (2005) aesthetic and built on
     needed. Hyphenated command families (`apt-get`, `apt-key`, `apt-mark`, …) nest under one
     shared parent pill instead of cluttering the list as unrelated flat entries.
 *   **A graphical file picker.** Any command that takes a file argument gets a `file…` pill that
-    browses the real filesystem through the same pill stack — no separate screen, no typing a
-    path by hand.
+    opens a graphical Select File/Folder screen from the settled pill crumb — no typing a path by
+    hand.
 *   **Interactive prompts, answered graphically.** A command that stops mid-run to ask a
     yes/no question gets a dedicated **Answer** stack (`YES`/`NO`) instead of leaving you to
     type a blind reply; anything else falls back to the input field, whose Run button becomes
@@ -38,9 +38,10 @@ Inspired by the *Hitchhiker's Guide to the Galaxy* (2005) aesthetic and built on
 *   **Sessions.** Named terminal sessions, each with its own scrollback and working directory.
 *   **Aliases.** Native shell aliases plus `ShellAliases.kt`'s own suggestion pills — no
     duplicate alias system layered on top of the real shell's.
-*   **A real file manager.** Search, sort, multi-select batch actions, in-place rename, an
-    automatic media grid, and a storage-by-type breakdown over the `vfs` sandbox — folders are
-    capsules that expand in place, siblings squishing into thin coloured rods beside them.
+*   **A real file manager.** Search, sort, kind/hidden/recency filters, multi-select batch actions,
+    in-place rename, an automatic media grid, and a storage-by-type breakdown over the `vfs`
+    sandbox — folders are capsules that expand in place, siblings squishing into thin coloured
+    rods beside them.
 *   **The Guide.** A chaptered glossary of real commands paired with invented, Hitchhiker's-
     Guide-style definitions, reachable from the command picker — reading material, not another
     way to run something.
@@ -55,7 +56,7 @@ cascades its children upward from it. Output arrives in a record tile, not a scr
 ## Project structure
 
 Kotlin Multiplatform (Compose) for the UI and execution layer. There is no separate command
-framework: the ten built-ins are a fixed dispatch table (`terminal/Builtins.kt`), not a
+framework: the eleven built-ins are a fixed dispatch table (`terminal/Builtins.kt`), not a
 reflection-discovered plugin system.
 
 *   `composeApp/src/commonMain/kotlin/com/hereliesaz/hg2gui/`
@@ -78,13 +79,13 @@ reflection-discovered plugin system.
     *   `terminal/` — execution. `ShellSession.kt` (the `actual` implementation: a long-lived
         shell framed by a sentinel that reports exit status and working directory, with
         idle-based detection of a stalled interactive prompt), `TerminalEngine.kt` (routes a
-        line to a built-in, the bootstrap installer, or the shell), `Builtins.kt` (the ten
+        line to a built-in, the bootstrap installer, or the shell), `Builtins.kt` (the eleven
         built-ins: system toggles, `call`/`contacts`, `vfs`, `calc`, `edit`), `DistroManager.kt`
         (downloads and extracts the real Termux bootstrap), `DpkgCatalog.kt` (reads dpkg's own
         bookkeeping for which package owns a given binary — Termux's packages carry no Debian
         Section field to read a category from directly, so `CommandTree`'s own hand-curated map
         turns package into category).
-    *   `ui/menu/CommandTree.kt` — builds the tree: the ten built-ins into System / Apps & nav /
+    *   `ui/menu/CommandTree.kt` — builds the tree: the eleven built-ins into Device / Apps & nav /
         Features, real PATH binaries by category (Package management, Network, Development, …)
         with hyphenated command families (`apt-get`/`apt-key`/…) nested under their shared
         parent.
@@ -95,10 +96,15 @@ reflection-discovered plugin system.
     *   `util/` — the handful of shared helpers (logging, crash reporting, the interactive-shell
         wrapper, `GenericFileProvider`) still in use.
 *   `composeApp/src/androidMain/res/` — resources. Jost lives in `res/font/`.
+*   `terminal-emulator/` — the headless VT100 parser used to normalize shell output. Shell
+    processes still use ordinary `ProcessBuilder` pipes, not a PTY.
+*   `termux-shared/` — the Android library shared with the app for Termux-compatible filesystem,
+    process, and terminal utilities; it depends on `terminal-emulator`.
 
 ## Build
 
-JDK 21, Gradle 8.13, AGP 8.13, Kotlin 2.2.20. `compileSdk`/`targetSdk` 37, `minSdk` 24.
+JDK 21, Gradle 9.7.0, AGP 9.3.1, Kotlin 2.4.10, Compose Multiplatform 1.11.1.
+`compileSdk`/`targetSdk` 37, `minSdk` 24.
 
 ```bash
 ./gradlew assembleDebug

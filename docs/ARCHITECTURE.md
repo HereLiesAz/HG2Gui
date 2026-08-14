@@ -1,5 +1,7 @@
 # Architecture
 
+**Current version:** 0.6.50.211
+
 HG2Gui is an Android **terminal application** — not a launcher. The UI and execution layer are
 Kotlin Multiplatform (Compose); there is no separate reflection-based command framework. Built-in
 commands are a fixed dispatch table in `terminal/Builtins.kt`.
@@ -33,10 +35,11 @@ The entry point.
     same rootfs zip archive the official Termux app installs, giving genuine `bash`, `apt`/
     `pkg`, and coreutils. Runs automatically on first launch (see `TerminalActivity`) and can
     also be triggered by hand via the `bootstrap` verb.
-*   `Builtins.kt` — the ten commands the real shell has no path to: `wifi`, `bluetooth`,
+*   `Builtins.kt` — the eleven commands the real shell has no path to: `wifi`, `bluetooth`,
     `airplane`, `flash`, `volume`, `brightness` (system toggles with no shell binary behind
     them), `call`/`contacts` (via `ContactManager`), `vfs` (the sandboxed filesystem, see below),
-    `calc` (via `util/CalculationEngine.kt`). A plain `fun run(context, line): String` dispatch
+    `calc` (via `util/CalculationEngine.kt`), and `edit` (the Compose editor). A plain
+    `fun run(context, line): String` dispatch
     on the verb — no interface, no reflection, no per-command class.
 *   `TerminalEngine.kt` — decides where a line runs: `bootstrap` streams from `DistroManager`,
     a verb in `Builtins.NAMES` goes to `Builtins.run` (a single synchronous result), anything
@@ -72,7 +75,7 @@ Compose. A screen is a function of state; there is no view-hierarchy manager cla
     that hand-off until the pick's own trail crumb has actually settled and reported its on-screen
     position (`onCrumbPositioned`) - for a wizard whose entrance animation needs to grow out from
     that exact spot, like the Select File/Folder pill.
-*   `ui/menu/CommandTree.kt` — builds the tree: the ten `Builtins` verbs (fixed lists, not
+*   `ui/menu/CommandTree.kt` — builds the tree: the eleven `Builtins` verbs (fixed lists, not
     discovered) into Device / Apps & nav / Features, and the shell's real PATH binaries into one
     root category per package category — `DpkgCatalog` reads which package owns a binary from
     dpkg's own bookkeeping, and a hand-curated map (Termux's packages carry no Debian Section
@@ -100,7 +103,8 @@ Compose. A screen is a function of state; there is no view-hierarchy manager cla
 *   `ui/editor/EditorScreen.kt` — the `edit` command's text editor: a plain Compose screen (Save/
     Back pills, a text field), hosted by `EditorActivity` so it's also a valid target for another
     app's VIEW/EDIT intent on a text file.
-*   `ui/files/FilesScreen.kt` — the graphical explorer over `VfsManager`'s sandbox.
+*   `ui/files/FilesScreen.kt` — the graphical explorer over `VfsManager`'s sandbox, with search,
+    sorting, kind/hidden/recency filters, batch actions, rename, media grid, and storage views.
 *   `Theme.kt` — Azphalt colour and type tokens.
 
 ## Package Structure (`com.hereliesaz.hg2gui`)
@@ -108,16 +112,64 @@ Compose. A screen is a function of state; there is no view-hierarchy manager cla
 *   **root**: `TerminalActivity`, `EditorActivity` — the only two activities.
 *   **`ui/`**: Compose UI and the pill menu, `ui/editor/`, `ui/files/`.
 *   **`managers/`**: `ContactManager` (contacts, backs `call`/`contacts`), `VfsManager` (a
-    sandboxed file layer rooted at `filesDir/vfs` — real files, but confined to the app's private
-    storage and never touched by the real shell), `flashlight/` (the torch implementation behind
-    `flash`).
-*   **`terminal/`**: `ShellSession`, `TerminalEngine`, `Builtins` (the ten built-in commands),
+    sandboxed file layer rooted at `filesDir/vfs`; normal operations stay confined to app-private
+    storage, while the explicit root-only `vfs mount` command can bind-mount it into the real
+    filesystem), `flashlight/` (the torch implementation behind `flash`).
+*   **`terminal/`**: `ShellSession`, `TerminalEngine`, `Builtins` (the eleven built-in commands),
     `DistroManager` (the Termux bootstrap installer), `DpkgCatalog` (reads dpkg's own bookkeeping
     for which package owns a binary — `CommandTree`'s hand-curated map turns that into a
     category).
 *   **`util/`**: `CalculationEngine` (the `calc` expression parser, `commonMain`), plus a handful
     of Android-only helpers still in use — logging/crash reporting, the interactive-shell wrapper
     `vfs mount` needs for `su`, `GenericFileProvider`.
+
+## Gradle Module Boundaries
+
+*   **`:composeApp`** — the Android application and Kotlin Multiplatform Compose UI, orchestration,
+    terminal routing, managers, and platform integrations.
+*   **`:terminal-emulator`** — a headless VT100 output parser. It does not provide a PTY; the shell
+    remains a `ProcessBuilder` process connected through ordinary streams.
+*   **`:termux-shared`** — reusable Termux-compatible Android utilities consumed by `:composeApp`;
+    depends on `:terminal-emulator`.
+
+## Product Subsystems
+
+*   **MCP:** an explicit-start, loopback-only JSON-RPC server. VFS tools are sandboxed; shell
+    execution is separately biometric-gated and uses a service-owned terminal engine.
+*   **Workflows and AI:** workflows expand reviewed command templates; AI produces command
+    suggestions and optional token explanations. Neither path executes a suggestion automatically.
+*   **Azphalt store:** package extraction is path-contained and signature-checked; every extracted
+    payload must be declared and match its declared SHA-256 digest. Skill text can augment AI
+    prompts. `script` packages can
+    resolve Termux dependencies and install a PATH wrapper; other package kinds remain stored data.
+*   **Context and Guide:** the OS-context tree offers static remote-OS reference commands, while
+    the Guide is reading material. Neither pretends to discover a remote machine.
+
+## Invariants
+
+1.  The app is a terminal, not a launcher: there is no `HOME` intent filter.
+2.  Built-ins are an explicit eleven-verb dispatch table; no reflection discovers commands.
+3.  `bootstrap` routes first, built-ins win command-name ties, and all other input reaches the shell.
+4.  Every terminal tab owns its engine, shell, UI state, history, scrollback, and working directory.
+5.  VFS operations resolve paths canonically beneath `filesDir/vfs`; shell access requires the
+    explicit, root-only `vfs mount` escape hatch.
+6.  Shell processes are persistent but have no PTY, job control, or full-screen cursor semantics.
+7.  Wizard- and AI-produced commands are assembled for review, never executed automatically.
+8.  MCP binds only to loopback; shell tools remain disabled until explicit biometric approval.
+9.  Azphalt extraction never writes outside its package directory; every extracted payload must be
+    declared and match its declared SHA-256 digest, and the package must pass signature policy.
+
+## Decisions and Reasons
+
+*   **Compose-only presentation:** separate editor and file surfaces replace cursor-addressed terminal
+    programs because the shell transport deliberately has no PTY.
+*   **Fixed built-ins:** only Android capabilities with no useful shell binary live in Kotlin, keeping
+    the real shell authoritative for everything else.
+*   **Per-session engines:** persistent shell state is useful, but leaking it between tabs is not.
+*   **Curated command categories:** Termux package metadata has no reliable Debian Section field, so
+    dpkg supplies ownership while a checked-in map supplies human-facing categories.
+*   **Review before execution:** graphical wizards and AI may assemble commands, but user intent is
+    established only when the user runs them.
 
 ## Data Flow
 

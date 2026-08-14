@@ -4,8 +4,8 @@
 HG2Gui is a touch-optimised terminal emulator for Android. It is **not a launcher** — there is
 no `category.HOME` filter, no launcher lifecycle behaviour, and no app drawer.
 
-The UI, execution layer, and the ten built-in commands are all Kotlin. There is no separate
-reflection-based command engine underneath it — built-ins are a fixed dispatch table.
+The UI, execution layer, and the eleven built-in commands are all Kotlin. There is no separate
+reflection-based command engine underneath it — eleven built-ins are a fixed dispatch table.
 
 ## Core Components
 
@@ -29,8 +29,8 @@ reflection-based command engine underneath it — built-ins are a fixed dispatch
 *   **Responsibility**: The tree's state machine (browsing, leaving, open) and its motion.
     Each pill is an `Animatable`; the choreography is specified in [DESIGN.md](DESIGN.md).
 
-### 4. `Builtins` (Kotlin, the ten commands the shell can't provide)
-*   **Role**: The fixed dispatch table for the ten built-in commands.
+### 4. `Builtins` (Kotlin, the eleven commands the shell can't provide)
+*   **Role**: The fixed dispatch table for the eleven built-in commands.
 *   **Responsibility**: `wifi`, `bluetooth`, `airplane`, `flash`, `volume`, `brightness` (system
     toggles Android exposes no shell path to), `call`/`contacts` (via `ContactManager`), `vfs`
     (the sandboxed filesystem), `calc` (via `util/CalculationEngine.kt`), `edit` (opens
@@ -57,7 +57,7 @@ reflection-based command engine underneath it — built-ins are a fixed dispatch
 
 ### 6. `CommandTree` (Kotlin, `androidMain`)
 *   **Role**: Turns the fixed `Builtins` list and the shell's own PATH into the menu.
-*   **Responsibility**: The ten built-ins group into Device / Apps & nav / Features from a fixed
+*   **Responsibility**: The eleven built-ins group into Device / Apps & nav / Features from a fixed
     list, with argument hints from a static map, per [COMMANDS.md](COMMANDS.md). "Device" (the
     hardware toggles: wifi/bluetooth/airplane/flash/volume/brightness) is deliberately not called
     "System" - a shell-discovered category is also named "System" (procps/tmux/htop/util-linux and
@@ -80,11 +80,13 @@ reflection-based command engine underneath it — built-ins are a fixed dispatch
     *and* its hyphenated siblings, not just the siblings). Before a bootstrap exists, Shell offers
     exactly one pill: `bootstrap`.
 *   **Overflow**: a category or a root stack can hold more pills than one screen's height at
-    `PillMenu.kt`'s `ROW_PITCH` - `rememberStackScroll` (in `PillMenu.kt`) tracks a plain drag
-    offset applied on top of every pill's own animated position, since the stack's absolute-
+    `PillMenu.kt`'s `ROW_PITCH` - `rememberStackScroll` tracks drag and decay-fling offsets, then
+    snaps to the nearest row. The offset is applied on top of every pill's animated position,
+    since the stack's absolute-
     `translationY` positioning can't use a stock `verticalScroll`/`LazyColumn` (Compose would size
     the scroll region to each pill's own viewport-sized Box, not to the stack's real extent). Used
-    for both the root stack and any `ChildBand`.
+    for both the root stack and any `ChildBand`. Dwelling on a newly scrolled-in navigational pill
+    for 550 ms advances into it; terminal leaves and wizard actions never fire from dwell.
 *   `FileBrowser` (also `androidMain`) supplies the file-argument case: a `file…` node (attached
     to `edit` and to every discovered shell binary) whose `wizardId` opens the graphical Select
     File/Folder picker instead of drilling further into the pill stack - see section 13 below.
@@ -190,20 +192,20 @@ reflection-based command engine underneath it — built-ins are a fixed dispatch
     installed skill package's `skills/<id>/SKILL.md` off disk, capped to a fixed character budget,
     for `AiClient` to fold into its system prompt.
 *   **`ui/azp/AzpStoreScreen.kt`** (commonMain): search box, kind-filter pills (all/skill/mcp/
-    code/pack/asset/app), and a result list with an INSTALL/INSTALLED pill per package — same
+    code/pack/asset/app/script), and a result list with an INSTALL/INSTALLED pill per package — same
     visual idiom as `AiChatScreen`. An installed row also shows a trust badge (TRUSTED SIGNER /
     SIGNED · UNKNOWN SIGNER / SIGNED · UNVERIFIED (OS) / UNSIGNED) — `AzpListing.trust` carries
     the androidMain `AzpTrust` enum's name as a plain string, since commonMain can't reference a
     platform-specific type directly. Reached via a synthesized `azp` root pill
     (`CommandTree.azpRoot`, `wizardId = "azp-store"` navigates to the screen, same reuse of
     `onWizard` as the AI pill).
-*   HG2Gui has no `.azp` execution runtime (no WASM sandbox, no MCP client), so "install" for
-    every kind except `skill` is download-and-unpack only — the package sits on-device for the
-    user's own use elsewhere, the same as `apt download` versus `apt install`. This is a permanent,
-    accepted scope boundary, not a gap to close: building a sandboxed code/WASM runtime or an MCP
-    client into this app is a different, much larger project than a package browser. Per-file
-    integrity against `manifest.files`' digests is also not implemented — only the manifest
-    signature itself.
+*   `AzpInstaller` computes SHA-256 while extracting and rejects a package when a payload is
+    unlisted or differs from `manifest.files`; path containment and signature checks still apply.
+    For `kind:"script"`, `ScriptInstaller` resolves declared `apt` dependencies through the Termux
+    prefix and writes an executable wrapper into `prefix/bin`, pointing at the verified entry file.
+    HG2Gui still has no general WASM runtime or MCP client: kinds other than `skill` and `script`
+    remain download-and-unpack data. That boundary avoids pretending arbitrary packages are safe or
+    executable merely because they arrived in a ZIP.
 
 ### 10. Ground rotation (Kotlin, `commonMain`)
 *   **`ui/menu/PillMenu.kt`**: `Azphalt.currentGround` is a process-wide `mutableStateOf(Ground)`
