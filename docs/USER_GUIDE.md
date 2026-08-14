@@ -50,7 +50,7 @@ The keyboard is not forced open. Tap the command line to type; suggestions still
 go, so you can type `git` and tap `commit` rather than spelling it out.
 
 ## Basic Commands
-The ten built-in commands are `wifi`, `bluetooth`, `airplane`, `flash`, `volume`, `brightness`,
+The eleven built-in commands are `wifi`, `bluetooth`, `airplane`, `flash`, `volume`, `brightness`,
 `call`, `contacts`, `vfs`, `calc` and `edit` — see [Commands](COMMANDS.md) for what each does.
 Everything else — `apps`, `alias`, `clear`, listing packages, and so on — is a real shell
 binary now, run in the Termux environment below, not a reimplementation of one.
@@ -141,11 +141,13 @@ binary now, run in the Termux environment below, not a reimplementation of one.
 -   **Store:** the **Store** pill opens a browser for [azphalt.store](https://azphalt.store), the
     package registry for `.azp` extensions — the same idea as `pkg`/`apt`, but general-purpose:
     assets, sandboxed code, packs, companion apps, MCP-server headers, and AI-skill bundles all
-    ship as `.azp` packages. Search, filter by kind (skill / mcp / code / pack / asset / app), and
-    tap **INSTALL** to download and unpack one. HG2Gui has no `.azp` execution sandbox, so most
-    kinds are download-only, kept on-device for use elsewhere — the one exception is a **skill**
-    package: its bundled `SKILL.md` is folded into the AI chat's system prompt automatically, so
-    an installed skill actually changes how the AI pill answers. Every install checks the
+    ship as `.azp` packages. Search, filter by kind (skill / mcp / code / pack / asset / app /
+    script), and
+    tap **INSTALL** to download and unpack one. Most kinds are download-only, kept on-device for
+    use elsewhere. A **skill** package folds its bundled `SKILL.md` into the AI chat's system
+    prompt. A **script** package can resolve declared Termux dependencies and install an executable
+    wrapper for its digest-verified entry file. Every install rejects unlisted payloads and requires
+    each extracted payload to match its declared SHA-256 digest before it checks the
     package's Ed25519 signature (on Android 13+; older devices can't check it and the package is
     marked unverified rather than silently trusted) against azphalt.store's own published signing
     keys — an installed row shows **✓ TRUSTED SIGNER** when the signer is one the registry itself

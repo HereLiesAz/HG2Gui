@@ -36,7 +36,8 @@ are out of scope.
         timing or layout.
 
 ## Toolchain
-JDK 21, Gradle 8.13, AGP 8.13, Kotlin 2.2.20, `compileSdk` 37, `minSdk` 24.
+JDK 21, Gradle 9.7.0, AGP 9.3.1, Kotlin 2.4.10, Compose Multiplatform 1.11.1,
+`compileSdk` 37, `minSdk` 24.
 
 ## Pull Requests
 1.  Fork the repository.

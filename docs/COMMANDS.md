@@ -42,7 +42,7 @@ predates them (`DistroManager.ensureBundledScripts`):
 
 See `docs/USER_GUIDE.md` for the full description of each.
 
-Two more root pills sit alongside the shell categories, neither backed by a shell binary:
+Four more root pills sit alongside the shell categories, none backed by a shell binary:
 
 *   **Workflows**: saved command templates. Each saved one is a pill that asks for any
     `{placeholder}` values the template needs, then drops the assembled command onto the command
@@ -59,18 +59,18 @@ Two more root pills sit alongside the shell categories, neither backed by a shel
     locally real, the package/service managers don't. Picking one just assembles the command onto
     the command line like any other pill; nothing runs automatically.
 *   **Store**: one `search…` pill opening the azphalt.store package browser — the same idea as
-    `pkg`/`apt`, but for `.azp` extensions (assets, code, packs, companion apps, MCP-server
-    headers, and AI-skill bundles). Filter by kind, then INSTALL downloads and unpacks a package.
-    HG2Gui has no `.azp` execution runtime, so only `skill`-kind packages do anything further —
-    their `SKILL.md` content is folded into the AI chat's system prompt. Everything else is
-    download-only, for use elsewhere, the same as `apt download`. Every install verifies the
-    package's Ed25519 signature against the registry's published signing keys and shows a trust
-    badge (TRUSTED / SIGNED / UNSIGNED); a signature that fails to verify is rejected. See
+    `pkg`/`apt`, but for `.azp` extensions (assets, code, packs, companion apps, scripts,
+    MCP-server headers, and AI-skill bundles). Filter by kind, then INSTALL downloads and unpacks
+    a package. Skill content augments AI chat; script packages resolve declared Termux dependencies
+    and install a verified entry-point wrapper. Other kinds remain download-only. Every install
+    enforces path containment, requires each extracted payload to match its declared SHA-256 digest,
+    verifies any Ed25519 signature,
+    and shows its trust state; a digest or signature failure rejects the package. See
     `docs/USER_GUIDE.md`.
 
 ## Built-in commands
 
-These ten are the only commands HG2Gui itself implements — see `terminal/Builtins.kt`. Every
+These eleven are the only commands HG2Gui itself implements — see `terminal/Builtins.kt`. Every
 other verb (app launching, file sharing, `alias`, editing with `nano`/`vim`, and so on) is a
 real shell binary now, not a reimplementation of one.
 
