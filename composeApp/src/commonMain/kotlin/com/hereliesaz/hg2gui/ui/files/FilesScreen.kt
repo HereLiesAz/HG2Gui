@@ -42,8 +42,9 @@ import com.hereliesaz.hg2gui.ui.menu.pageBrush
 import kotlinx.coroutines.launch
 
 /*
- * The file manager: search, sort, multi-select batch actions, in-place rename, an automatic
- * media grid, and a real storage-by-type breakdown, all built on Azphalt's capsule primitive.
+ * The file manager: search, sort, filter (kind/hidden/recency), multi-select batch actions,
+ * in-place rename, an automatic media grid, and a real storage-by-type breakdown, all built on
+ * Azphalt's capsule primitive.
  * No icons: a folder is a whole rounded rectangle in its own hue; tapping one expands it while
  * its siblings squish into thin coloured rods beside it, its children living inside it as
  * smaller rectangles - two accordion levels deep, then a plain record of what's inside.
@@ -53,14 +54,47 @@ private enum class SortMode(val label: String) { NAME("Name"), NEWEST("Newest") 
 private enum class FMScreen { Browse, Search, Storage, PickMove, PickCopy }
 private enum class CreateMode { FOLDER, FILE }
 
+// Cycled with a tap, same as SortMode - each one a single always-visible chip rather than a
+// picker sheet, since a folder listing is small enough on a phone that a menu would cost more
+// taps than it saves.
+private enum class KindFilter(val label: String) { ALL("All"), FOLDERS("Folders"), FILES("Files"), IMAGES("Images") }
+private enum class RecencyFilter(val label: String) { ANY("Any time"), TODAY("Today"), WEEK("This week") }
+
+private const val DAY_MS = 24L * 60 * 60 * 1000
+private const val WEEK_MS = 7 * DAY_MS
+
 private fun sortEntries(list: List<VfsEntry>, mode: SortMode): List<VfsEntry> = when (mode) {
     SortMode.NAME -> list.sortedWith(compareBy({ !it.isDirectory }, { it.name.lowercase() }))
     SortMode.NEWEST -> list.sortedWith(compareBy({ !it.isDirectory }, { -it.modifiedAt }))
 }
 
+/**
+ * Hidden dotfiles are stripped first regardless of [kind]/[recency], same as every real Unix
+ * file manager. [recency] only ever hides *files* - a folder's own mtime tracks its last touched
+ * child, not something meaningful to filter a folder's own presence by, so folders always pass
+ * through it untouched.
+ */
+private fun List<VfsEntry>.filtered(kind: KindFilter, showHidden: Boolean, recency: RecencyFilter, nowMillis: Long): List<VfsEntry> {
+    var out: List<VfsEntry> = this
+    if (!showHidden) out = out.filter { !it.name.startsWith(".") }
+    out = when (kind) {
+        KindFilter.ALL -> out
+        KindFilter.FOLDERS -> out.filter { it.isDirectory }
+        KindFilter.FILES -> out.filter { !it.isDirectory }
+        KindFilter.IMAGES -> out.filter { it.isImage }
+    }
+    val recencyFloor = when (recency) {
+        RecencyFilter.ANY -> return out
+        RecencyFilter.TODAY -> DAY_MS
+        RecencyFilter.WEEK -> WEEK_MS
+    }
+    return out.filter { it.isDirectory || nowMillis - it.modifiedAt <= recencyFloor }
+}
+
 @Composable
 fun FilesScreen(
     fullscreen: Boolean,
+    nowMillis: Long,
     listDir: suspend (path: String) -> List<VfsEntry>,
     search: suspend (query: String) -> List<VfsSearchResult>,
     storageStats: suspend () -> StorageStats,
@@ -81,6 +115,9 @@ fun FilesScreen(
     var l0Entries by remember { mutableStateOf<List<VfsEntry>>(emptyList()) }
     var recordEntries by remember { mutableStateOf<List<VfsEntry>>(emptyList()) }
     var sortMode by remember { mutableStateOf(SortMode.NAME) }
+    var kindFilter by remember { mutableStateOf(KindFilter.ALL) }
+    var recencyFilter by remember { mutableStateOf(RecencyFilter.ANY) }
+    var showHidden by remember { mutableStateOf(false) }
     var refreshTick by remember { mutableStateOf(0) }
 
     var searchActive by remember { mutableStateOf(false) }
@@ -108,15 +145,20 @@ fun FilesScreen(
 
     val currentTargetDir = openChain.lastOrNull()?.path ?: "/"
 
-    LaunchedEffect(refreshTick) { rootEntries = sortEntries(listDir("/"), sortMode) }
-    LaunchedEffect(openChain.getOrNull(0)?.path, sortMode, refreshTick) {
-        l0Entries = openChain.getOrNull(0)?.let { sortEntries(listDir(it.path), sortMode) } ?: emptyList()
+    fun List<VfsEntry>.filteredAndSorted() = sortEntries(filtered(kindFilter, showHidden, recencyFilter, nowMillis), sortMode)
+
+    LaunchedEffect(refreshTick, sortMode, kindFilter, recencyFilter, showHidden) {
+        rootEntries = listDir("/").filteredAndSorted()
     }
-    LaunchedEffect(openChain.getOrNull(1)?.path, sortMode, refreshTick) {
-        recordEntries = openChain.getOrNull(1)?.let { sortEntries(listDir(it.path), sortMode) } ?: emptyList()
+    LaunchedEffect(openChain.getOrNull(0)?.path, sortMode, kindFilter, recencyFilter, showHidden, refreshTick) {
+        l0Entries = openChain.getOrNull(0)?.let { listDir(it.path).filteredAndSorted() } ?: emptyList()
     }
-    LaunchedEffect(searchQuery, refreshTick) {
-        searchResults = if (searchQuery.isNotBlank()) search(searchQuery) else emptyList()
+    LaunchedEffect(openChain.getOrNull(1)?.path, sortMode, kindFilter, recencyFilter, showHidden, refreshTick) {
+        recordEntries = openChain.getOrNull(1)?.let { listDir(it.path).filteredAndSorted() } ?: emptyList()
+    }
+    LaunchedEffect(searchQuery, showHidden, refreshTick) {
+        val results = if (searchQuery.isNotBlank()) search(searchQuery) else emptyList()
+        searchResults = if (showHidden) results else results.filter { !it.entry.name.startsWith(".") }
     }
 
     fun openEntry(depth: Int, entry: VfsEntry) {
@@ -268,6 +310,37 @@ fun FilesScreen(
                         )
                     }
                 }
+            }
+        }
+
+        // --- Filter row --------------------------------------------------------------------
+        // Its own row rather than folded into the search/sort one above - a folder listing on a
+        // phone is narrow enough that three more chips there would start wrapping or crowding
+        // the search well. Horizontally scrollable so a later filter never has to fight the
+        // ones already here for room.
+        if (!selectMode && !searchActive) {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(start = 20.dp, end = 20.dp, top = 8.dp)
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                FilterChip(
+                    kindFilter.label.uppercase(), active = kindFilter != KindFilter.ALL,
+                    onClick = {
+                        val values = KindFilter.entries
+                        kindFilter = values[(kindFilter.ordinal + 1) % values.size]
+                    }
+                )
+                FilterChip(
+                    recencyFilter.label.uppercase(), active = recencyFilter != RecencyFilter.ANY,
+                    onClick = {
+                        val values = RecencyFilter.entries
+                        recencyFilter = values[(recencyFilter.ordinal + 1) % values.size]
+                    }
+                )
+                FilterChip("HIDDEN", active = showHidden, onClick = { showHidden = !showHidden })
             }
         }
         }
@@ -455,21 +528,28 @@ private fun ExpandableLevel(
                 Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(18.dp))
-                    .background(if (selectMode && openEntry.path in selected) Azphalt.Ink else Azphalt.hues[Azphalt.hueOf(openEntry.path)])
+                    // The row's own hue never changes on selection - only the mark does, same
+                    // as every other selectable row in this screen.
+                    .background(Azphalt.hues[Azphalt.hueOf(openEntry.path)])
                     .clickable { onTap(openEntry) }
                     .padding(14.dp)
             ) {
                 Column {
                     Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                        Text(
-                            openEntry.name.uppercase(), color = Azphalt.White,
-                            fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.06.em
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            if (selectMode) SelectMark(openEntry.path in selected, dark = true)
+                            Text(
+                                openEntry.name.uppercase(), color = Azphalt.White,
+                                fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.06.em
+                            )
+                        }
                         EntryMenu(openEntry, onRename, onDelete, onShare, tint = Azphalt.White)
                     }
                     Box(Modifier.padding(start = 14.dp, top = 10.dp)) { nestedContent() }
                 }
             }
+        } else if (folders.isEmpty() && files.isEmpty()) {
+            EmptyLabel()
         } else if (folders.isNotEmpty()) {
             Text(
                 "FOLDERS · ${folders.size}", color = Azphalt.Ink.copy(alpha = .45f),
@@ -505,9 +585,18 @@ private fun RecordList(
     val folders = entries.filter { it.isDirectory }
     val files = entries.filter { !it.isDirectory }
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        if (folders.isEmpty() && files.isEmpty()) EmptyLabel()
         folders.forEach { f -> key(f.path) { FolderRow(f, selectMode, f.path in selected, onTap, onLongPress, onRename, onDelete, onShare) } }
         if (files.isNotEmpty()) FileRows(files, selectMode, selected, onTap, onLongPress, onRename, onDelete, onShare)
     }
+}
+
+@Composable
+private fun EmptyLabel() {
+    Text(
+        "NOTHING HERE", color = Azphalt.Ink.copy(alpha = .4f),
+        fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.14.em
+    )
 }
 
 @Composable
@@ -525,7 +614,8 @@ private fun FolderRow(
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(percent = 50))
-            .background(if (isSelected) Azphalt.Ink else Azphalt.hues[Azphalt.hueOf(entry.path)])
+            // The row's own hue never changes on selection - only the mark does.
+            .background(Azphalt.hues[Azphalt.hueOf(entry.path)])
             .combinedClickable(onClick = { onTap(entry) }, onLongClick = { onLongPress(entry) })
             .padding(start = 16.dp, end = 8.dp, top = 10.dp, bottom = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -574,16 +664,21 @@ private fun FileRows(
                     Box(
                         Modifier
                             .aspectRatio(1f)
-                            .clip(RoundedCornerShape(9.dp))
-                            .background(if (img.path in selected) Azphalt.Ink else Azphalt.hues[Azphalt.hueOf(img.path)])
-                            .clickable { onTap(img) },
-                        contentAlignment = Alignment.BottomStart
+                            .clip(RoundedCornerShape(7.dp))
+                            // The tile's own hue never changes on selection - only the mark does.
+                            .background(Azphalt.hues[Azphalt.hueOf(img.path)])
+                            .clickable { onTap(img) }
                     ) {
                         Text(
                             img.name, color = Azphalt.White.copy(alpha = .8f), fontSize = 7.sp,
                             fontWeight = FontWeight.Bold, maxLines = 1,
-                            modifier = Modifier.padding(6.dp)
+                            modifier = Modifier.align(Alignment.BottomStart).padding(6.dp)
                         )
+                        if (selectMode) {
+                            Box(Modifier.align(Alignment.TopEnd).padding(4.dp)) {
+                                SelectMark(img.path in selected, dark = true)
+                            }
+                        }
                     }
                 }
             }
@@ -594,17 +689,20 @@ private fun FileRows(
                     Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(percent = 50))
-                        .background(if (f.path in selected) Azphalt.Ink else Azphalt.Ink.copy(alpha = .09f))
+                        // The row's own wash never changes on selection - only the mark does.
+                        .background(Azphalt.Ink.copy(alpha = .09f))
                         .combinedClickable(onClick = { onTap(f) }, onLongClick = { onLongPress(f) })
                         .padding(start = 16.dp, end = 8.dp, top = 10.dp, bottom = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        if (selectMode) SelectMark(f.path in selected, dark = f.path !in selected)
-                        val fg = if (f.path in selected) Azphalt.Yellow else Azphalt.Ink
-                        Text(f.name.uppercase(), color = fg, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em, maxLines = 1)
-                        Text(formatFileSize(f.sizeBytes), color = fg.copy(alpha = .55f), fontSize = 9.sp)
+                        if (selectMode) SelectMark(f.path in selected, dark = false)
+                        // Filenames are literal, not labels - the one place real case survives
+                        // outside body copy, same as every other identifier here that names an
+                        // actual leaf item rather than a folder/chrome label.
+                        Text(f.name, color = Azphalt.Ink, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em, maxLines = 1)
+                        Text(formatFileSize(f.sizeBytes), color = Azphalt.Ink.copy(alpha = .55f), fontSize = 9.sp)
                     }
                     if (!selectMode) EntryMenu(f, onRename, onDelete, onShare, tint = Azphalt.Ink)
                 }
@@ -656,7 +754,7 @@ private fun ColumnScope.SearchResults(results: List<VfsSearchResult>, onOpen: (V
                 Modifier.fillMaxWidth().clickable { onOpen(r) }.padding(vertical = 10.dp)
             ) {
                 Text(
-                    (r.entry.name + if (r.entry.isDirectory) "/" else "").uppercase(),
+                    r.entry.name + if (r.entry.isDirectory) "/" else "",
                     color = Azphalt.Ink, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold
                 )
                 Text(r.parentPath, color = Azphalt.Ink.copy(alpha = .5f), fontSize = 10.sp)
@@ -690,6 +788,22 @@ private fun NamePrompt(label: String, name: String, onNameChange: (String) -> Un
         )
         Text("OK", color = Azphalt.Yellow, fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.clickable(onClick = onConfirm).padding(horizontal = 8.dp, vertical = 6.dp))
         Text("X", color = Azphalt.Yellow.copy(alpha = .6f), fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.clickable(onClick = onCancel).padding(horizontal = 8.dp, vertical = 6.dp))
+    }
+}
+
+@Composable
+private fun FilterChip(label: String, active: Boolean, onClick: () -> Unit) {
+    Row(
+        Modifier
+            .clip(RoundedCornerShape(percent = 50))
+            .background(if (active) Azphalt.Ink else Azphalt.Ink.copy(alpha = .10f))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 8.dp)
+    ) {
+        Text(
+            label, color = if (active) Azphalt.Yellow else Azphalt.Ink.copy(alpha = .55f),
+            fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.1.em
+        )
     }
 }
 
