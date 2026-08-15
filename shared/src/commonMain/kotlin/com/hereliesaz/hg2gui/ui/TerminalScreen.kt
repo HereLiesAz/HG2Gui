@@ -1,6 +1,7 @@
 package com.hereliesaz.hg2gui.ui
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -43,7 +44,6 @@ import com.hereliesaz.hg2gui.ui.menu.Azphalt
 import com.hereliesaz.hg2gui.ui.menu.pageBrush
 import com.hereliesaz.hg2gui.ui.menu.MenuNode
 import com.hereliesaz.hg2gui.ui.menu.PillMenu
-import com.hereliesaz.hg2gui.ui.theme.AzphaltMotion
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -418,7 +418,8 @@ private fun BufferEntry(
 
 // Line-by-line duration/stagger for the output "set" beat - 320ms sits inside the 300-360ms
 // window the motion sheet calls for, staggered 90ms apart, using the one house easing curve
-// (AzphaltMotion.unfoldEasing) everything else in the app already animates with.
+// everything else in the app already animates with.
+private val OUTPUT_WIPE_EASE = CubicBezierEasing(0f, .9f, .1f, 1f)
 private const val OUTPUT_WIPE_MS = 320
 private const val OUTPUT_WIPE_STAGGER_MS = 90L
 
@@ -469,7 +470,7 @@ private fun OutputWipeLine(seq: Int, line: String) {
     val progress = remember { Animatable(0f) }
     LaunchedEffect(Unit) {
         delay(seq * OUTPUT_WIPE_STAGGER_MS)
-        progress.animateTo(1f, tween(OUTPUT_WIPE_MS, easing = AzphaltMotion.unfoldEasing))
+        progress.animateTo(1f, tween(OUTPUT_WIPE_MS, easing = OUTPUT_WIPE_EASE))
     }
     Text(
         line,
