@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  MCP-12: allowBackup="true" with no exclusion meant hg2gui_mcp_prefs (the shell-exec-enabled
+  flag, set only after a biometric confirmation - see McpServerService.requestEnableShellExec)
+  could restore straight onto a different device that never confirmed anything itself. Pre-12
+  full backup rules - see data_extraction_rules.xml for the 12+ equivalent.
+-->
+<full-backup-content>
+    <exclude domain="sharedpref" path="hg2gui_mcp_prefs.xml" />
+</full-backup-content>

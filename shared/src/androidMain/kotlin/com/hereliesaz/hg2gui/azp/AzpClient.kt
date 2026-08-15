@@ -21,6 +21,14 @@ object AzpClient {
     private val http = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
+        // AZP-10: OkHttp's own defaults follow both same-scheme and HTTPS->HTTP redirects, which
+        // would let a compromised or misconfigured REPOSITORY_BASE silently hand a `.azp`
+        // download (or the discovery/search responses that steer it) off to an arbitrary,
+        // possibly cleartext host. The repository's own domain is fixed and never legitimately
+        // redirects a download, so a 3xx here is treated as a failure (resp.isSuccessful is
+        // false for 3xx, which every call site below already handles) rather than followed.
+        .followRedirects(false)
+        .followSslRedirects(false)
         .build()
 
     suspend fun search(query: String, kind: String?, page: Int = 1): AzpSearchResponse =

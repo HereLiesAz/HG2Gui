@@ -29,13 +29,51 @@ import java.io.OutputStreamWriter
 import java.net.InetAddress
 import java.net.ServerSocket
 import java.net.Socket
+import java.security.MessageDigest
 import java.security.SecureRandom
+
+/**
+ * `MessageDigest.isEqual` is specified to run in time independent of where the two arrays first
+ * differ (JDK 6u17+), unlike `String.equals`/`==`, which return as soon as a mismatched byte or
+ * length is found. The pairing token is 192 bits of entropy, so a timing side-channel here isn't
+ * a practical break either way - this closes the hardening gap without pretending it was ever an
+ * exploitable one. `internal`, not `private`, so McpServerServiceTest (androidUnitTest) can call
+ * it directly - it's plain java.security, no Robolectric/instrumented runtime needed.
+ */
+internal fun constantTimeEquals(a: String, b: String): Boolean =
+    MessageDigest.isEqual(a.toByteArray(Charsets.UTF_8), b.toByteArray(Charsets.UTF_8))
+
+/** Same contract as [BufferedReader.readLine] - null at end of stream, otherwise the next line
+ *  with its terminator stripped - except a line longer than [maxChars] throws instead of growing
+ *  an internal buffer without limit; the caller (an unauthenticated socket, in the worst case)
+ *  controls how much gets sent before a newline ever arrives (MCP-3). Top-level and `internal`,
+ *  not a private member of McpServerService, specifically so McpServerServiceTest can construct
+ *  a plain `BufferedReader(StringReader(...))` and exercise it without any Android/Service
+ *  runtime at all. */
+internal fun BufferedReader.readLineBounded(maxChars: Int): String? {
+    val sb = StringBuilder()
+    while (true) {
+        val c = read()
+        if (c == -1) return if (sb.isEmpty()) null else sb.toString()
+        if (c == '\n'.code) return sb.toString()
+        if (c != '\r'.code) sb.append(c.toChar())
+        if (sb.length > maxChars) throw java.io.IOException("line exceeds $maxChars chars")
+    }
+}
 
 private const val PREFS_NAME = "hg2gui_mcp_prefs"
 private const val PREF_SHELL_EXEC_ENABLED = "shell_exec_enabled"
 private const val CHANNEL_ID = "mcp_server"
 private const val NOTIFICATION_ID = 4201
 private const val DEFAULT_PORT = 4827
+// MCP-2: any app with just INTERNET can open the loopback socket and send nothing - without a
+// read timeout, the pre-auth readLine() blocks forever, and since v1 handles one client at a
+// time, that one silent connection wedges the server shut for everyone else permanently.
+private const val SOCKET_READ_TIMEOUT_MS = 15_000
+// MCP-3: readLine() has no size cap of its own - an attacker-controlled line with no newline
+// would otherwise buffer unbounded in memory, on the same pre-auth path, before the token is
+// ever checked.
+private const val MAX_LINE_CHARS = 1 shl 16
 
 /**
  * A loopback-only JSON-RPC 2.0 server (newline-delimited, matching MCP's own stdio framing) an
@@ -96,6 +134,10 @@ class McpServerService : Service() {
 
     private val scope = CoroutineScope(Dispatchers.IO + Job())
     private var serverSocket: ServerSocket? = null
+    // MCP-4: stopServer() only ever closed the listening socket, never the one client actually
+    // connected at the time - its in-flight readLine() could still resolve and dispatch one more
+    // tool call after the user had already tapped off.
+    private var currentClient: Socket? = null
     private var engine: TerminalEngine? = null
     private var tools: McpTools? = null
 
@@ -117,8 +159,16 @@ class McpServerService : Service() {
         return START_NOT_STICKY
     }
 
+    // MCP-9: isRunning only flips true once the bind coroutine actually runs, on Dispatchers.IO -
+    // onStartCommand itself runs synchronously on the main thread, so a second START intent
+    // (a double-tap on the UI toggle) can land before that coroutine has had a chance to set it,
+    // sail past the isRunning check below, and build a second TerminalEngine that immediately
+    // loses the port race. This flag closes that window without waiting on the coroutine at all.
+    private var starting = false
+
     private fun startServer() {
-        if (isRunning.value) return
+        if (isRunning.value || starting) return
+        starting = true
 
         val generatedToken = generateToken()
         val builtEngine = TerminalEngine(applicationContext)
@@ -133,18 +183,39 @@ class McpServerService : Service() {
                 serverSocket = socket
                 token.value = generatedToken
                 isRunning.value = true
+                starting = false
                 while (isRunning.value) {
                     val client = try {
                         socket.accept()
                     } catch (e: Exception) {
                         break
                     }
-                    handleClient(client, generatedToken)
+                    currentClient = client
+                    try {
+                        // One bad client (a malformed line, a timeout) must only cost that one
+                        // connection - letting it escape here used to fall into the outer catch
+                        // below, which tears the whole server down as though the bind itself had
+                        // failed.
+                        handleClient(client, generatedToken)
+                    } catch (e: Exception) {
+                        // Already logged nothing, intentionally - a client-triggered exception
+                        // isn't an operator error worth surfacing, just a connection to drop.
+                    } finally {
+                        currentClient = null
+                    }
                 }
             } catch (e: Exception) {
-                // Most likely the port's already taken - fail closed, nothing partially running.
+                // MCP-5: the engine/tools were already constructed above - a bind failure (most
+                // likely the port already taken) must not leave that shell alive with nothing
+                // pointing at it, and must not leave the "running" notification up for a server
+                // that never actually started.
                 isRunning.value = false
+                starting = false
                 token.value = null
+                engine?.destroy()
+                engine = null
+                tools = null
+                stopForeground(STOP_FOREGROUND_REMOVE)
             }
         }
     }
@@ -153,6 +224,9 @@ class McpServerService : Service() {
      *  launching it concurrently, so a second connection simply queues at the OS accept backlog
      *  until this one closes. */
     private suspend fun handleClient(client: Socket, expectedToken: String) {
+        // A connection that never sends anything - the whole point of MCP-2 - now times out
+        // instead of blocking the single-client accept loop forever.
+        client.soTimeout = SOCKET_READ_TIMEOUT_MS
         client.use { socket ->
             val reader = BufferedReader(InputStreamReader(socket.getInputStream()))
             val writer = OutputStreamWriter(socket.getOutputStream())
@@ -160,10 +234,10 @@ class McpServerService : Service() {
             // The pairing token rides as one bespoke line before any JSON-RPC traffic - layered
             // under MCP's own newline-delimited framing rather than baked into it, so a stock
             // stdio MCP client speaking plain JSON-RPC still works once paired.
-            val authLine = reader.readLine() ?: return
+            val authLine = reader.readLineBounded(MAX_LINE_CHARS) ?: return
             val authorized = try {
                 val obj = McpJsonRpc.json.parseToJsonElement(authLine) as? JsonObject
-                (obj?.get("token") as? JsonPrimitive)?.content == expectedToken
+                (obj?.get("token") as? JsonPrimitive)?.content?.let { constantTimeEquals(it, expectedToken) } == true
             } catch (e: Exception) {
                 false
             }
@@ -178,7 +252,7 @@ class McpServerService : Service() {
 
             val currentTools = tools ?: return
             while (isRunning.value) {
-                val line = reader.readLine() ?: break
+                val line = reader.readLineBounded(MAX_LINE_CHARS) ?: break
                 if (line.isBlank()) continue
                 val response = McpJsonRpc.handleLine(line, currentTools)
                 writer.write(response)
@@ -196,6 +270,12 @@ class McpServerService : Service() {
             // Already closed or never opened - nothing to clean up.
         }
         serverSocket = null
+        try {
+            currentClient?.close()
+        } catch (e: Exception) {
+            // Already closed - nothing to clean up.
+        }
+        currentClient = null
         engine?.destroy()
         engine = null
         tools = null

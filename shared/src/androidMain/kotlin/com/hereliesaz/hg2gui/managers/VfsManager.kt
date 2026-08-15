@@ -93,13 +93,25 @@ object VfsManager {
         return f.exists() || f.createNewFile()
     }
 
+    // MCP-11: the MCP vfs.read tool routes straight through this with no cap of its own - a
+    // paired agent (or the in-app editor) asking to read a multi-gigabyte file would otherwise
+    // materialize the whole thing as one String in memory before anything gets a chance to reject
+    // it.
+    private const val MAX_READ_TEXT_BYTES = 16L * 1024 * 1024
+
     fun readText(context: Context, name: String): String? =
-        resolve(context, name)?.takeIf { it.isFile }?.readText()
+        resolve(context, name)
+            ?.takeIf { it.isFile && it.length() <= MAX_READ_TEXT_BYTES }
+            ?.readText()
 
     fun writeText(context: Context, name: String, text: String): Boolean {
         val f = resolve(context, name) ?: return false
-        f.writeText(text)
-        return true
+        return try {
+            f.writeText(text)
+            true
+        } catch (e: Exception) {
+            false
+        }
     }
 
     fun delete(context: Context, name: String): Boolean = resolve(context, name)?.deleteRecursively() ?: false
@@ -134,12 +146,27 @@ object VfsManager {
     // level, independent of any single "current directory" - so these work directly against a
     // File rather than resolving a name relative to it.
 
-    fun mkdir(dir: File, name: String): Boolean = contains(dir) && File(dir, name).mkdirs()
+    // mkdir/touch/rename all join a user-typed name onto an already-checked File - checking only
+    // that File (the parent, or the file being renamed) and not the *joined result* is exactly
+    // how a name like "../../evil" walks back out of the sandbox despite the parent itself being
+    // legitimate: contains() has to run again against the actual candidate target, the same way
+    // resolve() already checks the joined path for the string-based API above.
 
+    fun mkdir(dir: File, name: String): Boolean {
+        if (!contains(dir)) return false
+        val target = File(dir, name)
+        return contains(target) && target.mkdirs()
+    }
+
+    // VFS-13: this backs the Files screen's own "+ New File" - unlike the string-based touch()
+    // above (a real Unix `touch`, correctly idempotent for the vfs command line), an existing
+    // target here is reported as a failure rather than silently doing nothing while the UI acts
+    // as though a fresh file was created.
     fun touch(dir: File, name: String): Boolean {
         if (!contains(dir)) return false
-        val f = File(dir, name)
-        return f.exists() || f.createNewFile()
+        val target = File(dir, name)
+        if (!contains(target) || target.exists()) return false
+        return target.createNewFile()
     }
 
     fun delete(file: File): Boolean = contains(file) && file.deleteRecursively()
@@ -147,16 +174,29 @@ object VfsManager {
     fun rename(file: File, newName: String): Boolean {
         if (!contains(file)) return false
         val parent = file.parentFile ?: return false
-        return file.renameTo(File(parent, newName))
+        val target = File(parent, newName)
+        return contains(target) && file.renameTo(target)
+    }
+
+    /** True iff [target] is [ancestor] itself or sits somewhere underneath it - the check
+     *  moveInto/copyInto need before touching a folder, since neither `renameTo` nor
+     *  `copyRecursively` reject a destination that's actually inside the source they're reading
+     *  from; the folder picker offers exactly that target with nothing else stopping it. */
+    private fun isSelfOrDescendant(ancestor: File, target: File): Boolean {
+        val a = ancestor.canonicalFile
+        val t = target.canonicalFile
+        return t == a || t.path.startsWith(a.path + File.separator)
     }
 
     fun moveInto(file: File, targetDir: File): Boolean {
         if (!contains(file) || !contains(targetDir)) return false
+        if (file.isDirectory && isSelfOrDescendant(file, targetDir)) return false
         return file.renameTo(File(targetDir, file.name))
     }
 
     fun copyInto(file: File, targetDir: File): Boolean {
         if (!contains(file) || !contains(targetDir)) return false
+        if (file.isDirectory && isSelfOrDescendant(file, targetDir)) return false
         val target = File(targetDir, file.name)
         return try {
             if (file.isDirectory) file.copyRecursively(target, overwrite = true) else { file.copyTo(target, overwrite = true); true }
@@ -165,28 +205,51 @@ object VfsManager {
         }
     }
 
+    // A guard shared by every recursive walk below: [seen] catches a symlink cycle (an inward-
+    // pointing link resolves to a canonical path already on this walk's own stack, so it's
+    // skipped rather than recursed into forever) and MAX_WALK_DEPTH backstops any cycle [seen]
+    // doesn't - a real filesystem is never this deep, so hitting it means something's wrong, not
+    // that there's more to see.
+    private const val MAX_WALK_DEPTH = 64
+
     /** Every file and directory under [dir] (or the whole sandbox, by default), depth-first,
      *  directories before their own contents - the walk every recursive feature below shares. */
-    private fun walk(dir: File, into: MutableList<File>) {
+    private fun walk(dir: File, into: MutableList<File>, seen: MutableSet<String> = mutableSetOf(), depth: Int = 0) {
+        if (depth >= MAX_WALK_DEPTH || !seen.add(dir.canonicalPath)) return
         val children = dir.listFiles()
             ?.sortedWith(compareBy({ !it.isDirectory }, { it.name.lowercase() }))
             ?: return
         for (child in children) {
             into.add(child)
-            if (child.isDirectory) walk(child, into)
+            if (child.isDirectory) walk(child, into, seen, depth + 1)
         }
     }
 
     /** Every name under [dir] (defaulting to the sandbox root) containing [query], case
-     *  insensitive - real recursive search, not just the one open directory. Capped at [limit]
-     *  since a query that matches broadly (a single common letter) shouldn't hang the UI walking
-     *  an unbounded tree. */
+     *  insensitive - real recursive search, not just the one open directory. Stops as soon as
+     *  [limit] matches are found rather than materializing the whole tree first and truncating
+     *  after - a query that matches broadly (a single common letter) shouldn't have to finish
+     *  walking an unbounded tree before the first [limit] results can come back. */
     fun search(context: Context, query: String, dir: File = init(context), limit: Int = 200): List<File> {
         if (query.isBlank()) return emptyList()
-        val q = query.lowercase()
-        val all = mutableListOf<File>()
-        walk(dir, all)
-        return all.filter { it.name.lowercase().contains(q) }.take(limit)
+        val results = mutableListOf<File>()
+        searchWalk(dir, query.lowercase(), results, limit)
+        return results
+    }
+
+    private fun searchWalk(
+        dir: File, q: String, into: MutableList<File>, limit: Int,
+        seen: MutableSet<String> = mutableSetOf(), depth: Int = 0
+    ) {
+        if (into.size >= limit || depth >= MAX_WALK_DEPTH || !seen.add(dir.canonicalPath)) return
+        val children = dir.listFiles()
+            ?.sortedWith(compareBy({ !it.isDirectory }, { it.name.lowercase() }))
+            ?: return
+        for (child in children) {
+            if (into.size >= limit) return
+            if (child.name.lowercase().contains(q)) into.add(child)
+            if (child.isDirectory) searchWalk(child, q, into, limit, seen, depth + 1)
+        }
     }
 
     enum class StorageCategory(val label: String) {

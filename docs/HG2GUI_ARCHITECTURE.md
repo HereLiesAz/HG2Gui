@@ -49,9 +49,17 @@ reflection-based command engine underneath it — eleven built-ins are a fixed d
     never prints its own trailing newline while it waits for input — an idle gap with an
     unterminated tail is treated as a live prompt and surfaced through a callback instead of
     blocking forever.
-*   **Limit**: no pty. Full-screen, cursor-addressing programs are out of scope; the UI renders
-    discrete records, not a scrollback with a cursor in it. That's why `edit` is its own Compose
-    screen rather than an attempt to run `nano` through this. Autosuggestion, "did you mean", and
+*   **Limit**: no pty - a plain `ProcessBuilder` with piped stdin/stdout, not `/dev/ptmx`. Full-
+    screen, cursor-addressing programs are out of scope; the UI renders discrete records, not a
+    scrollback with a cursor in it. That's why `edit` is its own Compose screen rather than an
+    attempt to run `nano` through this. Unfinished, not undesigned: the `terminal-emulator` module
+    already bundles a real native pty bridge (`JNI.kt`'s `createSubprocess`, backed by
+    `jni/termux.c` - the same one upstream Termux's `TerminalSession` uses) and the
+    `TerminalEmulator` `ShellSession` already builds is exactly what that bridge is meant to feed
+    live, not just replay output through after the fact. See the doc comment on `ShellSession`
+    itself for why rewiring the app's one shared process-I/O path onto it stayed out of scope this
+    round (no device in this environment to verify a change to code every terminal command runs
+    through). Autosuggestion, "did you mean", and
     alias hints are implemented natively in Kotlin (`ShellAliases.kt`) as ordinary pills rather
     than as a shell-side line editor plugin — there's no live PTY for one to attach to.
 
@@ -81,12 +89,14 @@ reflection-based command engine underneath it — eleven built-ins are a fixed d
     exactly one pill: `bootstrap`.
 *   **Overflow**: a category or a root stack can hold more pills than one screen's height at
     `PillMenu.kt`'s `ROW_PITCH` - `rememberStackScroll` tracks drag and decay-fling offsets, then
-    snaps to the nearest row. The offset is applied on top of every pill's animated position,
-    since the stack's absolute-
-    `translationY` positioning can't use a stock `verticalScroll`/`LazyColumn` (Compose would size
-    the scroll region to each pill's own viewport-sized Box, not to the stack's real extent). Used
-    for both the root stack and any `ChildBand`. Dwelling on a newly scrolled-in navigational pill
-    for 550 ms advances into it; terminal leaves and wizard actions never fire from dwell.
+    snaps to the nearest row; the offset is unbounded in both directions, so a drag or fling can
+    carry the stack past its first or last row, leaving blank space, with nothing snapping it
+    back. The offset is applied on top of every pill's animated position, since the stack's
+    absolute-`translationY` positioning can't use a stock `verticalScroll`/`LazyColumn` (Compose
+    would size the scroll region to each pill's own viewport-sized Box, not to the stack's real
+    extent). Used for both the root stack and any `ChildBand`. Whichever pill scrolls to rest at
+    row 0 goes ink ("primed") purely as a cosmetic marker - selecting a pill always requires an
+    explicit tap, never a scroll-and-wait.
 *   `FileBrowser` (also `androidMain`) supplies the file-argument case: a `file…` node (attached
     to `edit` and to every discovered shell binary) whose `wizardId` opens the graphical Select
     File/Folder picker instead of drilling further into the pill stack - see section 13 below.
@@ -196,7 +206,11 @@ reflection-based command engine underneath it — eleven built-ins are a fixed d
     visual idiom as `AiChatScreen`. An installed row also shows a trust badge (TRUSTED SIGNER /
     SIGNED · UNKNOWN SIGNER / SIGNED · UNVERIFIED (OS) / UNSIGNED) — `AzpListing.trust` carries
     the androidMain `AzpTrust` enum's name as a plain string, since commonMain can't reference a
-    platform-specific type directly. Reached via a synthesized `azp` root pill
+    platform-specific type directly. A not-yet-installed row shows "TRUST UNKNOWN · CHECKED AT
+    INSTALL" instead of nothing (AZP-7): the repository's search API (`AzpPackageSummary`) never
+    returns anything signature-related, so there's no real verdict to show before downloading and
+    verifying — the deliberate choice is to say so plainly rather than let the absence of a badge
+    silently read as "already vetted". Reached via a synthesized `azp` root pill
     (`CommandTree.azpRoot`, `wizardId = "azp-store"` navigates to the screen, same reuse of
     `onWizard` as the AI pill).
 *   `AzpInstaller` computes SHA-256 while extracting and rejects a package when a payload is
@@ -212,7 +226,8 @@ reflection-based command engine underneath it — eleven built-ins are a fixed d
     (not `remember`-scoped) so every screen agrees on the same background, including
     `EditorScreen` - which runs in its own Activity (`EditorActivity`) with its own composition,
     so a per-composition roll would let it disagree with the rest of the app. `Azphalt.grounds`
-    (Mustard weighted heavily as the primary, six others sharing the rest) and
+    (Mustard weighted heavily as the primary, five others sharing the rest - a sixth, Olive, was
+    dropped for reading too close to Mustard's own yellow) and
     `Azphalt.randomGround(exclude)` (weighted pick) predate this; `currentGround` just makes one
     of those picks the shared, observable one.
 *   `Azphalt.rerollGround()` swaps to a new weighted pick (never repeating the current one),

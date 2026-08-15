@@ -17,6 +17,17 @@ import kotlinx.serialization.json.putJsonArray
 
 private fun JsonObject.stringArg(key: String): String? = (this[key] as? JsonPrimitive)?.content
 
+/**
+ * Same as [stringArg], but forces the result to be root-absolute. `VfsManager.resolve` treats a
+ * path with no leading "/" as relative to whatever directory the Files-explorer UI (or the `vfs`
+ * command line) currently has open - state a human can change between one MCP call and the next,
+ * or even while a call is in flight. An MCP client has no way to observe or control that cwd, so
+ * every vfs.* tool call resolves paths against the sandbox root instead, regardless of what's
+ * open in the UI at the moment the call lands.
+ */
+private fun JsonObject.absPathArg(key: String): String? =
+    stringArg(key)?.let { if (it.startsWith("/")) it else "/$it" }
+
 private fun textContent(text: String): JsonArray = buildJsonArray {
     addJsonObject { put("type", "text"); put("text", text) }
 }
@@ -63,7 +74,7 @@ class McpTools(
             "List entries (name, type) in a directory of HG2Gui's app-private sandboxed filesystem.",
             schema(props("path" to stringProp("Directory path, e.g. \"/\" or \"/Downloads\"")), listOf("path"))
         ) { args ->
-            val path = args?.stringArg("path")
+            val path = args?.absPathArg("path")
                 ?: return@ToolSpec ToolCallResult.Failure(McpJsonRpc.INVALID_PARAMS, "Missing \"path\"")
             val dir = VfsManager.resolve(context, path)
             if (dir == null || !dir.isDirectory) {
@@ -80,7 +91,7 @@ class McpTools(
             "Read a text file's contents from HG2Gui's app-private sandboxed filesystem.",
             schema(props("path" to stringProp("File path, e.g. \"/notes.txt\"")), listOf("path"))
         ) { args ->
-            val path = args?.stringArg("path")
+            val path = args?.absPathArg("path")
                 ?: return@ToolSpec ToolCallResult.Failure(McpJsonRpc.INVALID_PARAMS, "Missing \"path\"")
             val text = VfsManager.readText(context, path)
             if (text == null) ToolCallResult.Failure(McpJsonRpc.INVALID_PARAMS, "Not a file: $path")
@@ -97,7 +108,7 @@ class McpTools(
                 listOf("path", "content")
             )
         ) { args ->
-            val path = args?.stringArg("path")
+            val path = args?.absPathArg("path")
                 ?: return@ToolSpec ToolCallResult.Failure(McpJsonRpc.INVALID_PARAMS, "Missing \"path\"")
             val content = args.stringArg("content")
                 ?: return@ToolSpec ToolCallResult.Failure(McpJsonRpc.INVALID_PARAMS, "Missing \"content\"")
@@ -109,7 +120,7 @@ class McpTools(
             "Create a directory (and parents) in HG2Gui's app-private sandboxed filesystem.",
             schema(props("path" to stringProp("Directory path to create")), listOf("path"))
         ) { args ->
-            val path = args?.stringArg("path")
+            val path = args?.absPathArg("path")
                 ?: return@ToolSpec ToolCallResult.Failure(McpJsonRpc.INVALID_PARAMS, "Missing \"path\"")
             if (VfsManager.mkdir(context, path)) ToolCallResult.Success(textContent("ok"))
             else ToolCallResult.Failure(McpJsonRpc.INTERNAL_ERROR, "Failed to create: $path")
@@ -119,7 +130,7 @@ class McpTools(
             "Delete a file or directory (recursively) in HG2Gui's app-private sandboxed filesystem.",
             schema(props("path" to stringProp("Path to delete")), listOf("path"))
         ) { args ->
-            val path = args?.stringArg("path")
+            val path = args?.absPathArg("path")
                 ?: return@ToolSpec ToolCallResult.Failure(McpJsonRpc.INVALID_PARAMS, "Missing \"path\"")
             if (VfsManager.delete(context, path)) ToolCallResult.Success(textContent("ok"))
             else ToolCallResult.Failure(McpJsonRpc.INTERNAL_ERROR, "Failed to delete: $path")
@@ -132,9 +143,9 @@ class McpTools(
                 listOf("from", "to")
             )
         ) { args ->
-            val from = args?.stringArg("from")
+            val from = args?.absPathArg("from")
                 ?: return@ToolSpec ToolCallResult.Failure(McpJsonRpc.INVALID_PARAMS, "Missing \"from\"")
-            val to = args.stringArg("to")
+            val to = args.absPathArg("to")
                 ?: return@ToolSpec ToolCallResult.Failure(McpJsonRpc.INVALID_PARAMS, "Missing \"to\"")
             if (VfsManager.move(context, from, to)) ToolCallResult.Success(textContent("ok"))
             else ToolCallResult.Failure(McpJsonRpc.INTERNAL_ERROR, "Failed to move $from -> $to")
@@ -147,9 +158,9 @@ class McpTools(
                 listOf("from", "to")
             )
         ) { args ->
-            val from = args?.stringArg("from")
+            val from = args?.absPathArg("from")
                 ?: return@ToolSpec ToolCallResult.Failure(McpJsonRpc.INVALID_PARAMS, "Missing \"from\"")
-            val to = args.stringArg("to")
+            val to = args.absPathArg("to")
                 ?: return@ToolSpec ToolCallResult.Failure(McpJsonRpc.INVALID_PARAMS, "Missing \"to\"")
             if (VfsManager.copy(context, from, to)) ToolCallResult.Success(textContent("ok"))
             else ToolCallResult.Failure(McpJsonRpc.INTERNAL_ERROR, "Failed to copy $from -> $to")
@@ -192,7 +203,7 @@ class McpTools(
     override suspend fun callTool(name: String, arguments: JsonObject?): ToolCallResult {
         val tool = allTools.firstOrNull { it.name == name }
             ?: return ToolCallResult.Failure(McpJsonRpc.METHOD_NOT_FOUND, "Unknown tool: $name")
-        if (name.startsWith("shell.") && !shellExecEnabled.value) {
+        if (isShellToolGated(name, shellExecEnabled.value)) {
             return ToolCallResult.Failure(McpJsonRpc.SHELL_EXEC_DISABLED, "Shell execution is disabled")
         }
         return tool.handler(arguments)

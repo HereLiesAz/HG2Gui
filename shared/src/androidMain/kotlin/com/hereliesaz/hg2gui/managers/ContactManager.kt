@@ -24,6 +24,11 @@ import java.util.Collections
  */
 class ContactManager(private val context: Context) {
 
+    // SYS-7: written by the background StoppableThread in refreshContacts(), read from whatever
+    // thread calls listNames()/getContacts()/etc. (usually main) - without @Volatile, a reader on
+    // another thread has no memory-model guarantee it ever sees the write at all, let alone
+    // promptly.
+    @Volatile
     private var contacts: MutableList<Contact>? = null // Cached list of contacts
     private val receiver: BroadcastReceiver
 
@@ -285,7 +290,10 @@ class ContactManager(private val context: Context) {
             val difference = System.currentTimeMillis() - lastContacted
             var sc = difference / 1000
             if (sc < 60) {
-                about[LAST_CONTACTED] = "sec: $lastContacted"
+                // SYS-5: was $lastContacted (the raw epoch timestamp, a huge absolute number) -
+                // sc is the actual "seconds ago" value this branch means to report, matching
+                // every other branch below it.
+                about[LAST_CONTACTED] = "sec: $sc"
             } else {
                 var ms = (sc / 60).toInt()
                 sc = (ms % 60).toLong()
@@ -397,9 +405,12 @@ class ContactManager(private val context: Context) {
         override fun getString(): String = name
 
         override fun compareTo(other: Contact): Int {
-            // Sort by first letter
-            val tf = name.uppercase()[0]
-            val of = other.name.uppercase()[0]
+            // Sort by first letter. SYS-6: a contact can reach here with an empty display name
+            // (added whenever name != null, and "" is not null) - indexing [0] on that threw;
+            // firstOrNull() falls back to a shared sentinel instead so an unnamed contact sorts
+            // predictably rather than crashing the sort.
+            val tf = name.uppercase().firstOrNull() ?: ' '
+            val of = other.name.uppercase().firstOrNull() ?: ' '
             return tf - of
         }
     }

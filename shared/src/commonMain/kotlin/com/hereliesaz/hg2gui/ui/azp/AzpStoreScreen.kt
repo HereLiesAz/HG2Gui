@@ -52,10 +52,12 @@ private val KINDS = listOf("all", "skill", "mcp", "code", "pack", "asset", "app"
 
 /**
  * Browses the azphalt registry (spec/repository-api.md) - the same `pkg`/`apt` idiom, but for
- * `.azp` extensions: search, filter by kind, install. HG2Gui has no `.azp` execution runtime, so
- * "install" downloads + unpacks the archive; only `kind:"skill"` packages do anything further
- * (their SKILL.md content feeds the AI chat's system prompt - see AiClient/AzpLibrary). Every
- * other kind is downloaded for the user's own use elsewhere, same as `apt download`.
+ * `.azp` extensions: search, filter by kind, install. HG2Gui has no `.azp` code/WASM execution
+ * runtime, so "install" downloads + unpacks the archive for most kinds - but two do something
+ * further: `kind:"skill"` packages fold their SKILL.md into the AI chat's system prompt (see
+ * AiClient/AzpLibrary), and `kind:"script"` packages resolve their declared Termux dependencies
+ * and wire an executable wrapper onto PATH (see ScriptInstaller). Every other kind is downloaded
+ * for the user's own use elsewhere, same as `apt download`.
  */
 @Composable
 fun AzpStoreScreen(
@@ -212,6 +214,18 @@ private fun AzpRow(listing: AzpListing, installing: Boolean, onInstall: (AzpList
                 Text(
                     trustLabel(listing.trust),
                     color = trustColor(listing.trust),
+                    fontSize = 8.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em,
+                    modifier = Modifier.padding(top = 3.dp)
+                )
+            } else if (!listing.installed) {
+                // AZP-7: signature verification needs the actual downloaded manifest.json and
+                // signature.json bytes - the repository's search API never returns anything
+                // signature-related, so there is no real trust verdict to show before installing.
+                // Rather than say nothing (which reads as "already vetted" by omission), this
+                // states that plainly: trust is unknown until install, not silently assumed good.
+                Text(
+                    "TRUST UNKNOWN · CHECKED AT INSTALL",
+                    color = Azphalt.Ink.copy(alpha = .4f),
                     fontSize = 8.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em,
                     modifier = Modifier.padding(top = 3.dp)
                 )

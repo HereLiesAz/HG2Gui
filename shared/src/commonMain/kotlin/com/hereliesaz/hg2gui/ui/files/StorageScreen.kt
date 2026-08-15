@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import com.hereliesaz.hg2gui.ui.ConfirmDialog
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
 import com.hereliesaz.hg2gui.ui.menu.pageBrush
 
@@ -49,6 +50,7 @@ fun StorageScreen(
     modifier: Modifier = Modifier
 ) {
     var tab by remember { mutableStateOf(StorageTab.BY_TYPE) }
+    var deleteTarget by remember { mutableStateOf<VfsEntry?>(null) }
 
     Column(
         modifier
@@ -62,7 +64,9 @@ fun StorageScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Chip("‹ BACK", onClick = onBack)
-            Chip("${stats?.byCategory?.size ?: 0} PLACES", filled = false, clickable = false)
+            // byCategory is this fixed 5-entry taxonomy (StorageCategory), not a count of where
+            // things live - "N PLACES" read as the latter while counting the former.
+            Chip("${stats?.byCategory?.size ?: 0} CATEGORIES", filled = false, clickable = false)
         }
 
         if (stats == null) {
@@ -177,11 +181,25 @@ fun StorageScreen(
                         }
                         Text(
                             "×", color = Azphalt.Ink.copy(alpha = .7f), fontSize = 15.sp,
-                            modifier = Modifier.clickable { onDelete(f.path) }.padding(start = 8.dp)
+                            modifier = Modifier.clickable { deleteTarget = f }.padding(start = 8.dp)
                         )
                     }
                 }
             }
+        }
+
+        deleteTarget?.let { entry ->
+            ConfirmDialog(
+                title = "DELETE ${entry.name}?",
+                message = if (entry.isDirectory) {
+                    "This deletes ${entry.name} and everything inside it. This can't be undone."
+                } else {
+                    "This deletes ${entry.name}. This can't be undone."
+                },
+                confirmLabel = "DELETE",
+                onConfirm = { onDelete(entry.path); deleteTarget = null },
+                onDismiss = { deleteTarget = null }
+            )
         }
     }
 }

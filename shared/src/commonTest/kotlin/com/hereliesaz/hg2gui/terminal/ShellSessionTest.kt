@@ -4,6 +4,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class ShellSessionTest {
@@ -122,7 +123,7 @@ class ShellSessionTest {
     }
 
     @Test
-    fun decliningToAnswerLeavesTheSessionAliveAfterTimeout() {
+    fun decliningToAnswerTearsDownTheSessionInsteadOfDesyncingIt() {
         val s = shell ?: return
         var promptOffered = false
         s.stream(
@@ -131,6 +132,31 @@ class ShellSessionTest {
             onNeedInput = { promptOffered = true; null }
         )
         assertTrue(promptOffered, "expected the stall to still be offered even with no answer available")
-        assertTrue(s.isAlive, "declining an answer must fall through to the existing timeout backstop, not hang forever")
+        assertFalse(
+            s.isAlive,
+            "a declined/timed-out prompt must tear the session down; leaving it alive but abandoned " +
+                "mid-read means the next command silently gets consumed as the old prompt's answer"
+        )
+
+        var nextOutput = ""
+        val exitCode = s.stream("echo next", onLine = { nextOutput = it }, onNeedInput = { null })
+        assertEquals(-1, exitCode, "a torn-down session must not silently swallow the next command")
+        assertTrue(nextOutput.contains("shell is not running"))
+    }
+
+    @Test
+    fun outputExceedingTheScrollbackBufferIsFlaggedAsTruncated() {
+        // MCP-13: the headless TerminalEmulator's scrollback is a fixed-size circular buffer
+        // (1000 rows) - a command producing more lines than that silently loses its earliest
+        // ones with no signal, which matters most for an MCP caller with no live screen to
+        // notice the scroll. 1200 lines comfortably exceeds the buffer without being slow.
+        val s = shell ?: return
+        val r = s.exec("i=1; while [ \$i -le 1200 ]; do echo line\$i; i=\$((i+1)); done")
+        assertEquals(0, r.exitCode)
+        assertTrue(
+            r.output.startsWith("[earlier output truncated"),
+            "expected a truncation marker once output exceeds the scrollback buffer: ${r.output.take(120)}"
+        )
+        assertTrue(r.output.contains("line1200"), "the most recent lines must still be present")
     }
 }

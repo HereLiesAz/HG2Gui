@@ -73,12 +73,17 @@ fun McpServerScreen(
 
         McpSettingRow(
             title = "Server",
+            // MCP-7: loopback-only means no other device on the network can reach this - it does
+            // not mean no other app can. Any app on this device with plain INTERNET permission
+            // can open the same socket; the token below is what actually stands between it and
+            // this app's sandboxed files, not the network boundary.
             description = if (running)
-                "Running on 127.0.0.1:$port. An external AI agent can pair with it after " +
-                    "presenting the token below — nothing else on the network can reach it."
+                "Running on 127.0.0.1:$port, reachable by any app on this device (not just over " +
+                    "the network) — the token below is what actually gates it. Present it once to pair."
             else
-                "Off. Starting it opens a loopback-only socket an AI agent can connect to " +
-                    "(e.g. via adb forward) to read/write this app's sandboxed files."
+                "Off. Starting it opens a loopback socket any app on this device can connect to " +
+                    "(not just via adb forward) to read/write this app's sandboxed files, gated by a " +
+                    "pairing token."
         ) {
             McpToggle(leftLabel = "OFF", rightLabel = "ON", rightSelected = running) { wantOn ->
                 if (wantOn) onStart() else onStop()

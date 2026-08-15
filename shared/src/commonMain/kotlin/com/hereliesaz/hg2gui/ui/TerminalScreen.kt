@@ -47,6 +47,10 @@ import com.hereliesaz.hg2gui.ui.theme.AzphaltMotion
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+// SH-5: each entry's own VT100 scrollback is already capped independently - this bounds the
+// outer list of commands itself, which used to grow without limit for the life of a session.
+private const val MAX_BUFFER_ENTRIES = 200
+
 @Composable
 fun TerminalScreen(
     tree: List<MenuNode>,
@@ -104,7 +108,7 @@ fun TerminalScreen(
             if (fullLine.isNotEmpty() && !session.running) {
                 session.running = true
                 if (session.commandHistory.isEmpty() || session.commandHistory.last() != fullLine) {
-                    session.commandHistory = session.commandHistory + fullLine
+                    session.commandHistory = (session.commandHistory + fullLine).takeLast(MAX_BUFFER_ENTRIES)
                 }
                 session.historyIndex = -1
                 val lineToRun = fullLine
@@ -147,6 +151,14 @@ fun TerminalScreen(
                     } finally {
                         session.buffer = session.buffer.mapIndexed { index, entry ->
                             if (index == entryId) entry.copy(isRunning = false) else entry
+                        }
+                        // SH-5: each entry's own VT100 scrollback is already capped, but nothing
+                        // ever trimmed the *outer* list of commands itself - a long session just
+                        // kept growing it forever. Only safe to trim here, once this entry is no
+                        // longer being updated by its own entryId - trimming mid-run would shift
+                        // every index the streaming/error/finally branches above still target.
+                        if (session.buffer.size > MAX_BUFFER_ENTRIES) {
+                            session.buffer = session.buffer.takeLast(MAX_BUFFER_ENTRIES)
                         }
                         session.running = false
                     }
@@ -224,6 +236,7 @@ fun TerminalScreen(
             MenuNode(
                 id = "answer",
                 label = "Answer",
+                emitsToken = false,
                 children = listOf(
                     MenuNode(id = "answer-yes", label = "YES", value = "y"),
                     MenuNode(id = "answer-no", label = "NO", value = "n")
@@ -327,6 +340,9 @@ private fun BufferEntry(
     // fires the command itself - same "assemble, then let the user press Run" rule every
     // wizard-produced command already follows.
     var expanded by remember { mutableStateOf(false) }
+    // entry.output never carries raw ANSI/VT100 escapes to strip here: real shell output is
+    // always pre-flattened through ShellSession's headless TerminalEmulator before it reaches the
+    // buffer, and the bootstrap/Builtins branches only ever emit app-authored plain text.
     val isArt = remember(entry.output) { looksLikeAsciiArt(entry.output) }
     // Checked only when the output isn't already art - a block of `label: value` lines and a
     // dense symbol-art block are mutually exclusive readings of the same text.
@@ -532,14 +548,27 @@ private fun SessionTabs(
                         )
                         if (on && sessions.size > 1) {
                             Spacer(Modifier.width(6.dp))
-                            Text(
-                                "×",
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    color = Azphalt.Yellow,
-                                    fontSize = 10.sp
-                                ),
-                                modifier = Modifier.clickable { onClose(s.id) }
-                            )
+                            // UI-7: a bare glyph-sized clickable here would hit the same well-
+                            // under-48dp problem the guide Chip had. The full 48dp minimum isn't
+                            // used - this sits inside a horizontally-scrolling multi-tab strip,
+                            // and a 48dp close target per tab would make more than two or three
+                            // tabs unreachable on a phone-width screen - but the hitbox is grown
+                            // well past the bare glyph via padding, a deliberate middle ground
+                            // between the two, not an oversight.
+                            Box(
+                                Modifier
+                                    .clickable { onClose(s.id) }
+                                    .padding(8.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    "×",
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        color = Azphalt.Yellow,
+                                        fontSize = 10.sp
+                                    )
+                                )
+                            }
                         }
                     }
                 }
@@ -727,7 +756,12 @@ private fun suggestionNodeFor(session: SessionUiState): MenuNode? {
             }
         }
     }
-    return if (children.isEmpty()) null else MenuNode(id = "suggest", label = "Suggest", children = children)
+    return if (children.isEmpty()) null else MenuNode(
+        id = "suggest",
+        label = "Suggest",
+        children = children,
+        emitsToken = false
+    )
 }
 
 @Composable
