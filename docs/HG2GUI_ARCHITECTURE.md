@@ -96,7 +96,9 @@ reflection-based command engine underneath it — eleven built-ins are a fixed d
     would size the scroll region to each pill's own viewport-sized Box, not to the stack's real
     extent). Used for both the root stack and any `ChildBand`. Whichever pill scrolls to rest at
     row 0 goes ink ("primed") purely as a cosmetic marker - selecting a pill always requires an
-    explicit tap, never a scroll-and-wait.
+    explicit tap, never a scroll-and-wait. That marker only ever applies once the user has
+    actually dragged or flung the stack at least once; before any input, nothing is primed, even
+    if a pill happens to start out sitting at row 0.
 *   `FileBrowser` (also `androidMain`) supplies the file-argument case: a `file…` node (attached
     to `edit` and to every discovered shell binary) whose `wizardId` opens the graphical Select
     File/Folder picker instead of drilling further into the pill stack - see section 13 below.
