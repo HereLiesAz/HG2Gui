@@ -2,8 +2,10 @@
 
 package com.hereliesaz.hg2gui.ui.files
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -48,7 +50,9 @@ import kotlinx.coroutines.launch
  * Azphalt's capsule primitive.
  * No icons: a folder is a whole rounded rectangle in its own hue; tapping one expands it while
  * its siblings squish into thin coloured rods beside it, its children living inside it as
- * smaller rectangles - two accordion levels deep, then a plain record of what's inside.
+ * smaller rectangles - nested arbitrarily deep, not flattened into rows, the same "one host, the
+ * rest leave" choreography PillMenu's own capsule stack uses (ExpandableLevel recurses into
+ * itself rather than capping out at a fixed depth).
  */
 
 private enum class SortMode(val label: String) { NAME("Name"), NEWEST("Newest") }
@@ -119,10 +123,13 @@ fun FilesScreen(
     modifier: Modifier = Modifier
 ) {
     var screen by remember { mutableStateOf(FMScreen.Browse) }
+    // Unbounded - a folder can be opened inside an opened folder inside an opened folder, no
+    // fixed cap, the same way a PillMenu trail can drill as deep as the tree it's walking goes.
     var openChain by remember { mutableStateOf<List<VfsEntry>>(emptyList()) }
-    var rootEntries by remember { mutableStateOf<List<VfsEntry>>(emptyList()) }
-    var l0Entries by remember { mutableStateOf<List<VfsEntry>>(emptyList()) }
-    var recordEntries by remember { mutableStateOf<List<VfsEntry>>(emptyList()) }
+    // One listing per currently-relevant path: "/" plus every entry currently open in
+    // [openChain]. Keyed by path rather than depth so a stale listing from a chain that's since
+    // been trimmed just falls out of use rather than needing to be explicitly discarded.
+    var levelCache by remember { mutableStateOf<Map<String, List<VfsEntry>>>(emptyMap()) }
     var sortMode by remember { mutableStateOf(SortMode.NAME) }
     var kindFilter by remember { mutableStateOf(KindFilter.ALL) }
     var recencyFilter by remember { mutableStateOf(RecencyFilter.ANY) }
@@ -166,15 +173,20 @@ fun FilesScreen(
 
     fun List<VfsEntry>.filteredAndSorted() = sortEntries(filtered(kindFilter, showHidden, recencyFilter, nowMillis), sortMode)
 
-    LaunchedEffect(refreshTick, sortMode, kindFilter, recencyFilter, showHidden) {
-        rootEntries = listDir("/").filteredAndSorted()
+    // Reloads root plus every currently-open ancestor's own listing whenever the chain changes
+    // depth (a tap drilled in or backed out) or the filter/sort/refresh state changes - the
+    // direct generalization of the old three fixed LaunchedEffects (root/level-0/record) to
+    // however many levels happen to be open right now.
+    LaunchedEffect(openChain, sortMode, kindFilter, recencyFilter, showHidden, refreshTick) {
+        val paths = listOf("/") + openChain.map { it.path }
+        levelCache = paths.associateWith { listDir(it).filteredAndSorted() }
     }
-    LaunchedEffect(openChain.getOrNull(0)?.path, sortMode, kindFilter, recencyFilter, showHidden, refreshTick) {
-        l0Entries = openChain.getOrNull(0)?.let { listDir(it.path).filteredAndSorted() } ?: emptyList()
+
+    fun entriesAt(depth: Int): List<VfsEntry> {
+        val path = if (depth == 0) "/" else openChain.getOrNull(depth - 1)?.path ?: return emptyList()
+        return levelCache[path] ?: emptyList()
     }
-    LaunchedEffect(openChain.getOrNull(1)?.path, sortMode, kindFilter, recencyFilter, showHidden, refreshTick) {
-        recordEntries = openChain.getOrNull(1)?.let { listDir(it.path).filteredAndSorted() } ?: emptyList()
-    }
+
     LaunchedEffect(searchQuery, showHidden, refreshTick) {
         val results = if (searchQuery.isNotBlank()) search(searchQuery) else emptyList()
         // Hidden means "living inside a dotted path," the same rule the browse view applies to
@@ -192,15 +204,13 @@ fun FilesScreen(
     }
 
     fun openEntry(depth: Int, entry: VfsEntry) {
-        openChain = when (depth) {
-            // Two accordion levels deep, then a plain record of what's inside - depth 1 and any
-            // deeper tap (a folder found inside the record list) both just replace level 1, never
-            // rolling level 0 out. Dropping level 0 here used to rebase the chain onto a folder
-            // that was never actually one of the true root's own children - the root panel's own
-            // sibling rods (computed against rootEntries) would then never find it, and the "…"
-            // back chip landed on a chain no longer reachable from the root.
-            0 -> if (openChain.getOrNull(0)?.path == entry.path) emptyList() else listOf(entry)
-            else -> if (openChain.getOrNull(1)?.path == entry.path) openChain.take(1) else openChain.take(1) + entry
+        // Tapping the folder already open at this depth closes it back to its own level;
+        // tapping any other folder here replaces whatever was open at this depth (and
+        // everything deeper, which only ever made sense nested inside it) with the new pick.
+        openChain = if (openChain.getOrNull(depth)?.path == entry.path) {
+            openChain.take(depth)
+        } else {
+            openChain.take(depth) + entry
         }
     }
 
@@ -308,15 +318,10 @@ fun FilesScreen(
                         Chip("…", background = Azphalt.Yellow, foreground = Azphalt.Ink, onClick = { openChain = openChain.dropLast(1) })
                     }
                 }
-                // "Here" is wherever the chain has actually drilled to - the three lists are
-                // different depths, not siblings, so summing them (a former bug) counted a
-                // folder's own contents as though they sat beside it at the level above.
-                val count = when (openChain.size) {
-                    0 -> rootEntries.size
-                    1 -> l0Entries.size
-                    else -> recordEntries.size
-                }
-                Chip("$count THINGS HERE", filled = false, clickable = false)
+                // "Here" is wherever the chain has actually drilled to - the deepest open level's
+                // own listing, not a sum across every depth (a folder's contents don't also sit
+                // beside it at the level above).
+                Chip("${entriesAt(openChain.size).size} THINGS HERE", filled = false, clickable = false)
             }
         }
 
@@ -459,12 +464,13 @@ fun FilesScreen(
             ) {
                 item(key = "level0") {
                     ExpandableLevel(
-                        entries = rootEntries,
-                        openEntry = openChain.getOrNull(0),
-                        onToggle = { openEntry(0, it) },
+                        depth = 0,
+                        openChain = openChain,
+                        entriesAt = ::entriesAt,
+                        onToggle = { d, e -> openEntry(d, e) },
                         selectMode = selectMode,
                         selected = selected,
-                        onTap = { tapEntry(0, it) },
+                        onTap = { d, e -> tapEntry(d, e) },
                         // Long-pressing while already selecting adds to the set, same as tapping
                         // a row already does in select mode - replacing it wiped everything else
                         // picked so far the moment a second long-press landed on a new row.
@@ -472,41 +478,7 @@ fun FilesScreen(
                         onRename = { renameTarget = it; renameInput = it.name },
                         onDelete = { deleteTarget = it },
                         onShare = { onShare(it.path) }
-                    ) {
-                        if (openChain.isNotEmpty()) {
-                            ExpandableLevel(
-                                entries = l0Entries,
-                                openEntry = openChain.getOrNull(1),
-                                onToggle = { openEntry(1, it) },
-                                selectMode = selectMode,
-                                selected = selected,
-                                onTap = { tapEntry(1, it) },
-                                // Long-pressing while already selecting adds to the set, same as tapping
-                        // a row already does in select mode - replacing it wiped everything else
-                        // picked so far the moment a second long-press landed on a new row.
-                        onLongPress = { selectMode = true; selected = selected + it.path },
-                                onRename = { renameTarget = it; renameInput = it.name },
-                                onDelete = { deleteTarget = it },
-                                onShare = { onShare(it.path) }
-                            ) {
-                                if (openChain.size == 2) {
-                                    RecordList(
-                                        entries = recordEntries,
-                                        selectMode = selectMode,
-                                        selected = selected,
-                                        onTap = { tapEntry(2, it) },
-                                        // Long-pressing while already selecting adds to the set, same as tapping
-                        // a row already does in select mode - replacing it wiped everything else
-                        // picked so far the moment a second long-press landed on a new row.
-                        onLongPress = { selectMode = true; selected = selected + it.path },
-                                        onRename = { renameTarget = it; renameInput = it.name },
-                                        onDelete = { deleteTarget = it },
-                                        onShare = { onShare(it.path) }
-                                    )
-                                }
-                            }
-                        }
-                    }
+                    )
                 }
             }
         }
@@ -648,24 +620,41 @@ fun FilesScreen(
     }
 }
 
+/**
+ * A folder is a whole rounded rectangle in its own hue. Tapping one opens it in place: its
+ * sibling folders squish into thin coloured rods beside it, and its own contents render inside
+ * it - which, if one of *those* is itself opened, means this composable calling itself again for
+ * [depth] + 1, exactly the way an opened rectangle's children are still nested inside the parent
+ * rectangle they've always belonged to. Nothing caps how deep that goes; it bottoms out on its
+ * own the moment a level has nothing open in it. [animateContentSize] reuses PillMenu's own
+ * [Azphalt.SLIDE_MS]/linear timing for the size change this produces (a squish, an expand) rather
+ * than the hand-rolled per-pill Animatable choreography PillMenu itself uses for a fixed, static
+ * pill tree - this tree is arbitrary-depth and lazily loaded, so animating the aggregate size
+ * change is the direct equivalent for data that isn't known until a folder is actually opened.
+ */
 @Composable
 private fun ExpandableLevel(
-    entries: List<VfsEntry>,
-    openEntry: VfsEntry?,
-    onToggle: (VfsEntry) -> Unit,
+    depth: Int,
+    openChain: List<VfsEntry>,
+    entriesAt: (Int) -> List<VfsEntry>,
+    onToggle: (Int, VfsEntry) -> Unit,
     selectMode: Boolean,
     selected: Set<String>,
-    onTap: (VfsEntry) -> Unit,
+    onTap: (Int, VfsEntry) -> Unit,
     onLongPress: (VfsEntry) -> Unit,
     onRename: (VfsEntry) -> Unit,
     onDelete: (VfsEntry) -> Unit,
-    onShare: (VfsEntry) -> Unit,
-    nestedContent: @Composable () -> Unit
+    onShare: (VfsEntry) -> Unit
 ) {
+    val entries = entriesAt(depth)
+    val openEntry = openChain.getOrNull(depth)
     val folders = entries.filter { it.isDirectory }
     val files = entries.filter { !it.isDirectory }
 
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+        modifier = Modifier.animateContentSize(tween(Azphalt.SLIDE_MS, easing = LinearEasing))
+    ) {
         if (openEntry != null) {
             val others = folders.filter { it.path != openEntry.path }
             if (others.isNotEmpty()) {
@@ -681,7 +670,7 @@ private fun ExpandableLevel(
                                     .height(40.dp)
                                     .clip(RoundedCornerShape(percent = 50))
                                     .background(Azphalt.hues[Azphalt.hueOf(f.path)])
-                                    .clickable { onToggle(f) }
+                                    .clickable { onToggle(depth, f) }
                             )
                         }
                     }
@@ -690,11 +679,13 @@ private fun ExpandableLevel(
             Box(
                 Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(18.dp))
+                    // The style guide's canonical "record tile" radius - the one other ad hoc
+                    // radius this screen used to carry (18dp) reconciled to it.
+                    .clip(RoundedCornerShape(26.dp))
                     // The row's own hue never changes on selection - only the mark does, same
                     // as every other selectable row in this screen.
                     .background(Azphalt.hues[Azphalt.hueOf(openEntry.path)])
-                    .clickable { onTap(openEntry) }
+                    .clickable { onTap(depth, openEntry) }
                     .padding(14.dp)
             ) {
                 Column {
@@ -711,7 +702,21 @@ private fun ExpandableLevel(
                         // could delete the very folder whose contents you were selecting inside.
                         if (!selectMode) EntryMenu(openEntry, onRename, onDelete, onShare, tint = Azphalt.White)
                     }
-                    Box(Modifier.padding(start = 14.dp, top = 10.dp)) { nestedContent() }
+                    Box(Modifier.padding(start = 14.dp, top = 10.dp)) {
+                        ExpandableLevel(
+                            depth = depth + 1,
+                            openChain = openChain,
+                            entriesAt = entriesAt,
+                            onToggle = onToggle,
+                            selectMode = selectMode,
+                            selected = selected,
+                            onTap = onTap,
+                            onLongPress = onLongPress,
+                            onRename = onRename,
+                            onDelete = onDelete,
+                            onShare = onShare
+                        )
+                    }
                 }
             }
         } else if (folders.isEmpty() && files.isEmpty()) {
@@ -721,7 +726,11 @@ private fun ExpandableLevel(
                 "FOLDERS · ${folders.size}", color = Azphalt.Ink.copy(alpha = .45f),
                 fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.18.em
             )
-            folders.forEach { f -> key(f.path) { FolderRow(f, selectMode, f.path in selected, onTap, onLongPress, onRename, onDelete, onShare) } }
+            folders.forEach { f ->
+                key(f.path) {
+                    FolderRow(f, selectMode, f.path in selected, { onTap(depth, it) }, onLongPress, onRename, onDelete, onShare)
+                }
+            }
         }
 
         if (files.isNotEmpty()) {
@@ -732,28 +741,8 @@ private fun ExpandableLevel(
                     modifier = Modifier.padding(top = 4.dp)
                 )
             }
-            FileRows(files, selectMode, selected, onTap, onLongPress, onRename, onDelete, onShare)
+            FileRows(files, selectMode, selected, { onTap(depth, it) }, onLongPress, onRename, onDelete, onShare)
         }
-    }
-}
-
-@Composable
-private fun RecordList(
-    entries: List<VfsEntry>,
-    selectMode: Boolean,
-    selected: Set<String>,
-    onTap: (VfsEntry) -> Unit,
-    onLongPress: (VfsEntry) -> Unit,
-    onRename: (VfsEntry) -> Unit,
-    onDelete: (VfsEntry) -> Unit,
-    onShare: (VfsEntry) -> Unit
-) {
-    val folders = entries.filter { it.isDirectory }
-    val files = entries.filter { !it.isDirectory }
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        if (folders.isEmpty() && files.isEmpty()) EmptyLabel()
-        folders.forEach { f -> key(f.path) { FolderRow(f, selectMode, f.path in selected, onTap, onLongPress, onRename, onDelete, onShare) } }
-        if (files.isNotEmpty()) FileRows(files, selectMode, selected, onTap, onLongPress, onRename, onDelete, onShare)
     }
 }
 
