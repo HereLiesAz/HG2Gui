@@ -172,12 +172,28 @@ private const val HOST_WIDTH = 0.66f
 private const val HOST_RIGHT_EDGE = 0.34f
 private const val CHILD_LEFT = 0.30f
 private const val CHILD_WIDTH = 0.34f
-// Menu Style Guide rule 8 (4%-per-depth width variation) is NOT implemented here. StackPill's
-// resting-state math was confirmed safe to vary by hand-derivation, but HostPill's constraint
-// propagation (offsetByFractionOfParent / fillMaxWidth / absoluteBleed interacting to park the
-// host at HOST_RIGHT_EDGE = 34%) couldn't be confidently resolved without a device to verify
-// against - HostPill's width/offset has been hand-tuned across two prior PRs (#91/#92), and this
-// gap is left open rather than risk regressing it on an unverified derivation.
+// Menu Style Guide rule 01 (4%-per-row width variation, "so the stack reads as a stack") is
+// applied only to StackPill's own resting width below, via ROOT_WIDTH_STEP / rootWidthFraction -
+// never to HostPill. HostPill's constraint propagation (offsetByFractionOfParent / fillMaxWidth /
+// absoluteBleed interacting to park the host at HOST_RIGHT_EDGE = 34%) has been hand-tuned across
+// two prior PRs (#91/#92); every line of HostPill (and every constant it reads - HOST_WIDTH,
+// HOST_RIGHT_EDGE) is left exactly as it was, so this variation can never touch that math. It's
+// safe to vary StackPill alone because of how offsetByFractionOfParent composes with fillMaxWidth:
+// StackPill's fillMaxWidth(fraction) modifier runs *first*, narrowing the constraints handed to
+// offsetByFractionOfParent, so with offset 0f (the resting, non-leaving state) a pill's right edge
+// simply lands at `fraction` of the full screen width - changing that one fillMaxWidth fraction
+// per row is the entire effect, with nothing downstream (absoluteBleed only extends the *left*
+// bleed) able to feed back into HostPill's own right-edge math.
+private const val ROOT_WIDTH_STEP = 0.04f
+
+/** StackPill's resting width, cycling every five rows per the base cascade's own "cycling every
+ *  five" language - triangling 0/1/2/1 steps down from [HOST_WIDTH] keeps every row's right edge
+ *  at or below HOST_WIDTH (never above it), so rule 01's "right end never passes two thirds of the
+ *  screen width" (HOST_WIDTH = 66% is already just under that) holds for every row, not just row 0. */
+private fun rootWidthFraction(row: Int): Float {
+    val stepsDown = intArrayOf(0, 1, 2, 1, 2)[row % 5]
+    return HOST_WIDTH - ROOT_WIDTH_STEP * stepsDown
+}
 // HostPill is HOST_WIDTH wide, offset left by (1 - HOST_RIGHT_EDGE) * HOST_WIDTH, so its right
 // edge lands at HOST_WIDTH * HOST_RIGHT_EDGE of the full width. A band of children clears that
 // safely by rising into row 1+, but the trail row shares row 0 with the host, so it has to start
@@ -512,14 +528,18 @@ private fun StackPill(
     }
     val offset = remember { Animatable(if (entering) -1.7f else 0f) }
 
-    // One shared clock, no per-pill stagger - "dismissing the host plays the exact same arrival
-    // as opening the app... because returning to a stack and arriving at it are the same event."
-    // Every root pill's entrance and leaving-stack animation shares this same unstaggered timing.
+    // Leaving the stack (dismissing a host) still shares one clock across every pill - "dismissing
+    // the host plays the exact same arrival as opening the app" only describes that shared-clock
+    // leaving/re-entering pair, not first entrance. Entrance itself gets the style guide's row
+    // stagger (rule 08: "26ms per row, capped at twenty") so a freshly-opened stack cascades in
+    // top-down instead of every root pill snapping into place on the same frame.
     LaunchedEffect(leaving, entering) {
-        if (entering) offset.animateTo(
-            0f,
-            tween(Azphalt.SLIDE_MS, easing = LinearEasing)
-        ) else offset.animateTo(target, tween(Azphalt.SLIDE_MS, easing = LinearEasing))
+        if (entering) {
+            delay(row.coerceAtMost(20) * 26L)
+            offset.animateTo(0f, tween(Azphalt.SLIDE_MS, easing = LinearEasing))
+        } else {
+            offset.animateTo(target, tween(Azphalt.SLIDE_MS, easing = LinearEasing))
+        }
     }
 
     // The row this pill rests on is reached the same way HostPill reaches its own row: a single
@@ -530,10 +550,12 @@ private fun StackPill(
     val pitchPx = with(density) { ROW_PITCH.toPx() }
     val lift = remember { Animatable(0f) }
     LaunchedEffect(entering) {
-        if (entering) lift.animateTo(
-            -pitchPx * row,
-            tween(Azphalt.SLIDE_MS, easing = LinearEasing)
-        )
+        if (entering) {
+            // Same per-row 26ms stagger as the offset animation above, capped at twenty rows -
+            // both Animatables drive one entrance motion, so both start on the same delayed beat.
+            delay(row.coerceAtMost(20) * 26L)
+            lift.animateTo(-pitchPx * row, tween(Azphalt.SLIDE_MS, easing = LinearEasing))
+        }
     }
 
     Box(Modifier.fillMaxSize()) {
@@ -547,7 +569,7 @@ private fun StackPill(
             selected = (leaving && isHost) || (aligned && !leaving),
             modifier = Modifier
                 .align(Alignment.BottomStart)
-                .fillMaxWidth(HOST_WIDTH)
+                .fillMaxWidth(rootWidthFraction(row))
                 .offsetByFractionOfParent(offset.value)
                 .absoluteBleed(OVERHANG)
                 .graphicsLayer { translationY = lift.value + scrollOffsetPx }

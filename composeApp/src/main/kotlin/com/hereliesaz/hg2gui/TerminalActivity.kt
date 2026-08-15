@@ -262,6 +262,16 @@ class TerminalActivity : FragmentActivity() {
 
             suspend fun vfsStorageStats(): StorageStats = withContext(Dispatchers.IO) {
                 val breakdown = VfsManager.storageByType(this@TerminalActivity)
+                // Real device capacity for the "USED OF n GB" framing - the one figure the
+                // sandboxed vfs model has no way to know about itself, so it comes straight from
+                // StatFs on the partition backing the app's private storage rather than anything
+                // VfsManager tracks.
+                val capacityBytes = try {
+                    val statFs = android.os.StatFs(filesDir.path)
+                    statFs.blockSizeLong * statFs.blockCountLong
+                } catch (e: Exception) {
+                    null
+                }
                 StorageStats(
                     totalBytes = breakdown.totalBytes,
                     byCategory = breakdown.byCategory.map { (category, bytes) -> StorageCategoryStat(category.label, bytes) },
@@ -274,7 +284,8 @@ class TerminalActivity : FragmentActivity() {
                             modifiedAt = f.lastModified(),
                             isImage = VfsManager.isImage(f)
                         )
-                    }
+                    },
+                    totalCapacityBytes = capacityBytes
                 )
             }
 

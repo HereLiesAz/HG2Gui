@@ -18,11 +18,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -34,6 +37,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
@@ -47,7 +51,8 @@ import kotlinx.coroutines.launch
  * Azphalt's capsule primitive.
  * No icons: a folder is a whole rounded rectangle in its own hue; tapping one expands it while
  * its siblings squish into thin coloured rods beside it, its children living inside it as
- * smaller rectangles - two accordion levels deep, then a plain record of what's inside.
+ * smaller rectangles - nested arbitrarily deep, the same choreography at every level, until
+ * whatever's open bottoms out at a plain record of what's inside.
  */
 
 private enum class SortMode(val label: String) { NAME("Name"), NEWEST("Newest") }
@@ -111,9 +116,10 @@ fun FilesScreen(
 ) {
     var screen by remember { mutableStateOf(FMScreen.Browse) }
     var openChain by remember { mutableStateOf<List<VfsEntry>>(emptyList()) }
-    var rootEntries by remember { mutableStateOf<List<VfsEntry>>(emptyList()) }
-    var l0Entries by remember { mutableStateOf<List<VfsEntry>>(emptyList()) }
-    var recordEntries by remember { mutableStateOf<List<VfsEntry>>(emptyList()) }
+    // Entries for every currently-open accordion level: index 0 is the root ("/"), index i+1 is
+    // openChain[i]'s children - as many levels as the user has actually opened, no hardcoded
+    // cutoff.
+    var levelEntries by remember { mutableStateOf<List<List<VfsEntry>>>(listOf(emptyList())) }
     var sortMode by remember { mutableStateOf(SortMode.NAME) }
     var kindFilter by remember { mutableStateOf(KindFilter.ALL) }
     var recencyFilter by remember { mutableStateOf(RecencyFilter.ANY) }
@@ -123,6 +129,9 @@ fun FilesScreen(
     var searchActive by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var searchResults by remember { mutableStateOf<List<VfsSearchResult>>(emptyList()) }
+    // Most-recent-first, capped, no duplicates - just enough to let a tap re-run a search that
+    // was actually submitted, not every half-typed query.
+    val recentSearches = remember { mutableStateListOf<String>() }
 
     var selectMode by remember { mutableStateOf(false) }
     var selected by remember { mutableStateOf<Set<String>>(emptySet()) }
@@ -147,14 +156,9 @@ fun FilesScreen(
 
     fun List<VfsEntry>.filteredAndSorted() = sortEntries(filtered(kindFilter, showHidden, recencyFilter, nowMillis), sortMode)
 
-    LaunchedEffect(refreshTick, sortMode, kindFilter, recencyFilter, showHidden) {
-        rootEntries = listDir("/").filteredAndSorted()
-    }
-    LaunchedEffect(openChain.getOrNull(0)?.path, sortMode, kindFilter, recencyFilter, showHidden, refreshTick) {
-        l0Entries = openChain.getOrNull(0)?.let { listDir(it.path).filteredAndSorted() } ?: emptyList()
-    }
-    LaunchedEffect(openChain.getOrNull(1)?.path, sortMode, kindFilter, recencyFilter, showHidden, refreshTick) {
-        recordEntries = openChain.getOrNull(1)?.let { listDir(it.path).filteredAndSorted() } ?: emptyList()
+    LaunchedEffect(openChain, sortMode, kindFilter, recencyFilter, showHidden, refreshTick) {
+        val paths = listOf("/") + openChain.map { it.path }
+        levelEntries = paths.map { p -> listDir(p).filteredAndSorted() }
     }
     LaunchedEffect(searchQuery, showHidden, refreshTick) {
         val results = if (searchQuery.isNotBlank()) search(searchQuery) else emptyList()
@@ -162,11 +166,22 @@ fun FilesScreen(
     }
 
     fun openEntry(depth: Int, entry: VfsEntry) {
-        openChain = when (depth) {
-            0 -> if (openChain.getOrNull(0)?.path == entry.path) emptyList() else listOf(entry)
-            1 -> if (openChain.getOrNull(1)?.path == entry.path) openChain.take(1) else openChain.take(1) + entry
-            else -> listOf(openChain[1], entry) // descending past the 2-level window
+        // Same choreography at every depth - opening a folder truncates the chain down to this
+        // level and appends it (or closes it, if it was already the open one here), with no
+        // fixed-depth window to slide.
+        openChain = if (openChain.getOrNull(depth)?.path == entry.path) {
+            openChain.take(depth)
+        } else {
+            openChain.take(depth) + entry
         }
+    }
+
+    fun recordSearch(query: String) {
+        val trimmed = query.trim()
+        if (trimmed.isEmpty()) return
+        recentSearches.remove(trimmed)
+        recentSearches.add(0, trimmed)
+        while (recentSearches.size > 6) recentSearches.removeAt(recentSearches.lastIndex)
     }
 
     fun tapEntry(depth: Int, entry: VfsEntry) {
@@ -238,7 +253,7 @@ fun FilesScreen(
                         Chip("…", background = Azphalt.Yellow, foreground = Azphalt.Ink, onClick = { openChain = openChain.dropLast(1) })
                     }
                 }
-                val count = rootEntries.size + l0Entries.size + recordEntries.size
+                val count = levelEntries.sumOf { it.size }
                 Chip("$count THINGS HERE", filled = false, clickable = false)
             }
         }
@@ -269,7 +284,9 @@ fun FilesScreen(
                                 color = Azphalt.Ink, fontSize = 13.sp, fontWeight = FontWeight.SemiBold
                             ),
                             cursorBrush = SolidColor(Azphalt.Ink),
-                            singleLine = true
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                            keyboardActions = KeyboardActions(onSearch = { recordSearch(searchQuery) })
                         )
                         Text(
                             "✕", color = Azphalt.Ink.copy(alpha = .6f), fontSize = 13.sp,
@@ -346,66 +363,56 @@ fun FilesScreen(
         }
 
         // --- Content ------------------------------------------------------------------------
-        if (screen == FMScreen.Search) {
-            SearchResults(
-                results = searchResults,
-                onOpen = { result ->
-                    if (result.entry.isDirectory) {
-                        // A folder from search just becomes the new deepest-open level.
-                        openChain = listOf(result.entry)
-                        searchActive = false; searchQuery = ""; screen = FMScreen.Browse
-                    } else {
-                        onOpenFile(result.entry.path)
-                    }
+        // A single recursive level renderer rather than a fixed number of nested calls - a
+        // folder opened inside a folder inside a folder just keeps calling itself, with no
+        // hardcoded cutoff.
+        @Composable
+        fun RenderLevel(depth: Int) {
+            val entriesHere = levelEntries.getOrNull(depth) ?: emptyList()
+            val openHere = openChain.getOrNull(depth)
+            ExpandableLevel(
+                entries = entriesHere,
+                openEntry = openHere,
+                onToggle = { openEntry(depth, it) },
+                selectMode = selectMode,
+                selected = selected,
+                onTap = { tapEntry(depth, it) },
+                onLongPress = { selectMode = true; selected = setOf(it.path) },
+                onRename = { renameTarget = it; renameInput = it.name },
+                onDelete = { scope.launch { onDelete(it.path); refresh() } },
+                onShare = { onShare(it.path) }
+            ) {
+                if (openHere != null) RenderLevel(depth + 1)
+            }
+        }
+
+        if (searchActive) {
+            if (searchQuery.isBlank()) {
+                RecentSearches(recentSearches) { q ->
+                    searchQuery = q
+                    screen = FMScreen.Search
+                    recordSearch(q)
                 }
-            )
+            } else {
+                SearchResults(
+                    results = searchResults,
+                    onOpen = { result ->
+                        if (result.entry.isDirectory) {
+                            // A folder from search just becomes the new deepest-open level.
+                            openChain = listOf(result.entry)
+                            searchActive = false; searchQuery = ""; screen = FMScreen.Browse
+                        } else {
+                            onOpenFile(result.entry.path)
+                        }
+                    }
+                )
+            }
         } else {
             LazyColumn(
                 Modifier.weight(1f).fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                item(key = "level0") {
-                    ExpandableLevel(
-                        entries = rootEntries,
-                        openEntry = openChain.getOrNull(0),
-                        onToggle = { openEntry(0, it) },
-                        selectMode = selectMode,
-                        selected = selected,
-                        onTap = { tapEntry(0, it) },
-                        onLongPress = { selectMode = true; selected = setOf(it.path) },
-                        onRename = { renameTarget = it; renameInput = it.name },
-                        onDelete = { scope.launch { onDelete(it.path); refresh() } },
-                        onShare = { onShare(it.path) }
-                    ) {
-                        if (openChain.isNotEmpty()) {
-                            ExpandableLevel(
-                                entries = l0Entries,
-                                openEntry = openChain.getOrNull(1),
-                                onToggle = { openEntry(1, it) },
-                                selectMode = selectMode,
-                                selected = selected,
-                                onTap = { tapEntry(1, it) },
-                                onLongPress = { selectMode = true; selected = setOf(it.path) },
-                                onRename = { renameTarget = it; renameInput = it.name },
-                                onDelete = { scope.launch { onDelete(it.path); refresh() } },
-                                onShare = { onShare(it.path) }
-                            ) {
-                                if (openChain.size == 2) {
-                                    RecordList(
-                                        entries = recordEntries,
-                                        selectMode = selectMode,
-                                        selected = selected,
-                                        onTap = { tapEntry(2, it) },
-                                        onLongPress = { selectMode = true; selected = setOf(it.path) },
-                                        onRename = { renameTarget = it; renameInput = it.name },
-                                        onDelete = { scope.launch { onDelete(it.path); refresh() } },
-                                        onShare = { onShare(it.path) }
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
+                item(key = "level0") { RenderLevel(0) }
             }
         }
 
@@ -524,13 +531,14 @@ private fun ExpandableLevel(
                     }
                 }
             }
+            val isSelected = selectMode && openEntry.path in selected
             Box(
                 Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(18.dp))
-                    // The row's own hue never changes on selection - only the mark does, same
-                    // as every other selectable row in this screen.
-                    .background(Azphalt.hues[Azphalt.hueOf(openEntry.path)])
+                    // A selected row goes to ink with an inverted (yellow) foreground - same
+                    // "ink means selected/open" convention PillMenu's open pills use.
+                    .background(if (isSelected) Azphalt.Ink else Azphalt.hues[Azphalt.hueOf(openEntry.path)])
                     .clickable { onTap(openEntry) }
                     .padding(14.dp)
             ) {
@@ -539,11 +547,11 @@ private fun ExpandableLevel(
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             if (selectMode) SelectMark(openEntry.path in selected, dark = true)
                             Text(
-                                openEntry.name.uppercase(), color = Azphalt.White,
+                                openEntry.name.uppercase(), color = if (isSelected) Azphalt.Yellow else Azphalt.White,
                                 fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.06.em
                             )
                         }
-                        EntryMenu(openEntry, onRename, onDelete, onShare, tint = Azphalt.White)
+                        EntryMenu(openEntry, onRename, onDelete, onShare, tint = if (isSelected) Azphalt.Yellow else Azphalt.White)
                     }
                     Box(Modifier.padding(start = 14.dp, top = 10.dp)) { nestedContent() }
                 }
@@ -610,12 +618,14 @@ private fun FolderRow(
     onDelete: (VfsEntry) -> Unit,
     onShare: (VfsEntry) -> Unit
 ) {
+    val selectedTint = selectMode && isSelected
     Row(
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(percent = 50))
-            // The row's own hue never changes on selection - only the mark does.
-            .background(Azphalt.hues[Azphalt.hueOf(entry.path)])
+            // A selected row goes to ink with an inverted (yellow) foreground - same
+            // "ink means selected/open" convention PillMenu's open pills use.
+            .background(if (selectedTint) Azphalt.Ink else Azphalt.hues[Azphalt.hueOf(entry.path)])
             .combinedClickable(onClick = { onTap(entry) }, onLongClick = { onLongPress(entry) })
             .padding(start = 16.dp, end = 8.dp, top = 10.dp, bottom = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -625,7 +635,8 @@ private fun FolderRow(
             if (selectMode) SelectMark(isSelected, dark = true)
             Text(
                 (entry.name + "/").uppercase(),
-                color = Azphalt.White, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em, maxLines = 1
+                color = if (selectedTint) Azphalt.Yellow else Azphalt.White,
+                fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em, maxLines = 1
             )
         }
         if (!selectMode) EntryMenu(entry, onRename, onDelete, onShare, tint = Azphalt.White)
@@ -685,12 +696,14 @@ private fun FileRows(
         }
         others.forEach { f ->
             key(f.path) {
+                val selectedTint = selectMode && f.path in selected
                 Row(
                     Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(percent = 50))
-                        // The row's own wash never changes on selection - only the mark does.
-                        .background(Azphalt.Ink.copy(alpha = .09f))
+                        // A selected row goes to ink with an inverted (yellow) foreground - same
+                        // "ink means selected/open" convention PillMenu's open pills use.
+                        .background(if (selectedTint) Azphalt.Ink else Azphalt.Ink.copy(alpha = .09f))
                         .combinedClickable(onClick = { onTap(f) }, onLongClick = { onLongPress(f) })
                         .padding(start = 16.dp, end = 8.dp, top = 10.dp, bottom = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -701,8 +714,15 @@ private fun FileRows(
                         // Filenames are literal, not labels - the one place real case survives
                         // outside body copy, same as every other identifier here that names an
                         // actual leaf item rather than a folder/chrome label.
-                        Text(f.name, color = Azphalt.Ink, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em, maxLines = 1)
-                        Text(formatFileSize(f.sizeBytes), color = Azphalt.Ink.copy(alpha = .55f), fontSize = 9.sp)
+                        Text(
+                            f.name, color = if (selectedTint) Azphalt.Yellow else Azphalt.Ink,
+                            fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em, maxLines = 1
+                        )
+                        Text(
+                            formatFileSize(f.sizeBytes),
+                            color = if (selectedTint) Azphalt.Yellow.copy(alpha = .75f) else Azphalt.Ink.copy(alpha = .55f),
+                            fontSize = 9.sp
+                        )
                     }
                     if (!selectMode) EntryMenu(f, onRename, onDelete, onShare, tint = Azphalt.Ink)
                 }
@@ -732,6 +752,42 @@ private fun EntryMenu(entry: VfsEntry, onRename: (VfsEntry) -> Unit, onDelete: (
             Text("SHARE", color = tint.copy(alpha = .7f), fontSize = 8.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clickable { onShare(entry) })
         }
         Text("×", color = tint.copy(alpha = .85f), fontSize = 13.sp, modifier = Modifier.clickable { onDelete(entry) })
+    }
+}
+
+@Composable
+private fun ColumnScope.RecentSearches(recent: List<String>, onSelect: (String) -> Unit) {
+    Column(Modifier.fillMaxWidth().weight(1f).padding(horizontal = 20.dp, vertical = 12.dp)) {
+        if (recent.isEmpty()) {
+            Text(
+                "TYPE TO SEARCH", color = Azphalt.Ink.copy(alpha = .4f),
+                fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.1.em
+            )
+        } else {
+            Text(
+                "RECENT SEARCHES", color = Azphalt.Ink.copy(alpha = .45f),
+                fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.18.em
+            )
+            Spacer(Modifier.height(8.dp))
+            Row(
+                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                recent.forEach { q ->
+                    key(q) {
+                        Row(
+                            Modifier
+                                .clip(RoundedCornerShape(percent = 50))
+                                .background(Azphalt.Ink.copy(alpha = .10f))
+                                .clickable { onSelect(q) }
+                                .padding(horizontal = 14.dp, vertical = 8.dp)
+                        ) {
+                            Text(q, color = Azphalt.Ink.copy(alpha = .7f), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
