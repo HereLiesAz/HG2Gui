@@ -70,9 +70,10 @@ binary now, run in the Termux environment below, not a reimplementation of one.
     already inside it, browsing a sandboxed filesystem rooted at the app's private storage (the
     `vfs` command's backing store) — separate from the real Termux filesystem the shell operates
     on. A folder is a capsule: tap one to expand it while its siblings squish into thin coloured
-    rods beside it, two levels deep before you're looking at a plain list of what's inside; a
-    yellow **…** chip drops in next to **Close** whenever there's a level open, to step back up
-    one. From there: search across the whole sandbox, sort by name or newest, filter by kind
+    rods beside it, its own contents nested inside it exactly the same way — open one of *those*
+    and it repeats at any depth, never flattening into a plain list until a level actually has
+    nothing open in it. A yellow **…** chip drops in next to **Close** whenever there's a level
+    open, to step back up one. From there: search across the whole sandbox, sort by name or newest, filter by kind
     (folders/files/images), recency (today/this week), and whether dotfiles show at all, tap
     **Select** to multi-select for a batch Move, Copy, Share or Delete, rename anything in place,
     and a folder that's mostly photos renders itself as a thumbnail grid automatically — no
