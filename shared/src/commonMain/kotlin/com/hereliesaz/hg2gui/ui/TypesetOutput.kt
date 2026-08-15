@@ -69,7 +69,7 @@ fun KeyValueTable(text: String, ink: Color, modifier: Modifier = Modifier) {
         Box(Modifier.fillMaxWidth().height(1.dp).background(rule))
         rows.forEach { row ->
             Row(
-                Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                Modifier.fillMaxWidth().padding(vertical = 9.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
@@ -77,7 +77,7 @@ fun KeyValueTable(text: String, ink: Color, modifier: Modifier = Modifier) {
                     color = ink.copy(alpha = .55f),
                     fontSize = 9.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = 0.14.em
+                    letterSpacing = 0.18.em
                 )
                 Text(
                     row.value,

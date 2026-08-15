@@ -20,10 +20,19 @@ data class VfsSearchResult(val entry: VfsEntry, val parentPath: String)
 
 data class StorageCategoryStat(val label: String, val bytes: Long)
 
+/** [totalCapacityBytes] and [usedCapacityBytes] are the real device/partition capacity and usage,
+ *  when the platform can supply them (e.g. via `StatFs` on Android) - null when it can't, since
+ *  commonMain has no cross-platform way to ask the OS how big the disk is or how full it is. The
+ *  header falls back to just the sandbox total when they're absent instead of pretending to know a
+ *  percentage it doesn't have. [usedCapacityBytes] is the partition's own used bytes (capacity
+ *  minus available) - deliberately NOT [totalBytes], which is only the sandbox's own contents and
+ *  would make "used of n GB" read as a near-zero percentage against the whole partition. */
 data class StorageStats(
     val totalBytes: Long,
     val byCategory: List<StorageCategoryStat>,
-    val largest: List<VfsEntry>
+    val largest: List<VfsEntry>,
+    val totalCapacityBytes: Long? = null,
+    val usedCapacityBytes: Long? = null
 )
 
 /** The parent path of [path] ("/a/b/c" -> "/a/b"; "/a" -> "/"). */

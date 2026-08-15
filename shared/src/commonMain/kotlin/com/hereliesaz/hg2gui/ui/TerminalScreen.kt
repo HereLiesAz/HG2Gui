@@ -1,5 +1,8 @@
 package com.hereliesaz.hg2gui.ui
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -18,10 +21,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontFamily
@@ -38,6 +44,7 @@ import com.hereliesaz.hg2gui.ui.menu.Azphalt
 import com.hereliesaz.hg2gui.ui.menu.pageBrush
 import com.hereliesaz.hg2gui.ui.menu.MenuNode
 import com.hereliesaz.hg2gui.ui.menu.PillMenu
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 // SH-5: each entry's own VT100 scrollback is already capped independently - this bounds the
@@ -386,14 +393,10 @@ private fun BufferEntry(
                 // as a two-column grid with hairline rules, not left as raw monospace text.
                 KeyValueTable(entry.output, Azphalt.Ink)
             } else {
-                Text(
-                    entry.output,
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        color = Azphalt.Ink.copy(alpha = .8f),
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 12.sp
-                    )
-                )
+                // "Output sets, not echoes" (RATTLE 5G / OUTPUT SETS): raw output reveals line by
+                // line via a clip-wipe + slight slide, the same idiom GuideReaderScreen's WipeItem
+                // uses for its own reveals, rather than the whole block appearing instantly.
+                OutputLines(entry)
             }
         }
         if (expanded) {
@@ -413,6 +416,81 @@ private fun BufferEntry(
     }
 }
 
+// Line-by-line duration/stagger for the output "set" beat - 320ms sits inside the 300-360ms
+// window the motion sheet calls for, staggered 90ms apart, using the one house easing curve
+// everything else in the app already animates with.
+private val OUTPUT_WIPE_EASE = CubicBezierEasing(0f, .9f, .1f, 1f)
+private const val OUTPUT_WIPE_MS = 320
+private const val OUTPUT_WIPE_STAGGER_MS = 90L
+
+// Mirrors PillMenu's own "26ms per row, capped at twenty" rule for a per-row stagger: only the
+// first STAGGER_CAP lines get the staggered wipe treatment, the rest of a very long output just
+// appears immediately rather than making the reader wait out dozens of staggered reveals.
+private const val OUTPUT_WIPE_STAGGER_CAP = 24
+
+@Composable
+private fun OutputLines(entry: TerminalHistoryEntry) {
+    // While a command is still streaming, output just appears as it arrives - the "set" beat is
+    // for the finished block settling in, not a wipe replayed on every incoming chunk. Once
+    // entry.isRunning flips to false this branch (re)mounts fresh, so its first composition here
+    // *is* the "output first appears" signal - a brand-new Column, a brand-new remember, exactly
+    // once, matching WipeItem/wipeKey's "plays once, not a loop" rule.
+    if (entry.isRunning) {
+        Text(
+            entry.output,
+            style = MaterialTheme.typography.bodyMedium.copy(
+                color = Azphalt.Ink.copy(alpha = .8f),
+                fontFamily = FontFamily.Monospace,
+                fontSize = 12.sp
+            )
+        )
+        return
+    }
+    val lines = remember(entry.output) { entry.output.split("\n") }
+    Column {
+        // Only the animated prefix gets one composable per line - the stagger cap already bounds
+        // how many lines wipe on individually, but the *rest* of a very long output (a recursive
+        // listing, a package inventory, thousands of lines) used to still get one Text node each,
+        // costing real composition/layout work for content nobody's watching wipe on anyway. The
+        // remaining tail renders as a single joined block instead.
+        lines.take(OUTPUT_WIPE_STAGGER_CAP).forEachIndexed { index, line ->
+            OutputWipeLine(seq = index, line = line)
+        }
+        if (lines.size > OUTPUT_WIPE_STAGGER_CAP) {
+            Text(
+                lines.drop(OUTPUT_WIPE_STAGGER_CAP).joinToString("\n"),
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    color = Azphalt.Ink.copy(alpha = .8f),
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 12.sp
+                )
+            )
+        }
+    }
+}
+
+@Composable
+private fun OutputWipeLine(seq: Int, line: String) {
+    val progress = remember { Animatable(0f) }
+    LaunchedEffect(Unit) {
+        delay(seq * OUTPUT_WIPE_STAGGER_MS)
+        progress.animateTo(1f, tween(OUTPUT_WIPE_MS, easing = OUTPUT_WIPE_EASE))
+    }
+    Text(
+        line,
+        modifier = Modifier
+            .drawWithContent {
+                clipRect(right = size.width * progress.value) { this@drawWithContent.drawContent() }
+            }
+            .graphicsLayer { translationX = -14.dp.toPx() * (1f - progress.value) },
+        style = MaterialTheme.typography.bodyMedium.copy(
+            color = Azphalt.Ink.copy(alpha = .8f),
+            fontFamily = FontFamily.Monospace,
+            fontSize = 12.sp
+        )
+    )
+}
+
 @Composable
 private fun BlockActionPill(label: String, onClick: () -> Unit) {
     Box(
@@ -420,14 +498,15 @@ private fun BlockActionPill(label: String, onClick: () -> Unit) {
             .clip(RoundedCornerShape(percent = 50))
             .background(Azphalt.Ink.copy(alpha = .14f))
             .clickable(onClick = onClick)
-            .padding(horizontal = 10.dp, vertical = 5.dp)
+            .padding(horizontal = 18.dp, vertical = 11.dp)
     ) {
         Text(
             label,
             style = MaterialTheme.typography.titleMedium.copy(
-                color = Azphalt.Ink,
-                fontSize = 8.sp,
-                fontWeight = FontWeight.Black
+                color = Azphalt.Ink.copy(alpha = .55f),
+                fontSize = 11.sp,
+                fontWeight = FontWeight.ExtraBold,
+                letterSpacing = 0.09.em
             )
         )
     }

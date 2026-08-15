@@ -20,11 +20,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -36,6 +39,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
@@ -52,7 +56,8 @@ import kotlinx.coroutines.launch
  * its siblings squish into thin coloured rods beside it, its children living inside it as
  * smaller rectangles - nested arbitrarily deep, not flattened into rows, the same "one host, the
  * rest leave" choreography PillMenu's own capsule stack uses (ExpandableLevel recurses into
- * itself rather than capping out at a fixed depth).
+ * itself rather than capping out at a fixed depth). A selected row goes to ink with an inverted
+ * (yellow) foreground - same "ink means selected/open" convention PillMenu's open pills use.
  */
 
 private enum class SortMode(val label: String) { NAME("Name"), NEWEST("Newest") }
@@ -139,6 +144,9 @@ fun FilesScreen(
     var searchActive by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var searchResults by remember { mutableStateOf<List<VfsSearchResult>>(emptyList()) }
+    // Most-recent-first, capped, no duplicates - just enough to let a tap re-run a search that
+    // was actually submitted, not every half-typed query.
+    val recentSearches = remember { mutableStateListOf<String>() }
 
     var selectMode by remember { mutableStateOf(false) }
     var selected by remember { mutableStateOf<Set<String>>(emptySet()) }
@@ -212,6 +220,14 @@ fun FilesScreen(
         } else {
             openChain.take(depth) + entry
         }
+    }
+
+    fun recordSearch(query: String) {
+        val trimmed = query.trim()
+        if (trimmed.isEmpty()) return
+        recentSearches.remove(trimmed)
+        recentSearches.add(0, trimmed)
+        while (recentSearches.size > 6) recentSearches.removeAt(recentSearches.lastIndex)
     }
 
     fun tapEntry(depth: Int, entry: VfsEntry) {
@@ -351,7 +367,9 @@ fun FilesScreen(
                                 color = Azphalt.Ink, fontSize = 13.sp, fontWeight = FontWeight.SemiBold
                             ),
                             cursorBrush = SolidColor(Azphalt.Ink),
-                            singleLine = true
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                            keyboardActions = KeyboardActions(onSearch = { recordSearch(searchQuery) })
                         )
                         Text(
                             "✕", color = Azphalt.Ink.copy(alpha = .6f), fontSize = 13.sp,
@@ -444,19 +462,27 @@ fun FilesScreen(
         }
 
         // --- Content ------------------------------------------------------------------------
-        if (screen == FMScreen.Search) {
-            SearchResults(
-                results = searchResults,
-                onOpen = { result ->
-                    if (result.entry.isDirectory) {
-                        // A folder from search just becomes the new deepest-open level.
-                        openChain = listOf(result.entry)
-                        searchActive = false; searchQuery = ""; screen = FMScreen.Browse
-                    } else {
-                        onOpenFile(result.entry.path)
-                    }
+        if (searchActive) {
+            if (searchQuery.isBlank()) {
+                RecentSearches(recentSearches) { q ->
+                    searchQuery = q
+                    screen = FMScreen.Search
+                    recordSearch(q)
                 }
-            )
+            } else {
+                SearchResults(
+                    results = searchResults,
+                    onOpen = { result ->
+                        if (result.entry.isDirectory) {
+                            // A folder from search just becomes the new deepest-open level.
+                            openChain = listOf(result.entry)
+                            searchActive = false; searchQuery = ""; screen = FMScreen.Browse
+                        } else {
+                            onOpenFile(result.entry.path)
+                        }
+                    }
+                )
+            }
         } else {
             LazyColumn(
                 Modifier.weight(1f).fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
@@ -676,15 +702,16 @@ private fun ExpandableLevel(
                     }
                 }
             }
+            val isSelected = selectMode && openEntry.path in selected
             Box(
                 Modifier
                     .fillMaxWidth()
                     // The style guide's canonical "record tile" radius - the one other ad hoc
                     // radius this screen used to carry (18dp) reconciled to it.
                     .clip(RoundedCornerShape(26.dp))
-                    // The row's own hue never changes on selection - only the mark does, same
-                    // as every other selectable row in this screen.
-                    .background(Azphalt.hues[Azphalt.hueOf(openEntry.path)])
+                    // A selected row goes to ink with an inverted (yellow) foreground - same
+                    // "ink means selected/open" convention PillMenu's open pills use.
+                    .background(if (isSelected) Azphalt.Ink else Azphalt.hues[Azphalt.hueOf(openEntry.path)])
                     .clickable { onTap(depth, openEntry) }
                     .padding(14.dp)
             ) {
@@ -693,7 +720,7 @@ private fun ExpandableLevel(
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             if (selectMode) SelectMark(openEntry.path in selected, dark = true)
                             Text(
-                                openEntry.name.uppercase(), color = Azphalt.White,
+                                openEntry.name.uppercase(), color = if (isSelected) Azphalt.Yellow else Azphalt.White,
                                 fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.06.em
                             )
                         }
@@ -765,12 +792,14 @@ private fun FolderRow(
     onDelete: (VfsEntry) -> Unit,
     onShare: (VfsEntry) -> Unit
 ) {
+    val selectedTint = selectMode && isSelected
     Row(
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(percent = 50))
-            // The row's own hue never changes on selection - only the mark does.
-            .background(Azphalt.hues[Azphalt.hueOf(entry.path)])
+            // A selected row goes to ink with an inverted (yellow) foreground - same
+            // "ink means selected/open" convention PillMenu's open pills use.
+            .background(if (selectedTint) Azphalt.Ink else Azphalt.hues[Azphalt.hueOf(entry.path)])
             .combinedClickable(onClick = { onTap(entry) }, onLongClick = { onLongPress(entry) })
             .padding(start = 16.dp, end = 8.dp, top = 10.dp, bottom = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -780,7 +809,8 @@ private fun FolderRow(
             if (selectMode) SelectMark(isSelected, dark = true)
             Text(
                 (entry.name + "/").uppercase(),
-                color = Azphalt.White, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em, maxLines = 1
+                color = if (selectedTint) Azphalt.Yellow else Azphalt.White,
+                fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em, maxLines = 1
             )
         }
         if (!selectMode) EntryMenu(entry, onRename, onDelete, onShare, tint = Azphalt.White)
@@ -840,12 +870,14 @@ private fun FileRows(
         }
         others.forEach { f ->
             key(f.path) {
+                val selectedTint = selectMode && f.path in selected
                 Row(
                     Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(percent = 50))
-                        // The row's own wash never changes on selection - only the mark does.
-                        .background(Azphalt.Ink.copy(alpha = .09f))
+                        // A selected row goes to ink with an inverted (yellow) foreground - same
+                        // "ink means selected/open" convention PillMenu's open pills use.
+                        .background(if (selectedTint) Azphalt.Ink else Azphalt.Ink.copy(alpha = .09f))
                         .combinedClickable(onClick = { onTap(f) }, onLongClick = { onLongPress(f) })
                         .padding(start = 16.dp, end = 8.dp, top = 10.dp, bottom = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -856,8 +888,15 @@ private fun FileRows(
                         // Filenames are literal, not labels - the one place real case survives
                         // outside body copy, same as every other identifier here that names an
                         // actual leaf item rather than a folder/chrome label.
-                        Text(f.name, color = Azphalt.Ink, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em, maxLines = 1)
-                        Text(formatFileSize(f.sizeBytes), color = Azphalt.Ink.copy(alpha = .55f), fontSize = 9.sp)
+                        Text(
+                            f.name, color = if (selectedTint) Azphalt.Yellow else Azphalt.Ink,
+                            fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em, maxLines = 1
+                        )
+                        Text(
+                            formatFileSize(f.sizeBytes),
+                            color = if (selectedTint) Azphalt.Yellow.copy(alpha = .75f) else Azphalt.Ink.copy(alpha = .55f),
+                            fontSize = 9.sp
+                        )
                     }
                     if (!selectMode) EntryMenu(f, onRename, onDelete, onShare, tint = Azphalt.Ink)
                 }
@@ -887,6 +926,42 @@ private fun EntryMenu(entry: VfsEntry, onRename: (VfsEntry) -> Unit, onDelete: (
             Text("SHARE", color = tint.copy(alpha = .7f), fontSize = 8.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clickable { onShare(entry) })
         }
         Text("×", color = tint.copy(alpha = .85f), fontSize = 13.sp, modifier = Modifier.clickable { onDelete(entry) })
+    }
+}
+
+@Composable
+private fun ColumnScope.RecentSearches(recent: List<String>, onSelect: (String) -> Unit) {
+    Column(Modifier.fillMaxWidth().weight(1f).padding(horizontal = 20.dp, vertical = 12.dp)) {
+        if (recent.isEmpty()) {
+            Text(
+                "TYPE TO SEARCH", color = Azphalt.Ink.copy(alpha = .4f),
+                fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.1.em
+            )
+        } else {
+            Text(
+                "RECENT SEARCHES", color = Azphalt.Ink.copy(alpha = .45f),
+                fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.18.em
+            )
+            Spacer(Modifier.height(8.dp))
+            Row(
+                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                recent.forEach { q ->
+                    key(q) {
+                        Row(
+                            Modifier
+                                .clip(RoundedCornerShape(percent = 50))
+                                .background(Azphalt.Ink.copy(alpha = .10f))
+                                .clickable { onSelect(q) }
+                                .padding(horizontal = 14.dp, vertical = 8.dp)
+                        ) {
+                            Text(q, color = Azphalt.Ink.copy(alpha = .7f), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 

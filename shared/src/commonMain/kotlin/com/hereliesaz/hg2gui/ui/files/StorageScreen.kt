@@ -2,9 +2,11 @@ package com.hereliesaz.hg2gui.ui.files
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,9 +28,12 @@ import com.hereliesaz.hg2gui.ui.menu.Azphalt
 import com.hereliesaz.hg2gui.ui.menu.pageBrush
 
 /*
- * Storage broken down by content type - real numbers from a recursive walk of the sandbox, not
- * a device-wide figure the app has no way to actually know. Two tabs: the breakdown, and the
- * worst offenders named.
+ * Storage broken down by content type - real numbers from a recursive walk of the sandbox. The
+ * headline "USED OF n GB" / percent figure needs the device's actual capacity though, which this
+ * commonMain screen has no way to ask the OS for itself - so it's plumbed in as an optional
+ * [StorageStats.totalCapacityBytes] the platform layer fills in (Android does this with
+ * `StatFs`); when it's null the header just falls back to the sandbox total alone. Two tabs: the
+ * breakdown, and the worst offenders named.
  */
 
 private val CATEGORY_HUES = mapOf(
@@ -43,6 +48,7 @@ fun StorageScreen(
     onDelete: (path: String) -> Unit,
     onBack: () -> Unit,
     fullscreen: Boolean,
+    onFreeUpSpace: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var tab by remember { mutableStateOf(StorageTab.BY_TYPE) }
@@ -75,14 +81,31 @@ fun StorageScreen(
         }
 
         Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 20.dp)) {
-            Text(
-                "USED IN THIS SANDBOX", color = Azphalt.Ink.copy(alpha = .55f),
-                fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.18.em
-            )
-            Text(
-                formatFileSize(stats.totalBytes), color = Azphalt.Ink,
-                fontSize = 44.sp, lineHeight = 40.sp, fontWeight = FontWeight.Black
-            )
+            val capacity = stats.totalCapacityBytes
+            val usedOfCapacity = stats.usedCapacityBytes
+            if (capacity != null && capacity > 0 && usedOfCapacity != null) {
+                Text(
+                    "USED OF ${formatFileSize(capacity)}", color = Azphalt.Ink.copy(alpha = .55f),
+                    fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.18.em
+                )
+                // The partition's own used bytes against its own capacity - stats.totalBytes is
+                // only the sandbox's own contents, dividing that by the whole partition's capacity
+                // would read as a near-zero percent regardless of how full the device actually is.
+                val percent = ((usedOfCapacity.toDouble() / capacity.toDouble()) * 100).toInt().coerceIn(0, 100)
+                Text(
+                    "$percent%", color = Azphalt.Ink,
+                    fontSize = 44.sp, lineHeight = 40.sp, fontWeight = FontWeight.Black
+                )
+            } else {
+                Text(
+                    "USED IN THIS SANDBOX", color = Azphalt.Ink.copy(alpha = .55f),
+                    fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.18.em
+                )
+                Text(
+                    formatFileSize(stats.totalBytes), color = Azphalt.Ink,
+                    fontSize = 44.sp, lineHeight = 40.sp, fontWeight = FontWeight.Black
+                )
+            }
             Spacer(Modifier.height(14.dp))
             Row(
                 Modifier
@@ -104,12 +127,26 @@ fun StorageScreen(
             }
         }
 
+        // Horizontally scrollable rather than a fixed Row with a weighted spacer - at larger UI
+        // scale/system font sizes or on a narrow device, three chips plus padding and gaps can
+        // exceed the available width; the spacer used to just collapse to zero and push FREE UP
+        // SPACE partly or wholly off-screen instead of making room for it.
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp),
+            Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp, vertical = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Chip("BY TYPE", filled = tab == StorageTab.BY_TYPE, onClick = { tab = StorageTab.BY_TYPE })
             Chip("LARGEST", filled = tab == StorageTab.LARGEST, onClick = { tab = StorageTab.LARGEST })
+            // No bulk-cleanup flow of its own - the sensible existing action is just surfacing
+            // the worst offenders, so this jumps to LARGEST (where DELETE is one tap away) and
+            // also hands off to whatever the caller wants to do with it.
+            Chip(
+                "FREE UP SPACE", background = Azphalt.hues[6], foreground = Azphalt.White,
+                onClick = { tab = StorageTab.LARGEST; onFreeUpSpace() }
+            )
         }
 
         when (tab) {
@@ -183,12 +220,14 @@ fun StorageScreen(
 private fun Chip(
     label: String,
     modifier: Modifier = Modifier,
+    background: Color = Azphalt.Ink,
+    foreground: Color = Azphalt.Yellow,
     filled: Boolean = true,
     clickable: Boolean = true,
     onClick: () -> Unit = {}
 ) {
-    val bg = if (filled) Azphalt.Ink else Azphalt.Ink.copy(alpha = .14f)
-    val fg = if (filled) Azphalt.Yellow else Azphalt.Ink.copy(alpha = .55f)
+    val bg = if (filled) background else Azphalt.Ink.copy(alpha = .14f)
+    val fg = if (filled) foreground else Azphalt.Ink.copy(alpha = .55f)
     Box(
         modifier
             .clip(RoundedCornerShape(percent = 50))
