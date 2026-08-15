@@ -558,7 +558,12 @@ private fun StackPill(
             selected = (leaving && isHost) || (aligned && !leaving),
             modifier = Modifier
                 .align(Alignment.BottomStart)
-                .fillMaxWidth(rootWidthFraction(row))
+                // The row-varied width is only for pills staying in the browsing stack - the one
+                // becoming the host has to already be HOST_WIDTH wide, matching exactly what
+                // HostPill renders once this phase completes, or `target`'s offset below (derived
+                // assuming HOST_WIDTH) lands the wrong row's right edge somewhere other than
+                // HOST_RIGHT_EDGE and then visibly pops into place the instant HostPill takes over.
+                .fillMaxWidth(if (isHost) HOST_WIDTH else rootWidthFraction(row))
                 .offsetByFractionOfParent(offset.value)
                 .absoluteBleed(OVERHANG)
                 .graphicsLayer { translationY = lift.value + scrollOffsetPx }

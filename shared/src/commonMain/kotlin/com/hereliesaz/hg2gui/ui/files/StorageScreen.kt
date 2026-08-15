@@ -2,9 +2,11 @@ package com.hereliesaz.hg2gui.ui.files
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -80,12 +82,16 @@ fun StorageScreen(
 
         Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 20.dp)) {
             val capacity = stats.totalCapacityBytes
-            if (capacity != null && capacity > 0) {
+            val usedOfCapacity = stats.usedCapacityBytes
+            if (capacity != null && capacity > 0 && usedOfCapacity != null) {
                 Text(
                     "USED OF ${formatFileSize(capacity)}", color = Azphalt.Ink.copy(alpha = .55f),
                     fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.18.em
                 )
-                val percent = ((stats.totalBytes.toDouble() / capacity.toDouble()) * 100).toInt().coerceIn(0, 100)
+                // The partition's own used bytes against its own capacity - stats.totalBytes is
+                // only the sandbox's own contents, dividing that by the whole partition's capacity
+                // would read as a near-zero percent regardless of how full the device actually is.
+                val percent = ((usedOfCapacity.toDouble() / capacity.toDouble()) * 100).toInt().coerceIn(0, 100)
                 Text(
                     "$percent%", color = Azphalt.Ink,
                     fontSize = 44.sp, lineHeight = 40.sp, fontWeight = FontWeight.Black
@@ -121,13 +127,19 @@ fun StorageScreen(
             }
         }
 
+        // Horizontally scrollable rather than a fixed Row with a weighted spacer - at larger UI
+        // scale/system font sizes or on a narrow device, three chips plus padding and gaps can
+        // exceed the available width; the spacer used to just collapse to zero and push FREE UP
+        // SPACE partly or wholly off-screen instead of making room for it.
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp),
+            Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp, vertical = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Chip("BY TYPE", filled = tab == StorageTab.BY_TYPE, onClick = { tab = StorageTab.BY_TYPE })
             Chip("LARGEST", filled = tab == StorageTab.LARGEST, onClick = { tab = StorageTab.LARGEST })
-            Spacer(Modifier.weight(1f))
             // No bulk-cleanup flow of its own - the sensible existing action is just surfacing
             // the worst offenders, so this jumps to LARGEST (where DELETE is one tap away) and
             // also hands off to whatever the caller wants to do with it.

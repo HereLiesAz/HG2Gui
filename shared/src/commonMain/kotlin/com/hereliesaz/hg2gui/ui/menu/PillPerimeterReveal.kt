@@ -89,8 +89,8 @@ class PerimeterRevealState {
     val rockAngle = Animatable(0f)
     // Beat 3 "fall": drops straight down from the break point onto the bottom edge (= origin).
     val fallProgress = Animatable(0f)
-    // Beat 4 "set": sits at 1 (no-op) except during its own brief window right after flood
-    // completes, where it snaps to 0 and wipes back to 1 - a plain top-level mirror of
+    // Beat 4 "set": stays at 0 (content hidden behind the flat hue fill) through the perimeter
+    // and flood legs, then wipes to 1 once flood completes - a plain top-level mirror of
     // GuideReaderScreen's WipeItem/wipeClip idiom (clip + slight slide) rather than a full
     // per-line wipe, since the wrapped content here is a whole screen, not a list of lines.
     val setWipe = Animatable(1f)
@@ -100,6 +100,11 @@ class PerimeterRevealState {
         active = true
         runLeadIn(reverse = false)
         listOf(bottomLeg, rightLeg, topLeg, leftLeg, flood).forEach { it.snapTo(0f) }
+        // setWipe sits at 0 (content hidden behind the flat hue fill) through the whole
+        // perimeter+flood run, rather than snapping there only after flood already finished -
+        // snapping afterward briefly showed the fully-revealed content, then hid it, then wiped
+        // it back on, a flicker rather than a single clean reveal.
+        setWipe.snapTo(0f)
         bottomLeg.animateTo(1f, tween(LEG_MS, easing = LEG_EASE))
         rightLeg.animateTo(1f, tween(LEG_MS, easing = LEG_EASE))
         topLeg.animateTo(1f, tween(LEG_MS, easing = LEG_EASE))
@@ -107,14 +112,15 @@ class PerimeterRevealState {
             launch { leftLeg.animateTo(1f, tween(LEG_MS, easing = LEG_EASE)) }
             launch { flood.animateTo(1f, tween(FLOOD_MS, easing = LEG_EASE)) }
         }
-        setWipe.snapTo(0f)
         setWipe.animateTo(1f, tween(SET_MS, easing = LEG_EASE))
     }
 
     /** The exact reverse: beat 4 first, then perimeter+flood retreat, then beats 3-1 backwards. */
     suspend fun close() {
+        // Left at 0 (content hidden) through the rest of the closing sequence below - the frame
+        // itself is retreating anyway, so there's nothing to "gate" by leaving it hidden; forcing
+        // it back to 1 here used to pop content instantly back into view mid-close.
         setWipe.animateTo(0f, tween(SET_MS, easing = LEG_EASE))
-        setWipe.snapTo(1f) // reset so it doesn't gate the flood/perimeter retreat below
         coroutineScope {
             launch { flood.animateTo(0f, tween(FLOOD_MS, easing = LEG_EASE)) }
             launch { leftLeg.animateTo(0f, tween(LEG_MS, easing = LEG_EASE)) }

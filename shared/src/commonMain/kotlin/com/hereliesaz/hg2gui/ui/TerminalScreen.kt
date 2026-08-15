@@ -448,19 +448,23 @@ private fun OutputLines(entry: TerminalHistoryEntry) {
     }
     val lines = remember(entry.output) { entry.output.split("\n") }
     Column {
-        lines.forEachIndexed { index, line ->
-            if (index < OUTPUT_WIPE_STAGGER_CAP) {
-                OutputWipeLine(seq = index, line = line)
-            } else {
-                Text(
-                    line,
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        color = Azphalt.Ink.copy(alpha = .8f),
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 12.sp
-                    )
+        // Only the animated prefix gets one composable per line - the stagger cap already bounds
+        // how many lines wipe on individually, but the *rest* of a very long output (a recursive
+        // listing, a package inventory, thousands of lines) used to still get one Text node each,
+        // costing real composition/layout work for content nobody's watching wipe on anyway. The
+        // remaining tail renders as a single joined block instead.
+        lines.take(OUTPUT_WIPE_STAGGER_CAP).forEachIndexed { index, line ->
+            OutputWipeLine(seq = index, line = line)
+        }
+        if (lines.size > OUTPUT_WIPE_STAGGER_CAP) {
+            Text(
+                lines.drop(OUTPUT_WIPE_STAGGER_CAP).joinToString("\n"),
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    color = Azphalt.Ink.copy(alpha = .8f),
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 12.sp
                 )
-            }
+            )
         }
     }
 }

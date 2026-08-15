@@ -317,15 +317,19 @@ class TerminalActivity : FragmentActivity() {
 
             suspend fun vfsStorageStats(): StorageStats = withContext(Dispatchers.IO) {
                 val breakdown = VfsManager.storageByType(this@TerminalActivity)
-                // Real device capacity for the "USED OF n GB" framing - the one figure the
-                // sandboxed vfs model has no way to know about itself, so it comes straight from
-                // StatFs on the partition backing the app's private storage rather than anything
-                // VfsManager tracks.
-                val capacityBytes = try {
+                // Real device capacity/usage for the "USED OF n GB" framing - the sandboxed vfs
+                // model has no way to know either about itself, so both come straight from StatFs
+                // on the partition backing the app's private storage rather than anything
+                // VfsManager tracks. Used is the partition's own used bytes (capacity minus
+                // available), not breakdown.totalBytes - that's only the sandbox's own contents,
+                // dividing it by the whole partition's capacity would read as a near-zero percent.
+                val (capacityBytes, usedBytes) = try {
                     val statFs = android.os.StatFs(filesDir.path)
-                    statFs.blockSizeLong * statFs.blockCountLong
+                    val capacity = statFs.blockSizeLong * statFs.blockCountLong
+                    val available = statFs.blockSizeLong * statFs.availableBlocksLong
+                    capacity to (capacity - available)
                 } catch (e: Exception) {
-                    null
+                    null to null
                 }
                 StorageStats(
                     totalBytes = breakdown.totalBytes,
@@ -340,7 +344,8 @@ class TerminalActivity : FragmentActivity() {
                             isImage = VfsManager.isImage(f)
                         )
                     },
-                    totalCapacityBytes = capacityBytes
+                    totalCapacityBytes = capacityBytes,
+                    usedCapacityBytes = usedBytes
                 )
             }
 

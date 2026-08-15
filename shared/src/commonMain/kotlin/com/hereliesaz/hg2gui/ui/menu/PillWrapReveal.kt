@@ -68,8 +68,8 @@ class PillWrapRevealState {
     // header for why this tier simplifies them this way.
     var leadInActive: Boolean by mutableStateOf(false)
     val leadIn = Animatable(0f)
-    // Beat 4 "set": sits at 1 (no-op) except right after flood completes - see setWipe in
-    // PillPerimeterReveal.kt for the identical idiom and rationale.
+    // Beat 4 "set": stays at 0 (content hidden) until flood completes, then wipes to 1 - see
+    // setWipe in PillPerimeterReveal.kt for the identical idiom and rationale.
     val setWipe = Animatable(1f)
 
     suspend fun open() {
@@ -80,15 +80,21 @@ class PillWrapRevealState {
         leadInActive = false
         wrap.snapTo(0f)
         flood.snapTo(0f)
+        // setWipe sits at 0 (content hidden behind the border-only frame) through wrap+flood,
+        // rather than snapping there only after flood already finished - snapping afterward
+        // briefly showed the fully-revealed content, then hid it, then wiped it back on, a
+        // flicker rather than a single clean reveal.
+        setWipe.snapTo(0f)
         wrap.animateTo(1f, tween(WRAP_MS, easing = WRAP_EASE))
         flood.animateTo(1f, tween(FLOOD_MS, easing = WRAP_EASE))
-        setWipe.snapTo(0f)
         setWipe.animateTo(1f, tween(SET_MS, easing = WRAP_EASE))
     }
 
     suspend fun close() {
+        // Left at 0 (content hidden) through the rest of the closing sequence below - the frame
+        // itself is retreating anyway, so there's nothing to "gate" by leaving it hidden; forcing
+        // it back to 1 here used to pop content instantly back into view mid-close.
         setWipe.animateTo(0f, tween(SET_MS, easing = WRAP_EASE))
-        setWipe.snapTo(1f) // reset so it doesn't gate the wrap/flood retreat below
         flood.animateTo(0f, tween(FLOOD_MS, easing = WRAP_EASE))
         wrap.animateTo(0f, tween(WRAP_MS, easing = WRAP_EASE))
         leadInActive = true
@@ -114,15 +120,31 @@ fun PillWrapReveal(state: PillWrapRevealState, hue: Color, content: @Composable 
         val fullH = with(density) { maxHeight.toPx() }
         val o = state.origin
         val w = state.wrap.value
-        val left = lerp(o.left, 0f, w)
-        val top = lerp(o.top, 0f, w)
-        val right = lerp(o.right, fullW, w)
-        val bottom = lerp(o.bottom, fullH, w)
-        val curW = right - left
-        val curH = bottom - top
-        val corner = lerp(minOf(o.width, o.height) / 2f, 0f, w)
 
         with(density) {
+            // The lead-in beats always land at the bottom edge (per the doc: stretch/break/fall
+            // bring the pill down onto the bottom of the screen before the perimeter run starts),
+            // regardless of where [origin] itself sits (e.g. the Files pill lives in the top
+            // header). The wrap growth below has to start from that same landed rect, not from
+            // [origin] directly, or the frame visibly teleports from the bottom back up to the
+            // header the instant leadInActive flips off.
+            val originLeft = if (o.width > 0f) o.left else 0f
+            val thickness = if (o.height > 0f) o.height else 34.dp.toPx()
+            val baseW = if (o.width > 0f) o.width else 64.dp.toPx()
+            val landedWidth = (baseW * 0.45f).coerceAtLeast(1f)
+            val landed = Rect(
+                left = originLeft, top = fullH - thickness,
+                right = originLeft + landedWidth, bottom = fullH
+            )
+
+            val left = lerp(landed.left, 0f, w)
+            val top = lerp(landed.top, 0f, w)
+            val right = lerp(landed.right, fullW, w)
+            val bottom = lerp(landed.bottom, fullH, w)
+            val curW = right - left
+            val curH = bottom - top
+            val corner = lerp(minOf(landed.width, landed.height) / 2f, 0f, w)
+
             if (state.leadInActive) {
                 // Beats 1-3, all derived from the single leadIn driver - see file header. Phase
                 // boundaries are proportional to each beat's share of LEAD_IN_MS.
@@ -159,9 +181,6 @@ fun PillWrapReveal(state: PillWrapRevealState, hue: Color, content: @Composable 
 
                 val flyDistancePx = LEAD_IN_FLY_DISTANCE.toPx()
                 val dropHeightPx = LEAD_IN_DROP_HEIGHT.toPx()
-                val originLeft = if (o.width > 0f) o.left else 0f
-                val thickness = if (o.height > 0f) o.height else 34.dp.toPx()
-                val baseW = if (o.width > 0f) o.width else 64.dp.toPx()
                 val pillW = (baseW * widthMul).coerceAtLeast(1f)
                 val x = lerp(originLeft - flyDistancePx, originLeft, flyT)
                 val landedY = fullH - thickness
