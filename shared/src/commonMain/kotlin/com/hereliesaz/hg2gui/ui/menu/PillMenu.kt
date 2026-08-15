@@ -227,7 +227,10 @@ private const val BAND_BASE_ROW = 1
 // one is open. [StackScroll.alignedRow] names whichever row currently sits at that fixed spot,
 // which reads as "primed" (ink) purely as a cosmetic marker of what's nearest the front of the
 // stack - it never fires anything by itself. Every pill is tappable wherever it sits in the
-// band; scrolling never substitutes for the tap.
+// band; scrolling never substitutes for the tap. -1 (never a real row) until the user has
+// actually dragged or flung the stack at least once - without that guard, whichever pill starts
+// out sitting at row 0 (the stack's own resting position, before any input) rendered ink from
+// the very first frame, reading as something already auto-selected.
 private class StackScroll(val modifier: Modifier, val offsetPx: Float, val alignedRow: Int)
 
 @Composable
@@ -235,11 +238,13 @@ private fun rememberStackScroll(): StackScroll {
     val density = LocalDensity.current
     val pitchPx = with(density) { ROW_PITCH.toPx() }
     var offsetPx by remember { mutableStateOf(0f) }
+    var hasScrolled by remember { mutableStateOf(false) }
     // Unbounded on both ends - dragging or flinging past either end of the stack's own content
     // reveals blank space above the top row or below the bottom one, rather than stopping dead
     // at the content edge. Nothing auto-corrects it back: it stays wherever the gesture leaves
     // it, the same "no bounce, no self-correcting" house rule the settle already follows.
     val scrollState = rememberScrollableState { delta ->
+        hasScrolled = true
         offsetPx += delta
         delta
     }
@@ -249,7 +254,7 @@ private fun rememberStackScroll(): StackScroll {
         state = scrollState,
         flingBehavior = flingBehavior
     )
-    val alignedRow = if (pitchPx > 0f) (offsetPx / pitchPx).roundToInt() else 0
+    val alignedRow = if (hasScrolled && pitchPx > 0f) (offsetPx / pitchPx).roundToInt() else -1
     return StackScroll(modifier, offsetPx, alignedRow)
 }
 

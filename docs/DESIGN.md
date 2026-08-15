@@ -58,7 +58,9 @@ the same tick lands it on one and a gentle release snaps almost immediately
 goes ink, the same "primed" look a pill gets from anywhere else in the menu, whenever a pill
 scrolls to rest there: a purely cosmetic marker of what's nearest the front of the stack. It
 never fires anything by itself - every pill is tappable wherever it sits in the band, and
-scrolling one to row 0 doesn't substitute for that tap.
+scrolling one to row 0 doesn't substitute for that tap. This only ever kicks in after an actual
+drag or fling - whichever pill happens to start out at row 0 before any input never goes ink on
+its own, so nothing reads as pre-selected the instant a stack first appears.
 
 Scrolling isn't bounded to the stack's own content either: a drag or a fling can carry the stack
 past its first or last row, leaving blank space above the top or below the bottom. Nothing
