@@ -135,10 +135,30 @@ tasks.register("incrementAndPushVersion") {
     }
 }
 
+// release-play.yml sets this before invoking bundleRelease: that workflow has already called
+// incrementAndPushVersion explicitly and reconciled the result against Play's own highest
+// versionCode, so version.properties is deliberately final by the time bundleRelease's
+// configuration phase reads it. Without this switch, autoIncrementVersion still ran as a hidden
+// dependency of whatever compile/assemble/bundle/kapt task happened to be in that build's task
+// graph - not just composeApp's own bundleRelease/bundlePlaystoreRelease, but any library
+// subproject's plain compile task too (e.g. :shared:compileAndroidMain), none of which are named
+// distinctly enough to exclude by a name pattern - and rewrote version.properties *again* (its
+// own execution phase, right after bundleRelease's configuration phase had already captured
+// versionCode from the file). That was invisible to the build itself, but it meant the *next*
+// Gradle invocation in the same job (`printVersionEnv`, for "Confirm the built versionCode clears
+// Play" / the Play upload's expected-version-code) read that further-incremented file and
+// reported a version one higher than what was actually signed into the .aab - confirmed on run
+// 31933127627: expected 250, Play reported the upload as 249. Debug-build-type tasks
+// (assembleDebug, the only other consumer of this project's Gradle tasks) still get the
+// auto-bump: that pipeline's own versioning is provided by an explicit -PversionBuild instead, so
+// nothing there depends on file-read timing the way release-play.yml's does.
+val skipAutoIncrement = providers.gradleProperty("skipAutoIncrementVersion").isPresent
+
 subprojects {
     tasks.configureEach {
         val taskName = name.lowercase()
-        if ((taskName.contains("compile") || taskName.contains("assemble") || taskName.contains("bundle") || taskName.contains("kapt"))
+        if (!skipAutoIncrement
+            && (taskName.contains("compile") || taskName.contains("assemble") || taskName.contains("bundle") || taskName.contains("kapt"))
             && name != "autoIncrementVersion"
             && name != "incrementAndPushVersion"
             && name != "printVersionEnv"
