@@ -230,7 +230,15 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           REQUIRE_SIGNING: 'true'
-        run: ./gradlew bundleRelease
+        # -PskipAutoIncrementVersion: version.properties was already finalized by "Increment
+        # and push version" above - without this, the root build.gradle.kts's blanket
+        # auto-bump-on-any-compile/assemble/bundle/kapt-task convenience (meant for local/
+        # debug builds that never call incrementAndPushVersion themselves) silently bumps it
+        # *again* during this task's own execution, and the next Gradle invocation in this job
+        # (`printVersionEnv`, for the versionCode-clears-Play check and the Play upload's
+        # expected-version-code) then reads that further-incremented file and disagrees with
+        # what actually got signed into the .aab.
+        run: ./gradlew bundleRelease -PskipAutoIncrementVersion=true
 
       - name: Verify the bundle is signed by the expected key
         run: |
