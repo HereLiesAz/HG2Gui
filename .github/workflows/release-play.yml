@@ -296,7 +296,6 @@ jobs:
           package-name: ${{ env.APP_ID }}
           aab: ${{ env.AAB_PATH }}
           token-file: ${{ steps.publish-token.outputs.token-file }}
-          expected-version-code: ${{ env.VERSION_CODE }}
           completed-track: ${{ env.COMPLETED_TRACK }}
           draft-tracks: ${{ env.DRAFT_TRACKS }}
           release-name: ${{ env.VERSION_NAME }}
