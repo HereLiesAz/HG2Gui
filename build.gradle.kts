@@ -47,6 +47,15 @@ tasks.register("printVersionEnv") {
             val patch = (props.getProperty("versionPatch")?.toInt() ?: 0) + 1
             val build = (props.getProperty("versionBuild")?.toInt() ?: 0) + 1
             val versionName = "$major.$minor.$patch.$build"
+            // Mirrors composeApp/build.gradle.kts's own `resolvedVersionCode` exactly (same
+            // `legacyVersionCode = 205` floor, same +1) - this is a separate Gradle script with
+            // no shared code between the two, so nothing enforces they stay in lockstep short of
+            // this comment. release-play.yml's "Confirm the built versionCode clears Play" step
+            // (and the Play API upload's expected-version-code) both read this VERSION_CODE - a
+            // build actually invokes `bundleRelease` with no `-PversionBuild` override, so it too
+            // resolves versionCode from version.properties, not this script's own $build.
+            val legacyVersionCode = 205
+            val versionCode = maxOf(build, legacyVersionCode + 1)
 
             val githubEnv = System.getenv("GITHUB_ENV")
             if (githubEnv != null) {
@@ -57,6 +66,7 @@ tasks.register("printVersionEnv") {
                     VERSION_PATCH=$patch
                     VERSION_BUILD=$build
                     VERSION_NAME=$versionName
+                    VERSION_CODE=$versionCode
                     """.trimIndent() + "\n"
                 )
             }
@@ -65,6 +75,7 @@ tasks.register("printVersionEnv") {
             println("VERSION_PATCH=$patch")
             println("VERSION_BUILD=$build")
             println("VERSION_NAME=$versionName")
+            println("VERSION_CODE=$versionCode")
         }
     }
 }
