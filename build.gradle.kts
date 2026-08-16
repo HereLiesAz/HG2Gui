@@ -103,8 +103,16 @@ tasks.register("incrementAndPushVersion") {
         for (attempt in 1..maxAttempts) {
             try {
                 git("fetch", "origin", branch, "--quiet")
-                // Synchronize version.properties with origin to handle concurrent builds
-                git("checkout", "origin/$branch", "--", "version.properties")
+                // Fully resync local HEAD to origin, not just this one file's working-tree
+                // content: a prior attempt in this same loop may have already run `git commit`
+                // before its `git push` got rejected, leaving a stale local commit that diverges
+                // from origin. `checkout origin/$branch -- version.properties` only overwrote the
+                // file, so HEAD stayed on that stale commit - the next attempt's recomputed bump
+                // then either fails to push (still diverged) or, if it happens to land on the same
+                // numbers the stale commit already has, `git commit` errors with "nothing to
+                // commit" since the working tree already matches HEAD. `reset --hard` discards
+                // that stale commit outright so every attempt starts from origin's real tip.
+                git("reset", "--hard", "origin/$branch")
                 
                 val props = Properties()
                 versionFile.inputStream().use { props.load(it) }
