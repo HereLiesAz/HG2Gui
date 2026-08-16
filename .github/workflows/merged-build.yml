@@ -21,7 +21,7 @@ jobs:
     with:
       gradle_task: assembleDebug
       artifact_name: android-debug-apk
-      artifact_path_pattern: "composeApp/build/outputs/apk/fdroid/*.apk"
+      artifact_path_pattern: "composeApp/build/outputs/apk/playstore/debug/*.apk"
       release_tag_prefix: "latest-debug"
       publish_to_release: true
       signing_enabled: true
