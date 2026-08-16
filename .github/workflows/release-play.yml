@@ -25,7 +25,16 @@ name: Release to Play
 #   KEYSTORE_PRIVATE / KEYSTORE_RSA / KEYSTORE_PUBLIC / KEYSTORE_CHAIN
 
 on:
+  # A push to master is treated as publish=true (internal track rolled out,
+  # alpha staged as a draft) - the same defaults workflow_dispatch itself
+  # uses. The `inputs` context GitHub Actions gives every other job below
+  # only exists for workflow_dispatch/workflow_call, so a plain push event
+  # never sees `inputs.publish` at all; env.DO_PUBLISH (and friends, below)
+  # is what actually makes a push behave like inputs.publish=true instead of
+  # every publish step silently reporting "skipped" while the job as a whole
+  # still reports success.
   push:
+    branches: [master, main]
     paths-ignore:
       - 'version.properties'
   # Called by the workflows that publish a GitHub release, so a Play publish
@@ -77,12 +86,22 @@ on:
 
 jobs:
   build-publish:
-    name: Build signed AAB${{ inputs.publish && ' + publish' || '' }}
+    name: Build signed AAB${{ (inputs.publish || github.event_name == 'push') && ' + publish' || '' }}
     runs-on: ubuntu-latest
     # contents: write so "Increment and push versionBuild" can commit and push the bumped
     # version.properties. Everything else here only talks to Google.
     permissions:
       contents: write
+    # The effective inputs for this run. workflow_dispatch/workflow_call already populate
+    # `inputs.*`, in which case these are just that value again; a plain push event never
+    # populates `inputs.*` at all, so every fallback here is that same trigger's own default
+    # (matching workflow_dispatch's `default:` above) rather than an empty string.
+    env:
+      DO_PUBLISH: ${{ inputs.publish || github.event_name == 'push' }}
+      COMPLETED_TRACK: ${{ inputs.completed_track || 'internal' }}
+      DRAFT_TRACKS: ${{ inputs.draft_tracks || 'alpha' }}
+      RELEASE_NOTES: ${{ inputs.release_notes || '' }}
+      VERSION_CODE_MODE: ${{ inputs.version_code_mode || 'auto' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -133,7 +152,7 @@ jobs:
       # own actions.
       - name: Mint a Play API token (preflight)
         id: preflight-token
-        if: ${{ inputs.publish }}
+        if: ${{ env.DO_PUBLISH == 'true' }}
         uses: ./.github/actions/play-api-token
         with:
           service-account-json: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
@@ -148,7 +167,7 @@ jobs:
       # It also reads back the highest versionCode Play holds, which is the
       # number the next step needs.
       - name: Preflight Google Play API access
-        if: ${{ inputs.publish }}
+        if: ${{ env.DO_PUBLISH == 'true' }}
         run: |
           set -euo pipefail
           token=$(cat "${{ steps.preflight-token.outputs.token-file }}")
@@ -195,9 +214,9 @@ jobs:
       # This step's only job is invoking it with what only CI knows (Play's current
       # max) before bundleRelease ever runs.
       - name: Increment and push version
-        if: ${{ inputs.publish }}
+        if: ${{ env.DO_PUBLISH == 'true' }}
         run: |
-          if [ "${{ inputs.version_code_mode }}" = "strict" ]; then
+          if [ "${{ env.VERSION_CODE_MODE }}" = "strict" ]; then
             ./gradlew -q incrementAndPushVersion -PversionCodeMode=strict
           else
             ./gradlew -q incrementAndPushVersion -PversionCodeMode=auto -PplayMaxVersionCode="${PLAY_MAX_VERSION_CODE:-0}"
@@ -233,7 +252,7 @@ jobs:
       # actually built. Belt and braces, because the cost of getting it wrong is
       # a rejected rollout and a burned versionCode.
       - name: Confirm the built versionCode clears Play
-        if: ${{ inputs.publish }}
+        if: ${{ env.DO_PUBLISH == 'true' }}
         run: |
           set -euo pipefail
           play_max=${PLAY_MAX_VERSION_CODE:-0}
@@ -256,27 +275,27 @@ jobs:
       # and the build sits in between.
       - name: Mint a Play API token (publish)
         id: publish-token
-        if: ${{ inputs.publish }}
+        if: ${{ env.DO_PUBLISH == 'true' }}
         uses: ./.github/actions/play-api-token
         with:
           service-account-json: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
 
       - name: Publish to Google Play
         id: play
-        if: ${{ inputs.publish }}
+        if: ${{ env.DO_PUBLISH == 'true' }}
         uses: ./.github/actions/play-publish
         with:
           package-name: ${{ env.APP_ID }}
           aab: ${{ env.AAB_PATH }}
           token-file: ${{ steps.publish-token.outputs.token-file }}
           expected-version-code: ${{ env.VERSION_CODE }}
-          completed-track: ${{ inputs.completed_track }}
-          draft-tracks: ${{ inputs.draft_tracks }}
+          completed-track: ${{ env.COMPLETED_TRACK }}
+          draft-tracks: ${{ env.DRAFT_TRACKS }}
           release-name: ${{ env.VERSION_NAME }}
-          release-notes: ${{ inputs.release_notes }}
+          release-notes: ${{ env.RELEASE_NOTES }}
 
       - name: Say what landed where
-        if: ${{ inputs.publish }}
+        if: ${{ env.DO_PUBLISH == 'true' }}
         run: |
           echo "versionCode ${{ steps.play.outputs.version-code }} is live on the ${{ steps.play.outputs.rolled-out }} track."
           drafted="${{ steps.play.outputs.drafted }}"
