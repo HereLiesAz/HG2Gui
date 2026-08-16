@@ -4,12 +4,11 @@ set -euo pipefail
 package="$1"
 aab_glob="$2"
 token_file="$3"
-expected_vc="$4"
-completed_track="$5"
-draft_tracks="$6"
-release_name="$7"
-release_notes="$8"
-out_file="$9"
+completed_track="$4"
+draft_tracks="$5"
+release_name="$6"
+release_notes="$7"
+out_file="$8"
 
 # Resolve aab (glob)
 aab=""
@@ -95,12 +94,11 @@ if [ -z "$version_code" ]; then
   exit 1
 fi
 
-# Optional sanity check
-if [ -n "$expected_vc" ] && [ "$expected_vc" != "$version_code" ]; then
-  echo "::error::Expected VERSION_CODE $expected_vc but upload produced $version_code"
-  curl -sS -o /dev/null -X DELETE -H "Authorization: Bearer $token" "$api/edits/${edit_id}" || true
-  exit 1
-fi
+# Play only ever rejects a versionCode for being too low, never for differing from some other
+# script's own prediction of what it "should" be - that's already checked, against Play's real
+# highest versionCode, by release-play.yml's "Confirm the built versionCode clears Play" step
+# *before* this upload runs. $version_code here is Play's own read of what actually got uploaded,
+# and it's what every release/draft below is staged with - there's nothing to reconcile it against.
 
 # Build release JSON helper (status = completed/draft)
 make_release() {
