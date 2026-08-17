@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.hereliesaz.hg2gui.ui.Eyebrow
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
+import com.hereliesaz.hg2gui.ui.menu.onPage
 import com.hereliesaz.hg2gui.ui.menu.pageBrush
 import com.hereliesaz.hg2gui.ui.menu.MenuNode
 import com.hereliesaz.hg2gui.ui.menu.PillMenu
@@ -112,7 +113,7 @@ fun CommandGuideScreen(
 
         Text(
             "Pick a command to drop it into the input — nothing here runs on its own.",
-            color = Azphalt.Ink.copy(alpha = .6f),
+            color = Azphalt.currentGround.onPage.copy(alpha = .6f),
             fontSize = 11.sp,
             lineHeight = 15.sp,
             modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 12.dp)
