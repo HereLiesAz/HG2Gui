@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.sp
 import com.hereliesaz.hg2gui.managers.TerminalHistoryEntry
 import com.hereliesaz.hg2gui.terminal.ShellAliases
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
+import com.hereliesaz.hg2gui.ui.menu.onPage
 import com.hereliesaz.hg2gui.ui.menu.pageBrush
 import com.hereliesaz.hg2gui.ui.menu.MenuNode
 import com.hereliesaz.hg2gui.ui.menu.PillMenu
@@ -202,7 +203,7 @@ fun TerminalScreen(
         Text(
             active.cwd,
             style = MaterialTheme.typography.labelSmall.copy(
-                color = Azphalt.Ink.copy(alpha = .45f),
+                color = Azphalt.currentGround.onPage.copy(alpha = .45f),
                 fontSize = 11.sp,
                 letterSpacing = 0.em
             ),
@@ -370,11 +371,12 @@ private fun BufferEntry(
             .clickable { expanded = !expanded }
             .padding(12.dp)
     ) {
+        val onPage = Azphalt.currentGround.onPage
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 "$",
                 style = MaterialTheme.typography.bodyMedium.copy(
-                    color = Azphalt.Ink.copy(alpha = .5f),
+                    color = onPage.copy(alpha = .5f),
                     fontWeight = FontWeight.Black
                 )
             )
@@ -382,7 +384,7 @@ private fun BufferEntry(
             Text(
                 entry.command,
                 style = MaterialTheme.typography.bodyMedium.copy(
-                    color = Azphalt.Ink,
+                    color = onPage,
                     fontWeight = FontWeight.Bold
                 )
             )
@@ -396,11 +398,11 @@ private fun BufferEntry(
             if (isArt && !showRaw) {
                 // Vector-style rendering: flat filled cells sized by character density, not
                 // literal glyphs - a script's ASCII/box-drawing art reads as art, not text.
-                AsciiArtCanvas(entry.output, Azphalt.Ink.copy(alpha = .8f))
+                AsciiArtCanvas(entry.output, onPage.copy(alpha = .8f))
             } else if (isTable && !showRaw) {
                 // "Output is set, not echoed": a block of label: value lines is set on the page
                 // as a two-column grid with hairline rules, not left as raw monospace text.
-                KeyValueTable(entry.output, Azphalt.Ink)
+                KeyValueTable(entry.output, onPage)
             } else {
                 // "Output sets, not echoes" (RATTLE 5G / OUTPUT SETS): raw output reveals line by
                 // line via a clip-wipe + slight slide, the same idiom GuideReaderScreen's WipeItem
@@ -448,7 +450,7 @@ private fun OutputLines(entry: TerminalHistoryEntry) {
         Text(
             entry.output,
             style = MaterialTheme.typography.bodyMedium.copy(
-                color = Azphalt.Ink.copy(alpha = .8f),
+                color = Azphalt.currentGround.onPage.copy(alpha = .8f),
                 fontFamily = FontFamily.Monospace,
                 fontSize = 12.sp
             )
@@ -469,7 +471,7 @@ private fun OutputLines(entry: TerminalHistoryEntry) {
             Text(
                 lines.drop(OUTPUT_WIPE_STAGGER_CAP).joinToString("\n"),
                 style = MaterialTheme.typography.bodyMedium.copy(
-                    color = Azphalt.Ink.copy(alpha = .8f),
+                    color = Azphalt.currentGround.onPage.copy(alpha = .8f),
                     fontFamily = FontFamily.Monospace,
                     fontSize = 12.sp
                 )
@@ -493,7 +495,7 @@ private fun OutputWipeLine(seq: Int, line: String) {
             }
             .graphicsLayer { translationX = -14.dp.toPx() * (1f - progress.value) },
         style = MaterialTheme.typography.bodyMedium.copy(
-            color = Azphalt.Ink.copy(alpha = .8f),
+            color = Azphalt.currentGround.onPage.copy(alpha = .8f),
             fontFamily = FontFamily.Monospace,
             fontSize = 12.sp
         )
@@ -512,7 +514,7 @@ private fun BlockActionPill(label: String, onClick: () -> Unit) {
         Text(
             label,
             style = MaterialTheme.typography.titleMedium.copy(
-                color = Azphalt.Ink.copy(alpha = .55f),
+                color = Azphalt.currentGround.onPage.copy(alpha = .55f),
                 fontSize = 11.sp,
                 fontWeight = FontWeight.ExtraBold,
                 letterSpacing = 0.09.em
@@ -533,6 +535,7 @@ private fun SessionTabs(
     onNew: () -> Unit,
     onClose: (String) -> Unit
 ) {
+    val onPage = Azphalt.currentGround.onPage
     Row(
         Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 18.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -556,7 +559,7 @@ private fun SessionTabs(
                         Text(
                             s.name.uppercase(),
                             style = MaterialTheme.typography.titleMedium.copy(
-                                color = if (on) Azphalt.Yellow else Azphalt.Ink.copy(alpha = .55f),
+                                color = if (on) Azphalt.Yellow else onPage.copy(alpha = .55f),
                                 fontSize = 8.sp
                             )
                         )
@@ -597,7 +600,7 @@ private fun SessionTabs(
                 Text(
                     "+",
                     style = MaterialTheme.typography.titleMedium.copy(
-                        color = Azphalt.Ink.copy(alpha = .55f),
+                        color = onPage.copy(alpha = .55f),
                         fontSize = 10.sp
                     )
                 )
@@ -636,7 +639,7 @@ private fun SessionTabs(
             ) {
                 Text(
                     "⚙",
-                    style = MaterialTheme.typography.titleMedium.copy(color = Azphalt.Ink, fontSize = 12.sp)
+                    style = MaterialTheme.typography.titleMedium.copy(color = onPage, fontSize = 12.sp)
                 )
             }
         }
@@ -655,7 +658,7 @@ private fun SessionTabs(
             ) {
                 Text(
                     "?",
-                    style = MaterialTheme.typography.titleMedium.copy(color = Azphalt.Ink, fontSize = 12.sp)
+                    style = MaterialTheme.typography.titleMedium.copy(color = onPage, fontSize = 12.sp)
                 )
             }
         }
@@ -677,7 +680,7 @@ private fun CommandLine(
         Text(
             hint.uppercase(),
             style = MaterialTheme.typography.labelSmall.copy(
-                color = Azphalt.Ink.copy(alpha = .45f),
+                color = Azphalt.currentGround.onPage.copy(alpha = .45f),
                 fontSize = 9.sp
             )
         )
@@ -827,7 +830,7 @@ private fun ModifierKeys(
                     Text(
                         k.uppercase(),
                         style = MaterialTheme.typography.titleMedium.copy(
-                            color = Azphalt.Ink,
+                            color = Azphalt.currentGround.onPage,
                             fontSize = 8.sp
                         )
                     )

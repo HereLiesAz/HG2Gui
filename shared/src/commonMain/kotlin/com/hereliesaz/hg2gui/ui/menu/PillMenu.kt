@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -170,6 +171,27 @@ object Azphalt {
  *  screen's local PageYellow constant used before a shared rotating ground existed. Top-level
  *  (not nested in [Azphalt]) so it's callable as `Azphalt.currentGround.pageBrush()`. */
 fun Azphalt.Ground.pageBrush(): Brush = Brush.linearGradient(0f to page, 0.5f to foldDark, 1f to page)
+
+// House rule: text (and any glyph carrying meaning - an icon, an end-cap) always reads as the
+// opposite of whatever it sits on, never a fixed color assumed to work against every background.
+// Mustard is light enough for Ink text, but four of the six grounds in Azphalt.grounds (Maroon,
+// Navy, Teal, and near enough Cerulean) are dark - Ink text hardcoded against those disappears.
+// The 0.35 luminance split is the same rough light/dark line sRGB relative luminance conventionally
+// uses for a black-vs-white text choice (WCAG's own "which of black/white contrasts more" cutoffs
+// straddle this range); exact value only matters near the boundary, where either color still reads.
+private const val LEGIBLE_LUMINANCE_SPLIT = 0.35f
+
+/** The one of [Azphalt.Ink] / [Azphalt.White] that actually contrasts with this background,
+ *  instead of a color assumed to work against every ground/hue this sits on. Not used for a pill's
+ *  own selected state (ink bg + yellow fg) - that pairing is a fixed UI signal, not "text on an
+ *  arbitrary background," and stays exactly as designed regardless of ground or hue. */
+fun Color.contrastingText(): Color = if (luminance() > LEGIBLE_LUMINANCE_SPLIT) Azphalt.Ink else Azphalt.White
+
+/** The page ground's own text color - [Color.contrastingText] applied to [Azphalt.Ground.page] -
+ *  for the many places text/icons sit directly on the rotating page background (or a background
+ *  that's just the page lightly tinted, e.g. a translucent-ink chip), rather than on a pill's own
+ *  fixed hue. */
+val Azphalt.Ground.onPage: Color get() = page.contrastingText()
 
 private val PILL_HEIGHT = 17.dp
 private val ROW_PITCH = 20.dp
@@ -840,9 +862,13 @@ internal fun Pill(
     anchor: Alignment = Alignment.BottomEnd
 ) {
     val bg = if (selected) Azphalt.Ink else Azphalt.hues[hue]
-    val fg = if (selected) Azphalt.Yellow else Azphalt.White
     val capBg = if (selected) Azphalt.Yellow else Azphalt.caps[hue]
-    val capFg = if (selected) Azphalt.Ink else Azphalt.White
+    // Selected is a fixed ink-bg/yellow-fg UI signal, not "text on an arbitrary background" - it
+    // keeps its own fixed pairing. Unselected sits on this pill's own hue/cap, which - unlike the
+    // page ground - never rotates, but still spans light (amber, tan) to dark (violet, teal), so a
+    // fixed White reads fine on most of them and nearly vanishes on the lightest few.
+    val fg = if (selected) Azphalt.Yellow else bg.contrastingText()
+    val capFg = if (selected) Azphalt.Ink else capBg.contrastingText()
     // Local copy so the semantics block below reads the parameter, not its own
     // SemanticsPropertyReceiver.selected property of the same name.
     val isSelected = selected
