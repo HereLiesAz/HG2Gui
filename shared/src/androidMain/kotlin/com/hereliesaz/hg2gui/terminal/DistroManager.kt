@@ -12,6 +12,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
 import java.io.FileOutputStream
+import java.nio.file.Files
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 
@@ -22,9 +23,16 @@ import java.util.zip.ZipInputStream
  */
 object DistroManager {
 
-    // /releases/latest/download/<asset> always redirects to whatever the current release is,
-    // so this doesn't go stale the way pinning one specific release tag does.
-    private const val BOOTSTRAP_BASE_URL = "https://github.com/termux/termux-packages/releases/latest/download"
+    // Pinned, not /releases/latest/download/ - BootstrapManifest's 330 executables/libraries are
+    // a frozen snapshot of exactly this release's bin/, lib/, and libexec/, bundled into the APK
+    // itself (see that file's own doc comment for why). Pointing this at whatever "latest" is at
+    // download time would let the two drift out of sync - a newer release's dpkg database, apt
+    // config, or package lists disagreeing with the actual (older, bundled) binary they describe.
+    // Bumping this to a new release means regenerating BootstrapManifest.kt and jniLibs/arm64-v8a/
+    // from that release's own bootstrap-aarch64.zip at the same time, not on its own.
+    private const val BOOTSTRAP_RELEASE_TAG = "bootstrap-2026.08.16-r1+apt.android-7"
+    private const val BOOTSTRAP_BASE_URL =
+        "https://github.com/termux/termux-packages/releases/download/$BOOTSTRAP_RELEASE_TAG"
     private const val BOOTSTRAP_FILE = "bootstrap.zip"
     private const val SYMLINKS_ENTRY = "SYMLINKS.txt"
     // U+2190 LEFTWARDS ARROW - the field separator Termux's own bootstrap builder puts between
@@ -99,7 +107,7 @@ object DistroManager {
             emit("Download complete. Extracting...")
 
             val prefix = prefixDir(context)
-            extractBootstrap(destFile, prefix)
+            extractBootstrap(destFile, prefix, context.applicationInfo.nativeLibraryDir)
             homeDir(context).mkdirs()
 
             emit("Extraction complete. Fixing permissions...")
@@ -121,14 +129,19 @@ object DistroManager {
     }.flowOn(Dispatchers.IO)
 
     /**
-     * Extracts a Termux bootstrap zip into [prefix]. Regular files unpack directly; a zip can't
-     * carry real symlinks, so Termux's bootstrap builder lists them instead in a root-level
-     * SYMLINKS.txt (one per line, "<target><SEPARATOR><link path>") and they're created here as
-     * an explicit second pass, once every real file the symlinks might point at already exists.
+     * Extracts a Termux bootstrap zip into [prefix]. Regular files unpack directly, except for
+     * the ~330 executables/libraries [BootstrapManifest] covers - those are skipped here (their
+     * content from the zip would just be inert, blocked from ever executing - see that file's own
+     * doc comment) and symlinked to their bundled, exec-exempt counterpart in [nativeLibraryDir]
+     * instead, once every other file has landed. A zip can't carry real symlinks either, so
+     * Termux's bootstrap builder lists those separately in a root-level SYMLINKS.txt (one per
+     * line, "<target><SEPARATOR><link path>") and they're created here as their own pass, once
+     * every real file they might point at already exists.
      */
-    private fun extractBootstrap(zipFile: File, prefix: File) {
+    private fun extractBootstrap(zipFile: File, prefix: File, nativeLibraryDir: String) {
         prefix.mkdirs()
         val symlinksText = StringBuilder()
+        val manifest = BootstrapManifest.ENTRIES.toMap()
 
         ZipInputStream(zipFile.inputStream().buffered()).use { zis ->
             var entry: ZipEntry? = zis.nextEntry
@@ -139,6 +152,11 @@ object DistroManager {
                     }
                     entry.isDirectory -> {
                         File(prefix, entry.name).mkdirs()
+                    }
+                    entry.name in manifest -> {
+                        // Still needs its own directory to exist, for whatever else in this same
+                        // directory isn't manifest-covered - just not this file's own content.
+                        File(prefix, entry.name).parentFile?.mkdirs()
                     }
                     else -> {
                         val outFile = File(prefix, entry.name)
@@ -167,12 +185,26 @@ object DistroManager {
                 Utils.log(e)
             }
         }
+
+        for ((realPath, flatName) in manifest) {
+            val linkFile = File(prefix, realPath)
+            linkFile.parentFile?.mkdirs()
+            linkFile.delete()
+            try {
+                Os.symlink(File(nativeLibraryDir, flatName).absolutePath, linkFile.absolutePath)
+            } catch (e: Exception) {
+                Utils.log(e)
+            }
+        }
     }
 
     private fun makeBinariesExecutable(prefix: File) {
         listOf("bin", "libexec", "lib").forEach { sub ->
             File(prefix, sub).walkTopDown().forEach { f ->
-                if (f.isFile) f.setExecutable(true)
+                // Manifest-covered paths are symlinks into nativeLibraryDir now, not real files -
+                // already executable (the OS sets that at install time), and not this app's own
+                // file to chmod even if it tried.
+                if (f.isFile && !Files.isSymbolicLink(f.toPath())) f.setExecutable(true)
             }
         }
     }
