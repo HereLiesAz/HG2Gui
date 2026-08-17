@@ -240,11 +240,14 @@ private fun rootWidthFraction(row: Int): Float {
     return HOST_WIDTH - ROOT_WIDTH_STEP * stepsDown
 }
 // HostPill is HOST_WIDTH wide, offset left by (1 - HOST_RIGHT_EDGE) * HOST_WIDTH, so its right
-// edge lands at HOST_WIDTH * HOST_RIGHT_EDGE of the full width. A band of children clears that
-// safely by rising into row 1+, but the trail row shares row 0 with the host, so it has to start
-// past that edge instead - lining up with the band's own left edge (which sits well inside that
-// span) would overlap the host it's sitting next to.
-private const val TRAIL_LEFT_OF_FULL = HOST_WIDTH * HOST_RIGHT_EDGE + 0.02f
+// edge lands at HOST_WIDTH * HOST_RIGHT_EDGE of the full width. The trail row shares row 0 with
+// the host, and reads as a continuation of it - "each pill overlapped by the one before it," the
+// same shingled-fan language TRAIL_OVERLAP already gives every crumb after the first - so the
+// trail's own left edge starts *before* that right edge, not after: a plain gap here would be the
+// one seam in the chain that doesn't fan like the rest of it. -0.035 is TRAIL_OVERLAP's -14dp
+// expressed as roughly the same fraction of a typical phone's width, so the host-to-first-crumb
+// overlap reads the same size as every crumb-to-crumb one that follows it.
+private const val TRAIL_LEFT_OF_FULL = HOST_WIDTH * HOST_RIGHT_EDGE - 0.035f
 // Row 0 is reserved for the host and the trail of picks below it; every band of choices fans
 // out starting one row above that, never on top of it.
 private const val BAND_BASE_ROW = 1
