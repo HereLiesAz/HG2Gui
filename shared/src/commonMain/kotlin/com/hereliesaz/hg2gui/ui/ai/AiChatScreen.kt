@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
+import com.hereliesaz.hg2gui.ui.menu.onPage
 import com.hereliesaz.hg2gui.ui.menu.pageBrush
 
 /** [parts] is a flag-by-flag "what each part does" breakdown for a command reply - see
@@ -91,7 +92,7 @@ fun AiChatScreen(
             Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp)) {
                 Text(
                     "Add an Anthropic API key in Settings → AI first.",
-                    color = Azphalt.Ink.copy(alpha = .7f), fontSize = 12.sp,
+                    color = Azphalt.currentGround.onPage.copy(alpha = .7f), fontSize = 12.sp,
                     modifier = Modifier.padding(bottom = 10.dp)
                 )
                 Box(
@@ -182,7 +183,7 @@ private fun AiBubble(message: AiMessage, onUseCommand: (String) -> Unit) {
     ) {
         Text(
             message.text,
-            style = MaterialTheme.typography.bodyMedium.copy(color = Azphalt.Ink)
+            style = MaterialTheme.typography.bodyMedium.copy(color = Azphalt.currentGround.onPage)
         )
         if (message.command != null) {
             Spacer(Modifier.height(8.dp))
@@ -211,20 +212,20 @@ private fun AiBubble(message: AiMessage, onUseCommand: (String) -> Unit) {
             ) {
                 Text(
                     "WHAT EACH PART DOES",
-                    color = Azphalt.Ink.copy(alpha = .45f),
+                    color = Azphalt.currentGround.onPage.copy(alpha = .45f),
                     fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.18.em
                 )
                 message.parts.forEach { (token, explanation) ->
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Text(
                             token,
-                            color = Azphalt.Ink,
+                            color = Azphalt.currentGround.onPage,
                             fontSize = 12.sp, fontWeight = FontWeight.ExtraBold,
                             modifier = Modifier.widthIn(min = 34.dp)
                         )
                         Text(
                             explanation,
-                            color = Azphalt.Ink.copy(alpha = .78f),
+                            color = Azphalt.currentGround.onPage.copy(alpha = .78f),
                             fontSize = 12.sp, lineHeight = 16.sp
                         )
                     }

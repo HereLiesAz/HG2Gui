@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
+import com.hereliesaz.hg2gui.ui.menu.onPage
 import com.hereliesaz.hg2gui.ui.menu.pageBrush
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -89,7 +90,7 @@ fun FolderPicker(
             val crumbs = currentPath.trim('/').split('/').filter { it.isNotEmpty() }
             Text(
                 "/" + crumbs.joinToString("/"),
-                color = Azphalt.Ink.copy(alpha = .55f),
+                color = Azphalt.currentGround.onPage.copy(alpha = .55f),
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1
@@ -100,7 +101,7 @@ fun FolderPicker(
             if (folders.isEmpty()) {
                 Text(
                     "NO SUBFOLDERS HERE",
-                    color = Azphalt.Ink.copy(alpha = .4f),
+                    color = Azphalt.currentGround.onPage.copy(alpha = .4f),
                     fontSize = 10.sp,
                     fontWeight = FontWeight.ExtraBold,
                     letterSpacing = 0.18.em
@@ -247,7 +248,7 @@ private fun PickerChip(
     onClick: () -> Unit = {}
 ) {
     val bg = if (filled) background else Azphalt.Ink.copy(alpha = .14f)
-    val fg = if (filled) foreground else Azphalt.Ink.copy(alpha = .55f)
+    val fg = if (filled) foreground else Azphalt.currentGround.onPage.copy(alpha = .55f)
     Box(
         modifier
             .then(if (fillWidth) Modifier.fillMaxWidth() else Modifier)

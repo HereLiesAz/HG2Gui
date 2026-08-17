@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.hereliesaz.hg2gui.ui.ConfirmDialog
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
+import com.hereliesaz.hg2gui.ui.menu.onPage
 import com.hereliesaz.hg2gui.ui.menu.pageBrush
 import kotlinx.coroutines.launch
 
@@ -395,22 +396,22 @@ fun FilesScreen(
                             onValueChange = { searchQuery = it; screen = if (it.isBlank()) FMScreen.Browse else FMScreen.Search },
                             modifier = Modifier.weight(1f),
                             textStyle = androidx.compose.ui.text.TextStyle(
-                                color = Azphalt.Ink, fontSize = 13.sp, fontWeight = FontWeight.SemiBold
+                                color = Azphalt.currentGround.onPage, fontSize = 13.sp, fontWeight = FontWeight.SemiBold
                             ),
-                            cursorBrush = SolidColor(Azphalt.Ink),
+                            cursorBrush = SolidColor(Azphalt.currentGround.onPage),
                             singleLine = true,
                             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                             keyboardActions = KeyboardActions(onSearch = { recordSearch(searchQuery) })
                         )
                         Text(
-                            "✕", color = Azphalt.Ink.copy(alpha = .6f), fontSize = 13.sp,
+                            "✕", color = Azphalt.currentGround.onPage.copy(alpha = .6f), fontSize = 13.sp,
                             modifier = Modifier.clickable {
                                 searchActive = false; searchQuery = ""; screen = FMScreen.Browse
                             }
                         )
                     } else {
                         Text(
-                            "SEARCH", color = Azphalt.Ink.copy(alpha = .55f),
+                            "SEARCH", color = Azphalt.currentGround.onPage.copy(alpha = .55f),
                             fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.1.em
                         )
                     }
@@ -424,7 +425,7 @@ fun FilesScreen(
                             .padding(horizontal = 14.dp, vertical = 8.dp)
                     ) {
                         Text(
-                            "${sortMode.label.uppercase()} ▾", color = Azphalt.Ink.copy(alpha = .55f),
+                            "${sortMode.label.uppercase()} ▾", color = Azphalt.currentGround.onPage.copy(alpha = .55f),
                             fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.1.em
                         )
                     }
@@ -436,7 +437,7 @@ fun FilesScreen(
                             .padding(horizontal = 14.dp, vertical = 8.dp)
                     ) {
                         Text(
-                            "STORAGE ›", color = Azphalt.Ink.copy(alpha = .55f),
+                            "STORAGE ›", color = Azphalt.currentGround.onPage.copy(alpha = .55f),
                             fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.1.em
                         )
                     }

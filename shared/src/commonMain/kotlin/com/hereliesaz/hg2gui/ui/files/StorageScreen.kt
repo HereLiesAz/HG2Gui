@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.hereliesaz.hg2gui.ui.ConfirmDialog
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
+import com.hereliesaz.hg2gui.ui.menu.onPage
 import com.hereliesaz.hg2gui.ui.menu.pageBrush
 
 /*
@@ -73,7 +74,7 @@ fun StorageScreen(
 
         if (stats == null) {
             Text(
-                "COUNTING…", color = Azphalt.Ink.copy(alpha = .4f),
+                "COUNTING…", color = Azphalt.currentGround.onPage.copy(alpha = .4f),
                 fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.1.em,
                 modifier = Modifier.padding(start = 20.dp, top = 24.dp)
             )
@@ -85,7 +86,7 @@ fun StorageScreen(
             val usedOfCapacity = stats.usedCapacityBytes
             if (capacity != null && capacity > 0 && usedOfCapacity != null) {
                 Text(
-                    "USED OF ${formatFileSize(capacity)}", color = Azphalt.Ink.copy(alpha = .55f),
+                    "USED OF ${formatFileSize(capacity)}", color = Azphalt.currentGround.onPage.copy(alpha = .55f),
                     fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.18.em
                 )
                 // The partition's own used bytes against its own capacity - stats.totalBytes is
@@ -93,16 +94,16 @@ fun StorageScreen(
                 // would read as a near-zero percent regardless of how full the device actually is.
                 val percent = ((usedOfCapacity.toDouble() / capacity.toDouble()) * 100).toInt().coerceIn(0, 100)
                 Text(
-                    "$percent%", color = Azphalt.Ink,
+                    "$percent%", color = Azphalt.currentGround.onPage,
                     fontSize = 44.sp, lineHeight = 40.sp, fontWeight = FontWeight.Black
                 )
             } else {
                 Text(
-                    "USED IN THIS SANDBOX", color = Azphalt.Ink.copy(alpha = .55f),
+                    "USED IN THIS SANDBOX", color = Azphalt.currentGround.onPage.copy(alpha = .55f),
                     fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.18.em
                 )
                 Text(
-                    formatFileSize(stats.totalBytes), color = Azphalt.Ink,
+                    formatFileSize(stats.totalBytes), color = Azphalt.currentGround.onPage,
                     fontSize = 44.sp, lineHeight = 40.sp, fontWeight = FontWeight.Black
                 )
             }
@@ -165,9 +166,20 @@ fun StorageScreen(
                                 Modifier.size(8.dp).clip(RoundedCornerShape(percent = 50))
                                     .background(Azphalt.hues[CATEGORY_HUES[cat.label] ?: 3])
                             )
-                            Text(cat.label.uppercase(), color = Azphalt.Ink, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.06.em)
+                            Text(
+                                cat.label.uppercase(),
+                                color = Azphalt.currentGround.onPage,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                letterSpacing = 0.06.em
+                            )
                         }
-                        Text(formatFileSize(cat.bytes), color = Azphalt.Ink.copy(alpha = .6f), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Text(
+                            formatFileSize(cat.bytes),
+                            color = Azphalt.currentGround.onPage.copy(alpha = .6f),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                     Box(Modifier.fillMaxWidth().height(1.dp).background(Azphalt.Ink.copy(alpha = .12f)))
                 }
@@ -188,11 +200,11 @@ fun StorageScreen(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Column {
-                            Text(f.name, color = Azphalt.Ink, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-                            Text(formatFileSize(f.sizeBytes), color = Azphalt.Ink.copy(alpha = .55f), fontSize = 9.sp)
+                            Text(f.name, color = Azphalt.currentGround.onPage, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                            Text(formatFileSize(f.sizeBytes), color = Azphalt.currentGround.onPage.copy(alpha = .55f), fontSize = 9.sp)
                         }
                         Text(
-                            "×", color = Azphalt.Ink.copy(alpha = .7f), fontSize = 15.sp,
+                            "×", color = Azphalt.currentGround.onPage.copy(alpha = .7f), fontSize = 15.sp,
                             modifier = Modifier.clickable { deleteTarget = f }.padding(start = 8.dp)
                         )
                     }
@@ -227,7 +239,7 @@ private fun Chip(
     onClick: () -> Unit = {}
 ) {
     val bg = if (filled) background else Azphalt.Ink.copy(alpha = .14f)
-    val fg = if (filled) foreground else Azphalt.Ink.copy(alpha = .55f)
+    val fg = if (filled) foreground else Azphalt.currentGround.onPage.copy(alpha = .55f)
     Box(
         modifier
             .clip(RoundedCornerShape(percent = 50))

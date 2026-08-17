@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
+import com.hereliesaz.hg2gui.ui.menu.onPage
 import com.hereliesaz.hg2gui.ui.menu.pageBrush
 
 /**
@@ -83,7 +84,7 @@ fun PathPickerScreen(
 
         Text(
             currentPath,
-            color = Azphalt.Ink.copy(alpha = .55f),
+            color = Azphalt.currentGround.onPage.copy(alpha = .55f),
             fontSize = 11.sp,
             fontWeight = FontWeight.Bold,
             maxLines = 1,
@@ -116,7 +117,7 @@ fun PathPickerScreen(
                 ) {
                     Text(
                         (if (entry.isDirectory) entry.name + "/" else entry.name).uppercase(),
-                        color = if (entry.isDirectory) Azphalt.White else Azphalt.Ink,
+                        color = if (entry.isDirectory) Azphalt.White else Azphalt.currentGround.onPage,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.ExtraBold,
                         letterSpacing = 0.09.em,

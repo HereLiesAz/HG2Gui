@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -170,6 +171,27 @@ object Azphalt {
  *  screen's local PageYellow constant used before a shared rotating ground existed. Top-level
  *  (not nested in [Azphalt]) so it's callable as `Azphalt.currentGround.pageBrush()`. */
 fun Azphalt.Ground.pageBrush(): Brush = Brush.linearGradient(0f to page, 0.5f to foldDark, 1f to page)
+
+// House rule: text (and any glyph carrying meaning - an icon, an end-cap) always reads as the
+// opposite of whatever it sits on, never a fixed color assumed to work against every background.
+// Mustard is light enough for Ink text, but four of the six grounds in Azphalt.grounds (Maroon,
+// Navy, Teal, and near enough Cerulean) are dark - Ink text hardcoded against those disappears.
+// The 0.35 luminance split is the same rough light/dark line sRGB relative luminance conventionally
+// uses for a black-vs-white text choice (WCAG's own "which of black/white contrasts more" cutoffs
+// straddle this range); exact value only matters near the boundary, where either color still reads.
+private const val LEGIBLE_LUMINANCE_SPLIT = 0.35f
+
+/** The one of [Azphalt.Ink] / [Azphalt.White] that actually contrasts with this background,
+ *  instead of a color assumed to work against every ground/hue this sits on. Not used for a pill's
+ *  own selected state (ink bg + yellow fg) - that pairing is a fixed UI signal, not "text on an
+ *  arbitrary background," and stays exactly as designed regardless of ground or hue. */
+fun Color.contrastingText(): Color = if (luminance() > LEGIBLE_LUMINANCE_SPLIT) Azphalt.Ink else Azphalt.White
+
+/** The page ground's own text color - [Color.contrastingText] applied to [Azphalt.Ground.page] -
+ *  for the many places text/icons sit directly on the rotating page background (or a background
+ *  that's just the page lightly tinted, e.g. a translucent-ink chip), rather than on a pill's own
+ *  fixed hue. */
+val Azphalt.Ground.onPage: Color get() = page.contrastingText()
 
 private val PILL_HEIGHT = 17.dp
 private val ROW_PITCH = 20.dp
@@ -585,6 +607,7 @@ private fun StackPill(
             // scrolled into the fixed row-0 spot gets the same treatment - primed to be tapped
             // next, not yet picked.
             selected = (leaving && isHost) || (aligned && !leaving),
+            touchTargetHeight = ROW_PITCH,
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 // The row-varied width is only for pills staying in the browsing stack - the one
@@ -613,6 +636,7 @@ private fun HostPill(node: MenuNode, rowsBelow: Int, onClick: () -> Unit) {
             cap = node.cap,
             hue = Azphalt.hueOf(node.id),
             selected = true,
+            touchTargetHeight = ROW_PITCH,
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .fillMaxWidth(HOST_WIDTH)
@@ -735,6 +759,7 @@ private fun ChildPill(
             hue = Azphalt.hueOf(hueOwner),
             // Same "ink means primed" treatment StackPill gives its own row-0-aligned pill.
             selected = aligned,
+            touchTargetHeight = ROW_PITCH,
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .fillMaxWidth(CHILD_WIDTH)
@@ -837,12 +862,19 @@ internal fun Pill(
     // own right edge, the one fixed point DESIGN.md's "anchored by its right end" actually means -
     // so a short label bleeds less past the left edge and a long one bleeds more, instead of every
     // pill's visible capsule starting flush at the same left point regardless of label length.
-    anchor: Alignment = Alignment.BottomEnd
+    anchor: Alignment = Alignment.BottomEnd,
+    // The accessibility-minimum default, overridden by every row-stacked pill - see the comment
+    // where this is actually consumed, on why a row-stacked pill can't safely use the default.
+    touchTargetHeight: Dp = PILL_TOUCH_TARGET
 ) {
     val bg = if (selected) Azphalt.Ink else Azphalt.hues[hue]
-    val fg = if (selected) Azphalt.Yellow else Azphalt.White
     val capBg = if (selected) Azphalt.Yellow else Azphalt.caps[hue]
-    val capFg = if (selected) Azphalt.Ink else Azphalt.White
+    // Selected is a fixed ink-bg/yellow-fg UI signal, not "text on an arbitrary background" - it
+    // keeps its own fixed pairing. Unselected sits on this pill's own hue/cap, which - unlike the
+    // page ground - never rotates, but still spans light (amber, tan) to dark (violet, teal), so a
+    // fixed White reads fine on most of them and nearly vanishes on the lightest few.
+    val fg = if (selected) Azphalt.Yellow else bg.contrastingText()
+    val capFg = if (selected) Azphalt.Ink else capBg.contrastingText()
     // Local copy so the semantics block below reads the parameter, not its own
     // SemanticsPropertyReceiver.selected property of the same name.
     val isSelected = selected
@@ -852,18 +884,26 @@ internal fun Pill(
     // against the pill's own footprint. PILL_HEIGHT (17dp) is a deliberate Menu Style Guide
     // constant the width-variation and row-pitch math elsewhere in this file depends on staying
     // exact, so it can't simply grow to Android's PILL_TOUCH_TARGET (48dp) minimum. Instead this
-    // outer Box pads out the *clickable* region to PILL_TOUCH_TARGET while the Row painted below
+    // outer Box pads out the *clickable* region to [touchTargetHeight] while the Row painted below
     // stays exactly PILL_HEIGHT tall - the same "invisible larger tap zone around a small visible
     // element" pattern GuideReaderScreen's Chip (UI-7) uses. The padding is pinned to the bottom
     // edge (defaultMinSize + a Bottom* anchor) rather than split evenly above and below: every
     // pill here is itself bottom-anchored (aligned to a Bottom* row position, then lifted into its
     // row by translationY), so bottom-anchoring the touch target too means the extra height only
-    // ever extends upward - toward the next row up, exactly where ROW_PITCH's 3dp gap actually is
-    // - without nudging the visible pill's own on-screen position by even a pixel. [anchor]'s
-    // Start/End half is the separate, horizontal half of this same alignment - see the comment on
-    // the parameter itself.
+    // ever extends upward, toward the next row up - never nudging the visible pill's own on-screen
+    // position by even a pixel, but eating into that next row's own space by however much the
+    // target overshoots PILL_HEIGHT. [touchTargetHeight] is a real, enforced bound on that
+    // overshoot, not a "should be fine" hope: a row-stacked pill (StackPill/HostPill/ChildPill)
+    // passes ROW_PITCH itself here, capping the touch target at exactly the gap to the next row so
+    // two rows' tap zones can never overlap - PILL_TOUCH_TARGET's full 48dp would reach 31dp past
+    // a 17dp pill into rows *above* it, and since later-declared rows paint (and hit-test) on top
+    // of earlier ones, a lower row's oversized target would silently steal taps aimed at whatever
+    // pill actually sits under the user's finger higher up the stack. TrailCrumb - a single
+    // horizontal row, not lifted into a stack of its own - keeps the full accessibility-minimum
+    // default since it has no neighboring row to overlap. [anchor]'s Start/End half is the
+    // separate, horizontal half of this same alignment - see the comment on that parameter.
     Box(
-        modifier.defaultMinSize(minHeight = PILL_TOUCH_TARGET),
+        modifier.defaultMinSize(minHeight = touchTargetHeight),
         contentAlignment = anchor
     ) {
         Row(
@@ -889,6 +929,13 @@ internal fun Pill(
                 text = label.uppercase(),
                 color = fg,
                 fontSize = 6.sp,
+                // Text() with no `style` inherits LocalTextStyle - MaterialTheme's own
+                // ProvideTextStyle(typography.bodyLarge), whose lineHeight is a fixed 24.sp. An
+                // overridden fontSize alone doesn't touch that: the merged style keeps the
+                // inherited 24.sp line box around a 6sp glyph, and both this Row and the cap Box
+                // below clip to their own much shorter fixed height, cutting most of the glyph
+                // away. Matching lineHeight to fontSize is what actually fixes it, not the clip.
+                lineHeight = 6.sp,
                 fontWeight = FontWeight.ExtraBold,
                 letterSpacing = 0.09.em,
                 maxLines = 1,
@@ -908,6 +955,10 @@ internal fun Pill(
                         text = cap.uppercase(),
                         color = capFg,
                         fontSize = 5.sp,
+                        // Same inherited-lineHeight bug as the label above, worse here since this
+                        // Box is only 10dp tall - the inherited 24.sp line box left only the very
+                        // top sliver of the cap's own glyphs inside that clip.
+                        lineHeight = 5.sp,
                         fontWeight = FontWeight.ExtraBold
                     )
                 }
