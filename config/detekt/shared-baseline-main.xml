@@ -1,0 +1,166 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>ComplexCondition:ContactManager.kt$ContactManager$displayNameCol == -1 || timesContactedCol == -1 || lastTimeContactedCol == -1 || numberCol == -1</ID>
+    <ID>ComplexCondition:ContactManager.kt$ContactManager.&lt;no name provided&gt;$contactIdIndex == -1 || numberIndex == -1 || superPrimaryIndex == -1 || displayNameIndex == -1</ID>
+    <ID>ComplexCondition:ShellSession.kt$ShellSession$!promptOfferedForThisStall &amp;&amp; marker &lt; 0 &amp;&amp; tailIsUnterminated &amp;&amp; idleMs &gt; PROMPT_IDLE_MS</ID>
+    <ID>CyclomaticComplexMethod:AzpInstaller.kt$AzpInstaller$suspend fun install( context: Context, id: String, version: String, bytes: ByteArray, trustedKeys: List&lt;String&gt; = emptyList(), ): AzpInstallResult?</ID>
+    <ID>CyclomaticComplexMethod:AzpLibrary.kt$AzpLibrary$fun installedSkillTexts(context: Context): List&lt;Pair&lt;String, String&gt;&gt;</ID>
+    <ID>CyclomaticComplexMethod:Builtins.kt$Builtins$private fun contacts(context: Context, args: List&lt;String&gt;): String</ID>
+    <ID>CyclomaticComplexMethod:Builtins.kt$Builtins$private fun vfs(context: Context, args: List&lt;String&gt;): String</ID>
+    <ID>CyclomaticComplexMethod:Builtins.kt$Builtins$private fun volume(context: Context, args: List&lt;String&gt;): String</ID>
+    <ID>CyclomaticComplexMethod:ContactManager.kt$ContactManager$fun about(phone: String): Array&lt;String?&gt;?</ID>
+    <ID>CyclomaticComplexMethod:ShellSession.kt$ShellSession$actual fun stream(command: String, onLine: (line: String) -&gt; Unit, onNeedInput: (prompt: String) -&gt; String?): Int</ID>
+    <ID>EmptyFunctionBlock:ShellSession.kt$DummyTerminalOutput${}</ID>
+    <ID>FunctionNaming:AiSettingsScreen.kt$@Composable fun AiSettingsScreen( fullscreen: Boolean, apiKey: String?, onSave: (String?) -&gt; Unit, onBack: () -&gt; Unit )</ID>
+    <ID>FunctionNaming:AiSettingsScreen.kt$@Composable private fun Eyebrow(text: String)</ID>
+    <ID>FunctionNaming:McpServerScreen.kt$@Composable fun McpServerScreen( fullscreen: Boolean, running: Boolean, port: Int, token: String?, shellExecEnabled: Boolean, onStart: () -&gt; Unit, onStop: () -&gt; Unit, onRequestShellExec: () -&gt; Unit, onDisableShellExec: () -&gt; Unit, onBack: () -&gt; Unit )</ID>
+    <ID>FunctionNaming:McpServerScreen.kt$@Composable private fun McpSettingRow(title: String, description: String, control: @Composable () -&gt; Unit)</ID>
+    <ID>FunctionNaming:McpServerScreen.kt$@Composable private fun McpToggle( leftLabel: String, rightLabel: String, rightSelected: Boolean, onSelectRight: (Boolean) -&gt; Unit )</ID>
+    <ID>FunctionNaming:SettingsScreen.kt$@Composable fun SettingsScreen( fullscreen: Boolean, onFullscreenChange: (Boolean) -&gt; Unit, fontScalePercent: Int, onFontScalePercentChange: (Int) -&gt; Unit, onOpenMcpServer: () -&gt; Unit, onOpenAiSettings: () -&gt; Unit, onBack: () -&gt; Unit )</ID>
+    <ID>FunctionNaming:SettingsScreen.kt$@Composable private fun SegmentedToggle( leftLabel: String, rightLabel: String, rightSelected: Boolean, onSelectRight: (Boolean) -&gt; Unit )</ID>
+    <ID>FunctionNaming:SettingsScreen.kt$@Composable private fun SettingRow(title: String, description: String, control: @Composable () -&gt; Unit)</ID>
+    <ID>FunctionNaming:SettingsScreen.kt$@Composable private fun Stepper( value: Int, min: Int, max: Int, step: Int, label: (Int) -&gt; String, onChange: (Int) -&gt; Unit )</ID>
+    <ID>FunctionNaming:SettingsScreen.kt$@Composable private fun StepperButton(symbol: String, enabled: Boolean, onClick: () -&gt; Unit)</ID>
+    <ID>FunctionNaming:Theme.kt$@Composable fun HG2GuiTheme(scale: Float = 1f, content: @Composable () -&gt; Unit)</ID>
+    <ID>InjectDispatcher:AiClient.kt$AiClient$IO</ID>
+    <ID>InjectDispatcher:AzpClient.kt$AzpClient$IO</ID>
+    <ID>InjectDispatcher:AzpInstaller.kt$AzpInstaller$IO</ID>
+    <ID>InjectDispatcher:TerminalEngine.kt$TerminalEngine$IO</ID>
+    <ID>LongMethod:AiSettingsScreen.kt$@Composable fun AiSettingsScreen( fullscreen: Boolean, apiKey: String?, onSave: (String?) -&gt; Unit, onBack: () -&gt; Unit )</ID>
+    <ID>LongMethod:AzpInstaller.kt$AzpInstaller$suspend fun install( context: Context, id: String, version: String, bytes: ByteArray, trustedKeys: List&lt;String&gt; = emptyList(), ): AzpInstallResult?</ID>
+    <ID>LongMethod:ContactManager.kt$ContactManager$fun about(phone: String): Array&lt;String?&gt;?</ID>
+    <ID>LongMethod:ContactManager.kt$ContactManager.&lt;no name provided&gt;$override fun run()</ID>
+    <ID>LongMethod:McpServerScreen.kt$@Composable fun McpServerScreen( fullscreen: Boolean, running: Boolean, port: Int, token: String?, shellExecEnabled: Boolean, onStart: () -&gt; Unit, onStop: () -&gt; Unit, onRequestShellExec: () -&gt; Unit, onDisableShellExec: () -&gt; Unit, onBack: () -&gt; Unit )</ID>
+    <ID>LongMethod:SettingsScreen.kt$@Composable fun SettingsScreen( fullscreen: Boolean, onFullscreenChange: (Boolean) -&gt; Unit, fontScalePercent: Int, onFontScalePercentChange: (Int) -&gt; Unit, onOpenMcpServer: () -&gt; Unit, onOpenAiSettings: () -&gt; Unit, onBack: () -&gt; Unit )</ID>
+    <ID>LongMethod:ShellSession.kt$ShellSession$actual fun stream(command: String, onLine: (line: String) -&gt; Unit, onNeedInput: (prompt: String) -&gt; String?): Int</ID>
+    <ID>LongMethod:ShellSession.kt$ShellSession.Companion$private fun setupZshrc(home: File?)</ID>
+    <ID>LongParameterList:AzpLibrary.kt$AzpLibrary$( context: Context, id: String, name: String, version: String, kind: String, skillIds: List&lt;String&gt;, trust: AzpTrust = AzpTrust.UNSIGNED, /** For `kind:"script"` only - the name it's callable as on PATH once [ScriptInstaller] * has written its wrapper, so the store row can show it. Blank if installation didn't * reach that point (e.g. no Termux bootstrap yet - see [ScriptInstaller.Result]). */ scriptCommand: String? = null, )</ID>
+    <ID>LongParameterList:McpServerScreen.kt$( fullscreen: Boolean, running: Boolean, port: Int, token: String?, shellExecEnabled: Boolean, onStart: () -&gt; Unit, onStop: () -&gt; Unit, onRequestShellExec: () -&gt; Unit, onDisableShellExec: () -&gt; Unit, onBack: () -&gt; Unit )</ID>
+    <ID>LongParameterList:SettingsScreen.kt$( fullscreen: Boolean, onFullscreenChange: (Boolean) -&gt; Unit, fontScalePercent: Int, onFontScalePercentChange: (Int) -&gt; Unit, onOpenMcpServer: () -&gt; Unit, onOpenAiSettings: () -&gt; Unit, onBack: () -&gt; Unit )</ID>
+    <ID>LongParameterList:SettingsScreen.kt$( value: Int, min: Int, max: Int, step: Int, label: (Int) -&gt; String, onChange: (Int) -&gt; Unit )</ID>
+    <ID>LongParameterList:VfsManager.kt$VfsManager$( dir: File, q: String, into: MutableList&lt;File&gt;, limit: Int, seen: MutableSet&lt;String&gt; = mutableSetOf(), depth: Int = 0 )</ID>
+    <ID>LoopWithTooManyJumpStatements:AzpLibrary.kt$AzpLibrary$for</ID>
+    <ID>LoopWithTooManyJumpStatements:ContactManager.kt$ContactManager.&lt;no name provided&gt;$while</ID>
+    <ID>LoopWithTooManyJumpStatements:ShellSession.kt$ShellSession$while</ID>
+    <ID>MagicNumber:AiClient.kt$AiClient$2048L</ID>
+    <ID>MagicNumber:AiSettingsScreen.kt$6</ID>
+    <ID>MagicNumber:AzpClient.kt$AzpClient$15</ID>
+    <ID>MagicNumber:AzpClient.kt$AzpClient$30</ID>
+    <ID>MagicNumber:Builtins.kt$Builtins$100</ID>
+    <ID>MagicNumber:Builtins.kt$Builtins$255</ID>
+    <ID>MagicNumber:Builtins.kt$Builtins$255f</ID>
+    <ID>MagicNumber:ContactManager.kt$ContactManager$1000</ID>
+    <ID>MagicNumber:ContactManager.kt$ContactManager$24</ID>
+    <ID>MagicNumber:ContactManager.kt$ContactManager$60</ID>
+    <ID>MagicNumber:SettingsScreen.kt$6</ID>
+    <ID>MagicNumber:ShellSession.kt$ShellSession$10</ID>
+    <ID>MagicNumber:ShellSession.kt$ShellSession$1000</ID>
+    <ID>MagicNumber:ShellSession.kt$ShellSession$10L</ID>
+    <ID>MagicNumber:ShellSession.kt$ShellSession$120</ID>
+    <ID>MagicNumber:ShellSession.kt$ShellSession$24</ID>
+    <ID>MagicNumber:ShellSession.kt$ShellSession$4096</ID>
+    <ID>MagicNumber:SshPresets.kt$SshPresets$22</ID>
+    <ID>MagicNumber:TerminalEngine.kt$TerminalEngine.Companion$10</ID>
+    <ID>MagicNumber:TerminalEngine.kt$TerminalEngine.Companion$1024</ID>
+    <ID>MagicNumber:VfsManager.kt$VfsManager$10</ID>
+    <ID>MaxLineLength:AiClient.kt$If the user's request can be satisfied by a single shell command, reply on the first line with ONLY that command, prefixed with </ID>
+    <ID>MaxLineLength:ContactManager.kt$ContactManager$ActivityCompat.requestPermissions(context as Activity, arrayOf(Manifest.permission.READ_CONTACTS), PermissionCodes.COMMAND_SUGGESTION_REQUEST_PERMISSION)</ID>
+    <ID>NestedBlockDepth:ContactManager.kt$ContactManager$fun about(phone: String): Array&lt;String?&gt;?</ID>
+    <ID>NestedBlockDepth:ContactManager.kt$ContactManager$fun findNumber(name: String): String?</ID>
+    <ID>NestedBlockDepth:ContactManager.kt$ContactManager$fun refreshContacts(context: Context)</ID>
+    <ID>NestedBlockDepth:ShellSession.kt$ShellSession$actual fun stream(command: String, onLine: (line: String) -&gt; Unit, onNeedInput: (prompt: String) -&gt; String?): Int</ID>
+    <ID>PackageNaming:ActualResourceCollectors.kt$package hg2gui.shared.generated.resources</ID>
+    <ID>ReturnCount:AzpInstaller.kt$internal fun filesMatchDigests(extracted: Map&lt;String, String&gt;, declared: Map&lt;String, String&gt;): Boolean</ID>
+    <ID>ReturnCount:AzpSignatureVerifier.kt$AzpSignatureVerifier$fun verify(manifestBytes: ByteArray, signature: AzpSignature?, trustedKeys: List&lt;String&gt;): AzpTrust</ID>
+    <ID>ReturnCount:Builtins.kt$Builtins$@RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT) private fun bluetooth(context: Context): String</ID>
+    <ID>ReturnCount:Builtins.kt$Builtins$private fun brightness(context: Context, args: List&lt;String&gt;): String</ID>
+    <ID>ReturnCount:Builtins.kt$Builtins$private fun call(context: Context, args: List&lt;String&gt;): String</ID>
+    <ID>ReturnCount:Builtins.kt$Builtins$private fun contacts(context: Context, args: List&lt;String&gt;): String</ID>
+    <ID>ReturnCount:Builtins.kt$Builtins$private fun edit(context: Context, args: List&lt;String&gt;): String</ID>
+    <ID>ReturnCount:Builtins.kt$Builtins$private fun hasNotificationPolicyAccess(context: Context): Boolean</ID>
+    <ID>ReturnCount:Builtins.kt$Builtins$private fun vfs(context: Context, args: List&lt;String&gt;): String</ID>
+    <ID>ReturnCount:Builtins.kt$Builtins$private fun vfsMount(context: Context, target: String?): String</ID>
+    <ID>ReturnCount:Builtins.kt$Builtins$private fun volume(context: Context, args: List&lt;String&gt;): String</ID>
+    <ID>ReturnCount:ContactManager.kt$ContactManager$fun about(phone: String): Array&lt;String?&gt;?</ID>
+    <ID>ReturnCount:ContactManager.kt$ContactManager$fun fromPhone(phone: String): Uri?</ID>
+    <ID>ReturnCount:McpTools.kt$McpTools$override suspend fun callTool(name: String, arguments: JsonObject?): ToolCallResult</ID>
+    <ID>ReturnCount:ScriptInstaller.kt$ScriptInstaller$suspend fun install( context: Context, id: String, version: String, script: ScriptDto, ): Result</ID>
+    <ID>ReturnCount:ShellSession.kt$ShellSession$actual fun stream(command: String, onLine: (line: String) -&gt; Unit, onNeedInput: (prompt: String) -&gt; String?): Int</ID>
+    <ID>ReturnCount:ShellSession.kt$ShellSession.Companion$fun forAndroid(home: File?, context: Context): ShellSession</ID>
+    <ID>ReturnCount:VfsManager.kt$VfsManager$fun cd(context: Context, name: String): Boolean</ID>
+    <ID>ReturnCount:VfsManager.kt$VfsManager$fun cdInto(context: Context, absoluteDir: File): Boolean</ID>
+    <ID>ReturnCount:VfsManager.kt$VfsManager$fun copy(context: Context, from: String, to: String): Boolean</ID>
+    <ID>ReturnCount:VfsManager.kt$VfsManager$fun copyInto(file: File, targetDir: File): Boolean</ID>
+    <ID>ReturnCount:VfsManager.kt$VfsManager$fun move(context: Context, from: String, to: String): Boolean</ID>
+    <ID>ReturnCount:VfsManager.kt$VfsManager$fun moveInto(file: File, targetDir: File): Boolean</ID>
+    <ID>ReturnCount:VfsManager.kt$VfsManager$fun rename(file: File, newName: String): Boolean</ID>
+    <ID>ReturnCount:VfsManager.kt$VfsManager$fun touch(dir: File, name: String): Boolean</ID>
+    <ID>ReturnCount:VfsManager.kt$VfsManager$private fun searchWalk( dir: File, q: String, into: MutableList&lt;File&gt;, limit: Int, seen: MutableSet&lt;String&gt; = mutableSetOf(), depth: Int = 0 )</ID>
+    <ID>SpreadOperator:ShellSession.kt$ShellSession$(*command)</ID>
+    <ID>SwallowedException:AzpInstaller.kt$AzpInstaller$e: Exception</ID>
+    <ID>SwallowedException:AzpSignatureVerifier.kt$AzpSignatureVerifier$e: Exception</ID>
+    <ID>SwallowedException:Builtins.kt$Builtins$e: SecurityException</ID>
+    <ID>SwallowedException:CommandTree.kt$CommandTree$e: SecurityException</ID>
+    <ID>SwallowedException:DpkgCatalog.kt$DpkgCatalog$e: Exception</ID>
+    <ID>SwallowedException:ShellSession.kt$ShellSession$e: IOException</ID>
+    <ID>SwallowedException:ShellSession.kt$ShellSession$stillRunning: IllegalThreadStateException</ID>
+    <ID>SwallowedException:ShellSession.kt$ShellSession.Companion$e: Exception</ID>
+    <ID>SwallowedException:Utils.kt$Utils$e: Exception</ID>
+    <ID>SwallowedException:VfsManager.kt$VfsManager$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:AzpInstaller.kt$AzpInstaller$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:AzpSignatureVerifier.kt$AzpSignatureVerifier$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:Builtins.kt$Builtins$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:DpkgCatalog.kt$DpkgCatalog$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:McpJsonRpc.kt$McpJsonRpc$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ShellSession.kt$ShellSession.Companion$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:Utils.kt$Utils$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:VfsManager.kt$VfsManager$e: Exception</ID>
+    <ID>TooManyFunctions:Builtins.kt$Builtins</ID>
+    <ID>TooManyFunctions:CommandTree.kt$CommandTree</ID>
+    <ID>TooManyFunctions:VfsManager.kt$VfsManager</ID>
+    <ID>UnreachableCode:AzpLibrary.kt$AzpLibrary$for (skillId in skillIds) { if (remaining &lt;= 0) break val skillMd = root.resolve("skills/$skillId/SKILL.md") if (!skillMd.exists()) continue val text = skillMd.readText().take(remaining) remaining -= text.length out += skillId to text }</ID>
+    <ID>UnreachableCode:AzpLibrary.kt$AzpLibrary$val root = AzpInstaller.rootDir(context, id, version)</ID>
+    <ID>UnreachableCode:AzpLibrary.kt$AzpLibrary$val skillIds = p.getString("$id.skillIds", "")?.split(",")?.filter { it.isNotBlank() } ?: continue</ID>
+    <ID>UnreachableCode:Builtins.kt$Builtins$"Ringer profile: $name"</ID>
+    <ID>UnreachableCode:Builtins.kt$Builtins$Settings.System.putInt( resolver, Settings.System.SCREEN_BRIGHTNESS_MODE, Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL )</ID>
+    <ID>UnreachableCode:Builtins.kt$Builtins$Settings.System.putInt(resolver, Settings.System.SCREEN_BRIGHTNESS, level255)</ID>
+    <ID>UnreachableCode:Builtins.kt$Builtins$activity?.runOnUiThread { val lp = activity.window.attributes // screenBrightness wants a 0f-1f fraction; SCREEN_BRIGHTNESS itself is 0-255. Mixing // the two scales up was the one real bug here - every level rendered as either // near-black or clipped to full. lp.screenBrightness = level255 / 255f activity.window.attributes = lp }</ID>
+    <ID>UnreachableCode:Builtins.kt$Builtins$if (stream == AudioManager.STREAM_RING &amp;&amp; !hasNotificationPolicyAccess(context)) { return "Ring volume needs Do Not Disturb access — opening settings to grant it." }</ID>
+    <ID>UnreachableCode:Builtins.kt$Builtins$levelOf(which, stream)</ID>
+    <ID>UnreachableCode:Builtins.kt$Builtins$manager.ringerMode = mode</ID>
+    <ID>UnreachableCode:Builtins.kt$Builtins$manager.setStreamVolume(stream, target, 0)</ID>
+    <ID>UnreachableCode:Builtins.kt$Builtins$return "Brightness: $percent%"</ID>
+    <ID>UnreachableCode:Builtins.kt$Builtins$return when (sub) { "ls" -&gt; { val entries = VfsManager.list(context) if (entries.isEmpty()) "(empty)" else entries.joinToString("\n") { if (it.isDirectory) it.name + "/" else it.name } } "pwd" -&gt; VfsManager.currentPath() "cd" -&gt; { val name = rest.getOrNull(0) ?: return "Usage: vfs cd &lt;dir&gt;" if (VfsManager.cd(context, name)) VfsManager.currentPath() else "No such directory: $name" } "mkdir" -&gt; { val name = rest.getOrNull(0) ?: return "Usage: vfs mkdir &lt;name&gt;" if (VfsManager.mkdir(context, name)) "Created $name" else "Could not create $name" } "touch" -&gt; { val name = rest.getOrNull(0) ?: return "Usage: vfs touch &lt;name&gt;" if (VfsManager.touch(context, name)) "Created $name" else "Could not create $name" } "cat" -&gt; { val name = rest.getOrNull(0) ?: return "Usage: vfs cat &lt;name&gt;" VfsManager.readText(context, name) ?: "No such file: $name" } "rm" -&gt; { val name = rest.getOrNull(0) ?: return "Usage: vfs rm &lt;name&gt;" if (VfsManager.delete(context, name)) "Removed $name" else "Could not remove $name" } "mv" -&gt; { if (rest.size &lt; 2) return "Usage: vfs mv &lt;from&gt; &lt;to&gt;" if (VfsManager.move(context, rest[0], rest[1])) "Moved ${rest[0]} -&gt; ${rest[1]}" else "Could not move" } "cp" -&gt; { if (rest.size &lt; 2) return "Usage: vfs cp &lt;from&gt; &lt;to&gt;" if (VfsManager.copy(context, rest[0], rest[1])) "Copied ${rest[0]} -&gt; ${rest[1]}" else "Could not copy" } "mount" -&gt; vfsMount(context, rest.getOrNull(0)) else -&gt; VFS_USAGE }</ID>
+    <ID>UnreachableCode:Builtins.kt$Builtins$return when (verb) { "wifi" -&gt; wifi(context) "bluetooth" -&gt; bluetooth(context) "airplane" -&gt; airplane(context) "flash" -&gt; flash(context) "volume" -&gt; volume(context, args) "brightness" -&gt; brightness(context, args) "call" -&gt; call(context, args) "contacts" -&gt; contacts(context, args) "vfs" -&gt; vfs(context, args) "edit" -&gt; edit(context, args) "calc" -&gt; calc(args) else -&gt; "Unknown builtin: $verb" }</ID>
+    <ID>UnreachableCode:Builtins.kt$Builtins$val args = parts.drop(1)</ID>
+    <ID>UnreachableCode:Builtins.kt$Builtins$val level255 = percent * 255 / 100</ID>
+    <ID>UnreachableCode:Builtins.kt$Builtins$val mode = RINGER_PROFILES[name] ?: return "Unknown profile \"$name\". Use one of: ${RINGER_PROFILES.keys.joinToString()}"</ID>
+    <ID>UnreachableCode:Builtins.kt$Builtins$val name = args.getOrNull(1)?.lowercase() ?: return "Usage: volume profile &lt;${RINGER_PROFILES.keys.joinToString("|")}&gt;"</ID>
+    <ID>UnreachableCode:Builtins.kt$Builtins$val percent = args.getOrNull(0)?.toIntOrNull()?.coerceIn(0, 100) ?: return "Usage: brightness &lt;0-100&gt; | auto"</ID>
+    <ID>UnreachableCode:Builtins.kt$Builtins$val percent = args.getOrNull(2)?.toIntOrNull()?.coerceIn(0, 100) ?: return usage</ID>
+    <ID>UnreachableCode:Builtins.kt$Builtins$val rest = args.drop(1)</ID>
+    <ID>UnreachableCode:Builtins.kt$Builtins$val stream = VOLUME_STREAMS[which] ?: return "Unknown stream \"$which\". Use one of: ${VOLUME_STREAMS.keys.joinToString()}"</ID>
+    <ID>UnreachableCode:Builtins.kt$Builtins$val sub = args.getOrNull(0)?.lowercase() ?: return VFS_USAGE</ID>
+    <ID>UnreachableCode:Builtins.kt$Builtins$val target = percent * manager.getStreamMaxVolume(stream) / 100</ID>
+    <ID>UnreachableCode:Builtins.kt$Builtins$val verb = parts.firstOrNull() ?: return ""</ID>
+    <ID>UnreachableCode:Builtins.kt$Builtins$val which = args.getOrNull(1)?.lowercase() ?: return usage</ID>
+    <ID>UnreachableCode:CommandTree.kt$CommandTree$for (b in binaries) categoryOf[b] = category</ID>
+    <ID>UnreachableCode:CommandTree.kt$CommandTree$val category = CATEGORY_OF_PACKAGE[pkg] ?: continue</ID>
+    <ID>UnreachableCode:McpJsonRpc.kt$McpJsonRpc$return json.encodeToString(JsonRpcResponse.serializer(), response)</ID>
+    <ID>UnreachableCode:McpJsonRpc.kt$McpJsonRpc$val request = try { json.decodeFromString(JsonRpcRequest.serializer(), line) } catch (e: Exception) { return json.encodeToString( JsonRpcResponse.serializer(), JsonRpcResponse(error = JsonRpcError(PARSE_ERROR, "Parse error: ${e.message}")) ) }</ID>
+    <ID>UnreachableCode:McpJsonRpc.kt$McpJsonRpc$val response = dispatch(request, tools)</ID>
+    <ID>UnsafeCallOnNullableType:ContactManager.kt$ContactManager$about[NUMBERS]!!</ID>
+    <ID>UseIsNullOrEmpty:ContactManager.kt$ContactManager$mCursor == null || mCursor.count == 0</ID>
+    <ID>UseIsNullOrEmpty:ContactManager.kt$ContactManager$snapshot == null || snapshot.isEmpty()</ID>
+    <ID>UseOrEmpty:AzpLibrary.kt$AzpLibrary$p.getString("$id.version", "") ?: ""</ID>
+    <ID>UseOrEmpty:CommandTree.kt$CommandTree$binDir.listFiles() ?: emptyArray()</ID>
+    <ID>UseOrEmpty:McpServerScreen.kt$token ?: ""</ID>
+    <ID>UseOrEmpty:McpTools.kt$McpTools$dir.listFiles() ?: emptyArray()</ID>
+    <ID>UseOrEmpty:SshPresets.kt$SshPresets$p.getString("$name.user", "") ?: ""</ID>
+    <ID>WildcardImport:AiSettingsScreen.kt$import androidx.compose.foundation.layout.*</ID>
+    <ID>WildcardImport:McpServerScreen.kt$import androidx.compose.foundation.layout.*</ID>
+    <ID>WildcardImport:SettingsScreen.kt$import androidx.compose.foundation.layout.*</ID>
+  </CurrentIssues>
+</SmellBaseline>

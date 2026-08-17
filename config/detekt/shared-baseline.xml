@@ -1,0 +1,360 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>ComplexCondition:AsciiArt.kt$r == 0 || c == 0 || r == rows + 1 || c == cols + 1</ID>
+    <ID>CyclomaticComplexMethod:AsciiArt.kt$private fun buildContourPath(density: Array&lt;FloatArray&gt;, cellPx: Float): Path</ID>
+    <ID>CyclomaticComplexMethod:FilesScreen.kt$@Composable fun FilesScreen( fullscreen: Boolean, nowMillis: Long, listDir: suspend (path: String) -&gt; List&lt;VfsEntry&gt;, search: suspend (query: String) -&gt; List&lt;VfsSearchResult&gt;, storageStats: suspend () -&gt; StorageStats, onOpenFile: (path: String) -&gt; Unit, // VFS-13: every one of these used to discard its own success/failure - create-with-an- // existing-name reported fake success (the underlying call is a no-op that still returns // true), and every other failure (permission denied, sandbox containment) simply vanished. // Returning Boolean lets this screen tell the user when a tap didn't do what it looked like. onCreateFolder: suspend (parentPath: String, name: String) -&gt; Boolean, onCreateFile: suspend (parentPath: String, name: String) -&gt; Boolean, onDelete: suspend (path: String) -&gt; Boolean, onRename: suspend (path: String, newName: String) -&gt; Boolean, onMove: suspend (path: String, targetDirPath: String) -&gt; Boolean, onCopy: suspend (path: String, targetDirPath: String) -&gt; Boolean, onShare: (path: String) -&gt; Unit, // VFS-4: a batch share used to just forEach the single-file callback, firing N independent // ACTION_SEND choosers in a row instead of one ACTION_SEND_MULTIPLE - only the last one was // ever actually reachable. onShareMultiple: (paths: Set&lt;String&gt;) -&gt; Unit, onBack: () -&gt; Unit, // UI-1: reports whether this screen has an internal level (Storage/Search/PickMove/PickCopy, // select mode, a rename/create prompt, a drilled-in folder chain) that system back/the edge // gesture should step up through one level at a time, instead of always closing this whole // screen the way [onBack] itself does. See BackStepState's own doc for the full mechanism. backStep: BackStepState, modifier: Modifier = Modifier )</ID>
+    <ID>CyclomaticComplexMethod:FilesScreen.kt$@Composable private fun ExpandableLevel( depth: Int, openChain: List&lt;VfsEntry&gt;, entriesAt: (Int) -&gt; List&lt;VfsEntry&gt;?, onToggle: (Int, VfsEntry) -&gt; Unit, selectMode: Boolean, selected: Set&lt;String&gt;, onTap: (Int, VfsEntry) -&gt; Unit, onLongPress: (VfsEntry) -&gt; Unit, onRename: (VfsEntry) -&gt; Unit, onDelete: (VfsEntry) -&gt; Unit, onShare: (VfsEntry) -&gt; Unit )</ID>
+    <ID>CyclomaticComplexMethod:PillWrapReveal.kt$@Composable fun PillWrapReveal(state: PillWrapRevealState, hue: Color, content: @Composable () -&gt; Unit)</ID>
+    <ID>CyclomaticComplexMethod:TerminalScreen.kt$@Composable fun TerminalScreen( tree: List&lt;MenuNode&gt;, sessions: List&lt;SessionUiState&gt;, activeSessionId: String, onSessionPick: (String) -&gt; Unit, onNewSession: () -&gt; Unit, onCloseSession: (String) -&gt; Unit, fullscreen: Boolean, onOpenSettings: () -&gt; Unit, onOpenGuide: () -&gt; Unit, onOpenFiles: () -&gt; Unit, onFilesButtonPositioned: (Rect) -&gt; Unit = {}, onWizard: (wizardId: String) -&gt; Unit = {}, onCrumbPositioned: (id: String, rect: Rect) -&gt; Unit = { _, _ -&gt; }, onCopy: (String) -&gt; Unit = {}, onShare: (String) -&gt; Unit = {}, onRun: suspend ( sessionId: String, line: String, onOutput: (String) -&gt; Unit, onNeedInput: suspend (prompt: String) -&gt; String ) -&gt; Unit )</ID>
+    <ID>FunctionNaming:AiChatScreen.kt$@Composable fun AiChatScreen( fullscreen: Boolean, messages: List&lt;AiMessage&gt;, apiKeyConfigured: Boolean, busy: Boolean, onAsk: (String) -&gt; Unit, onUseCommand: (String) -&gt; Unit, onOpenSettings: () -&gt; Unit, onBack: () -&gt; Unit )</ID>
+    <ID>FunctionNaming:AiChatScreen.kt$@Composable private fun AiBubble(message: AiMessage, onUseCommand: (String) -&gt; Unit)</ID>
+    <ID>FunctionNaming:AiChatScreen.kt$@Composable private fun Eyebrow(text: String)</ID>
+    <ID>FunctionNaming:AsciiArt.kt$@Composable fun AsciiArtCanvas(text: String, ink: Color, modifier: Modifier = Modifier, maxCell: Dp = 7.dp)</ID>
+    <ID>FunctionNaming:AzpStoreScreen.kt$@Composable fun AzpStoreScreen( fullscreen: Boolean, results: List&lt;AzpListing&gt;, busy: Boolean, installingId: String?, onSearch: (query: String, kind: String) -&gt; Unit, onInstall: (AzpListing) -&gt; Unit, onBack: () -&gt; Unit, )</ID>
+    <ID>FunctionNaming:AzpStoreScreen.kt$@Composable private fun AzpRow(listing: AzpListing, installing: Boolean, onInstall: (AzpListing) -&gt; Unit)</ID>
+    <ID>FunctionNaming:AzpStoreScreen.kt$@Composable private fun Eyebrow(text: String)</ID>
+    <ID>FunctionNaming:CommandGuideScreen.kt$@Composable fun CommandGuideScreen( tree: List&lt;MenuNode&gt;, fullscreen: Boolean, onCommandSelected: (List&lt;String&gt;) -&gt; Unit, onBack: () -&gt; Unit, // UI-2: reports whether there's an internal level (right now, only "the reader is open") for // system back/the edge gesture to step up through before onBack closes this whole screen. When // readingGuide is true, GuideReaderScreen (which owns its own index/entry drill-down) takes // over reporting to the very same instance - see its own doc comment for how the two levels // combine into one step-at-a-time back stack without either screen knowing about the other's // state directly. backStep: BackStepState, modifier: Modifier = Modifier )</ID>
+    <ID>FunctionNaming:ConfirmDialog.kt$@Composable fun ConfirmDialog( title: String, message: String, confirmLabel: String, onConfirm: () -&gt; Unit, onDismiss: () -&gt; Unit, cancelLabel: String = "CANCEL" )</ID>
+    <ID>FunctionNaming:EditorScreen.kt$@Composable fun EditorScreen( fileName: String, content: String?, error: String?, dirty: Boolean, onContentChange: (String) -&gt; Unit, onSave: () -&gt; Unit, onBack: () -&gt; Unit, modifier: Modifier = Modifier )</ID>
+    <ID>FunctionNaming:EditorScreen.kt$@Composable private fun Pill(label: String, background: Color, foreground: Color, onClick: () -&gt; Unit)</ID>
+    <ID>FunctionNaming:FilesScreen.kt$@Composable fun FilesScreen( fullscreen: Boolean, nowMillis: Long, listDir: suspend (path: String) -&gt; List&lt;VfsEntry&gt;, search: suspend (query: String) -&gt; List&lt;VfsSearchResult&gt;, storageStats: suspend () -&gt; StorageStats, onOpenFile: (path: String) -&gt; Unit, // VFS-13: every one of these used to discard its own success/failure - create-with-an- // existing-name reported fake success (the underlying call is a no-op that still returns // true), and every other failure (permission denied, sandbox containment) simply vanished. // Returning Boolean lets this screen tell the user when a tap didn't do what it looked like. onCreateFolder: suspend (parentPath: String, name: String) -&gt; Boolean, onCreateFile: suspend (parentPath: String, name: String) -&gt; Boolean, onDelete: suspend (path: String) -&gt; Boolean, onRename: suspend (path: String, newName: String) -&gt; Boolean, onMove: suspend (path: String, targetDirPath: String) -&gt; Boolean, onCopy: suspend (path: String, targetDirPath: String) -&gt; Boolean, onShare: (path: String) -&gt; Unit, // VFS-4: a batch share used to just forEach the single-file callback, firing N independent // ACTION_SEND choosers in a row instead of one ACTION_SEND_MULTIPLE - only the last one was // ever actually reachable. onShareMultiple: (paths: Set&lt;String&gt;) -&gt; Unit, onBack: () -&gt; Unit, // UI-1: reports whether this screen has an internal level (Storage/Search/PickMove/PickCopy, // select mode, a rename/create prompt, a drilled-in folder chain) that system back/the edge // gesture should step up through one level at a time, instead of always closing this whole // screen the way [onBack] itself does. See BackStepState's own doc for the full mechanism. backStep: BackStepState, modifier: Modifier = Modifier )</ID>
+    <ID>FunctionNaming:FilesScreen.kt$@Composable private fun Chip( label: String, modifier: Modifier = Modifier, background: Color = Azphalt.Ink, foreground: Color = Azphalt.Yellow, filled: Boolean = true, clickable: Boolean = true, onClick: () -&gt; Unit = {} )</ID>
+    <ID>FunctionNaming:FilesScreen.kt$@Composable private fun ColumnScope.RecentSearches(recent: List&lt;String&gt;, onSelect: (String) -&gt; Unit)</ID>
+    <ID>FunctionNaming:FilesScreen.kt$@Composable private fun ColumnScope.SearchResults(results: List&lt;VfsSearchResult&gt;, onOpen: (VfsSearchResult) -&gt; Unit)</ID>
+    <ID>FunctionNaming:FilesScreen.kt$@Composable private fun EmptyLabel()</ID>
+    <ID>FunctionNaming:FilesScreen.kt$@Composable private fun EntryMenu(entry: VfsEntry, onRename: (VfsEntry) -&gt; Unit, onDelete: (VfsEntry) -&gt; Unit, onShare: (VfsEntry) -&gt; Unit, tint: Color)</ID>
+    <ID>FunctionNaming:FilesScreen.kt$@Composable private fun ExpandableLevel( depth: Int, openChain: List&lt;VfsEntry&gt;, entriesAt: (Int) -&gt; List&lt;VfsEntry&gt;?, onToggle: (Int, VfsEntry) -&gt; Unit, selectMode: Boolean, selected: Set&lt;String&gt;, onTap: (Int, VfsEntry) -&gt; Unit, onLongPress: (VfsEntry) -&gt; Unit, onRename: (VfsEntry) -&gt; Unit, onDelete: (VfsEntry) -&gt; Unit, onShare: (VfsEntry) -&gt; Unit )</ID>
+    <ID>FunctionNaming:FilesScreen.kt$@Composable private fun FileRows( files: List&lt;VfsEntry&gt;, selectMode: Boolean, selected: Set&lt;String&gt;, onTap: (VfsEntry) -&gt; Unit, onLongPress: (VfsEntry) -&gt; Unit, onRename: (VfsEntry) -&gt; Unit, onDelete: (VfsEntry) -&gt; Unit, onShare: (VfsEntry) -&gt; Unit )</ID>
+    <ID>FunctionNaming:FilesScreen.kt$@Composable private fun FilterChip(label: String, active: Boolean, onClick: () -&gt; Unit)</ID>
+    <ID>FunctionNaming:FilesScreen.kt$@Composable private fun FolderRow( entry: VfsEntry, selectMode: Boolean, isSelected: Boolean, onTap: (VfsEntry) -&gt; Unit, onLongPress: (VfsEntry) -&gt; Unit, onRename: (VfsEntry) -&gt; Unit, onDelete: (VfsEntry) -&gt; Unit, onShare: (VfsEntry) -&gt; Unit )</ID>
+    <ID>FunctionNaming:FilesScreen.kt$@Composable private fun LoadingLabel()</ID>
+    <ID>FunctionNaming:FilesScreen.kt$@Composable private fun NamePrompt(label: String, name: String, onNameChange: (String) -&gt; Unit, onConfirm: () -&gt; Unit, onCancel: () -&gt; Unit)</ID>
+    <ID>FunctionNaming:FilesScreen.kt$@Composable private fun SelectMark(selected: Boolean, dark: Boolean)</ID>
+    <ID>FunctionNaming:FolderPicker.kt$@Composable fun FolderPicker( title: String, listDir: suspend (path: String) -&gt; List&lt;VfsEntry&gt;, onConfirm: (targetPath: String) -&gt; Unit, onCancel: () -&gt; Unit, modifier: Modifier = Modifier )</ID>
+    <ID>FunctionNaming:FolderPicker.kt$@Composable private fun MorphTile( label: String, hue: Color, rect: Rect, isOpen: Boolean, onClick: () -&gt; Unit, onOpenDescend: () -&gt; Unit )</ID>
+    <ID>FunctionNaming:FolderPicker.kt$@Composable private fun PickerChip( label: String, modifier: Modifier = Modifier, background: Color = Azphalt.Ink, foreground: Color = Azphalt.Yellow, filled: Boolean = true, clickable: Boolean = true, fillWidth: Boolean = false, onClick: () -&gt; Unit = {} )</ID>
+    <ID>FunctionNaming:Font0.commonMain.kt$@InternalResourceApi internal fun _collectCommonMainFont0Resources(map: MutableMap&lt;String, FontResource&gt;)</ID>
+    <ID>FunctionNaming:GuideReaderScreen.kt$@Composable fun GuideReaderScreen( fullscreen: Boolean, onBack: () -&gt; Unit, // UI-2: this screen is always "somewhere with a level to step up from" while it's showing - // either up to its own index (from an entry) or out entirely via [onBack] (from the index) - // so it owns backStep unconditionally rather than only when it has state of its own to unwind. backStep: BackStepState, modifier: Modifier = Modifier )</ID>
+    <ID>FunctionNaming:GuideReaderScreen.kt$@Composable private fun Chip( label: String, modifier: Modifier = Modifier, background: Color = Azphalt.Ink, foreground: Color = Azphalt.Yellow, filled: Boolean = true, clickable: Boolean = true, fillWidth: Boolean = false, onClick: () -&gt; Unit = {} )</ID>
+    <ID>FunctionNaming:GuideReaderScreen.kt$@Composable private fun ColumnScope.GuideEntryReader( entry: GuideEntry, number: Int, total: Int, wipeKey: Int, onBackToIndex: () -&gt; Unit, onPrev: () -&gt; Unit, onNext: () -&gt; Unit, onReplay: () -&gt; Unit )</ID>
+    <ID>FunctionNaming:GuideReaderScreen.kt$@Composable private fun ColumnScope.GuideIndex(onBack: () -&gt; Unit, onOpenEntry: (Int) -&gt; Unit)</ID>
+    <ID>FunctionNaming:GuideReaderScreen.kt$@Composable private fun FactRow(label: String, value: String)</ID>
+    <ID>FunctionNaming:GuideReaderScreen.kt$@Composable private fun GuideWash(word: String, wipeKey: Int)</ID>
+    <ID>FunctionNaming:GuideReaderScreen.kt$@Composable private fun WipeItem(seq: Int, wipeKey: Int, wide: Boolean, modifier: Modifier = Modifier, content: @Composable () -&gt; Unit)</ID>
+    <ID>FunctionNaming:PathPickerScreen.kt$@Composable fun PathPickerScreen( startPath: String, listDir: suspend (path: String) -&gt; List&lt;VfsEntry&gt;, onSelectFile: (path: String) -&gt; Unit, onSelectFolder: (path: String) -&gt; Unit, onCancel: () -&gt; Unit, // UI-3: reports whether a folder tap has drilled this picker deeper than [startPath], so // system back/the edge gesture steps up one directory at a time instead of always cancelling // the whole picker the way [onCancel] itself does. See BackStepState's own doc. backStep: BackStepState, modifier: Modifier = Modifier )</ID>
+    <ID>FunctionNaming:PathPickerScreen.kt$@Composable private fun PickerPill( label: String, modifier: Modifier = Modifier, background: androidx.compose.ui.graphics.Color = Azphalt.Ink, foreground: androidx.compose.ui.graphics.Color = Azphalt.Yellow, fillWidth: Boolean = false, onClick: () -&gt; Unit )</ID>
+    <ID>FunctionNaming:PillMenu.kt$@Composable fun PillMenu( roots: List&lt;MenuNode&gt;, modifier: Modifier = Modifier, // isTerminal is true only when this call reports a pick that just fully resolved a // parameter (nothing left to drill into) - the signal a caller needs to auto-run instead of // waiting for a separate confirmation. onRun: (tokens: List&lt;String&gt;, isTerminal: Boolean) -&gt; Unit = { _, _ -&gt; }, // Called instead of onRun when the picked child has a wizardId - the caller owns whatever // multi-step flow that id names. onWizard: (wizardId: String) -&gt; Unit = {}, // Reports a trail crumb's on-screen rect (root coordinates) every time it's laid out - only // consumed by a settleBeforeWizard pick that needs to anchor an animation to it. onCrumbPositioned: (id: String, rect: Rect) -&gt; Unit = { _, _ -&gt; } )</ID>
+    <ID>FunctionNaming:PillMenu.kt$@Composable internal fun Pill( label: String, cap: String?, hue: Int, selected: Boolean, modifier: Modifier = Modifier )</ID>
+    <ID>FunctionNaming:PillMenu.kt$@Composable private fun ChildBand( children: List&lt;MenuNode&gt;, hueOwner: String, onPick: (MenuNode) -&gt; Unit )</ID>
+    <ID>FunctionNaming:PillMenu.kt$@Composable private fun ChildPill( node: MenuNode, localIndex: Int, hueOwner: String, scrollOffsetPx: Float, leaving: Boolean, droppingOut: Boolean, alignedRow: Int, onClick: () -&gt; Unit )</ID>
+    <ID>FunctionNaming:PillMenu.kt$@Composable private fun HostPill(node: MenuNode, rowsBelow: Int, onClick: () -&gt; Unit)</ID>
+    <ID>FunctionNaming:PillMenu.kt$@Composable private fun StackPill( node: MenuNode, row: Int, scrollOffsetPx: Float, leaving: Boolean, isHost: Boolean, entering: Boolean, aligned: Boolean, onClick: () -&gt; Unit )</ID>
+    <ID>FunctionNaming:PillMenu.kt$@Composable private fun TrailCrumb( node: MenuNode, hueOwner: String, zIndex: Float, onClick: () -&gt; Unit, onPositioned: (Rect) -&gt; Unit = {} )</ID>
+    <ID>FunctionNaming:PillMenu.kt$@Composable private fun TrailRow( trail: List&lt;MenuNode&gt;, hueOwner: String, onTapCrumb: (Int) -&gt; Unit, onCrumbPositioned: (id: String, rect: Rect) -&gt; Unit = { _, _ -&gt; } )</ID>
+    <ID>FunctionNaming:PillPerimeterReveal.kt$@Composable fun PillPerimeterReveal(state: PerimeterRevealState, hue: Color, content: @Composable () -&gt; Unit)</ID>
+    <ID>FunctionNaming:PillWrapReveal.kt$@Composable fun PillWrapReveal(state: PillWrapRevealState, hue: Color, content: @Composable () -&gt; Unit)</ID>
+    <ID>FunctionNaming:StorageScreen.kt$@Composable fun StorageScreen( stats: StorageStats?, onDelete: (path: String) -&gt; Unit, onBack: () -&gt; Unit, fullscreen: Boolean, onFreeUpSpace: () -&gt; Unit = {}, modifier: Modifier = Modifier )</ID>
+    <ID>FunctionNaming:StorageScreen.kt$@Composable private fun Chip( label: String, modifier: Modifier = Modifier, background: Color = Azphalt.Ink, foreground: Color = Azphalt.Yellow, filled: Boolean = true, clickable: Boolean = true, onClick: () -&gt; Unit = {} )</ID>
+    <ID>FunctionNaming:TerminalScreen.kt$@Composable fun TerminalScreen( tree: List&lt;MenuNode&gt;, sessions: List&lt;SessionUiState&gt;, activeSessionId: String, onSessionPick: (String) -&gt; Unit, onNewSession: () -&gt; Unit, onCloseSession: (String) -&gt; Unit, fullscreen: Boolean, onOpenSettings: () -&gt; Unit, onOpenGuide: () -&gt; Unit, onOpenFiles: () -&gt; Unit, onFilesButtonPositioned: (Rect) -&gt; Unit = {}, onWizard: (wizardId: String) -&gt; Unit = {}, onCrumbPositioned: (id: String, rect: Rect) -&gt; Unit = { _, _ -&gt; }, onCopy: (String) -&gt; Unit = {}, onShare: (String) -&gt; Unit = {}, onRun: suspend ( sessionId: String, line: String, onOutput: (String) -&gt; Unit, onNeedInput: suspend (prompt: String) -&gt; String ) -&gt; Unit )</ID>
+    <ID>FunctionNaming:TerminalScreen.kt$@Composable internal fun Eyebrow(text: String)</ID>
+    <ID>FunctionNaming:TerminalScreen.kt$@Composable private fun BlockActionPill(label: String, onClick: () -&gt; Unit)</ID>
+    <ID>FunctionNaming:TerminalScreen.kt$@Composable private fun BufferEntry( entry: TerminalHistoryEntry, onCopy: (String) -&gt; Unit, onShare: (String) -&gt; Unit, onRerun: (String) -&gt; Unit )</ID>
+    <ID>FunctionNaming:TerminalScreen.kt$@Composable private fun CommandLine( tokens: List&lt;String&gt;, inputText: String, onInputTextChange: (String) -&gt; Unit, hint: String, enabled: Boolean, onRun: () -&gt; Unit, runLabel: String = "RUN", masked: Boolean = false )</ID>
+    <ID>FunctionNaming:TerminalScreen.kt$@Composable private fun ModifierKeys( keys: List&lt;String&gt; = listOf("ctrl", "alt", "esc", "tab", "↑", "↓"), onKeyClick: (String) -&gt; Unit = {} )</ID>
+    <ID>FunctionNaming:TerminalScreen.kt$@Composable private fun OutputLines(entry: TerminalHistoryEntry)</ID>
+    <ID>FunctionNaming:TerminalScreen.kt$@Composable private fun OutputWipeLine(seq: Int, line: String)</ID>
+    <ID>FunctionNaming:TerminalScreen.kt$@Composable private fun SessionTabs( sessions: List&lt;SessionUiState&gt;, activeId: String, onOpenSettings: () -&gt; Unit, onOpenGuide: () -&gt; Unit, onOpenFiles: () -&gt; Unit, onFilesButtonPositioned: (Rect) -&gt; Unit, onPick: (String) -&gt; Unit, onNew: () -&gt; Unit, onClose: (String) -&gt; Unit )</ID>
+    <ID>FunctionNaming:Theme.kt$@Composable fun HG2GuiTheme( darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -&gt; Unit )</ID>
+    <ID>FunctionNaming:TypesetOutput.kt$@Composable fun KeyValueTable(text: String, ink: Color, modifier: Modifier = Modifier)</ID>
+    <ID>LongMethod:AiChatScreen.kt$@Composable fun AiChatScreen( fullscreen: Boolean, messages: List&lt;AiMessage&gt;, apiKeyConfigured: Boolean, busy: Boolean, onAsk: (String) -&gt; Unit, onUseCommand: (String) -&gt; Unit, onOpenSettings: () -&gt; Unit, onBack: () -&gt; Unit )</ID>
+    <ID>LongMethod:AiChatScreen.kt$@Composable private fun AiBubble(message: AiMessage, onUseCommand: (String) -&gt; Unit)</ID>
+    <ID>LongMethod:AzpStoreScreen.kt$@Composable fun AzpStoreScreen( fullscreen: Boolean, results: List&lt;AzpListing&gt;, busy: Boolean, installingId: String?, onSearch: (query: String, kind: String) -&gt; Unit, onInstall: (AzpListing) -&gt; Unit, onBack: () -&gt; Unit, )</ID>
+    <ID>LongMethod:AzpStoreScreen.kt$@Composable private fun AzpRow(listing: AzpListing, installing: Boolean, onInstall: (AzpListing) -&gt; Unit)</ID>
+    <ID>LongMethod:CommandGuideScreen.kt$@Composable fun CommandGuideScreen( tree: List&lt;MenuNode&gt;, fullscreen: Boolean, onCommandSelected: (List&lt;String&gt;) -&gt; Unit, onBack: () -&gt; Unit, // UI-2: reports whether there's an internal level (right now, only "the reader is open") for // system back/the edge gesture to step up through before onBack closes this whole screen. When // readingGuide is true, GuideReaderScreen (which owns its own index/entry drill-down) takes // over reporting to the very same instance - see its own doc comment for how the two levels // combine into one step-at-a-time back stack without either screen knowing about the other's // state directly. backStep: BackStepState, modifier: Modifier = Modifier )</ID>
+    <ID>LongMethod:FilesScreen.kt$@Composable fun FilesScreen( fullscreen: Boolean, nowMillis: Long, listDir: suspend (path: String) -&gt; List&lt;VfsEntry&gt;, search: suspend (query: String) -&gt; List&lt;VfsSearchResult&gt;, storageStats: suspend () -&gt; StorageStats, onOpenFile: (path: String) -&gt; Unit, // VFS-13: every one of these used to discard its own success/failure - create-with-an- // existing-name reported fake success (the underlying call is a no-op that still returns // true), and every other failure (permission denied, sandbox containment) simply vanished. // Returning Boolean lets this screen tell the user when a tap didn't do what it looked like. onCreateFolder: suspend (parentPath: String, name: String) -&gt; Boolean, onCreateFile: suspend (parentPath: String, name: String) -&gt; Boolean, onDelete: suspend (path: String) -&gt; Boolean, onRename: suspend (path: String, newName: String) -&gt; Boolean, onMove: suspend (path: String, targetDirPath: String) -&gt; Boolean, onCopy: suspend (path: String, targetDirPath: String) -&gt; Boolean, onShare: (path: String) -&gt; Unit, // VFS-4: a batch share used to just forEach the single-file callback, firing N independent // ACTION_SEND choosers in a row instead of one ACTION_SEND_MULTIPLE - only the last one was // ever actually reachable. onShareMultiple: (paths: Set&lt;String&gt;) -&gt; Unit, onBack: () -&gt; Unit, // UI-1: reports whether this screen has an internal level (Storage/Search/PickMove/PickCopy, // select mode, a rename/create prompt, a drilled-in folder chain) that system back/the edge // gesture should step up through one level at a time, instead of always closing this whole // screen the way [onBack] itself does. See BackStepState's own doc for the full mechanism. backStep: BackStepState, modifier: Modifier = Modifier )</ID>
+    <ID>LongMethod:FilesScreen.kt$@Composable private fun ExpandableLevel( depth: Int, openChain: List&lt;VfsEntry&gt;, entriesAt: (Int) -&gt; List&lt;VfsEntry&gt;?, onToggle: (Int, VfsEntry) -&gt; Unit, selectMode: Boolean, selected: Set&lt;String&gt;, onTap: (Int, VfsEntry) -&gt; Unit, onLongPress: (VfsEntry) -&gt; Unit, onRename: (VfsEntry) -&gt; Unit, onDelete: (VfsEntry) -&gt; Unit, onShare: (VfsEntry) -&gt; Unit )</ID>
+    <ID>LongMethod:FilesScreen.kt$@Composable private fun FileRows( files: List&lt;VfsEntry&gt;, selectMode: Boolean, selected: Set&lt;String&gt;, onTap: (VfsEntry) -&gt; Unit, onLongPress: (VfsEntry) -&gt; Unit, onRename: (VfsEntry) -&gt; Unit, onDelete: (VfsEntry) -&gt; Unit, onShare: (VfsEntry) -&gt; Unit )</ID>
+    <ID>LongMethod:FolderPicker.kt$@Composable fun FolderPicker( title: String, listDir: suspend (path: String) -&gt; List&lt;VfsEntry&gt;, onConfirm: (targetPath: String) -&gt; Unit, onCancel: () -&gt; Unit, modifier: Modifier = Modifier )</ID>
+    <ID>LongMethod:GuideReaderScreen.kt$@Composable private fun ColumnScope.GuideEntryReader( entry: GuideEntry, number: Int, total: Int, wipeKey: Int, onBackToIndex: () -&gt; Unit, onPrev: () -&gt; Unit, onNext: () -&gt; Unit, onReplay: () -&gt; Unit )</ID>
+    <ID>LongMethod:GuideReaderScreen.kt$@Composable private fun ColumnScope.GuideIndex(onBack: () -&gt; Unit, onOpenEntry: (Int) -&gt; Unit)</ID>
+    <ID>LongMethod:PathPickerScreen.kt$@Composable fun PathPickerScreen( startPath: String, listDir: suspend (path: String) -&gt; List&lt;VfsEntry&gt;, onSelectFile: (path: String) -&gt; Unit, onSelectFolder: (path: String) -&gt; Unit, onCancel: () -&gt; Unit, // UI-3: reports whether a folder tap has drilled this picker deeper than [startPath], so // system back/the edge gesture steps up one directory at a time instead of always cancelling // the whole picker the way [onCancel] itself does. See BackStepState's own doc. backStep: BackStepState, modifier: Modifier = Modifier )</ID>
+    <ID>LongMethod:PillMenu.kt$@Composable fun PillMenu( roots: List&lt;MenuNode&gt;, modifier: Modifier = Modifier, // isTerminal is true only when this call reports a pick that just fully resolved a // parameter (nothing left to drill into) - the signal a caller needs to auto-run instead of // waiting for a separate confirmation. onRun: (tokens: List&lt;String&gt;, isTerminal: Boolean) -&gt; Unit = { _, _ -&gt; }, // Called instead of onRun when the picked child has a wizardId - the caller owns whatever // multi-step flow that id names. onWizard: (wizardId: String) -&gt; Unit = {}, // Reports a trail crumb's on-screen rect (root coordinates) every time it's laid out - only // consumed by a settleBeforeWizard pick that needs to anchor an animation to it. onCrumbPositioned: (id: String, rect: Rect) -&gt; Unit = { _, _ -&gt; } )</ID>
+    <ID>LongMethod:PillMenu.kt$@Composable private fun ChildPill( node: MenuNode, localIndex: Int, hueOwner: String, scrollOffsetPx: Float, leaving: Boolean, droppingOut: Boolean, alignedRow: Int, onClick: () -&gt; Unit )</ID>
+    <ID>LongMethod:PillPerimeterReveal.kt$@Composable fun PillPerimeterReveal(state: PerimeterRevealState, hue: Color, content: @Composable () -&gt; Unit)</ID>
+    <ID>LongMethod:PillPerimeterReveal.kt$PerimeterRevealState$private suspend fun runLeadIn(reverse: Boolean)</ID>
+    <ID>LongMethod:PillWrapReveal.kt$@Composable fun PillWrapReveal(state: PillWrapRevealState, hue: Color, content: @Composable () -&gt; Unit)</ID>
+    <ID>LongMethod:StorageScreen.kt$@Composable fun StorageScreen( stats: StorageStats?, onDelete: (path: String) -&gt; Unit, onBack: () -&gt; Unit, fullscreen: Boolean, onFreeUpSpace: () -&gt; Unit = {}, modifier: Modifier = Modifier )</ID>
+    <ID>LongMethod:TerminalScreen.kt$@Composable fun TerminalScreen( tree: List&lt;MenuNode&gt;, sessions: List&lt;SessionUiState&gt;, activeSessionId: String, onSessionPick: (String) -&gt; Unit, onNewSession: () -&gt; Unit, onCloseSession: (String) -&gt; Unit, fullscreen: Boolean, onOpenSettings: () -&gt; Unit, onOpenGuide: () -&gt; Unit, onOpenFiles: () -&gt; Unit, onFilesButtonPositioned: (Rect) -&gt; Unit = {}, onWizard: (wizardId: String) -&gt; Unit = {}, onCrumbPositioned: (id: String, rect: Rect) -&gt; Unit = { _, _ -&gt; }, onCopy: (String) -&gt; Unit = {}, onShare: (String) -&gt; Unit = {}, onRun: suspend ( sessionId: String, line: String, onOutput: (String) -&gt; Unit, onNeedInput: suspend (prompt: String) -&gt; String ) -&gt; Unit )</ID>
+    <ID>LongMethod:TerminalScreen.kt$@Composable private fun BufferEntry( entry: TerminalHistoryEntry, onCopy: (String) -&gt; Unit, onShare: (String) -&gt; Unit, onRerun: (String) -&gt; Unit )</ID>
+    <ID>LongMethod:TerminalScreen.kt$@Composable private fun CommandLine( tokens: List&lt;String&gt;, inputText: String, onInputTextChange: (String) -&gt; Unit, hint: String, enabled: Boolean, onRun: () -&gt; Unit, runLabel: String = "RUN", masked: Boolean = false )</ID>
+    <ID>LongMethod:TerminalScreen.kt$@Composable private fun SessionTabs( sessions: List&lt;SessionUiState&gt;, activeId: String, onOpenSettings: () -&gt; Unit, onOpenGuide: () -&gt; Unit, onOpenFiles: () -&gt; Unit, onFilesButtonPositioned: (Rect) -&gt; Unit, onPick: (String) -&gt; Unit, onNew: () -&gt; Unit, onClose: (String) -&gt; Unit )</ID>
+    <ID>LongParameterList:AiChatScreen.kt$( fullscreen: Boolean, messages: List&lt;AiMessage&gt;, apiKeyConfigured: Boolean, busy: Boolean, onAsk: (String) -&gt; Unit, onUseCommand: (String) -&gt; Unit, onOpenSettings: () -&gt; Unit, onBack: () -&gt; Unit )</ID>
+    <ID>LongParameterList:AzpStoreScreen.kt$( fullscreen: Boolean, results: List&lt;AzpListing&gt;, busy: Boolean, installingId: String?, onSearch: (query: String, kind: String) -&gt; Unit, onInstall: (AzpListing) -&gt; Unit, onBack: () -&gt; Unit, )</ID>
+    <ID>LongParameterList:CommandGuideScreen.kt$( tree: List&lt;MenuNode&gt;, fullscreen: Boolean, onCommandSelected: (List&lt;String&gt;) -&gt; Unit, onBack: () -&gt; Unit, // UI-2: reports whether there's an internal level (right now, only "the reader is open") for // system back/the edge gesture to step up through before onBack closes this whole screen. When // readingGuide is true, GuideReaderScreen (which owns its own index/entry drill-down) takes // over reporting to the very same instance - see its own doc comment for how the two levels // combine into one step-at-a-time back stack without either screen knowing about the other's // state directly. backStep: BackStepState, modifier: Modifier = Modifier )</ID>
+    <ID>LongParameterList:ConfirmDialog.kt$( title: String, message: String, confirmLabel: String, onConfirm: () -&gt; Unit, onDismiss: () -&gt; Unit, cancelLabel: String = "CANCEL" )</ID>
+    <ID>LongParameterList:EditorScreen.kt$( fileName: String, content: String?, error: String?, dirty: Boolean, onContentChange: (String) -&gt; Unit, onSave: () -&gt; Unit, onBack: () -&gt; Unit, modifier: Modifier = Modifier )</ID>
+    <ID>LongParameterList:FilesScreen.kt$( depth: Int, openChain: List&lt;VfsEntry&gt;, entriesAt: (Int) -&gt; List&lt;VfsEntry&gt;?, onToggle: (Int, VfsEntry) -&gt; Unit, selectMode: Boolean, selected: Set&lt;String&gt;, onTap: (Int, VfsEntry) -&gt; Unit, onLongPress: (VfsEntry) -&gt; Unit, onRename: (VfsEntry) -&gt; Unit, onDelete: (VfsEntry) -&gt; Unit, onShare: (VfsEntry) -&gt; Unit )</ID>
+    <ID>LongParameterList:FilesScreen.kt$( entry: VfsEntry, selectMode: Boolean, isSelected: Boolean, onTap: (VfsEntry) -&gt; Unit, onLongPress: (VfsEntry) -&gt; Unit, onRename: (VfsEntry) -&gt; Unit, onDelete: (VfsEntry) -&gt; Unit, onShare: (VfsEntry) -&gt; Unit )</ID>
+    <ID>LongParameterList:FilesScreen.kt$( files: List&lt;VfsEntry&gt;, selectMode: Boolean, selected: Set&lt;String&gt;, onTap: (VfsEntry) -&gt; Unit, onLongPress: (VfsEntry) -&gt; Unit, onRename: (VfsEntry) -&gt; Unit, onDelete: (VfsEntry) -&gt; Unit, onShare: (VfsEntry) -&gt; Unit )</ID>
+    <ID>LongParameterList:FilesScreen.kt$( fullscreen: Boolean, nowMillis: Long, listDir: suspend (path: String) -&gt; List&lt;VfsEntry&gt;, search: suspend (query: String) -&gt; List&lt;VfsSearchResult&gt;, storageStats: suspend () -&gt; StorageStats, onOpenFile: (path: String) -&gt; Unit, // VFS-13: every one of these used to discard its own success/failure - create-with-an- // existing-name reported fake success (the underlying call is a no-op that still returns // true), and every other failure (permission denied, sandbox containment) simply vanished. // Returning Boolean lets this screen tell the user when a tap didn't do what it looked like. onCreateFolder: suspend (parentPath: String, name: String) -&gt; Boolean, onCreateFile: suspend (parentPath: String, name: String) -&gt; Boolean, onDelete: suspend (path: String) -&gt; Boolean, onRename: suspend (path: String, newName: String) -&gt; Boolean, onMove: suspend (path: String, targetDirPath: String) -&gt; Boolean, onCopy: suspend (path: String, targetDirPath: String) -&gt; Boolean, onShare: (path: String) -&gt; Unit, // VFS-4: a batch share used to just forEach the single-file callback, firing N independent // ACTION_SEND choosers in a row instead of one ACTION_SEND_MULTIPLE - only the last one was // ever actually reachable. onShareMultiple: (paths: Set&lt;String&gt;) -&gt; Unit, onBack: () -&gt; Unit, // UI-1: reports whether this screen has an internal level (Storage/Search/PickMove/PickCopy, // select mode, a rename/create prompt, a drilled-in folder chain) that system back/the edge // gesture should step up through one level at a time, instead of always closing this whole // screen the way [onBack] itself does. See BackStepState's own doc for the full mechanism. backStep: BackStepState, modifier: Modifier = Modifier )</ID>
+    <ID>LongParameterList:FilesScreen.kt$( label: String, modifier: Modifier = Modifier, background: Color = Azphalt.Ink, foreground: Color = Azphalt.Yellow, filled: Boolean = true, clickable: Boolean = true, onClick: () -&gt; Unit = {} )</ID>
+    <ID>LongParameterList:FolderPicker.kt$( label: String, hue: Color, rect: Rect, isOpen: Boolean, onClick: () -&gt; Unit, onOpenDescend: () -&gt; Unit )</ID>
+    <ID>LongParameterList:FolderPicker.kt$( label: String, modifier: Modifier = Modifier, background: Color = Azphalt.Ink, foreground: Color = Azphalt.Yellow, filled: Boolean = true, clickable: Boolean = true, fillWidth: Boolean = false, onClick: () -&gt; Unit = {} )</ID>
+    <ID>LongParameterList:GuideReaderScreen.kt$( entry: GuideEntry, number: Int, total: Int, wipeKey: Int, onBackToIndex: () -&gt; Unit, onPrev: () -&gt; Unit, onNext: () -&gt; Unit, onReplay: () -&gt; Unit )</ID>
+    <ID>LongParameterList:GuideReaderScreen.kt$( label: String, modifier: Modifier = Modifier, background: Color = Azphalt.Ink, foreground: Color = Azphalt.Yellow, filled: Boolean = true, clickable: Boolean = true, fillWidth: Boolean = false, onClick: () -&gt; Unit = {} )</ID>
+    <ID>LongParameterList:PathPickerScreen.kt$( label: String, modifier: Modifier = Modifier, background: androidx.compose.ui.graphics.Color = Azphalt.Ink, foreground: androidx.compose.ui.graphics.Color = Azphalt.Yellow, fillWidth: Boolean = false, onClick: () -&gt; Unit )</ID>
+    <ID>LongParameterList:PathPickerScreen.kt$( startPath: String, listDir: suspend (path: String) -&gt; List&lt;VfsEntry&gt;, onSelectFile: (path: String) -&gt; Unit, onSelectFolder: (path: String) -&gt; Unit, onCancel: () -&gt; Unit, // UI-3: reports whether a folder tap has drilled this picker deeper than [startPath], so // system back/the edge gesture steps up one directory at a time instead of always cancelling // the whole picker the way [onCancel] itself does. See BackStepState's own doc. backStep: BackStepState, modifier: Modifier = Modifier )</ID>
+    <ID>LongParameterList:PillMenu.kt$( node: MenuNode, localIndex: Int, hueOwner: String, scrollOffsetPx: Float, leaving: Boolean, droppingOut: Boolean, alignedRow: Int, onClick: () -&gt; Unit )</ID>
+    <ID>LongParameterList:PillMenu.kt$( node: MenuNode, row: Int, scrollOffsetPx: Float, leaving: Boolean, isHost: Boolean, entering: Boolean, aligned: Boolean, onClick: () -&gt; Unit )</ID>
+    <ID>LongParameterList:StorageScreen.kt$( label: String, modifier: Modifier = Modifier, background: Color = Azphalt.Ink, foreground: Color = Azphalt.Yellow, filled: Boolean = true, clickable: Boolean = true, onClick: () -&gt; Unit = {} )</ID>
+    <ID>LongParameterList:StorageScreen.kt$( stats: StorageStats?, onDelete: (path: String) -&gt; Unit, onBack: () -&gt; Unit, fullscreen: Boolean, onFreeUpSpace: () -&gt; Unit = {}, modifier: Modifier = Modifier )</ID>
+    <ID>LongParameterList:TerminalScreen.kt$( sessions: List&lt;SessionUiState&gt;, activeId: String, onOpenSettings: () -&gt; Unit, onOpenGuide: () -&gt; Unit, onOpenFiles: () -&gt; Unit, onFilesButtonPositioned: (Rect) -&gt; Unit, onPick: (String) -&gt; Unit, onNew: () -&gt; Unit, onClose: (String) -&gt; Unit )</ID>
+    <ID>LongParameterList:TerminalScreen.kt$( tokens: List&lt;String&gt;, inputText: String, onInputTextChange: (String) -&gt; Unit, hint: String, enabled: Boolean, onRun: () -&gt; Unit, runLabel: String = "RUN", masked: Boolean = false )</ID>
+    <ID>LongParameterList:TerminalScreen.kt$( tree: List&lt;MenuNode&gt;, sessions: List&lt;SessionUiState&gt;, activeSessionId: String, onSessionPick: (String) -&gt; Unit, onNewSession: () -&gt; Unit, onCloseSession: (String) -&gt; Unit, fullscreen: Boolean, onOpenSettings: () -&gt; Unit, onOpenGuide: () -&gt; Unit, onOpenFiles: () -&gt; Unit, onFilesButtonPositioned: (Rect) -&gt; Unit = {}, onWizard: (wizardId: String) -&gt; Unit = {}, onCrumbPositioned: (id: String, rect: Rect) -&gt; Unit = { _, _ -&gt; }, onCopy: (String) -&gt; Unit = {}, onShare: (String) -&gt; Unit = {}, onRun: suspend ( sessionId: String, line: String, onOutput: (String) -&gt; Unit, onNeedInput: suspend (prompt: String) -&gt; String ) -&gt; Unit )</ID>
+    <ID>MagicNumber:AiChatScreen.kt$6</ID>
+    <ID>MagicNumber:AsciiArt.kt$0.35f</ID>
+    <ID>MagicNumber:AsciiArt.kt$0.5f</ID>
+    <ID>MagicNumber:AsciiArt.kt$0.7f</ID>
+    <ID>MagicNumber:AsciiArt.kt$0x2500</ID>
+    <ID>MagicNumber:AsciiArt.kt$0x259F</ID>
+    <ID>MagicNumber:AsciiArt.kt$10</ID>
+    <ID>MagicNumber:AsciiArt.kt$11</ID>
+    <ID>MagicNumber:AsciiArt.kt$12</ID>
+    <ID>MagicNumber:AsciiArt.kt$13</ID>
+    <ID>MagicNumber:AsciiArt.kt$14</ID>
+    <ID>MagicNumber:AsciiArt.kt$3</ID>
+    <ID>MagicNumber:AsciiArt.kt$4</ID>
+    <ID>MagicNumber:AsciiArt.kt$40</ID>
+    <ID>MagicNumber:AsciiArt.kt$5</ID>
+    <ID>MagicNumber:AsciiArt.kt$6</ID>
+    <ID>MagicNumber:AsciiArt.kt$7</ID>
+    <ID>MagicNumber:AsciiArt.kt$8</ID>
+    <ID>MagicNumber:AsciiArt.kt$9</ID>
+    <ID>MagicNumber:AzpStoreScreen.kt$3</ID>
+    <ID>MagicNumber:AzpStoreScreen.kt$6</ID>
+    <ID>MagicNumber:CalculationEngine.kt$CalculationEngine.&lt;no name provided&gt;$180.0</ID>
+    <ID>MagicNumber:Color.kt$0x1A44F6F6</ID>
+    <ID>MagicNumber:Color.kt$0x4D44F6F6</ID>
+    <ID>MagicNumber:Color.kt$0xFF0A1417</ID>
+    <ID>MagicNumber:Color.kt$0xFF0DB9F2</ID>
+    <ID>MagicNumber:Color.kt$0xFF101E22</ID>
+    <ID>MagicNumber:Color.kt$0xFFA1D821</ID>
+    <ID>MagicNumber:Color.kt$0xFFFF3B3B</ID>
+    <ID>MagicNumber:CommandGuideScreen.kt$6</ID>
+    <ID>MagicNumber:ConfirmDialog.kt$0.86f</ID>
+    <ID>MagicNumber:ConfirmDialog.kt$6</ID>
+    <ID>MagicNumber:FilesScreen.kt$.1f</ID>
+    <ID>MagicNumber:FilesScreen.kt$.9f</ID>
+    <ID>MagicNumber:FilesScreen.kt$0.001f</ID>
+    <ID>MagicNumber:FilesScreen.kt$3</ID>
+    <ID>MagicNumber:FilesScreen.kt$360</ID>
+    <ID>MagicNumber:FilesScreen.kt$6</ID>
+    <ID>MagicNumber:FilesScreen.kt$90</ID>
+    <ID>MagicNumber:FolderPicker.kt$.1f</ID>
+    <ID>MagicNumber:FolderPicker.kt$.9f</ID>
+    <ID>MagicNumber:FolderPicker.kt$0.7f</ID>
+    <ID>MagicNumber:FolderPicker.kt$1.6f</ID>
+    <ID>MagicNumber:Font0.commonMain.kt$143_032_014</ID>
+    <ID>MagicNumber:Font0.commonMain.kt$14_004_951</ID>
+    <ID>MagicNumber:Font0.commonMain.kt$160_154_510</ID>
+    <ID>MagicNumber:Font0.commonMain.kt$1_202_846_019</ID>
+    <ID>MagicNumber:GuideReaderScreen.kt$.1f</ID>
+    <ID>MagicNumber:GuideReaderScreen.kt$.9f</ID>
+    <ID>MagicNumber:GuideReaderScreen.kt$0.4f</ID>
+    <ID>MagicNumber:GuideReaderScreen.kt$0.6f</ID>
+    <ID>MagicNumber:GuideReaderScreen.kt$110</ID>
+    <ID>MagicNumber:GuideReaderScreen.kt$120</ID>
+    <ID>MagicNumber:GuideReaderScreen.kt$2400</ID>
+    <ID>MagicNumber:GuideReaderScreen.kt$3</ID>
+    <ID>MagicNumber:GuideReaderScreen.kt$300</ID>
+    <ID>MagicNumber:GuideReaderScreen.kt$4</ID>
+    <ID>MagicNumber:GuideReaderScreen.kt$40f</ID>
+    <ID>MagicNumber:GuideReaderScreen.kt$420</ID>
+    <ID>MagicNumber:GuideReaderScreen.kt$5</ID>
+    <ID>MagicNumber:GuideReaderScreen.kt$6</ID>
+    <ID>MagicNumber:GuideReaderScreen.kt$7</ID>
+    <ID>MagicNumber:GuideReaderScreen.kt$9</ID>
+    <ID>MagicNumber:PillMenu.kt$0.5f</ID>
+    <ID>MagicNumber:PillMenu.kt$1.15f</ID>
+    <ID>MagicNumber:PillMenu.kt$1.7f</ID>
+    <ID>MagicNumber:PillMenu.kt$100f</ID>
+    <ID>MagicNumber:PillMenu.kt$14</ID>
+    <ID>MagicNumber:PillMenu.kt$20</ID>
+    <ID>MagicNumber:PillMenu.kt$26L</ID>
+    <ID>MagicNumber:PillMenu.kt$3</ID>
+    <ID>MagicNumber:PillMenu.kt$32</ID>
+    <ID>MagicNumber:PillMenu.kt$360f</ID>
+    <ID>MagicNumber:PillMenu.kt$36f</ID>
+    <ID>MagicNumber:PillMenu.kt$5</ID>
+    <ID>MagicNumber:PillMenu.kt$50f</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFF0F2447</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFF0F2C4C</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFF123A52</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFF137060</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFF14554E</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFF163A63</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFF1D6B62</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFF1E1A17</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFF1E4E85</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFF1F7B90</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFF1F9E86</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFF204B7C</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFF215A8C</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFF267F74</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFF2D6EA8</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFF2E6FB7</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFF2FA9C4</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFF365A4E</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFF3C82C2</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFF3E7D22</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFF4B3489</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFF4E7D6E</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFF5AAE34</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFF616A6E</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFF634B31</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFF653578</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFF6B4FBB</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFF7A1A2C</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFF7F2A4D</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFF8A9296</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFF8B0021</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFF8B3350</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFF8B6420</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFF8C6E4E</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFF8E4FA8</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFF8F1F34</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFF93251D</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFF96762F</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFFA22940</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFFA2760F</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFFA6551A</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFFB03A6E</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFFC15D7A</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFFC6392F</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFFC9A45C</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFFD4728F</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFFD9762A</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFFD9A21C</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFFD9B615</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFFDD879F</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFFE8C81E</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFFF0D42A</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFFF2D82C</ID>
+    <ID>MagicNumber:PillMenu.kt$Azphalt$0xFFFFFFFF</ID>
+    <ID>MagicNumber:PillPerimeterReveal.kt$.1f</ID>
+    <ID>MagicNumber:PillPerimeterReveal.kt$.9f</ID>
+    <ID>MagicNumber:PillPerimeterReveal.kt$PerimeterRevealState$0.25f</ID>
+    <ID>MagicNumber:PillPerimeterReveal.kt$PerimeterRevealState$0.35f</ID>
+    <ID>MagicNumber:PillPerimeterReveal.kt$PerimeterRevealState$0.45f</ID>
+    <ID>MagicNumber:PillPerimeterReveal.kt$PerimeterRevealState$0.55f</ID>
+    <ID>MagicNumber:PillPerimeterReveal.kt$PerimeterRevealState$0.5f</ID>
+    <ID>MagicNumber:PillPerimeterReveal.kt$PerimeterRevealState$0.65f</ID>
+    <ID>MagicNumber:PillPerimeterReveal.kt$PerimeterRevealState$0.75f</ID>
+    <ID>MagicNumber:PillPerimeterReveal.kt$PerimeterRevealState$1.6f</ID>
+    <ID>MagicNumber:PillPerimeterReveal.kt$PerimeterRevealState$14f</ID>
+    <ID>MagicNumber:PillPerimeterReveal.kt$PerimeterRevealState$4f</ID>
+    <ID>MagicNumber:PillPerimeterReveal.kt$PerimeterRevealState$8f</ID>
+    <ID>MagicNumber:PillWrapReveal.kt$.1f</ID>
+    <ID>MagicNumber:PillWrapReveal.kt$.9f</ID>
+    <ID>MagicNumber:PillWrapReveal.kt$0.25f</ID>
+    <ID>MagicNumber:PillWrapReveal.kt$0.2f</ID>
+    <ID>MagicNumber:PillWrapReveal.kt$0.35f</ID>
+    <ID>MagicNumber:PillWrapReveal.kt$0.45f</ID>
+    <ID>MagicNumber:PillWrapReveal.kt$0.55f</ID>
+    <ID>MagicNumber:PillWrapReveal.kt$0.5f</ID>
+    <ID>MagicNumber:PillWrapReveal.kt$0.75f</ID>
+    <ID>MagicNumber:PillWrapReveal.kt$1.6f</ID>
+    <ID>MagicNumber:PillWrapReveal.kt$14f</ID>
+    <ID>MagicNumber:PillWrapReveal.kt$4f</ID>
+    <ID>MagicNumber:PillWrapReveal.kt$8f</ID>
+    <ID>MagicNumber:SshFlow.kt$SshFlow$22</ID>
+    <ID>MagicNumber:StorageScreen.kt$0.001f</ID>
+    <ID>MagicNumber:StorageScreen.kt$100</ID>
+    <ID>MagicNumber:StorageScreen.kt$3</ID>
+    <ID>MagicNumber:StorageScreen.kt$4</ID>
+    <ID>MagicNumber:StorageScreen.kt$5</ID>
+    <ID>MagicNumber:StorageScreen.kt$9</ID>
+    <ID>MagicNumber:TerminalScreen.kt$.1f</ID>
+    <ID>MagicNumber:TerminalScreen.kt$.9f</ID>
+    <ID>MagicNumber:TerminalScreen.kt$0.4f</ID>
+    <ID>MagicNumber:TerminalScreen.kt$0.6f</ID>
+    <ID>MagicNumber:TerminalScreen.kt$6</ID>
+    <ID>MagicNumber:TypesetOutput.kt$3</ID>
+    <ID>MagicNumber:VfsEntry.kt$10</ID>
+    <ID>MagicNumber:VfsEntry.kt$1024</ID>
+    <ID>MagicNumber:VfsEntry.kt$1024L</ID>
+    <ID>MagicNumber:VfsEntry.kt$10L</ID>
+    <ID>MatchingDeclarationName:AiChatScreen.kt$AiMessage</ID>
+    <ID>MatchingDeclarationName:AzpStoreScreen.kt$AzpListing</ID>
+    <ID>MatchingDeclarationName:TerminalHistory.kt$TerminalHistoryEntry</ID>
+    <ID>MaxLineLength:FilesScreen.kt$Text("OK", color = Azphalt.Yellow, fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.clickable(onClick = onConfirm).padding(horizontal = 8.dp, vertical = 6.dp))</ID>
+    <ID>MaxLineLength:FilesScreen.kt$Text("RENAME", color = tint.copy(alpha = .7f), fontSize = 8.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clickable { onRename(entry) })</ID>
+    <ID>MaxLineLength:FilesScreen.kt$Text("SHARE", color = tint.copy(alpha = .7f), fontSize = 8.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clickable { onShare(entry) })</ID>
+    <ID>MaxLineLength:FilesScreen.kt$Text("X", color = Azphalt.Yellow.copy(alpha = .6f), fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.clickable(onClick = onCancel).padding(horizontal = 8.dp, vertical = 6.dp))</ID>
+    <ID>MaxLineLength:FilesScreen.kt$private</ID>
+    <ID>MaxLineLength:GuideContent.kt$"(Note: Chapter 5 was eaten by a small, heavily armed logic flaw.) There is a long and storied history of holy wars across the galaxy, mostly fought over the proper way to exit a text editor."</ID>
+    <ID>MaxLineLength:GuideContent.kt$"Connecting to the internet from a terminal emulator is much like shouting into a black hole, except occasionally the black hole shouts back to offer you a suspiciously cheap pharmaceutical product."</ID>
+    <ID>MaxLineLength:GuideContent.kt$"Curiously, while the uppercase Chapter 5 was destroyed by a logic flaw, this file survived. It contains nothing but the creeping dread of realization."</ID>
+    <ID>MaxLineLength:GuideContent.kt$"If you are going to do something utterly pointless, the Guide advises that you should at least automate it so you can be somewhere else when the error logs start flooding in."</ID>
+    <ID>MaxLineLength:GuideContent.kt$"It is a well-documented phenomenon that any sufficiently advanced filesystem will spontaneously generate duplicate files with slightly altered casing, just to see if the user is paying attention."</ID>
+    <ID>MaxLineLength:GuideContent.kt$"Space is big. You just won't believe how vastly, hugely, mind-bogglingly big it is. But it is nothing compared to the labyrinthine absurdity of the root file system."</ID>
+    <ID>MaxLineLength:GuideContent.kt$"The Encyclopedia Galactica defines a file system as a logical method for storing data. The Guide defines it as a digital sock drawer where you will inevitably lose the one script you actually need."</ID>
+    <ID>MaxLineLength:GuideContent.kt$"The Guide notes that all major galactic civilizations go through three distinct and recognizable phases of package management: Survival (How do I install this?), Inquiry (Why is this dependency broken?), and Sophistication (Where did my free space go?)."</ID>
+    <ID>MaxLineLength:GuideContent.kt$"The final duplicate file. By this point, the Guide assumes you have either mastered the command line or have thrown your device into the nearest body of water."</ID>
+    <ID>MaxLineLength:GuideContent.kt$"To ensure the utmost safety of your completely irrelevant data, it is highly recommended to keep a lower-case copy of every upper-case file."</ID>
+    <ID>MaxLineLength:GuideContent.kt$"To prevent the entire universe from collapsing under the weight of its own poorly written shell scripts, the Unix permissions model was invented to ensure nobody could actually touch anything of value."</ID>
+    <ID>MaxLineLength:GuideContent.kt$"You have successfully downloaded a duplicate chapter about package management. The dependencies for understanding this chapter include a complete abandonment of logical coherence."</ID>
+    <ID>MaxLineLength:GuideContent.kt$"You may attempt to read this file, but it will only tell you that the permissions you thought you understood were merely another language game designed to keep you from realizing the terminal is actually empty."</ID>
+    <ID>MaxLineLength:GuideContent.kt$Entry("apt-get update", "advanced package tool, update", "Asks the universe if entropy has escalated since you last inquired. Spoiler: It has.")</ID>
+    <ID>MaxLineLength:GuideContent.kt$Entry("bash", "bourne-again shell", "Bashes your fragile, flawed human logic repeatedly against the unforgiving anvil of machine syntax.")</ID>
+    <ID>MaxLineLength:GuideContent.kt$Entry("cat", "concatenate", "Carelessly coughs the complete contents of a file directly onto your screen, utterly unconcerned with context or comprehension.")</ID>
+    <ID>MaxLineLength:GuideContent.kt$Entry("chmod", "change mode", "Charades played with the operating system, pretending you have power over the inevitable decay of your data.")</ID>
+    <ID>MaxLineLength:GuideContent.kt$Entry("chown", "change owner", "Transfers the crushing, inescapable existential burden of ownership from one doomed user to another.")</ID>
+    <ID>MaxLineLength:GuideContent.kt$Entry("df", "disk free", "Documents the depressing depletion of your disk space, offering absolutely zero psychological support.")</ID>
+    <ID>MaxLineLength:GuideContent.kt$Entry("find", "find", "Frantically flails through the filesystem, finally confirming the absolute absence of whatever you were foolish enough to look for.")</ID>
+    <ID>MaxLineLength:GuideContent.kt$Entry("grep", "global regular expression print", "Grabs greedily at the galactic garbage heap, guaranteeing you only gather other, slightly sharper garbage.")</ID>
+    <ID>MaxLineLength:GuideContent.kt$Entry("ifconfig", "interface configuration", "Inappropriately forces your interface to strip and show its subnet mask to complete, calculating strangers.")</ID>
+    <ID>MaxLineLength:GuideContent.kt$Entry("ls -a", "list, all", "Lifts the veil on the lurking, hidden files, highlighting the horrific reality that your system has secrets.")</ID>
+    <ID>MaxLineLength:GuideContent.kt$Entry("mkdir", "make directory", "Manufactures a meticulously sterile void, perfectly prepared to house your digital disappointments.")</ID>
+    <ID>MaxLineLength:GuideContent.kt$Entry("nano", "nano's another editor", "Nurtures your neuroses by explicitly explaining how to escape the very cage you just built.")</ID>
+    <ID>MaxLineLength:GuideContent.kt$Entry("ps", "process status", "Parades the pathetic, purgatorial processes perpetually trapped in the processor's penal colony.")</ID>
+    <ID>MaxLineLength:GuideContent.kt$Entry("source", "source", "Sucks the soul out of a separate script, violently assimilating its variables like a digital vampire.")</ID>
+    <ID>MaxLineLength:GuideContent.kt$Entry("ssh", "secure shell", "Sends your consciousness hurtling through hyperspace, solely so you can shatter systems from the safety of your sofa.")</ID>
+    <ID>MaxLineLength:GuideContent.kt$Entry("sudo", "superuser do", "Summons a superficial sense of supremacy, temporarily tricking the terminal into trusting your terrible ideas.")</ID>
+    <ID>MaxLineLength:GuideContent.kt$Entry("top", "table of processes", "Tally of the parasitic processes currently consuming the cold, calculating core of your computer.")</ID>
+    <ID>MaxLineLength:PillMenu.kt$(-pitchPx * (absoluteRow - 1).coerceAtLeast(BAND_BASE_ROW)) at (Azphalt.SWING_MS * Azphalt.LIFT_FRACTION).toInt() using LinearEasing</ID>
+    <ID>MaxLineLength:StorageScreen.kt$Text(cat.label.uppercase(), color = Azphalt.Ink, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.06.em)</ID>
+    <ID>MaxLineLength:StorageScreen.kt$Text(formatFileSize(cat.bytes), color = Azphalt.Ink.copy(alpha = .6f), fontSize = 11.sp, fontWeight = FontWeight.Bold)</ID>
+    <ID>MaxLineLength:TerminalScreen.kt$val nextIdx = if (active.historyIndex == -1) active.commandHistory.size - 1 else (active.historyIndex - 1).coerceAtLeast(0)</ID>
+    <ID>PackageNaming:ExpectResourceCollectors.kt$package hg2gui.shared.generated.resources</ID>
+    <ID>PackageNaming:Font0.commonMain.kt$package hg2gui.shared.generated.resources</ID>
+    <ID>PackageNaming:Res.kt$package hg2gui.shared.generated.resources</ID>
+    <ID>ReturnCount:AsciiArt.kt$fun looksLikeAsciiArt(text: String): Boolean</ID>
+    <ID>ReturnCount:AsciiArt.kt$internal fun charDensity(c: Char): Float</ID>
+    <ID>ReturnCount:CalculationEngine.kt$CalculationEngine.&lt;no name provided&gt;$fun parseFactor(): Double</ID>
+    <ID>ReturnCount:MimeTypes.kt$MimeTypes$fun getMimeType(path: String, isDirectory: Boolean): String?</ID>
+    <ID>ReturnCount:ShellAliases.kt$ShellAliases$fun autosuggest(input: String, history: List&lt;String&gt;): String?</ID>
+    <ID>TooGenericExceptionCaught:TerminalScreen.kt$e: Exception</ID>
+    <ID>TooGenericExceptionThrown:CalculationEngine.kt$CalculationEngine.&lt;no name provided&gt;$throw RuntimeException("Unexpected: " + ch.toChar())</ID>
+    <ID>TooGenericExceptionThrown:CalculationEngine.kt$CalculationEngine.&lt;no name provided&gt;$throw RuntimeException("Unknown function: $func")</ID>
+    <ID>TooManyFunctions:FilesScreen.kt$com.hereliesaz.hg2gui.ui.files.FilesScreen.kt</ID>
+    <ID>TooManyFunctions:PillMenu.kt$com.hereliesaz.hg2gui.ui.menu.PillMenu.kt</ID>
+    <ID>UnusedParameter:Theme.kt$darkTheme: Boolean = isSystemInDarkTheme()</ID>
+    <ID>UnusedPrivateProperty:ShellSession.kt$ShellSession$homePath: String?</ID>
+    <ID>UnusedPrivateProperty:ShellSession.kt$ShellSession$shellPath: String</ID>
+    <ID>WildcardImport:AiChatScreen.kt$import androidx.compose.foundation.layout.*</ID>
+    <ID>WildcardImport:AzpStoreScreen.kt$import androidx.compose.foundation.layout.*</ID>
+    <ID>WildcardImport:CalculationEngine.kt$import kotlin.math.*</ID>
+    <ID>WildcardImport:CommandGuideScreen.kt$import androidx.compose.foundation.layout.*</ID>
+    <ID>WildcardImport:FilesScreen.kt$import androidx.compose.foundation.layout.*</ID>
+    <ID>WildcardImport:FolderPicker.kt$import androidx.compose.foundation.layout.*</ID>
+    <ID>WildcardImport:GuideReaderScreen.kt$import androidx.compose.foundation.layout.*</ID>
+    <ID>WildcardImport:PillMenu.kt$import androidx.compose.foundation.layout.*</ID>
+    <ID>WildcardImport:PillMenu.kt$import androidx.compose.runtime.*</ID>
+    <ID>WildcardImport:StorageScreen.kt$import androidx.compose.foundation.layout.*</ID>
+    <ID>WildcardImport:TerminalScreen.kt$import androidx.compose.foundation.layout.*</ID>
+    <ID>WildcardImport:TerminalScreen.kt$import androidx.compose.runtime.*</ID>
+  </CurrentIssues>
+</SmellBaseline>

@@ -1,0 +1,17 @@
+# Starts from detekt's own default ruleset (buildUponDefaultConfig = true in build.gradle.kts) -
+# this file only overrides the handful of rules that actively fight this codebase's own,
+# already-established conventions rather than catching a real defect class.
+
+style:
+  MaxLineLength:
+    # This codebase's doc comments routinely run long by design (see CLAUDE.md-style "why"
+    # comments throughout shared/ui/**) - flagging every one of them would bury genuine findings
+    # under wrapping nags. Code lines still get caught; this only raises the ceiling.
+    maxLineLength: 140
+    excludes: ['**/test/**', '**/androidTest/**']
+
+comments:
+  UndocumentedPublicClass:
+    active: false
+  UndocumentedPublicFunction:
+    active: false

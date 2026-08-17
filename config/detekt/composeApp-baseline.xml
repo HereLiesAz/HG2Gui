@@ -1,0 +1,23 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>CyclomaticComplexMethod:EditorActivity.kt$EditorActivity$override fun onCreate(savedInstanceState: Bundle?)</ID>
+    <ID>CyclomaticComplexMethod:TerminalActivity.kt$TerminalActivity$override fun onCreate(savedInstanceState: Bundle?)</ID>
+    <ID>LargeClass:TerminalActivity.kt$TerminalActivity : FragmentActivity</ID>
+    <ID>LongMethod:EditorActivity.kt$EditorActivity$override fun onCreate(savedInstanceState: Bundle?)</ID>
+    <ID>LongMethod:TerminalActivity.kt$TerminalActivity$override fun onCreate(savedInstanceState: Bundle?)</ID>
+    <ID>LoopWithTooManyJumpStatements:McpServerService.kt$McpServerService$while</ID>
+    <ID>MagicNumber:EditorActivity.kt$8000</ID>
+    <ID>MagicNumber:McpServerService.kt$McpServerService.Companion$24</ID>
+    <ID>MagicNumber:TerminalActivity.kt$TerminalActivity$100</ID>
+    <ID>MaxLineLength:TerminalActivity.kt$TerminalActivity$startService(Intent(this@TerminalActivity, McpServerService::class.java).apply { action = McpServerService.ACTION_STOP })</ID>
+    <ID>ReturnCount:McpServerService.kt$McpServerService$private suspend fun handleClient(client: Socket, expectedToken: String)</ID>
+    <ID>SwallowedException:EditorActivity.kt$EditorActivity$e: OutOfMemoryError</ID>
+    <ID>SwallowedException:McpServerService.kt$McpServerService$e: Exception</ID>
+    <ID>SwallowedException:TerminalActivity.kt$TerminalActivity$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:EditorActivity.kt$EditorActivity$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:McpServerService.kt$McpServerService$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:TerminalActivity.kt$TerminalActivity$e: Exception</ID>
+  </CurrentIssues>
+</SmellBaseline>
