@@ -27,10 +27,11 @@ changes. A pill with no end-cap still right-aligns its label.
 ## 3. Selecting a host
 
 Tapping a host sends the entire stack further left: every unselected pill leaves the screen,
-and the host stops with its **right end parked at 22.44%** of the frame — whatever its length —
-so only its label and end-cap remain visible. (`HOST_WIDTH × HOST_RIGHT_EDGE` in `PillMenu.kt` -
-`HOST_RIGHT_EDGE` names a factor in that product, not the resting position itself.) It then
-**drops to the bottom of the screen**, `rowsBelow × pitch`, and stays pinned there.
+and the host stops with its **right end parked at 36.3%** of the frame — whatever its length —
+so its label and end-cap stay legible, with the rest of the pill bled off the left edge like
+everywhere else in this menu. (`HOST_WIDTH × HOST_RIGHT_EDGE` in `PillMenu.kt` - `HOST_RIGHT_EDGE`
+names a factor in that product, not the resting position itself.) It then **drops to the bottom
+of the screen**, `rowsBelow × pitch`, and stays pinned there.
 
 ## 4. Children cascade upward
 
@@ -71,12 +72,14 @@ whatever row it lands on.
 
 A picked child doesn't just cascade its own children in — it also drops out of the band and
 settles beside the host as a **trail crumb**, the record of what's been picked so far. The
-trail starts at 24% of the frame, just clear of the host's right end, and runs left to right in
-pick order. Unlike every other pill (sized as a fraction of the screen), a crumb is sized by its
-own content, with a 56dp floor so a short label like `ls` doesn't shrink-wrap smaller than
-everything around it. Tapping a crumb pops the trail back to just before it and re-opens that
-pill's own band — each level is its own fresh cascade, never more pills piled onto the one
-before it.
+trail starts at 38.3% of the frame, just clear of the host's right end, and runs left to right
+in pick order. Unlike every other pill (sized as a fraction of the screen), a crumb is sized by
+its own content, with a 56dp floor so a short label like `ls` doesn't shrink-wrap smaller than
+everything around it. Each crumb overlaps the one after it by 14dp - a fanned, shingled read
+(the same overlap/bleed language the rest of the menu already uses) rather than a plain row of
+gapped pills; the earlier crumb draws on top, so it's the later one that visibly tucks under.
+Tapping a crumb pops the trail back to just before it and re-opens that pill's own band — each
+level is its own fresh cascade, never more pills piled onto the one before it.
 
 ## 5. Motion
 
@@ -87,10 +90,10 @@ before it.
 | Child turn (swing) | 173ms, linear |
 | Lift | final 10% of the turn |
 | Cascade | strictly sequential — 173ms per step |
-| Host rests at | 22.44% of the frame |
+| Host rests at | 36.3% of the frame |
 | Child pill | 34% wide, 30% in |
-| Trail starts at | 24% of the frame |
-| Trail crumb | content-sized, 56dp floor |
+| Trail starts at | 38.3% of the frame |
+| Trail crumb | content-sized, 56dp floor, 14dp overlap |
 | Overhang | 62dp past the left edge |
 | Row pitch | 20dp |
 | Pick grows to | 1.15× before settling back to 1× |

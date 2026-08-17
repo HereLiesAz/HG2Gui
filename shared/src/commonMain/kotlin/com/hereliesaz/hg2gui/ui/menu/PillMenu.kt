@@ -174,17 +174,30 @@ fun Azphalt.Ground.pageBrush(): Brush = Brush.linearGradient(0f to page, 0.5f to
 private val PILL_HEIGHT = 17.dp
 private val ROW_PITCH = 20.dp
 private val OVERHANG = 62.dp
+// Negative Arrangement.spacedBy for TrailRow - each crumb's left edge tucks this far under the
+// crumb before it. A quarter of TrailCrumb's own 56dp floor width: enough to read as a deliberate
+// overlap (the "each crumb overlapped by the one before it" fan) without hiding a short crumb
+// like `ls` entirely behind its neighbor.
+private val TRAIL_OVERLAP = (-14).dp
 private const val HOST_WIDTH = 0.66f
-private const val HOST_RIGHT_EDGE = 0.34f
+// HostPill's own right edge lands at exactly HOST_WIDTH * HOST_RIGHT_EDGE of the full width (see
+// the comment on that math below) - which, since HostPill is HOST_WIDTH wide, also happens to be
+// the fraction of the host's *own* width left on-screen (the rest bleeds off the left edge). At
+// 0.34 that was only 34% of the label visible - "Package management" read as an unrecognizable
+// "...MANAGEMENT" fragment, not a deliberate bleed. Raised to 0.55 so most host labels stay
+// legible; still bleeds some off the left edge, matching the house style used everywhere else in
+// this menu (OVERHANG, the root stack's own absoluteBleed), just no longer past the point of
+// losing the label's own meaning.
+private const val HOST_RIGHT_EDGE = 0.55f
 private const val CHILD_LEFT = 0.30f
 private const val CHILD_WIDTH = 0.34f
 // Menu Style Guide rule 01 (4%-per-row width variation, "so the stack reads as a stack") is
 // applied only to StackPill's own resting width below, via ROOT_WIDTH_STEP / rootWidthFraction -
 // never to HostPill. HostPill's constraint propagation (offsetByFractionOfParent / fillMaxWidth /
-// absoluteBleed interacting to park the host at HOST_RIGHT_EDGE = 34%) has been hand-tuned across
-// two prior PRs (#91/#92); every line of HostPill (and every constant it reads - HOST_WIDTH,
-// HOST_RIGHT_EDGE) is left exactly as it was, so this variation can never touch that math. It's
-// safe to vary StackPill alone because of how offsetByFractionOfParent composes with fillMaxWidth:
+// absoluteBleed interacting to park the host at HOST_RIGHT_EDGE) has been hand-tuned across two
+// prior PRs (#91/#92, and the HOST_RIGHT_EDGE value itself once more since); every line of
+// HostPill is left exactly as it was, so this variation can never touch that math. It's safe to
+// vary StackPill alone because of how offsetByFractionOfParent composes with fillMaxWidth:
 // StackPill's fillMaxWidth(fraction) modifier runs *first*, narrowing the constraints handed to
 // offsetByFractionOfParent, so with offset 0f (the resting, non-leaving state) a pill's right edge
 // simply lands at `fraction` of the full screen width - changing that one fillMaxWidth fraction
@@ -748,13 +761,19 @@ private fun TrailRow(
             Modifier
                 .align(Alignment.BottomStart)
                 .offsetByFractionOfParent(TRAIL_LEFT_OF_FULL),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+            // Negative spacing overlaps each crumb into the one after it, like a fanned hand of
+            // cards - the same shingled read as the rest of this menu's overlaps/bleeds. A plain
+            // Row draws later children over earlier ones, which would overlap backwards ("each
+            // crumb sits ON the one before it" instead of the other way around); TrailCrumb's own
+            // zIndex below reverses that so a crumb is drawn *under* every crumb that follows it.
+            horizontalArrangement = Arrangement.spacedBy(TRAIL_OVERLAP)
         ) {
             trail.forEachIndexed { i, node ->
                 key(node.id) {
                     TrailCrumb(
                         node = node,
                         hueOwner = hueOwner,
+                        zIndex = (trail.size - i).toFloat(),
                         onClick = { onTapCrumb(i) },
                         onPositioned = { onCrumbPositioned(node.id, it) }
                     )
@@ -765,7 +784,13 @@ private fun TrailRow(
 }
 
 @Composable
-private fun TrailCrumb(node: MenuNode, hueOwner: String, onClick: () -> Unit, onPositioned: (Rect) -> Unit = {}) {
+private fun TrailCrumb(
+    node: MenuNode,
+    hueOwner: String,
+    zIndex: Float,
+    onClick: () -> Unit,
+    onPositioned: (Rect) -> Unit = {}
+) {
     Pill(
         label = node.label,
         cap = node.cap,
@@ -777,6 +802,7 @@ private fun TrailCrumb(node: MenuNode, hueOwner: String, onClick: () -> Unit, on
         // doesn't shrink-wrap into something visibly smaller than everything around it.
         modifier = Modifier
             .defaultMinSize(minWidth = 56.dp)
+            .zIndex(zIndex)
             .clickable(onClick = onClick)
             .onGloballyPositioned { onPositioned(it.boundsInRoot()) }
     )
