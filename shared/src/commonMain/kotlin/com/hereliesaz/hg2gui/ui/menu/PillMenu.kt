@@ -256,14 +256,21 @@ private fun rememberStackScroll(): StackScroll {
     val pitchPx = with(density) { ROW_PITCH.toPx() }
     var offsetPx by remember { mutableStateOf(0f) }
     var hasScrolled by remember { mutableStateOf(false) }
-    // Unbounded on both ends - dragging or flinging past either end of the stack's own content
-    // reveals blank space above the top row or below the bottom one, rather than stopping dead
-    // at the content edge. Nothing auto-corrects it back: it stays wherever the gesture leaves
-    // it, the same "no bounce, no self-correcting" house rule the settle already follows.
+    // Bounded below zero only. [offsetPx] is added on top of every pill's own already-correct
+    // resting `lift` - at rest (offsetPx == 0) the bottom-most pill in the stack already sits
+    // exactly on the breadcrumb row (the root stack's row 0, or a child band's BAND_BASE_ROW,
+    // one pitch above the trail it shares row 0 with) - so any positive offsetPx would drag that
+    // pill, and every pill above it, further down past that shared row. Coercing the running
+    // total keeps the whole rigid stack from ever crossing it, top pill and bottom pill alike,
+    // while leaving the top end open - dragging or flinging past the top of the stack's own
+    // content still reveals blank space above the top row rather than stopping dead, the same
+    // "no bounce, no self-correcting" house rule the settle already follows for that end.
     val scrollState = rememberScrollableState { delta ->
         hasScrolled = true
-        offsetPx += delta
-        delta
+        val next = (offsetPx + delta).coerceAtMost(0f)
+        val consumed = next - offsetPx
+        offsetPx = next
+        consumed
     }
     val flingBehavior = rememberSlotFlingBehavior(pitchPx = pitchPx) { offsetPx }
     val modifier = Modifier.scrollable(
