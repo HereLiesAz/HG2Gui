@@ -8,6 +8,39 @@ plugins {
     alias(libs.plugins.compose.compiler) apply false
     alias(libs.plugins.kotlinMultiplatform) apply false
     alias(libs.plugins.kotlinAndroid) apply false
+    alias(libs.plugins.detekt) apply false
+}
+
+// CodeQL's default-setup scanning covers this repo's Actions/JS but has no Kotlin support at
+// all, so detekt is the only static-analysis gate over composeApp/shared - the app's own code.
+// Deliberately NOT applied to terminal-emulator/termux-shared: those are a vendored Termux fork,
+// not code this project maintains, and running a style/complexity linter over someone else's
+// upstream source would be pure noise. A checked-in baseline (config/detekt/*-baseline.xml,
+// generate with `./gradlew detektBaseline`) suppresses every finding that already existed when
+// this was introduced, so `./gradlew detekt` only fails on genuinely new issues, not a backlog.
+subprojects {
+    if (name == "shared" || name == "composeApp") {
+        apply(plugin = "io.gitlab.arturbosch.detekt")
+        extensions.configure<io.gitlab.arturbosch.detekt.extensions.DetektExtension> {
+            buildUponDefaultConfig = true
+            config.setFrom(rootProject.file("config/detekt/detekt.yml"))
+            baseline = rootProject.file("config/detekt/${name}-baseline.xml")
+            parallel = true
+        }
+        // shared's type-resolution-aware androidMain task (detekt 1.23.8, the newest release at
+        // time of writing) crashes with an internal NullPointerException specifically analyzing
+        // DistroManager.kt - traced to detekt's own nullability-inference resolution choking on
+        // `response.body ?: throw ...` now that OkHttp's Response.body is itself non-nullable
+        // (the compiler already warns the Elvis is redundant for the same reason). This is a
+        // detekt bug, not a defect in that file - excluding just this one file is a smaller
+        // concession than losing static analysis over the rest of androidMain entirely, or over
+        // this whole module, while this Kotlin/detekt version combination is this new.
+        if (name == "shared") {
+            tasks.matching { it.name == "detektAndroidMain" || it.name == "detektBaselineAndroidMain" }.configureEach {
+                (this as org.gradle.api.tasks.SourceTask).exclude("**/DistroManager.kt")
+            }
+        }
+    }
 }
 
 val autoIncrementVersion = tasks.register("autoIncrementVersion") {
