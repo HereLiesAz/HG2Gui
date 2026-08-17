@@ -42,9 +42,17 @@ object DistroManager {
     fun prefixDir(context: Context): File = File(context.filesDir, "usr")
     fun homeDir(context: Context): File = File(context.filesDir, "home")
 
+    // Requires a working bin/bash, not just the directories existing: CommandTree.scanShell()
+    // lists whatever's actually sitting in usr/bin/ and gates entirely on this check, so an
+    // existence-only check let it advertise real binaries (apt, coreutils, ...) from an install
+    // whose bash is missing, a dangling symlink, or otherwise non-executable - ShellSession
+    // .forAndroid() already requires this same bin/bash.canExecute() before it'll use the
+    // bootstrap shell at all, so a command picked from such a tree fell through to the bare
+    // /system/bin/sh fallback and failed with its "inaccessible or not found" instead of
+    // whatever apt/coreutils would have actually said.
     fun isInstalled(context: Context): Boolean {
         val usrDir = prefixDir(context)
-        return usrDir.isDirectory && File(usrDir, "bin").isDirectory
+        return usrDir.isDirectory && File(usrDir, "bin").isDirectory && File(usrDir, "bin/bash").canExecute()
     }
 
     fun bootstrap(context: Context, client: OkHttpClient): Flow<String> = flow {

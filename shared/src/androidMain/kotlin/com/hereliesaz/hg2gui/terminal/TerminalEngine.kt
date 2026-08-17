@@ -19,10 +19,17 @@ import java.io.File
  */
 class TerminalEngine(
     private val context: Context,
-    home: File? = null
+    private val home: File? = null
 ) {
 
-    private val shell = ShellSession.forAndroid(home, context)
+    // var, not val: a fresh `bootstrap` run replaces this once the install actually lands (see
+    // the "bootstrap" branch of run() below). Without that, a session that picked the
+    // /system/bin/sh fallback before a bootstrap existed - or before this specific run's install
+    // finished - stays pinned to it for the rest of its life: every command after that keeps
+    // failing with the bare system shell's "inaccessible or not found", even though
+    // CommandTree.from() re-scans the filesystem live on every render and correctly starts
+    // offering apt/pkg/coreutils pills the moment the bootstrap directory is actually populated.
+    private var shell = ShellSession.forAndroid(home, context)
 
     // Only bootstrap still needs an HTTP client, now that RSS/weather/etc. are gone with the
     // rest of the legacy engine.
@@ -50,6 +57,13 @@ class TerminalEngine(
         if (verb == "bootstrap") {
             launch(Dispatchers.IO) {
                 DistroManager.bootstrap(context, client).collect { trySend(it) }
+                // Re-pick the shell now that the bootstrap either just landed or, on failure,
+                // was rolled back - forAndroid() re-checks DistroManager.isInstalled() and a
+                // real bash's presence itself, so this converges to whatever's actually usable
+                // now instead of leaving `shell` pinned to whatever was true at construction.
+                val old = shell
+                shell = ShellSession.forAndroid(home, context)
+                old.close()
                 close()
             }
         } else if (verb in Builtins.NAMES) {
