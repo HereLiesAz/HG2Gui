@@ -15,6 +15,15 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Explicit, least-privilege, and matching exactly what the called _reusable-build.yml job itself
+# declares - without this, the effective GITHUB_TOKEN permissions for the whole run fall back to
+# the repo/org's default token permissions setting instead of being pinned here.
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  checks: read
+
 jobs:
   android-debug:
     uses: ./.github/workflows/_reusable-build.yml
