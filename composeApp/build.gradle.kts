@@ -71,6 +71,16 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
             excludes += "/META-INF/DEPENDENCIES"
         }
+        // DistroManager symlinks the bundled Termux bootstrap's real bin/bash (etc.) to its
+        // exec-exempt counterpart under context.applicationInfo.nativeLibraryDir - which only
+        // works if that directory holds real extracted files ProcessBuilder can exec directly.
+        // AGP's newer default (useLegacyPackaging = false) instead ships native libs page-aligned
+        // and uncompressed inside the APK itself, mmap'd on demand rather than extracted to disk;
+        // nativeLibraryDir may not contain real files at all under that scheme. Forcing legacy
+        // packaging guarantees the extraction this whole design depends on.
+        jniLibs {
+            useLegacyPackaging = true
+        }
     }
     
     signingConfigs {

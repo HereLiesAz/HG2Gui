@@ -39,6 +39,10 @@ object DistroManager {
     // a symlink's target and the path it should be created at.
     private const val SYMLINK_SEPARATOR = "←"
 
+    // The absolute prefix a handful of SYMLINKS.txt targets hardcode against Termux's own
+    // package name - see extractBootstrap's symlink pass for why this needs rewriting.
+    private const val HARDCODED_TERMUX_PREFIX = "/data/data/com.termux/files/usr"
+
     private fun bootstrapArch(): String? = when (Build.SUPPORTED_ABIS.firstOrNull()) {
         "arm64-v8a" -> "aarch64"
         "armeabi-v7a" -> "arm"
@@ -172,7 +176,18 @@ object DistroManager {
         symlinksText.lineSequence().filter { it.isNotBlank() }.forEach { line ->
             val separatorIndex = line.indexOf(SYMLINK_SEPARATOR)
             if (separatorIndex < 0) return@forEach
-            val target = line.substring(0, separatorIndex)
+            val rawTarget = line.substring(0, separatorIndex)
+            // A handful of targets (apt/pacman keyring files, a couple of bin/ aliases) are
+            // absolute paths baked in at Termux's own build time against ITS package name -
+            // `/data/data/com.termux/files/usr/...` - which doesn't exist under this app's
+            // sandbox at all. Every other target is already relative (resolved against the
+            // symlink's own containing directory, so it needs no rewriting) - this only touches
+            // the ones that would otherwise dangle.
+            val target = if (rawTarget.startsWith(HARDCODED_TERMUX_PREFIX)) {
+                prefix.absolutePath + rawTarget.removePrefix(HARDCODED_TERMUX_PREFIX)
+            } else {
+                rawTarget
+            }
             val linkPath = line.substring(separatorIndex + SYMLINK_SEPARATOR.length)
             val linkFile = File(prefix, linkPath)
             linkFile.parentFile?.mkdirs()
@@ -190,21 +205,34 @@ object DistroManager {
             val linkFile = File(prefix, realPath)
             linkFile.parentFile?.mkdirs()
             linkFile.delete()
+            val realFile = File(nativeLibraryDir, flatName)
             try {
-                Os.symlink(File(nativeLibraryDir, flatName).absolutePath, linkFile.absolutePath)
+                // A hard link shares the target's own inode - and with it, the target's own
+                // security context - so there's no separate "does exec permission follow a
+                // symlink to its target?" question left to answer for it. Only possible when
+                // both paths are on the same filesystem, which prefix (under context.filesDir)
+                // and nativeLibraryDir aren't guaranteed to be - falls back to a symlink (this
+                // app's only previously-available option) when the OS refuses to link across
+                // filesystems.
+                Files.createLink(linkFile.toPath(), realFile.toPath())
             } catch (e: Exception) {
-                Utils.log(e)
+                try {
+                    Os.symlink(realFile.absolutePath, linkFile.absolutePath)
+                } catch (e2: Exception) {
+                    Utils.log(e2)
+                }
             }
         }
     }
 
     private fun makeBinariesExecutable(prefix: File) {
+        val manifestPaths = BootstrapManifest.ENTRIES.mapTo(HashSet()) { (realPath, _) -> File(prefix, realPath) }
         listOf("bin", "libexec", "lib").forEach { sub ->
             File(prefix, sub).walkTopDown().forEach { f ->
-                // Manifest-covered paths are symlinks into nativeLibraryDir now, not real files -
-                // already executable (the OS sets that at install time), and not this app's own
-                // file to chmod even if it tried.
-                if (f.isFile && !Files.isSymbolicLink(f.toPath())) f.setExecutable(true)
+                // Manifest-covered paths are a symlink or hard link into nativeLibraryDir now,
+                // not this app's own extracted file - already executable (the OS sets that at
+                // install time), and not something this app can, or needs to, chmod itself.
+                if (f.isFile && !Files.isSymbolicLink(f.toPath()) && f !in manifestPaths) f.setExecutable(true)
             }
         }
     }

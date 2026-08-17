@@ -27,6 +27,17 @@ package com.hereliesaz.hg2gui.terminal
  * installed-tests/, which is bootstrap-internal test tooling, not something a shell session ever
  * runs), flatten(path) = "lib" + path.replace(anything not [a-zA-Z0-9_-], "_") + ".so", copy the
  * real file to that name under jniLibs/arm64-v8a/, and regenerate this table from the result.
+ *
+ * One step beyond a plain copy: every one of these binaries ships from upstream with `DT_RUNPATH`
+ * hardcoded to `/data/data/com.termux/files/usr/lib` - correct for Termux's own package, meaningless
+ * for this app's (`com.hereliesaz.hg2gui`), and there's no way to fix that at install time, since
+ * anything this app writes itself falls under the same write-xor-execute restriction that made
+ * flattening necessary in the first place - it has to be baked in before the file ever ships. Run
+ * `patchelf --set-rpath /data/data/com.hereliesaz.hg2gui/files/usr/lib <file>` on the flattened
+ * copy before it's committed. This covers the common case (the default, single-profile install
+ * every real device actually runs as); [ShellSession.forAndroid]'s `LD_LIBRARY_PATH`, computed
+ * live from the actual `$PREFIX` at runtime, is what makes every case work, RUNPATH or not - this
+ * patch just stops the shipped RUNPATH from naming a package that was never this one.
  */
 object BootstrapManifest {
     /** (path under $PREFIX, matching filename under nativeLibraryDir) for every bundled
@@ -361,6 +372,6 @@ object BootstrapManifest {
         "libexec/syslogd" to "liblibexec_syslogd.so",
         "libexec/telnetd" to "liblibexec_telnetd.so",
         "libexec/termux/command-not-found" to "liblibexec_termux_command-not-found.so",
-        "libexec/tftpd" to "liblibexec_tftpd.so"
+        "libexec/tftpd" to "liblibexec_tftpd.so",
     )
 }
