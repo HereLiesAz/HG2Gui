@@ -158,7 +158,16 @@ jobs:
              gh release delete-asset "$TAG_NAME" "$OLD_ASSET" -y || true
           done
 
-          gh release edit "$TAG_NAME" --prerelease --title "Latest Build ($TAG_NAME)" --notes "Auto-build from $GITHUB_SHA" --target "$GITHUB_SHA"
+          # `gh release edit` only works on a release that already exists - it can't create one,
+          # so the first build under a new TAG_NAME (e.g. right after a versionMajor/versionMinor
+          # bump, since that's what TAG_NAME is keyed on) had no release to edit and failed the
+          # whole step with "release not found". `gh release view` above already tells us which
+          # case we're in.
+          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            gh release edit "$TAG_NAME" --prerelease --title "Latest Build ($TAG_NAME)" --notes "Auto-build from $GITHUB_SHA" --target "$GITHUB_SHA"
+          else
+            gh release create "$TAG_NAME" --prerelease --title "Latest Build ($TAG_NAME)" --notes "Auto-build from $GITHUB_SHA" --target "$GITHUB_SHA"
+          fi
           
           # Find and upload all artifacts matching pattern
           for FILE in ${{ inputs.artifact_path_pattern }}; do

@@ -240,11 +240,14 @@ private fun rootWidthFraction(row: Int): Float {
     return HOST_WIDTH - ROOT_WIDTH_STEP * stepsDown
 }
 // HostPill is HOST_WIDTH wide, offset left by (1 - HOST_RIGHT_EDGE) * HOST_WIDTH, so its right
-// edge lands at HOST_WIDTH * HOST_RIGHT_EDGE of the full width. A band of children clears that
-// safely by rising into row 1+, but the trail row shares row 0 with the host, so it has to start
-// past that edge instead - lining up with the band's own left edge (which sits well inside that
-// span) would overlap the host it's sitting next to.
-private const val TRAIL_LEFT_OF_FULL = HOST_WIDTH * HOST_RIGHT_EDGE + 0.02f
+// edge lands at HOST_WIDTH * HOST_RIGHT_EDGE of the full width. The trail row shares row 0 with
+// the host, and reads as a continuation of it - "each pill overlapped by the one before it," the
+// same shingled-fan language TRAIL_OVERLAP already gives every crumb after the first - so the
+// trail's own left edge starts *before* that right edge, not after: a plain gap here would be the
+// one seam in the chain that doesn't fan like the rest of it. -0.035 is TRAIL_OVERLAP's -14dp
+// expressed as roughly the same fraction of a typical phone's width, so the host-to-first-crumb
+// overlap reads the same size as every crumb-to-crumb one that follows it.
+private const val TRAIL_LEFT_OF_FULL = HOST_WIDTH * HOST_RIGHT_EDGE - 0.035f
 // Row 0 is reserved for the host and the trail of picks below it; every band of choices fans
 // out starting one row above that, never on top of it.
 private const val BAND_BASE_ROW = 1
@@ -833,13 +836,14 @@ private fun TrailCrumb(
         hue = Azphalt.hueOf(hueOwner),
         selected = false,
         // Every other pill in the menu gets its width from fillMaxWidth against a fraction of
-        // the screen; a Row of these can't do that (they'd all fight for the full row), so this
-        // is the one pill sized by content alone - give it a floor so a short label like "ls"
-        // doesn't shrink-wrap into something visibly smaller than everything around it. Anchored
-        // BottomStart (Pill's own default is BottomEnd, for the left-bleeding stack pills) so a
-        // short crumb's floor padding falls after its label, keeping the shingled trail's overlap
-        // landing on real crumb content instead of an empty margin ahead of it.
+        // the screen and stretches its capsule to fill it; a Row of these can't do that (they'd
+        // all fight for the full row), so this is the one pill sized by content alone - give it a
+        // floor so a short label like "ls" doesn't shrink-wrap into something visibly smaller
+        // than everything around it. Anchored BottomStart so a short crumb's floor padding falls
+        // after its label, keeping the shingled trail's overlap landing on real crumb content
+        // instead of an empty margin ahead of it.
         anchor = Alignment.BottomStart,
+        stretch = false,
         modifier = Modifier
             .defaultMinSize(minWidth = 56.dp)
             .zIndex(zIndex)
@@ -856,13 +860,21 @@ internal fun Pill(
     selected: Boolean,
     modifier: Modifier = Modifier,
     // Every stack pill (StackPill/HostPill/ChildPill) is sized via fillMaxWidth(fraction) against
-    // a fraction of the screen, then bled further left by absoluteBleed - a box far wider than its
-    // own label. BottomEnd anchors the visible capsule (this Box's content, sized to the label
-    // alone - see the comment below on why it can't just grow to fill that width) to that box's
-    // own right edge, the one fixed point DESIGN.md's "anchored by its right end" actually means -
-    // so a short label bleeds less past the left edge and a long one bleeds more, instead of every
-    // pill's visible capsule starting flush at the same left point regardless of label length.
+    // a fraction of the screen, then bled further left by absoluteBleed. [stretch] (below) makes
+    // the visible capsule actually fill that whole box - the *label* still sits at the box's own
+    // right edge, the one fixed point DESIGN.md's "anchored by its right end" means, via
+    // horizontalArrangement below; [anchor] only still matters for TrailCrumb, the one caller
+    // that passes stretch=false, where BottomStart puts its 56dp floor-padding after a short
+    // label instead of before it.
     anchor: Alignment = Alignment.BottomEnd,
+    // True for every pill fanned out in a stack (StackPill/HostPill/ChildPill): the visible
+    // capsule fills [modifier]'s own width - the fraction-of-screen-width box described above -
+    // instead of shrinking to the label, so a stack's row-to-row width variation (or a child
+    // band's uniform one) actually shows up as the capsule's own bled-left length, per DESIGN.md
+    // rule 1, rather than being swallowed by a label-sized capsule floating inside an invisible
+    // wider box. False only for TrailCrumb, the one pill sized by its own content - a Row of
+    // those can't all stretch to fill their shared row without fighting each other for width.
+    stretch: Boolean = true,
     // The accessibility-minimum default, overridden by every row-stacked pill - see the comment
     // where this is actually consumed, on why a row-stacked pill can't safely use the default.
     touchTargetHeight: Dp = PILL_TOUCH_TARGET
@@ -909,6 +921,7 @@ internal fun Pill(
         Row(
             Modifier
                 .height(PILL_HEIGHT)
+                .then(if (stretch) Modifier.fillMaxWidth() else Modifier)
                 // The state that reads as a color shift (ink vs. hue) needs its own semantics
                 // entry to reach a screen reader at all - color alone carries no signal there.
                 // Merging descendants folds the label/cap Text children into one announced unit

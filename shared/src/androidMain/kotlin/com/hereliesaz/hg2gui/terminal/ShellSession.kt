@@ -47,7 +47,16 @@ class DummyTerminalOutput : TerminalOutput() {
 actual class ShellSession private constructor(
     home: File?,
     command: Array<String>,
-    extraEnv: Map<String, String>
+    extraEnv: Map<String, String>,
+    // Which of forAndroid()'s three tiers this session actually ended up on, and - only for the
+    // last-resort system shell, since that's the one with no apt/pkg/coreutils - why the better
+    // ones weren't used. forAndroid() used to pick silently: a session that landed on
+    // /system/bin/sh because zsh isn't bundled for this device's ABI, or because the Termux
+    // bootstrap's bash exists on disk but the OS won't actually execute a binary extracted into
+    // app-private storage (the write-xor-execute restriction Android's enforced since API 29),
+    // looked identical to one that landed there for any other reason - "command not found" with
+    // no way to tell which. TerminalEngine surfaces this once per session pick, in-transcript.
+    val backendDescription: String = "the bare system shell ($DEFAULT_SHELL) - no fallback reached"
 ) {
 
     companion object {
@@ -156,6 +165,10 @@ actual class ShellSession private constructor(
         }
 
         fun forAndroid(home: File?, context: Context): ShellSession {
+            // Collected only to explain the last-resort fallback below, if it comes to that -
+            // never surfaced when zsh or the bootstrap actually works.
+            val reasons = mutableListOf<String>()
+
             val zsh = File(context.applicationInfo.nativeLibraryDir, ZSH_LIB_NAME)
             if (zsh.canExecute()) {
                 setupZshrc(home)
@@ -163,9 +176,12 @@ actual class ShellSession private constructor(
                     put("LD_LIBRARY_PATH", zsh.parent.orEmpty())
                     if (home != null) put("HOME", home.absolutePath)
                 }
-                val session = ShellSession(home, arrayOf(zsh.absolutePath), env)
+                val session = ShellSession(home, arrayOf(zsh.absolutePath), env, "zsh (bundled)")
                 if (session.survivedStartup()) return session
                 session.close()
+                reasons += "zsh started but exited immediately"
+            } else {
+                reasons += "zsh isn't bundled for this device's architecture"
             }
 
             if (DistroManager.isInstalled(context)) {
@@ -182,13 +198,28 @@ actual class ShellSession private constructor(
                         "TMPDIR" to "${prefix.absolutePath}/tmp",
                         "LANG" to "en_US.UTF-8"
                     )
-                    val session = ShellSession(bootstrapHome, arrayOf(bash.absolutePath, "-l"), env)
+                    val session = ShellSession(bootstrapHome, arrayOf(bash.absolutePath, "-l"), env, "bash (Termux bootstrap)")
                     if (session.survivedStartup()) return session
                     session.close()
+                    // The most likely real cause on a modern device: Android's blocked executing
+                    // binaries out of app-private storage since API 29 (write-xor-execute) unless
+                    // they're the APK's own bundled native libs (like libzsh.so above) - a
+                    // downloaded-and-extracted bin/bash never qualifies for that exemption.
+                    reasons += "the Termux bootstrap's bash started but exited immediately - " +
+                        "possibly blocked from executing a binary extracted into app-private " +
+                        "storage (Android disallows this since API 29 unless it shipped in the APK)"
+                } else {
+                    reasons += "the Termux bootstrap's bash isn't executable"
                 }
+            } else {
+                reasons += "no Termux bootstrap is installed"
             }
 
-            return ShellSession(home)
+            return ShellSession(
+                home, arrayOf(DEFAULT_SHELL), emptyMap(),
+                "the bare system shell ($DEFAULT_SHELL), without apt/pkg/coreutils - " +
+                    reasons.joinToString("; ")
+            )
         }
     }
 

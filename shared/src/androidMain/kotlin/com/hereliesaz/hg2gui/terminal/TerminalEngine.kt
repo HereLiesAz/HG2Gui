@@ -31,6 +31,17 @@ class TerminalEngine(
     // offering apt/pkg/coreutils pills the moment the bootstrap directory is actually populated.
     private var shell = ShellSession.forAndroid(home, context)
 
+    // Set whenever `shell` above lands on the last-resort system shell - never for zsh or the
+    // Termux bootstrap, which need no explaining - and consumed (once) by the next real command
+    // that actually runs on it, so the *reason* a pill like "apt install" fails is visible right
+    // in the transcript next to that failure, not silently indistinguishable from any other
+    // "command not found". See ShellSession.backendDescription for what's actually in it.
+    private var pendingBackendNotice: String? = shell.fallbackNoticeOrNull()
+
+    private fun ShellSession.fallbackNoticeOrNull(): String? =
+        backendDescription.takeIf { it.startsWith("the bare system shell") }
+            ?.let { "[using $it]" }
+
     // Only bootstrap still needs an HTTP client, now that RSS/weather/etc. are gone with the
     // rest of the legacy engine. Shared across every TerminalEngine instance (one per terminal
     // tab, plus the MCP service, plus one-off uses like ScriptInstaller's `azp` installer) via
@@ -63,6 +74,7 @@ class TerminalEngine(
                 // now instead of leaving `shell` pinned to whatever was true at construction.
                 val old = shell
                 shell = ShellSession.forAndroid(home, context)
+                pendingBackendNotice = shell.fallbackNoticeOrNull()
                 old.close()
                 close()
             }
@@ -73,9 +85,16 @@ class TerminalEngine(
             }
         } else {
             launch(Dispatchers.IO) {
+                // ShellSession.stream's onLine always reports the *whole* transcript so far, not
+                // a delta - sending the notice as its own line ahead of the first callback would
+                // just get overwritten by it. Prefixing every callback keeps it attached to the
+                // transcript that's actually displayed, for the one command this shell's first
+                // command after landing on it.
+                val notice = pendingBackendNotice
+                pendingBackendNotice = null
                 shell.stream(
                     trimmed,
-                    onLine = { line -> trySend(line) },
+                    onLine = { line -> trySend(if (notice != null) "$notice\n$line" else line) },
                     onNeedInput = { prompt -> runBlocking { onNeedInput(prompt) } }
                 )
                 close()
