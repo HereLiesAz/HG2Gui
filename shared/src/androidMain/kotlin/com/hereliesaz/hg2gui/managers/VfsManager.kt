@@ -13,7 +13,16 @@ import java.io.File
  * Files app" model a phone's real file manager uses, not a per-terminal-tab concept.
  */
 object VfsManager {
+    // `root` and `relativePath` are global/shared across every terminal tab (see the class doc
+    // above), each of which runs on its own Dispatchers.IO coroutine. A `vfs cd` in one tab
+    // writes `relativePath`; a `pwd`/`ls`/resolve() in another tab, on another thread, reads it.
+    // Without @Volatile there is no cross-thread visibility guarantee for a plain var, so a
+    // reader on another core could observe a stale value even after the write has genuinely
+    // completed. Both fields hold plain immutable references (File, String), so a single
+    // @Volatile fully covers this - there's no in-place mutation hazard to guard against here.
+    @Volatile
     private var root: File? = null
+    @Volatile
     private var relativePath: String = ""
 
     fun init(context: Context): File {

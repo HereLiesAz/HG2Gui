@@ -44,6 +44,7 @@ import com.hereliesaz.hg2gui.ui.menu.Azphalt
 import com.hereliesaz.hg2gui.ui.menu.pageBrush
 import com.hereliesaz.hg2gui.ui.menu.MenuNode
 import com.hereliesaz.hg2gui.ui.menu.PillMenu
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -140,6 +141,14 @@ fun TerminalScreen(
                             },
                             { prompt -> session.awaitPromptAnswer(prompt) }
                         )
+                    } catch (e: CancellationException) {
+                        // Composition teardown (e.g. navigating away to Settings/Guide/Files
+                        // while a command is still running) cancels this scope, which surfaces
+                        // here as a CancellationException - not a real command failure. Nothing
+                        // was wrong, the screen just went away, so don't write a fake "error:"
+                        // line into a buffer nobody but the next visit will see; rethrow so
+                        // structured concurrency still sees the cancellation.
+                        throw e
                     } catch (e: Exception) {
                         session.buffer = session.buffer.mapIndexed { index, entry ->
                             if (index == entryId) {
@@ -607,31 +616,48 @@ private fun SessionTabs(
                 style = MaterialTheme.typography.titleMedium.copy(color = Azphalt.White, fontSize = 8.sp, fontWeight = FontWeight.Black)
             )
         }
+        // UI-7: the visible circle stays its small designed 22dp size; the clickable region is a
+        // separate, invisible 48dp-minimum Box the circle is centered inside, matching the pattern
+        // GuideReaderScreen's own Chip() uses for this exact problem. Settings and Guide sit only
+        // 6dp apart, so their 48dp hit areas necessarily overlap - that's an intentional generous
+        // tap zone, not a bug, since each hit area is still centered on its own glyph.
         Box(
             Modifier
-                .size(22.dp)
-                .clip(RoundedCornerShape(percent = 50))
-                .background(Azphalt.Ink.copy(alpha = .14f))
+                .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
                 .clickable(onClick = onOpenSettings),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                "⚙",
-                style = MaterialTheme.typography.titleMedium.copy(color = Azphalt.Ink, fontSize = 12.sp)
-            )
+            Box(
+                Modifier
+                    .size(22.dp)
+                    .clip(RoundedCornerShape(percent = 50))
+                    .background(Azphalt.Ink.copy(alpha = .14f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    "⚙",
+                    style = MaterialTheme.typography.titleMedium.copy(color = Azphalt.Ink, fontSize = 12.sp)
+                )
+            }
         }
         Box(
             Modifier
-                .size(22.dp)
-                .clip(RoundedCornerShape(percent = 50))
-                .background(Azphalt.Ink.copy(alpha = .14f))
+                .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
                 .clickable(onClick = onOpenGuide),
             contentAlignment = Alignment.Center
-        ) { 
-            Text(
-                "?", 
-                style = MaterialTheme.typography.titleMedium.copy(color = Azphalt.Ink, fontSize = 12.sp)
-            ) 
+        ) {
+            Box(
+                Modifier
+                    .size(22.dp)
+                    .clip(RoundedCornerShape(percent = 50))
+                    .background(Azphalt.Ink.copy(alpha = .14f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    "?",
+                    style = MaterialTheme.typography.titleMedium.copy(color = Azphalt.Ink, fontSize = 12.sp)
+                )
+            }
         }
     }
 }
@@ -779,22 +805,33 @@ private fun ModifierKeys(
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         keys.forEach { k ->
+            // UI-7: the visible pill keeps its small designed 26dp height; the clickable region
+            // is a separate, invisible 48dp-minimum-height Box the pill is centered inside, same
+            // pattern as GuideReaderScreen's Chip(). Still `.weight(1f)` so the six keys divide
+            // the row's width evenly - only the height grows past the visible pill.
             Box(
                 Modifier
                     .weight(1f)
-                    .height(26.dp)
-                    .clip(RoundedCornerShape(percent = 50))
-                    .background(Azphalt.Ink.copy(alpha = .14f))
+                    .defaultMinSize(minHeight = 48.dp)
                     .clickable { onKeyClick(k) },
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    k.uppercase(),
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        color = Azphalt.Ink,
-                        fontSize = 8.sp
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(26.dp)
+                        .clip(RoundedCornerShape(percent = 50))
+                        .background(Azphalt.Ink.copy(alpha = .14f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        k.uppercase(),
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            color = Azphalt.Ink,
+                            fontSize = 8.sp
+                        )
                     )
-                )
+                }
             }
         }
     }

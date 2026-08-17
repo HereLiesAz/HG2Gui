@@ -32,10 +32,10 @@ class TerminalEngine(
     private var shell = ShellSession.forAndroid(home, context)
 
     // Only bootstrap still needs an HTTP client, now that RSS/weather/etc. are gone with the
-    // rest of the legacy engine.
-    private val client = OkHttpClient.Builder()
-        .cache(Cache(File(context.cacheDir, "http"), (10 * 1024 * 1024).toLong()))
-        .build()
+    // rest of the legacy engine. Shared across every TerminalEngine instance (one per terminal
+    // tab, plus the MCP service, plus one-off uses like ScriptInstaller's `azp` installer) via
+    // the companion object below - see its doc comment for why a per-instance client is unsafe.
+    private val client = sharedHttpClient(context)
 
     val workingDirectory: String get() = shell.workingDirectory
 
@@ -105,5 +105,30 @@ class TerminalEngine(
 
     fun destroy() {
         shell.close()
+    }
+
+    companion object {
+        // OkHttp's Cache/DiskLruCache is documented as unsafe to open twice concurrently against
+        // the same directory from the same process. Every TerminalEngine used to build its own
+        // OkHttpClient pointed at the identical `context.cacheDir/"http"` directory - with one
+        // instance per terminal tab, one for the MCP service, and one for ScriptInstaller's `azp`
+        // installs, two of those live at once (two tabs, a tab plus the MCP service, an install
+        // alongside an open tab) raced the same DiskLruCache directory, risking IOExceptions or
+        // cache corruption. OkHttpClient instances are meant to be shared/reused anyway, so this
+        // lazily builds a single client (and single Cache) the first time any TerminalEngine
+        // needs one, and every later instance reuses it. Double-checked locking keeps the common
+        // case (already initialized) lock-free while still being safe if two TerminalEngines are
+        // constructed concurrently on different threads.
+        @Volatile
+        private var instance: OkHttpClient? = null
+
+        private fun sharedHttpClient(context: Context): OkHttpClient {
+            return instance ?: synchronized(this) {
+                instance ?: OkHttpClient.Builder()
+                    .cache(Cache(File(context.applicationContext.cacheDir, "http"), (10 * 1024 * 1024).toLong()))
+                    .build()
+                    .also { instance = it }
+            }
+        }
     }
 }

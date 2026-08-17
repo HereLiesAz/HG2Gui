@@ -25,6 +25,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateListOf
@@ -32,6 +33,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import com.hereliesaz.hg2gui.ui.BackStepState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -125,6 +127,11 @@ fun FilesScreen(
     // ever actually reachable.
     onShareMultiple: (paths: Set<String>) -> Unit,
     onBack: () -> Unit,
+    // UI-1: reports whether this screen has an internal level (Storage/Search/PickMove/PickCopy,
+    // select mode, a rename/create prompt, a drilled-in folder chain) that system back/the edge
+    // gesture should step up through one level at a time, instead of always closing this whole
+    // screen the way [onBack] itself does. See BackStepState's own doc for the full mechanism.
+    backStep: BackStepState,
     modifier: Modifier = Modifier
 ) {
     var screen by remember { mutableStateOf(FMScreen.Browse) }
@@ -190,9 +197,14 @@ fun FilesScreen(
         levelCache = paths.associateWith { listDir(it).filteredAndSorted() }
     }
 
-    fun entriesAt(depth: Int): List<VfsEntry> {
+    // VFS-14: null means "this depth's listing hasn't come back from [listDir] yet," distinct
+    // from a present-but-empty list ("it came back and there's genuinely nothing here") - the
+    // same COUNTING…/null-until-loaded distinction StorageScreen already uses for its own stats.
+    // Collapsing both to emptyList() (the old behaviour) is what made every folder tap flash
+    // "NOTHING HERE" for a frame before the real listing replaced it.
+    fun entriesAt(depth: Int): List<VfsEntry>? {
         val path = if (depth == 0) "/" else openChain.getOrNull(depth - 1)?.path ?: return emptyList()
-        return levelCache[path] ?: emptyList()
+        return levelCache[path]
     }
 
     LaunchedEffect(searchQuery, showHidden, refreshTick) {
@@ -237,6 +249,25 @@ fun FilesScreen(
             openEntry(depth, entry)
         } else {
             onOpenFile(entry.path)
+        }
+    }
+
+    // UI-1: must run before the PickMove/PickCopy/Storage early-returns below so a system-back
+    // press while any of those (or select mode, a rename/create prompt, or a drilled-in folder)
+    // is showing steps up exactly one level instead of skipping straight past all of them to
+    // onBack. Checked in the same "deepest first" order the header's own back-affordances use.
+    SideEffect {
+        backStep.canStepBack = creating != null || renameTarget != null ||
+            screen != FMScreen.Browse || searchActive || selectMode || openChain.isNotEmpty()
+        backStep.stepBack = {
+            when {
+                creating != null -> { creating = null; createInput = "" }
+                renameTarget != null -> { renameTarget = null }
+                screen != FMScreen.Browse -> { screen = FMScreen.Browse }
+                searchActive -> { searchActive = false; searchQuery = ""; screen = FMScreen.Browse }
+                selectMode -> { selectMode = false; selected = emptySet() }
+                openChain.isNotEmpty() -> { openChain = openChain.dropLast(1) }
+            }
         }
     }
 
@@ -337,7 +368,7 @@ fun FilesScreen(
                 // "Here" is wherever the chain has actually drilled to - the deepest open level's
                 // own listing, not a sum across every depth (a folder's contents don't also sit
                 // beside it at the level above).
-                Chip("${entriesAt(openChain.size).size} THINGS HERE", filled = false, clickable = false)
+                Chip("${entriesAt(openChain.size)?.size ?: 0} THINGS HERE", filled = false, clickable = false)
             }
         }
 
@@ -662,7 +693,7 @@ fun FilesScreen(
 private fun ExpandableLevel(
     depth: Int,
     openChain: List<VfsEntry>,
-    entriesAt: (Int) -> List<VfsEntry>,
+    entriesAt: (Int) -> List<VfsEntry>?,
     onToggle: (Int, VfsEntry) -> Unit,
     selectMode: Boolean,
     selected: Set<String>,
@@ -674,8 +705,8 @@ private fun ExpandableLevel(
 ) {
     val entries = entriesAt(depth)
     val openEntry = openChain.getOrNull(depth)
-    val folders = entries.filter { it.isDirectory }
-    val files = entries.filter { !it.isDirectory }
+    val folders = entries?.filter { it.isDirectory } ?: emptyList()
+    val files = entries?.filterNot { it.isDirectory } ?: emptyList()
 
     Column(
         verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -746,6 +777,10 @@ private fun ExpandableLevel(
                     }
                 }
             }
+        } else if (entries == null) {
+            // VFS-14: this depth's own listing hasn't come back yet - a folder just tapped open,
+            // or a filter/sort change still in flight - not "there's genuinely nothing here."
+            LoadingLabel()
         } else if (folders.isEmpty() && files.isEmpty()) {
             EmptyLabel()
         } else if (folders.isNotEmpty()) {
@@ -777,6 +812,14 @@ private fun ExpandableLevel(
 private fun EmptyLabel() {
     Text(
         "NOTHING HERE", color = Azphalt.Ink.copy(alpha = .4f),
+        fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.14.em
+    )
+}
+
+@Composable
+private fun LoadingLabel() {
+    Text(
+        "LOADING…", color = Azphalt.Ink.copy(alpha = .4f),
         fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.14.em
     )
 }

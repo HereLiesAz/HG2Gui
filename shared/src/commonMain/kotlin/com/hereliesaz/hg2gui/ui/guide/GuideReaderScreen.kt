@@ -15,10 +15,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.hereliesaz.hg2gui.ui.BackStepState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -63,11 +65,22 @@ private enum class GuideView { Index, Entry }
 fun GuideReaderScreen(
     fullscreen: Boolean,
     onBack: () -> Unit,
+    // UI-2: this screen is always "somewhere with a level to step up from" while it's showing -
+    // either up to its own index (from an entry) or out entirely via [onBack] (from the index) -
+    // so it owns backStep unconditionally rather than only when it has state of its own to unwind.
+    backStep: BackStepState,
     modifier: Modifier = Modifier
 ) {
     var view by remember { mutableStateOf(GuideView.Index) }
     var entryIndex by remember { mutableStateOf(0) }
     var wipeKey by remember { mutableStateOf(0) }
+
+    SideEffect {
+        backStep.canStepBack = true
+        backStep.stepBack = {
+            if (view == GuideView.Entry) view = GuideView.Index else onBack()
+        }
+    }
 
     Column(
         modifier

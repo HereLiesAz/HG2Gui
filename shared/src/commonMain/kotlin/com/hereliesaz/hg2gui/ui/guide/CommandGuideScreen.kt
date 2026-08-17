@@ -6,10 +6,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.hereliesaz.hg2gui.ui.BackStepState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,6 +40,13 @@ fun CommandGuideScreen(
     fullscreen: Boolean,
     onCommandSelected: (List<String>) -> Unit,
     onBack: () -> Unit,
+    // UI-2: reports whether there's an internal level (right now, only "the reader is open") for
+    // system back/the edge gesture to step up through before onBack closes this whole screen. When
+    // readingGuide is true, GuideReaderScreen (which owns its own index/entry drill-down) takes
+    // over reporting to the very same instance - see its own doc comment for how the two levels
+    // combine into one step-at-a-time back stack without either screen knowing about the other's
+    // state directly.
+    backStep: BackStepState,
     modifier: Modifier = Modifier
 ) {
     // The real Hitchhiker's Guide - a chapter index of parody command entries, not a picker -
@@ -49,9 +58,17 @@ fun CommandGuideScreen(
         GuideReaderScreen(
             fullscreen = fullscreen,
             onBack = { readingGuide = false },
+            backStep = backStep,
             modifier = modifier
         )
         return
+    }
+
+    // Nothing left to step back through at this level - GuideReaderScreen (above) owns backStep
+    // entirely while it's showing instead, since this branch never composes at the same time.
+    SideEffect {
+        backStep.canStepBack = false
+        backStep.stepBack = {}
     }
 
     Column(

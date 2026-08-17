@@ -15,10 +15,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.hereliesaz.hg2gui.ui.BackStepState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -43,13 +45,31 @@ fun PathPickerScreen(
     onSelectFile: (path: String) -> Unit,
     onSelectFolder: (path: String) -> Unit,
     onCancel: () -> Unit,
+    // UI-3: reports whether a folder tap has drilled this picker deeper than [startPath], so
+    // system back/the edge gesture steps up one directory at a time instead of always cancelling
+    // the whole picker the way [onCancel] itself does. See BackStepState's own doc.
+    backStep: BackStepState,
     modifier: Modifier = Modifier
 ) {
     var currentPath by remember(startPath) { mutableStateOf(startPath) }
+    // Every folder tapped into on the way to [currentPath], oldest first - popping the last entry
+    // off this is exactly "go up one directory," the same drill-history PillMenu's own trail and
+    // FilesScreen's own openChain already track for their own back-one-level affordances.
+    var pathHistory by remember(startPath) { mutableStateOf<List<String>>(emptyList()) }
     var entries by remember { mutableStateOf<List<VfsEntry>>(emptyList()) }
 
     LaunchedEffect(currentPath) {
         entries = listDir(currentPath).sortedWith(compareBy({ !it.isDirectory }, { it.name.lowercase() }))
+    }
+
+    SideEffect {
+        backStep.canStepBack = pathHistory.isNotEmpty()
+        backStep.stepBack = {
+            pathHistory.lastOrNull()?.let { parent ->
+                currentPath = parent
+                pathHistory = pathHistory.dropLast(1)
+            }
+        }
     }
 
     Column(modifier.fillMaxSize().background(Azphalt.currentGround.pageBrush())) {
@@ -84,7 +104,12 @@ fun PathPickerScreen(
                             else Azphalt.Ink.copy(alpha = .06f)
                         )
                         .clickable {
-                            if (entry.isDirectory) currentPath = entry.path else onSelectFile(entry.path)
+                            if (entry.isDirectory) {
+                                pathHistory = pathHistory + currentPath
+                                currentPath = entry.path
+                            } else {
+                                onSelectFile(entry.path)
+                            }
                         }
                         .padding(horizontal = 16.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically

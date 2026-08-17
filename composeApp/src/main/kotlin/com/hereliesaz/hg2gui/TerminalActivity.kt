@@ -59,6 +59,7 @@ import com.hereliesaz.hg2gui.terminal.TerminalEngine
 import com.hereliesaz.hg2gui.util.GenericFileProvider
 import com.hereliesaz.hg2gui.util.Utils
 import com.hereliesaz.hg2gui.ui.AiSettingsScreen
+import com.hereliesaz.hg2gui.ui.BackStepState
 import com.hereliesaz.hg2gui.ui.ConfirmDialog
 import com.hereliesaz.hg2gui.ui.HG2GuiTheme
 import com.hereliesaz.hg2gui.ui.McpServerScreen
@@ -268,6 +269,15 @@ class TerminalActivity : FragmentActivity() {
                 scope.launch { pathPickerState.close() }
             }
 
+            // UI-1/UI-2/UI-3: each of these screens keeps its own internal navigation state
+            // privately (Files' Storage/Search/select mode/drill depth, the Guide's index/entry
+            // drill-down, the path picker's folder depth) - one instance per screen, handed down
+            // so the screen can report "I have a level to step up through" to the BackHandler
+            // below instead of it always closing the whole screen. See BackStepState's own doc.
+            val filesBackStep = remember { BackStepState() }
+            val guideBackStep = remember { BackStepState() }
+            val pathPickerBackStep = remember { BackStepState() }
+
             suspend fun realFsListDir(path: String): List<VfsEntry> = withContext(Dispatchers.IO) {
                 val dir = File(path)
                 (dir.listFiles() ?: emptyArray())
@@ -398,18 +408,25 @@ class TerminalActivity : FragmentActivity() {
                 applyFullscreen(fullscreen)
             }
 
-            // UI-1: nothing in the app previously intercepted system back or the edge-swipe
-            // gesture, so either one closed the whole app from any secondary screen instead of
-            // navigating up a level. This mirrors exactly what each screen's own BACK pill
-            // already does - deepest overlay first (the path picker, then Files), then whichever
-            // screen the visible one's own onBack already targets - so system back and the
-            // in-screen pill always agree. Disabled at the true root (Terminal, nothing open)
-            // so system back still backgrounds/exits the app there, same as before.
+            // UI-1/UI-2/UI-3: nothing in the app previously intercepted system back or the
+            // edge-swipe gesture, so either one closed the whole app - or, once each screen's own
+            // BACK pill was checked here too, whichever secondary screen was open - from any depth
+            // in one press, discarding whatever internal navigation state (Files' Storage/Search/
+            // select mode/drill chain, the Guide's index/entry drill-down, the path picker's
+            // folder depth) that screen was privately sitting on. Each *BackStep above is that
+            // screen's own report of "I still have a level to step up through" - checked first, so
+            // system back steps up exactly one level at a time, same as each screen's own BACK
+            // pill already does, before ever falling through to closing the whole screen. Disabled
+            // at the true root (Terminal, nothing open) so system back still backgrounds/exits the
+            // app there, same as before.
             val atRoot = screen == Screen.Terminal && !filesWrap.active && !pathPickerState.active
             BackHandler(enabled = !atRoot) {
                 when {
+                    pathPickerState.active && pathPickerBackStep.canStepBack -> pathPickerBackStep.stepBack()
                     pathPickerState.active -> closePathPicker()
+                    (screen == Screen.Files || filesWrap.active) && filesBackStep.canStepBack -> filesBackStep.stepBack()
                     screen == Screen.Files || filesWrap.active -> closeFiles()
+                    screen == Screen.Guide && guideBackStep.canStepBack -> guideBackStep.stepBack()
                     screen == Screen.AiSettings -> screen = Screen.Settings
                     screen == Screen.Mcp -> screen = Screen.Settings
                     else -> screen = Screen.Terminal
@@ -613,7 +630,8 @@ class TerminalActivity : FragmentActivity() {
                                 session.ui.inputText = ""
                             }
                         },
-                        onBack = { screen = Screen.Terminal }
+                        onBack = { screen = Screen.Terminal },
+                        backStep = guideBackStep
                     )
 
                     sessions.isNotEmpty() && currentTree != null -> TerminalScreen(
@@ -711,10 +729,16 @@ class TerminalActivity : FragmentActivity() {
                             val session = sessions.first { it.ui.id == sessionId }
                             session.engine.run(line, onNeedInput).collect { output -> onOutput(output) }
                             session.ui.cwd = session.engine.workingDirectory
-                            // A package manager (pkg/apt/pip/npm) can change what's actually on
-                            // PATH; re-scan so the Shell pills reflect that instead of the
-                            // snapshot from whenever the tree was last built.
-                            tree = withContext(Dispatchers.IO) { CommandTree.from(this@TerminalActivity) }
+                            // A package manager (pkg/apt/apt-get/dpkg) can change what's actually
+                            // on PATH; re-scan so the Shell pills reflect that instead of the
+                            // snapshot from whenever the tree was last built. Every other command
+                            // (ls, pwd, cat, ...) can't change installed packages, so re-running
+                            // CommandTree.from's dpkg .list scan after each of those would just be
+                            // wasted file I/O and a pointless menu recomposition.
+                            val ranCommand = line.trim().substringBefore(' ')
+                            if (ranCommand in CommandTree.PACKAGE_MANAGER_COMMANDS) {
+                                tree = withContext(Dispatchers.IO) { CommandTree.from(this@TerminalActivity) }
+                            }
                         }
                     )
 
@@ -759,9 +783,10 @@ class TerminalActivity : FragmentActivity() {
                                         VfsManager.resolve(this@TerminalActivity, path)
                                     }
                                     if (file != null) {
-                                        val intent = Intent(this@TerminalActivity, EditorActivity::class.java)
-                                        intent.putExtra(EditorActivity.PATH, file.absolutePath)
-                                        startActivity(intent)
+                                        // SYS-1: handed off via a plain static field, not an Intent
+                                        // extra - see EditorActivity.pendingInternalPath.
+                                        EditorActivity.pendingInternalPath = file.absolutePath
+                                        startActivity(Intent(this@TerminalActivity, EditorActivity::class.java))
                                     }
                                 }
                             },
@@ -835,6 +860,7 @@ class TerminalActivity : FragmentActivity() {
                                 }
                             },
                             onBack = { closeFiles() },
+                            backStep = filesBackStep,
                             modifier = Modifier.then(
                                 if (fullscreen) Modifier else Modifier.windowInsetsPadding(WindowInsets.systemBars)
                             )
@@ -870,6 +896,7 @@ class TerminalActivity : FragmentActivity() {
                                 closePathPicker()
                             },
                             onCancel = { closePathPicker() },
+                            backStep = pathPickerBackStep,
                             modifier = Modifier.then(
                                 if (fullscreen) Modifier else Modifier.windowInsetsPadding(WindowInsets.systemBars)
                             )

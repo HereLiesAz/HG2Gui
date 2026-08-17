@@ -12,7 +12,7 @@ name: Release to Play
 # out. `publish: false` builds and uploads the artifact here without touching
 # Play at all.
 #
-# Required repo secrets (see docs/PLAY_PUBLISHING.md):
+# Required repo secrets (this comment block is the documentation - no separate doc exists):
 #   KEYSTORE_RAW               - base64 of the upload keystore (.jks / .p12)
 #   KEYSTORE_PASSWORD          - keystore (store) password
 #   KEY_ALIAS                  - key alias
@@ -23,6 +23,12 @@ name: Release to Play
 #   KEYSTORE_SHA256 / KEYSTORE_SHA1 / KEYSTORE_OWNER
 # Optional, used to rebuild the keystore if KEYSTORE_RAW isn't set:
 #   KEYSTORE_PRIVATE / KEYSTORE_RSA / KEYSTORE_PUBLIC / KEYSTORE_CHAIN
+#
+# Not chained after any other workflow - nothing in this repo currently calls this via
+# workflow_call. It runs from its own push trigger (master/main only - every other branch's push
+# would otherwise decrypt the production keystore and run a real publish for no reason - see the
+# DO_PUBLISH fallback below for why a plain push event still publishes) or a manual
+# workflow_dispatch.
 
 on:
   # A push to master is treated as publish=true (internal track rolled out,
@@ -37,8 +43,6 @@ on:
     branches: [master, main]
     paths-ignore:
       - 'version.properties'
-  # Called by the workflows that publish a GitHub release, so a Play publish
-  # follows automatically once the release is out. Also runnable by hand.
   workflow_call:
     inputs:
       publish:
@@ -104,12 +108,12 @@ jobs:
       VERSION_CODE_MODE: ${{ inputs.version_code_mode || 'auto' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0   # full history so versionCode = commit count is correct
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
         with:
           java-version: '21'
           distribution: 'temurin'
@@ -271,7 +275,7 @@ jobs:
           fi
 
       - name: Upload AAB artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: hg2gui-release-aab-${{ env.VERSION_NAME }}
           path: |
