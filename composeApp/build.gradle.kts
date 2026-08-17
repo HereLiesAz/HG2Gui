@@ -1,3 +1,4 @@
+import com.android.build.api.variant.impl.VariantOutputImpl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.util.Properties
 
@@ -110,6 +111,24 @@ android {
     }
     ndkVersion = "29.0.14206865"
     buildToolsVersion = "37.0.0"
+}
+
+// The default output name (composeApp-<flavor>-<buildType>.apk) carries no version at all - every
+// build overwrites the same filename, and once one lands on the "latest-debug"/"latest" GitHub
+// Release (see _reusable-build.yml's Publish Release step, which uploads this exact file) there's
+// no way to tell which build a previously-downloaded APK actually is. VariantOutputImpl's
+// outputFileName is the actual mutable Property; the public VariantOutput interface only exposes
+// it read-only, so every AGP renaming setup - this one included - casts down to the impl class.
+androidComponents {
+    onVariants(selector().all()) { variant ->
+        variant.outputs.forEach { output ->
+            if (output is VariantOutputImpl) {
+                output.outputFileName.set(
+                    "hg2gui-${variant.flavorName}-${variant.buildType}-$resolvedVersionName.apk"
+                )
+            }
+        }
+    }
 }
 
 dependencies {
