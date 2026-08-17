@@ -810,7 +810,11 @@ private fun TrailCrumb(
         // Every other pill in the menu gets its width from fillMaxWidth against a fraction of
         // the screen; a Row of these can't do that (they'd all fight for the full row), so this
         // is the one pill sized by content alone - give it a floor so a short label like "ls"
-        // doesn't shrink-wrap into something visibly smaller than everything around it.
+        // doesn't shrink-wrap into something visibly smaller than everything around it. Anchored
+        // BottomStart (Pill's own default is BottomEnd, for the left-bleeding stack pills) so a
+        // short crumb's floor padding falls after its label, keeping the shingled trail's overlap
+        // landing on real crumb content instead of an empty margin ahead of it.
+        anchor = Alignment.BottomStart,
         modifier = Modifier
             .defaultMinSize(minWidth = 56.dp)
             .zIndex(zIndex)
@@ -825,7 +829,15 @@ internal fun Pill(
     cap: String?,
     hue: Int,
     selected: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    // Every stack pill (StackPill/HostPill/ChildPill) is sized via fillMaxWidth(fraction) against
+    // a fraction of the screen, then bled further left by absoluteBleed - a box far wider than its
+    // own label. BottomEnd anchors the visible capsule (this Box's content, sized to the label
+    // alone - see the comment below on why it can't just grow to fill that width) to that box's
+    // own right edge, the one fixed point DESIGN.md's "anchored by its right end" actually means -
+    // so a short label bleeds less past the left edge and a long one bleeds more, instead of every
+    // pill's visible capsule starting flush at the same left point regardless of label length.
+    anchor: Alignment = Alignment.BottomEnd
 ) {
     val bg = if (selected) Azphalt.Ink else Azphalt.hues[hue]
     val fg = if (selected) Azphalt.Yellow else Azphalt.White
@@ -843,14 +855,16 @@ internal fun Pill(
     // outer Box pads out the *clickable* region to PILL_TOUCH_TARGET while the Row painted below
     // stays exactly PILL_HEIGHT tall - the same "invisible larger tap zone around a small visible
     // element" pattern GuideReaderScreen's Chip (UI-7) uses. The padding is pinned to the bottom
-    // edge (defaultMinSize + Alignment.BottomStart) rather than split evenly above and below:
-    // every pill here is itself bottom-anchored (aligned BottomStart, then lifted into its row by
-    // translationY), so bottom-anchoring the touch target too means the extra height only ever
-    // extends upward - toward the next row up, exactly where ROW_PITCH's 3dp gap actually is -
-    // without nudging the visible pill's own on-screen position by even a pixel.
+    // edge (defaultMinSize + a Bottom* anchor) rather than split evenly above and below: every
+    // pill here is itself bottom-anchored (aligned to a Bottom* row position, then lifted into its
+    // row by translationY), so bottom-anchoring the touch target too means the extra height only
+    // ever extends upward - toward the next row up, exactly where ROW_PITCH's 3dp gap actually is
+    // - without nudging the visible pill's own on-screen position by even a pixel. [anchor]'s
+    // Start/End half is the separate, horizontal half of this same alignment - see the comment on
+    // the parameter itself.
     Box(
         modifier.defaultMinSize(minHeight = PILL_TOUCH_TARGET),
-        contentAlignment = Alignment.BottomStart
+        contentAlignment = anchor
     ) {
         Row(
             Modifier
