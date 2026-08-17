@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
+import com.hereliesaz.hg2gui.ui.menu.onPage
 import com.hereliesaz.hg2gui.ui.menu.pageBrush
 import kotlinx.coroutines.delay
 
@@ -127,7 +128,7 @@ private fun ColumnScope.GuideIndex(onBack: () -> Unit, onOpenEntry: (Int) -> Uni
     Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 18.dp)) {
         Text(
             "THE GUIDE",
-            color = Azphalt.Ink,
+            color = Azphalt.currentGround.onPage,
             fontSize = 34.sp,
             lineHeight = 30.sp,
             fontWeight = FontWeight.Black,
@@ -136,7 +137,7 @@ private fun ColumnScope.GuideIndex(onBack: () -> Unit, onOpenEntry: (Int) -> Uni
         Text(
             "The galaxy's largest repository of half-truths and pseudo-knowledge required to " +
                 "pocket a wild Linux environment. Proceed with a care-free sort of caution.",
-            color = Azphalt.Ink.copy(alpha = .78f),
+            color = Azphalt.currentGround.onPage.copy(alpha = .78f),
             fontSize = 13.sp,
             lineHeight = 18.sp,
             modifier = Modifier.padding(top = 8.dp)
@@ -159,14 +160,14 @@ private fun ColumnScope.GuideIndex(onBack: () -> Unit, onOpenEntry: (Int) -> Uni
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(
                         chapter.label.uppercase(),
-                        color = Azphalt.Ink.copy(alpha = .45f),
+                        color = Azphalt.currentGround.onPage.copy(alpha = .45f),
                         fontSize = 9.sp,
                         fontWeight = FontWeight.ExtraBold,
                         letterSpacing = 0.18.em
                     )
                     Text(
                         chapter.title.uppercase(),
-                        color = Azphalt.Ink,
+                        color = Azphalt.currentGround.onPage,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Black,
                         letterSpacing = (-0.01).em
@@ -179,7 +180,7 @@ private fun ColumnScope.GuideIndex(onBack: () -> Unit, onOpenEntry: (Int) -> Uni
                         // a pick that would otherwise never exist.
                         Text(
                             chapter.intro,
-                            color = Azphalt.Ink.copy(alpha = .7f),
+                            color = Azphalt.currentGround.onPage.copy(alpha = .7f),
                             fontSize = 12.sp,
                             lineHeight = 18.sp,
                             modifier = Modifier.padding(vertical = 11.dp)
@@ -196,7 +197,7 @@ private fun ColumnScope.GuideIndex(onBack: () -> Unit, onOpenEntry: (Int) -> Uni
                         ) {
                             Text(
                                 entry.cmd,
-                                color = Azphalt.Ink,
+                                color = Azphalt.currentGround.onPage,
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.ExtraBold,
                                 letterSpacing = 0.01.em,
@@ -204,7 +205,7 @@ private fun ColumnScope.GuideIndex(onBack: () -> Unit, onOpenEntry: (Int) -> Uni
                             )
                             Text(
                                 entry.teaser,
-                                color = Azphalt.Ink.copy(alpha = .55f),
+                                color = Azphalt.currentGround.onPage.copy(alpha = .55f),
                                 fontSize = 12.sp,
                                 lineHeight = 16.sp,
                                 modifier = Modifier.weight(0.6f)
@@ -253,7 +254,7 @@ private fun ColumnScope.GuideEntryReader(
         WipeItem(2, wipeKey, wide = true, modifier = Modifier.padding(top = 16.dp)) {
             Text(
                 entry.cmd.uppercase(),
-                color = Azphalt.Ink,
+                color = Azphalt.currentGround.onPage,
                 fontSize = 34.sp,
                 lineHeight = 30.sp,
                 fontWeight = FontWeight.Black,
@@ -284,7 +285,7 @@ private fun ColumnScope.GuideEntryReader(
             WipeItem(seq++, wipeKey, wide = true, modifier = Modifier.padding(top = 16.dp)) {
                 Text(
                     entry.blurb,
-                    color = Azphalt.Ink.copy(alpha = .78f),
+                    color = Azphalt.currentGround.onPage.copy(alpha = .78f),
                     fontSize = 15.sp,
                     lineHeight = 21.sp
                 )
@@ -293,7 +294,7 @@ private fun ColumnScope.GuideEntryReader(
             WipeItem(seq++, wipeKey, wide = true, modifier = Modifier.padding(top = 10.dp)) {
                 Text(
                     "STANDS FOR “${entry.full.uppercase()}”",
-                    color = Azphalt.Ink.copy(alpha = .45f),
+                    color = Azphalt.currentGround.onPage.copy(alpha = .45f),
                     fontSize = 10.sp,
                     fontWeight = FontWeight.ExtraBold,
                     letterSpacing = 0.14.em
@@ -325,7 +326,7 @@ private fun ColumnScope.GuideEntryReader(
                         )
                         Text(
                             anim,
-                            color = Azphalt.Ink.copy(alpha = .78f),
+                            color = Azphalt.currentGround.onPage.copy(alpha = .78f),
                             fontSize = 13.sp,
                             lineHeight = 19.sp,
                             modifier = Modifier.padding(top = 8.dp)
@@ -338,7 +339,7 @@ private fun ColumnScope.GuideEntryReader(
                 WipeItem(seq++, wipeKey, wide = true, modifier = Modifier.padding(top = 16.dp)) {
                     Text(
                         note,
-                        color = Azphalt.Ink.copy(alpha = .55f),
+                        color = Azphalt.currentGround.onPage.copy(alpha = .55f),
                         fontSize = 12.sp,
                         lineHeight = 17.sp,
                         fontWeight = FontWeight.Medium
@@ -350,14 +351,14 @@ private fun ColumnScope.GuideEntryReader(
                 Column {
                     Text(
                         "FROM THE CHAPTER",
-                        color = Azphalt.Ink.copy(alpha = .45f),
+                        color = Azphalt.currentGround.onPage.copy(alpha = .45f),
                         fontSize = 9.sp,
                         fontWeight = FontWeight.ExtraBold,
                         letterSpacing = 0.18.em
                     )
                     Text(
                         entry.chapterIntro,
-                        color = Azphalt.Ink.copy(alpha = .78f),
+                        color = Azphalt.currentGround.onPage.copy(alpha = .78f),
                         fontSize = 12.sp,
                         lineHeight = 17.sp,
                         modifier = Modifier.padding(top = 6.dp)
@@ -400,7 +401,7 @@ private fun GuideWash(word: String, wipeKey: Int) {
     }
     Text(
         word,
-        color = Azphalt.Ink.copy(alpha = .09f),
+        color = Azphalt.currentGround.onPage.copy(alpha = .09f),
         fontSize = 100.sp,
         lineHeight = 84.sp,
         fontWeight = FontWeight.Black,
@@ -420,10 +421,10 @@ private fun FactRow(label: String, value: String) {
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
-            label.uppercase(), color = Azphalt.Ink.copy(alpha = .55f),
+            label.uppercase(), color = Azphalt.currentGround.onPage.copy(alpha = .55f),
             fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em
         )
-        Text(value, color = Azphalt.Ink, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        Text(value, color = Azphalt.currentGround.onPage, fontSize = 12.sp, fontWeight = FontWeight.Bold)
     }
     Box(Modifier.fillMaxWidth().height(1.dp).background(Azphalt.Ink.copy(alpha = .16f)))
 }
@@ -440,7 +441,7 @@ private fun Chip(
     onClick: () -> Unit = {}
 ) {
     val bg = if (filled) background else Azphalt.Ink.copy(alpha = .14f)
-    val fg = if (filled) foreground else Azphalt.Ink.copy(alpha = .55f)
+    val fg = if (filled) foreground else Azphalt.currentGround.onPage.copy(alpha = .55f)
     // UI-7: the visible chip (padding(vertical = 8.dp) around 9sp type) renders well under the
     // 48dp minimum touch target. Rather than growing the chip itself - which would blow up its
     // whole visual proportions - the clickable region is a separate, invisible 48dp-tall Box the

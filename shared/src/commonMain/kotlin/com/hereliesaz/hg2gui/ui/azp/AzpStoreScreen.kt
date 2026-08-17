@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
+import com.hereliesaz.hg2gui.ui.menu.onPage
 import com.hereliesaz.hg2gui.ui.menu.pageBrush
 
 /** A search result row, or an already-installed package - shared shape for the list.
@@ -116,7 +117,7 @@ fun AzpStoreScreen(
                 ) {
                     Text(
                         k.uppercase(),
-                        color = if (selected) Azphalt.Yellow else Azphalt.Ink,
+                        color = if (selected) Azphalt.Yellow else Azphalt.currentGround.onPage,
                         fontSize = 8.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em
                     )
                 }
@@ -185,29 +186,30 @@ private fun AzpRow(listing: AzpListing, installing: Boolean, onInstall: (AzpList
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        val onPage = Azphalt.currentGround.onPage
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     listing.name,
-                    style = MaterialTheme.typography.bodyMedium.copy(color = Azphalt.Ink, fontWeight = FontWeight.ExtraBold)
+                    style = MaterialTheme.typography.bodyMedium.copy(color = onPage, fontWeight = FontWeight.ExtraBold)
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
                     listing.kind.uppercase(),
-                    color = Azphalt.Ink.copy(alpha = .5f),
+                    color = onPage.copy(alpha = .5f),
                     fontSize = 8.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em
                 )
             }
             if (listing.description.isNotBlank()) {
                 Text(
                     listing.description,
-                    color = Azphalt.Ink.copy(alpha = .65f), fontSize = 10.sp,
+                    color = onPage.copy(alpha = .65f), fontSize = 10.sp,
                     modifier = Modifier.padding(top = 2.dp)
                 )
             }
             Text(
                 "${listing.author} · v${listing.version}",
-                color = Azphalt.Ink.copy(alpha = .45f), fontSize = 9.sp,
+                color = onPage.copy(alpha = .45f), fontSize = 9.sp,
                 modifier = Modifier.padding(top = 2.dp)
             )
             if (listing.installed && listing.trust.isNotBlank()) {
@@ -225,7 +227,7 @@ private fun AzpRow(listing: AzpListing, installing: Boolean, onInstall: (AzpList
                 // states that plainly: trust is unknown until install, not silently assumed good.
                 Text(
                     "TRUST UNKNOWN · CHECKED AT INSTALL",
-                    color = Azphalt.Ink.copy(alpha = .4f),
+                    color = onPage.copy(alpha = .4f),
                     fontSize = 8.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em,
                     modifier = Modifier.padding(top = 3.dp)
                 )
@@ -233,7 +235,7 @@ private fun AzpRow(listing: AzpListing, installing: Boolean, onInstall: (AzpList
             if (listing.installed && listing.kind == "script") {
                 Text(
                     if (listing.scriptCommand.isNotBlank()) "→ ${listing.scriptCommand}" else "AWAITING BOOTSTRAP",
-                    color = Azphalt.Ink.copy(alpha = .45f),
+                    color = onPage.copy(alpha = .45f),
                     fontSize = 8.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em,
                     modifier = Modifier.padding(top = 3.dp)
                 )
@@ -273,7 +275,7 @@ private fun trustLabel(trust: String): String = when (trust) {
 /** Single source of truth for "is this the TRUSTED tier" - [trustLabel] and this must never
  *  disagree about which string means trusted, so both read the same comparison. */
 private fun trustColor(trust: String): Color =
-    if (trust == "TRUSTED") Azphalt.hues[3] else Azphalt.Ink.copy(alpha = .45f)
+    if (trust == "TRUSTED") Azphalt.hues[3] else Azphalt.currentGround.onPage.copy(alpha = .45f)
 
 @Composable
 private fun Eyebrow(text: String) {
