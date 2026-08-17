@@ -173,6 +173,10 @@ fun Azphalt.Ground.pageBrush(): Brush = Brush.linearGradient(0f to page, 0.5f to
 
 private val PILL_HEIGHT = 17.dp
 private val ROW_PITCH = 20.dp
+// Android's own accessibility minimum tap target - PILL_HEIGHT (17dp) is well under it, and rows
+// are only ROW_PITCH (20dp) apart besides. Pill pads its *clickable* region out to this without
+// touching PILL_HEIGHT itself - see the comment on Pill's own wrapping Box.
+private val PILL_TOUCH_TARGET = 48.dp
 private val OVERHANG = 62.dp
 // Negative Arrangement.spacedBy for TrailRow - each crumb's left edge tucks this far under the
 // crumb before it. A quarter of TrailCrumb's own 56dp floor width: enough to read as a deliberate
@@ -824,50 +828,68 @@ internal fun Pill(
     // SemanticsPropertyReceiver.selected property of the same name.
     val isSelected = selected
 
-    Row(
-        modifier
-            .height(PILL_HEIGHT)
-            // The state that reads as a color shift (ink vs. hue) needs its own semantics entry
-            // to reach a screen reader at all - color alone carries no signal there. Merging
-            // descendants folds the label/cap Text children into one announced unit ("LABEL,
-            // button") instead of TalkBack stopping on each one separately.
-            .semantics(mergeDescendants = true) {
-                this.role = Role.Button
-                this.selected = isSelected
-            }
-            .clip(RoundedCornerShape(percent = 50))
-            .background(bg)
-            .padding(start = 12.dp, end = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        // "Label and end-cap sit together at the right end of the pill, in that order, 9px
-        // apart" - the style guide's own literal gap value.
-        horizontalArrangement = Arrangement.spacedBy(9.dp, Alignment.End)
+    // [modifier] carries this pill's real geometry - offsetByFractionOfParent / absoluteBleed /
+    // the lift-and-scroll graphicsLayer - and ends in the clickable that fires onClick, all sized
+    // against the pill's own footprint. PILL_HEIGHT (17dp) is a deliberate Menu Style Guide
+    // constant the width-variation and row-pitch math elsewhere in this file depends on staying
+    // exact, so it can't simply grow to Android's PILL_TOUCH_TARGET (48dp) minimum. Instead this
+    // outer Box pads out the *clickable* region to PILL_TOUCH_TARGET while the Row painted below
+    // stays exactly PILL_HEIGHT tall - the same "invisible larger tap zone around a small visible
+    // element" pattern GuideReaderScreen's Chip (UI-7) uses. The padding is pinned to the bottom
+    // edge (defaultMinSize + Alignment.BottomStart) rather than split evenly above and below:
+    // every pill here is itself bottom-anchored (aligned BottomStart, then lifted into its row by
+    // translationY), so bottom-anchoring the touch target too means the extra height only ever
+    // extends upward - toward the next row up, exactly where ROW_PITCH's 3dp gap actually is -
+    // without nudging the visible pill's own on-screen position by even a pixel.
+    Box(
+        modifier.defaultMinSize(minHeight = PILL_TOUCH_TARGET),
+        contentAlignment = Alignment.BottomStart
     ) {
-        Text(
-            text = label.uppercase(),
-            color = fg,
-            fontSize = 6.sp,
-            fontWeight = FontWeight.ExtraBold,
-            letterSpacing = 0.09.em,
-            maxLines = 1,
-            textAlign = TextAlign.End
-        )
-        if (cap != null) {
-            Box(
-                Modifier
-                    .height(10.dp)
-                    .defaultMinSize(minWidth = 12.dp)
-                    .clip(RoundedCornerShape(percent = 50))
-                    .background(capBg)
-                    .padding(horizontal = 4.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = cap.uppercase(),
-                    color = capFg,
-                    fontSize = 5.sp,
-                    fontWeight = FontWeight.ExtraBold
-                )
+        Row(
+            Modifier
+                .height(PILL_HEIGHT)
+                // The state that reads as a color shift (ink vs. hue) needs its own semantics
+                // entry to reach a screen reader at all - color alone carries no signal there.
+                // Merging descendants folds the label/cap Text children into one announced unit
+                // ("LABEL, button") instead of TalkBack stopping on each one separately.
+                .semantics(mergeDescendants = true) {
+                    this.role = Role.Button
+                    this.selected = isSelected
+                }
+                .clip(RoundedCornerShape(percent = 50))
+                .background(bg)
+                .padding(start = 12.dp, end = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            // "Label and end-cap sit together at the right end of the pill, in that order, 9px
+            // apart" - the style guide's own literal gap value.
+            horizontalArrangement = Arrangement.spacedBy(9.dp, Alignment.End)
+        ) {
+            Text(
+                text = label.uppercase(),
+                color = fg,
+                fontSize = 6.sp,
+                fontWeight = FontWeight.ExtraBold,
+                letterSpacing = 0.09.em,
+                maxLines = 1,
+                textAlign = TextAlign.End
+            )
+            if (cap != null) {
+                Box(
+                    Modifier
+                        .height(10.dp)
+                        .defaultMinSize(minWidth = 12.dp)
+                        .clip(RoundedCornerShape(percent = 50))
+                        .background(capBg)
+                        .padding(horizontal = 4.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = cap.uppercase(),
+                        color = capFg,
+                        fontSize = 5.sp,
+                        fontWeight = FontWeight.ExtraBold
+                    )
+                }
             }
         }
     }

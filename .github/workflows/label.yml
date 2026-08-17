@@ -20,6 +20,6 @@ jobs:
     # v5 rather than v4: v4 targets Node 20, which the runners now force onto Node 24 with a
     # deprecation warning. The config schema differs between the two — .github/labeler.yml is
     # written against v5.
-    - uses: actions/labeler@v7
+    - uses: actions/labeler@bf12e9b00b37c5c0ca2b87b79b2daf7891dbda13 # v7
       with:
         repo-token: "${{ secrets.GITHUB_TOKEN }}"

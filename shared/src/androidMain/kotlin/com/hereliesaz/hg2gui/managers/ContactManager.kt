@@ -24,12 +24,16 @@ import java.util.Collections
  */
 class ContactManager(private val context: Context) {
 
-    // SYS-7: written by the background StoppableThread in refreshContacts(), read from whatever
-    // thread calls listNames()/getContacts()/etc. (usually main) - without @Volatile, a reader on
-    // another thread has no memory-model guarantee it ever sees the write at all, let alone
-    // promptly.
+    // SYS-7 / SYS-8: `contacts` is @Volatile so a reader on another thread is guaranteed to see a
+    // published write promptly. That guarantee only covers the *reference* though - it says
+    // nothing about safety of mutating the referenced list in place. refreshContacts() therefore
+    // never mutates the currently-published list: it builds a brand-new list on the background
+    // thread and only ever publishes it with a single reference assignment once it is fully built
+    // (`contacts = newContacts`). Readers below take a single local snapshot of the reference and
+    // iterate that snapshot, so they either see the old, complete list or the new, complete list -
+    // never a list that is concurrently being cleared/added to by a refresh.
     @Volatile
-    private var contacts: MutableList<Contact>? = null // Cached list of contacts
+    private var contacts: List<Contact>? = null // Cached list of contacts
     private val receiver: BroadcastReceiver
 
     init {
@@ -71,13 +75,12 @@ class ContactManager(private val context: Context) {
             override fun run() {
                 super.run()
 
-                if (contacts == null) {
-                    contacts = ArrayList()
-                } else {
-                    contacts!!.clear()
-                }
-
-                val currentContacts = contacts!!
+                // Build the refreshed list entirely in a local, unpublished ArrayList. The
+                // currently-published `contacts` field is never touched while this runs, so
+                // concurrent readers (listNames(), getContacts(), etc.) never observe a
+                // partially-built list. The new list is published with a single volatile
+                // reference write at the very end of this method.
+                val currentContacts = ArrayList<Contact>()
 
                 // Query for Name, ID, Number, and Primary flag
                 val phones = context.contentResolver.query(
@@ -165,31 +168,42 @@ class ContactManager(private val context: Context) {
                 }
 
                 Collections.sort(currentContacts)
+
+                // Publish the fully-built list with a single volatile reference write. This is
+                // the only place `contacts` is ever assigned after construction, and nothing
+                // mutates a list once it has been published here.
+                contacts = currentContacts
             }
         }.start()
     }
 
     fun listNames(): List<String> {
-        if (contacts == null || contacts!!.isEmpty()) refreshContacts(context)
+        var snapshot = contacts
+        if (snapshot == null || snapshot.isEmpty()) refreshContacts(context)
+        snapshot = contacts
 
         val names = ArrayList<String>()
-        contacts?.let {
+        snapshot?.let {
             for (c in it) names.add(c.name)
         }
         return names
     }
 
     fun getContacts(): List<Contact> {
-        if (contacts == null || contacts!!.isEmpty()) refreshContacts(context)
+        var snapshot = contacts
+        if (snapshot == null || snapshot.isEmpty()) refreshContacts(context)
+        snapshot = contacts
 
-        return ArrayList(contacts ?: emptyList())
+        return ArrayList(snapshot ?: emptyList())
     }
 
     fun listNamesAndNumbers(): List<String> {
-        if (contacts == null || contacts!!.isEmpty()) refreshContacts(context)
+        var snapshot = contacts
+        if (snapshot == null || snapshot.isEmpty()) refreshContacts(context)
+        snapshot = contacts
 
         val c = ArrayList<String>()
-        contacts?.let {
+        snapshot?.let {
             for (cnt in it) {
                 val b = StringBuilder()
                 b.append(cnt.name)

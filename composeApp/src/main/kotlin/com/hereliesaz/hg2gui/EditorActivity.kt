@@ -30,27 +30,42 @@ class EditorActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
-        val path = intent.getStringExtra(PATH) ?: intent.data?.path
+        // SYS-1: this Activity is exported (so another app's VIEW/EDIT intent can reach it - see
+        // the manifest). Because android:exported="true" lets ANY app start it via an *explicit*
+        // component Intent - bypassing the VIEW/EDIT intent-filter entirely, action/mimeType/extras
+        // and all - an Intent extra was never a safe place to distinguish "this app's own Files
+        // screen or edit command opened this" from "some other installed app crafted this Intent."
+        // A previous version of this check trusted a "path" String extra and merely blocklisted a
+        // few sibling directories (shared_prefs/databases/cache/code_cache), leaving filesDir - the
+        // VFS sandbox root and $HOME for the real shell (see DistroManager.homeDir) - reachable to
+        // ANY caller, including one that never had storage access of its own. Since this app's SSH
+        // feature routinely puts private keys under $HOME/.ssh, that was a real confused-deputy
+        // path: a zero-permission app could read (or, via Save, overwrite) this app's SSH keys.
+        //
+        // The fix: internal callers now hand off the path through [pendingInternalPath], a plain
+        // in-process field an external Intent can never populate (there's no Intent, extra, or data
+        // Uri for an attacker to spoof it through) - see the launch site in TerminalActivity. Only
+        // that trusted handoff is allowed to open a path anywhere in this app's private storage.
+        // Anything that actually arrived via an Intent (implicit VIEW/EDIT, or an explicit
+        // component Intent from another app) is treated as untrusted regardless of what it claims,
+        // and is denied outright if it resolves anywhere inside this app's own private data dir -
+        // this app's own private files were never meant to be reachable through the public
+        // VIEW/EDIT surface at all.
+        val internalPath = pendingInternalPath
+        pendingInternalPath = null
+        val path = internalPath ?: intent.data?.path
         if (path == null) {
             finish()
             return
         }
         val file = File(path)
 
-        // SYS-1: this Activity is exported (so another app's VIEW/EDIT intent can reach it - see
-        // the manifest), which means the path above is not necessarily one this app chose. It
-        // still executes with this app's own file permissions regardless of who sent the intent,
-        // so a caller with zero storage access of its own could otherwise use this Activity as a
-        // confused deputy to read (and, via Save, tamper with) this app's private preference
-        // files - most sensitively shared_prefs, where the AI API key and MCP pairing token live
-        // in plaintext. filesDir itself (VFS's sandbox root, the Termux prefix) stays reachable -
-        // both this app's own "edit" command and the Files screen's "open in editor" legitimately
-        // point here - only the sibling directories no legitimate caller has any reason to name.
-        val dataRoot = File(applicationInfo.dataDir ?: filesDir.parentFile?.path.orEmpty())
-        val offLimits = listOf("shared_prefs", "databases", "cache", "code_cache").map { File(dataRoot, it) }
-        if (offLimits.any { dir -> file.isWithin(dir) }) {
-            finish()
-            return
+        if (internalPath == null) {
+            val dataRoot = File(applicationInfo.dataDir ?: filesDir.parentFile?.path.orEmpty())
+            if (file.isWithin(dataRoot)) {
+                finish()
+                return
+            }
         }
 
         setContent {
@@ -127,7 +142,14 @@ class EditorActivity : ComponentActivity() {
     }
 
     companion object {
-        const val PATH = "path"
+        // Set by a trusted in-process caller (see TerminalActivity's "open in editor"/edit-command
+        // launch site) immediately before starting this Activity, then consumed once in onCreate.
+        // Deliberately NOT an Intent extra - an exported Activity can be started by any other app
+        // via an explicit component Intent, so any Intent extra (however it's named) is something
+        // an external caller can also set. A plain static field has no such surface: nothing about
+        // starting this Activity from outside the process can populate it.
+        @Volatile
+        var pendingInternalPath: String? = null
     }
 }
 
