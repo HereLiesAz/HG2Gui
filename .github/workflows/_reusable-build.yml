@@ -152,12 +152,6 @@ jobs:
           git tag -fa "$TAG_NAME" -m "Automated Release"
           git push origin "refs/tags/$TAG_NAME" --force
 
-          # Handle existing release update
-          OLD_ASSETS=$(gh release view "$TAG_NAME" --json assets --jq '.assets[].name' || true)
-          for OLD_ASSET in $OLD_ASSETS; do
-             gh release delete-asset "$TAG_NAME" "$OLD_ASSET" -y || true
-          done
-
           # `gh release edit` only works on a release that already exists - it can't create one,
           # so the first build under a new TAG_NAME (e.g. right after a versionMajor/versionMinor
           # bump, since that's what TAG_NAME is keyed on) had no release to edit and failed the
