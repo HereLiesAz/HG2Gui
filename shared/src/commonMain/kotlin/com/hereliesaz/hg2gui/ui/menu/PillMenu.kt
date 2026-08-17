@@ -607,6 +607,7 @@ private fun StackPill(
             // scrolled into the fixed row-0 spot gets the same treatment - primed to be tapped
             // next, not yet picked.
             selected = (leaving && isHost) || (aligned && !leaving),
+            touchTargetHeight = ROW_PITCH,
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 // The row-varied width is only for pills staying in the browsing stack - the one
@@ -635,6 +636,7 @@ private fun HostPill(node: MenuNode, rowsBelow: Int, onClick: () -> Unit) {
             cap = node.cap,
             hue = Azphalt.hueOf(node.id),
             selected = true,
+            touchTargetHeight = ROW_PITCH,
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .fillMaxWidth(HOST_WIDTH)
@@ -757,6 +759,7 @@ private fun ChildPill(
             hue = Azphalt.hueOf(hueOwner),
             // Same "ink means primed" treatment StackPill gives its own row-0-aligned pill.
             selected = aligned,
+            touchTargetHeight = ROW_PITCH,
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .fillMaxWidth(CHILD_WIDTH)
@@ -859,7 +862,10 @@ internal fun Pill(
     // own right edge, the one fixed point DESIGN.md's "anchored by its right end" actually means -
     // so a short label bleeds less past the left edge and a long one bleeds more, instead of every
     // pill's visible capsule starting flush at the same left point regardless of label length.
-    anchor: Alignment = Alignment.BottomEnd
+    anchor: Alignment = Alignment.BottomEnd,
+    // The accessibility-minimum default, overridden by every row-stacked pill - see the comment
+    // where this is actually consumed, on why a row-stacked pill can't safely use the default.
+    touchTargetHeight: Dp = PILL_TOUCH_TARGET
 ) {
     val bg = if (selected) Azphalt.Ink else Azphalt.hues[hue]
     val capBg = if (selected) Azphalt.Yellow else Azphalt.caps[hue]
@@ -878,18 +884,26 @@ internal fun Pill(
     // against the pill's own footprint. PILL_HEIGHT (17dp) is a deliberate Menu Style Guide
     // constant the width-variation and row-pitch math elsewhere in this file depends on staying
     // exact, so it can't simply grow to Android's PILL_TOUCH_TARGET (48dp) minimum. Instead this
-    // outer Box pads out the *clickable* region to PILL_TOUCH_TARGET while the Row painted below
+    // outer Box pads out the *clickable* region to [touchTargetHeight] while the Row painted below
     // stays exactly PILL_HEIGHT tall - the same "invisible larger tap zone around a small visible
     // element" pattern GuideReaderScreen's Chip (UI-7) uses. The padding is pinned to the bottom
     // edge (defaultMinSize + a Bottom* anchor) rather than split evenly above and below: every
     // pill here is itself bottom-anchored (aligned to a Bottom* row position, then lifted into its
     // row by translationY), so bottom-anchoring the touch target too means the extra height only
-    // ever extends upward - toward the next row up, exactly where ROW_PITCH's 3dp gap actually is
-    // - without nudging the visible pill's own on-screen position by even a pixel. [anchor]'s
-    // Start/End half is the separate, horizontal half of this same alignment - see the comment on
-    // the parameter itself.
+    // ever extends upward, toward the next row up - never nudging the visible pill's own on-screen
+    // position by even a pixel, but eating into that next row's own space by however much the
+    // target overshoots PILL_HEIGHT. [touchTargetHeight] is a real, enforced bound on that
+    // overshoot, not a "should be fine" hope: a row-stacked pill (StackPill/HostPill/ChildPill)
+    // passes ROW_PITCH itself here, capping the touch target at exactly the gap to the next row so
+    // two rows' tap zones can never overlap - PILL_TOUCH_TARGET's full 48dp would reach 31dp past
+    // a 17dp pill into rows *above* it, and since later-declared rows paint (and hit-test) on top
+    // of earlier ones, a lower row's oversized target would silently steal taps aimed at whatever
+    // pill actually sits under the user's finger higher up the stack. TrailCrumb - a single
+    // horizontal row, not lifted into a stack of its own - keeps the full accessibility-minimum
+    // default since it has no neighboring row to overlap. [anchor]'s Start/End half is the
+    // separate, horizontal half of this same alignment - see the comment on that parameter.
     Box(
-        modifier.defaultMinSize(minHeight = PILL_TOUCH_TARGET),
+        modifier.defaultMinSize(minHeight = touchTargetHeight),
         contentAlignment = anchor
     ) {
         Row(
@@ -915,6 +929,13 @@ internal fun Pill(
                 text = label.uppercase(),
                 color = fg,
                 fontSize = 6.sp,
+                // Text() with no `style` inherits LocalTextStyle - MaterialTheme's own
+                // ProvideTextStyle(typography.bodyLarge), whose lineHeight is a fixed 24.sp. An
+                // overridden fontSize alone doesn't touch that: the merged style keeps the
+                // inherited 24.sp line box around a 6sp glyph, and both this Row and the cap Box
+                // below clip to their own much shorter fixed height, cutting most of the glyph
+                // away. Matching lineHeight to fontSize is what actually fixes it, not the clip.
+                lineHeight = 6.sp,
                 fontWeight = FontWeight.ExtraBold,
                 letterSpacing = 0.09.em,
                 maxLines = 1,
@@ -934,6 +955,10 @@ internal fun Pill(
                         text = cap.uppercase(),
                         color = capFg,
                         fontSize = 5.sp,
+                        // Same inherited-lineHeight bug as the label above, worse here since this
+                        // Box is only 10dp tall - the inherited 24.sp line box left only the very
+                        // top sliver of the cap's own glyphs inside that clip.
+                        lineHeight = 5.sp,
                         fontWeight = FontWeight.ExtraBold
                     )
                 }
