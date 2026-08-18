@@ -239,6 +239,15 @@ private fun rootWidthFraction(row: Int): Float {
     val stepsDown = intArrayOf(0, 1, 2, 1, 2)[row % 5]
     return HOST_WIDTH - ROOT_WIDTH_STEP * stepsDown
 }
+
+// Same "so the stack reads as a stack" cycling rootWidthFraction gives the root stack, scaled to
+// CHILD_WIDTH's own narrower range - a child band is a stack too, and was the one place still
+// rendering every pill at one identical width instead of varying by row.
+private const val CHILD_WIDTH_STEP = 0.02f
+private fun childWidthFraction(localIndex: Int): Float {
+    val stepsDown = intArrayOf(0, 1, 2, 1, 2)[localIndex % 5]
+    return CHILD_WIDTH - CHILD_WIDTH_STEP * stepsDown
+}
 // HostPill is HOST_WIDTH wide, offset left by (1 - HOST_RIGHT_EDGE) * HOST_WIDTH, so its right
 // edge lands at HOST_WIDTH * HOST_RIGHT_EDGE of the full width. The trail row shares row 0 with
 // the host, and reads as a continuation of it - "each pill overlapped by the one before it," the
@@ -485,13 +494,23 @@ fun PillMenu(
                     // real I/O (a directory listing, a PATH scan), and remember(anchor.id) keeps
                     // that to one call per navigation into this node.
                     val effectiveChildren = remember(anchor.id) { anchor.resolveChildren?.invoke() ?: anchor.children }
+                    // ChildBand's own `selected == null` check only guards against a second tap
+                    // landing on one of ITS OWN sibling pills - it has no way to know about
+                    // HostPill or TrailRow, which sit outside it and keep accepting taps for the
+                    // whole DROP_MS+SWING_MS hand-off delay below, before `trail` actually
+                    // updates and swaps in the next band. A tap landing there during that window
+                    // still fires against the *old* anchor - e.g. HostPill resetting all the way
+                    // back to Browsing - even though a pick already committed and is mid-flight.
+                    // Resets itself the instant `anchor.id` actually changes (remember's key),
+                    // exactly when the next band takes over.
+                    var pendingPick by remember(anchor.id) { mutableStateOf(false) }
 
                     if (effectiveChildren.isNotEmpty()) {
                         key(anchor.id) {
                             ChildBand(
                                 children = effectiveChildren,
-                                hueOwner = host.id,
                                 onPick = { child ->
+                                    pendingPick = true
                                     if (child.wizardId != null && child.settleBeforeWizard) {
                                         // This wizard anchors an animation to the crumb's actual
                                         // landing spot, so it can't fire until the crumb exists and
@@ -538,9 +557,11 @@ fun PillMenu(
                         trail = trail,
                         hueOwner = host.id,
                         onTapCrumb = { i ->
-                            trail = trail.take(i)
-                            tokens = trail.mapNotNull { it.tokenValue() }
-                            onRun(tokens, false)
+                            if (!pendingPick) {
+                                trail = trail.take(i)
+                                tokens = trail.mapNotNull { it.tokenValue() }
+                                onRun(tokens, false)
+                            }
                         },
                         onCrumbPositioned = onCrumbPositioned
                     )
@@ -549,10 +570,12 @@ fun PillMenu(
                         node = host,
                         rowsBelow = rowsBelow,
                         onClick = {
-                            phase = Phase.Browsing
-                            trail = emptyList()
-                            tokens = emptyList()
-                            onRun(tokens, false)
+                            if (!pendingPick) {
+                                phase = Phase.Browsing
+                                trail = emptyList()
+                                tokens = emptyList()
+                                onRun(tokens, false)
+                            }
                         }
                     )
                 }
@@ -672,7 +695,6 @@ private fun HostPill(node: MenuNode, rowsBelow: Int, onClick: () -> Unit) {
 @Composable
 private fun ChildBand(
     children: List<MenuNode>,
-    hueOwner: String,
     onPick: (MenuNode) -> Unit
 ) {
     // No key needed here - the call site already wraps this whole band in key(anchor.id), so a
@@ -687,7 +709,6 @@ private fun ChildBand(
                 ChildPill(
                     node = child,
                     localIndex = idx,
-                    hueOwner = hueOwner,
                     scrollOffsetPx = stackScroll.offsetPx,
                     leaving = selected != null && !isSelected,
                     droppingOut = isSelected,
@@ -708,7 +729,6 @@ private fun ChildBand(
 private fun ChildPill(
     node: MenuNode,
     localIndex: Int,
-    hueOwner: String,
     scrollOffsetPx: Float,
     leaving: Boolean,
     droppingOut: Boolean,
@@ -767,13 +787,17 @@ private fun ChildPill(
         Pill(
             label = node.label,
             cap = node.cap,
-            hue = Azphalt.hueOf(hueOwner),
+            // Each pill in the band its own hue, the same way StackPill's root stack already
+            // varies by the pill's own id rather than sharing one color across every row -
+            // hueOwner is still threaded through for TrailCrumb, where a shared color is the
+            // point (the trail reads as one continuous path off the host), just not here.
+            hue = Azphalt.hueOf(node.id),
             // Same "ink means primed" treatment StackPill gives its own row-0-aligned pill.
             selected = aligned,
             touchTargetHeight = ROW_PITCH,
             modifier = Modifier
                 .align(Alignment.BottomStart)
-                .fillMaxWidth(CHILD_WIDTH)
+                .fillMaxWidth(childWidthFraction(localIndex))
                 .offsetByFractionOfParent(CHILD_LEFT + leaveOffset.value)
                 .graphicsLayer {
                     transformOrigin =
