@@ -877,6 +877,10 @@ private fun TrailCrumb(
         // instead of an empty margin ahead of it.
         anchor = Alignment.BottomStart,
         stretch = false,
+        // Guarantees real trailing space behind every crumb's own label/cap, long or short - see
+        // extraEndPadding's own doc comment on Pill() for why a floor-width crumb's padding alone
+        // isn't enough once a label's content outgrows that floor.
+        extraEndPadding = -TRAIL_OVERLAP,
         modifier = Modifier
             .defaultMinSize(minWidth = 56.dp)
             .zIndex(zIndex)
@@ -910,7 +914,15 @@ internal fun Pill(
     stretch: Boolean = true,
     // The accessibility-minimum default, overridden by every row-stacked pill - see the comment
     // where this is actually consumed, on why a row-stacked pill can't safely use the default.
-    touchTargetHeight: Dp = PILL_TOUCH_TARGET
+    touchTargetHeight: Dp = PILL_TOUCH_TARGET,
+    // Zero for every pill except TrailCrumb, which passes -TRAIL_OVERLAP here: a short crumb's
+    // own floor-padding already keeps a shingled neighbor's overlap off its label (see [anchor]'s
+    // own comment), but a crumb whose label is long enough to fill or exceed that 56dp floor has
+    // no such buffer - the next crumb's overlap would land squarely on this one's own trailing
+    // glyphs otherwise. Padding the content out by at least the overlap amount guarantees real,
+    // opaque space back there for every crumb, long or short, so the overlap zone can never reach
+    // actual text - independent of which crumb z-order happens to paint on top.
+    extraEndPadding: Dp = 0.dp
 ) {
     val bg = if (selected) Azphalt.Ink else Azphalt.hues[hue]
     val capBg = if (selected) Azphalt.Yellow else Azphalt.caps[hue]
@@ -965,7 +977,7 @@ internal fun Pill(
                 }
                 .clip(RoundedCornerShape(percent = 50))
                 .background(bg)
-                .padding(start = 12.dp, end = 6.dp),
+                .padding(start = 12.dp, end = 6.dp + extraEndPadding),
             verticalAlignment = Alignment.CenterVertically,
             // "Label and end-cap sit together at the right end of the pill, in that order, 9px
             // apart" - the style guide's own literal gap value.
