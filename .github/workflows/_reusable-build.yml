@@ -164,22 +164,24 @@ jobs:
             gh release create "$TAG_NAME" --prerelease --title "Latest Build ($TAG_NAME)" --notes "Auto-build from $GITHUB_SHA" --target "$GITHUB_SHA"
           fi
 
-          # This tag is a single rolling "latest" release, not a version archive - each APK's own
-          # filename embeds its full version for traceability (see composeApp/build.gradle.kts),
-          # but only the CURRENT build's asset should ever be here. Without this, GitHub's asset
-          # list sorts alphabetically, not by version or date - "...0.7.9....apk" sorts *after*
-          # "...0.7.11....apk" - so an old build left sitting here can look like the latest one
-          # and get downloaded instead of it. `--clobber` on the upload below only replaces a
-          # same-named asset (i.e. an exact re-run of the same version); every differently-named
-          # one from a previous build has to be deleted explicitly first.
-          if [ "$RELEASE_EXISTS" = true ]; then
-            OLD_ASSETS=$(gh release view "$TAG_NAME" --json assets --jq '.assets[].name')
-            for OLD_ASSET in $OLD_ASSETS; do
-              gh release delete-asset "$TAG_NAME" "$OLD_ASSET" -y || true
-            done
-          fi
-
-          # Find and upload all artifacts matching pattern
+          # Every build's own versioned APK accumulates here on purpose - older builds are kept,
+          # not deleted, so a previously-shared download link keeps working and the release page
+          # is a real history. But GitHub's asset list sorts alphabetically, not by version or
+          # date - "...0.7.9....apk" sorts *after* "...0.7.11....apk" - so with several versions
+          # sitting side by side, nothing marks which one is actually current. Alongside each
+          # file's own versioned name, also upload it under a second, fixed "-latest.apk" name
+          # that always sits at the same spot in the list and always gets overwritten
+          # (--clobber) with whatever just built - an unambiguous, permanent link to "whatever's
+          # newest right now" that coexists with the growing version history instead of replacing
+          # it.
           for FILE in ${{ inputs.artifact_path_pattern }}; do
-            [ -f "$FILE" ] && gh release upload "$TAG_NAME" "$FILE" --clobber
+            [ -f "$FILE" ] || continue
+            gh release upload "$TAG_NAME" "$FILE" --clobber
+            BASE="$(basename "$FILE")"
+            ALIAS="$(echo "$BASE" | sed -E 's/-[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+\.apk$/-latest.apk/')"
+            if [ "$ALIAS" != "$BASE" ]; then
+              ALIAS_PATH="$(dirname "$FILE")/$ALIAS"
+              cp "$FILE" "$ALIAS_PATH"
+              gh release upload "$TAG_NAME" "$ALIAS_PATH" --clobber
+            fi
           done
