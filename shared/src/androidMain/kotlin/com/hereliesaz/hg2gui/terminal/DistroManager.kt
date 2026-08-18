@@ -166,6 +166,7 @@ object DistroManager {
                         val outFile = File(prefix, entry.name)
                         outFile.parentFile?.mkdirs()
                         outFile.outputStream().buffered().use { out -> zis.copyTo(out) }
+                        rewriteShebangIfNeeded(outFile, prefix)
                     }
                 }
                 zis.closeEntry()
@@ -223,6 +224,67 @@ object DistroManager {
                 }
             }
         }
+
+        writeAptConf(prefix)
+    }
+
+    // Every script Termux's bootstrap builder compiled - `pkg` among them - gets a shebang line
+    // baked at ITS build time against ITS package: `#!/data/data/com.termux/files/usr/bin/bash`.
+    // That path doesn't exist under this app's sandbox, so the kernel's own "bad interpreter"
+    // check fails before bash (or whatever's named) ever runs - a real command extractBootstrap
+    // never touches otherwise, since only the ~330 manifest-covered ELF files need the
+    // exec-exemption trick; a plain script just needs its own first line to name a real path.
+    // Only the first line is ever touched - nothing else about the file's content changes.
+    private fun rewriteShebangIfNeeded(file: File, prefix: File) {
+        if (file.length() < 3) return
+        val bytes = file.readBytes()
+        if (bytes.size < 2 || bytes[0] != '#'.code.toByte() || bytes[1] != '!'.code.toByte()) return
+        val newlineIndex = bytes.indexOf('\n'.code.toByte())
+        val firstLineEnd = if (newlineIndex < 0) bytes.size else newlineIndex
+        val firstLine = String(bytes, 0, firstLineEnd, Charsets.UTF_8)
+        if (!firstLine.contains(HARDCODED_TERMUX_PREFIX)) return
+        val patchedLine = firstLine.replace(HARDCODED_TERMUX_PREFIX, prefix.absolutePath)
+        val rest = if (newlineIndex < 0) ByteArray(0) else bytes.copyOfRange(newlineIndex, bytes.size)
+        file.writeBytes(patchedLine.toByteArray(Charsets.UTF_8) + rest)
+    }
+
+    // apt's own Dir::* settings (where it looks for apt.conf.d, sources.list, its package cache,
+    // dpkg's status file, ...) are compiled in as absolute paths against Termux's own package too
+    // - unlike a shebang line, there's no single first-line fix, since these are baked into
+    // apt/libapt-pkg's own binary as C++ string constants apt reads at startup, before it's ever
+    // consulted a config file. What apt *does* still honor from the environment is APT_CONFIG - a
+    // path to a config file it reads before falling back to those compiled-in defaults - so this
+    // writes one, with every Dir:: apt.conf(5) documents pointed at this app's real prefix
+    // instead, and ShellSession points APT_CONFIG at it for every bootstrap-tier command.
+    private fun writeAptConf(prefix: File) {
+        val p = prefix.absolutePath
+        val aptConfDir = File(prefix, "etc/apt")
+        aptConfDir.mkdirs()
+        File(aptConfDir, "apt.conf").writeText(
+            """
+            Dir "$p/";
+            Dir::Etc "$p/etc/apt/";
+            Dir::Etc::sourcelist "$p/etc/apt/sources.list";
+            Dir::Etc::sourceparts "$p/etc/apt/sources.list.d/";
+            Dir::Etc::vendorlist "$p/etc/apt/vendors.list";
+            Dir::Etc::vendorparts "$p/etc/apt/vendors.list.d/";
+            Dir::Etc::main "$p/etc/apt/apt.conf";
+            Dir::Etc::parts "$p/etc/apt/apt.conf.d/";
+            Dir::Etc::preferences "$p/etc/apt/preferences";
+            Dir::Etc::preferencesparts "$p/etc/apt/preferences.d/";
+            Dir::Etc::trusted "$p/etc/apt/trusted.gpg";
+            Dir::Etc::trustedparts "$p/etc/apt/trusted.gpg.d/";
+            Dir::State "$p/var/lib/apt/";
+            Dir::State::lists "$p/var/lib/apt/lists/";
+            Dir::State::status "$p/var/lib/dpkg/status";
+            Dir::Cache "$p/var/cache/apt/";
+            Dir::Cache::archives "$p/var/cache/apt/archives/";
+            Dir::Log "$p/var/log/apt/";
+            Dir::Bin::methods "$p/lib/apt/methods/";
+            Dir::Bin::solvers:: "$p/lib/apt/solvers/";
+            Dir::Bin::dpkg "$p/bin/dpkg";
+            """.trimIndent()
+        )
     }
 
     private fun makeBinariesExecutable(prefix: File) {
