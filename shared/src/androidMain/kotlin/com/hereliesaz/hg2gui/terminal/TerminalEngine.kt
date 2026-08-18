@@ -31,8 +31,8 @@ class TerminalEngine(
     // offering apt/pkg/coreutils pills the moment the bootstrap directory is actually populated.
     private var shell = ShellSession.forAndroid(home, context)
 
-    // Set whenever `shell` above lands on the last-resort system shell - never for zsh or the
-    // Termux bootstrap, which need no explaining - and consumed (once) by the next real command
+    // Set whenever `shell` above lands on the last-resort system shell - never for the Termux
+    // bootstrap, which needs no explaining - and consumed (once) by the next real command
     // that actually runs on it, so the *reason* a pill like "apt install" fails is visible right
     // in the transcript next to that failure, not silently indistinguishable from any other
     // "command not found". See ShellSession.backendDescription for what's actually in it.
