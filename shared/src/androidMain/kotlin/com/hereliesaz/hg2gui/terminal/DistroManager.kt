@@ -256,6 +256,14 @@ object DistroManager {
     // path to a config file it reads before falling back to those compiled-in defaults - so this
     // writes one, with every Dir:: apt.conf(5) documents pointed at this app's real prefix
     // instead, and ShellSession points APT_CONFIG at it for every bootstrap-tier command.
+    //
+    // Acquire::https::CaInfo is here for a related but separate reason: the bootstrap zip already
+    // ships a real CA bundle at etc/tls/cert.pem (extracted like any other regular file, no fixup
+    // needed for the file itself), but on a genuine Termux install that bundle only becomes the
+    // thing TLS actually consults once the `ca-certificates` package's own postinst runs `trust
+    // extract` to activate it - a dpkg step this extraction never runs, so the bundle just sits
+    // there unused otherwise. Pointing apt straight at the raw bundle sidesteps needing that
+    // activation step at all.
     private fun writeAptConf(prefix: File) {
         val p = prefix.absolutePath
         val aptConfDir = File(prefix, "etc/apt")
@@ -283,6 +291,7 @@ object DistroManager {
             Dir::Bin::methods "$p/lib/apt/methods/";
             Dir::Bin::solvers:: "$p/lib/apt/solvers/";
             Dir::Bin::dpkg "$p/bin/dpkg";
+            Acquire::https::CaInfo "$p/etc/tls/cert.pem";
             """.trimIndent()
         )
     }

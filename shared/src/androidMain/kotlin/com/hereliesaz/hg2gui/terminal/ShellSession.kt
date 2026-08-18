@@ -94,7 +94,12 @@ actual class ShellSession private constructor(
                         // pointed at this app's real prefix instead) before it ever falls back to
                         // those. See DistroManager.writeAptConf's own doc comment for why a config
                         // file, not an env var alone, is what apt actually needs here.
-                        "APT_CONFIG" to "${prefix.absolutePath}/etc/apt/apt.conf"
+                        "APT_CONFIG" to "${prefix.absolutePath}/etc/apt/apt.conf",
+                        // apt.conf's Acquire::https::CaInfo covers apt itself; these are the same
+                        // bundle for every other bootstrap-tier tool that talks TLS (curl, wget,
+                        // git, ...) via the conventions each already knows to check.
+                        "SSL_CERT_FILE" to "${prefix.absolutePath}/etc/tls/cert.pem",
+                        "CURL_CA_BUNDLE" to "${prefix.absolutePath}/etc/tls/cert.pem"
                     )
                     val session = ShellSession(bootstrapHome, arrayOf(bash.absolutePath, "-l"), env, "bash (Termux bootstrap)")
                     if (session.survivedStartup()) return session
