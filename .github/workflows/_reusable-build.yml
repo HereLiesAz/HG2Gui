@@ -155,15 +155,33 @@ jobs:
           # `gh release edit` only works on a release that already exists - it can't create one,
           # so the first build under a new TAG_NAME (e.g. right after a versionMajor/versionMinor
           # bump, since that's what TAG_NAME is keyed on) had no release to edit and failed the
-          # whole step with "release not found". `gh release view` above already tells us which
-          # case we're in.
+          # whole step with "release not found".
+          RELEASE_EXISTS=false
           if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            RELEASE_EXISTS=true
             gh release edit "$TAG_NAME" --prerelease --title "Latest Build ($TAG_NAME)" --notes "Auto-build from $GITHUB_SHA" --target "$GITHUB_SHA"
           else
             gh release create "$TAG_NAME" --prerelease --title "Latest Build ($TAG_NAME)" --notes "Auto-build from $GITHUB_SHA" --target "$GITHUB_SHA"
           fi
-          
-          # Find and upload all artifacts matching pattern
+
+          # Every build's own versioned APK accumulates here on purpose - older builds are kept,
+          # not deleted, so a previously-shared download link keeps working and the release page
+          # is a real history. But GitHub's asset list sorts alphabetically, not by version or
+          # date - "...0.7.9....apk" sorts *after* "...0.7.11....apk" - so with several versions
+          # sitting side by side, nothing marks which one is actually current. Alongside each
+          # file's own versioned name, also upload it under a second, fixed "-latest.apk" name
+          # that always sits at the same spot in the list and always gets overwritten
+          # (--clobber) with whatever just built - an unambiguous, permanent link to "whatever's
+          # newest right now" that coexists with the growing version history instead of replacing
+          # it.
           for FILE in ${{ inputs.artifact_path_pattern }}; do
-            [ -f "$FILE" ] && gh release upload "$TAG_NAME" "$FILE" --clobber
+            [ -f "$FILE" ] || continue
+            gh release upload "$TAG_NAME" "$FILE" --clobber
+            BASE="$(basename "$FILE")"
+            ALIAS="$(echo "$BASE" | sed -E 's/-[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+\.apk$/-latest.apk/')"
+            if [ "$ALIAS" != "$BASE" ]; then
+              ALIAS_PATH="$(dirname "$FILE")/$ALIAS"
+              cp "$FILE" "$ALIAS_PATH"
+              gh release upload "$TAG_NAME" "$ALIAS_PATH" --clobber
+            fi
           done
