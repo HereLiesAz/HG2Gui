@@ -526,17 +526,14 @@ fun PillMenu(
                         }
                     }
 
-                    HostPill(
-                        node = host,
-                        rowsBelow = rowsBelow,
-                        onClick = {
-                            phase = Phase.Browsing
-                            trail = emptyList()
-                            tokens = emptyList()
-                            onRun(tokens, false)
-                        }
-                    )
-
+                    // TrailRow first, HostPill second: with neither given an explicit zIndex, a
+                    // plain Box stacks its children in declaration order, later on top - so
+                    // whichever of these two is declared last wins the shared boundary where the
+                    // trail's own TRAIL_LEFT_OF_FULL overlap runs it into the host. The host reads
+                    // as the anchor the whole trail hangs off of - conceptually "before" crumb
+                    // zero, the same way crumb zero sits on top of crumb one below - so it has to
+                    // be declared after TrailRow, not before, to stay on top of that first crumb
+                    // instead of being covered by it.
                     TrailRow(
                         trail = trail,
                         hueOwner = host.id,
@@ -546,6 +543,17 @@ fun PillMenu(
                             onRun(tokens, false)
                         },
                         onCrumbPositioned = onCrumbPositioned
+                    )
+
+                    HostPill(
+                        node = host,
+                        rowsBelow = rowsBelow,
+                        onClick = {
+                            phase = Phase.Browsing
+                            trail = emptyList()
+                            tokens = emptyList()
+                            onRun(tokens, false)
+                        }
                     )
                 }
             }
@@ -802,9 +810,10 @@ private fun TrailRow(
                 .offsetByFractionOfParent(TRAIL_LEFT_OF_FULL),
             // Negative spacing overlaps each crumb into the one after it, like a fanned hand of
             // cards - the same shingled read as the rest of this menu's overlaps/bleeds. A plain
-            // Row draws later children over earlier ones, which would overlap backwards ("each
-            // crumb sits ON the one before it" instead of the other way around); TrailCrumb's own
-            // zIndex below reverses that so a crumb is drawn *under* every crumb that follows it.
+            // Row draws later children over earlier ones, which would read backwards for a trail
+            // (the newest pick burying the path that led to it); TrailCrumb's own zIndex below
+            // reverses that, so each crumb draws on top of every crumb that comes after it -
+            // earlier picks stay on top, the way an actual stack of cards fans out.
             horizontalArrangement = Arrangement.spacedBy(TRAIL_OVERLAP)
         ) {
             trail.forEachIndexed { i, node ->

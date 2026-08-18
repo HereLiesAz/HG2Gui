@@ -62,127 +62,19 @@ actual class ShellSession private constructor(
     companion object {
         private const val SENTINEL = "__HG2GUI_EOC_a7f3__"
         private const val DEFAULT_SHELL = "/system/bin/sh"
-        private const val ZSH_LIB_NAME = "libzsh.so"
         private const val TIMEOUT_MS = 15_000L
         private const val STARTUP_PROBE_MS = 300L
         private const val PROMPT_IDLE_MS = 400L
 
-        private fun setupZshrc(home: File?) {
-            if (home == null) return
-            try {
-                if (!home.exists()) home.mkdirs()
-                val zshrc = File(home, ".zshrc")
-                if (!zshrc.exists()) {
-                    zshrc.writeText(
-                        "# --- Completion ---\n" +
-                        "autoload -Uz compinit\n" +
-                        "compinit -C\n" +
-                        "zstyle ':completion:*' menu select\n" +
-                        "\n" +
-                        "# --- History search on the arrow keys, prefix-aware ---\n" +
-                        "autoload -Uz up-line-or-beginning-search down-line-or-beginning-search\n" +
-                        "zle -N up-line-or-beginning-search\n" +
-                        "zle -N down-line-or-beginning-search\n" +
-                        "bindkey '^[[A' up-line-or-beginning-search\n" +
-                        "bindkey '^[[B' down-line-or-beginning-search\n" +
-                        "\n" +
-                        "# --- command-not-found hints ---\n" +
-                        "command_not_found_handler() {\n" +
-                        "  local cmd=\$1 best=\"\" bestlen=999\n" +
-                        "  for c in \${(k)commands} \${(k)aliases}; do\n" +
-                        "    if [[ \$c == \${cmd}* || \$cmd == \${c}* ]]; then\n" +
-                        "      local len=\${#c}\n" +
-                        "      (( len < bestlen )) && { best=\$c; bestlen=\$len }\n" +
-                        "    fi\n" +
-                        "  done\n" +
-                        "  if [[ -n \$best ]]; then\n" +
-                        "    print -u2 \"zsh: command not found: \$cmd (did you mean: \$best?)\"\n" +
-                        "  else\n" +
-                        "    print -u2 \"zsh: command not found: \$cmd\"\n" +
-                        "  fi\n" +
-                        "  return 127\n" +
-                        "}\n" +
-                        "\n" +
-                        "# --- Autosuggestions ---\n" +
-                        "_hg2gui_suggest() {\n" +
-                        "  POSTDISPLAY=\"\"\n" +
-                        "  [[ -z \$BUFFER ]] && return\n" +
-                        "  local i\n" +
-                        "  for (( i = HISTCMD; i >= 1; i-- )); do\n" +
-                        "    local h=\${history[\$i]}\n" +
-                        "    if [[ -n \$h && \$h == \${BUFFER}* && \$h != \$BUFFER ]]; then\n" +
-                        "      POSTDISPLAY=\${h#\$BUFFER}\n" +
-                        "      return\n" +
-                        "    fi\n" +
-                        "  done\n" +
-                        "}\n" +
-                        "_hg2gui_suggest_widget() {\n" +
-                        "  zle .\$WIDGET\n" +
-                        "  _hg2gui_suggest\n" +
-                        "}\n" +
-                        "for w in self-insert backward-delete-char delete-char backward-kill-word; do\n" +
-                        "  zle -N \$w _hg2gui_suggest_widget\n" +
-                        "done\n" +
-                        "_hg2gui_accept_suggestion() {\n" +
-                        "  if [[ -n \$POSTDISPLAY && \$CURSOR -eq \${#BUFFER} ]]; then\n" +
-                        "    BUFFER+=\"\$POSTDISPLAY\"\n" +
-                        "    POSTDISPLAY=\"\"\n" +
-                        "    CURSOR=\${#BUFFER}\n" +
-                        "  else\n" +
-                        "    zle forward-char\n" +
-                        "  fi\n" +
-                        "}\n" +
-                        "zle -N _hg2gui_accept_suggestion\n" +
-                        "bindkey '^[[C' _hg2gui_accept_suggestion\n" +
-                        "\n" +
-                        "# --- \"you should use\" style alias hints ---\n" +
-                        "_hg2gui_alias_hint() {\n" +
-                        "  local ran=\"\$1\" name expansion\n" +
-                        "  for name in \${(k)aliases}; do\n" +
-                        "    expansion=\${aliases[\$name]}\n" +
-                        "    if [[ -n \$expansion && \"\$ran\" == \"\$expansion\"* && \"\$ran\" != \"\$name\"* ]]; then\n" +
-                        "      print -u2 \"hint: alias \$name='\$expansion'\"\n" +
-                        "      return\n" +
-                        "    fi\n" +
-                        "  done\n" +
-                        "}\n" +
-                        "autoload -Uz add-zsh-hook\n" +
-                        "add-zsh-hook preexec _hg2gui_alias_hint\n" +
-                        "\n" +
-                        "if command -v bat >/dev/null 2>&1; then\n" +
-                        "  alias cat='bat --paging=never'\n" +
-                        "fi\n" +
-                        "if command -v fzf >/dev/null 2>&1; then\n" +
-                        "  eval \"\$(fzf --zsh 2>/dev/null)\"\n" +
-                        "fi\n" +
-                        "\n" +
-                        "printf '\\033P\$q\"p\\033\\\\'\n"
-                    )
-                }
-            } catch (e: Exception) {
-                // Ignore
-            }
-        }
-
+        // Zsh was bundled the same way as the Termux bootstrap (a flattened, exec-exempt native
+        // lib) but its own RUNPATH/dependency chain was never patched the way the bootstrap's
+        // was - see the bootstrap RUNPATH fix's commit for the underlying bug. Pulled out for now
+        // rather than shipping a shell tier known to carry the same defect unfixed; forAndroid()
+        // goes straight to the Termux bootstrap.
         fun forAndroid(home: File?, context: Context): ShellSession {
             // Collected only to explain the last-resort fallback below, if it comes to that -
-            // never surfaced when zsh or the bootstrap actually works.
+            // never surfaced when the bootstrap actually works.
             val reasons = mutableListOf<String>()
-
-            val zsh = File(context.applicationInfo.nativeLibraryDir, ZSH_LIB_NAME)
-            if (zsh.canExecute()) {
-                setupZshrc(home)
-                val env = buildMap {
-                    put("LD_LIBRARY_PATH", zsh.parent.orEmpty())
-                    if (home != null) put("HOME", home.absolutePath)
-                }
-                val session = ShellSession(home, arrayOf(zsh.absolutePath), env, "zsh (bundled)")
-                if (session.survivedStartup()) return session
-                session.close()
-                reasons += "zsh started but exited immediately"
-            } else {
-                reasons += "zsh isn't bundled for this device's architecture"
-            }
 
             if (DistroManager.isInstalled(context)) {
                 val prefix = DistroManager.prefixDir(context)
@@ -203,8 +95,8 @@ actual class ShellSession private constructor(
                     session.close()
                     // The most likely real cause on a modern device: Android's blocked executing
                     // binaries out of app-private storage since API 29 (write-xor-execute) unless
-                    // they're the APK's own bundled native libs (like libzsh.so above) - a
-                    // downloaded-and-extracted bin/bash never qualifies for that exemption.
+                    // they're the APK's own bundled native libs - a downloaded-and-extracted
+                    // bin/bash never qualifies for that exemption on its own.
                     reasons += "the Termux bootstrap's bash started but exited immediately - " +
                         "possibly blocked from executing a binary extracted into app-private " +
                         "storage (Android disallows this since API 29 unless it shipped in the APK)"
