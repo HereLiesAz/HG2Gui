@@ -88,7 +88,13 @@ actual class ShellSession private constructor(
                         "PATH" to "${prefix.absolutePath}/bin",
                         "LD_LIBRARY_PATH" to "${prefix.absolutePath}/lib",
                         "TMPDIR" to "${prefix.absolutePath}/tmp",
-                        "LANG" to "en_US.UTF-8"
+                        "LANG" to "en_US.UTF-8",
+                        // apt's own Dir::* defaults are compiled in against Termux's own package -
+                        // this points it at the apt.conf DistroManager writes (with every Dir::
+                        // pointed at this app's real prefix instead) before it ever falls back to
+                        // those. See DistroManager.writeAptConf's own doc comment for why a config
+                        // file, not an env var alone, is what apt actually needs here.
+                        "APT_CONFIG" to "${prefix.absolutePath}/etc/apt/apt.conf"
                     )
                     val session = ShellSession(bootstrapHome, arrayOf(bash.absolutePath, "-l"), env, "bash (Termux bootstrap)")
                     if (session.survivedStartup()) return session
