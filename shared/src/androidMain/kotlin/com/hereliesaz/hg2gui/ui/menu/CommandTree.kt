@@ -4,6 +4,7 @@ import android.content.Context
 import com.hereliesaz.hg2gui.managers.OsContextStore
 import com.hereliesaz.hg2gui.managers.SshPresets
 import com.hereliesaz.hg2gui.managers.WorkflowStore
+import com.hereliesaz.hg2gui.terminal.AptCatalog
 import com.hereliesaz.hg2gui.terminal.DistroManager
 import com.hereliesaz.hg2gui.terminal.DpkgCatalog
 import com.hereliesaz.hg2gui.ui.ssh.SshFlow
@@ -295,8 +296,36 @@ object CommandTree {
         )
     }
 
-    private fun shellLeaf(fullName: String, label: String): MenuNode {
-        val hints = SHELL_HINTS[fullName].orEmpty().map { MenuNode("sh/$fullName/$it", it) }
+    /** A single SHELL_HINTS entry, turned into a real pill. Every hint is a flat, terminal leaf
+     *  by default - picking it just types that literal text and stops there. Every real package
+     *  manager here has one hint that actually needs a browsable target instead:
+     *  apt/apt-get/pkg's "install" wants a *name* from the repo catalog (apt update's own
+     *  downloaded index); dpkg's "-i" wants a *path* to an already-downloaded .deb, not a
+     *  repo-resolved name, so it gets the same file picker every other shell command's own
+     *  file… child already uses, not the catalog. Shared by [shellLeaf] and [groupByFamily]'s own
+     *  bareHints - a hyphenated family (apt-get/apt-cache/... alongside bare "apt") builds the
+     *  bare command's hints separately from its family members, so both call this rather than
+     *  only one of them silently missing the special-casing. */
+    private fun hintChild(context: Context, fullName: String, hint: String): MenuNode = when {
+        fullName in PACKAGE_MANAGER_COMMANDS && hint == "install" ->
+            installNode(context, "sh/$fullName/install")
+        // "-i" still has to actually reach the command line as its own token - unlike
+        // FILE_PARAM_COMMANDS' "edit" (where the file *is* the whole rest of the command), dpkg
+        // needs both "-i" and the path after it. Wrapping the picker as this node's own child,
+        // instead of swapping "-i" out for it directly, keeps "-i" emitting normally while still
+        // drilling into the same picker every other file… child uses.
+        fullName == "dpkg" && hint == "-i" ->
+            MenuNode(
+                id = "sh/$fullName/-i",
+                label = "-i",
+                cap = "1",
+                children = listOf(FileBrowser.pickerNode("sh/$fullName/-i/file"))
+            )
+        else -> MenuNode("sh/$fullName/$hint", hint)
+    }
+
+    private fun shellLeaf(context: Context, fullName: String, label: String): MenuNode {
+        val hints = SHELL_HINTS[fullName].orEmpty().map { hint -> hintChild(context, fullName, hint) }
         val children = hints + FileBrowser.pickerNode("sh/$fullName/file")
         return MenuNode(
             id = "sh/$fullName",
@@ -305,6 +334,63 @@ object CommandTree {
             children = children,
             value = fullName
         )
+    }
+
+    /** The "install" pill under apt/pkg/apt-get: still contributes "install" to the command
+     *  line like any other hint (it really is the next literal word), but instead of stopping
+     *  there, drills into [AptCatalog]'s categorized package list - resolved lazily since
+     *  parsing ~2900 index entries on every tree rebuild would be wasted work the vast majority
+     *  of the time this pill never actually gets opened. */
+    private fun installNode(context: Context, id: String): MenuNode = MenuNode(
+        id = id,
+        label = "install",
+        cap = "browse",
+        resolveChildren = { installCategories(context) }
+    )
+
+    /** A category is purely navigational, same reasoning as [scanShell]'s own category nodes -
+     *  "Libraries" or "Networking" is never itself part of the command line, only whatever
+     *  package a pick resolves to inside it. */
+    private fun installCategories(context: Context): List<MenuNode> {
+        val prefix = DistroManager.prefixDir(context)
+        if (!AptCatalog.hasIndex(prefix)) {
+            return listOf(
+                MenuNode(
+                    id = "aptcat/none",
+                    label = "run 'apt update' first",
+                    cap = "…",
+                    emitsToken = false
+                )
+            )
+        }
+        val byCategory = AptCatalog.all(prefix)
+            .groupBy { AptCatalog.categoryOf(it.name, it.description) }
+
+        return byCategory.entries.sortedBy { it.key }.map { (category, members) ->
+            val sorted = members.sortedBy { it.name }
+            val capped = sorted.take(MAX_SHELL_ENTRIES)
+            val children = capped.map { pkg ->
+                MenuNode(id = "aptcat/$category/${pkg.name}", label = pkg.name)
+            } + if (sorted.size > capped.size) {
+                listOf(
+                    MenuNode(
+                        id = "aptcat/$category/more",
+                        label = "+${sorted.size - capped.size} more",
+                        cap = "…",
+                        emitsToken = false
+                    )
+                )
+            } else {
+                emptyList()
+            }
+            MenuNode(
+                id = "aptcat/$category",
+                label = category,
+                cap = children.size.toString(),
+                children = children,
+                emitsToken = false
+            )
+        }
     }
 
     /**
@@ -332,11 +418,12 @@ object CommandTree {
             // real SHELL_HINTS of its own would never be able to show them, since this host's
             // children were always just the family list.
             val bareHints = if (hasBare) {
-                SHELL_HINTS[prefix].orEmpty().map { MenuNode("sh/$prefix/$it", it) }
+                SHELL_HINTS[prefix].orEmpty().map { hint -> hintChild(context, prefix, hint) }
             } else {
                 emptyList()
             }
-            val children = bareHints + members.sorted().map { full -> shellLeaf(full, full.removePrefix("$prefix-")) }
+            val children = bareHints +
+                members.sorted().map { full -> shellLeaf(context, full, full.removePrefix("$prefix-")) }
             nodes.add(
                 MenuNode(
                     id = "sh/$prefix",
@@ -353,7 +440,7 @@ object CommandTree {
 
         for (name in names) {
             if (name in consumed) continue
-            nodes.add(if (name == "ssh") sshLeaf(context) else shellLeaf(name, name))
+            nodes.add(if (name == "ssh") sshLeaf(context) else shellLeaf(context, name, name))
         }
 
         return nodes.sortedBy { it.label }
