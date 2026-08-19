@@ -268,6 +268,17 @@ object DistroManager {
         val p = prefix.absolutePath
         val aptConfDir = File(prefix, "etc/apt")
         aptConfDir.mkdirs()
+
+        // Real Termux only ever runs from a live install apt/dpkg have already been managing -
+        // var/lib/apt and var/cache/apt (and their own "partial" subdirs, where an in-progress
+        // download or list fetch lands before being renamed into place) get created the first
+        // time some package's own postinst or dpkg trigger touches them. This zip is a frozen
+        // snapshot, not a live install, so neither tree exists in it at all - and unlike most of
+        // apt's own Dir::* paths, it won't just mkdir -p these two on demand; a missing "partial"
+        // is a hard Acquire error ("Archives directory ... is missing").
+        File(prefix, "var/cache/apt/archives/partial").mkdirs()
+        File(prefix, "var/lib/apt/lists/partial").mkdirs()
+
         File(aptConfDir, "apt.conf").writeText(
             """
             Dir "$p/";
