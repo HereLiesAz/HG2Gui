@@ -76,6 +76,43 @@ object ShellAliases {
 
     fun looksLikePassword(prompt: String): Boolean = PASSWORD_PATTERN.containsMatchIn(prompt)
 
+    // A bracketed/parenthesized list of single-token choices more general than plain yes/no -
+    // dpkg's conffile prompt ("(Y/I/N/O/D/Z)"), git's interactive add ("[y,n,q,a,d,e,?]"), any
+    // tool offering a short menu inline rather than across several lines. Only the LAST such
+    // group in the accumulated stall text is used - earlier lines can legitimately contain
+    // unrelated bracketed text (explanatory prose above the actual prompt), but the real prompt
+    // a stalled shell is actually waiting on is always the last thing printed.
+    private val BRACKETED_CHOICES_PATTERN = Regex("""[\[(]\s*([A-Za-z0-9?]+(?:\s*[/,]\s*[A-Za-z0-9?]+)+)\s*[\])]""")
+    private const val MAX_BRACKETED_CHOICES = 8
+
+    /** The individual tokens of the last bracketed choice list in [prompt] (e.g. "(Y/I/N/O/D/Z)"
+     *  -> ["Y","I","N","O","D","Z"]), or null if none - checked only after [looksLikeYesNo]
+     *  itself comes back false, so a plain y/n prompt keeps its own dedicated YES/NO pair rather
+     *  than a same-shaped generic list. */
+    fun bracketedChoices(prompt: String): List<String>? {
+        val match = BRACKETED_CHOICES_PATTERN.findAll(prompt).lastOrNull() ?: return null
+        val choices = match.groupValues[1].split(Regex("""\s*[/,]\s*""")).map { it.trim() }.filter { it.isNotEmpty() }
+        return choices.takeIf { it.size in 2..MAX_BRACKETED_CHOICES }
+    }
+
+    // A `select`-style numbered menu spanning several lines - "1) apple", "2) banana", ... -
+    // the shape bash's own `select` builtin prints, along with tzselect/dpkg-reconfigure/
+    // update-alternatives and similar. Requires at least two such lines before treating it as a
+    // menu at all, since a single "1) " could just as easily be an ordinary numbered list in a
+    // file a command happened to cat, not a prompt.
+    private val NUMBERED_CHOICE_LINE = Regex("""(?m)^\s*(\d{1,3})[).]\s+(\S.*)$""")
+    private const val MIN_NUMBERED_CHOICES = 2
+
+    /** (number, label) pairs for a numbered menu found anywhere in [prompt] - so the UI can show
+     *  what each number actually means instead of a bare digit - or null if fewer than
+     *  [MIN_NUMBERED_CHOICES] such lines are present. */
+    fun numberedMenuChoices(prompt: String): List<Pair<String, String>>? {
+        val matches = NUMBERED_CHOICE_LINE.findAll(prompt)
+            .map { it.groupValues[1] to it.groupValues[2].trim() }
+            .toList()
+        return matches.takeIf { it.size >= MIN_NUMBERED_CHOICES }
+    }
+
     /** Closest known command word to [failed], among alias keys/expansions plus [known] extras. */
     fun didYouMean(failed: String, known: List<String> = emptyList()): String? {
         if (failed.isBlank() || table.containsKey(failed)) return null

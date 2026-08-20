@@ -29,6 +29,8 @@ fun SettingsScreen(
     onFullscreenChange: (Boolean) -> Unit,
     fontScalePercent: Int,
     onFontScalePercentChange: (Int) -> Unit,
+    usePty: Boolean,
+    onUsePtyChange: (Boolean) -> Unit,
     onOpenMcpServer: () -> Unit,
     onOpenAiSettings: () -> Unit,
     onBack: () -> Unit
@@ -85,6 +87,22 @@ fun SettingsScreen(
                 step = FONT_SCALE_STEP_PERCENT,
                 label = { "$it%" },
                 onChange = onFontScalePercentChange
+            )
+        }
+
+        SettingRow(
+            title = "Real pseudoterminal",
+            description = "Experimental. Runs commands over the app's own native pty bridge " +
+                "instead of a plain pipe, so full-screen tools (vim, top, less, an interactive " +
+                "REPL) can actually draw a screen instead of breaking. Unverified on real " +
+                "hardware — off is the safe, always-worked default. Takes effect for a new tab " +
+                "or the next app launch, not the one you're in."
+        ) {
+            SegmentedToggle(
+                leftLabel = "PIPE",
+                rightLabel = "PTY",
+                rightSelected = usePty,
+                onSelectRight = onUsePtyChange
             )
         }
 

@@ -7,6 +7,7 @@ import com.hereliesaz.hg2gui.managers.WorkflowStore
 import com.hereliesaz.hg2gui.terminal.AptCatalog
 import com.hereliesaz.hg2gui.terminal.DistroManager
 import com.hereliesaz.hg2gui.terminal.DpkgCatalog
+import com.hereliesaz.hg2gui.terminal.HelpCatalog
 import com.hereliesaz.hg2gui.ui.ssh.SshFlow
 import java.io.File
 
@@ -324,8 +325,18 @@ object CommandTree {
         else -> MenuNode("sh/$fullName/$hint", hint)
     }
 
+    /** Flag/arg hints for one binary: the hand-curated [SHELL_HINTS] entry, if any, followed by
+     *  whatever [HelpCatalog] discovered from that binary's own `--help` output that isn't
+     *  already covered by the curated list - so a hand-picked hint's ordering/wording always
+     *  wins, and discovery only ever adds, never duplicates or overrides. */
+    private fun hintsForBinary(context: Context, fullName: String): List<String> {
+        val curated = SHELL_HINTS[fullName].orEmpty()
+        val discovered = HelpCatalog.hintsFor(context, fullName).filter { it !in curated }
+        return curated + discovered
+    }
+
     private fun shellLeaf(context: Context, fullName: String, label: String): MenuNode {
-        val hints = SHELL_HINTS[fullName].orEmpty().map { hint -> hintChild(context, fullName, hint) }
+        val hints = hintsForBinary(context, fullName).map { hint -> hintChild(context, fullName, hint) }
         val children = hints + FileBrowser.pickerNode("sh/$fullName/file")
         return MenuNode(
             id = "sh/$fullName",
@@ -418,7 +429,7 @@ object CommandTree {
             // real SHELL_HINTS of its own would never be able to show them, since this host's
             // children were always just the family list.
             val bareHints = if (hasBare) {
-                SHELL_HINTS[prefix].orEmpty().map { hint -> hintChild(context, prefix, hint) }
+                hintsForBinary(context, prefix).map { hint -> hintChild(context, prefix, hint) }
             } else {
                 emptyList()
             }
@@ -459,13 +470,12 @@ object CommandTree {
      * root category. A binary from a package not in that map - or not owned by dpkg at all -
      * still shows up, just under "Other".
      */
-    private fun scanShell(context: Context): List<MenuNode> {
-        if (!DistroManager.isInstalled(context)) {
-            return listOf(MenuNode("sh", "Shell", "1", listOf(MenuNode(id = "sh/bootstrap", label = "bootstrap", cap = "run"))))
-        }
-
-        val prefix = DistroManager.prefixDir(context)
-        val binDir = File(prefix, "bin")
+    /** The bootstrap prefix's own bin/ dir and every real, executable binary in it - shared by
+     *  [scanShell] (to build the tree) and [warmHelpCache] (to know what to probe). Null before
+     *  a bootstrap is installed, since there's nothing to discover yet. */
+    private fun discoverBinaries(context: Context): Pair<File, List<String>>? {
+        if (!DistroManager.isInstalled(context)) return null
+        val binDir = File(DistroManager.prefixDir(context), "bin")
         val names = try {
             (binDir.listFiles() ?: emptyArray())
                 .filter { it.isFile && it.canExecute() }
@@ -473,6 +483,24 @@ object CommandTree {
         } catch (e: SecurityException) {
             emptyList()
         }.distinct().sorted()
+        return binDir to names
+    }
+
+    /** Kicks off (or continues) background discovery of `--help` flags for every real binary on
+     *  PATH, so the next tree rebuild's [hintsForBinary] calls can pick up whatever this finds -
+     *  see [HelpCatalog]. Blocks the calling thread for as long as any still-uncached binary
+     *  takes to answer, so callers must run this off the main thread. Safe to call repeatedly:
+     *  already-cached binaries are skipped, so a call after `apt install`ing something new only
+     *  probes what's newly there. */
+    fun warmHelpCache(context: Context) {
+        val (binDir, names) = discoverBinaries(context) ?: return
+        HelpCatalog.warm(context, binDir, names)
+    }
+
+    private fun scanShell(context: Context): List<MenuNode> {
+        val (binDir, names) = discoverBinaries(context)
+            ?: return listOf(MenuNode("sh", "Shell", "1", listOf(MenuNode(id = "sh/bootstrap", label = "bootstrap", cap = "run"))))
+        val prefix = binDir.parentFile ?: DistroManager.prefixDir(context)
 
         val categoryOf = mutableMapOf<String, String>()
         for ((pkg, binaries) in DpkgCatalog.binariesByPackage(prefix)) {

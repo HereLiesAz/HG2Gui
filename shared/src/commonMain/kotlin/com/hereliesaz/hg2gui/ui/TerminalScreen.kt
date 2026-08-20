@@ -237,22 +237,47 @@ fun TerminalScreen(
 
         Eyebrow("01 — Command tree")
 
-        // A stalled command shaped like a yes/no question gets a dedicated Answer stack so the
-        // reply is a tap, not typed text - same stack, same mechanism as everything else: YES
-        // and NO are ordinary terminal leaves, so picking one auto-runs (here, auto-sends) via
-        // the exact same isTerminal path a normal command completes through.
+        // A stalled command shaped like a question with a known, enumerable set of answers gets
+        // a dedicated Answer stack so the reply is a tap, not typed text - each option is an
+        // ordinary terminal leaf, so picking one auto-runs (here, auto-sends) via the exact same
+        // isTerminal path a normal command completes through. Checked in order of how much
+        // structure each shape actually offers: a numbered `select`-style menu names every
+        // option, so it wins over a same-prompt bracketed list; a plain y/n question gets its
+        // own clearer YES/NO pair before falling back to a generic bracketed/lettered list
+        // (dpkg conffile prompts, git's interactive add, ...).
         val pendingPrompt = active.pendingPrompt
-        val answerNode = if (pendingPrompt != null && ShellAliases.looksLikeYesNo(pendingPrompt)) {
-            MenuNode(
-                id = "answer",
-                label = "Answer",
-                emitsToken = false,
-                children = listOf(
-                    MenuNode(id = "answer-yes", label = "YES", value = "y"),
-                    MenuNode(id = "answer-no", label = "NO", value = "n")
+        val answerNode = when {
+            pendingPrompt == null -> null
+            else -> ShellAliases.numberedMenuChoices(pendingPrompt)?.let { choices ->
+                MenuNode(
+                    id = "answer",
+                    label = "Answer",
+                    emitsToken = false,
+                    children = choices.map { (number, label) ->
+                        MenuNode(id = "answer-$number", label = "$number) $label", value = number)
+                    }
                 )
-            )
-        } else null
+            } ?: if (ShellAliases.looksLikeYesNo(pendingPrompt)) {
+                MenuNode(
+                    id = "answer",
+                    label = "Answer",
+                    emitsToken = false,
+                    children = listOf(
+                        MenuNode(id = "answer-yes", label = "YES", value = "y"),
+                        MenuNode(id = "answer-no", label = "NO", value = "n")
+                    )
+                )
+            } else {
+                ShellAliases.bracketedChoices(pendingPrompt)?.let { choices ->
+                    MenuNode(
+                        id = "answer",
+                        label = "Answer",
+                        emitsToken = false,
+                        children = choices.map { choice -> MenuNode(id = "answer-$choice", label = choice, value = choice) }
+                    )
+                }
+            }
+        }
 
         // The suggestion host, when it has anything to offer, rides along as just one more
         // root in the same stack every other command lives in - not a second PillMenu next to
