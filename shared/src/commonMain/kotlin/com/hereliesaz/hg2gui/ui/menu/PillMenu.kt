@@ -285,23 +285,30 @@ private const val BAND_BASE_ROW = 1
 private class StackScroll(val modifier: Modifier, val offsetPx: Float, val alignedRow: Int)
 
 @Composable
-private fun rememberStackScroll(): StackScroll {
+private fun rememberStackScroll(rowMin: Int, rowMax: Int): StackScroll {
     val density = LocalDensity.current
     val pitchPx = with(density) { ROW_PITCH.toPx() }
     var offsetPx by remember { mutableStateOf(0f) }
     var hasScrolled by remember { mutableStateOf(false) }
-    // Bounded below zero only. [offsetPx] is added on top of every pill's own already-correct
-    // resting `lift` - at rest (offsetPx == 0) the bottom-most pill in the stack already sits
-    // exactly on the breadcrumb row (the root stack's row 0, or a child band's BAND_BASE_ROW,
-    // one pitch above the trail it shares row 0 with) - so any positive offsetPx would drag that
-    // pill, and every pill above it, further down past that shared row. Coercing the running
-    // total keeps the whole rigid stack from ever crossing it, top pill and bottom pill alike,
-    // while leaving the top end open - dragging or flinging past the top of the stack's own
-    // content still reveals blank space above the top row rather than stopping dead, the same
-    // "no bounce, no self-correcting" house rule the settle already follows for that end.
+    // [offsetPx] is added on top of every pill's own already-correct resting `lift` (row R rests
+    // at -pitchPx*R, so translationY = -pitchPx*R + offsetPx). Bounded on BOTH ends now, each end
+    // named for the one pill it would otherwise let cross the breadcrumb (row 0, translationY 0 -
+    // shared with the root stack's own front row, or a child band's trail below it):
+    //  - upper bound (+pitchPx*rowMin): the closest pill to the breadcrumb (the bottom-most one)
+    //    reaching translationY 0 exactly - any more and it, and everything above it, would drag
+    //    down past the breadcrumb it shares that row with.
+    //  - lower bound (-pitchPx*(rowMax-rowMin)): the point where the whole rigid stack has
+    //    shifted up by exactly its own span - the top-most pill has moved as far as the
+    //    bottom-most pill's own resting spot ever gets to move, so going further would only ever
+    //    reveal blank space past the top-most pill, never another real row.
+    // Both ends stop dead at their pill, matching the "no bounce, no self-correcting" house rule
+    // the settle already follows - unverified on a real device, since none was available while
+    // building this; a backwards feel is a one-line sign flip, not a structural fix.
+    val maxOffsetPx = pitchPx * rowMin
+    val minOffsetPx = -pitchPx * (rowMax - rowMin)
     val scrollState = rememberScrollableState { delta ->
         hasScrolled = true
-        val next = (offsetPx + delta).coerceAtMost(0f)
+        val next = (offsetPx + delta).coerceIn(minOffsetPx, maxOffsetPx)
         val consumed = next - offsetPx
         offsetPx = next
         consumed
@@ -450,7 +457,7 @@ fun PillMenu(
         when (val p = phase) {
             is Phase.Browsing, is Phase.Leaving -> {
                 val leavingHost = (p as? Phase.Leaving)?.hostId
-                val stackScroll = rememberStackScroll()
+                val stackScroll = rememberStackScroll(rowMin = 0, rowMax = (roots.size - 1).coerceAtLeast(0))
 
                 Box(Modifier.fillMaxSize().padding(bottom = 12.dp).then(stackScroll.modifier)) {
                     roots.forEachIndexed { i, node ->
@@ -700,7 +707,10 @@ private fun ChildBand(
     // No key needed here - the call site already wraps this whole band in key(anchor.id), so a
     // new anchor tears down and recreates this state automatically.
     var selected by remember { mutableStateOf<String?>(null) }
-    val stackScroll = rememberStackScroll()
+    val stackScroll = rememberStackScroll(
+        rowMin = BAND_BASE_ROW,
+        rowMax = (BAND_BASE_ROW + children.size - 1).coerceAtLeast(BAND_BASE_ROW)
+    )
 
     Box(Modifier.fillMaxSize().then(stackScroll.modifier)) {
         children.forEachIndexed { idx, child ->
