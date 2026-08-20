@@ -1,14 +1,24 @@
 package com.hereliesaz.hg2gui.terminal
 
 import android.content.Context
+import android.system.ErrnoException
+import android.system.Os
+import android.system.OsConstants
+import com.hereliesaz.hg2gui.managers.PtyPreference
 import java.io.BufferedReader
 import java.io.BufferedWriter
 import java.io.File
+import java.io.FileDescriptor
+import java.io.FileInputStream
+import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
+import java.lang.reflect.Field
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.concurrent.thread
 
+import com.termux.terminal.JNI
 import com.termux.terminal.TerminalEmulator
 import com.termux.terminal.TerminalOutput
 
@@ -56,7 +66,11 @@ actual class ShellSession private constructor(
     // app-private storage (the write-xor-execute restriction Android's enforced since API 29),
     // looked identical to one that landed there for any other reason - "command not found" with
     // no way to tell which. TerminalEngine surfaces this once per session pick, in-transcript.
-    val backendDescription: String = "the bare system shell ($DEFAULT_SHELL) - no fallback reached"
+    val backendDescription: String = "the bare system shell ($DEFAULT_SHELL) - no fallback reached",
+    // See PtyPreference's own doc comment: off by default, since a plain pipe is what every
+    // command in the app has always run through and the real pty path (below) has never been
+    // verified on a physical device. Only forAndroid() ever passes true.
+    private val usePty: Boolean = false
 ) {
 
     companion object {
@@ -65,6 +79,15 @@ actual class ShellSession private constructor(
         private const val TIMEOUT_MS = 15_000L
         private const val STARTUP_PROBE_MS = 300L
         private const val PROMPT_IDLE_MS = 400L
+
+        // Matches the width/height stream()'s own per-command TerminalEmulator(...) already
+        // assumes below - so the pty's actual window size (what ioctl(TIOCGWINSZ) reports to the
+        // child) doesn't disagree with the geometry every command's output gets re-wrapped to
+        // when flattened back into plain text.
+        private const val PTY_ROWS = 24
+        private const val PTY_COLUMNS = 120
+        private const val PTY_CELL_WIDTH = 10
+        private const val PTY_CELL_HEIGHT = 10
 
         // Zsh was bundled the same way as the Termux bootstrap (a flattened, exec-exempt native
         // lib) but its own RUNPATH/dependency chain was never patched the way the bootstrap's
@@ -75,6 +98,7 @@ actual class ShellSession private constructor(
             // Collected only to explain the last-resort fallback below, if it comes to that -
             // never surfaced when the bootstrap actually works.
             val reasons = mutableListOf<String>()
+            val usePty = PtyPreference.isEnabled(context)
 
             if (DistroManager.isInstalled(context)) {
                 val prefix = DistroManager.prefixDir(context)
@@ -99,9 +123,19 @@ actual class ShellSession private constructor(
                         // bundle for every other bootstrap-tier tool that talks TLS (curl, wget,
                         // git, ...) via the conventions each already knows to check.
                         "SSL_CERT_FILE" to "${prefix.absolutePath}/etc/tls/cert.pem",
-                        "CURL_CA_BUNDLE" to "${prefix.absolutePath}/etc/tls/cert.pem"
+                        "CURL_CA_BUNDLE" to "${prefix.absolutePath}/etc/tls/cert.pem",
+                        // Only matters on the pty tier (a plain pipe was never a tty to begin
+                        // with, so no ncurses program would trust TERM over it either way), but
+                        // harmless to set regardless. ncurses' own compiled-in terminfo search
+                        // path is baked in against Termux's own package the same way apt's Dir::*
+                        // defaults are - TERMINFO overrides that with the copy this bootstrap
+                        // actually ships, confirmed present at share/terminfo/x/xterm-256color.
+                        "TERM" to "xterm-256color",
+                        "TERMINFO" to "${prefix.absolutePath}/share/terminfo"
                     )
-                    val session = ShellSession(bootstrapHome, arrayOf(bash.absolutePath, "-l"), env, "bash (Termux bootstrap)")
+                    val session = ShellSession(
+                        bootstrapHome, arrayOf(bash.absolutePath, "-l"), env, "bash (Termux bootstrap)", usePty
+                    )
                     if (session.survivedStartup()) return session
                     session.close()
                     // The most likely real cause on a modern device: Android's blocked executing
@@ -118,15 +152,45 @@ actual class ShellSession private constructor(
                 reasons += "no Termux bootstrap is installed"
             }
 
+            // The pipe tier gets a real PATH for free (ProcessBuilder inherits this Android
+            // process's own environment, unlike the pty tier's clearenv() - see startPty's own
+            // doc comment); the pty tier would otherwise leave /system/bin/sh with nothing set
+            // at all, unable to resolve even a bare "ls" typed at its prompt.
+            val fallbackEnv = if (usePty) mapOf("PATH" to "/system/bin:/system/xbin", "HOME" to (home?.absolutePath ?: "/")) else emptyMap()
             return ShellSession(
-                home, arrayOf(DEFAULT_SHELL), emptyMap(),
+                home, arrayOf(DEFAULT_SHELL), fallbackEnv,
                 "the bare system shell ($DEFAULT_SHELL), without apt/pkg/coreutils - " +
-                    reasons.joinToString("; ")
+                    reasons.joinToString("; "),
+                usePty
             )
+        }
+
+        // Reflection mirrors terminal-emulator's own TerminalSession.wrapFileDescriptor - there
+        // is no public API to build a FileDescriptor from a raw native fd int, only from opening
+        // a real file, so this is the same private-field trick that module's own pty usage
+        // already relies on.
+        private fun wrapFileDescriptor(fileDescriptor: Int): FileDescriptor {
+            val result = FileDescriptor()
+            try {
+                val descriptorField: Field = try {
+                    FileDescriptor::class.java.getDeclaredField("descriptor")
+                } catch (ignored: NoSuchFieldException) {
+                    FileDescriptor::class.java.getDeclaredField("fd")
+                }
+                descriptorField.isAccessible = true
+                descriptorField.set(result, fileDescriptor)
+            } catch (e: ReflectiveOperationException) {
+                throw IOException("Cannot wrap native pty fd via reflection", e)
+            }
+            return result
         }
     }
 
+    // Only ever populated on the plain-pipe tier - the pty tier has no java Process object at
+    // all, only a raw native fd and pid (ptyFd/ptyPid below).
     private var process: Process? = null
+    private var ptyFd: Int = -1
+    private var ptyPid: Int = -1
     private var stdin: BufferedWriter? = null
     private var stdout: BufferedReader? = null
 
@@ -139,7 +203,7 @@ actual class ShellSession private constructor(
         get() = _workingDirectory
 
     actual val isAlive: Boolean
-        get() = alive.get() && process != null && processStillRunning()
+        get() = alive.get() && processStillRunning()
 
     constructor(home: File?) : this(home, arrayOf(DEFAULT_SHELL), emptyMap())
 
@@ -150,21 +214,71 @@ actual class ShellSession private constructor(
     actual constructor(homePath: String?, shellPath: String) : this(homePath?.let { File(it) }, shellPath)
 
     init {
+        startChild(home, command, extraEnv)
+    }
+
+    // @Suppress: JNI.createSubprocess (see termux.c's throw_runtime_exception) only ever throws
+    // the bare java.lang.RuntimeException class itself for a native pty failure (ptmx open,
+    // grantpt/unlockpt) - there is no more specific type to narrow the catch below to. Treated
+    // exactly like a pipe-tier IOException: this session never came up, and forAndroid()'s own
+    // fallback chain is what handles that, not a crash. (Kotlin doesn't allow annotating an
+    // `init` block directly, hence this being its own function.)
+    @Suppress("TooGenericExceptionCaught")
+    private fun startChild(home: File?, command: Array<String>, extraEnv: Map<String, String>) {
         try {
-            val builder = ProcessBuilder(*command)
-            builder.redirectErrorStream(true)
-            if (home != null && home.isDirectory) builder.directory(home)
-            if (extraEnv.isNotEmpty()) {
-                builder.environment().putAll(extraEnv)
-            }
-
-            val p = builder.start()
-            process = p
-            stdin = BufferedWriter(OutputStreamWriter(p.outputStream))
-            stdout = BufferedReader(InputStreamReader(p.inputStream))
-
+            if (usePty) startPty(home, command, extraEnv) else startPipe(home, command, extraEnv)
             alive.set(true)
-        } catch (e: IOException) {
+        } catch (ignored: IOException) {
+            alive.set(false)
+        } catch (ignored: RuntimeException) {
+            alive.set(false)
+        }
+    }
+
+    private fun startPipe(home: File?, command: Array<String>, extraEnv: Map<String, String>) {
+        val builder = ProcessBuilder(*command)
+        builder.redirectErrorStream(true)
+        if (home != null && home.isDirectory) builder.directory(home)
+        if (extraEnv.isNotEmpty()) {
+            builder.environment().putAll(extraEnv)
+        }
+
+        val p = builder.start()
+        process = p
+        stdin = BufferedWriter(OutputStreamWriter(p.outputStream))
+        stdout = BufferedReader(InputStreamReader(p.inputStream))
+    }
+
+    /** A real pseudoterminal via the app's own bundled native pty bridge (terminal-emulator's
+     *  JNI/termux.c - the same one upstream Termux's own TerminalSession uses to open
+     *  /dev/ptmx and fork the child onto the slave side), instead of a plain OS pipe - see this
+     *  file's own top-of-file doc comment for why a pipe alone can't satisfy isatty()/termios-
+     *  checking tools. Unlike [startPipe]'s ProcessBuilder, the child's environment here is NOT
+     *  inherited from this Android process at all - the native side clearenv()s before exec, so
+     *  every variable the shell needs has to already be in [extraEnv], nothing carries over
+     *  silently. [stream]/[exec] read and write this exactly like the pipe tier below - only how
+     *  stdin/stdout are opened differs. */
+    private fun startPty(home: File?, command: Array<String>, extraEnv: Map<String, String>) {
+        val cwd = home?.absolutePath ?: "/"
+        val envArray = extraEnv.map { (k, v) -> "$k=$v" }.toTypedArray()
+        val pid = IntArray(1)
+        val fd = JNI.createSubprocess(
+            command[0], cwd, command, envArray, pid,
+            PTY_ROWS, PTY_COLUMNS, PTY_CELL_WIDTH, PTY_CELL_HEIGHT
+        )
+        if (fd < 0) throw IOException("createSubprocess() failed to open a pty")
+        ptyFd = fd
+        ptyPid = pid[0]
+
+        val wrapped = wrapFileDescriptor(fd)
+        stdin = BufferedWriter(OutputStreamWriter(FileOutputStream(wrapped)))
+        stdout = BufferedReader(InputStreamReader(FileInputStream(wrapped)))
+
+        // processStillRunning() below is a plain flag check on this tier, not a poll - nothing
+        // else calls JNI.waitFor() for this pid, so this thread existing is what notices the
+        // child actually exiting at all.
+        thread(name = "ShellSession-pty-waiter[pid=$ptyPid]") {
+            JNI.waitFor(ptyPid)
             alive.set(false)
         }
     }
@@ -180,6 +294,10 @@ actual class ShellSession private constructor(
     }
 
     private fun processStillRunning(): Boolean {
+        // The pty tier has no exitValue()-style poll - startPty()'s own waiter thread is the
+        // only thing that ever learns the child exited, by blocking on JNI.waitFor(); `alive`
+        // is what it flips when that happens.
+        if (usePty) return alive.get()
         return try {
             process?.exitValue()
             false
@@ -232,7 +350,7 @@ actual class ShellSession private constructor(
                     // its command straight into that stale read: the new command never runs, and
                     // its text gets silently consumed as the old prompt's answer instead.
                     alive.set(false)
-                    process?.destroy()
+                    killChild()
                     try { stdin?.close() } catch (ignored: IOException) {}
                     try { stdout?.close() } catch (ignored: IOException) {}
                     break
@@ -362,6 +480,27 @@ actual class ShellSession private constructor(
             stdout?.close()
         } catch (ignored: IOException) {
         }
-        process?.destroy()
+        killChild()
+    }
+
+    /** Force-stops the child regardless of which tier it's running on - called both by [close]
+     *  and by [stream]'s own timeout branch (a genuinely stuck command has to actually be ended,
+     *  not just have its streams closed out from under it - see that branch's own comment). */
+    private fun killChild() {
+        if (usePty) {
+            if (ptyPid > 0) {
+                try {
+                    Os.kill(ptyPid, OsConstants.SIGKILL)
+                } catch (ignored: ErrnoException) {
+                    // Already exited - nothing left to kill.
+                }
+            }
+            if (ptyFd >= 0) {
+                JNI.close(ptyFd)
+                ptyFd = -1
+            }
+        } else {
+            process?.destroy()
+        }
     }
 }

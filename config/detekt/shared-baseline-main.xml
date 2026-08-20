@@ -18,7 +18,7 @@
     <ID>FunctionNaming:McpServerScreen.kt$@Composable fun McpServerScreen( fullscreen: Boolean, running: Boolean, port: Int, token: String?, shellExecEnabled: Boolean, onStart: () -&gt; Unit, onStop: () -&gt; Unit, onRequestShellExec: () -&gt; Unit, onDisableShellExec: () -&gt; Unit, onBack: () -&gt; Unit )</ID>
     <ID>FunctionNaming:McpServerScreen.kt$@Composable private fun McpSettingRow(title: String, description: String, control: @Composable () -&gt; Unit)</ID>
     <ID>FunctionNaming:McpServerScreen.kt$@Composable private fun McpToggle( leftLabel: String, rightLabel: String, rightSelected: Boolean, onSelectRight: (Boolean) -&gt; Unit )</ID>
-    <ID>FunctionNaming:SettingsScreen.kt$@Composable fun SettingsScreen( fullscreen: Boolean, onFullscreenChange: (Boolean) -&gt; Unit, fontScalePercent: Int, onFontScalePercentChange: (Int) -&gt; Unit, onOpenMcpServer: () -&gt; Unit, onOpenAiSettings: () -&gt; Unit, onBack: () -&gt; Unit )</ID>
+    <ID>FunctionNaming:SettingsScreen.kt$@Composable fun SettingsScreen( fullscreen: Boolean, onFullscreenChange: (Boolean) -&gt; Unit, fontScalePercent: Int, onFontScalePercentChange: (Int) -&gt; Unit, usePty: Boolean, onUsePtyChange: (Boolean) -&gt; Unit, onOpenMcpServer: () -&gt; Unit, onOpenAiSettings: () -&gt; Unit, onBack: () -&gt; Unit )</ID>
     <ID>FunctionNaming:SettingsScreen.kt$@Composable private fun SegmentedToggle( leftLabel: String, rightLabel: String, rightSelected: Boolean, onSelectRight: (Boolean) -&gt; Unit )</ID>
     <ID>FunctionNaming:SettingsScreen.kt$@Composable private fun SettingRow(title: String, description: String, control: @Composable () -&gt; Unit)</ID>
     <ID>FunctionNaming:SettingsScreen.kt$@Composable private fun Stepper( value: Int, min: Int, max: Int, step: Int, label: (Int) -&gt; String, onChange: (Int) -&gt; Unit )</ID>
@@ -33,11 +33,11 @@
     <ID>LongMethod:ContactManager.kt$ContactManager$fun about(phone: String): Array&lt;String?&gt;?</ID>
     <ID>LongMethod:ContactManager.kt$ContactManager.&lt;no name provided&gt;$override fun run()</ID>
     <ID>LongMethod:McpServerScreen.kt$@Composable fun McpServerScreen( fullscreen: Boolean, running: Boolean, port: Int, token: String?, shellExecEnabled: Boolean, onStart: () -&gt; Unit, onStop: () -&gt; Unit, onRequestShellExec: () -&gt; Unit, onDisableShellExec: () -&gt; Unit, onBack: () -&gt; Unit )</ID>
-    <ID>LongMethod:SettingsScreen.kt$@Composable fun SettingsScreen( fullscreen: Boolean, onFullscreenChange: (Boolean) -&gt; Unit, fontScalePercent: Int, onFontScalePercentChange: (Int) -&gt; Unit, onOpenMcpServer: () -&gt; Unit, onOpenAiSettings: () -&gt; Unit, onBack: () -&gt; Unit )</ID>
+    <ID>LongMethod:SettingsScreen.kt$@Composable fun SettingsScreen( fullscreen: Boolean, onFullscreenChange: (Boolean) -&gt; Unit, fontScalePercent: Int, onFontScalePercentChange: (Int) -&gt; Unit, usePty: Boolean, onUsePtyChange: (Boolean) -&gt; Unit, onOpenMcpServer: () -&gt; Unit, onOpenAiSettings: () -&gt; Unit, onBack: () -&gt; Unit )</ID>
     <ID>LongMethod:ShellSession.kt$ShellSession$actual fun stream(command: String, onLine: (line: String) -&gt; Unit, onNeedInput: (prompt: String) -&gt; String?): Int</ID>
     <ID>LongParameterList:AzpLibrary.kt$AzpLibrary$( context: Context, id: String, name: String, version: String, kind: String, skillIds: List&lt;String&gt;, trust: AzpTrust = AzpTrust.UNSIGNED, /** For `kind:"script"` only - the name it's callable as on PATH once [ScriptInstaller] * has written its wrapper, so the store row can show it. Blank if installation didn't * reach that point (e.g. no Termux bootstrap yet - see [ScriptInstaller.Result]). */ scriptCommand: String? = null, )</ID>
     <ID>LongParameterList:McpServerScreen.kt$( fullscreen: Boolean, running: Boolean, port: Int, token: String?, shellExecEnabled: Boolean, onStart: () -&gt; Unit, onStop: () -&gt; Unit, onRequestShellExec: () -&gt; Unit, onDisableShellExec: () -&gt; Unit, onBack: () -&gt; Unit )</ID>
-    <ID>LongParameterList:SettingsScreen.kt$( fullscreen: Boolean, onFullscreenChange: (Boolean) -&gt; Unit, fontScalePercent: Int, onFontScalePercentChange: (Int) -&gt; Unit, onOpenMcpServer: () -&gt; Unit, onOpenAiSettings: () -&gt; Unit, onBack: () -&gt; Unit )</ID>
+    <ID>LongParameterList:SettingsScreen.kt$( fullscreen: Boolean, onFullscreenChange: (Boolean) -&gt; Unit, fontScalePercent: Int, onFontScalePercentChange: (Int) -&gt; Unit, usePty: Boolean, onUsePtyChange: (Boolean) -&gt; Unit, onOpenMcpServer: () -&gt; Unit, onOpenAiSettings: () -&gt; Unit, onBack: () -&gt; Unit )</ID>
     <ID>LongParameterList:SettingsScreen.kt$( value: Int, min: Int, max: Int, step: Int, label: (Int) -&gt; String, onChange: (Int) -&gt; Unit )</ID>
     <ID>LongParameterList:VfsManager.kt$VfsManager$( dir: File, q: String, into: MutableList&lt;File&gt;, limit: Int, seen: MutableSet&lt;String&gt; = mutableSetOf(), depth: Int = 0 )</ID>
     <ID>LoopWithTooManyJumpStatements:AzpLibrary.kt$AzpLibrary$for</ID>
@@ -102,7 +102,6 @@
     <ID>SwallowedException:Builtins.kt$Builtins$e: SecurityException</ID>
     <ID>SwallowedException:CommandTree.kt$CommandTree$e: SecurityException</ID>
     <ID>SwallowedException:DpkgCatalog.kt$DpkgCatalog$e: Exception</ID>
-    <ID>SwallowedException:ShellSession.kt$ShellSession$e: IOException</ID>
     <ID>SwallowedException:ShellSession.kt$ShellSession$stillRunning: IllegalThreadStateException</ID>
     <ID>SwallowedException:Utils.kt$Utils$e: Exception</ID>
     <ID>SwallowedException:VfsManager.kt$VfsManager$e: Exception</ID>
@@ -115,6 +114,7 @@
     <ID>TooGenericExceptionCaught:VfsManager.kt$VfsManager$e: Exception</ID>
     <ID>TooManyFunctions:Builtins.kt$Builtins</ID>
     <ID>TooManyFunctions:CommandTree.kt$CommandTree</ID>
+    <ID>TooManyFunctions:ShellSession.kt$ShellSession</ID>
     <ID>TooManyFunctions:VfsManager.kt$VfsManager</ID>
     <ID>UnreachableCode:AzpLibrary.kt$AzpLibrary$for (skillId in skillIds) { if (remaining &lt;= 0) break val skillMd = root.resolve("skills/$skillId/SKILL.md") if (!skillMd.exists()) continue val text = skillMd.readText().take(remaining) remaining -= text.length out += skillId to text }</ID>
     <ID>UnreachableCode:AzpLibrary.kt$AzpLibrary$val root = AzpInstaller.rootDir(context, id, version)</ID>

@@ -48,6 +48,7 @@ import com.hereliesaz.hg2gui.managers.AiSettings
 import com.hereliesaz.hg2gui.managers.AzpLibrary
 import com.hereliesaz.hg2gui.managers.ContactManager
 import com.hereliesaz.hg2gui.managers.OsContextStore
+import com.hereliesaz.hg2gui.managers.PtyPreference
 import com.hereliesaz.hg2gui.managers.SshPresets
 import com.hereliesaz.hg2gui.managers.TerminalHistoryEntry
 import com.hereliesaz.hg2gui.managers.VfsManager
@@ -153,7 +154,8 @@ class TerminalActivity : FragmentActivity() {
         val engine: TerminalEngine,
         val tree: List<MenuNode>,
         val fullscreen: Boolean,
-        val fontScalePercent: Int
+        val fontScalePercent: Int,
+        val usePty: Boolean
     )
 
     private val prefs: SharedPreferences by lazy { getSharedPreferences(PREFS_NAME, MODE_PRIVATE) }
@@ -207,6 +209,7 @@ class TerminalActivity : FragmentActivity() {
             }
             var fullscreen by remember { mutableStateOf(false) }
             var fontScalePercent by remember { mutableStateOf(100) }
+            var usePty by remember { mutableStateOf(false) }
             var aiApiKey by remember { mutableStateOf(AiSettings.apiKey(this@TerminalActivity)) }
             var aiMessages by remember { mutableStateOf<List<AiMessage>>(emptyList()) }
             var aiBusy by remember { mutableStateOf(false) }
@@ -370,7 +373,8 @@ class TerminalActivity : FragmentActivity() {
                         engine = builtEngine,
                         tree = builtTree,
                         fullscreen = prefs.getBoolean(PREF_FULLSCREEN, false),
-                        fontScalePercent = prefs.getInt(PREF_FONT_SCALE_PERCENT, 100)
+                        fontScalePercent = prefs.getInt(PREF_FONT_SCALE_PERCENT, 100),
+                        usePty = PtyPreference.isEnabled(this@TerminalActivity)
                     )
                 }
 
@@ -380,6 +384,7 @@ class TerminalActivity : FragmentActivity() {
                 tree = built.tree
                 fullscreen = built.fullscreen
                 fontScalePercent = built.fontScalePercent
+                usePty = built.usePty
 
                 // Real Termux never shows an empty shell either - it installs its own bootstrap
                 // automatically, once, before the first prompt appears. Match that instead of
@@ -452,6 +457,11 @@ class TerminalActivity : FragmentActivity() {
                         onFontScalePercentChange = { value ->
                             fontScalePercent = value
                             prefs.edit { putInt(PREF_FONT_SCALE_PERCENT, value) }
+                        },
+                        usePty = usePty,
+                        onUsePtyChange = { value ->
+                            usePty = value
+                            PtyPreference.setEnabled(this@TerminalActivity, value)
                         },
                         onOpenMcpServer = { screen = Screen.Mcp },
                         onOpenAiSettings = { screen = Screen.AiSettings },

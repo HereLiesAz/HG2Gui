@@ -2,8 +2,13 @@ package com.termux.terminal
 
 /**
  * Native methods for creating and managing pseudoterminal subprocesses. C code is in jni/termux.c.
+ *
+ * Not `internal`: [com.hereliesaz.hg2gui.terminal.ShellSession] (the `:shared` module, a
+ * separate Kotlin compilation unit from this one) calls these directly - Kotlin's `internal`
+ * is module-scoped, not just package-private, so it can't stay internal and still be reachable
+ * from there.
  */
-internal object JNI {
+object JNI {
 
     init {
         System.loadLibrary("termux")
