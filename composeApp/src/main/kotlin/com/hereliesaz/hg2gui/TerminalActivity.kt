@@ -402,6 +402,11 @@ class TerminalActivity : FragmentActivity() {
                         CommandTree.from(this@TerminalActivity)
                     }
                 }
+
+                // Fire-and-forget: the flags this discovers only show up the next time a pill
+                // menu's own resolveChildren runs (see HelpCatalog's own doc comment), never
+                // this frame - there's nothing here worth blocking startup on.
+                launch(Dispatchers.IO) { CommandTree.warmHelpCache(this@TerminalActivity) }
             }
 
             LaunchedEffect(fullscreen) {
@@ -737,7 +742,13 @@ class TerminalActivity : FragmentActivity() {
                             // wasted file I/O and a pointless menu recomposition.
                             val ranCommand = line.trim().substringBefore(' ')
                             if (ranCommand in CommandTree.PACKAGE_MANAGER_COMMANDS) {
-                                tree = withContext(Dispatchers.IO) { CommandTree.from(this@TerminalActivity) }
+                                tree = withContext(Dispatchers.IO) {
+                                    // A fresh install can add binaries this pill menu has never
+                                    // probed for --help flags before; catch those up here too,
+                                    // rather than waiting on the next app launch's own warm-up.
+                                    CommandTree.warmHelpCache(this@TerminalActivity)
+                                    CommandTree.from(this@TerminalActivity)
+                                }
                             }
                         }
                     )
