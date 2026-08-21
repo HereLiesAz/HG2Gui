@@ -279,17 +279,33 @@ class TerminalActivity : FragmentActivity() {
             val filesWrap = remember { PillWrapRevealState() }
             var filesOrigin by remember { mutableStateOf(Rect.Zero) }
             val filesHue = remember { Azphalt.hues[Azphalt.hueOf("/")] }
+            // Tracks whichever of open()/close() is currently driving filesWrap's Animatables, so
+            // the other one can be cancelled before a new run starts instead of both racing the
+            // same Animatable objects - a second run's animateTo()/snapTo() call silently steals
+            // control from whichever run got there first, and if that first run was the one still
+            // due to flip `active`/`screen` back, neither ever happens and the Files overlay is
+            // stuck on screen. Paired with the active-guards below, which also stop a re-tap on an
+            // already-open (or already-opening) Files pill from restarting the reveal from scratch.
+            var filesJob by remember { mutableStateOf<Job?>(null) }
             fun openFiles() {
+                if (filesWrap.active) return
+                filesWrap.active = true
                 filesWrap.origin = filesOrigin
                 screen = Screen.Files
-                scope.launch {
+                filesJob = scope.launch {
                     filesWrap.open(revealFullWidthPx, revealFullHeightPx, revealDefaultBaseWidthPx, revealMinThicknessPx)
                 }
             }
             fun closeFiles() {
-                scope.launch {
+                if (!filesWrap.active) return
+                filesJob?.cancel()
+                filesJob = scope.launch {
                     filesWrap.close(revealFullWidthPx, revealFullHeightPx, revealDefaultBaseWidthPx, revealMinThicknessPx)
-                    screen = Screen.Terminal
+                    // Only this run's own screen, not whatever the user may have navigated to
+                    // since - closeFiles() can now only ever be reached while Files is still the
+                    // active screen (see the excluded when-branch below), but this stays a
+                    // conditional reset rather than unconditional out of caution.
+                    if (screen == Screen.Files) screen = Screen.Terminal
                 }
             }
 
@@ -301,9 +317,13 @@ class TerminalActivity : FragmentActivity() {
             var pathPickerRoot by remember { mutableStateOf("") }
             val pathPickerHue = remember { Azphalt.hues[Azphalt.hueOf(FileBrowser.WIZARD_PREFIX)] }
             val crumbRects = remember { mutableStateMapOf<String, Rect>() }
+            // Same open()/close() race guard as filesJob above - see its comment.
+            var pathPickerJob by remember { mutableStateOf<Job?>(null) }
 
             fun closePathPicker() {
-                scope.launch {
+                if (!pathPickerState.active) return
+                pathPickerJob?.cancel()
+                pathPickerJob = scope.launch {
                     pathPickerState.close(revealFullWidthPx, revealFullHeightPx, revealDefaultBaseWidthPx, revealMinThicknessPx)
                 }
             }
@@ -686,6 +706,17 @@ class TerminalActivity : FragmentActivity() {
                         backStep = guideBackStep
                     )
 
+                    // Files/PathPicker's own reveal takes ~1-2s to run (see openFiles()/the
+                    // wizard-pill dispatch above), and neither is a real screen change - `screen`
+                    // itself only flips to Files synchronously, never for the picker. Without this
+                    // branch, TerminalScreen (the catch-all below) would keep rendering - and
+                    // staying fully interactive, since PillWrapReveal/PillPerimeterReveal draw no
+                    // touch-blocking scrim of their own - underneath the growing reveal for that
+                    // whole window, letting a wizard pill tapped through it start a real navigation
+                    // (`screen = Screen.Ai`, etc.) while the reveal is still mid-flight and stack
+                    // its own overlay on top of wherever that navigation lands.
+                    screen == Screen.Files || filesWrap.active || pathPickerState.active -> {}
+
                     sessions.isNotEmpty() && currentTree != null -> TerminalScreen(
                         tree = currentTree,
                         sessions = sessions.map { it.ui },
@@ -768,12 +799,13 @@ class TerminalActivity : FragmentActivity() {
                                         tree = withContext(Dispatchers.IO) { CommandTree.from(this@TerminalActivity) }
                                     }
                                 }
-                                wizardId.startsWith(FileBrowser.WIZARD_PREFIX) -> {
+                                wizardId.startsWith(FileBrowser.WIZARD_PREFIX) -> if (!pathPickerState.active) {
                                     val crumbId = wizardId.removePrefix(FileBrowser.WIZARD_PREFIX)
                                     pathPickerRoot = session?.ui?.cwd?.takeIf { it.isNotBlank() }
                                         ?: CommandTree.pickerRoot(this@TerminalActivity).absolutePath
+                                    pathPickerState.active = true
                                     pathPickerState.origin = crumbRects[crumbId] ?: Rect.Zero
-                                    scope.launch {
+                                    pathPickerJob = scope.launch {
                                         pathPickerState.open(
                                             revealFullWidthPx,
                                             revealFullHeightPx,
