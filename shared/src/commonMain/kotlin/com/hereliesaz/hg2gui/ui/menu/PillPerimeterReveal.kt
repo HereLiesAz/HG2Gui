@@ -65,7 +65,8 @@ private val MIN_THICKNESS = 34.dp
 private const val EDGE_MARGIN_PX = 6f
 
 // The break-free pill pivots on its own right tip - the edge it flies into and thuds against.
-private val TIP_ORIGIN = TransformOrigin(1f, 0.5f)
+private const val TIP_ORIGIN_Y = 0.5f
+private val TIP_ORIGIN = TransformOrigin(1f, TIP_ORIGIN_Y)
 
 class PerimeterRevealState {
     var origin: Rect by mutableStateOf(Rect.Zero)

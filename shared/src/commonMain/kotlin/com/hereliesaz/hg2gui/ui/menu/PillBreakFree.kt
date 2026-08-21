@@ -1,6 +1,7 @@
 package com.hereliesaz.hg2gui.ui.menu
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.keyframes
 import androidx.compose.animation.core.tween
@@ -45,6 +46,13 @@ private const val JIGGLE_PEAK_3_MS = 130
 // real width yet, e.g. before first layout) must not hand Compose a runaway tween length.
 private const val MIN_FLIGHT_MS = 1
 private const val MAX_FLIGHT_MS = 2000
+
+// Beat 5's own easing - the same "page" curve the rest of this ground uses for a settle, but
+// declared locally (rather than shared off Azphalt) since this file has no dependency on the
+// menu's own object beyond this one curve.
+private const val FALL_EASE_CONTROL_1 = .9f
+private const val FALL_EASE_CONTROL_2 = .1f
+private val FALL_EASE = CubicBezierEasing(0f, FALL_EASE_CONTROL_1, FALL_EASE_CONTROL_2, 1f)
 
 class BreakFreeState {
     /** Multiplier on the pill's own resting width. */
@@ -105,7 +113,7 @@ suspend fun BreakFreeState.run(baseWidthPx: Float, flightPx: Float, floorPx: Flo
     })
 
     // 5. FALL. Straight down onto the bottom edge, where the perimeter/wrap run picks up.
-    offsetY.animateTo(floorPx, tween(FALL_MS, easing = Azphalt.PAGE_EASE))
+    offsetY.animateTo(floorPx, tween(FALL_MS, easing = FALL_EASE))
     active = false
 }
 
@@ -116,7 +124,7 @@ suspend fun BreakFreeState.reverse(baseWidthPx: Float, flightPx: Float, floorPx:
     offsetY.snapTo(floorPx)
     width.snapTo(SHORT)
     tilt.snapTo(0f)
-    offsetY.animateTo(0f, tween(FALL_MS, easing = Azphalt.PAGE_EASE))
+    offsetY.animateTo(0f, tween(FALL_MS, easing = FALL_EASE))
     val retractedPx = retractedPxOf(baseWidthPx)
     val ratePxPerMs = retractedPx / SNAP_MS
     val flightMs = (flightPx / ratePxPerMs).toInt().coerceIn(MIN_FLIGHT_MS, MAX_FLIGHT_MS)
