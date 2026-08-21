@@ -34,45 +34,44 @@ import androidx.compose.ui.unit.dp
  * here (as elsewhere in this app) from the source's multi-stage keyframe sequence into one
  * continuous rect interpolation plus a clip-based wipe, rather than four separate animated edges.
  *
- * Per "THE SIX BEATS" in docs/HG2Gui Run Transition.html and specimens 8/9 in
- * docs/HG2Gui Motion Sheet.html, three lead-in beats precede "run the perimeter": stretch, break
- * free, and fall - the pill lengthens, snaps thin, flies into the corner it lands in, rocks on
- * the tip it just landed on, then drops onto the bottom edge. A trailing "set" beat wipes the
- * revealed content on once the flood completes. In keeping with this file's own simplification of
- * the source choreography, the three lead-in beats are driven by a single continuous [Animatable]
- * (leadIn) rather than PillPerimeterReveal's separate per-beat Animatables, with the composable
- * deriving the stretch/snap/fly/rock/fall visuals as piecewise functions of that one value.
+ * Per "THE SIX BEATS" in docs/HG2Gui Run Transition.html, beats 1-3 (stretch, break free, fall)
+ * play out via the shared [BreakFreeState] in PillBreakFree.kt before "run the perimeter" - see
+ * that file for the choreography itself, and PillPerimeterReveal.kt's own header for why the
+ * break-free pill flying off toward the right edge doesn't move where the wrap growth below
+ * itself starts from. A trailing "set" beat wipes the revealed content on once the flood
+ * completes.
  */
 
 private val WRAP_EASE = CubicBezierEasing(0f, .9f, .1f, 1f)
 private const val WRAP_MS = 640
 private const val FLOOD_MS = 420
+private const val SET_MS = 90
 private val BORDER_WIDTH = 3.dp
 
-// Lead-in beat durations - the doc's own approximate figures. WRAP_MS/FLOOD_MS above untouched.
-private const val LEAD_IN_STRETCH_MS = 300
-private const val LEAD_IN_BREAK_MS = 140
-private const val LEAD_IN_FALL_MS = 300
-private const val LEAD_IN_MS = LEAD_IN_STRETCH_MS + LEAD_IN_BREAK_MS + LEAD_IN_FALL_MS
-private const val SET_MS = 90
-private val LEAD_IN_FLY_DISTANCE = 150.dp
-private val LEAD_IN_DROP_HEIGHT = 70.dp
+// How close to the literal screen edge the break-free flight lands - keeps the pill's own
+// rounded tip from visually clipping into the edge, matching the reference spec's own margin.
+private const val EDGE_MARGIN_PX = 6f
+
+// The break-free pill pivots on its own right tip - the edge it flies into and thuds against.
+private val TIP_ORIGIN = TransformOrigin(1f, 0.5f)
 
 class PillWrapRevealState {
     var origin: Rect by mutableStateOf(Rect.Zero)
     var active: Boolean by mutableStateOf(false)
     val wrap = Animatable(0f)
     val flood = Animatable(0f)
+    val breakFree = BreakFreeState()
 
-    // Beats 1-3 (stretch, break free, fall) collapsed into one continuous driver - see file
-    // header for why this tier simplifies them this way.
-    var leadInActive: Boolean by mutableStateOf(false)
-    val leadIn = Animatable(0f)
     // Beat 4 "set": stays at 0 (content hidden) until flood completes, then wipes to 1 - see
     // setWipe in PillPerimeterReveal.kt for the identical idiom and rationale.
     val setWipe = Animatable(1f)
 
-    suspend fun open() {
+    /**
+     * [fullWidthPx]/[fullHeightPx]/[defaultBaseWidthPx] come from the composable's own
+     * BoxWithConstraints/density scope, which this plain suspend function has no access to - see
+     * PillWrapReveal's own call site.
+     */
+    suspend fun open(fullWidthPx: Float, fullHeightPx: Float, defaultBaseWidthPx: Float, minThicknessPx: Float) {
         active = true
         // Reset every animatable up front, not only the ones about to move next - if a PREVIOUS
         // open()/close() coroutine was cancelled mid-sequence (a back press, the phase changing
@@ -83,22 +82,14 @@ class PillWrapRevealState {
         wrap.snapTo(0f)
         flood.snapTo(0f)
         setWipe.snapTo(0f)
-        try {
-            leadInActive = true
-            leadIn.snapTo(0f)
-            leadIn.animateTo(1f, tween(LEAD_IN_MS, easing = WRAP_EASE))
-        } finally {
-            // Runs even if this coroutine is cancelled mid-animation, so leadInActive can never
-            // stay stuck true - the standalone lead-in pill it gates would otherwise keep
-            // rendering forever with nothing left animating it.
-            leadInActive = false
-        }
+        val geometry = geometry(fullWidthPx, fullHeightPx, defaultBaseWidthPx, minThicknessPx)
+        breakFree.run(geometry.baseWidthPx, geometry.flightPx, geometry.floorPx)
         wrap.animateTo(1f, tween(WRAP_MS, easing = WRAP_EASE))
         flood.animateTo(1f, tween(FLOOD_MS, easing = WRAP_EASE))
         setWipe.animateTo(1f, tween(SET_MS, easing = WRAP_EASE))
     }
 
-    suspend fun close() {
+    suspend fun close(fullWidthPx: Float, fullHeightPx: Float, defaultBaseWidthPx: Float, minThicknessPx: Float) {
         // Same defensive snap open() makes, mirrored to the fully-open end of the range - a
         // cancelled open() otherwise leaves an arbitrary animatable short, and close() would
         // retreat whatever partial frame that left rather than the intended fully-drawn one.
@@ -110,15 +101,28 @@ class PillWrapRevealState {
         setWipe.animateTo(0f, tween(SET_MS, easing = WRAP_EASE))
         flood.animateTo(0f, tween(FLOOD_MS, easing = WRAP_EASE))
         wrap.animateTo(0f, tween(WRAP_MS, easing = WRAP_EASE))
-        try {
-            leadInActive = true
-            leadIn.animateTo(0f, tween(LEAD_IN_MS, easing = WRAP_EASE))
-        } finally {
-            leadInActive = false
-        }
+        val geometry = geometry(fullWidthPx, fullHeightPx, defaultBaseWidthPx, minThicknessPx)
+        breakFree.reverse(geometry.baseWidthPx, geometry.flightPx, geometry.floorPx)
         active = false
     }
+
+    private fun geometry(
+        fullWidthPx: Float,
+        fullHeightPx: Float,
+        defaultBaseWidthPx: Float,
+        minThicknessPx: Float
+    ): WrapBreakFreeGeometry {
+        val thickness = if (origin.height > 0f) origin.height else minThicknessPx
+        val originLeft = if (origin.width > 0f) origin.left else 0f
+        val originTop = if (origin.height > 0f) origin.top else fullHeightPx - thickness
+        val baseWidthPx = if (origin.width > 0f) origin.width else defaultBaseWidthPx
+        val flightPx = (fullWidthPx - EDGE_MARGIN_PX - originLeft - baseWidthPx).coerceAtLeast(0f)
+        val floorPx = (fullHeightPx - thickness - originTop).coerceAtLeast(0f)
+        return WrapBreakFreeGeometry(baseWidthPx, flightPx, floorPx)
+    }
 }
+
+private data class WrapBreakFreeGeometry(val baseWidthPx: Float, val flightPx: Float, val floorPx: Float)
 
 private fun lerp(a: Float, b: Float, t: Float) = a + (b - a) * t
 
@@ -138,12 +142,9 @@ fun PillWrapReveal(state: PillWrapRevealState, hue: Color, content: @Composable 
         val w = state.wrap.value
 
         with(density) {
-            // The lead-in beats always land at the bottom edge (per the doc: stretch/break/fall
-            // bring the pill down onto the bottom of the screen before the perimeter run starts),
-            // regardless of where [origin] itself sits (e.g. the Files pill lives in the top
-            // header). The wrap growth below has to start from that same landed rect, not from
-            // [origin] directly, or the frame visibly teleports from the bottom back up to the
-            // header the instant leadInActive flips off.
+            // The wrap growth always starts from [origin] itself - the break-free pill above is
+            // a flourish flying off to the side, not a relocation of where this frame grows from
+            // (see PillPerimeterReveal.kt's own header for the reasoning this file shares).
             val originLeft = if (o.width > 0f) o.left else 0f
             val thickness = if (o.height > 0f) o.height else 34.dp.toPx()
             val baseW = if (o.width > 0f) o.width else 64.dp.toPx()
@@ -161,54 +162,23 @@ fun PillWrapReveal(state: PillWrapRevealState, hue: Color, content: @Composable 
             val curH = bottom - top
             val corner = lerp(minOf(landed.width, landed.height) / 2f, 0f, w)
 
-            if (state.leadInActive) {
-                // Beats 1-3, all derived from the single leadIn driver - see file header. Phase
-                // boundaries are proportional to each beat's share of LEAD_IN_MS.
-                val stretchFrac = LEAD_IN_STRETCH_MS / LEAD_IN_MS.toFloat()
-                val breakFrac = LEAD_IN_BREAK_MS / LEAD_IN_MS.toFloat()
-                val t = state.leadIn.value
-
-                val widthMul = if (t < stretchFrac) {
-                    val local = (t / stretchFrac).coerceIn(0f, 1f)
-                    when {
-                        local < 0.35f -> lerp(1f, 1.6f, local / 0.35f)
-                        local < 0.55f -> lerp(1.6f, 0.45f, (local - 0.35f) / 0.2f)
-                        else -> 0.45f
-                    }
-                } else 0.45f
-
-                val flyT = if (t < stretchFrac) {
-                    val local = (t / stretchFrac).coerceIn(0f, 1f)
-                    if (local < 0.55f) 0f else (local - 0.55f) / 0.45f
-                } else 1f
-
-                val rockDeg = if (t in stretchFrac..(stretchFrac + breakFrac)) {
-                    val local = ((t - stretchFrac) / breakFrac).coerceIn(0f, 1f)
-                    when {
-                        local < 0.25f -> lerp(0f, 14f, local / 0.25f)
-                        local < 0.5f -> lerp(14f, -8f, (local - 0.25f) / 0.25f)
-                        local < 0.75f -> lerp(-8f, 4f, (local - 0.5f) / 0.25f)
-                        else -> lerp(4f, 0f, (local - 0.75f) / 0.25f)
-                    }
-                } else 0f
-
-                val fallStart = stretchFrac + breakFrac
-                val fallT = ((t - fallStart) / (1f - fallStart)).coerceIn(0f, 1f)
-
-                val flyDistancePx = LEAD_IN_FLY_DISTANCE.toPx()
-                val dropHeightPx = LEAD_IN_DROP_HEIGHT.toPx()
-                val pillW = (baseW * widthMul).coerceAtLeast(1f)
-                val x = lerp(originLeft - flyDistancePx, originLeft, flyT)
-                val landedY = fullH - thickness
-                val y = lerp(landedY - dropHeightPx, landedY, fallT)
-
+            if (state.breakFree.active) {
+                // Beats 1-3: a stand-in pill (the real stack lives in PillMenu's own tree) that
+                // strains, breaks free, flies toward the right edge, thuds, and falls onto the
+                // bottom edge - ending clear of where the wrap rect above grows from.
+                val originTop = if (o.height > 0f) o.top else fullH - thickness
                 Box(
                     Modifier
-                        .offset { IntOffset(x.toInt(), y.toInt()) }
-                        .size(pillW.toDp(), thickness.toDp())
+                        .offset {
+                            IntOffset(
+                                (originLeft + state.breakFree.offsetX.value).toInt(),
+                                (originTop + state.breakFree.offsetY.value).toInt()
+                            )
+                        }
+                        .size((baseW * state.breakFree.width.value).coerceAtLeast(1f).toDp(), thickness.toDp())
                         .graphicsLayer {
-                            transformOrigin = TransformOrigin(1f, 1f)
-                            rotationZ = rockDeg
+                            transformOrigin = TIP_ORIGIN // the tip, not the corner
+                            rotationZ = state.breakFree.tilt.value
                         }
                         .clip(RoundedCornerShape(percent = 50))
                         .background(hue)

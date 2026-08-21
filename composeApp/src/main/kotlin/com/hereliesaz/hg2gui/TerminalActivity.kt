@@ -30,6 +30,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
@@ -96,6 +99,11 @@ import kotlinx.coroutines.withContext
 
 /** A live shell paired with the UI state (scrollback, history, cwd) that only it owns. */
 private class TerminalSession(val ui: SessionUiState, val engine: TerminalEngine)
+
+// Matches the fallback PillWrapReveal.kt/PillPerimeterReveal.kt's own render code uses when a
+// reveal's origin rect hasn't been reported yet - see this file's own revealDefaultBaseWidthPx.
+private val REVEAL_DEFAULT_BASE_WIDTH = 64.dp
+private val REVEAL_MIN_THICKNESS = 34.dp
 
 private const val PREFS_NAME = "hg2gui_prefs"
 private const val PREF_FULLSCREEN = "fullscreen"
@@ -235,6 +243,18 @@ class TerminalActivity : FragmentActivity() {
             }
             val scope = rememberCoroutineScope()
 
+            // PillWrapRevealState/PerimeterRevealState.open()/close() need the real screen size
+            // in px (they can't reach a BoxWithConstraints of their own from a plain suspend
+            // function called outside the composable that renders them) plus the same base-
+            // width/thickness fallback PillWrapReveal/PillPerimeterReveal's own render code falls
+            // back to when a pill's origin rect hasn't been reported yet.
+            val revealDensity = LocalDensity.current
+            val revealConfiguration = LocalConfiguration.current
+            val revealFullWidthPx = with(revealDensity) { revealConfiguration.screenWidthDp.dp.toPx() }
+            val revealFullHeightPx = with(revealDensity) { revealConfiguration.screenHeightDp.dp.toPx() }
+            val revealDefaultBaseWidthPx = with(revealDensity) { REVEAL_DEFAULT_BASE_WIDTH.toPx() }
+            val revealMinThicknessPx = with(revealDensity) { REVEAL_MIN_THICKNESS.toPx() }
+
             LaunchedEffect(lastIntentExtra) {
                 if (lastIntentExtra?.getBooleanExtra(McpServerService.EXTRA_OPEN_MCP, false) == true) {
                     screen = Screen.Mcp
@@ -250,11 +270,13 @@ class TerminalActivity : FragmentActivity() {
             fun openFiles() {
                 filesWrap.origin = filesOrigin
                 screen = Screen.Files
-                scope.launch { filesWrap.open() }
+                scope.launch {
+                    filesWrap.open(revealFullWidthPx, revealFullHeightPx, revealDefaultBaseWidthPx, revealMinThicknessPx)
+                }
             }
             fun closeFiles() {
                 scope.launch {
-                    filesWrap.close()
+                    filesWrap.close(revealFullWidthPx, revealFullHeightPx, revealDefaultBaseWidthPx, revealMinThicknessPx)
                     screen = Screen.Terminal
                 }
             }
@@ -269,7 +291,9 @@ class TerminalActivity : FragmentActivity() {
             val crumbRects = remember { mutableStateMapOf<String, Rect>() }
 
             fun closePathPicker() {
-                scope.launch { pathPickerState.close() }
+                scope.launch {
+                    pathPickerState.close(revealFullWidthPx, revealFullHeightPx, revealDefaultBaseWidthPx, revealMinThicknessPx)
+                }
             }
 
             // UI-1/UI-2/UI-3: each of these screens keeps its own internal navigation state
@@ -736,7 +760,14 @@ class TerminalActivity : FragmentActivity() {
                                     pathPickerRoot = session?.ui?.cwd?.takeIf { it.isNotBlank() }
                                         ?: CommandTree.pickerRoot(this@TerminalActivity).absolutePath
                                     pathPickerState.origin = crumbRects[crumbId] ?: Rect.Zero
-                                    scope.launch { pathPickerState.open() }
+                                    scope.launch {
+                                        pathPickerState.open(
+                                            revealFullWidthPx,
+                                            revealFullHeightPx,
+                                            revealDefaultBaseWidthPx,
+                                            revealMinThicknessPx
+                                        )
+                                    }
                                 }
                             }
                         },
