@@ -681,7 +681,7 @@ private fun StackPill(
     // (fraction of the pill's OWN width, per offsetByFractionOfParent's own semantics - it runs
     // after fillMaxWidth in this modifier chain, so its `constraints.maxWidth` is already this
     // pill's own target width, not the full screen's).
-    val motion = remember { StackEntranceMotion() }
+    val motion = remember { StackEntranceMotion(initialPoseFor(entering, entrance, row, geometry)) }
     val sway = remember { Animatable(0f) } // degrees, additive wobble - see PillWobble.kt
 
     // Keyed on the stack's own arrival identity (entranceKey), not `entering` alone: a pill
@@ -808,14 +808,65 @@ private const val DEAL_START_Y_MULTIPLIER = 2f
 private const val DEAL_TILT_DEG = 18f
 private const val TELESCOPE_STEP_MS = 120
 
-private class StackEntranceMotion {
+/** A [StackEntranceMotion]'s five Animatables, as plain values - see [initialPoseFor]. Defaults
+ *  are the at-rest pose (nothing displaced), the correct starting point for a pill that mounts
+ *  already [StackPillPhase.entering] false. */
+private data class StackEntrancePose(
+    val offset: Float = 0f,
+    val riseY: Float = 0f,
+    val lenFrac: Float = 1f,
+    val turn: Float = 0f,
+    val tilt: Float = 0f
+)
+
+/**
+ * The pose a [StackEntrance] variant's own `play*` function snaps to before it starts animating -
+ * mirrored here as a pure function so [StackPill] can seed [StackEntranceMotion]'s Animatables
+ * with it directly, at construction, instead of leaving them at their own generic defaults (the
+ * pill's fully-visible, at-rest pose) for the frame or two between first composition and this
+ * pill's own entrance [LaunchedEffect] actually reaching its first `snapTo()` call. That gap was
+ * a real, visible one: every pill in a freshly-arrived stack would flash into view at its final
+ * row position - "hidden behind each other" only after the animation caught up with itself,
+ * rather than from the very first frame. Each `play*` function's own `snapTo()` calls are left in
+ * place as a harmless no-op safety net (they re-set the same value this function already seeded),
+ * so the two can never drift into disagreement silently - a changed starting pose only has one
+ * place, this function, that actually needs updating.
+ */
+private fun initialPoseFor(entering: Boolean, entrance: StackEntrance, row: Int, geometry: StackRowGeometry): StackEntrancePose {
+    if (!entering) return StackEntrancePose()
+    val pitchPx = geometry.pitchPx
+    return when (entrance) {
+        StackEntrance.Slide -> StackEntrancePose(offset = -OFFSCREEN_FRACTION)
+        StackEntrance.Unfold -> StackEntrancePose(lenFrac = 0f)
+        StackEntrance.Drop -> StackEntrancePose(riseY = -pitchPx * DROP_START_MULTIPLIER)
+        StackEntrance.Cascade -> StackEntrancePose(
+            riseY = pitchPx,
+            turn = if (row % 2 == 0) -CASCADE_TURN_DEG else CASCADE_TURN_DEG
+        )
+        StackEntrance.Deal -> StackEntrancePose(
+            offset = DEAL_START_X_FRACTION,
+            riseY = pitchPx * DEAL_START_Y_MULTIPLIER,
+            tilt = DEAL_TILT_DEG
+        )
+        StackEntrance.Split -> StackEntrancePose(
+            offset = -OFFSCREEN_FRACTION,
+            riseY = pitchPx * row,
+            lenFrac = HOST_WIDTH / geometry.restWidthFraction
+        )
+        StackEntrance.Telescope ->
+            if (row == 0) StackEntrancePose(offset = -OFFSCREEN_FRACTION) else StackEntrancePose(riseY = pitchPx * row)
+        StackEntrance.Rally -> StackEntrancePose(offset = if (row % 2 == 0) -OFFSCREEN_FRACTION else OFFSCREEN_FRACTION)
+    }
+}
+
+private class StackEntranceMotion(pose: StackEntrancePose) {
     // Fraction of the pill's own width - see StackPill's own comment on why offsetByFractionOfParent
     // makes that true, not full-screen fraction.
-    val offset = Animatable(0f)
-    val riseY = Animatable(0f) // px, added to the pill's resting row lift
-    val lenFrac = Animatable(1f) // fraction of the pill's own resting width
-    val turn = Animatable(0f) // degrees
-    val tilt = Animatable(0f) // degrees
+    val offset = Animatable(pose.offset)
+    val riseY = Animatable(pose.riseY) // px, added to the pill's resting row lift
+    val lenFrac = Animatable(pose.lenFrac) // fraction of the pill's own resting width
+    val turn = Animatable(pose.turn) // degrees
+    val tilt = Animatable(pose.tilt) // degrees
 
     /**
      * The exit never varies - always the same sweep left, whichever entrance brought this pill
