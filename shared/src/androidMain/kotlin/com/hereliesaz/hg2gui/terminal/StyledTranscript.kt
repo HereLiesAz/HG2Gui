@@ -26,17 +26,21 @@ import com.termux.terminal.TextStyle
 // 24-bit truecolor cell (rare outside prompt themes and image previews) reports null - "no mapped
 // color", not "black" - and renders in the surrounding text's own normal ink instead of guessing.
 private val ANSI_HUE_BY_COLOR_INDEX: Map<Int, Int> = buildMap {
-    fun mapHue(hueName: String, vararg colorIndices: Int) {
+    // dim/bright named rather than vararg so every ANSI index below is passed as a named
+    // argument - the standard 16-color palette's own "dim 0-7, bright 8-15" layout, spelled out
+    // instead of computed, since that layout is what a reader needs to verify this against.
+    fun mapHue(hueName: String, dim: Int, bright: Int) {
         val hue = Azphalt.hueNames.indexOf(hueName)
-        colorIndices.forEach { put(it, hue) }
+        put(dim, hue)
+        put(bright, hue)
     }
-    mapHue("gray", 0, 8)
-    mapHue("red", 1, 9)
-    mapHue("green", 2, 10)
-    mapHue("amber", 3, 11)
-    mapHue("blue", 4, 12)
-    mapHue("magenta", 5, 13)
-    mapHue("cyan", 6, 14)
+    mapHue("gray", dim = 0, bright = 8)
+    mapHue("red", dim = 1, bright = 9)
+    mapHue("green", dim = 2, bright = 10)
+    mapHue("amber", dim = 3, bright = 11)
+    mapHue("blue", dim = 4, bright = 12)
+    mapHue("magenta", dim = 5, bright = 13)
+    mapHue("cyan", dim = 6, bright = 14)
     // 7/15 (white/bright white) intentionally absent - that's this terminal's own default-ish
     // foreground in most themes, not a semantic color worth breaking out of the normal ink.
 }
@@ -72,21 +76,24 @@ private fun styledLine(screen: TerminalBuffer, row: Int): List<StyledSpan> {
         val idx = charIndexAt[col]
         if (idx < used && text[idx] != ' ') lastPrintingCol = col
     }
-    if (lastPrintingCol < 0) return emptyList()
 
-    val spans = mutableListOf<StyledSpan>()
-    var runStartCol = 0
-    var runStyle = lineObject.getStyle(0)
-    for (col in 1..lastPrintingCol) {
-        val style = lineObject.getStyle(col)
-        if (style != runStyle) {
-            spans += styledSpan(text, charIndexAt[runStartCol], charIndexAt[col], runStyle)
-            runStartCol = col
-            runStyle = style
+    return if (lastPrintingCol < 0) {
+        emptyList()
+    } else {
+        val spans = mutableListOf<StyledSpan>()
+        var runStartCol = 0
+        var runStyle = lineObject.getStyle(0)
+        for (col in 1..lastPrintingCol) {
+            val style = lineObject.getStyle(col)
+            if (style != runStyle) {
+                spans += styledSpan(text, charIndexAt[runStartCol], charIndexAt[col], runStyle)
+                runStartCol = col
+                runStyle = style
+            }
         }
+        spans += styledSpan(text, charIndexAt[runStartCol], charIndexAt[lastPrintingCol + 1], runStyle)
+        spans
     }
-    spans += styledSpan(text, charIndexAt[runStartCol], charIndexAt[lastPrintingCol + 1], runStyle)
-    return spans
 }
 
 private fun styledSpan(text: CharArray, fromIdx: Int, toIdx: Int, style: Long): StyledSpan {
