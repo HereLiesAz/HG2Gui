@@ -235,6 +235,30 @@ fun FilesScreen(
         }
     }
 
+    // Rename/delete/move on a folder currently sitting in openChain used to leave that entry -
+    // and everything drilled in beneath it - pointing at a path that's since changed or vanished;
+    // the panel kept re-fetching the stale path, showed "NOTHING HERE" under a header still
+    // reading the old name, and currentTargetDir kept resolving to a directory that no longer
+    // existed. Deleting/moving the source out from under an open level closes it (and whatever
+    // was drilled in deeper, since a path nested under a gone folder is meaningless); renaming it
+    // updates that one level in place and closes anything drilled in deeper - LaunchedEffect above
+    // re-fetches every surviving level fresh the moment openChain itself changes, so there's
+    // nothing else to keep in sync by hand.
+    fun closeChainIfAffected(paths: Set<String>) {
+        val idx = openChain.indexOfFirst { it.path in paths }
+        if (idx >= 0) openChain = openChain.take(idx)
+    }
+
+    fun renameChainIfAffected(oldPath: String, newName: String) {
+        val idx = openChain.indexOfFirst { it.path == oldPath }
+        if (idx < 0) return
+        val renamed = openChain[idx].copy(name = newName, path = vfsChildPath(vfsParentPath(oldPath), newName))
+        openChain = openChain.take(idx) + renamed
+    }
+
+    fun moveOrCopyErrorMessage(failed: Int, total: Int, isMove: Boolean): String? =
+        if (failed > 0) "$failed of $total didn't ${if (isMove) "move" else "copy"}." else null
+
     fun recordSearch(query: String) {
         val trimmed = query.trim()
         if (trimmed.isEmpty()) return
@@ -264,8 +288,13 @@ fun FilesScreen(
             when {
                 creating != null -> { creating = null; createInput = "" }
                 renameTarget != null -> { renameTarget = null }
-                screen != FMScreen.Browse -> { screen = FMScreen.Browse }
+                // Checked ahead of the generic `screen != Browse` branch below: typing a query
+                // flips `screen` to Search as a side effect (see onValueChange above), but the
+                // content area is gated on `searchActive` alone - resetting only `screen` here
+                // left the visible search results on screen with nothing to show for the back
+                // press, requiring a second one to actually leave search.
                 searchActive -> { searchActive = false; searchQuery = ""; screen = FMScreen.Browse }
+                screen != FMScreen.Browse -> { screen = FMScreen.Browse }
                 selectMode -> { selectMode = false; selected = emptySet() }
                 openChain.isNotEmpty() -> { openChain = openChain.dropLast(1) }
             }
@@ -284,8 +313,11 @@ fun FilesScreen(
             confirmLabel = if (isMove) "MOVE" else "COPY",
             onConfirm = {
                 scope.launch {
-                    val failed = paths.count { path -> !(if (isMove) onMove(path, target) else onCopy(path, target)) }
-                    opError = if (failed > 0) "$failed of ${paths.size} didn't ${if (isMove) "move" else "copy"}." else null
+                    val failed = paths.filterNot { path -> if (isMove) onMove(path, target) else onCopy(path, target) }.toSet()
+                    opError = moveOrCopyErrorMessage(failed.size, paths.size, isMove)
+                    // Only a move actually removes the source - a copy leaves the open folder
+                    // right where it was.
+                    if (isMove) closeChainIfAffected(paths - failed)
                     selected = emptySet()
                     selectMode = false
                     refresh()
@@ -310,8 +342,9 @@ fun FilesScreen(
                         screen = FMScreen.Browse
                         pendingBatchOverwrite = Triple(selected, target, isMove)
                     } else {
-                        val failed = selected.count { path -> !(if (isMove) onMove(path, target) else onCopy(path, target)) }
-                        opError = if (failed > 0) "$failed of ${selected.size} didn't ${if (isMove) "move" else "copy"}." else null
+                        val failed = selected.filterNot { path -> if (isMove) onMove(path, target) else onCopy(path, target) }.toSet()
+                        opError = moveOrCopyErrorMessage(failed.size, selected.size, isMove)
+                        if (isMove) closeChainIfAffected(selected - failed)
                         selected = emptySet()
                         selectMode = false
                         screen = FMScreen.Browse
@@ -336,6 +369,8 @@ fun FilesScreen(
             },
             onBack = { screen = FMScreen.Browse },
             fullscreen = fullscreen,
+            errorMessage = opError,
+            onErrorDismiss = { opError = null },
             modifier = modifier
         )
         return
@@ -584,7 +619,9 @@ fun FilesScreen(
                                 if (name in siblingNames) {
                                     pendingRenameOverwrite = target to name
                                 } else {
-                                    opError = if (!onRename(target.path, name)) "Couldn't rename that." else null
+                                    val ok = onRename(target.path, name)
+                                    opError = if (!ok) "Couldn't rename that." else null
+                                    if (ok) renameChainIfAffected(target.path, name)
                                     refresh()
                                 }
                             }
@@ -604,7 +641,9 @@ fun FilesScreen(
                 confirmLabel = "OVERWRITE",
                 onConfirm = {
                     scope.launch {
-                        opError = if (!onRename(target.path, newName)) "Couldn't rename that." else null
+                        val ok = onRename(target.path, newName)
+                        opError = if (!ok) "Couldn't rename that." else null
+                        if (ok) renameChainIfAffected(target.path, newName)
                         refresh()
                     }
                     pendingRenameOverwrite = null
@@ -649,7 +688,9 @@ fun FilesScreen(
                 confirmLabel = "DELETE",
                 onConfirm = {
                     scope.launch {
-                        opError = if (!onDelete(entry.path)) "Couldn't delete ${entry.name}." else null
+                        val ok = onDelete(entry.path)
+                        opError = if (!ok) "Couldn't delete ${entry.name}." else null
+                        if (ok) closeChainIfAffected(setOf(entry.path))
                         refresh()
                     }
                     deleteTarget = null
@@ -666,8 +707,9 @@ fun FilesScreen(
                 confirmLabel = "DELETE",
                 onConfirm = {
                     scope.launch {
-                        val failed = selected.count { !onDelete(it) }
-                        opError = if (failed > 0) "$failed of ${selected.size} didn't delete." else null
+                        val failed = selected.filterNot { onDelete(it) }.toSet()
+                        opError = if (failed.isNotEmpty()) "${failed.size} of ${selected.size} didn't delete." else null
+                        closeChainIfAffected(selected - failed)
                         selected = emptySet(); selectMode = false; refresh()
                     }
                     batchDeleteConfirm = false
@@ -896,7 +938,7 @@ private fun FileRows(
                             .clip(RoundedCornerShape(7.dp))
                             // The tile's own hue never changes on selection - only the mark does.
                             .background(Azphalt.hues[Azphalt.hueOf(img.path)])
-                            .clickable { onTap(img) }
+                            .combinedClickable(onClick = { onTap(img) }, onLongClick = { onLongPress(img) })
                     ) {
                         Text(
                             img.name, color = Azphalt.White.copy(alpha = .8f), fontSize = 7.sp,
