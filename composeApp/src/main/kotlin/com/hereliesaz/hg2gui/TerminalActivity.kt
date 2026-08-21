@@ -771,9 +771,10 @@ class TerminalActivity : FragmentActivity() {
                                 }
                             }
                         },
-                        onRun = { sessionId, line, onOutput, onNeedInput, onExit, onStderr ->
+                        onRun = { sessionId, line, onOutput, onNeedInput, onExit, onStderr, onStyledOutput ->
                             val session = sessions.first { it.ui.id == sessionId }
-                            session.engine.run(line, onNeedInput, onExit, onStderr).collect { output -> onOutput(output) }
+                            session.engine.run(line, onNeedInput, onExit, onStderr, onStyledOutput)
+                                .collect { output -> onOutput(output) }
                             session.ui.cwd = session.engine.workingDirectory
                             // A package manager (pkg/apt/apt-get/dpkg) can change what's actually
                             // on PATH; re-scan so the Shell pills reflect that instead of the

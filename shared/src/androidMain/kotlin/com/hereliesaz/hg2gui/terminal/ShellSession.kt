@@ -5,6 +5,7 @@ import android.system.ErrnoException
 import android.system.Os
 import android.system.OsConstants
 import com.hereliesaz.hg2gui.managers.PtyPreference
+import com.hereliesaz.hg2gui.managers.StyledSpan
 import java.io.BufferedReader
 import java.io.BufferedWriter
 import java.io.File
@@ -332,7 +333,8 @@ actual class ShellSession private constructor(
             command,
             onLine = { line -> output = line },
             onNeedInput = { null },
-            onStderrLine = { line -> stderrOutput = line }
+            onStderrLine = { line -> stderrOutput = line },
+            onStyledLine = {}
         )
         return ShellSessionResult(output, exitCode, _workingDirectory, stderrOutput)
     }
@@ -341,7 +343,8 @@ actual class ShellSession private constructor(
         command: String,
         onLine: (line: String) -> Unit,
         onNeedInput: (prompt: String) -> String?,
-        onStderrLine: (line: String) -> Unit
+        onStderrLine: (line: String) -> Unit,
+        onStyledLine: (lines: List<List<StyledSpan>>) -> Unit
     ): Int {
         if (!isAlive) {
             onLine("shell is not running")
@@ -436,6 +439,7 @@ actual class ShellSession private constructor(
                     if (!promptOfferedForThisStall && marker < 0 && tailIsUnterminated && idleMs > PROMPT_IDLE_MS) {
                         promptOfferedForThisStall = true
                         emittedUpTo = trimConsumedPrefix(pending, flush(pending, emittedUpTo, pending.length, emulator, onLine))
+                        onStyledLine(emulator.styledTranscript())
                         val answer = onNeedInput(pending.substring(0, pending.length))
                         if (answer != null) {
                             sin.write(answer)
@@ -463,6 +467,7 @@ actual class ShellSession private constructor(
                 if (marker < 0) {
                     val safeEnd = (pending.length - SENTINEL.length).coerceAtLeast(emittedUpTo)
                     emittedUpTo = trimConsumedPrefix(pending, flush(pending, emittedUpTo, safeEnd, emulator, onLine))
+                    onStyledLine(emulator.styledTranscript())
                     continue
                 }
 
@@ -482,6 +487,7 @@ actual class ShellSession private constructor(
                 }
                 drainStderr()
                 onLine(emulator.transcriptText())
+                onStyledLine(emulator.styledTranscript())
                 break
             }
         } catch (e: IOException) {

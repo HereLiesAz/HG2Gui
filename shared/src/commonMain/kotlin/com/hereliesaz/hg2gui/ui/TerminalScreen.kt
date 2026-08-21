@@ -30,6 +30,10 @@ import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -39,6 +43,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import com.hereliesaz.hg2gui.managers.StyledSpan
 import com.hereliesaz.hg2gui.managers.TerminalHistoryEntry
 import com.hereliesaz.hg2gui.terminal.ShellAliases
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
@@ -54,8 +59,8 @@ import kotlinx.coroutines.launch
 // outer list of commands itself, which used to grow without limit for the life of a session.
 private const val MAX_BUFFER_ENTRIES = 200
 
-// Every in-flight update to one running entry - a streamed output/stderr chunk, the exit code
-// once it lands - is the same "find it by index, replace it" shape; this is that shape, once.
+// Every in-flight update to one running entry - a streamed output/stderr/styled chunk, the exit
+// code once it lands - is the same "find it by index, replace it" shape; this is that shape, once.
 private fun SessionUiState.updateBufferEntry(entryId: Int, transform: (TerminalHistoryEntry) -> TerminalHistoryEntry) {
     buffer = buffer.mapIndexed { index, entry -> if (index == entryId) transform(entry) else entry }
 }
@@ -83,7 +88,8 @@ fun TerminalScreen(
         onOutput: (String) -> Unit,
         onNeedInput: suspend (prompt: String) -> String,
         onExit: (Int?) -> Unit,
-        onStderr: (String) -> Unit
+        onStderr: (String) -> Unit,
+        onStyledOutput: (List<List<StyledSpan>>) -> Unit
     ) -> Unit
 ) {
     val active = sessions.first { it.id == activeSessionId }
@@ -147,7 +153,8 @@ fun TerminalScreen(
                             { outputChunk -> session.updateBufferEntry(entryId) { it.copy(output = outputChunk) } },
                             { prompt -> session.awaitPromptAnswer(prompt) },
                             { code -> exitCode = code },
-                            { stderrChunk -> session.updateBufferEntry(entryId) { it.copy(stderr = stderrChunk) } }
+                            { stderrChunk -> session.updateBufferEntry(entryId) { it.copy(stderr = stderrChunk) } },
+                            { styled -> session.updateBufferEntry(entryId) { it.copy(styledOutput = styled) } }
                         )
                     } catch (e: CancellationException) {
                         // Composition teardown (e.g. navigating away to Settings/Guide/Files
@@ -519,6 +526,19 @@ private const val OUTPUT_WIPE_STAGGER_MS = 90L
 // appears immediately rather than making the reader wait out dozens of staggered reveals.
 private const val OUTPUT_WIPE_STAGGER_CAP = 24
 
+// D1: an unstyled span's color - exactly what every line rendered as before ANSI-aware styling
+// existed, kept as the fallback for plain text and for any run whose color didn't map to a
+// named Azphalt hue (StyledTranscript.kt's own ansiHueOf).
+private fun StyledSpan.inkColor(onPage: Color): Color = hue?.let { Azphalt.hues[it] } ?: onPage.copy(alpha = .8f)
+
+private fun buildStyledLine(spans: List<StyledSpan>, onPage: Color): AnnotatedString = buildAnnotatedString {
+    spans.forEach { span ->
+        withStyle(SpanStyle(color = span.inkColor(onPage), fontWeight = if (span.bold) FontWeight.Bold else null)) {
+            append(span.text)
+        }
+    }
+}
+
 @Composable
 private fun OutputLines(entry: TerminalHistoryEntry) {
     // D4: this used to short-circuit to a flat, unanimated Text while entry.isRunning was true,
@@ -526,34 +546,47 @@ private fun OutputLines(entry: TerminalHistoryEntry) {
     // install, a build) sat there looking frozen for its entire run, then dumped its whole
     // transcript in one staggered burst at the very end. Using the same per-line composable
     // structure whether running or not means each NEW line gets its own wipe the moment it
-    // actually streams in - each OutputWipeLine's `line` param can keep growing after its own
+    // actually streams in - each OutputWipeLine's `spans` param can keep growing after its own
     // LaunchedEffect(Unit) has already fired (a line still being written, with no trailing
     // newline yet), which just reads as text extending live rather than re-wiping.
-    val lines = remember(entry.output) { entry.output.split("\n") }
+    //
+    // D1: entry.styledOutput (one entry per real terminal row, ANSI-aware) takes over rendering
+    // whenever it's non-empty - the bootstrap/Builtins branches, and any real command with no
+    // ANSI escapes in its output at all, leave it empty and this falls back to a single unstyled
+    // span per plain-text line, exactly what rendered before styling existed.
+    val lines = remember(entry.output, entry.styledOutput) {
+        if (entry.styledOutput.isNotEmpty()) {
+            entry.styledOutput
+        } else {
+            entry.output.split("\n").map { listOf(StyledSpan(it)) }
+        }
+    }
     Column {
         // Only the animated prefix gets one composable per line - the stagger cap already bounds
         // how many lines wipe on individually, but the *rest* of a very long output (a recursive
         // listing, a package inventory, thousands of lines) used to still get one Text node each,
         // costing real composition/layout work for content nobody's watching wipe on anyway. The
         // remaining tail renders as a single joined block instead.
-        lines.take(OUTPUT_WIPE_STAGGER_CAP).forEachIndexed { index, line ->
-            OutputWipeLine(seq = index, line = line)
+        lines.take(OUTPUT_WIPE_STAGGER_CAP).forEachIndexed { index, spans ->
+            OutputWipeLine(seq = index, spans = spans)
         }
         if (lines.size > OUTPUT_WIPE_STAGGER_CAP) {
+            val onPage = Azphalt.currentGround.onPage
             Text(
-                lines.drop(OUTPUT_WIPE_STAGGER_CAP).joinToString("\n"),
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    color = Azphalt.currentGround.onPage.copy(alpha = .8f),
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 12.sp
-                )
+                buildAnnotatedString {
+                    lines.drop(OUTPUT_WIPE_STAGGER_CAP).forEachIndexed { index, spans ->
+                        if (index > 0) append("\n")
+                        append(buildStyledLine(spans, onPage))
+                    }
+                },
+                style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace, fontSize = 12.sp)
             )
         }
     }
 }
 
 @Composable
-private fun OutputWipeLine(seq: Int, line: String) {
+private fun OutputWipeLine(seq: Int, spans: List<StyledSpan>) {
     val progress = remember { Animatable(0f) }
     LaunchedEffect(Unit) {
         // D4: seq is this line's absolute index into the whole transcript, which keeps growing
@@ -566,18 +599,15 @@ private fun OutputWipeLine(seq: Int, line: String) {
         delay((seq % OUTPUT_WIPE_STAGGER_CAP) * OUTPUT_WIPE_STAGGER_MS)
         progress.animateTo(1f, tween(OUTPUT_WIPE_MS, easing = OUTPUT_WIPE_EASE))
     }
+    val onPage = Azphalt.currentGround.onPage
     Text(
-        line,
+        buildStyledLine(spans, onPage),
         modifier = Modifier
             .drawWithContent {
                 clipRect(right = size.width * progress.value) { this@drawWithContent.drawContent() }
             }
             .graphicsLayer { translationX = -14.dp.toPx() * (1f - progress.value) },
-        style = MaterialTheme.typography.bodyMedium.copy(
-            color = Azphalt.currentGround.onPage.copy(alpha = .8f),
-            fontFamily = FontFamily.Monospace,
-            fontSize = 12.sp
-        )
+        style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace, fontSize = 12.sp)
     )
 }
 
