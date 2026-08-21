@@ -510,9 +510,8 @@ fun PillMenu(
                             val row = roots.size - 1 - i
                             StackPill(
                                 node = node,
-                                position = StackPillPosition(row, roots.size),
+                                position = StackPillPosition(row, roots.size, stackScroll.offsetPx),
                                 arrival = StackPillArrival(entrance, rootArrivalToken),
-                                scrollOffsetPx = stackScroll.offsetPx,
                                 phase = StackPillPhase(
                                     leaving = leavingHost != null,
                                     isHost = node.id == leavingHost,
@@ -635,8 +634,10 @@ fun PillMenu(
     }
 }
 
-/** Which row this pill is, and how many rows are in the stack - see [StackEntranceMotion.play]. */
-private data class StackPillPosition(val row: Int, val rowCount: Int)
+/** Which row this pill is, how many rows are in the stack, and the root stack's own scroll
+ *  offset - bundled together (rather than a separate parameter) to keep [StackPill] under
+ *  detekt's LongParameterList ceiling. See [StackEntranceMotion.play] for row/rowCount. */
+private data class StackPillPosition(val row: Int, val rowCount: Int, val scrollOffsetPx: Float)
 
 /** The stack-wide entrance roll and the arrival identity it was rolled against - see PillMenu's
  *  own `rootArrivalToken` comment for why the root stack needs an explicit identity here where a
@@ -651,11 +652,10 @@ private fun StackPill(
     node: MenuNode,
     position: StackPillPosition,
     arrival: StackPillArrival,
-    scrollOffsetPx: Float,
     phase: StackPillPhase,
     onClick: () -> Unit
 ) {
-    val (row, rowCount) = position
+    val (row, rowCount, scrollOffsetPx) = position
     val (entrance, entranceKey) = arrival
     // Not destructured (detekt caps that at 3 components) - read straight off the bundle instead.
     val leaving = phase.leaving
@@ -737,6 +737,10 @@ private suspend fun playStackSway(
     sway.wobble(row, Azphalt.SLIDE_MS, amplitudeScale)
 }
 
+// The vertical component of every "pivot on the right (or left) tip" TransformOrigin below -
+// dead centre of the pill's own height, never the top or bottom edge.
+private const val ORIGIN_CENTER_Y = .5f
+
 @Composable
 private fun StackPillVisual(
     ctx: StackPillContext,
@@ -768,8 +772,12 @@ private fun StackPillVisual(
                     transformOrigin = when (ctx.entrance) {
                         StackEntrance.Deal -> TransformOrigin(1f, 1f) // hinged bottom-right
                         StackEntrance.Cascade ->
-                            if (ctx.row % 2 == 0) TransformOrigin(0f, .5f) else TransformOrigin(1f, .5f)
-                        else -> TransformOrigin(1f, .5f) // the visible right end
+                            if (ctx.row % 2 == 0) {
+                                TransformOrigin(0f, ORIGIN_CENTER_Y)
+                            } else {
+                                TransformOrigin(1f, ORIGIN_CENTER_Y)
+                            }
+                        else -> TransformOrigin(1f, ORIGIN_CENTER_Y) // the visible right end
                     }
                     rotationZ = motion.turn.value + motion.tilt.value + sway.value
                     translationY = ctx.restLift + motion.riseY.value + ctx.scrollOffsetPx
@@ -989,7 +997,7 @@ private fun HostPill(node: MenuNode, rowsBelow: Int, onClick: () -> Unit) {
                 .offsetByFractionOfParent(HOST_RIGHT_EDGE - 1f)
                 .absoluteBleed(OVERHANG)
                 .graphicsLayer {
-                    transformOrigin = TransformOrigin(1f, .5f) // the visible right end
+                    transformOrigin = TransformOrigin(1f, ORIGIN_CENTER_Y) // the visible right end
                     rotationZ = sway.value
                     translationY = drop.value * density
                 }
