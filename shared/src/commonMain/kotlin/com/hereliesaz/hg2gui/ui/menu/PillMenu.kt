@@ -291,21 +291,25 @@ private fun rememberStackScroll(rowMin: Int, rowMax: Int): StackScroll {
     var offsetPx by remember { mutableStateOf(0f) }
     var hasScrolled by remember { mutableStateOf(false) }
     // [offsetPx] is added on top of every pill's own already-correct resting `lift` (row R rests
-    // at -pitchPx*R, so translationY = -pitchPx*R + offsetPx). Bounded on BOTH ends now, each end
-    // named for the one pill it would otherwise let cross the breadcrumb (row 0, translationY 0 -
-    // shared with the root stack's own front row, or a child band's trail below it):
-    //  - upper bound (+pitchPx*rowMin): the closest pill to the breadcrumb (the bottom-most one)
-    //    reaching translationY 0 exactly - any more and it, and everything above it, would drag
-    //    down past the breadcrumb it shares that row with.
-    //  - lower bound (-pitchPx*(rowMax-rowMin)): the point where the whole rigid stack has
-    //    shifted up by exactly its own span - the top-most pill has moved as far as the
-    //    bottom-most pill's own resting spot ever gets to move, so going further would only ever
-    //    reveal blank space past the top-most pill, never another real row.
+    // at -pitchPx*R, so translationY = -pitchPx*R + offsetPx; row R lands exactly on the
+    // breadcrumb, translationY 0, when offsetPx == +pitchPx*R - always non-negative, since every
+    // row index is). A scroll is really the whole rigid stack sliding through that one fixed
+    // breadcrumb slot: which row currently sits there changes continuously as offsetPx sweeps
+    // from one end to the other, in row order - a pill passing *through* translationY 0 on its
+    // way past is normal scrolling, not something to prevent. What must stay bounded is only the
+    // two ends of the real content:
+    //  - the closest-to-breadcrumb pill (rowMin) at the breadcrumb (offsetPx == pitchPx*rowMin,
+    //    0 for the root stack, one pitch for a child band) - the smallest offsetPx worth
+    //    reaching, since going lower would show nothing but blank space below where a real row
+    //    ever sits.
+    //  - the furthest-from-breadcrumb pill (rowMax) at the breadcrumb (offsetPx ==
+    //    pitchPx*rowMax) - the largest offsetPx worth reaching, past which there's no further
+    //    row to bring into that slot either.
     // Both ends stop dead at their pill, matching the "no bounce, no self-correcting" house rule
     // the settle already follows - unverified on a real device, since none was available while
     // building this; a backwards feel is a one-line sign flip, not a structural fix.
-    val maxOffsetPx = pitchPx * rowMin
-    val minOffsetPx = -pitchPx * (rowMax - rowMin)
+    val minOffsetPx = pitchPx * rowMin
+    val maxOffsetPx = pitchPx * rowMax
     val scrollState = rememberScrollableState { delta ->
         hasScrolled = true
         val next = (offsetPx + delta).coerceIn(minOffsetPx, maxOffsetPx)

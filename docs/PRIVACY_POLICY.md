@@ -32,6 +32,17 @@ If the Project includes an optional telemetry or crash-reporting feature, it wil
 
 HG2Gui may include or rely on third-party open-source libraries and tools. These components may have their own privacy practices. When included in releases, those components are governed by their respective licenses and policies. You should consult the documentation of any bundled third-party services for specific details.
 
+5a. Network Requests This App Makes
+
+None of these happen passively or in the background without you taking the corresponding action first:
+
+- Termux bootstrap download: on first launch (or when you run `bootstrap` by hand), the app downloads the real Termux bootstrap archive from GitHub Releases (`github.com/termux/termux-packages`) to give you a real shell.
+- Package management: `apt`/`apt-get`/`pkg` talk to Termux's own package mirror (`packages-cf.termux.dev`) exactly as they would in the official Termux app, whenever you run an update/install/search yourself.
+- The Store (azphalt.store): the **Store** pill's search and install actions talk to the `azphalt.store` package registry. Nothing here runs without an explicit search or install tap.
+- AI chat: only if you've set an API key in Settings → AI SETTINGS, the **AI** pill's chat sends your typed question to the Anthropic API to get a suggested command. No key, no requests. The key itself is stored locally on-device (unencrypted `SharedPreferences`, same as every other local setting here) and is never sent anywhere but Anthropic's API.
+- MCP server: if you start it from Settings → MCP SERVER, it listens on `127.0.0.1` only (loopback) — it never accepts a connection from the network, only from this same device.
+- Any other shell command you run (`curl`, `wget`, `ssh`, `git`, …) talks to whatever you point it at, exactly like it would in a real terminal — the app itself isn't a party to that traffic.
+
 6. Sharing Data (User Actions)
 
 If you choose to open an issue, create a pull request, or contact maintainers via GitHub and include logs, stack traces, or other debugging information, that information will become part of the public issue or PR and therefore public. Do not paste secrets, credentials, or personal data into issues or PRs.

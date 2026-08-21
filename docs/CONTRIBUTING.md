@@ -8,15 +8,25 @@ behaviour — app drawers, widget grids, a `category.HOME` filter, launcher life
 are out of scope.
 
 ## Project Structure
-*   **Kotlin shared across platforms:** `composeApp/src/commonMain/kotlin/com/hereliesaz/hg2gui/`
+HG2Gui is a Kotlin Multiplatform project: `:composeApp` is now just the thin Android entry point
+(`TerminalActivity.kt`, `EditorActivity.kt`, `mcp/McpServerService.kt`); the actual UI and
+execution logic lives in the separate `:shared` module.
+*   **Kotlin shared across platforms:** `shared/src/commonMain/kotlin/com/hereliesaz/hg2gui/`
     — Compose UI (`ui/`), the `ShellSession` contract and `ShellAliases` (`terminal/`), the
-    `calc` expression parser (`util/CalculationEngine.kt`).
-*   **Kotlin, Android-specific:** `composeApp/src/androidMain/kotlin/com/hereliesaz/hg2gui/`
+    `calc` expression parser (`util/CalculationEngine.kt`), plus `managers/`/`mcp/` code that
+    doesn't need an Android-specific API.
+*   **Kotlin, Android-specific:** `shared/src/androidMain/kotlin/com/hereliesaz/hg2gui/`
     — the `ShellSession`/`DistroManager`/`TerminalEngine`/`Builtins` implementations
-    (`terminal/`), `ContactManager`/`VfsManager`/`flashlight/` (`managers/`), a handful of
-    shared helpers (`util/`), and the Android-only parts of the UI (`ui/menu/CommandTree.kt`,
-    `ui/menu/FileBrowser.kt`, `ui/editor/`).
-*   **Resources:** `composeApp/src/androidMain/res/`
+    (`terminal/`), `ContactManager`/`VfsManager`/`flashlight/` (`managers/`), the AI chat client
+    (`ai/`) and the azphalt Store client (`azp/`), a handful of shared helpers (`util/`), and the
+    Android-only parts of the UI (`ui/menu/CommandTree.kt`, `ui/menu/FileBrowser.kt`,
+    `ui/editor/`).
+*   **`:terminal-emulator`**: a vendored VT100 parser plus the native pty JNI bridge
+    (`JNI.kt`/`jni/termux.c`) — used by default only to normalize shell output; the real pty
+    path is wired in but off by default (Settings → Real pseudoterminal).
+*   **`:termux-shared`**: Termux-compatible Android filesystem/process/terminal utilities;
+    depends on `:terminal-emulator`.
+*   **Resources:** `composeApp/src/main/res/`
 
 ## Coding Standards
 *   **Language:** Kotlin for everything, old and new. There is no separate legacy engine to
