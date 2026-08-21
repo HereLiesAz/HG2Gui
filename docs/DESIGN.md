@@ -63,10 +63,11 @@ scrolling one to row 0 doesn't substitute for that tap. This only ever kicks in 
 drag or fling - whichever pill happens to start out at row 0 before any input never goes ink on
 its own, so nothing reads as pre-selected the instant a stack first appears.
 
-Scrolling isn't bounded to the stack's own content either: a drag or a fling can carry the stack
-past its first or last row, leaving blank space above the top or below the bottom. Nothing
-snaps it back - it stays wherever the gesture leaves it, the same as a settled fling stays on
-whatever row it lands on.
+Scrolling is bounded to the stack's own content on both ends: a drag or a fling stops dead the
+instant the closest-to-breadcrumb pill would cross row 0 in one direction, or the far pill would
+in the other - never past either, never leaving blank space above the top or below the bottom
+(`rememberStackScroll`'s `rowMin`/`rowMax`-derived `coerceIn`). Short of those two limits it
+behaves the same as ever - a settled fling stays on whatever row it lands on.
 
 ## 4a. The trail
 

@@ -1,10 +1,12 @@
 # Architecture
 
-**Current version:** 0.6.50.211
+**Current version:** 0.7.28 build 299 (`version.properties`)
 
 HG2Gui is an Android **terminal application** — not a launcher. The UI and execution layer are
 Kotlin Multiplatform (Compose); there is no separate reflection-based command framework. Built-in
-commands are a fixed dispatch table in `terminal/Builtins.kt`.
+commands are a fixed dispatch table in `terminal/Builtins.kt`. `:shared` currently builds for
+Android only (no other KMP targets are declared) — "multiplatform" here names the tooling/module
+split (a thin `:composeApp` entry point over shared UI/logic), not a live cross-platform target.
 
 ## Core Components
 
@@ -20,21 +22,35 @@ The entry point.
 
 ### 2. Execution layer (`terminal/`)
 *   `ShellSession.kt` — an `expect`/`actual` pair (`commonMain`/`androidMain`). The Android
-    `actual` picks the best of three shell tiers in order: a bundled static `zsh` binary, a real
-    Termux bootstrap (see `DistroManager` below) if one is installed, or bare `/system/bin/sh`
-    as the last resort. Whichever wins is kept alive for the life of the session so `cd` and
-    exported variables persist. Commands are framed by a sentinel the shell echoes after each
-    line, carrying `$?` and `$PWD`. Output is read as a raw buffer, not line-by-line — a real
-    prompt (`Overwrite file? [y/N] `) never prints its own trailing newline while it waits, so
-    an idle gap with an unterminated tail is treated as a live prompt and surfaced through
-    `stream`'s `onNeedInput` callback rather than blocking forever. There is still no pty: no
-    job control, no cursor addressing, and full-screen programs will not behave — which is
-    exactly why `edit` exists as a separate Compose screen rather than trying to run `nano`
-    through this.
+    `actual` prefers a real Termux bootstrap (see `DistroManager` below) if one is installed,
+    falling back to bare `/system/bin/sh` as the last resort. Whichever wins is kept alive for
+    the life of the session so `cd` and exported variables persist. Commands are framed by a
+    sentinel the shell echoes after each line, carrying `$?` and `$PWD`. Output is read as a raw
+    buffer, not line-by-line — a real prompt (`Overwrite file? [y/N] `) never prints its own
+    trailing newline while it waits, so an idle gap with an unterminated tail is treated as a
+    live prompt and surfaced through `stream`'s `onNeedInput` callback rather than blocking
+    forever. The default backend is a plain `ProcessBuilder` pipe: no job control, no cursor
+    addressing, full-screen programs will not behave — which is exactly why `edit` exists as a
+    separate Compose screen rather than trying to run `nano` through this. An experimental,
+    off-by-default Settings toggle (`PtyPreference`) swaps this for the app's own bundled native
+    pty bridge (`:terminal-emulator`'s `JNI.kt`) instead; unverified on real hardware, so the
+    pipe stays the default.
 *   `DistroManager.kt` (`androidMain`) — downloads and extracts the real Termux bootstrap: the
     same rootfs zip archive the official Termux app installs, giving genuine `bash`, `apt`/
     `pkg`, and coreutils. Runs automatically on first launch (see `TerminalActivity`) and can
-    also be triggered by hand via the `bootstrap` verb.
+    also be triggered by hand via the `bootstrap` verb. Also symlinks the bootstrap's main-repo
+    APT keyring, writes a custom `apt.conf` pointing every `Dir::*` setting at this app's real
+    prefix, rewrites hardcoded-Termux-package shebangs, and writes a bash-function wrapper
+    profile so bootstrap-shipped shell scripts (which can't use Android's exec-exemption trick)
+    still run via `source`.
+*   `AptCatalog.kt` (`androidMain`) — everything `apt install` could install, not just what's on
+    disk: parsed from `apt update`'s own downloaded `var/lib/apt/lists/*_Packages` index and
+    heuristically categorized by name/description (Termux's repo carries no Section/Tag
+    metadata). Backs the `install` pill's browsable catalog under `apt`/`apt-get`/`pkg`.
+*   `HelpCatalog.kt` (`androidMain`) — background-probes each real binary on PATH with
+    `<binary> --help` (bounded timeout, cached in `SharedPreferences`) to discover flag hints
+    beyond `CommandTree`'s hand-curated `SHELL_HINTS` list. Read-only and synchronous at
+    pill-composition time; the actual probing runs off-thread.
 *   `Builtins.kt` — the eleven commands the real shell has no path to: `wifi`, `bluetooth`,
     `airplane`, `flash`, `volume`, `brightness` (system toggles with no shell binary behind
     them), `call`/`contacts` (via `ContactManager`), `vfs` (the sandboxed filesystem, see below),
@@ -48,9 +64,13 @@ The entry point.
     already runs on a background dispatcher.
 *   `ShellAliases.kt` (`commonMain`) — Kotlin-native replacements for what a live shell line
     editor would offer (autosuggestion, "did you mean", alias hints), since `ShellSession` sends
-    one complete line at a time and reads one complete result back — there's no live PTY for a
-    real line editor to attach to. Surfaced through `TerminalScreen` as an ordinary `MenuNode`
-    host+children, rendered by the same `PillMenu` every other command uses.
+    one complete line at a time and reads one complete result back by default — there's no live
+    PTY for a real line editor to attach to unless the experimental pty setting is on. Also
+    detects the *shape* of a stalled interactive prompt (yes/no, a bracketed/comma-separated
+    choice list, a `select`-style numbered menu, a password field) so `TerminalScreen` can offer
+    a tap-only reply instead of a text field wherever the shape allows it. Surfaced through
+    `TerminalScreen` as an ordinary `MenuNode` host+children, rendered by the same `PillMenu`
+    every other command uses.
 
 Sessions are one `ShellSession` + `TerminalEngine` pair each, so scrollback, command history and
 working directory never leak between tabs. `TerminalActivity` owns the list and switches which
@@ -109,28 +129,44 @@ Compose. A screen is a function of state; there is no view-hierarchy manager cla
 
 ## Package Structure (`com.hereliesaz.hg2gui`)
 
-*   **root**: `TerminalActivity`, `EditorActivity` — the only two activities.
-*   **`ui/`**: Compose UI and the pill menu, `ui/editor/`, `ui/files/`.
+*   **`composeApp` root**: `TerminalActivity`, `EditorActivity` — the only two activities — plus
+    `mcp/McpServerService.kt`, the MCP server's foreground `Service`. Everything else below lives
+    in the separate `:shared` module (`commonMain`/`androidMain`).
+*   **`ui/`**: Compose UI and the pill menu, `ui/editor/`, `ui/files/`, `ui/guide/` (the command
+    glossary), `ui/ssh/` (the ssh connection wizard), `ui/ai/` (the AI chat screen), `ui/azp/`
+    (the Store browser).
 *   **`managers/`**: `ContactManager` (contacts, backs `call`/`contacts`), `VfsManager` (a
     sandboxed file layer rooted at `filesDir/vfs`; normal operations stay confined to app-private
     storage, while the explicit root-only `vfs mount` command can bind-mount it into the real
-    filesystem), `flashlight/` (the torch implementation behind `flash`).
+    filesystem), `SshPresets`/`WorkflowStore`/`AzpLibrary` (flat-`SharedPreferences` stores),
+    `PtyPreference` (the real-pty Settings toggle), `flashlight/` (the torch implementation
+    behind `flash`).
 *   **`terminal/`**: `ShellSession`, `TerminalEngine`, `Builtins` (the eleven built-in commands),
     `DistroManager` (the Termux bootstrap installer), `DpkgCatalog` (reads dpkg's own bookkeeping
-    for which package owns a binary — `CommandTree`'s hand-curated map turns that into a
-    category).
+    for which package owns an installed binary), `AptCatalog` (everything `apt install` could
+    install, for the browsable install catalog), `HelpCatalog` (background `--help`-flag
+    discovery) — `CommandTree`'s hand-curated map turns package ownership into a category.
+*   **`ai/`**: the AI chat's Anthropic API client. **`azp/`**: the azphalt Store client (search,
+    download, Ed25519 signature verification, dependency-resolving script installs). **`mcp/`**:
+    the MCP server's JSON-RPC protocol and tool registry.
 *   **`util/`**: `CalculationEngine` (the `calc` expression parser, `commonMain`), plus a handful
     of Android-only helpers still in use — logging/crash reporting, the interactive-shell wrapper
     `vfs mount` needs for `su`, `GenericFileProvider`.
 
 ## Gradle Module Boundaries
 
-*   **`:composeApp`** — the Android application and Kotlin Multiplatform Compose UI, orchestration,
-    terminal routing, managers, and platform integrations.
-*   **`:terminal-emulator`** — a headless VT100 output parser. It does not provide a PTY; the shell
-    remains a `ProcessBuilder` process connected through ordinary streams.
-*   **`:termux-shared`** — reusable Termux-compatible Android utilities consumed by `:composeApp`;
-    depends on `:terminal-emulator`.
+*   **`:composeApp`** — the thin Android entry point: the two activities, the MCP foreground
+    service, resources, product flavor config. No terminal/UI logic of its own.
+*   **`:shared`** — the Kotlin Multiplatform module (Android-only today; no other targets are
+    declared) holding the actual Compose UI, terminal routing, managers, and platform
+    integrations described above.
+*   **`:terminal-emulator`** — a vendored VT100 output parser plus a native pty JNI bridge
+    (`JNI.kt`/`jni/termux.c`). The parser is used unconditionally to flatten shell output for
+    display; the pty bridge itself is only live when `PtyPreference`'s experimental setting is
+    on — the default shell backend is still a `ProcessBuilder` process over ordinary streams.
+*   **`:termux-shared`** — a vendored Termux-compatible Android utility library, declared as a
+    dependency of both `:composeApp` and `:shared` but not currently called by any
+    HG2Gui-authored code.
 
 ## Product Subsystems
 

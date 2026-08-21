@@ -57,19 +57,47 @@ the menu *is* the interface. Every command, subcommand and argument is a pill yo
         from shell plugins — autosuggestion, "did you mean", alias hints, a graphical file
         picker, graphical yes/no answers to an interactive prompt — are implemented natively as
         pills instead.
+-   [x] **Installable-package browsing.** The `install` pill under `apt`/`apt-get`/`pkg` no
+        longer requires typing a package name blind — it drills into a categorized, browsable
+        catalog parsed from `apt update`'s own downloaded index (`AptCatalog`), the same
+        "menu is the interface" premise applied to the one place it was still missing.
+-   [x] **Auto-discovered command flags.** Beyond the hand-curated hint list, every real binary
+        on PATH gets its `--help` output probed once in the background and parsed into tappable
+        flag pills (`HelpCatalog`) — narrowing, not replacing, how much of "anything Termux
+        handles" still requires typing a flag from memory.
 -   [ ] **Scripting:** A custom scripting language or deeper Python integration for
         automating tasks within the terminal.
 
 ### Phase 3: Connectivity
--   **SSH Client:** A full SSH client in the terminal, remote servers managed with the same
-    point-and-click convenience — the tree populates from the remote host's own completions.
--   **Plugin System:** Community-created command menus (JSON/YAML) imported to extend the
-    suggestion tree for `kubectl`, `aws`, and the rest.
+-   [x] **SSH Client** *(landed narrower than originally scoped)*: saved connection presets plus
+        a **new…** wizard that collects host/user/port/key and drops the assembled command on
+        the line — not the original "tree populates from the remote host's own completions"
+        vision, which would need a live connection to introspect. Host-key and password prompts
+        reuse the same tap-only interactive-prompt machinery every other command gets.
+-   [x] **Context switching:** a lighter-weight take on remote-host awareness than a live
+        completions feed — the **Context** pill offers a static reference tree
+        (package/service manager, `git`/`ls`/`ssh`) for `ubuntu`/`macos`/`windows`, for working
+        over an active `ssh` session into that kind of host.
+-   [ ] **Plugin System:** Community-created command menus (JSON/YAML) imported to extend the
+        suggestion tree for `kubectl`, `aws`, and the rest. Not built as originally scoped; the
+        **Store** below covers an adjacent but different need (installing whole packages, not
+        authoring new menu branches for an existing binary).
+-   [x] **The Store (azphalt.store).** Not in the original roadmap at all: a **Store** pill
+        browses [azphalt.store](https://azphalt.store)'s package registry for `.azp`
+        extensions — assets, sandboxed code, packs, companion apps, MCP-server headers, and
+        AI-skill bundles — each install path-contained, SHA-256-checked, and Ed25519-signature-
+        verified.
+-   [x] **MCP server.** Also outside the original roadmap: an optional, loopback-only,
+        explicit-start JSON-RPC server (Settings → MCP SERVER) a paired external AI agent can
+        use to read/write the app's sandboxed files; running real shell commands through it is a
+        second, biometric-gated switch, off by default.
 
 ### Phase 4: AI Integration
--   **LLM Assistant:** A local or API-based model that writes commands from natural language
-    ("How do I untar a file?"). It proposes; it never runs. The proposed command arrives as
-    editable pills, and you press Run.
+-   [x] **LLM Assistant:** a chat screen (the **AI** pill, an Anthropic API key you supply
+        yourself) turns a plain-English request into a suggested shell command, optionally with
+        a per-flag "what each part does" breakdown. It proposes; it never runs — the reply's
+        **USE ▸** pill drops the command onto the input line for you to review and press Run,
+        same as every wizard-produced command in the app.
 
 ## Non-goals
 -   Being a home screen. The launcher lineage is where this came from, not where it is going.
