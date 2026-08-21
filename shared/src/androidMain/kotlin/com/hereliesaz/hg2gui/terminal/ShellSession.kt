@@ -80,6 +80,15 @@ actual class ShellSession private constructor(
         private const val STARTUP_PROBE_MS = 300L
         private const val PROMPT_IDLE_MS = 400L
 
+        // D5: [pending] below accumulates every raw byte read for the life of one stream() call -
+        // flush() only ever advances a read cursor into it, never shrinks it, so a command that
+        // produces a huge amount of output before the sentinel line arrives (cat on a large file,
+        // a verbose build) grew it without bound even though the rendered TerminalEmulator
+        // transcript stays capped at 1000 rows. Once the already-flushed prefix passes this many
+        // chars, it's dropped from [pending] and the cursor reset to 0 - transparent, since
+        // nothing downstream ever reads before the cursor.
+        private const val PENDING_TRIM_THRESHOLD = 65_536
+
         // Matches the width/height stream()'s own per-command TerminalEmulator(...) already
         // assumes below - so the pty's actual window size (what ioctl(TIOCGWINSZ) reports to the
         // child) doesn't disagree with the geometry every command's output gets re-wrapped to
@@ -379,7 +388,7 @@ actual class ShellSession private constructor(
 
                     if (!promptOfferedForThisStall && marker < 0 && tailIsUnterminated && idleMs > PROMPT_IDLE_MS) {
                         promptOfferedForThisStall = true
-                        emittedUpTo = flush(pending, emittedUpTo, pending.length, emulator, onLine)
+                        emittedUpTo = trimConsumedPrefix(pending, flush(pending, emittedUpTo, pending.length, emulator, onLine))
                         val answer = onNeedInput(pending.substring(0, pending.length))
                         if (answer != null) {
                             sin.write(answer)
@@ -406,14 +415,14 @@ actual class ShellSession private constructor(
                 val marker = pending.indexOf(SENTINEL, emittedUpTo)
                 if (marker < 0) {
                     val safeEnd = (pending.length - SENTINEL.length).coerceAtLeast(emittedUpTo)
-                    emittedUpTo = flush(pending, emittedUpTo, safeEnd, emulator, onLine)
+                    emittedUpTo = trimConsumedPrefix(pending, flush(pending, emittedUpTo, safeEnd, emulator, onLine))
                     continue
                 }
 
                 val newlineIdx = pending.indexOf("\n", marker + SENTINEL.length)
                 if (newlineIdx < 0) continue
 
-                emittedUpTo = flush(pending, emittedUpTo, marker, emulator, onLine)
+                emittedUpTo = trimConsumedPrefix(pending, flush(pending, emittedUpTo, marker, emulator, onLine))
                 val tail = pending.substring(marker + SENTINEL.length, newlineIdx).trimEnd('\r')
                 val split = tail.indexOf(':')
                 if (split > 0) {
@@ -449,6 +458,15 @@ actual class ShellSession private constructor(
         emulator.append(bytes, bytes.size)
         onLine(emulator.transcriptText())
         return to
+    }
+
+    // D5: called with flush()'s own return value - drops [pending]'s already-flushed prefix once
+    // it's grown past PENDING_TRIM_THRESHOLD, since nothing downstream ever reads before the
+    // cursor flush() just returned.
+    private fun trimConsumedPrefix(pending: StringBuilder, emittedUpTo: Int): Int {
+        if (emittedUpTo <= PENDING_TRIM_THRESHOLD) return emittedUpTo
+        pending.delete(0, emittedUpTo)
+        return 0
     }
 
     // MCP-13: mScreen is a fixed-size circular scrollback (1000 rows, see the TerminalEmulator

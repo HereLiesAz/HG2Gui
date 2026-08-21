@@ -74,7 +74,8 @@ fun TerminalScreen(
         sessionId: String,
         line: String,
         onOutput: (String) -> Unit,
-        onNeedInput: suspend (prompt: String) -> String
+        onNeedInput: suspend (prompt: String) -> String,
+        onExit: (Int?) -> Unit
     ) -> Unit
 ) {
     val active = sessions.first { it.id == activeSessionId }
@@ -126,6 +127,11 @@ fun TerminalScreen(
                 session.buffer = session.buffer + TerminalHistoryEntry(command = lineToRun, isRunning = true)
 
                 scope.launch {
+                    // D2: null until the command actually exits (or forever, for the
+                    // bootstrap/Builtins branches - neither is a real shell command with an exit
+                    // status of its own) - captured here rather than read straight off onRun's
+                    // own return value, since a CancellationException below skips past that.
+                    var exitCode: Int? = null
                     try {
                         onRun(
                             session.id,
@@ -140,7 +146,8 @@ fun TerminalScreen(
                                     }
                                 }
                             },
-                            { prompt -> session.awaitPromptAnswer(prompt) }
+                            { prompt -> session.awaitPromptAnswer(prompt) },
+                            { code -> exitCode = code }
                         )
                     } catch (e: CancellationException) {
                         // Composition teardown (e.g. navigating away to Settings/Guide/Files
@@ -160,7 +167,7 @@ fun TerminalScreen(
                         }
                     } finally {
                         session.buffer = session.buffer.mapIndexed { index, entry ->
-                            if (index == entryId) entry.copy(isRunning = false) else entry
+                            if (index == entryId) entry.copy(isRunning = false, exitCode = exitCode) else entry
                         }
                         // SH-5: each entry's own VT100 scrollback is already capped, but nothing
                         // ever trimmed the *outer* list of commands itself - a long session just
@@ -413,10 +420,7 @@ private fun BufferEntry(
                     fontWeight = FontWeight.Bold
                 )
             )
-            if (entry.isRunning) {
-                Spacer(Modifier.width(8.dp))
-                Box(Modifier.size(8.dp).clip(RoundedCornerShape(percent = 50)).background(Azphalt.Yellow))
-            }
+            StatusDot(entry)
         }
         if (entry.output.isNotEmpty()) {
             Spacer(Modifier.height(4.dp))
@@ -452,6 +456,20 @@ private fun BufferEntry(
     }
 }
 
+@Composable
+private fun StatusDot(entry: TerminalHistoryEntry) {
+    if (entry.isRunning) {
+        Spacer(Modifier.width(8.dp))
+        Box(Modifier.size(8.dp).clip(RoundedCornerShape(percent = 50)).background(Azphalt.Yellow))
+    } else if (entry.exitCode != null && entry.exitCode != 0) {
+        // D2: success and failure used to render identically - no exit code reached the UI at
+        // all. "04 - Semantics" is explicit that a non-zero exit is red, the same hue Run/Primary
+        // already uses, rather than a separate error colour.
+        Spacer(Modifier.width(8.dp))
+        Box(Modifier.size(8.dp).clip(RoundedCornerShape(percent = 50)).background(Azphalt.hues[6]))
+    }
+}
+
 // Line-by-line duration/stagger for the output "set" beat - 320ms sits inside the 300-360ms
 // window the motion sheet calls for, staggered 90ms apart, using the one house easing curve
 // everything else in the app already animates with.
@@ -466,22 +484,14 @@ private const val OUTPUT_WIPE_STAGGER_CAP = 24
 
 @Composable
 private fun OutputLines(entry: TerminalHistoryEntry) {
-    // While a command is still streaming, output just appears as it arrives - the "set" beat is
-    // for the finished block settling in, not a wipe replayed on every incoming chunk. Once
-    // entry.isRunning flips to false this branch (re)mounts fresh, so its first composition here
-    // *is* the "output first appears" signal - a brand-new Column, a brand-new remember, exactly
-    // once, matching WipeItem/wipeKey's "plays once, not a loop" rule.
-    if (entry.isRunning) {
-        Text(
-            entry.output,
-            style = MaterialTheme.typography.bodyMedium.copy(
-                color = Azphalt.currentGround.onPage.copy(alpha = .8f),
-                fontFamily = FontFamily.Monospace,
-                fontSize = 12.sp
-            )
-        )
-        return
-    }
+    // D4: this used to short-circuit to a flat, unanimated Text while entry.isRunning was true,
+    // and only mount the per-line wipe below once the command finished - so a slow command (an
+    // install, a build) sat there looking frozen for its entire run, then dumped its whole
+    // transcript in one staggered burst at the very end. Using the same per-line composable
+    // structure whether running or not means each NEW line gets its own wipe the moment it
+    // actually streams in - each OutputWipeLine's `line` param can keep growing after its own
+    // LaunchedEffect(Unit) has already fired (a line still being written, with no trailing
+    // newline yet), which just reads as text extending live rather than re-wiping.
     val lines = remember(entry.output) { entry.output.split("\n") }
     Column {
         // Only the animated prefix gets one composable per line - the stagger cap already bounds
@@ -509,7 +519,14 @@ private fun OutputLines(entry: TerminalHistoryEntry) {
 private fun OutputWipeLine(seq: Int, line: String) {
     val progress = remember { Animatable(0f) }
     LaunchedEffect(Unit) {
-        delay(seq * OUTPUT_WIPE_STAGGER_MS)
+        // D4: seq is this line's absolute index into the whole transcript, which keeps growing
+        // for the life of a long-running command - a plain `seq * STAGGER_MS` delay would make a
+        // line arriving live at, say, index 400 wait another 36s past its own actual arrival
+        // before it's even allowed to start wiping in. Wrapping the multiplier by the same cap
+        // that already bounds how many lines animate individually keeps every line's own delay
+        // small and bounded, whether it's part of a big finished-block burst or arriving alone
+        // seconds into a stream.
+        delay((seq % OUTPUT_WIPE_STAGGER_CAP) * OUTPUT_WIPE_STAGGER_MS)
         progress.animateTo(1f, tween(OUTPUT_WIPE_MS, easing = OUTPUT_WIPE_EASE))
     }
     Text(

@@ -417,7 +417,7 @@ class TerminalActivity : FragmentActivity() {
                     firstUi.running = true
                     val entryId = firstUi.buffer.size
                     firstUi.buffer = firstUi.buffer + TerminalHistoryEntry(command = "bootstrap", isRunning = true)
-                    built.engine.run("bootstrap") { "" }.collect { output ->
+                    built.engine.run("bootstrap", onNeedInput = { "" }).collect { output ->
                         firstUi.buffer = firstUi.buffer.mapIndexed { i, e ->
                             if (i == entryId) e.copy(output = output) else e
                         }
@@ -771,9 +771,9 @@ class TerminalActivity : FragmentActivity() {
                                 }
                             }
                         },
-                        onRun = { sessionId, line, onOutput, onNeedInput ->
+                        onRun = { sessionId, line, onOutput, onNeedInput, onExit ->
                             val session = sessions.first { it.ui.id == sessionId }
-                            session.engine.run(line, onNeedInput).collect { output -> onOutput(output) }
+                            session.engine.run(line, onNeedInput, onExit).collect { output -> onOutput(output) }
                             session.ui.cwd = session.engine.workingDirectory
                             // A package manager (pkg/apt/apt-get/dpkg) can change what's actually
                             // on PATH; re-scan so the Shell pills reflect that instead of the
