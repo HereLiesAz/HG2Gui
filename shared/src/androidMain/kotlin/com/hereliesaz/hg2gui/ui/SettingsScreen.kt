@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
+import com.hereliesaz.hg2gui.ui.menu.onPage
 import com.hereliesaz.hg2gui.ui.menu.pageBrush
 
 /** Bounds match the range the reporter cared about testing: half size to double. */
@@ -154,7 +155,9 @@ private fun SettingRow(title: String, description: String, control: @Composable 
             fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em
         )
         Text(
-            description, color = Azphalt.Ink.copy(alpha = .6f),
+            // .55f, the style guide's own "text-muted" token - not .6f, which no other caption
+            // in the app uses for this role.
+            description, color = Azphalt.Ink.copy(alpha = .55f),
             fontSize = 11.sp, lineHeight = 15.sp,
             modifier = Modifier.padding(top = 4.dp, bottom = 10.dp)
         )
@@ -226,17 +229,20 @@ private fun StepperButton(symbol: String, enabled: Boolean, onClick: () -> Unit)
     // invisible 48dp box it's centered inside, the same pattern GuideReaderScreen's own Chip
     // helper uses for the identical problem.
     Box(
-        Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp).clickable(enabled = enabled, onClick = onClick),
+        Modifier
+            .size(34.dp)
+            .clip(RoundedCornerShape(percent = 50))
+            // A capsule is never tinted, faded, or given alpha (style guide "03 -
+            // Transparency") - idle uses the same ink-14% wash every other disabled capsule in
+            // the app does, not a faded copy of its own hue.
+            .background(if (enabled) Azphalt.hues[6] else Azphalt.Ink.copy(alpha = .14f))
+            .clickable(enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
-        Box(
-            Modifier
-                .size(34.dp)
-                .clip(RoundedCornerShape(percent = 50))
-                .background(Azphalt.hues[6].copy(alpha = if (enabled) 1f else .35f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(symbol, color = Azphalt.White, fontSize = 16.sp, fontWeight = FontWeight.Black)
-        }
+        Text(
+            symbol,
+            color = if (enabled) Azphalt.White else Azphalt.currentGround.onPage.copy(alpha = .55f),
+            fontSize = 16.sp, fontWeight = FontWeight.Black
+        )
     }
 }

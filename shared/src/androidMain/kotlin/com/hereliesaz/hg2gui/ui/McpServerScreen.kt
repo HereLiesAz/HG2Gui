@@ -142,7 +142,9 @@ private fun McpSettingRow(title: String, description: String, control: @Composab
             fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em
         )
         Text(
-            description, color = Azphalt.Ink.copy(alpha = .6f),
+            // .55f, the style guide's own "text-muted" token - not .6f, which no other caption
+            // in the app uses for this role.
+            description, color = Azphalt.Ink.copy(alpha = .55f),
             fontSize = 11.sp, lineHeight = 15.sp,
             modifier = Modifier.padding(top = 4.dp, bottom = 10.dp)
         )
