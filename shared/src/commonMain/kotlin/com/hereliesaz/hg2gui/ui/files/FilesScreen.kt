@@ -786,7 +786,10 @@ private fun ExpandableLevel(
             EmptyLabel()
         } else if (folders.isNotEmpty()) {
             Text(
-                "FOLDERS · ${folders.size}", color = Azphalt.Ink.copy(alpha = .45f),
+                // .55f, the app-wide "text-muted, eyebrows and captions" tier (style guide "03 -
+                // Transparency") - the 45% tier is for micro labels inside a pill, which this
+                // section caption isn't.
+                "FOLDERS · ${folders.size}", color = Azphalt.Ink.copy(alpha = .55f),
                 fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.18.em
             )
             folders.forEach { f ->
@@ -799,7 +802,9 @@ private fun ExpandableLevel(
         if (files.isNotEmpty()) {
             if (folders.isNotEmpty() || openEntry != null) {
                 Text(
-                    "FILES · ${files.size}", color = Azphalt.Ink.copy(alpha = .45f),
+                    // .55f, the app-wide "text-muted, eyebrows and captions" tier - see the
+                    // FOLDERS caption above for the same reasoning.
+                    "FILES · ${files.size}", color = Azphalt.Ink.copy(alpha = .55f),
                     fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.18.em,
                     modifier = Modifier.padding(top = 4.dp)
                 )
@@ -983,7 +988,8 @@ private fun ColumnScope.RecentSearches(recent: List<String>, onSelect: (String) 
             )
         } else {
             Text(
-                "RECENT SEARCHES", color = Azphalt.Ink.copy(alpha = .45f),
+                // .55f, the app-wide "text-muted, eyebrows and captions" tier.
+                "RECENT SEARCHES", color = Azphalt.Ink.copy(alpha = .55f),
                 fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.18.em
             )
             Spacer(Modifier.height(8.dp))

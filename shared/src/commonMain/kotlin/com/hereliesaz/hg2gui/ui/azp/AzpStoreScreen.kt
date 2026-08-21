@@ -110,7 +110,10 @@ fun AzpStoreScreen(
                     Modifier
                         .clip(RoundedCornerShape(percent = 50))
                         .background(if (selected) Azphalt.Ink else Azphalt.Ink.copy(alpha = .12f))
-                        .clickable {
+                        // Gated on !busy the same as the search field and SEARCH button below -
+                        // without it, tapping a second kind while the first search is still in
+                        // flight let two unsequenced requests race (see onSearch's own caller).
+                        .clickable(enabled = !busy) {
                             kind = k
                             onSearch(query.trim(), k)
                         }
@@ -154,13 +157,19 @@ fun AzpStoreScreen(
             Row(
                 Modifier
                     .clip(RoundedCornerShape(percent = 50))
-                    .background(if (!busy) Azphalt.hues[6] else Azphalt.hues[6].copy(alpha = .4f))
+                    // A capsule is never tinted, faded, or given alpha (style guide "03 -
+                    // Transparency") - idle uses the same ink-14% wash every other disabled
+                    // capsule in the app does, not a faded copy of its own hue.
+                    .background(if (!busy) Azphalt.hues[6] else Azphalt.Ink.copy(alpha = .14f))
                     .clickable(enabled = !busy) { onSearch(query.trim(), kind) }
                     .padding(horizontal = 16.dp, vertical = 9.dp)
             ) {
                 Text(
                     if (busy) "…" else "SEARCH",
-                    style = MaterialTheme.typography.titleMedium.copy(color = Azphalt.White, fontSize = 9.sp)
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        color = if (!busy) Azphalt.White else Azphalt.currentGround.onPage.copy(alpha = .55f),
+                        fontSize = 9.sp
+                    )
                 )
             }
         }
@@ -246,7 +255,10 @@ private fun AzpRow(listing: AzpListing, installing: Boolean, onInstall: (AzpList
         Box(
             Modifier
                 .clip(RoundedCornerShape(percent = 50))
-                .background(if (listing.installed) Azphalt.Ink.copy(alpha = .3f) else Azphalt.Ink)
+                // A capsule is never tinted, faded, or given alpha (style guide "03 -
+                // Transparency") - already-installed uses the same ink-14% wash every other
+                // idle/disabled capsule in the app does, not a faded copy of its own solid ink.
+                .background(if (listing.installed) Azphalt.Ink.copy(alpha = .14f) else Azphalt.Ink)
                 .clickable(enabled = !listing.installed && !installing) { onInstall(listing) }
                 .padding(horizontal = 12.dp, vertical = 7.dp)
         ) {
@@ -256,7 +268,7 @@ private fun AzpRow(listing: AzpListing, installing: Boolean, onInstall: (AzpList
                     installing -> "…"
                     else -> "INSTALL"
                 },
-                color = Azphalt.Yellow,
+                color = if (listing.installed) onPage.copy(alpha = .55f) else Azphalt.Yellow,
                 fontSize = 8.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em
             )
         }

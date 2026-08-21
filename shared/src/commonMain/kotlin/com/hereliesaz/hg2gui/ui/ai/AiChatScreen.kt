@@ -13,6 +13,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -62,6 +63,13 @@ fun AiChatScreen(
 ) {
     var input by remember { mutableStateOf("") }
     val listState = remember { LazyListState() }
+
+    // Without this, a reply that pushes the transcript past one screen left the user's own
+    // question and the AI's answer both below the fold with no scroll and no "new message"
+    // affordance - listState existed but nothing ever drove it.
+    LaunchedEffect(messages.size) {
+        if (messages.isNotEmpty()) listState.animateScrollToItem(messages.size - 1)
+    }
 
     Column(
         Modifier
@@ -157,7 +165,10 @@ fun AiChatScreen(
             Row(
                 Modifier
                     .clip(RoundedCornerShape(percent = 50))
-                    .background(if (!busy && input.isNotBlank()) Azphalt.hues[6] else Azphalt.hues[6].copy(alpha = .4f))
+                    // A capsule is never tinted, faded, or given alpha (style guide "03 -
+                    // Transparency") - idle uses the same ink-14% wash every other disabled
+                    // capsule in the app does, not a faded copy of its own hue.
+                    .background(if (!busy && input.isNotBlank()) Azphalt.hues[6] else Azphalt.Ink.copy(alpha = .14f))
                     .clickable(enabled = !busy && input.isNotBlank()) {
                         onAsk(input.trim())
                         input = ""
@@ -166,7 +177,10 @@ fun AiChatScreen(
             ) {
                 Text(
                     if (busy) "…" else "SEND",
-                    style = MaterialTheme.typography.titleMedium.copy(color = Azphalt.White, fontSize = 9.sp)
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        color = if (!busy && input.isNotBlank()) Azphalt.White else Azphalt.currentGround.onPage.copy(alpha = .55f),
+                        fontSize = 9.sp
+                    )
                 )
             }
         }
@@ -213,7 +227,9 @@ private fun AiBubble(message: AiMessage, onUseCommand: (String) -> Unit) {
             ) {
                 Text(
                     "WHAT EACH PART DOES",
-                    color = Azphalt.currentGround.onPage.copy(alpha = .45f),
+                    // .55f, the app-wide "text-muted, eyebrows and captions" tier - the 45% tier
+                    // is for micro labels inside a pill, which this section caption isn't.
+                    color = Azphalt.currentGround.onPage.copy(alpha = .55f),
                     fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.18.em
                 )
                 message.parts.forEach { (token, explanation) ->

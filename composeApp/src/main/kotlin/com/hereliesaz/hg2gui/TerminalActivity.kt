@@ -94,6 +94,7 @@ import com.hereliesaz.hg2gui.ui.ssh.SshFlow
 import java.io.File
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -215,6 +216,12 @@ class TerminalActivity : FragmentActivity() {
             var screen by remember {
                 mutableStateOf(if (intent?.getBooleanExtra(McpServerService.EXTRA_OPEN_MCP, false) == true) Screen.Mcp else Screen.Terminal)
             }
+            // Screen.AiSettings is reachable from both Settings and the AI chat - every exit used
+            // to hardcode a return to Settings regardless of which one actually opened it, so
+            // entering from the chat and then saving/backing out stranded the user on a screen
+            // they never visited in this chain. Set right before navigating to AiSettings, read by
+            // every one of its own exits below.
+            var aiSettingsCameFrom by remember { mutableStateOf(Screen.Settings) }
             var fullscreen by remember { mutableStateOf(false) }
             var fontScalePercent by remember { mutableStateOf(100) }
             var usePty by remember { mutableStateOf(false) }
@@ -223,6 +230,11 @@ class TerminalActivity : FragmentActivity() {
             var aiBusy by remember { mutableStateOf(false) }
             var azpResults by remember { mutableStateOf<List<AzpListing>>(emptyList()) }
             var azpBusy by remember { mutableStateOf(false) }
+            // Cancelled before every new search starts (see onSearch below) so a stale response
+            // from an earlier query/kind can never land after a newer one and silently overwrite
+            // it - AzpStoreScreen already gates its own kind chips/search field on !azpBusy, but
+            // this is what actually makes overlapping requests impossible rather than just unlikely.
+            var azpSearchJob by remember { mutableStateOf<Job?>(null) }
             var azpInstallingId by remember { mutableStateOf<String?>(null) }
             // AZP-2: a script package's dependency/wrapper step (ScriptInstaller.install, which
             // can run `pkg install -y` unconfirmed) only proceeds without asking first when the
@@ -461,7 +473,7 @@ class TerminalActivity : FragmentActivity() {
                     (screen == Screen.Files || filesWrap.active) && filesBackStep.canStepBack -> filesBackStep.stepBack()
                     screen == Screen.Files || filesWrap.active -> closeFiles()
                     screen == Screen.Guide && guideBackStep.canStepBack -> guideBackStep.stepBack()
-                    screen == Screen.AiSettings -> screen = Screen.Settings
+                    screen == Screen.AiSettings -> screen = aiSettingsCameFrom
                     screen == Screen.Mcp -> screen = Screen.Settings
                     else -> screen = Screen.Terminal
                 }
@@ -488,7 +500,7 @@ class TerminalActivity : FragmentActivity() {
                             PtyPreference.setEnabled(this@TerminalActivity, value)
                         },
                         onOpenMcpServer = { screen = Screen.Mcp },
-                        onOpenAiSettings = { screen = Screen.AiSettings },
+                        onOpenAiSettings = { aiSettingsCameFrom = Screen.Settings; screen = Screen.AiSettings },
                         onBack = { screen = Screen.Terminal }
                     )
 
@@ -498,9 +510,9 @@ class TerminalActivity : FragmentActivity() {
                         onSave = { newKey ->
                             aiApiKey = newKey
                             AiSettings.setApiKey(this@TerminalActivity, newKey)
-                            screen = Screen.Settings
+                            screen = aiSettingsCameFrom
                         },
-                        onBack = { screen = Screen.Settings }
+                        onBack = { screen = aiSettingsCameFrom }
                     )
 
                     screen == Screen.Ai -> AiChatScreen(
@@ -537,7 +549,7 @@ class TerminalActivity : FragmentActivity() {
                             }
                             screen = Screen.Terminal
                         },
-                        onOpenSettings = { screen = Screen.AiSettings },
+                        onOpenSettings = { aiSettingsCameFrom = Screen.Ai; screen = Screen.AiSettings },
                         onBack = { screen = Screen.Terminal }
                     )
 
@@ -548,7 +560,8 @@ class TerminalActivity : FragmentActivity() {
                         installingId = azpInstallingId,
                         onSearch = { query, kind ->
                             azpBusy = true
-                            scope.launch {
+                            azpSearchJob?.cancel()
+                            azpSearchJob = scope.launch {
                                 val response = try {
                                     AzpClient.search(query, kind.takeUnless { it == "all" })
                                 } catch (e: Exception) {

@@ -868,7 +868,10 @@ private fun CommandLine(
             Row(
                 Modifier
                     .clip(RoundedCornerShape(percent = 50))
-                    .background(if (enabled) Azphalt.hues[6] else Azphalt.hues[6].copy(alpha = .4f))
+                    // A capsule is never tinted, faded, or given alpha (style guide "03 -
+                    // Transparency") - idle uses the same ink-14% wash every other disabled
+                    // capsule in the app does, not a faded copy of its own hue.
+                    .background(if (enabled) Azphalt.hues[6] else Azphalt.Ink.copy(alpha = .14f))
                     .clickable(enabled = enabled, onClick = onRun)
                     .padding(start = 16.dp, end = 6.dp, top = 7.dp, bottom = 7.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -877,7 +880,7 @@ private fun CommandLine(
                 Text(
                     runLabel,
                     style = MaterialTheme.typography.titleMedium.copy(
-                        color = Azphalt.White,
+                        color = if (enabled) Azphalt.White else Azphalt.currentGround.onPage.copy(alpha = .55f),
                         fontSize = 9.sp
                     )
                 )

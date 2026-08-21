@@ -161,7 +161,10 @@ private fun ColumnScope.GuideIndex(onBack: () -> Unit, onOpenEntry: (Int) -> Uni
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(
                         chapter.label.uppercase(),
-                        color = Azphalt.currentGround.onPage.copy(alpha = .45f),
+                        // .55f, the app-wide "text-muted, eyebrows and captions" tier (style
+                        // guide "03 - Transparency") - the 45% tier is for micro labels inside a
+                        // pill, which this caption isn't.
+                        color = Azphalt.currentGround.onPage.copy(alpha = .55f),
                         fontSize = 9.sp,
                         fontWeight = FontWeight.ExtraBold,
                         letterSpacing = 0.18.em
@@ -352,7 +355,9 @@ private fun ColumnScope.GuideEntryReader(
                 Column {
                     Text(
                         "FROM THE CHAPTER",
-                        color = Azphalt.currentGround.onPage.copy(alpha = .45f),
+                        // .55f, the app-wide "text-muted, eyebrows and captions" tier - see the
+                        // chapter-label caption above for the same reasoning.
+                        color = Azphalt.currentGround.onPage.copy(alpha = .55f),
                         fontSize = 9.sp,
                         fontWeight = FontWeight.ExtraBold,
                         letterSpacing = 0.18.em
