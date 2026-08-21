@@ -35,9 +35,12 @@ of the screen**, `rowsBelow × pitch`, and stays pinned there.
 
 ## 4. Children cascade upward
 
-Children cascade **upward** from the host, all the same size (34% wide, starting at 30% —
-just inside the host's right end). Row 0 is reserved for the host and its own trail of picks,
-so the first child fans out from row 1, one pitch above the host - not sharing its row.
+Children cascade **upward** from the host, starting at 30% — just inside the host's right end —
+and 34% wide at most: the same row-to-row width cycling rule 01 gives the root stack (§6) applies
+here too, so a band isn't every pill at one identical width but cycles down in 2% steps every
+five rows (`childWidthFraction` in `PillMenu.kt`), the same "so the stack reads as a stack"
+reasoning. Row 0 is reserved for the host and its own trail of picks, so the first child fans out
+from row 1, one pitch above the host - not sharing its row.
 
 Arguments repeat this exact choreography, one level at a time, however deep the tree goes.
 Tapping a pill with its own children makes it the new anchor: its siblings **leave**, the same
@@ -72,10 +75,14 @@ behaves the same as ever - a settled fling stays on whatever row it lands on.
 ## 4a. The trail
 
 A picked child doesn't just cascade its own children in — it also drops out of the band and
-settles beside the host as a **trail crumb**, the record of what's been picked so far. The
-trail starts at 38.3% of the frame, just clear of the host's right end, and runs left to right
-in pick order. Unlike every other pill (sized as a fraction of the screen), a crumb is sized by
-its own content, with a 56dp floor so a short label like `ls` doesn't shrink-wrap smaller than
+settles beside the host as a **trail crumb**, the record of what's been picked so far. The trail
+starts at 32.8% of the frame — just *before* the host's right end (36.3%), not clear of it - the
+same shingled overlap every crumb-to-crumb seam already gets (`TRAIL_LEFT_OF_FULL` in
+`PillMenu.kt`, itself `HOST_WIDTH × HOST_RIGHT_EDGE` minus one crumb-overlap's worth), so the
+host-to-first-crumb joint fans the same way as the rest of the chain instead of being the one
+seam in it with a plain gap. Runs left to right in pick order. Unlike every other pill (sized as
+a fraction of the screen), a crumb is sized by its own content, with a 56dp floor so a short
+label like `ls` doesn't shrink-wrap smaller than
 everything around it. Each crumb overlaps the one after it by 14dp - a fanned, shingled read
 (the same overlap/bleed language the rest of the menu already uses) rather than a plain row of
 gapped pills; the earlier crumb draws on top, so it's the later one that visibly tucks under.
@@ -92,8 +99,8 @@ level is its own fresh cascade, never more pills piled onto the one before it.
 | Lift | final 10% of the turn |
 | Cascade | strictly sequential — 173ms per step |
 | Host rests at | 36.3% of the frame |
-| Child pill | 34% wide, 30% in |
-| Trail starts at | 38.3% of the frame |
+| Child pill | 30% in, 34% wide at most, cycling down in 2% steps every five rows |
+| Trail starts at | 32.8% of the frame |
 | Trail crumb | content-sized, 56dp floor, 14dp overlap |
 | Overhang | 62dp past the left edge |
 | Row pitch | 20dp |
