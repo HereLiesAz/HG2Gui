@@ -1011,16 +1011,17 @@ private fun EntryMenu(entry: VfsEntry, onRename: (VfsEntry) -> Unit, onDelete: (
     // the destructive × instead. Each gets its own invisible 48x48dp centered tap zone, the same
     // minWidth+minHeight pairing SessionTabs/ModifierKeys already use for a single-glyph target -
     // that alone also restores real separation between them without changing the visible spacing.
+    val tapZone = Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        Box(Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp).clickable { onRename(entry) }, contentAlignment = Alignment.Center) {
+        Box(tapZone.clickable { onRename(entry) }, contentAlignment = Alignment.Center) {
             Text("RENAME", color = tint.copy(alpha = .7f), fontSize = 8.sp, fontWeight = FontWeight.Bold)
         }
         if (!entry.isDirectory) {
-            Box(Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp).clickable { onShare(entry) }, contentAlignment = Alignment.Center) {
+            Box(tapZone.clickable { onShare(entry) }, contentAlignment = Alignment.Center) {
                 Text("SHARE", color = tint.copy(alpha = .7f), fontSize = 8.sp, fontWeight = FontWeight.Bold)
             }
         }
-        Box(Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp).clickable { onDelete(entry) }, contentAlignment = Alignment.Center) {
+        Box(tapZone.clickable { onDelete(entry) }, contentAlignment = Alignment.Center) {
             Text("×", color = tint.copy(alpha = .85f), fontSize = 13.sp)
         }
     }
