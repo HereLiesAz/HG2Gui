@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+
+<helmet>
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/tokens/colors.css">
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/tokens/typography.css">
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/tokens/motion.css">
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/tokens/base.css">
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/styles.css">
+<script src="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/_ds_bundle.js"></script>
+<style>
+  body{margin:0;background:var(--page);}
+  a{color:var(--ink);} a:hover{color:var(--hue-red);}
+  code{font:600 0.92em/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;}
+</style>
+</helmet>
+
+<div style="max-width:1040px;margin:0 auto;padding:56px 44px 140px;font-family:var(--font-core);color:var(--ink);display:flex;flex-direction:column;gap:46px;">
+
+  <div style="display:flex;flex-direction:column;gap:14px;max-width:720px;">
+    <div style="font:800 11px/1 var(--font-core);letter-spacing:.28em;text-transform:uppercase;color:var(--ink-55);">HG2Gui — implementation audit</div>
+    <div style="font:900 58px/0.84 var(--font-core);letter-spacing:-.03em;text-transform:uppercase;">Where the code and the guide disagree</div>
+    <p style="margin:0;font:var(--type-body);color:var(--ink-78);text-wrap:pretty;">Read against <code>HereLiesAz/HG2Gui@master</code>, tree <code>251c4ce</code>, 21 Aug 2026. The UI has moved again since the last sync: <code>composeApp/src/commonMain</code> is gone and every screen now lives in <code>shared/src/commonMain/kotlin/…/ui/</code>. <code>PillMenu.kt</code> has grown from a sketch to 58 KB of load-bearing, heavily-commented implementation, and two new files — <code>PillPerimeterReveal.kt</code> and <code>PillWrapReveal.kt</code> — implement the run transition at two levels of fidelity.</p>
+    <p style="margin:0;font:var(--type-body);color:var(--ink-78);text-wrap:pretty;">The headline: <strong>the palette, the timing constants, and the ground rotation are implemented exactly.</strong> What is missing or wrong is concentrated in motion — one animation absent entirely, one contradicting the sheet, one wrong in every number — plus two structural problems (a duplicate theme, an unimplemented type scale) that will keep producing drift until they are fixed.</p>
+    <p style="margin:0;font:var(--type-body);color:var(--ink-78);text-wrap:pretty;">This document is a handoff. Parts one to three are the audit; <strong>Part four carries drop-in Kotlin for every defect</strong> and Part five the exact guide copy changes, so a session picking this up needs nothing else. Part six is the order to do it in.</p>
+    <p style="margin:0;font:var(--type-body);color:var(--ink-78);text-wrap:pretty;"><strong>Part three b is new</strong>, and is the part to read first if the complaint is that an animation works sometimes: seven runtime defects that have nothing to do with the guide, four of which are one-line fixes. The intermittency is the tell — every one of them is state-dependent.</p>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+    <div style="border-radius:24px;padding:22px;background:var(--action-done-cap);display:flex;flex-direction:column;gap:6px;">
+      <span style="font:900 46px/0.9 var(--font-core);letter-spacing:-.02em;color:var(--white);">11</span>
+      <span style="font:800 10px/1.3 var(--font-core);letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.82);">Faithful — leave alone</span>
+    </div>
+    <div style="border-radius:24px;padding:22px;background:var(--hue-amber);display:flex;flex-direction:column;gap:6px;">
+      <span style="font:900 46px/0.9 var(--font-core);letter-spacing:-.02em;color:var(--ink);">7</span>
+      <span style="font:800 10px/1.3 var(--font-core);letter-spacing:.16em;text-transform:uppercase;color:var(--ink-78);">Acceptable — update the guide</span>
+    </div>
+    <div style="border-radius:24px;padding:22px;background:var(--hue-red);display:flex;flex-direction:column;gap:6px;">
+      <span style="font:900 46px/0.9 var(--font-core);letter-spacing:-.02em;color:var(--white);">7</span>
+      <span style="font:800 10px/1.3 var(--font-core);letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.82);">Not acceptable — fix the code</span>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;flex-direction:column;gap:9px;max-width:720px;">
+      <div style="font:800 11px/1 var(--font-core);letter-spacing:.28em;text-transform:uppercase;color:var(--action-done-cap);">Part one — faithful</div>
+      <div style="font:900 40px/1 var(--font-core);letter-spacing:-.02em;text-transform:uppercase;">Implemented exactly as specified</div>
+      <p style="margin:0;font:var(--type-body);color:var(--ink-78);text-wrap:pretty;">These need no action. Worth stating plainly because they are the parts most likely to be "tidied" by someone who has not read the guide.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;">
+      <div style="height:2px;background:var(--ink-16);"></div>
+      <sc-for list="{{ faithful }}" as="row" hint-placeholder-count="11">
+        <div style="display:flex;align-items:baseline;gap:18px;padding:15px 2px;">
+          <span style="flex:none;width:200px;font:800 14px/1.25 var(--font-core);letter-spacing:.01em;">{{ row.what }}</span>
+          <span style="flex:1;font:600 15px/1.5 var(--font-core);color:var(--ink-78);text-wrap:pretty;">{{ row.detail }}</span>
+        </div>
+        <div style="height:1px;background:var(--ink-16);"></div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;flex-direction:column;gap:9px;max-width:720px;">
+      <div style="font:800 11px/1 var(--font-core);letter-spacing:.28em;text-transform:uppercase;color:var(--hue-amber-cap);">Part two — acceptable divergence</div>
+      <div style="font:900 40px/1 var(--font-core);letter-spacing:-.02em;text-transform:uppercase;">The code is right and the guide is stale</div>
+      <p style="margin:0;font:var(--type-body);color:var(--ink-78);text-wrap:pretty;">In every case below the implementation made a defensible call — sometimes a better one than the guide's — and left a comment saying why. The action is to amend the guide, not the code. Two of these are places where <em>the guide contradicts itself</em>, and the code had to pick a side.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <sc-for list="{{ acceptable }}" as="item" hint-placeholder-count="7">
+        <div style="border-radius:24px;padding:22px 24px;background:var(--ink-09);display:flex;flex-direction:column;gap:12px;">
+          <div style="display:flex;align-items:baseline;gap:12px;">
+            <span style="flex:none;font:900 15px/1 var(--font-core);letter-spacing:.02em;text-transform:uppercase;">{{ item.title }}</span>
+            <span style="flex:1;height:1px;background:var(--ink-16);"></span>
+            <span style="flex:none;font:800 9px/1 var(--font-core);letter-spacing:.16em;text-transform:uppercase;color:var(--ink-45);">{{ item.file }}</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div style="border-radius:16px;padding:14px 16px;background:var(--ink-14);display:flex;flex-direction:column;gap:5px;">
+              <span style="font:800 8px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-55);">Guide says</span>
+              <span style="font:600 14px/1.45 var(--font-core);color:var(--ink);text-wrap:pretty;">{{ item.guide }}</span>
+            </div>
+            <div style="border-radius:16px;padding:14px 16px;background:var(--ink-14);display:flex;flex-direction:column;gap:5px;">
+              <span style="font:800 8px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-55);">Code does</span>
+              <span style="font:600 14px/1.45 var(--font-core);color:var(--ink);text-wrap:pretty;">{{ item.code }}</span>
+            </div>
+          </div>
+          <span style="font:600 15px/1.5 var(--font-core);color:var(--ink-78);text-wrap:pretty;">{{ item.verdict }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;flex-direction:column;gap:9px;max-width:720px;">
+      <div style="font:800 11px/1 var(--font-core);letter-spacing:.28em;text-transform:uppercase;color:var(--hue-red);">Part three — not acceptable</div>
+      <div style="font:900 40px/1 var(--font-core);letter-spacing:-.02em;text-transform:uppercase;">Fix the code</div>
+      <p style="margin:0;font:var(--type-body);color:var(--ink-78);text-wrap:pretty;">Ordered by how visible the defect is to a user holding the phone. The first three are the ones that make the app not feel like the design.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <sc-for list="{{ broken }}" as="bug" hint-placeholder-count="7">
+        <div style="border-radius:24px;padding:24px;background:{{ bug.bg }};display:flex;flex-direction:column;gap:14px;">
+          <div style="display:flex;align-items:baseline;gap:12px;">
+            <span style="flex:none;font:900 13px/1 var(--font-core);letter-spacing:.02em;color:{{ bug.chip }};">{{ bug.rank }}</span>
+            <span style="flex:1;font:900 22px/1.1 var(--font-core);letter-spacing:-.01em;text-transform:uppercase;color:var(--white);">{{ bug.title }}</span>
+            <span style="flex:none;font:800 9px/1 var(--font-core);letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.6);">{{ bug.severity }}</span>
+          </div>
+          <span style="font:600 16px/1.5 var(--font-core);color:rgba(255,255,255,.92);text-wrap:pretty;">{{ bug.body }}</span>
+          <div style="border-radius:16px;padding:15px 17px;background:rgba(0,0,0,.26);display:flex;flex-direction:column;gap:7px;">
+            <span style="font:800 8px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.55);">Evidence</span>
+            <span style="font:500 13px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;color:rgba(255,255,255,.86);white-space:pre-wrap;">{{ bug.evidence }}</span>
+          </div>
+          <div style="display:flex;align-items:baseline;gap:10px;">
+            <span style="flex:none;font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.55);">Fix</span>
+            <span style="flex:1;font:600 15px/1.5 var(--font-core);color:var(--white);text-wrap:pretty;">{{ bug.fix }}</span>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;flex-direction:column;gap:9px;max-width:720px;">
+      <div style="font:800 11px/1 var(--font-core);letter-spacing:.28em;text-transform:uppercase;color:var(--hue-red);">Part three b — runtime bugs</div>
+      <div style="font:900 40px/1 var(--font-core);letter-spacing:-.02em;text-transform:uppercase;">Not divergence — defects</div>
+      <p style="margin:0;font:var(--type-body);color:var(--ink-78);text-wrap:pretty;">These are separate from Part three: nothing here contradicts the guide. They are places where the code does not reliably do what <em>its own author</em> intended, found by reading state and lifecycle rather than by comparing against the spec. Most are state-dependent, which is why they present as intermittent — the animation that works on the first category and not the third.</p>
+      <p style="margin:0;font:var(--type-body);color:var(--ink-78);text-wrap:pretty;">Three of the seven are the same mistake: an effect that reads a value it does not key on. That pattern is worth a sweep of the whole package rather than seven individual fixes.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <sc-for list="{{ bugs }}" as="bug" hint-placeholder-count="7">
+        <div style="border-radius:24px;padding:24px;background:{{ bug.bg }};display:flex;flex-direction:column;gap:14px;">
+          <div style="display:flex;align-items:baseline;gap:12px;">
+            <span style="flex:none;font:900 13px/1 var(--font-core);letter-spacing:.02em;color:rgba(255,255,255,.6);">{{ bug.rank }}</span>
+            <span style="flex:1;font:900 22px/1.1 var(--font-core);letter-spacing:-.01em;text-transform:uppercase;color:var(--white);">{{ bug.title }}</span>
+            <span style="flex:none;font:800 9px/1 var(--font-core);letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.6);">{{ bug.tag }}</span>
+          </div>
+          <span style="font:600 16px/1.5 var(--font-core);color:rgba(255,255,255,.92);text-wrap:pretty;">{{ bug.body }}</span>
+          <div style="border-radius:16px;padding:15px 17px;background:rgba(0,0,0,.26);display:flex;flex-direction:column;gap:7px;">
+            <span style="font:800 8px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.55);">Evidence</span>
+            <span style="font:500 13px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;color:rgba(255,255,255,.86);white-space:pre-wrap;">{{ bug.evidence }}</span>
+          </div>
+          <div style="display:flex;align-items:baseline;gap:10px;">
+            <span style="flex:none;font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.55);">Fix</span>
+            <span style="flex:1;font:600 15px/1.5 var(--font-core);color:var(--white);text-wrap:pretty;">{{ bug.fix }}</span>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;flex-direction:column;gap:9px;max-width:720px;">
+      <div style="font:800 11px/1 var(--font-core);letter-spacing:.28em;text-transform:uppercase;color:var(--hue-red);">Part three c — the file explorer</div>
+      <div style="font:900 40px/1 var(--font-core);letter-spacing:-.02em;text-transform:uppercase;">The nesting is there; the motion is not
+      <div style="font:900 40px/1 var(--font-core);letter-spacing:-.02em;text-transform:uppercase;">Drop-in Kotlin for each defect</div>
+      <p style="margin:0;font:var(--type-body);color:var(--ink-78);text-wrap:pretty;">Written against the real files at tree <code>251c4ce</code>. Constants that already exist upstream are referenced, not redeclared. Apply in the order of Part six.</p>
+    </div>
+    <sc-for list="{{ patches }}" as="patch" hint-placeholder-count="6">
+      <div style="display:flex;flex-direction:column;gap:11px;">
+        <div style="display:flex;align-items:baseline;gap:12px;">
+          <span style="flex:none;font:900 15px/1 var(--font-core);letter-spacing:.02em;text-transform:uppercase;">{{ patch.title }}</span>
+          <span style="flex:1;height:1px;background:var(--ink-16);"></span>
+          <span style="flex:none;font:800 9px/1 var(--font-core);letter-spacing:.16em;text-transform:uppercase;color:var(--ink-45);">{{ patch.file }}</span>
+        </div>
+        <sc-for list="{{ patch.blocks }}" as="block" hint-placeholder-count="2">
+          <sc-if value="{{ block.prose }}" hint-placeholder-val="{{ true }}">
+            <p style="margin:0;font:600 15px/1.5 var(--font-core);color:var(--ink-78);max-width:720px;text-wrap:pretty;">{{ block.prose }}</p>
+          </sc-if>
+          <sc-if value="{{ block.code }}" hint-placeholder-val="{{ true }}">
+            <div style="overflow-x:auto;border-radius:20px;padding:20px 22px;background:var(--ink);"><span style="display:block;font:500 9.5px/1.65 ui-monospace,SFMono-Regular,Menlo,monospace;color:#f2e6b8;white-space:pre;">{{ block.code }}</span></div>
+          </sc-if>
+        </sc-for>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:20px;">
+    <div style="display:flex;flex-direction:column;gap:9px;max-width:720px;">
+      <div style="font:800 11px/1 var(--font-core);letter-spacing:.28em;text-transform:uppercase;color:var(--hue-amber-cap);">Part five — guide amendments</div>
+      <div style="font:900 40px/1 var(--font-core);letter-spacing:-.02em;text-transform:uppercase;">Exact copy changes</div>
+      <p style="margin:0;font:var(--type-body);color:var(--ink-78);text-wrap:pretty;">The other half of the work: seven edits to <code>HG2Gui Style Guide</code> and <code>HG2Gui Motion Sheet</code> so the documents stop describing an app that does not exist. Two of these are the guide contradicting itself, not the code diverging.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <sc-for list="{{ amendments }}" as="a" hint-placeholder-count="7">
+        <div style="border-radius:22px;padding:20px 22px;background:var(--ink-09);display:flex;flex-direction:column;gap:11px;">
+          <div style="display:flex;align-items:baseline;gap:12px;">
+            <span style="flex:none;font:900 13px/1 var(--font-core);color:var(--hue-amber-cap);">{{ a.n }}</span>
+            <span style="flex:1;font:900 15px/1.15 var(--font-core);letter-spacing:.02em;text-transform:uppercase;">{{ a.title }}</span>
+            <span style="flex:none;font:800 9px/1 var(--font-core);letter-spacing:.16em;text-transform:uppercase;color:var(--ink-45);">{{ a.where }}</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:7px;">
+            <div style="border-radius:14px;padding:12px 14px;background:var(--ink-14);display:flex;flex-direction:column;gap:4px;">
+              <span style="font:800 8px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-45);">Strike</span>
+              <span style="font:600 14px/1.45 var(--font-core);color:var(--ink-55);text-decoration:line-through;text-wrap:pretty;">{{ a.strike }}</span>
+            </div>
+            <div style="border-radius:14px;padding:12px 14px;background:var(--ink-14);display:flex;flex-direction:column;gap:4px;">
+              <span style="font:800 8px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-45);">Replace with</span>
+              <span style="font:600 14px/1.45 var(--font-core);color:var(--ink);text-wrap:pretty;">{{ a.add }}</span>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;flex-direction:column;gap:9px;max-width:720px;">
+      <div style="font:800 11px/1 var(--font-core);letter-spacing:.28em;text-transform:uppercase;color:var(--ink-55);">Part six — order of work</div>
+      <div style="font:900 40px/1 var(--font-core);letter-spacing:-.02em;text-transform:uppercase;">In this order</div>
+      <p style="margin:0;font:var(--type-body);color:var(--ink-78);text-wrap:pretty;">Step four gates step two's final shape, so take the decision before writing the entrance patch. Everything else is independent and can be split across sessions.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;">
+      <div style="height:2px;background:var(--ink-16);"></div>
+      <sc-for list="{{ actions }}" as="step" hint-placeholder-count="6">
+        <div style="display:flex;align-items:baseline;gap:16px;padding:16px 2px;">
+          <span style="flex:none;width:26px;font:900 19px/1 var(--font-core);color:var(--ink-45);">{{ step.n }}</span>
+          <span style="flex:1;font:600 16px/1.5 var(--font-core);color:var(--ink);text-wrap:pretty;">{{ step.text }}</span>
+          <span style="flex:none;font:800 9px/1 var(--font-core);letter-spacing:.16em;text-transform:uppercase;color:var(--ink-45);">{{ step.owner }}</span>
+        </div>
+        <div style="height:1px;background:var(--ink-16);"></div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:9px;max-width:720px;">
+    <div style="font:800 11px/1 var(--font-core);letter-spacing:.28em;text-transform:uppercase;color:var(--ink-55);">One note on the staged patch</div>
+    <p style="margin:0;font:var(--type-body);color:var(--ink-78);text-wrap:pretty;">The <code>patch/</code> directory in this project is now substantially obsolete. <code>AzphaltTokens.kt</code> and <code>GroundRoller.kt</code> duplicate work that already landed upstream inside the <code>Azphalt</code> object in <code>PillMenu.kt</code> — including the weighted ground roll and the two-reroll cap, implemented independently and slightly better than the staged version (process-wide rather than composition-scoped, so a second Activity cannot disagree about the current ground). <code>FilesScreen.kt</code> is also stale: upstream's is now 54 KB against the staged 18 KB. Only <code>SplashScreen.kt</code> and <code>CommandReferenceScreen.kt</code> still have no upstream counterpart. Recommend deleting the rest rather than carrying a diff nobody will apply.</p>
+  </div>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1040,&quot;height&quot;:1400}}">
+const FAITHFUL = [
+  ['The fourteen hues', 'Every hex in Azphalt.hues and Azphalt.caps matches the guide byte for byte, in the guide\u2019s own assignment order, with hueNames alongside. hueOf() is the specified absolute-hashCode modulo.'],
+  ['Reference groupings', 'All seven scene palettes present in Azphalt.groupings, with the exact header and accent hexes from \u201c02b \u2014 Reference groupings\u201d.'],
+  ['Menu timing', 'SLIDE_MS and DROP_MS are 420/3 = 140, SWING_MS is 520/3 = 173, LIFT_FRACTION is 0.90 \u2014 the guide\u2019s numbers, written as the divisions they were derived from.'],
+  ['Linear in the menu', 'Every menu animation passes easing = LinearEasing. The house curve CubicBezierEasing(0, .9, .1, 1) appears only in the page-level reveals and the terminal output wipe, which is exactly the split the guide draws.'],
+  ['Ground rotation', 'Weighted pick with Mustard at weight 6 against 1 for the rest, exclude-current on reroll, MAX_GROUND_REROLLS = 2, held in process-wide state so a second Activity cannot disagree.'],
+  ['The two-thirds rule', 'HOST_WIDTH is 0.66 and rootWidthFraction only ever subtracts from it, so no row\u2019s right edge can pass two thirds of the screen \u2014 enforced structurally rather than by convention.'],
+  ['Trail hand-off', 'The picked pill drops to row 0 and scales to 1.15\u00d7 over two thirds of DROP_MS, then back to 1\u00d7 over the last third. Crumbs shingle with negative spacing and reversed z-order so earlier picks stay on top.'],
+  ['Cascade sequencing', 'delay(DROP_MS + localIndex * SWING_MS) \u2014 genuinely sequential, each child starting only as the one before it finishes, not a stagger that overlaps.'],
+  ['The lift is in the tail', 'The lift keyframe sits at SWING_MS * 0.90, so the upward move occupies the final tenth of the swing and both land on the same frame.'],
+  ['No spinner', 'A running command is the output wipe itself \u2014 OUTPUT_WIPE_MS 320 with a 90 ms per-line stagger capped at 24 lines, then the remainder in one block. No indeterminate indicator anywhere in the tree.'],
+  ['Touch targets', 'PILL_HEIGHT is 17 dp but Pill takes a touchTargetHeight and pads its clickable region to PILL_TOUCH_TARGET = 48 dp, clearing the accessibility minimum without inflating the drawn capsule.']
+];
+
+const ACCEPTABLE = [
+  {
+    title: 'Olive is gone', file: 'PillMenu.kt',
+    guide: 'Seven grounds, Olive (#8F8A2E) among them, sampled from the Point-of-View Gun origin scene.',
+    code: 'Six grounds. Olive removed entirely, with a comment: close enough to Mustard in hue that rolling it read as \u201cthe yellow background is gone\u201d rather than as a different ground.',
+    verdict: 'The right call, and exactly the kind of thing only visible once it is running. The guide is now wrong in two places \u2014 the swatch grid and the sentence that says \u201cone of seven grounds.\u201d Drop Olive from both.'
+  },
+  {
+    title: 'Ground hexes were retuned', file: 'PillMenu.kt',
+    guide: 'Maroon #8B0021, Teal #0F4A46, Cerulean #1D6FA8 \u2014 sampled straight off film frames.',
+    code: 'Maroon #8F1F34, Teal #1D6B62, Cerulean #2D6EA8. Navy and Pink match the guide exactly.',
+    verdict: 'All three moved lighter and less saturated, which is what a frame-sampled colour usually needs once it is a full-screen background carrying white text. Accept the code\u2019s values and make the guide match; a screenshot swatch is a reference, not a token.'
+  },
+  {
+    title: 'Fold gradients are derived, not sampled', file: 'PillMenu.kt',
+    guide: 'Every ground carries its own header-strip and accent pairing.',
+    code: 'Only Mustard has real foldLight/foldDark tokens. The other five derive theirs from the single reference swatch by a fixed lighten/darken step matching Mustard\u2019s own offset.',
+    verdict: 'Honest stopgap, flagged as one in the code. Leave it, but the guide should say the fold is derived so nobody \u201cfixes\u201d it by inventing five more pairs of numbers by eye.'
+  },
+  {
+    title: 'The cascade width rule was replaced', file: 'PillMenu.kt',
+    guide: 'Widths run a fixed set \u2014 82 / 68 / 90 / 62 / 76 / 94 / 70 / 86% \u2014 each row stepping 9px further in, cycling every eight.',
+    code: 'rootWidthFraction triangles 0/1/2/1/2 steps of 4% down from HOST_WIDTH, cycling every five: 66 / 62 / 58 / 62 / 58%.',
+    verdict: 'The guide contradicts itself here and the code caught it: a 94% row would blow straight through the guide\u2019s own two-thirds ceiling. The code\u2019s version keeps the \u201creads as a stack\u201d variation while making the ceiling structurally impossible to breach. Replace the fixed list in the guide with the triangle rule.'
+  },
+  {
+    title: 'A contrast rule the guide never had', file: 'PillMenu.kt',
+    guide: '\u201cAlpha is ink on yellow, and nothing else.\u201d Every wash specified as ink at a percentage.',
+    code: 'contrastingText() picks Ink or White by a 0.35 relative-luminance split, and Ground.onPage applies it to the page colour. The selected-pill pairing (ink ground, yellow label) is explicitly exempted as a fixed UI signal.',
+    verdict: 'A genuine gap in the guide, not a divergence. Four of the six grounds are dark; ink text on them disappears. The code solved a problem the guide created by writing its alpha ramp before ground rotation existed. The guide must absorb this rule verbatim, including the exemption.'
+  },
+  {
+    title: 'The reveal exists at two fidelities', file: 'PillWrapReveal.kt / PillPerimeterReveal.kt',
+    guide: 'One perimeter run: four edges, one at a time, then flood.',
+    code: 'PillPerimeterReveal animates four separate legs as specified. PillWrapReveal collapses the whole thing into one rect interpolation with a border, and says so in its header.',
+    verdict: 'Deliberate tiering, documented at both ends \u2014 the cheap one for ordinary screen opens, the faithful one for the Select File/Folder pill that has to anchor to a crumb. Fine. The guide should name the two tiers so the simplified one is not mistaken for a bug.'
+  },
+  {
+    title: 'Slot-machine scrolling, undocumented', file: 'PillMenu.kt',
+    guide: 'Silent \u2014 the guide never contemplated a stack taller than one screen.',
+    code: 'A drag-tracked offset with a custom FlingBehavior that computes where a natural decay would stop, rounds that to the nearest row, then springs there critically damped. Row 0 renders ink as \u201cprimed\u201d once the user has actually scrolled.',
+    verdict: 'New behaviour, and good: a live PATH scan can easily overflow a screen, and the snap gets the \u201cless effect the faster it is going\u201d feel out of one formula instead of a velocity threshold. Not a divergence \u2014 an undocumented feature. Add it to the guide, including that \u201cprimed\u201d ink is cosmetic and never fires anything.'
+  }
+];
+
+const BROKEN = [
+  {
+    rank: '01', severity: 'Missing entirely', bg: 'var(--hue-red)', chip: 'rgba(255,255,255,.6)',
+    title: 'The stack never wobbles',
+    body: 'The guide is unambiguous: whenever the pills move together the stack sways, because it is a pile \u2014 the higher a pill sits the further it swings, hinged on its visible right end, damping out in three diminishing swings. There is no implementation of this anywhere in the repository. A search across every UI source for wobble, sway, or any rotation applied during a slide returns nothing but the cascade\u2019s own 360\u00b0 turn and the reveal\u2019s rock. Every stack move \u2014 arrive, leave, host drop, scroll \u2014 is a rigid translation.',
+    evidence: 'PillMenu.kt: StackPill applies only translationX (offsetByFractionOfParent) and translationY (lift + scrollOffset). No rotationZ, no per-row amplitude, no transformOrigin outside ChildPill.',
+    fix: 'Patch 01. Amplitude min(0.9 + row * 0.7, 3.4) degrees, hinged on the right end, keyframed out/back/again/settled at 30 / 58 / 82 / 100% of the move\u2019s own duration.'
+  },
+  {
+    rank: '02', severity: 'Contradicts the sheet', bg: 'var(--hue-red-cap)', chip: 'rgba(255,255,255,.6)',
+    title: 'The stack arrives wrong, and the docs disagree with each other',
+    body: 'The Motion Sheet specimen is explicit: one column, one clock, the whole stack slides in together with no per-row stagger, and the top pill alone overshoots and corrects once it has landed. The code does the opposite on both counts \u2014 a 26 ms per-row stagger capped at twenty rows, and no overshoot anywhere. The code\u2019s comment argues the one-clock rule described only the leave-and-re-enter pair, and cites Menu Style Guide rule 08 for the stagger. Both readings are defensible, which is the actual defect: two documents specify the same animation differently and the implementation had to guess.',
+    evidence: 'StackPill: LaunchedEffect(entering) { delay(row.coerceAtMost(20) * 26L); offset.animateTo(0f, tween(SLIDE_MS, LinearEasing)) }\nNo keyframes; no value ever passes its target.',
+    fix: 'Amendment 7 decides it, then patch 02 implements it. Do not leave both readings in the docs.'
+  },
+  {
+    rank: '03', severity: 'Every value wrong', bg: 'var(--hue-red)', chip: 'rgba(255,255,255,.6)',
+    title: 'Struggle and break-free do not match the spec in any respect',
+    body: 'This is the animation with the longest revision history in the design, and neither reveal file reflects where it landed. The specified motion: stretch slowly to 1.06\u00d7 and nothing else; snap in from the left edge down to 0.4\u00d7; fly right at the speed the snap was retracting it, with the flight duration derived from the snap\u2019s own px/ms rate; hit the right edge; then jiggle 180 ms on the right tip; then fall. The code stretches to 1.6\u00d7 \u2014 the exact over-stretch that was rejected repeatedly \u2014 snaps to 0.45\u00d7, flies inward from the left over a fixed slice of a 300 ms window rather than deriving anything, and rocks before the fall rather than after it.',
+    evidence: 'stretchWidth: 1f -> 1.6f at 35% -> 0.45f at 55% of STRETCH_MS=300\nflyProgress: holds 0 to 55%, then -> 1 (fixed duration, not derived)\nx = lerp(originLeft - 150.dp, originLeft, flyProgress)   // flies RIGHTWARD INTO place, not out to the edge\nrockAngle: 14\u00b0 / -8\u00b0 / 4\u00b0 over BREAK_MS=140, run BEFORE fallProgress\ntransformOrigin = TransformOrigin(1f, 1f)   // bottom-right corner, not the tip\u2019s centre',
+    fix: 'Patch 03 \u2014 one shared coroutine, called from both reveal files, with the flight duration derived from the snap rate.'
+  },
+  {
+    rank: '04', severity: 'Structural', bg: 'var(--hue-magenta-cap)', chip: 'rgba(255,255,255,.6)',
+    title: 'Two different themes, both called HG2GuiTheme',
+    body: 'ui/theme/Theme.kt declares a forced-dark Material scheme from a pre-Azphalt palette \u2014 GuidePrimary #0DB9F2 cyan on GuideBg #101E22, plus GuideRed, GuideGreen, GuidePromptBg \u2014 with no relationship to any current token. ui/Theme.kt declares the real one, reading Azphalt.currentGround and threading it through both onBackground and LocalContentColor. Same function name, different packages, both live. Any screen that imports the wrong one renders in a palette the guide abandoned, and the import is a single line nobody will notice in review.',
+    evidence: 'shared/\u2026/ui/theme/Theme.kt:  val colorScheme = DarkColorScheme // Forcing dark for now to match the guide theme\nshared/\u2026/ui/theme/Color.kt:  GuidePrimary #0DB9F2, GuideBg #101E22, GuideRed, GuideGreen, GuidePromptBg, GuidePromptHint, GuideWarningBg',
+    fix: 'Patch 04 \u2014 delete both stale files after mapping the seven abandoned constants onto live tokens.'
+  },
+  {
+    rank: '05', severity: 'Not implemented', bg: 'var(--hue-magenta-cap)', chip: 'rgba(255,255,255,.6)',
+    title: 'The type scale exists only in the guide',
+    body: 'The guide specifies a complete scale \u2014 900 weight at 40 px with -.02em tracking for section heads, 800 at 11 px with .28em for eyebrows, 800 at 9 px with .18em for micro labels, 600 at 17 px for body, uppercase everywhere except body copy. Typography.kt takes Material3\u2019s stock Typography and swaps the font family into all fifteen slots, changing nothing else. None of the sizes, weights, tracking, or casing survive. Consequently every screen improvises its own type, which is why the eyebrow treatment looks slightly different on each one.',
+    evidence: 'Typography().let { \u2026 it.copy(displayLarge = it.displayLarge.copy(fontFamily = family), \u2026) }\n\u2014 fontSize, fontWeight, letterSpacing, textTransform untouched in all fifteen slots.',
+    fix: 'Patch 05 \u2014 the real eight-step scale as named styles off a CompositionLocal, plus dropping the unused Medium face.'
+  },
+  {
+    rank: '06', severity: 'House rule broken', bg: 'var(--hue-orange-cap)', chip: 'rgba(255,255,255,.6)',
+    title: 'Cards came back',
+    body: 'The guide\u2019s \u201c09 \u2014 Surfaces\u201d section is titled \u201cThere are no cards\u201d: two soft surfaces exist, the record tile and the note, and they are the only places a radius is not 999px. Three screens have grown arbitrary mid-range radii that are neither.',
+    evidence: 'AiChatScreen.kt:180  RoundedCornerShape(12.dp)\nAiChatScreen.kt:208  RoundedCornerShape(14.dp)\nAzpStoreScreen.kt:184 RoundedCornerShape(12.dp)\nGuideReaderScreen.kt:316 RoundedCornerShape(18.dp)',
+    fix: 'Patch 06 \u2014 declare the two soft surfaces once and map all four sites onto them.'
+  },
+  {
+    rank: '07', severity: 'Ordering', bg: 'var(--hue-orange-cap)', chip: 'rgba(255,255,255,.6)',
+    title: 'The jiggle fires before the fall',
+    body: 'Both reveal files run the rock as beat two and the fall as beat three, so the pill shakes in mid-air and then descends calmly. The specified order is the reverse: it flies, it hits something, it jiggles because it hit something, and then it falls. A jiggle with nothing to jiggle against reads as a glitch rather than an impact \u2014 which is the whole point of the beat.',
+    evidence: 'runLeadIn(): stretch/fly -> rockAngle.animateTo(\u2026 BREAK_MS) -> fallProgress.animateTo(1f, FALL_MS)',
+    fix: 'Folded into patch 03 \u2014 same coroutine, reordered to fly, land, jiggle on impact, then fall, pivoting on the tip rather than the corner.'
+  }
+];
+
+// Kotlin lives here rather than in the template: the template parser rewrites camelCase
+// `identifier = value` lines inside literal markup as kebab-cased attributes, which silently
+// corrupted every patch. Rendered through a {{ }} hole, the text passes through untouched.
+const PATCH_01_FILE = [
+  'package com.hereliesaz.hg2gui.ui.menu',
+  '',
+  'import androidx.compose.animation.core.Animatable',
+  'import androidx.compose.animation.core.AnimationVector1D',
+  'import androidx.compose.animation.core.LinearEasing',
+  'import androidx.compose.animation.core.keyframes',
+  'import kotlin.math.min',
+  '',
+  '/*',
+  ' * A stack that moves as one sways: it is a pile, and the higher a pill sits the further it',
+  ' * swings, hinged on its visible right end, damping out in three diminishing swings. Applies',
+  ' * to every shared-clock stack move - arrive, leave, host drop - never to a single pill',
+  ' * moving alone, and never as a loop.',
+  ' */',
+  '',
+  '/** Degrees. Grows with height in the pile, capped so the top row never flails. */',
+  'fun wobbleAmplitude(row: Int): Float = min(0.9f + row * 0.7f, 3.4f)',
+  '',
+  '/**',
+  ' * Out, back, again smaller, settled - then it stops. Runs over the same duration as the move',
+  ' * it accompanies, so the sway ends exactly when the pill stops travelling.',
+  ' */',
+  'suspend fun Animatable<Float, AnimationVector1D>.wobble(row: Int, durationMs: Int) {',
+  '    val a = wobbleAmplitude(row)',
+  '    snapTo(0f)',
+  '    animateTo(0f, keyframes {',
+  '        durationMillis = durationMs',
+  '        0f at 0 using LinearEasing',
+  '        a at (durationMs * 0.30f).toInt() using LinearEasing',
+  '        -a * 0.55f at (durationMs * 0.58f).toInt() using LinearEasing',
+  '        a * 0.24f at (durationMs * 0.82f).toInt() using LinearEasing',
+  '        0f at durationMs',
+  '    })',
+  '}'
+].join('\n');
+
+const PATCH_01_STACK = [
+  'val sway = remember { Animatable(0f) }',
+  '',
+  '// Same shared clock as the slide it accompanies, and the same per-row entrance delay, so the',
+  '// whole pile sways as one body rather than each pill sawing independently.',
+  'LaunchedEffect(leaving, entering) {',
+  '    if (entering) delay(row.coerceAtMost(20) * 26L)',
+  '    sway.wobble(row, Azphalt.SLIDE_MS)',
+  '}',
+  '',
+  '// ...then extend the existing graphicsLayer block on the Pill modifier:',
+  '.graphicsLayer {',
+  '    transformOrigin = TransformOrigin(1f, 0.5f)   // the visible right end',
+  '    rotationZ = sway.value',
+  '    translationY = lift.value + scrollOffsetPx',
+  '}'
+].join('\n');
+
+const PATCH_01_HOST = [
+  '// HostPill',
+  'val sway = remember { Animatable(0f) }',
+  'LaunchedEffect(node.id) { sway.wobble(rowsBelow, Azphalt.DROP_MS) }'
+].join('\n');
+
+const PATCH_02 = [
+  '// Replaces the two staggered LaunchedEffects. One clock for the whole column: no per-row',
+  '// delay, so the stack reads as a single pile arriving rather than a list animating itself.',
+  'private const val OVERSHOOT_FRACTION = 0.06f   // of a row pitch, past the resting slot',
+  'private const val CORRECT_MS = 90',
+  '',
+  'LaunchedEffect(leaving, entering) {',
+  '    if (entering) offset.animateTo(0f, tween(Azphalt.SLIDE_MS, easing = LinearEasing))',
+  '    else offset.animateTo(target, tween(Azphalt.SLIDE_MS, easing = LinearEasing))',
+  '}',
+  '',
+  'LaunchedEffect(entering) {',
+  '    if (!entering) return@LaunchedEffect',
+  '    val rest = -pitchPx * row',
+  '    // The top pill alone leaves late and overshoots, correcting once it has landed - the one',
+  '    // piece of character in an otherwise rigid arrival. isTopRow is `row == rowCount - 1`,',
+  '    // passed down from PillMenu (roots.size - 1), not inferred here.',
+  '    if (!isTopRow) {',
+  '        lift.animateTo(rest, tween(Azphalt.SLIDE_MS, easing = LinearEasing))',
+  '    } else {',
+  '        lift.animateTo(rest, keyframes {',
+  '            durationMillis = Azphalt.SLIDE_MS + CORRECT_MS',
+  '            0f at 0 using LinearEasing',
+  '            rest - pitchPx * OVERSHOOT_FRACTION at Azphalt.SLIDE_MS using LinearEasing',
+  '            rest at Azphalt.SLIDE_MS + CORRECT_MS',
+  '        })',
+  '    }',
+  '}'
+].join('\n');
+
+const PATCH_03_FILE = [
+  'package com.hereliesaz.hg2gui.ui.menu',
+  '',
+  'import androidx.compose.animation.core.Animatable',
+  'import androidx.compose.animation.core.CubicBezierEasing',
+  'import androidx.compose.animation.core.LinearEasing',
+  'import androidx.compose.animation.core.keyframes',
+  'import androidx.compose.animation.core.tween',
+  'import androidx.compose.runtime.getValue',
+  'import androidx.compose.runtime.mutableStateOf',
+  'import androidx.compose.runtime.setValue',
+  'import kotlinx.coroutines.coroutineScope',
+  'import kotlinx.coroutines.launch',
+  '',
+  '/*',
+  ' * Beats 1-3 of the run transition, as ONE continuous motion rather than four chained',
+  ' * animations. The pill strains against the stack and only gets longer; it releases from its',
+  ' * left edge; it flies right at the speed the release was retracting it; it hits the right',
+  ' * edge and jiggles on that tip because it hit something; then it falls.',
+  ' *',
+  ' * Nothing here is authored twice: the flight duration comes out of the snap own px/ms rate.',
+  ' */',
+  '',
+  'private const val STRETCH_MS = 520   // slow strain. Length is the ONLY thing that changes.',
+  'private const val SNAP_MS = 40       // the release, retracting from the LEFT edge',
+  'private const val JIGGLE_MS = 180    // on the right tip, after impact',
+  'private const val FALL_MS = 280',
+  '',
+  'private const val STRETCH = 1.06f    // NOT 1.6 - a visibly longer pill, not a new shape',
+  'private const val SHORT = 0.40f',
+  '',
+  'private val HOUSE = CubicBezierEasing(0f, .9f, .1f, 1f)',
+  '',
+  'class BreakFreeState {',
+  '    /** Multiplier on the pill own resting width. */',
+  '    val width = Animatable(1f)',
+  '    /** Pixels, added to the pill resting left edge. */',
+  '    val offsetX = Animatable(0f)',
+  '    val offsetY = Animatable(0f)',
+  '    /** Degrees, pivoting on the right tip. */',
+  '    val tilt = Animatable(0f)',
+  '    var active by mutableStateOf(false)',
+  '        internal set',
+  '}',
+  '',
+  '/**',
+  ' * @param baseWidthPx the pill resting width',
+  ' * @param flightPx    distance from the pill right tip to the right edge of the screen',
+  ' * @param floorPx     distance from the pill row down to the bottom edge',
+  ' */',
+  'suspend fun BreakFreeState.run(baseWidthPx: Float, flightPx: Float, floorPx: Float) {',
+  '    active = true',
+  '    width.snapTo(1f); offsetX.snapTo(0f); offsetY.snapTo(0f); tilt.snapTo(0f)',
+  '',
+  '    // 1. STRUGGLE. It slowly gets longer, and that is all - no shake, no wobble, no',
+  '    //    rotation. Strain is length. Linear: an eased strain reads as a spring instead.',
+  '    width.animateTo(STRETCH, tween(STRETCH_MS, easing = LinearEasing))',
+  '',
+  '    // 2. BREAK FREE. Shortens from the LEFT, so the right tip stays exactly where it is:',
+  '    //    the width shrinks and the left edge advances by the same amount, one clock.',
+  '    val stretchedPx = baseWidthPx * STRETCH',
+  '    val shortPx = baseWidthPx * SHORT',
+  '    val retractedPx = stretchedPx - shortPx',
+  '    coroutineScope {',
+  '        launch { offsetX.animateTo(retractedPx, tween(SNAP_MS, easing = LinearEasing)) }',
+  '        width.animateTo(SHORT, tween(SNAP_MS, easing = LinearEasing))',
+  '    }',
+  '',
+  '    // 3. FLY. Same speed the snap was retracting it - derived, never authored. This is the',
+  '    //    line that makes it read as a rubber band released rather than a tween playing.',
+  '    val ratePxPerMs = retractedPx / SNAP_MS',
+  '    val flightMs = (flightPx / ratePxPerMs).toInt().coerceIn(1, 2000)',
+  '    offsetX.animateTo(retractedPx + flightPx, tween(flightMs, easing = LinearEasing))',
+  '',
+  '    // 4. THUD. It jiggles because it just hit the edge - rapid, damping, pivoting on the',
+  '    //    right tip own centre. Rotation only: a length bounce here reads as rubber.',
+  '    tilt.animateTo(0f, keyframes {',
+  '        durationMillis = JIGGLE_MS',
+  '        0f at 0 using LinearEasing',
+  '        3.2f at 40 using LinearEasing',
+  '        -2.1f at 85 using LinearEasing',
+  '        1.1f at 130 using LinearEasing',
+  '        0f at JIGGLE_MS',
+  '    })',
+  '',
+  '    // 5. FALL. Straight down onto the bottom edge, where the perimeter run picks up.',
+  '    offsetY.animateTo(floorPx, tween(FALL_MS, easing = HOUSE))',
+  '    active = false',
+  '}',
+  '',
+  '/** The exact reverse, for closing. */',
+  'suspend fun BreakFreeState.reverse(baseWidthPx: Float, flightPx: Float, floorPx: Float) {',
+  '    active = true',
+  '    offsetY.animateTo(0f, tween(FALL_MS, easing = HOUSE))',
+  '    val retractedPx = baseWidthPx * STRETCH - baseWidthPx * SHORT',
+  '    val ratePxPerMs = retractedPx / SNAP_MS',
+  '    val flightMs = (flightPx / ratePxPerMs).toInt().coerceIn(1, 2000)',
+  '    offsetX.animateTo(retractedPx, tween(flightMs, easing = LinearEasing))',
+  '    coroutineScope {',
+  '        launch { offsetX.animateTo(0f, tween(SNAP_MS, easing = LinearEasing)) }',
+  '        width.animateTo(STRETCH, tween(SNAP_MS, easing = LinearEasing))',
+  '    }',
+  '    width.animateTo(1f, tween(STRETCH_MS, easing = LinearEasing))',
+  '    active = false',
+  '}'
+].join('\n');
+
+const PATCH_03_RENDER = [
+  'if (breakFree.active) {',
+  '    Box(',
+  '        Modifier',
+  '            .offset {',
+  '                IntOffset(',
+  '                    (originLeft + breakFree.offsetX.value).toInt(),',
+  '                    (originTop + breakFree.offsetY.value).toInt()',
+  '                )',
+  '            }',
+  '            .size((baseW * breakFree.width.value).coerceAtLeast(1f).toDp(), thickness.toDp())',
+  '            .graphicsLayer {',
+  '                transformOrigin = TransformOrigin(1f, 0.5f)   // the tip, not the corner',
+  '                rotationZ = breakFree.tilt.value',
+  '            }',
+  '            .clip(RoundedCornerShape(percent = 50))',
+  '            .background(hue)',
+  '    )',
+  '}'
+].join('\n');
+
+const PATCH_04 = [
+  'GuidePrimary    #0DB9F2  ->  Azphalt.hues[6]                 (red = the primary action)',
+  'GuideBg         #101E22  ->  Azphalt.currentGround.page',
+  'GuideRed        #FF3B3B  ->  Azphalt.hues[6]  / caps[6]',
+  'GuideGreen      #A1D821  ->  Azphalt.hues[3]  / caps[3]',
+  'GuidePromptBg   #0A1417  ->  Azphalt.Ink',
+  'GuidePromptHint 0x4D...  ->  Azphalt.currentGround.onPage.copy(alpha = 0.45f)',
+  'GuideWarningBg  0x1A...  ->  Azphalt.Ink.copy(alpha = 0.14f)  (the 14% wash)',
+  '',
+  '# then, to confirm nothing still imports the dead theme:',
+  'rg -n "ui\\.theme\\.(Guide|HG2GuiTheme)" shared/ composeApp/'
+].join('\n');
+
+const PATCH_05 = [
+  '/**',
+  ' * The eight steps of the HG2Gui scale. One family; weight and tracking do the rest.',
+  ' * Everything is uppercase except [body], the only lowercase in the system.',
+  ' * Call sites uppercase their own strings - a TextStyle cannot do it.',
+  ' */',
+  '@Composable',
+  'fun azphaltType(): AzphaltType {',
+  '    val f = jostFontFamily()',
+  '    return AzphaltType(',
+  '        hero    = TextStyle(f, FontWeight.Black,      58.sp, lineHeight = 49.sp,   letterSpacing = (-0.03).em),',
+  '        section = TextStyle(f, FontWeight.Black,      40.sp, lineHeight = 40.sp,   letterSpacing = (-0.02).em),',
+  '        lead    = TextStyle(f, FontWeight.SemiBold,   25.sp, lineHeight = 32.sp),',
+  '        body    = TextStyle(f, FontWeight.SemiBold,   17.sp, lineHeight = 25.5.sp),   // only lowercase',
+  '        capsule = TextStyle(f, FontWeight.ExtraBold,  15.sp, lineHeight = 15.sp,   letterSpacing = 0.09.em),',
+  '        eyebrow = TextStyle(f, FontWeight.ExtraBold,  11.sp, lineHeight = 11.sp,   letterSpacing = 0.28.em),',
+  '        endCap  = TextStyle(f, FontWeight.ExtraBold,  10.sp, lineHeight = 10.sp,   letterSpacing = 0.10.em),',
+  '        micro   = TextStyle(f, FontWeight.ExtraBold,   9.sp, lineHeight =  9.sp,   letterSpacing = 0.18.em)',
+  '    )',
+  '}',
+  '',
+  'data class AzphaltType(',
+  '    val hero: TextStyle, val section: TextStyle, val lead: TextStyle, val body: TextStyle,',
+  '    val capsule: TextStyle, val eyebrow: TextStyle, val endCap: TextStyle, val micro: TextStyle',
+  ')',
+  '',
+  'val LocalAzphaltType = staticCompositionLocalOf<AzphaltType> { error("No AzphaltType") }',
+  '',
+  '// Provide it alongside LocalContentColor in ui/Theme.kt existing CompositionLocalProvider.',
+  '// Keep appTypography() for the Material components that demand a Typography, but no HG2Gui',
+  '// screen should read MaterialTheme.typography directly once migration is done.'
+].join('\n');
+
+const PATCH_06 = [
+  '// Two soft surfaces exist. Everything else is 999px. Declare them once:',
+  'object AzphaltSurface {',
+  '    val recordTile = RoundedCornerShape(26.dp)',
+  '    val note = RoundedCornerShape(20.dp)',
+  '    val capsule = RoundedCornerShape(percent = 50)',
+  '}',
+  '',
+  'AiChatScreen.kt:180      RoundedCornerShape(12.dp) -> AzphaltSurface.recordTile   // a message IS a record',
+  'AiChatScreen.kt:208      RoundedCornerShape(14.dp) -> AzphaltSurface.note',
+  'AzpStoreScreen.kt:184    RoundedCornerShape(12.dp) -> AzphaltSurface.recordTile',
+  'GuideReaderScreen.kt:316 RoundedCornerShape(18.dp) -> AzphaltSurface.note'
+].join('\n');
+
+const PATCHES = [
+  {
+    title: 'Patch 01 \u2014 the wobble', file: 'new file \u00b7 ui/menu/PillWobble.kt',
+    blocks: [
+      { prose: 'A new file rather than more lines in PillMenu.kt, which is already 58 KB. Both call sites follow.', code: '' },
+      { prose: '', code: PATCH_01_FILE },
+      { prose: 'Then in StackPill, alongside the existing offset and lift animatables:', code: '' },
+      { prose: '', code: PATCH_01_STACK },
+      { prose: 'And in HostPill, keyed to the drop rather than the slide. ChildPill already owns transformOrigin for its 360\u00b0 hinge, so add the sway there as a summed term (rotationZ = turn.value + sway.value) and only while leaving \u2014 a cascading child is moving alone, not with the pile.', code: '' },
+      { prose: '', code: PATCH_01_HOST }
+    ]
+  },
+  {
+    title: 'Patch 02 \u2014 stack entrance', file: 'PillMenu.kt \u00b7 StackPill',
+    blocks: [
+      { prose: 'Written for the Motion Sheet\u2019s reading, which I recommend adopting: one clock, no stagger, the top pill alone overshooting. If the decision goes the other way, keep the current code and amend the sheet instead \u2014 but do not ship both.', code: '' },
+      { prose: '', code: PATCH_02 }
+    ]
+  },
+  {
+    title: 'Patch 03 \u2014 struggle, break free, fall', file: 'new file \u00b7 ui/menu/PillBreakFree.kt',
+    blocks: [
+      { prose: 'The critical one. One coroutine, one shared implementation called from both reveal files, replacing runLeadIn in PillPerimeterReveal.kt and the leadIn piecewise block in PillWrapReveal.kt. The flight duration is derived from the snap\u2019s own retraction rate \u2014 that is what makes the release read as elastic instead of scripted, and it is the single most important line here.', code: '' },
+      { prose: '', code: PATCH_03_FILE },
+      { prose: 'The stand-in pill in both reveal files then renders from this one state, pivoting on the tip rather than the corner:', code: '' },
+      { prose: '', code: PATCH_03_RENDER }
+    ]
+  },
+  {
+    title: 'Patch 04 \u2014 one theme', file: 'delete two files',
+    blocks: [
+      { prose: 'No new code. Delete ui/theme/Theme.kt and ui/theme/Color.kt, keeping only ui/Theme.kt. Before deleting, grep for the seven abandoned constants and map each onto a live token \u2014 the prompt colours are the only ones likely to have real users:', code: '' },
+      { prose: '', code: PATCH_04 }
+    ]
+  },
+  {
+    title: 'Patch 05 \u2014 the real type scale', file: 'rewrite \u00b7 ui/theme/Typography.kt',
+    blocks: [
+      { prose: 'Named styles off an object, not Material\u2019s fifteen slots \u2014 the guide\u2019s scale has eight steps with their own meanings, and forcing them into displayLarge/titleMedium is how the mapping got lost in the first place. Sizes are the guide\u2019s px values read as sp.', code: '' },
+      { prose: '', code: PATCH_05 },
+      { prose: 'Jost is currently loaded at Black, Medium, SemiBold and ExtraBold. The scale above uses Black, ExtraBold and SemiBold only \u2014 drop the Medium face from jostFontFamily() and the resource set unless a use for 500 is found first.', code: '' }
+    ]
+  },
+  {
+    title: 'Patch 06 \u2014 the three stray radii', file: '3 files \u00b7 4 lines',
+    blocks: [{ prose: '', code: PATCH_06 }]
+  }
+];
+
+// The file explorer, read against the File Manager design. Split into what the design asked for
+// and was not built, versus what was built differently. Ordered by how far it is from the design.
+const FILES_GAPS = [
+  {
+    rank: 'F1', tag: 'Absent', bg: 'var(--hue-red)',
+    title: 'The nesting choreography is a single size interpolation',
+    body: 'This is the whole idea of the screen and it is not implemented. The design is a directed sequence: tap a folder and the others drop to the bottom, race left, and run up the side while the chosen one expands in width and then in height; back out and the reverse, with siblings ballooning and popping into place. What exists is one animateContentSize on the level container. Sizes interpolate, nothing travels, nothing has a direction, and no element is aware of any other. The code says as much in its own comment \u2014 it chose the aggregate-size approach over per-item choreography because the tree is arbitrary-depth and lazily loaded, which is a real constraint but produces none of the motion that made the design worth building.',
+    evidence: 'FilesScreen.kt:714  modifier = Modifier.animateContentSize(tween(Azphalt.SLIDE_MS, easing = LinearEasing))\n// The only animation in the nesting path. No per-item Animatable, no travel, no ordering.',
+    fix: 'The per-item approach already exists in this very package \u2014 FolderPicker.MorphTile animates a target Rect (x, y, w, h) per tile, which is exactly the tile-becomes-rod-becomes-panel motion. Lift that into FilesScreen: hold a target Rect per visible child, animate on change, and drive the drop/race/climb as a keyframed path on that Rect rather than as four independent tweens. Lazy loading is not an obstacle \u2014 an item that has not arrived has no rect and simply is not animated.'
+  },
+  {
+    rank: 'F2', tag: 'Absent', bg: 'var(--hue-red-cap)',
+    title: 'Padding does not thin with depth',
+    body: 'Every level is inset by the same fixed amounts regardless of how deep it sits: 14 dp on the open panel, plus 14 dp start and 10 dp top on the nested child. Those compound. At four levels down the content is inset 56 dp from the left before any of it is text, and the innermost rectangle is a sliver \u2014 which is precisely the failure the "thinner padding the deeper you go" rule was written to prevent. On a 390 dp screen this makes depth five effectively unusable.',
+    evidence: 'FilesScreen.kt:748  .padding(14.dp)                              // open panel, any depth\nFilesScreen.kt:764  Box(Modifier.padding(start = 14.dp, top = 10.dp))   // child level, any depth',
+    fix: 'Make the inset a function of depth and floor it: something like `max(14.dp - depth * 3.dp, 4.dp)`. One expression, and it is the difference between the nesting metaphor scaling and collapsing. Worth stating in the style guide too, since the rule currently lives only in conversation.'
+  },
+  {
+    rank: 'F3', tag: 'Absent', bg: 'var(--hue-red)',
+    title: 'No file preview, so opening a file does nothing legible',
+    body: 'The design has a tapped file reveal its contents inside its own rectangle \u2014 scrollable, with markdown rendered rather than shown as source, and syntax highlighting from whichever linters the user has chosen to install through Termux. There is nothing of this in the package: no preview surface, no markdown path, no highlighter, no lint hook. VfsEntry carries isImage and sizeBytes and stops there. A file explorer where files cannot be looked at is a folder explorer.',
+    evidence: 'No match for preview, markdown, lint, or highlight anywhere under ui/files/.\nVfsEntry: name, path, isDirectory, sizeBytes, modifiedAt, isImage.',
+    fix: 'Sizeable piece of work, and worth scoping separately: a scrollable preview surface inside the open rectangle, a markdown renderer, and a pluggable highlighter that reports which linters are present rather than assuming any. Until then a tapped file should at least say what it is instead of appearing inert.'
+  },
+  {
+    rank: 'F4', tag: 'Absent', bg: 'var(--hue-magenta-cap)',
+    title: 'Item colour carries no size information',
+    body: 'The design ties each item\u2019s hue to its share of total storage, so scanning a folder tells you where the weight is without reading a single number. The implementation has everything needed \u2014 sizeBytes per entry, a StorageStats with totals \u2014 and connects none of it: hues come from the same identity hash the menu uses, which is deliberately meaningless. The information is computed and then discarded.',
+    evidence: 'VfsEntry.sizeBytes and StorageStats.totalBytes both exist; no ramp, lerp, or share-based colour anywhere in ui/files/.',
+    fix: 'Map share-of-total onto the existing hue ramp rather than inventing colours: small items at the cool end, the outliers at red. Keep the identity hash for folders, where a hue that changes as contents change would be disorienting.'
+  },
+  {
+    rank: 'F5', tag: 'Built differently', bg: 'var(--hue-orange-cap)',
+    title: 'Rods run across, not down — and only in the picker',
+    body: 'Two problems in one. First, the rods live in FolderPicker but not in FilesScreen, even though FilesScreen\u2019s own doc comment promises them \u2014 so the browser proper does not have the squish-to-rod behaviour its documentation describes. Second, where they do exist they are laid out along the x axis, a horizontal row of 14 dp rods beneath the open panel. The design put them in a single thin vertical column of their own down the side, which is what keeps the open rectangle full-width and is the reason they read as compressed siblings rather than as tabs.',
+    evidence: 'FolderPicker.kt:50-51  ROD_WIDTH = 14.dp, ROD_GAP = 4.dp\nFolderPicker.kt:166  Rect(slot * (rodWidthPx + rodGapPx), panelHeight + GRID_GAP.toPx(), \u2026)\n// x advances per slot: rods tile horizontally.\nFilesScreen.kt:59, 683  doc comments describe rods; no rod geometry in the file.',
+    fix: 'Advance the rod slot on y instead of x, pin the column to one edge, and bring the same geometry into FilesScreen so the browser and the picker are the same idea at two sizes rather than two different ideas.'
+  },
+  {
+    rank: 'F6', tag: 'Built differently', bg: 'var(--hue-orange-cap)',
+    title: 'Folders are a list where the design made them a grid',
+    body: 'The agreed arrangement inside a rectangle was a grid of folder tiles at the top, then files as a list, with images grouped into a grid in place. Two of the three are right \u2014 FileRows renders a LazyVerticalGrid for images inside the file list, which is exactly the intent. But folders render as FolderRow, one full-width row each, so a folder with eight subfolders spends the whole rectangle on them before a single file appears. The tile grid exists in FolderPicker and was not carried across.',
+    evidence: 'FilesScreen.kt:794  FolderRow(f, \u2026) per folder, in a Column\nFilesScreen.kt:886  LazyVerticalGrid for images \u2014 the part that IS right',
+    fix: 'Reuse the picker\u2019s tile geometry for the folder band at the top of each level, capped at two rows with the remainder behind a count, the way the menu caps a category.'
+  },
+  {
+    rank: 'F7', tag: 'House rule', bg: 'var(--hue-orange-cap)',
+    title: 'Four more radii outside the system',
+    body: 'Beyond the three the audit already lists, the file package adds its own: 7 dp on image tiles, and 13/18 dp inside the picker\u2019s morph tile alongside a legitimate 999. The 26 dp open panel is the record tile and is correct. The rest are freehand.',
+    evidence: 'FilesScreen.kt:896  RoundedCornerShape(7.dp)        // image tile\nFolderPicker.kt:202  RoundedCornerShape(if (isOpen) 18.dp else if (w \u2264 20.dp) 999.dp else 13.dp)',
+    fix: 'Fold into patch 06. The picker\u2019s conditional is defensible in shape \u2014 a rod at rod width should be a capsule \u2014 but the two mid-range values should be the note and the record tile, not 13 and 18.'
+  }
+];
+
+// Runtime defects, as distinct from spec divergence: these are cases where the code does not
+// reliably do what its own author intended, found by reading state/lifecycle rather than by
+// comparing against the guide.
+const BUGS = [
+  {
+    rank: 'B1', tag: 'Latched initial value', bg: 'var(--hue-red)',
+    title: 'A pill composed at rest never slides again',
+    body: 'StackPill seeds its travel animatable from `entering` inside a bare remember. remember evaluates once, so the starting offset is frozen at whatever `entering` was on first composition. A pill first composed while resting keeps a start value of 0f forever \u2014 and because the LaunchedEffect then animates it to 0f, the slide is a no-op. This is almost certainly the recurring \u201cthe stack does not slide\u201d report: it is state-dependent, so it survives a rebuild and vanishes if you happen to open that category first.',
+    evidence: 'PillMenu.kt:614  val offset = remember { Animatable(if (entering) -1.7f else 0f) }',
+    fix: 'Never seed an animatable from a value that changes. Start it at rest and snapTo the entry value inside the effect: `val offset = remember { Animatable(0f) }`, then in LaunchedEffect, `if (entering) { offset.snapTo(-1.7f); offset.animateTo(0f, \u2026) }`. Same pattern in patch 02 and in the entrance work.'
+  },
+  {
+    rank: 'B2', tag: 'Wrong effect key', bg: 'var(--hue-red-cap)',
+    title: 'Rows can settle into the wrong slot',
+    body: 'The row lift animates to `-pitchPx * row`, but its LaunchedEffect is keyed only on `entering`. When a stack is rebuilt \u2014 a trail push, a live PATH rescan adding a category \u2014 a surviving pill can be handed a new `row` while `entering` is unchanged. The effect does not re-run, so the pill animates to, or stays at, its old row: overlapping pills, or a visible gap. Compose will happily keep that composition alive because the id is the same.',
+    evidence: 'PillMenu.kt:637  LaunchedEffect(entering) { \u2026 lift.animateTo(-pitchPx * row, \u2026) }\n// `row` and `pitchPx` are read inside but neither is a key.',
+    fix: 'Key on everything the effect reads: LaunchedEffect(entering, row, pitchPx). Cheap, and it removes a whole class of \u201cpills in the wrong place after going back\u201d reports.'
+  },
+  {
+    rank: 'B3', tag: 'Unit mismatch', bg: 'var(--hue-red)',
+    title: 'The host drop travels the wrong distance on every real device',
+    body: 'HostPill seeds its drop with ROW_PITCH.value \u2014 the dp <em>number</em>, stripped of its unit \u2014 and then applies it as pixels via graphicsLayer. On a 1x-density screen the two coincide; on a 3x phone the drop covers one third of the intended distance. Every physical Android device is 2x or higher, so this animation has never once run at its designed length \u2014 which would explain the drop reading as too short while the numbers in the file look right.',
+    evidence: 'PillMenu.kt:674  val drop = remember { Animatable(-(ROW_PITCH.value * rowsBelow)) }\n// Dp.value is a unitless dp count. graphicsLayer translation is in PIXELS.',
+    fix: 'Convert through the density scope: `with(LocalDensity.current) { (ROW_PITCH * rowsBelow).toPx() }`, or keep the animatable in dp and convert at the graphicsLayer. Grep for `.value` on any Dp across the menu package \u2014 this is unlikely to be the only one.'
+  },
+  {
+    rank: 'B4', tag: 'Cancellation', bg: 'var(--hue-magenta-cap)',
+    title: 'A cancelled reveal leaves the overlay stuck mid-draw',
+    body: 'Both reveal files run long snapTo/animateTo chains \u2014 five sequential legs, then a flood, then a wipe \u2014 directly inside a LaunchedEffect. If that effect is cancelled partway (a rotation, a back press, the phase changing while the reveal is still running) the coroutine stops where it is and the animatables keep their intermediate values. Nothing ever resets them, so the overlay is left as a half-drawn frame: three legs of a border and no content. Re-entering will not fix it, because the next run snapTos only the values it is about to use.',
+    evidence: 'PillPerimeterReveal.kt:102-115  legs snapTo(0f) \u2026 bottomLeg \u2192 rightLeg \u2192 topLeg \u2192 (leftLeg + flood) \u2192 setWipe\nPillWrapReveal.kt:78-90  leadIn \u2192 wrap \u2192 flood \u2192 setWipe, same shape.',
+    fix: 'Reset in a finally, or better, drive the whole reveal from one progress animatable and derive each leg from it, so there is exactly one value to be left behind and it is always consistent. At minimum, snapTo every animatable at the START of a run rather than only the ones about to move.'
+  },
+  {
+    rank: 'B5', tag: 'Stale flag', bg: 'var(--hue-magenta-cap)',
+    title: 'A fresh stack can open already primed',
+    body: 'hasScrolled gates the ink treatment on row 0. It lives in the menu\u2019s own remember scope, not the stack\u2019s, so it persists across a category change: scroll a long category, come back, pick a short one, and row 0 renders primed on a stack that has never been scrolled. Cosmetic \u2014 priming fires nothing \u2014 but it reads as the app claiming a state the user did not create.',
+    evidence: 'PillMenu.kt:292  var hasScrolled by remember { mutableStateOf(false) }\n// Never reset when phase.hostId or the root set changes.',
+    fix: 'Either move it inside the same key(hostId) scope as the stack, or reset it in a LaunchedEffect(phase.hostId). Reset offsetPx there too \u2014 a new stack inheriting the previous one\u2019s scroll offset is the same bug wearing a different hat.'
+  },
+  {
+    rank: 'B6', tag: 'Effect key', bg: 'var(--hue-orange-cap)',
+    title: 'Reordering a band does not restage the cascade',
+    body: 'The child swing is keyed on node.id but its delay is computed from localIndex. Two children swapping positions \u2014 a re-sort, a filter removing a sibling \u2014 changes every subsequent localIndex without changing any id, so no effect re-runs. The cascade keeps the old ordering: children arrive in a sequence that no longer matches where they sit. Rarer than the others, and correspondingly harder to reproduce on demand.',
+    evidence: 'PillMenu.kt:767  LaunchedEffect(node.id) { delay(Azphalt.DROP_MS + localIndex * Azphalt.SWING_MS) \u2026 }',
+    fix: 'LaunchedEffect(node.id, localIndex). Worth auditing every LaunchedEffect in the package the same way \u2014 three of the six bugs on this list are the same mistake.'
+  },
+  {
+    rank: 'B7', tag: 'No-op animation', bg: 'var(--hue-orange-cap)',
+    title: 'The rock animates from zero to zero',
+    body: 'rockAngle is snapped to 0f and then animated to a target of 0f through keyframes that peak in between. It works, but only because the keyframes carry the motion \u2014 the animation\u2019s declared target is its current value, so any code path that skips the keyframes, or any future refactor to a spring or a tween, silently produces nothing at all. It is a trap rather than a live defect.',
+    evidence: 'PillPerimeterReveal.kt:162  rockAngle.animateTo(0f, keyframes { \u2026 14f at \u2026 -8f at \u2026 4f at \u2026 })',
+    fix: 'Superseded by patch 03, which replaces this with the specified jiggle. Worth stating so nobody preserves the pattern while porting.'
+  }
+];
+
+const AMENDMENTS = [
+  {
+    title: 'Olive leaves the rotation', where: 'Style Guide \u00b7 01 \u2014 Ground',
+    strike: '\u201cOn launch the app rolls a ground\u2026\u201d followed by a seven-swatch grid ending in Olive #8F8A2E.',
+    add: 'Six swatches: Mustard, Maroon, Navy, Cerulean, Teal, Pink. Add a line: \u201cOlive was sampled and cut \u2014 near enough to Mustard in hue that rolling it read as the yellow having failed rather than as a different ground.\u201d A rejected candidate is worth recording; it stops the next person re-adding it.'
+  },
+  {
+    title: 'Adopt the shipped ground hexes', where: 'Style Guide \u00b7 01 \u2014 Ground',
+    strike: 'Maroon #8B0021 \u00b7 Teal #0F4A46 \u00b7 Cerulean #1D6FA8',
+    add: 'Maroon #8F1F34 \u00b7 Teal #1D6B62 \u00b7 Cerulean #2D6EA8 \u2014 the frame-sampled values lightened and desaturated for white text at full-screen size. Note that a film-still swatch is a reference, not a token, and that only Mustard has real fold values; the rest derive theirs by a fixed step.'
+  },
+  {
+    title: 'The cascade width rule', where: 'Style Guide \u00b7 07 \u2014 The cascade',
+    strike: '\u201cWidths run a fixed set \u2014 82 / 68 / 90 / 62 / 76 / 94 / 70 / 86% \u2014 and each row steps 9px further in, cycling every eight.\u201d',
+    add: '\u201cEvery row is a step down from the host\u2019s own 66%: a repeating 0 / 1 / 2 / 1 / 2 pattern of 4% steps, cycling every five. Subtractive by construction, so no row\u2019s right end can pass two thirds of the screen \u2014 the ceiling is structural, not a number to remember.\u201d The struck list violated that ceiling at 90% and 94%.'
+  },
+  {
+    title: 'Add the contrast rule', where: 'Style Guide \u00b7 03 \u2014 Transparency (new paragraph)',
+    strike: 'Nothing \u2014 this rule is absent, and its absence is why the alpha ramp breaks on four of six grounds.',
+    add: '\u201cThe alpha ramp above is ink on a light ground. Four of the six grounds are dark, so text and any glyph carrying meaning takes whichever of ink or white actually contrasts with what it sits on, decided by a 0.35 relative-luminance split \u2014 never a colour assumed to work everywhere. One exemption: a selected pill stays ink-on-yellow regardless of ground, because that pairing is a fixed signal rather than text on an arbitrary background.\u201d'
+  },
+  {
+    title: 'Name the two reveal tiers', where: 'Style Guide \u00b7 08 \u2014 Motion',
+    strike: 'A single \u201crun the perimeter\u201d description implying one implementation.',
+    add: '\u201cThe perimeter run exists at two fidelities. The full version animates four legs in sequence and is used wherever the transition anchors to a specific pill \u2014 a trail crumb the animation has to start from. The simplified version interpolates one rectangle with a border and is correct for an ordinary screen open. A simplified reveal is not a broken one.\u201d'
+  },
+  {
+    title: 'Document scrolling and the primed row', where: 'Style Guide \u00b7 07 \u2014 The cascade (new paragraph)',
+    strike: 'Nothing \u2014 the guide never contemplated a stack taller than the screen.',
+    add: '\u201cA category discovered live from PATH can outrun the screen, so a stack scrolls. A release settles by computing where an ordinary coast would stop and rounding that to the nearest row \u2014 so a hard flick barely notices the rounding and a gentle one snaps almost at once, from one rule rather than a speed threshold. Whichever row sits at the front reads as primed, in ink; priming is cosmetic and fires nothing.\u201d'
+  },
+  {
+    title: 'Settle the entrance contradiction', where: 'Motion Sheet \u00b7 Stack arrives + Menu Style Guide rule 08',
+    strike: 'The sheet: \u201cone column, one clock \u2014 no per-row stagger.\u201d Rule 08: \u201c26ms per row, capped at twenty.\u201d Both currently stand.',
+    add: 'One of the two, stated in both places. Recommendation: keep the sheet\u2019s one-clock arrival with the top-pill overshoot \u2014 it is the more distinctive motion and the reason the pile reads as a pile \u2014 and narrow rule 08\u2019s 26ms stagger explicitly to child cascades, where it is already correct and already implemented.'
+  }
+];
+
+const ACTIONS = [
+  ['Sweep every LaunchedEffect in ui/menu/ for values read but not keyed (bugs B1, B2, B6), and every Dp.value used as pixels (B3). Four one-line fixes, and they resolve the intermittent animation failures that keep coming back.', 'Part three b'],
+  ['Apply patch 04 \u2014 delete the duplicate theme. Smallest change here, and it stops new screens picking the wrong palette while the rest of this work is in flight.', 'Patch 04'],
+  ['Apply patch 03 \u2014 the shared break-free coroutine, called from both reveal files. The most visible defect and the one with the longest revision history; get it right once, in one place.', 'Patch 03'],
+  ['Apply patch 01 \u2014 the wobble, on every shared-clock stack move.', 'Patch 01'],
+  ['Take the entrance decision (amendment 7), then apply patch 02 to match whichever way it goes.', 'Design \u2192 patch 02'],
+  ['Make the seven guide amendments in Part five.', 'Design'],
+  ['Apply patches 05 and 06 \u2014 the type scale and the three stray radii. Largest diff, lowest urgency; the migration can land screen by screen.', 'Patches 05\u201306']
+];
+
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      faithful: FAITHFUL.map(([what, detail]) => ({ what, detail })),
+      acceptable: ACCEPTABLE,
+      broken: BROKEN,
+      bugs: BUGS,
+      filesGaps: FILES_GAPS,
+      patches: PATCHES,
+      amendments: AMENDMENTS.map((a, i) => ({ ...a, n: i + 1 })),
+      actions: ACTIONS.map(([text, owner], i) => ({ n: i + 1, text, owner }))
+    };
+  }
+}
+
+</script>
+</body>
+</html>
