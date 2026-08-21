@@ -64,6 +64,9 @@ private val MIN_THICKNESS = 34.dp
 // rounded tip from visually clipping into the edge, matching the reference spec's own margin.
 private const val EDGE_MARGIN_PX = 6f
 
+// The break-free pill pivots on its own right tip - the edge it flies into and thuds against.
+private val TIP_ORIGIN = TransformOrigin(1f, 0.5f)
+
 class PerimeterRevealState {
     var origin: Rect by mutableStateOf(Rect.Zero)
     var active: Boolean by mutableStateOf(false)
@@ -192,7 +195,7 @@ fun PillPerimeterReveal(state: PerimeterRevealState, hue: Color, content: @Compo
                         }
                         .size((baseW * state.breakFree.width.value).coerceAtLeast(1f).toDp(), thickness.toDp())
                         .graphicsLayer {
-                            transformOrigin = TransformOrigin(1f, 0.5f) // the tip, not the corner
+                            transformOrigin = TIP_ORIGIN // the tip, not the corner
                             rotationZ = state.breakFree.tilt.value
                         }
                         .clip(RoundedCornerShape(percent = 50))

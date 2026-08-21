@@ -1,7 +1,6 @@
 package com.hereliesaz.hg2gui.ui.menu
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.keyframes
 import androidx.compose.animation.core.tween
@@ -33,7 +32,19 @@ private const val FALL_MS = 280
 private const val STRETCH = 1.06f // NOT 1.6 - a visibly longer pill, not a new shape
 private const val SHORT = 0.40f
 
-private val HOUSE = CubicBezierEasing(0f, .9f, .1f, 1f)
+// The jiggle: rapid, damping, three peaks alternating sign - degrees paired with their own
+// millisecond offset into JIGGLE_MS.
+private const val JIGGLE_PEAK_1_DEG = 3.2f
+private const val JIGGLE_PEAK_1_MS = 40
+private const val JIGGLE_PEAK_2_DEG = -2.1f
+private const val JIGGLE_PEAK_2_MS = 85
+private const val JIGGLE_PEAK_3_DEG = 1.1f
+private const val JIGGLE_PEAK_3_MS = 130
+
+// A derived flight duration is still bounded - a zero or absurd retraction rate (a pill with no
+// real width yet, e.g. before first layout) must not hand Compose a runaway tween length.
+private const val MIN_FLIGHT_MS = 1
+private const val MAX_FLIGHT_MS = 2000
 
 class BreakFreeState {
     /** Multiplier on the pill's own resting width. */
@@ -79,7 +90,7 @@ suspend fun BreakFreeState.run(baseWidthPx: Float, flightPx: Float, floorPx: Flo
     // 3. FLY. Same speed the snap was retracting it - derived, never authored. This is the line
     //    that makes it read as a rubber band released rather than a tween playing.
     val ratePxPerMs = retractedPx / SNAP_MS
-    val flightMs = (flightPx / ratePxPerMs).toInt().coerceIn(1, 2000)
+    val flightMs = (flightPx / ratePxPerMs).toInt().coerceIn(MIN_FLIGHT_MS, MAX_FLIGHT_MS)
     offsetX.animateTo(retractedPx + flightPx, tween(flightMs, easing = LinearEasing))
 
     // 4. THUD. It jiggles because it just hit the edge - rapid, damping, pivoting on the right
@@ -87,14 +98,14 @@ suspend fun BreakFreeState.run(baseWidthPx: Float, flightPx: Float, floorPx: Flo
     tilt.animateTo(0f, keyframes {
         durationMillis = JIGGLE_MS
         0f at 0 using LinearEasing
-        3.2f at 40 using LinearEasing
-        (-2.1f) at 85 using LinearEasing
-        1.1f at 130 using LinearEasing
+        JIGGLE_PEAK_1_DEG at JIGGLE_PEAK_1_MS using LinearEasing
+        JIGGLE_PEAK_2_DEG at JIGGLE_PEAK_2_MS using LinearEasing
+        JIGGLE_PEAK_3_DEG at JIGGLE_PEAK_3_MS using LinearEasing
         0f at JIGGLE_MS
     })
 
     // 5. FALL. Straight down onto the bottom edge, where the perimeter/wrap run picks up.
-    offsetY.animateTo(floorPx, tween(FALL_MS, easing = HOUSE))
+    offsetY.animateTo(floorPx, tween(FALL_MS, easing = Azphalt.PAGE_EASE))
     active = false
 }
 
@@ -105,10 +116,10 @@ suspend fun BreakFreeState.reverse(baseWidthPx: Float, flightPx: Float, floorPx:
     offsetY.snapTo(floorPx)
     width.snapTo(SHORT)
     tilt.snapTo(0f)
-    offsetY.animateTo(0f, tween(FALL_MS, easing = HOUSE))
+    offsetY.animateTo(0f, tween(FALL_MS, easing = Azphalt.PAGE_EASE))
     val retractedPx = retractedPxOf(baseWidthPx)
     val ratePxPerMs = retractedPx / SNAP_MS
-    val flightMs = (flightPx / ratePxPerMs).toInt().coerceIn(1, 2000)
+    val flightMs = (flightPx / ratePxPerMs).toInt().coerceIn(MIN_FLIGHT_MS, MAX_FLIGHT_MS)
     offsetX.animateTo(retractedPx, tween(flightMs, easing = LinearEasing))
     coroutineScope {
         launch { offsetX.animateTo(0f, tween(SNAP_MS, easing = LinearEasing)) }
