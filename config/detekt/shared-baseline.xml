@@ -50,7 +50,8 @@
     <ID>FunctionNaming:PillMenu.kt$@Composable private fun ChildBand( children: List&lt;MenuNode&gt;, onPick: (MenuNode) -&gt; Unit )</ID>
     <ID>FunctionNaming:PillMenu.kt$@Composable private fun ChildPill( node: MenuNode, localIndex: Int, scrollOffsetPx: Float, leaving: Boolean, droppingOut: Boolean, alignedRow: Int, onClick: () -&gt; Unit )</ID>
     <ID>FunctionNaming:PillMenu.kt$@Composable private fun HostPill(node: MenuNode, rowsBelow: Int, onClick: () -&gt; Unit)</ID>
-    <ID>FunctionNaming:PillMenu.kt$@Composable private fun StackPill( node: MenuNode, row: Int, scrollOffsetPx: Float, leaving: Boolean, isHost: Boolean, entering: Boolean, aligned: Boolean, onClick: () -&gt; Unit )</ID>
+    <ID>FunctionNaming:PillMenu.kt$@Composable private fun StackPill( node: MenuNode, position: StackPillPosition, arrival: StackPillArrival, phase: StackPillPhase, onClick: () -&gt; Unit )</ID>
+    <ID>FunctionNaming:PillMenu.kt$@Composable private fun StackPillVisual( ctx: StackPillContext, motion: StackEntranceMotion, sway: Animatable&lt;Float, AnimationVector1D&gt;, onClick: () -&gt; Unit )</ID>
     <ID>FunctionNaming:PillMenu.kt$@Composable private fun TrailCrumb( node: MenuNode, hueOwner: String, zIndex: Float, onClick: () -&gt; Unit, onPositioned: (Rect) -&gt; Unit = {} )</ID>
     <ID>FunctionNaming:PillMenu.kt$@Composable private fun TrailRow( trail: List&lt;MenuNode&gt;, hueOwner: String, onTapCrumb: (Int) -&gt; Unit, onCrumbPositioned: (id: String, rect: Rect) -&gt; Unit = { _, _ -&gt; } )</ID>
     <ID>FunctionNaming:PillPerimeterReveal.kt$@Composable fun PillPerimeterReveal(state: PerimeterRevealState, hue: Color, content: @Composable () -&gt; Unit)</ID>
