@@ -134,7 +134,7 @@ class PerimeterRevealState {
         fullHeightPx: Float,
         defaultBaseWidthPx: Float,
         minThicknessPx: Float
-    ): BreakFreeGeometry {
+    ): PerimeterBreakFreeGeometry {
         val thickness = if (origin.height > 0f) origin.height else minThicknessPx
         val originLeft = if (origin.width > 0f) origin.left else 0f
         val originTop = if (origin.height > 0f) origin.top else fullHeightPx - thickness
@@ -145,11 +145,11 @@ class PerimeterRevealState {
         // stretch, and keeping that stretch factor private to PillBreakFree.kt is worth it.
         val flightPx = (fullWidthPx - EDGE_MARGIN_PX - originLeft - baseWidthPx).coerceAtLeast(0f)
         val floorPx = (fullHeightPx - thickness - originTop).coerceAtLeast(0f)
-        return BreakFreeGeometry(baseWidthPx, flightPx, floorPx)
+        return PerimeterBreakFreeGeometry(baseWidthPx, flightPx, floorPx)
     }
 }
 
-private data class BreakFreeGeometry(val baseWidthPx: Float, val flightPx: Float, val floorPx: Float)
+private data class PerimeterBreakFreeGeometry(val baseWidthPx: Float, val flightPx: Float, val floorPx: Float)
 
 private fun lerp(a: Float, b: Float, t: Float) = a + (b - a) * t
 
