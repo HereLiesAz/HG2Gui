@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.sp
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
 import com.hereliesaz.hg2gui.ui.menu.onPage
 import com.hereliesaz.hg2gui.ui.menu.pageBrush
+import com.hereliesaz.hg2gui.ui.theme.AzphaltSurface
 import kotlinx.coroutines.delay
 
 /*
@@ -313,7 +314,7 @@ private fun ColumnScope.GuideEntryReader(
                     Column(
                         Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(18.dp))
+                            .clip(AzphaltSurface.note)
                             .background(Azphalt.Ink.copy(alpha = .06f))
                             .padding(16.dp)
                     ) {
