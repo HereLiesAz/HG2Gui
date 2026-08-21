@@ -18,6 +18,7 @@
     <ID>FunctionNaming:McpServerScreen.kt$@Composable fun McpServerScreen( fullscreen: Boolean, running: Boolean, port: Int, token: String?, shellExecEnabled: Boolean, onStart: () -&gt; Unit, onStop: () -&gt; Unit, onRequestShellExec: () -&gt; Unit, onDisableShellExec: () -&gt; Unit, onBack: () -&gt; Unit )</ID>
     <ID>FunctionNaming:McpServerScreen.kt$@Composable private fun McpSettingRow(title: String, description: String, control: @Composable () -&gt; Unit)</ID>
     <ID>FunctionNaming:McpServerScreen.kt$@Composable private fun McpToggle( leftLabel: String, rightLabel: String, rightSelected: Boolean, onSelectRight: (Boolean) -&gt; Unit )</ID>
+    <ID>FunctionNaming:PreviewMain.kt$@Composable private fun PreviewRoot()</ID>
     <ID>FunctionNaming:SettingsScreen.kt$@Composable fun SettingsScreen( fullscreen: Boolean, onFullscreenChange: (Boolean) -&gt; Unit, fontScalePercent: Int, onFontScalePercentChange: (Int) -&gt; Unit, usePty: Boolean, onUsePtyChange: (Boolean) -&gt; Unit, onOpenMcpServer: () -&gt; Unit, onOpenAiSettings: () -&gt; Unit, onBack: () -&gt; Unit )</ID>
     <ID>FunctionNaming:SettingsScreen.kt$@Composable private fun SegmentedToggle( leftLabel: String, rightLabel: String, rightSelected: Boolean, onSelectRight: (Boolean) -&gt; Unit )</ID>
     <ID>FunctionNaming:SettingsScreen.kt$@Composable private fun SettingRow(title: String, description: String, control: @Composable () -&gt; Unit)</ID>

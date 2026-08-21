@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "compose-hot-reload": {
+      "command": "./gradlew",
+      "args": [
+        "--no-daemon",
+        "--quiet",
+        "--console=plain",
+        ":shared:hotMcpServerDesktop"
+      ],
+      "env": {
+        "SKIKO_RENDER_API": "SOFTWARE"
+      }
+    }
+  }
+}
