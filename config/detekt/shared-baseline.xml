@@ -341,6 +341,7 @@
     <ID>TooGenericExceptionThrown:CalculationEngine.kt$CalculationEngine.&lt;no name provided&gt;$throw RuntimeException("Unknown function: $func")</ID>
     <ID>TooManyFunctions:FilesScreen.kt$com.hereliesaz.hg2gui.ui.files.FilesScreen.kt</ID>
     <ID>TooManyFunctions:PillMenu.kt$com.hereliesaz.hg2gui.ui.menu.PillMenu.kt</ID>
+    <ID>TooManyFunctions:TerminalScreen.kt$com.hereliesaz.hg2gui.ui.TerminalScreen.kt</ID>
     <ID>UnusedPrivateProperty:ShellSession.kt$ShellSession$homePath: String?</ID>
     <ID>UnusedPrivateProperty:ShellSession.kt$ShellSession$shellPath: String</ID>
     <ID>WildcardImport:AiChatScreen.kt$import androidx.compose.foundation.layout.*</ID>
