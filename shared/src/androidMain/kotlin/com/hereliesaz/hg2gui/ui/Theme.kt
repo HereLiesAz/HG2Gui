@@ -16,7 +16,9 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
 import com.hereliesaz.hg2gui.ui.menu.onPage
+import com.hereliesaz.hg2gui.ui.theme.LocalAzphaltType
 import com.hereliesaz.hg2gui.ui.theme.appTypography
+import com.hereliesaz.hg2gui.ui.theme.azphaltType
 
 @Composable
 fun HG2GuiTheme(scale: Float = 1f, content: @Composable () -> Unit) {
@@ -45,7 +47,8 @@ fun HG2GuiTheme(scale: Float = 1f, content: @Composable () -> Unit) {
             // sets no `color` at all - fell back to Compose's own hardcoded LocalContentColor
             // default (plain black) regardless of ground, the same "assumes the light Mustard
             // page" bug this whole fix exists to kill, just one level removed from onBackground.
-            LocalContentColor provides ground.onPage
+            LocalContentColor provides ground.onPage,
+            LocalAzphaltType provides azphaltType()
         ) {
             content()
         }

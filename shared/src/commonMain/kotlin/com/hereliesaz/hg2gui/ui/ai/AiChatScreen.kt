@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.sp
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
 import com.hereliesaz.hg2gui.ui.menu.onPage
 import com.hereliesaz.hg2gui.ui.menu.pageBrush
+import com.hereliesaz.hg2gui.ui.theme.AzphaltSurface
 
 /** [parts] is a flag-by-flag "what each part does" breakdown for a command reply - see
  *  HG2Gui_Redesign.dc.html's "Phase 4" concept. Empty when the model didn't include one. */
@@ -177,7 +178,7 @@ private fun AiBubble(message: AiMessage, onUseCommand: (String) -> Unit) {
     Column(
         Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(AzphaltSurface.recordTile) // a message IS a record
             .background(Azphalt.Ink.copy(alpha = if (message.fromUser) .10f else .05f))
             .padding(12.dp)
     ) {
@@ -205,7 +206,7 @@ private fun AiBubble(message: AiMessage, onUseCommand: (String) -> Unit) {
             Column(
                 Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(14.dp))
+                    .clip(AzphaltSurface.note)
                     .background(Azphalt.Ink.copy(alpha = .09f))
                     .padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)

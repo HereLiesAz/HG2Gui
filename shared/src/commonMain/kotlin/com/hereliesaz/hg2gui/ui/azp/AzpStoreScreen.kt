@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.sp
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
 import com.hereliesaz.hg2gui.ui.menu.onPage
 import com.hereliesaz.hg2gui.ui.menu.pageBrush
+import com.hereliesaz.hg2gui.ui.theme.AzphaltSurface
 
 /** A search result row, or an already-installed package - shared shape for the list.
  *  [trust] mirrors androidMain's `AzpTrust` enum by name (commonMain can't reference it directly,
@@ -181,7 +182,7 @@ private fun AzpRow(listing: AzpListing, installing: Boolean, onInstall: (AzpList
     Row(
         Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(AzphaltSurface.recordTile)
             .background(Azphalt.Ink.copy(alpha = .05f))
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
