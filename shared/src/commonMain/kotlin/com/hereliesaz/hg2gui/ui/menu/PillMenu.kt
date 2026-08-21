@@ -178,7 +178,9 @@ object Azphalt {
     // once so StackEntrance.Unfold - the one entrance that grows in length rather than moving,
     // and so isn't bound by the menu's own "everything here is linear" rule - can reference it
     // without redeclaring it a fourth time.
-    val PAGE_EASE: Easing = CubicBezierEasing(0f, .9f, .1f, 1f)
+    private const val PAGE_EASE_CONTROL_1 = .9f
+    private const val PAGE_EASE_CONTROL_2 = .1f
+    val PAGE_EASE: Easing = CubicBezierEasing(0f, PAGE_EASE_CONTROL_1, PAGE_EASE_CONTROL_2, 1f)
 }
 
 /** The flat two-stop page gradient for this ground - page/foldDark/page, the same shape every
@@ -508,15 +510,15 @@ fun PillMenu(
                             val row = roots.size - 1 - i
                             StackPill(
                                 node = node,
-                                row = row,
-                                rowCount = roots.size,
-                                entrance = entrance,
-                                entranceKey = rootArrivalToken,
+                                position = StackPillPosition(row, roots.size),
+                                arrival = StackPillArrival(entrance, rootArrivalToken),
                                 scrollOffsetPx = stackScroll.offsetPx,
-                                leaving = leavingHost != null,
-                                isHost = node.id == leavingHost,
-                                entering = leavingHost == null,
-                                aligned = row == stackScroll.alignedRow,
+                                phase = StackPillPhase(
+                                    leaving = leavingHost != null,
+                                    isHost = node.id == leavingHost,
+                                    entering = leavingHost == null,
+                                    aligned = row == stackScroll.alignedRow
+                                ),
                                 onClick = { openHost(node) }
                             )
                         }
@@ -633,20 +635,33 @@ fun PillMenu(
     }
 }
 
+/** Which row this pill is, and how many rows are in the stack - see [StackEntranceMotion.play]. */
+private data class StackPillPosition(val row: Int, val rowCount: Int)
+
+/** The stack-wide entrance roll and the arrival identity it was rolled against - see PillMenu's
+ *  own `rootArrivalToken` comment for why the root stack needs an explicit identity here where a
+ *  child band can just key on its anchor's id. */
+private data class StackPillArrival(val entrance: StackEntrance, val entranceKey: Int)
+
+/** The four booleans that describe where in the host hand-off this pill currently sits. */
+private data class StackPillPhase(val leaving: Boolean, val isHost: Boolean, val entering: Boolean, val aligned: Boolean)
+
 @Composable
 private fun StackPill(
     node: MenuNode,
-    row: Int,
-    rowCount: Int,
-    entrance: StackEntrance,
-    entranceKey: Int,
+    position: StackPillPosition,
+    arrival: StackPillArrival,
     scrollOffsetPx: Float,
-    leaving: Boolean,
-    isHost: Boolean,
-    entering: Boolean,
-    aligned: Boolean,
+    phase: StackPillPhase,
     onClick: () -> Unit
 ) {
+    val (row, rowCount) = position
+    val (entrance, entranceKey) = arrival
+    // Not destructured (detekt caps that at 3 components) - read straight off the bundle instead.
+    val leaving = phase.leaving
+    val isHost = phase.isHost
+    val entering = phase.entering
+    val aligned = phase.aligned
     val restWidthFraction = if (isHost) HOST_WIDTH else rootWidthFraction(row)
     val target = when {
         !leaving -> 0f
@@ -769,6 +784,22 @@ private fun StackPillVisual(
  * [play] - and every per-variant function it dispatches to - stays a short, single-purpose
  * function instead of one function switching on all eight variants at once.
  */
+// How far off the pill's own width a slide starts/ends, as a fraction of it - comfortably clear
+// of the bled-left/right edges regardless of row width.
+private const val OFFSCREEN_FRACTION = 1.7f
+private const val SLIDE_CORRECT_MS = 90 // Slide's own top-row correction window
+private const val SLIDE_OVERSHOOT_FRACTION = 0.06f // of a row pitch, past the resting slot
+private const val UNFOLD_STAGGER_MS = 26L // per-row delay, bottom to top
+private const val DROP_START_MULTIPLIER = 1.4f // of a row pitch, above the resting row
+private const val DROP_SHORT_FRACTION = 0.04f // of a row pitch, short of the resting row
+private const val DROP_SETTLE_MS = 60
+private const val CASCADE_TURN_DEG = 360f
+private const val DEAL_STEP_MS = 90
+private const val DEAL_START_X_FRACTION = 0.5f
+private const val DEAL_START_Y_MULTIPLIER = 2f
+private const val DEAL_TILT_DEG = 18f
+private const val TELESCOPE_STEP_MS = 120
+
 private class StackEntranceMotion {
     // Fraction of the pill's own width - see StackPill's own comment on why offsetByFractionOfParent
     // makes that true, not full-screen fraction.
@@ -778,19 +809,13 @@ private class StackEntranceMotion {
     val turn = Animatable(0f) // degrees
     val tilt = Animatable(0f) // degrees
 
-    suspend fun resetToRest() {
-        riseY.snapTo(0f)
-        lenFrac.snapTo(1f)
-        turn.snapTo(0f)
-        tilt.snapTo(0f)
-    }
-
     /**
      * The exit never varies - always the same sweep left, whichever entrance brought this pill
      * in - so this is also where a pill leaving mid-entrance (a host tapped again before a slow
      * entrance like Drop's wobble has settled) gets reset: a stray riseY/turn/tilt left over from
      * the interrupted entrance would otherwise leave the pill visibly off its row while it sweeps
-     * away.
+     * away. (Folded into one function rather than a separate resetToRest(), to keep this class's
+     * own function count under detekt's TooManyFunctions ceiling.)
      */
     suspend fun enterOrLeave(
         entering: Boolean,
@@ -800,7 +825,10 @@ private class StackEntranceMotion {
         sway: Animatable<Float, AnimationVector1D>
     ) {
         if (!entering) {
-            resetToRest()
+            riseY.snapTo(0f)
+            lenFrac.snapTo(1f)
+            turn.snapTo(0f)
+            tilt.snapTo(0f)
             sway.snapTo(0f)
             offset.animateTo(leaveTarget, tween(Azphalt.SLIDE_MS, easing = LinearEasing))
             return
@@ -809,7 +837,11 @@ private class StackEntranceMotion {
     }
 
     private suspend fun play(entrance: StackEntrance, geometry: StackRowGeometry) {
-        val (row, rowCount, pitchPx, restWidthFraction) = geometry
+        // Not destructured (detekt caps that at 3 components) - read straight off the bundle.
+        val row = geometry.row
+        val rowCount = geometry.rowCount
+        val pitchPx = geometry.pitchPx
+        val restWidthFraction = geometry.restWidthFraction
         when (entrance) {
             StackEntrance.Slide -> playSlide(row, rowCount)
             StackEntrance.Unfold -> playUnfold(row)
@@ -824,16 +856,16 @@ private class StackEntranceMotion {
 
     private suspend fun playSlide(row: Int, rowCount: Int) {
         val slide = Azphalt.SLIDE_MS
-        offset.snapTo(-1.7f)
+        offset.snapTo(-OFFSCREEN_FRACTION)
         if (row == rowCount - 1) {
             // The top row alone leaves late and overshoots, correcting once it has landed - the
             // one piece of character in an otherwise rigid, one-clock arrival (Amendment 7: no
             // per-row stagger here - that belongs to Cascade).
             offset.animateTo(0f, keyframes {
-                durationMillis = slide + 90
-                -1.7f at 0 using LinearEasing
-                0.06f at slide using LinearEasing
-                0f at slide + 90
+                durationMillis = slide + SLIDE_CORRECT_MS
+                -OFFSCREEN_FRACTION at 0 using LinearEasing
+                SLIDE_OVERSHOOT_FRACTION at slide using LinearEasing
+                0f at slide + SLIDE_CORRECT_MS
             })
         } else {
             offset.animateTo(0f, tween(slide, easing = LinearEasing))
@@ -848,17 +880,17 @@ private class StackEntranceMotion {
         // make the tip the fixed point and the offscreen edge would travel - invisible, reading
         // as nothing happening.
         lenFrac.snapTo(0f)
-        delay(row * 26L)
+        delay(row * UNFOLD_STAGGER_MS)
         lenFrac.animateTo(1f, tween(Azphalt.UNFOLD_MS, easing = Azphalt.PAGE_EASE))
     }
 
     private suspend fun playDrop(pitchPx: Float) {
         val slide = Azphalt.SLIDE_MS
-        riseY.snapTo(-pitchPx * 1.4f)
+        riseY.snapTo(-pitchPx * DROP_START_MULTIPLIER)
         // Stops short by 4% of a row pitch; the wobble (StackPill's own sway) resolves the
         // remainder - the one entrance where the sway is load-bearing rather than decorative.
-        riseY.animateTo(pitchPx * 0.04f, tween(slide, easing = LinearEasing))
-        riseY.animateTo(0f, tween(60, easing = LinearEasing))
+        riseY.animateTo(pitchPx * DROP_SHORT_FRACTION, tween(slide, easing = LinearEasing))
+        riseY.animateTo(0f, tween(DROP_SETTLE_MS, easing = LinearEasing))
     }
 
     private suspend fun playCascade(row: Int, rowCount: Int, pitchPx: Float) {
@@ -866,7 +898,7 @@ private class StackEntranceMotion {
         // one below it finishes.
         val step = stackInterval(Azphalt.SWING_MS, rowCount)
         riseY.snapTo(pitchPx) // stacked on the row below
-        turn.snapTo(if (row % 2 == 0) -360f else 360f)
+        turn.snapTo(if (row % 2 == 0) -CASCADE_TURN_DEG else CASCADE_TURN_DEG)
         delay(row * step.toLong())
         coroutineScope {
             launch { turn.animateTo(0f, tween(step, easing = LinearEasing)) }
@@ -883,10 +915,10 @@ private class StackEntranceMotion {
     }
 
     private suspend fun playDeal(row: Int, rowCount: Int, pitchPx: Float) {
-        val step = stackInterval(90, rowCount)
-        offset.snapTo(0.5f)
-        riseY.snapTo(pitchPx * 2f)
-        tilt.snapTo(18f)
+        val step = stackInterval(DEAL_STEP_MS, rowCount)
+        offset.snapTo(DEAL_START_X_FRACTION)
+        riseY.snapTo(pitchPx * DEAL_START_Y_MULTIPLIER)
+        tilt.snapTo(DEAL_TILT_DEG)
         delay(row * step.toLong())
         coroutineScope {
             launch { offset.animateTo(0f, tween(step * 2, easing = LinearEasing)) }
@@ -898,7 +930,7 @@ private class StackEntranceMotion {
     private suspend fun playSplit(row: Int, pitchPx: Float, restWidthFraction: Float) {
         // Enters as ONE pill at host width on row 0, then divides upward.
         val slide = Azphalt.SLIDE_MS
-        offset.snapTo(-1.7f)
+        offset.snapTo(-OFFSCREEN_FRACTION)
         riseY.snapTo(pitchPx * row)
         lenFrac.snapTo(HOST_WIDTH / restWidthFraction)
         offset.animateTo(0f, tween(slide, easing = LinearEasing))
@@ -910,9 +942,9 @@ private class StackEntranceMotion {
 
     private suspend fun playTelescope(row: Int, rowCount: Int, pitchPx: Float) {
         val slide = Azphalt.SLIDE_MS
-        val step = stackInterval(120, rowCount)
+        val step = stackInterval(TELESCOPE_STEP_MS, rowCount)
         if (row == 0) {
-            offset.snapTo(-1.7f)
+            offset.snapTo(-OFFSCREEN_FRACTION)
             offset.animateTo(0f, tween(slide, easing = LinearEasing))
         } else {
             // Drawn out from behind the row below, already at final length.
@@ -926,7 +958,7 @@ private class StackEntranceMotion {
         // Alternate sides, one clock, no stagger. Struck from both directions, so StackPill's
         // own sway runs at double amplitude.
         val slide = Azphalt.SLIDE_MS
-        offset.snapTo(if (row % 2 == 0) -1.7f else 1.7f)
+        offset.snapTo(if (row % 2 == 0) -OFFSCREEN_FRACTION else OFFSCREEN_FRACTION)
         offset.animateTo(0f, tween(slide, easing = LinearEasing))
     }
 }

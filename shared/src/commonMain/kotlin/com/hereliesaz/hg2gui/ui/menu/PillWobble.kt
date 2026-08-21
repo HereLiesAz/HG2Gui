@@ -13,8 +13,13 @@ import kotlin.math.min
  * alone, and never as a loop.
  */
 
+private const val BASE_AMPLITUDE_DEG = 0.9f
+private const val AMPLITUDE_PER_ROW_DEG = 0.7f
+private const val MAX_AMPLITUDE_DEG = 3.4f
+
 /** Degrees. Grows with height in the pile, capped so the top row never flails. */
-fun wobbleAmplitude(row: Int): Float = min(0.9f + row * 0.7f, 3.4f)
+fun wobbleAmplitude(row: Int): Float =
+    min(BASE_AMPLITUDE_DEG + row * AMPLITUDE_PER_ROW_DEG, MAX_AMPLITUDE_DEG)
 
 /**
  * Out, back, again smaller, settled - then it stops. Runs over the same duration as the move it
@@ -34,9 +39,17 @@ suspend fun Animatable<Float, AnimationVector1D>.wobble(row: Int, durationMs: In
     animateTo(0f, keyframes {
         durationMillis = durationMs
         0f at 0 using LinearEasing
-        a at (durationMs * 0.30f).toInt() using LinearEasing
-        (-a * 0.55f) at (durationMs * 0.58f).toInt() using LinearEasing
-        (a * 0.24f) at (durationMs * 0.82f).toInt() using LinearEasing
+        a at (durationMs * SWING_1_FRACTION).toInt() using LinearEasing
+        (-a * SWING_2_SCALE) at (durationMs * SWING_2_FRACTION).toInt() using LinearEasing
+        (a * SWING_3_SCALE) at (durationMs * SWING_3_FRACTION).toInt() using LinearEasing
         0f at durationMs
     })
 }
+
+// Three diminishing swings, each a fraction of the move's own duration and a scale of the first
+// swing's own amplitude.
+private const val SWING_1_FRACTION = 0.30f
+private const val SWING_2_FRACTION = 0.58f
+private const val SWING_2_SCALE = 0.55f
+private const val SWING_3_FRACTION = 0.82f
+private const val SWING_3_SCALE = 0.24f
