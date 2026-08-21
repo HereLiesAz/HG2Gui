@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+
+<helmet>
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/tokens/colors.css">
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/tokens/typography.css">
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/tokens/motion.css">
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/tokens/base.css">
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/styles.css">
+<script src="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/_ds_bundle.js"></script>
+<style>
+  body{margin:0;background:var(--page);}
+  a{color:var(--ink);} a:hover{color:var(--hue-red);}
+  code{font:600 0.92em/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;}
+</style>
+</helmet>
+
+<div style="max-width:1180px;margin:0 auto;padding:56px 44px 140px;font-family:var(--font-core);color:var(--ink);display:flex;flex-direction:column;gap:46px;">
+
+  <div style="display:flex;flex-direction:column;gap:14px;max-width:740px;">
+    <div style="font:800 11px/1 var(--font-core);letter-spacing:.28em;text-transform:uppercase;color:var(--ink-55);">HG2Gui — stack entrances</div>
+    <div style="font:900 58px/0.84 var(--font-core);letter-spacing:-.03em;text-transform:uppercase;">Eight ways a stack can arrive</div>
+    <p style="margin:0;font:var(--type-body);color:var(--ink-78);text-wrap:pretty;">One stack, eight entrances, picked at random each time a set of pills is called for. The point is not novelty for its own sake — it is that a menu you open forty times a day should not perform the identical 140 ms every time. Each of these is built from primitives the system already has: a length animation, a hinged rotation, a travel, and the wobble. None introduces a new easing, a new duration, or a fade.</p>
+    <p style="margin:0;font:var(--type-body);color:var(--ink-78);text-wrap:pretty;">Only the <em>entrance</em> varies. The exit is always the sweep left, and everything downstream — the cascade, the trail, the run transition — is untouched, so a random entrance can never change what the user is looking at when the motion stops.</p>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:9px;">
+    <button onClick="{{ playAll }}" style="border-radius:999px;box-sizing:border-box;padding:14px 22px;background:var(--ink);font:800 11px/1 var(--font-core);letter-spacing:.14em;text-transform:uppercase;color:var(--yellow-bright);">Play all</button>
+    <button onClick="{{ playRandom }}" style="border-radius:999px;box-sizing:border-box;padding:14px 22px;background:var(--hue-red);font:800 11px/1 var(--font-core);letter-spacing:.14em;text-transform:uppercase;color:var(--white);">Roll one</button>
+    <span style="font:800 10px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-45);">{{ rolled }}</span>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;">
+    <sc-for list="{{ tiles }}" as="tile" hint-placeholder-count="8">
+      <button onClick="{{ tile.play }}" style="text-align:left;border-radius:26px;padding:18px;background:var(--ink-09);display:flex;flex-direction:column;gap:12px;" style-hover="background:var(--ink-14);">
+        <div style="display:flex;align-items:baseline;gap:8px;">
+          <span style="font:900 11px/1 var(--font-core);color:var(--ink-45);">{{ tile.n }}</span>
+          <span style="flex:1;font:900 15px/1 var(--font-core);letter-spacing:.02em;text-transform:uppercase;">{{ tile.name }}</span>
+          <span style="font:800 9px/1 var(--font-core);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-45);font-variant-numeric:tabular-nums;">{{ tile.weight }}</span>
+        </div>
+        <div id="{{ tile.stageId }}" style="position:relative;height:132px;overflow:hidden;border-radius:16px;background:var(--ink-09);">
+          <div data-col style="position:absolute;left:0;right:0;bottom:10px;display:flex;flex-direction:column-reverse;gap:7px;align-items:flex-start;">
+            <div data-pill style="height:15px;width:66%;border-radius:999px;background:var(--hue-red);display:flex;align-items:center;justify-content:flex-end;padding-right:7px;box-sizing:border-box;">
+              <span style="width:9px;height:9px;border-radius:999px;background:var(--hue-red-cap);"></span>
+            </div>
+            <div data-pill style="height:15px;width:58%;border-radius:999px;background:var(--hue-teal);display:flex;align-items:center;justify-content:flex-end;padding-right:7px;box-sizing:border-box;">
+              <span style="width:9px;height:9px;border-radius:999px;background:var(--hue-teal-cap);"></span>
+            </div>
+            <div data-pill style="height:15px;width:62%;border-radius:999px;background:var(--hue-magenta);display:flex;align-items:center;justify-content:flex-end;padding-right:7px;box-sizing:border-box;">
+              <span style="width:9px;height:9px;border-radius:999px;background:var(--hue-magenta-cap);"></span>
+            </div>
+            <div data-pill style="height:15px;width:54%;border-radius:999px;background:var(--hue-violet);display:flex;align-items:center;justify-content:flex-end;padding-right:7px;box-sizing:border-box;">
+              <span style="width:9px;height:9px;border-radius:999px;background:var(--hue-violet-cap);"></span>
+            </div>
+            <div data-pill style="height:15px;width:60%;border-radius:999px;background:var(--hue-blue);display:flex;align-items:center;justify-content:flex-end;padding-right:7px;box-sizing:border-box;">
+              <span style="width:9px;height:9px;border-radius:999px;background:var(--hue-blue-cap);"></span>
+            </div>
+          </div>
+        </div>
+        <span style="font:600 13px/1.45 var(--font-core);color:var(--ink-78);text-wrap:pretty;">{{ tile.blurb }}</span>
+      </button>
+    </sc-for>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;flex-direction:column;gap:9px;max-width:740px;">
+      <div style="font:800 11px/1 var(--font-core);letter-spacing:.28em;text-transform:uppercase;color:var(--ink-55);">The specifications</div>
+      <div style="font:900 40px/1 var(--font-core);letter-spacing:-.02em;text-transform:uppercase;">What each one actually does</div>
+      <p style="margin:0;font:var(--type-body);color:var(--ink-78);text-wrap:pretty;">Durations are the menu's existing tokens. Where an entrance is sequential its total is a multiple of the row count, so it is capped: past six rows the per-row interval halves rather than letting the arrival run long.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;">
+      <div style="height:2px;background:var(--ink-16);"></div>
+      <sc-for list="{{ specs }}" as="s" hint-placeholder-count="8">
+        <div style="display:flex;align-items:baseline;gap:16px;padding:15px 2px;">
+          <span style="flex:none;width:104px;font:800 14px/1.25 var(--font-core);text-transform:uppercase;">{{ s.name }}</span>
+          <span style="flex:none;width:104px;font:600 12px/1.3 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--ink-55);">{{ s.timing }}</span>
+          <span style="flex:1;font:600 15px/1.5 var(--font-core);color:var(--ink-78);text-wrap:pretty;">{{ s.spec }}</span>
+        </div>
+        <div style="height:1px;background:var(--ink-16);"></div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;flex-direction:column;gap:9px;max-width:740px;">
+      <div style="font:800 11px/1 var(--font-core);letter-spacing:.28em;text-transform:uppercase;color:var(--ink-55);">The rules</div>
+      <div style="font:900 40px/1 var(--font-core);letter-spacing:-.02em;text-transform:uppercase;">Random, but not arbitrary</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;">
+      <sc-for list="{{ rules }}" as="r" hint-placeholder-count="6">
+        <div style="border-radius:22px;padding:20px 22px;background:var(--ink-09);display:flex;flex-direction:column;gap:7px;">
+          <span style="font:900 14px/1.15 var(--font-core);letter-spacing:.02em;text-transform:uppercase;">{{ r.title }}</span>
+          <span style="font:600 15px/1.5 var(--font-core);color:var(--ink-78);text-wrap:pretty;">{{ r.body }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:11px;">
+    <div style="display:flex;align-items:baseline;gap:12px;">
+      <span style="font:900 15px/1 var(--font-core);letter-spacing:.02em;text-transform:uppercase;">Implementation</span>
+      <span style="flex:1;height:1px;background:var(--ink-16);"></span>
+      <span style="font:800 9px/1 var(--font-core);letter-spacing:.16em;text-transform:uppercase;color:var(--ink-45);">new file · ui/menu/StackEntrance.kt</span>
+    </div>
+    <p style="margin:0;font:600 15px/1.5 var(--font-core);color:var(--ink-78);max-width:740px;">The entrance is chosen once per stack and passed down, never decided inside a pill — otherwise rows in the same stack could disagree. Each pill then reads its own part out of the chosen enum.</p>
+    <div style="overflow-x:auto;border-radius:20px;padding:20px 22px;background:var(--ink);"><span style="display:block;font:500 9.5px/1.65 ui-monospace,SFMono-Regular,Menlo,monospace;color:#f2e6b8;white-space:pre;">{{ kt.pick }}</span></div>
+    <p style="margin:0;font:600 15px/1.5 var(--font-core);color:var(--ink-78);max-width:740px;">And the per-pill side, replacing the single hard-coded slide in <code>StackPill</code>. Every branch ends at the same resting transform, which is what makes the choice safe to randomise.</p>
+    <div style="overflow-x:auto;border-radius:20px;padding:20px 22px;background:var(--ink);"><span style="display:block;font:500 9.5px/1.65 ui-monospace,SFMono-Regular,Menlo,monospace;color:#f2e6b8;white-space:pre;">{{ kt.pill }}</span></div>
+  </div>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1180,&quot;height&quot;:1500}}">
+// Right edges never pass two thirds of the tile. Row 0 (the host) is the widest.
+// Kept in step with the five literal widths in the template.
+const WIDTHS = ['66%', '58%', '62%', '54%', '60%'];
+
+const VARIANTS = [
+  { key: 'slide', name: 'Slide', weight: '×4', blurb: 'The default. One column, one clock, in from the left — the top pill overshoots and corrects once it has landed.' },
+  { key: 'unfold', name: 'Unfold', weight: '×3', blurb: 'No pill travels. Each one extends rightward from its anchored left edge, tip advancing, one row after the next.' },
+  { key: 'cascade', name: 'Cascade', weight: '×2', blurb: 'The child hinge, applied to roots: each pill swings a full turn out from the row below it, alternating ends.' },
+  { key: 'drop', name: 'Drop', weight: '×3', blurb: 'The column falls in from above, lands short, and the pile wobbles itself level.' },
+  { key: 'deal', name: 'Deal', weight: '×2', blurb: 'Pills arrive one at a time from the bottom corner, tilted, righting themselves as they reach their row.' },
+  { key: 'split', name: 'Split', weight: '×1', blurb: 'One full-width pill slides in, then divides upward into the stack — each row shrinking to its own length.' },
+  { key: 'telescope', name: 'Telescope', weight: '×2', blurb: 'The host arrives alone, then every row above it draws out from behind it like an extending antenna.' },
+  { key: 'rally', name: 'Rally', weight: '×1', blurb: 'All at once, alternate rows from opposite edges, meeting in one line. The only entrance with no stagger at all.' }
+];
+
+const SPECS = [
+  ['Slide', 'SLIDE 140', 'One Animatable for the whole column translating from -1.7\u00d7 width to rest. The top row alone runs a keyframe 6% of a row pitch past its slot at SLIDE_MS, correcting over a further 90 ms. Wobble on the shared clock.'],
+  ['Unfold', 'UNFOLD 420', 'Width interpolated 0 \u2192 target per row, 26 ms apart bottom to top. Anchored at the LEFT edge \u2014 the end that is offscreen in the real menu \u2014 so the right tip is what advances. No translation, so no wobble: nothing is moving as a pile.'],
+  ['Cascade', 'SWING 173/row', 'Each pill starts stacked on the row below and swings 360\u00b0 hinged on alternating tips, the lift folded into the final 10%. Strictly sequential: a row does not begin until the one below finishes.'],
+  ['Drop', 'SLIDE 140', 'The column translates down from -1.4\u00d7 its own height, stopping 4% of a pitch short, then the wobble resolves the remainder. The only entrance where the wobble is load-bearing rather than decorative.'],
+  ['Deal', '90/row', 'Per row: translate from (+0.5\u00d7 width, +2\u00d7 height) with an 18\u00b0 tilt to rest at 0\u00b0, hinged bottom-right. Sequential, bottom row first, 90 ms apart \u2014 the fastest per-row interval in the set.'],
+  ['Split', 'SLIDE + 140', 'All rows enter as one pill at host width, stacked on row 0. They then travel to their own rows while their widths contract to target, on one shared clock. Reads as one thing becoming many.'],
+  ['Telescope', 'SLIDE + 120/row', 'Row 0 slides in alone. Every row above then translates up out from behind it, sequential, 120 ms apart, each already at its final length. Z-order ascends so each emerges from behind its predecessor.'],
+  ['Rally', 'SLIDE 140', 'Odd rows from the left, even rows from the right, all on one clock. No stagger, no overshoot; the wobble runs with doubled amplitude because the pile is struck from both sides.']
+];
+
+const RULES = [
+  { title: 'The exit never varies', body: 'Only arrivals are random. Every stack still leaves by the sweep left, so a user learns one departure and reads it everywhere.' },
+  { title: 'Never twice running', body: 'The picker excludes whatever ran last, so the randomness is actually noticeable. Two Slides in a row would read as no system at all.' },
+  { title: 'Weighted toward Slide', body: 'Slide keeps four tickets against one or two for the rest. It is the entrance that reads as the app\u2019s own; the others are seasoning, not equals.' },
+  { title: 'Chosen per stack, not per pill', body: 'The enum is resolved once where the stack is built and handed down. A pill that picked for itself could disagree with the row beneath it.' },
+  { title: 'Everything lands identically', body: 'Every branch resolves to the same resting transform and the same row pitch. The entrance can be swapped mid-development without touching a single downstream screen.' },
+  { title: 'Sequential entrances are capped', body: 'Past six rows the per-row interval halves. A twelve-row Cascade at full interval would take two seconds, and a menu that slow stops being a menu.' }
+];
+
+const KT = {
+  pick: [
+    'package com.hereliesaz.hg2gui.ui.menu',
+    '',
+    'import kotlin.random.Random',
+    '',
+    '/**',
+    ' * How a stack of pills arrives. Only arrivals vary - every stack still LEAVES by the sweep',
+    ' * left, so the departure stays learnable. Resolved once per stack and handed down: a pill',
+    ' * that picked for itself could disagree with the row beneath it.',
+    ' */',
+    'enum class StackEntrance(val weight: Int) {',
+    '    Slide(4),      // the house arrival; deliberately the most common',
+    '    Unfold(3),',
+    '    Drop(3),',
+    '    Cascade(2),',
+    '    Deal(2),',
+    '    Telescope(2),',
+    '    Split(1),',
+    '    Rally(1);',
+    '',
+    '    companion object {',
+    '        private var last: StackEntrance? = null',
+    '',
+    '        /** Excludes whatever ran last, so the variation is actually perceptible. */',
+    '        fun roll(random: Random = Random.Default): StackEntrance {',
+    '            val pool = entries.filter { it != last }',
+    '            var n = random.nextInt(pool.sumOf { it.weight })',
+    '            for (e in pool) {',
+    '                if (n < e.weight) { last = e; return e }',
+    '                n -= e.weight',
+    '            }',
+    '            return pool.last().also { last = it }',
+    '        }',
+    '    }',
+    '}',
+    '',
+    '/** Per-row interval, halved past six rows so a tall stack never runs long. */',
+    'fun stackInterval(base: Int, rowCount: Int): Int =',
+    '    if (rowCount > 6) base / 2 else base'
+  ].join('\n'),
+  pill: [
+    '// In PillMenu, where the stack is built: resolve once per stack and hand it down. `hostId`',
+    '// is phase.hostId - the identity of the stack currently on screen.',
+    'val entrance = remember(hostId) { StackEntrance.roll() }',
+    '',
+    '// ...then in StackPill, replacing the single hard-coded slide. Note every branch ends at',
+    '// the SAME resting values - that is what makes the choice safe to randomise.',
+    '@Composable',
+    'fun StackPill(',
+    '    row: Int,',
+    '    rowCount: Int,',
+    '    entrance: StackEntrance,',
+    '    entering: Boolean,',
+    '    // Passed down from PillMenu, not derived here:',
+    '    hostId: String,          // identity of the stack; keys the entrance effects',
+    '    pitchPx: Float,          // one row of travel, in PIXELS (see audit bug B3 - not Dp.value)',
+    '    hostFraction: Float,     // HOST_WIDTH, 0.66',
+    '    targetFraction: Float    // this row\'s own width fraction, from rootWidthFraction(row)',
+    ') {',
+    '    val slideX = remember { Animatable(0f) }   // fractions of own width',
+    '    val riseY = remember { Animatable(0f) }    // px, on top of the row lift',
+    '    val len = remember { Animatable(1f) }      // fraction of target width',
+    '    val turn = remember { Animatable(0f) }',
+    '    val tilt = remember { Animatable(0f) }',
+    '    val sway = remember { Animatable(0f) }',
+    '',
+    '    // Keyed on the stack identity, NOT on `entering` alone: a pill composed while already',
+    '    // resting must still animate when a later stack enters. (See audit bug 01.)',
+    '    LaunchedEffect(entrance, hostId, row) {',
+    '        val slide = Azphalt.SLIDE_MS',
+    '        when (entrance) {',
+    '            StackEntrance.Slide -> {',
+    '                slideX.snapTo(-1.7f)',
+    '                if (row == rowCount - 1) {',
+    '                    // the top pill alone overshoots, correcting once it has landed',
+    '                    slideX.animateTo(0f, keyframes {',
+    '                        durationMillis = slide + 90',
+    '                        -1.7f at 0 using LinearEasing',
+    '                        0.06f at slide using LinearEasing',
+    '                        0f at slide + 90',
+    '                    })',
+    '                } else slideX.animateTo(0f, tween(slide, easing = LinearEasing))',
+    '            }',
+    '',
+    '            StackEntrance.Unfold -> {',
+    '                // Length only, so nothing wobbles. The pill is laid out from its LEFT edge',
+    '                // (the offscreen end in the real menu) and `len` scales the width, so the',
+    '                // right tip is what advances. Do NOT anchor this at the right tip: the tip',
+    '                // would then be the fixed point and the offscreen edge would travel, which',
+    '                // is invisible and reads as nothing happening.',
+    '                len.snapTo(0f)',
+    '                delay(row * 26L)',
+    '                len.animateTo(1f, tween(Azphalt.UNFOLD_MS, easing = Azphalt.PAGE_EASE))',
+    '            }',
+    '',
+    '            StackEntrance.Drop -> {',
+    '                riseY.snapTo(-pitchPx * 1.4f)',
+    '                // Stops 4% short: the wobble resolves the remainder, which is why this is',
+    '                // the one entrance where the sway is load-bearing rather than decoration.',
+    '                riseY.animateTo(pitchPx * 0.04f, tween(slide, easing = LinearEasing))',
+    '                riseY.animateTo(0f, tween(60, easing = LinearEasing))',
+    '            }',
+    '',
+    '            StackEntrance.Cascade -> {',
+    '                // The child hinge, applied to roots. Strictly sequential.',
+    '                val step = stackInterval(Azphalt.SWING_MS, rowCount)',
+    '                riseY.snapTo(pitchPx)   // stacked on the row below',
+    '                turn.snapTo(if (row % 2 == 0) -360f else 360f)',
+    '                delay(row * step.toLong())',
+    '                coroutineScope {',
+    '                    launch { turn.animateTo(0f, tween(step, easing = LinearEasing)) }',
+    '                    launch {',
+    '                        // lift folded into the final tenth, so both land on one frame',
+    '                        riseY.animateTo(0f, keyframes {',
+    '                            durationMillis = step',
+    '                            pitchPx at 0 using LinearEasing',
+    '                            pitchPx at (step * Azphalt.LIFT_FRACTION).toInt() using LinearEasing',
+    '                            0f at step',
+    '                        })',
+    '                    }',
+    '                }',
+    '            }',
+    '',
+    '            StackEntrance.Deal -> {',
+    '                val step = stackInterval(90, rowCount)',
+    '                slideX.snapTo(0.5f); riseY.snapTo(pitchPx * 2f); tilt.snapTo(18f)',
+    '                delay(row * step.toLong())',
+    '                coroutineScope {',
+    '                    launch { slideX.animateTo(0f, tween(step * 2, easing = LinearEasing)) }',
+    '                    launch { riseY.animateTo(0f, tween(step * 2, easing = LinearEasing)) }',
+    '                    launch { tilt.animateTo(0f, tween(step * 2, easing = LinearEasing)) }',
+    '                }',
+    '            }',
+    '',
+    '            StackEntrance.Split -> {',
+    '                // Enters as ONE pill at host width on row 0, then divides upward.',
+    '                slideX.snapTo(-1.7f); riseY.snapTo(pitchPx * row); len.snapTo(hostFraction / targetFraction)',
+    '                slideX.animateTo(0f, tween(slide, easing = LinearEasing))',
+    '                coroutineScope {',
+    '                    launch { riseY.animateTo(0f, tween(slide, easing = LinearEasing)) }',
+    '                    launch { len.animateTo(1f, tween(slide, easing = LinearEasing)) }',
+    '                }',
+    '            }',
+    '',
+    '            StackEntrance.Telescope -> {',
+    '                val step = stackInterval(120, rowCount)',
+    '                if (row == 0) {',
+    '                    slideX.snapTo(-1.7f)',
+    '                    slideX.animateTo(0f, tween(slide, easing = LinearEasing))',
+    '                } else {',
+    '                    // Drawn out from behind the row below, already at final length.',
+    '                    riseY.snapTo(pitchPx * row)',
+    '                    delay(slide + (row - 1) * step.toLong())',
+    '                    riseY.animateTo(0f, tween(step, easing = LinearEasing))',
+    '                }',
+    '            }',
+    '',
+    '            StackEntrance.Rally -> {',
+    '                // Alternate sides, one clock, no stagger. Struck from both directions, so',
+    '                // the wobble runs at double amplitude.',
+    '                slideX.snapTo(if (row % 2 == 0) -1.7f else 1.7f)',
+    '                slideX.animateTo(0f, tween(slide, easing = LinearEasing))',
+    '            }',
+    '        }',
+    '    }',
+    '',
+    '    // The wobble accompanies any entrance that TRAVELS as a pile. Three are excluded, and',
+    '    // for the same reason: Unfold does not move at all, while Cascade and Deal move one row',
+    '    // at a time. A sway needs a pile in motion together; a single pill swinging alone has',
+    '    // nothing to sway against.',
+    '    LaunchedEffect(entrance, hostId) {',
+    '        val amp = when (entrance) {',
+    '            StackEntrance.Unfold, StackEntrance.Cascade, StackEntrance.Deal -> return@LaunchedEffect',
+    '            StackEntrance.Rally -> 2f',
+    '            else -> 1f',
+    '        }',
+    '        sway.wobble(row, Azphalt.SLIDE_MS, amplitudeScale = amp)',
+    '    }',
+    '}'
+  ].join('\n')
+};
+
+const SLIDE = 140, SWING = 173, UNFOLD = 420, PITCH = 22;
+const LIN = 'linear', PAGE = 'cubic-bezier(0,.9,.1,1)';
+
+class Component extends DCLogic {
+  state = { rolled: 'nothing rolled yet' };
+
+  componentDidMount() { setTimeout(() => this.playAll(), 260); }
+
+  pillsOf(key) {
+    const stage = document.getElementById('stage-' + key);
+    if (!stage) return [];
+    // Rendered column-reverse, so DOM order is already row 0 first.
+    return [...stage.querySelectorAll('[data-pill]')];
+  }
+
+  // Clear everything any variant might have set, or state leaks between plays. The authored
+  // width lives in the same inline style attribute, so it is stashed on first touch and put
+  // back — clearing it outright would delete the ragged right edge the whole sheet is about.
+  reset(el, row) {
+    el.getAnimations().forEach(a => a.cancel());
+    if (!el.dataset.w) el.dataset.w = el.style.width || WIDTHS[row] || '';
+    el.style.transform = '';
+    el.style.translate = '';
+    el.style.rotate = '';
+    el.style.width = el.dataset.w;
+    el.style.transformOrigin = '';
+    el.style.zIndex = '';
+  }
+
+  // Every variant lands on the same resting transform; that is what makes the pick safe.
+  play(key) {
+    const pills = this.pillsOf(key);
+    if (!pills.length) return;
+    const n = pills.length;
+    const widths = pills.map((p, i) => WIDTHS[i]);
+    pills.forEach((p, i) => this.reset(p, i));
+    const step = n > 6 ? 0.5 : 1;
+
+    const go = (el, frames, duration, delay = 0, easing = LIN) =>
+      el.animate(frames, { duration, delay, easing, fill: 'both' });
+
+    const sway = (el, row, duration, scale = 1) => {
+      const a = Math.min(0.9 + row * 0.7, 3.4) * scale;
+      el.animate([
+        { rotate: '0deg' }, { rotate: a + 'deg', offset: 0.30 },
+        { rotate: (-a * 0.55) + 'deg', offset: 0.58 },
+        { rotate: (a * 0.24) + 'deg', offset: 0.82 }, { rotate: '0deg' }
+      ], { duration, easing: LIN, fill: 'none', composite: 'add' });
+    };
+
+    if (key === 'slide') {
+      pills.forEach((p, i) => {
+        if (i === n - 1) {
+          go(p, [
+            { translate: '-170% 0' }, { translate: '4% 0', offset: SLIDE / (SLIDE + 90) }, { translate: '0 0' }
+          ], SLIDE + 90);
+        } else go(p, [{ translate: '-170% 0' }, { translate: '0 0' }], SLIDE);
+        sway(p, i, SLIDE);
+      });
+    }
+
+    if (key === 'unfold') {
+      // Length only. Pills share a left edge and vary at the right, so the width grows
+      // rightward from that shared edge — the tip travels, the anchor does not.
+      pills.forEach((p, i) => go(p, [{ width: '0%' }, { width: widths[i] }], UNFOLD, i * 26, PAGE));
+    }
+
+    if (key === 'drop') {
+      pills.forEach((p, i) => {
+        go(p, [
+          { translate: '0 ' + (-PITCH * 1.4 * n) + 'px' },
+          { translate: '0 ' + (PITCH * 0.04) + 'px', offset: SLIDE / (SLIDE + 60) },
+          { translate: '0 0' }
+        ], SLIDE + 60);
+        sway(p, i, SLIDE + 260);
+      });
+    }
+
+    if (key === 'cascade') {
+      const s = Math.round(SWING * step);
+      pills.forEach((p, i) => {
+        p.style.transformOrigin = i % 2 === 0 ? '100% 50%' : '0% 50%';
+        go(p, [
+          { rotate: (i % 2 === 0 ? -360 : 360) + 'deg', translate: '0 ' + PITCH + 'px' },
+          { rotate: (i % 2 === 0 ? -36 : 36) + 'deg', translate: '0 ' + PITCH + 'px', offset: 0.9 },
+          { rotate: '0deg', translate: '0 0' }
+        ], s, i * s);
+      });
+    }
+
+    if (key === 'deal') {
+      const s = Math.round(90 * step);
+      pills.forEach((p, i) => {
+        p.style.transformOrigin = '100% 100%';
+        go(p, [
+          { translate: '50% ' + (PITCH * 2) + 'px', rotate: '18deg' },
+          { translate: '0 0', rotate: '0deg' }
+        ], s * 2, i * s);
+      });
+    }
+
+    if (key === 'split') {
+      pills.forEach((p, i) => {
+        go(p, [{ translate: '-170% 0' }, { translate: '0 0' }], SLIDE);
+        go(p, [
+          { translate: '0 ' + (PITCH * i) + 'px', width: WIDTHS[0] },
+          { translate: '0 0', width: widths[i] }
+        ], SLIDE, SLIDE);
+        sway(p, i, SLIDE, 1);
+      });
+    }
+
+    if (key === 'telescope') {
+      const s = Math.round(120 * step);
+      pills.forEach((p, i) => {
+        p.style.zIndex = String(n - i);
+        if (i === 0) {
+          go(p, [{ translate: '-170% 0' }, { translate: '0 0' }], SLIDE);
+        } else {
+          go(p, [
+            { translate: '0 ' + (PITCH * i) + 'px' }, { translate: '0 0' }
+          ], s, SLIDE + (i - 1) * s);
+        }
+      });
+    }
+
+    if (key === 'rally') {
+      pills.forEach((p, i) => {
+        go(p, [{ translate: (i % 2 === 0 ? '-170%' : '170%') + ' 0' }, { translate: '0 0' }], SLIDE);
+        sway(p, i, SLIDE, 2);
+      });
+    }
+  }
+
+  playAll() { VARIANTS.forEach((v, i) => setTimeout(() => this.play(v.key), i * 120)); }
+
+  playRandom() {
+    const pool = VARIANTS.filter(v => v.name !== this.last);
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    this.last = pick.name;
+    this.setState({ rolled: 'rolled — ' + pick.name });
+    this.play(pick.key);
+  }
+
+  renderVals() {
+    return {
+      tiles: VARIANTS.map((v, i) => ({
+        n: String(i + 1).padStart(2, '0'),
+        name: v.name, weight: v.weight, blurb: v.blurb,
+        stageId: 'stage-' + v.key,
+        play: () => this.play(v.key)
+      })),
+      specs: SPECS.map(([name, timing, spec]) => ({ name, timing, spec })),
+      rules: RULES,
+      kt: KT,
+      rolled: this.state.rolled,
+      playAll: () => this.playAll(),
+      playRandom: () => this.playRandom()
+    };
+  }
+}
+
+</script>
+</body>
+</html>
