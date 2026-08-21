@@ -55,8 +55,17 @@ class TerminalEngine(
      * for an answer whenever the shell looks like it's stalled waiting on stdin - a real prompt,
      * not a hang. It bridges into ShellSession's blocking callback via runBlocking, which is
      * safe here since this whole branch already runs on a background dispatcher.
+     *
+     * [onExit] fires once, after the flow's last output emission but before it closes, with the
+     * real shell's own exit code - null for the `bootstrap`/[Builtins] branches, neither of which
+     * is a real shell command with an exit status of its own (D2: previously `stream()`'s own
+     * return value was simply discarded here, so success and failure rendered identically).
      */
-    fun run(line: String, onNeedInput: suspend (prompt: String) -> String): Flow<String> = callbackFlow {
+    fun run(
+        line: String,
+        onNeedInput: suspend (prompt: String) -> String,
+        onExit: (Int?) -> Unit = {}
+    ): Flow<String> = callbackFlow {
         val trimmed = line.trim()
         if (trimmed.isEmpty()) {
             close()
@@ -76,11 +85,13 @@ class TerminalEngine(
                 shell = ShellSession.forAndroid(home, context)
                 pendingBackendNotice = shell.fallbackNoticeOrNull()
                 old.close()
+                onExit(null)
                 close()
             }
         } else if (verb in Builtins.NAMES) {
             launch(Dispatchers.IO) {
                 send(Builtins.run(context, trimmed))
+                onExit(null)
                 close()
             }
         } else {
@@ -92,11 +103,12 @@ class TerminalEngine(
                 // command after landing on it.
                 val notice = pendingBackendNotice
                 pendingBackendNotice = null
-                shell.stream(
+                val exitCode = shell.stream(
                     trimmed,
                     onLine = { line -> trySend(if (notice != null) "$notice\n$line" else line) },
                     onNeedInput = { prompt -> runBlocking { onNeedInput(prompt) } }
                 )
+                onExit(exitCode)
                 close()
             }
         }
