@@ -417,7 +417,7 @@ class TerminalActivity : FragmentActivity() {
                     firstUi.running = true
                     val entryId = firstUi.buffer.size
                     firstUi.buffer = firstUi.buffer + TerminalHistoryEntry(command = "bootstrap", isRunning = true)
-                    built.engine.run("bootstrap") { "" }.collect { output ->
+                    built.engine.run("bootstrap", onNeedInput = { "" }).collect { output ->
                         firstUi.buffer = firstUi.buffer.mapIndexed { i, e ->
                             if (i == entryId) e.copy(output = output) else e
                         }
