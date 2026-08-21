@@ -636,22 +636,31 @@ private fun StderrBlock(text: String) {
 
 @Composable
 private fun BlockActionPill(label: String, onClick: () -> Unit) {
+    // UI-7: the visible pill (padding(vertical = 11.dp) around 11sp type) renders well under the
+    // 48dp minimum touch target. Rather than growing the pill itself - which would blow up its
+    // compact look next to its siblings in the same Row - the clickable region is a separate,
+    // invisible 48dp-tall Box the small pill is centered inside, the same pattern
+    // GuideReaderScreen's own Chip helper uses for the identical shape.
     Box(
-        Modifier
-            .clip(RoundedCornerShape(percent = 50))
-            .background(Azphalt.Ink.copy(alpha = .14f))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 18.dp, vertical = 11.dp)
+        Modifier.defaultMinSize(minHeight = 48.dp).clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
     ) {
-        Text(
-            label,
-            style = MaterialTheme.typography.titleMedium.copy(
-                color = Azphalt.currentGround.onPage.copy(alpha = .55f),
-                fontSize = 11.sp,
-                fontWeight = FontWeight.ExtraBold,
-                letterSpacing = 0.09.em
+        Box(
+            Modifier
+                .clip(RoundedCornerShape(percent = 50))
+                .background(Azphalt.Ink.copy(alpha = .14f))
+                .padding(horizontal = 18.dp, vertical = 11.dp)
+        ) {
+            Text(
+                label,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    color = Azphalt.currentGround.onPage.copy(alpha = .55f),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = 0.09.em
+                )
             )
-        )
+        }
     }
 }
 

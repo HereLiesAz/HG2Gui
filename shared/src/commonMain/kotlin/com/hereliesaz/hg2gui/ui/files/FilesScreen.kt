@@ -964,12 +964,23 @@ private fun SelectMark(selected: Boolean, dark: Boolean) {
 
 @Composable
 private fun EntryMenu(entry: VfsEntry, onRename: (VfsEntry) -> Unit, onDelete: (VfsEntry) -> Unit, onShare: (VfsEntry) -> Unit, tint: Color) {
+    // UI-7: these Text labels had no padding at all - well under the 48dp minimum touch target,
+    // and with only 10dp between them, an imprecise tap intended for RENAME/SHARE could land on
+    // the destructive × instead. Each gets its own invisible 48x48dp centered tap zone, the same
+    // minWidth+minHeight pairing SessionTabs/ModifierKeys already use for a single-glyph target -
+    // that alone also restores real separation between them without changing the visible spacing.
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text("RENAME", color = tint.copy(alpha = .7f), fontSize = 8.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clickable { onRename(entry) })
-        if (!entry.isDirectory) {
-            Text("SHARE", color = tint.copy(alpha = .7f), fontSize = 8.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clickable { onShare(entry) })
+        Box(Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp).clickable { onRename(entry) }, contentAlignment = Alignment.Center) {
+            Text("RENAME", color = tint.copy(alpha = .7f), fontSize = 8.sp, fontWeight = FontWeight.Bold)
         }
-        Text("×", color = tint.copy(alpha = .85f), fontSize = 13.sp, modifier = Modifier.clickable { onDelete(entry) })
+        if (!entry.isDirectory) {
+            Box(Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp).clickable { onShare(entry) }, contentAlignment = Alignment.Center) {
+                Text("SHARE", color = tint.copy(alpha = .7f), fontSize = 8.sp, fontWeight = FontWeight.Bold)
+            }
+        }
+        Box(Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp).clickable { onDelete(entry) }, contentAlignment = Alignment.Center) {
+            Text("×", color = tint.copy(alpha = .85f), fontSize = 13.sp)
+        }
     }
 }
 
