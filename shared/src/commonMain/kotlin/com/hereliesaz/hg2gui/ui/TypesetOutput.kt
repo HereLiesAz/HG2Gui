@@ -118,8 +118,7 @@ fun looksLikeWideTable(text: String): Boolean {
     val lines = text.lines().filter { it.isNotBlank() }
     if (lines.size < 3) return false
     val headerTokens = WORD.findAll(lines[0]).count()
-    if (headerTokens < MIN_WIDE_TABLE_COLUMNS) return false
-    return lines.drop(1).all { WORD.findAll(it).count() >= headerTokens }
+    return headerTokens >= MIN_WIDE_TABLE_COLUMNS && lines.drop(1).all { WORD.findAll(it).count() >= headerTokens }
 }
 
 internal data class WideTableRow(val fields: List<Pair<String, String>>)
@@ -217,4 +216,19 @@ fun looksLikeBinary(text: String): Boolean {
     if (text.isEmpty()) return false
     val suspicious = text.count { c -> c == '\uFFFD' || (c.code < 0x20 && c != '\t' && c != '\n' && c != '\r') }
     return suspicious.toDouble() / text.length > BINARY_SUSPICIOUS_RATIO
+}
+
+/** The mutually-exclusive readings BufferEntry can typeset one command's output as - checked in
+ *  this exact priority order (binary first, since garbled bytes can spuriously satisfy the art/
+ *  table/wide-table heuristics on their own noise; wide-table last, since it's the least specific
+ *  shape) and collapsed into a single classification here instead of a chain of independent
+ *  booleans, so a caller only ever has to make (and pay the branching cost of) this one decision. */
+enum class OutputKind { BINARY, ART, TABLE, WIDE_TABLE, PLAIN }
+
+fun classifyOutput(output: String): OutputKind = when {
+    looksLikeBinary(output) -> OutputKind.BINARY
+    looksLikeAsciiArt(output) -> OutputKind.ART
+    looksLikeKeyValueTable(output) -> OutputKind.TABLE
+    looksLikeWideTable(output) -> OutputKind.WIDE_TABLE
+    else -> OutputKind.PLAIN
 }

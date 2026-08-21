@@ -62,6 +62,8 @@
     <ID>FunctionNaming:TerminalScreen.kt$@Composable internal fun Eyebrow(text: String)</ID>
     <ID>FunctionNaming:TerminalScreen.kt$@Composable private fun BlockActionPill(label: String, onClick: () -&gt; Unit)</ID>
     <ID>FunctionNaming:TerminalScreen.kt$@Composable private fun BufferEntry( entry: TerminalHistoryEntry, onCopy: (String) -&gt; Unit, onShare: (String) -&gt; Unit, onRerun: (String) -&gt; Unit )</ID>
+    <ID>FunctionNaming:TerminalScreen.kt$@Composable private fun ClassificationTogglePill(kind: OutputKind, showRaw: Boolean, onToggle: () -&gt; Unit)</ID>
+    <ID>FunctionNaming:TerminalScreen.kt$@Composable private fun ClassifiedOutput(kind: OutputKind, entry: TerminalHistoryEntry, onPage: Color, showRaw: Boolean)</ID>
     <ID>FunctionNaming:TerminalScreen.kt$@Composable private fun CommandLine( tokens: List&lt;String&gt;, inputText: String, onInputTextChange: (String) -&gt; Unit, hint: String, enabled: Boolean, onRun: () -&gt; Unit, runLabel: String = "RUN", masked: Boolean = false )</ID>
     <ID>FunctionNaming:TerminalScreen.kt$@Composable private fun ModifierKeys( keys: List&lt;String&gt; = listOf("ctrl", "alt", "esc", "tab", "↑", "↓"), onKeyClick: (String) -&gt; Unit = {} )</ID>
     <ID>FunctionNaming:TerminalScreen.kt$@Composable private fun OutputLines(entry: TerminalHistoryEntry)</ID>
