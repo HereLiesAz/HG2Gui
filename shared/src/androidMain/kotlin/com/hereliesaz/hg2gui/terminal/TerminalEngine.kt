@@ -1,6 +1,7 @@
 package com.hereliesaz.hg2gui.terminal
 
 import android.content.Context
+import com.hereliesaz.hg2gui.managers.StyledSpan
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -60,11 +61,16 @@ class TerminalEngine(
      * real shell's own exit code - null for the `bootstrap`/[Builtins] branches, neither of which
      * is a real shell command with an exit status of its own (D2: previously `stream()`'s own
      * return value was simply discarded here, so success and failure rendered identically).
+     *
+     * [onStyledOutput] fires alongside the flow's own emissions with the same transcript's per-run
+     * ANSI color/attribute reading (D1) - see [ShellSession.stream]'s own doc comment. Never fires
+     * for the `bootstrap`/[Builtins] branches, neither of which produces real ANSI-styled output.
      */
     fun run(
         line: String,
         onNeedInput: suspend (prompt: String) -> String,
-        onExit: (Int?) -> Unit = {}
+        onExit: (Int?) -> Unit = {},
+        onStyledOutput: (lines: List<List<StyledSpan>>) -> Unit = {}
     ): Flow<String> = callbackFlow {
         val trimmed = line.trim()
         if (trimmed.isEmpty()) {
@@ -106,7 +112,8 @@ class TerminalEngine(
                 val exitCode = shell.stream(
                     trimmed,
                     onLine = { line -> trySend(if (notice != null) "$notice\n$line" else line) },
-                    onNeedInput = { prompt -> runBlocking { onNeedInput(prompt) } }
+                    onNeedInput = { prompt -> runBlocking { onNeedInput(prompt) } },
+                    onStyledLine = { lines -> onStyledOutput(lines) }
                 )
                 onExit(exitCode)
                 close()
@@ -130,7 +137,7 @@ class TerminalEngine(
      */
     suspend fun runToCompletion(line: String): Pair<String, Int> = withContext(Dispatchers.IO) {
         var transcript = ""
-        val exitCode = shell.stream(line, onLine = { transcript = it }, onNeedInput = { null })
+        val exitCode = shell.stream(line, onLine = { transcript = it }, onNeedInput = { null }, onStyledLine = {})
         transcript to exitCode
     }
 

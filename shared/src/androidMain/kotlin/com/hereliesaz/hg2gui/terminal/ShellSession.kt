@@ -5,6 +5,7 @@ import android.system.ErrnoException
 import android.system.Os
 import android.system.OsConstants
 import com.hereliesaz.hg2gui.managers.PtyPreference
+import com.hereliesaz.hg2gui.managers.StyledSpan
 import java.io.BufferedReader
 import java.io.BufferedWriter
 import java.io.File
@@ -317,11 +318,16 @@ actual class ShellSession private constructor(
 
     actual fun exec(command: String): ShellSessionResult {
         var output = ""
-        val exitCode = stream(command, onLine = { line -> output = line }, onNeedInput = { null })
+        val exitCode = stream(command, onLine = { line -> output = line }, onNeedInput = { null }, onStyledLine = {})
         return ShellSessionResult(output, exitCode, _workingDirectory)
     }
 
-    actual fun stream(command: String, onLine: (line: String) -> Unit, onNeedInput: (prompt: String) -> String?): Int {
+    actual fun stream(
+        command: String,
+        onLine: (line: String) -> Unit,
+        onNeedInput: (prompt: String) -> String?,
+        onStyledLine: (lines: List<List<StyledSpan>>) -> Unit
+    ): Int {
         if (!isAlive) {
             onLine("shell is not running")
             return -1
@@ -389,6 +395,7 @@ actual class ShellSession private constructor(
                     if (!promptOfferedForThisStall && marker < 0 && tailIsUnterminated && idleMs > PROMPT_IDLE_MS) {
                         promptOfferedForThisStall = true
                         emittedUpTo = trimConsumedPrefix(pending, flush(pending, emittedUpTo, pending.length, emulator, onLine))
+                        onStyledLine(emulator.styledTranscript())
                         val answer = onNeedInput(pending.substring(0, pending.length))
                         if (answer != null) {
                             sin.write(answer)
@@ -416,6 +423,7 @@ actual class ShellSession private constructor(
                 if (marker < 0) {
                     val safeEnd = (pending.length - SENTINEL.length).coerceAtLeast(emittedUpTo)
                     emittedUpTo = trimConsumedPrefix(pending, flush(pending, emittedUpTo, safeEnd, emulator, onLine))
+                    onStyledLine(emulator.styledTranscript())
                     continue
                 }
 
@@ -434,6 +442,7 @@ actual class ShellSession private constructor(
                     if (pwd.isNotEmpty()) _workingDirectory = pwd
                 }
                 onLine(emulator.transcriptText())
+                onStyledLine(emulator.styledTranscript())
                 break
             }
         } catch (e: IOException) {

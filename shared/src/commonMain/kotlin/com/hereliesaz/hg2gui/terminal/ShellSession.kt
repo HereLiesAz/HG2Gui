@@ -1,5 +1,7 @@
 package com.hereliesaz.hg2gui.terminal
 
+import com.hereliesaz.hg2gui.managers.StyledSpan
+
 data class ShellSessionResult(
     val output: String,
     val exitCode: Int,
@@ -13,6 +15,14 @@ expect class ShellSession {
     val isAlive: Boolean
     val workingDirectory: String
     fun exec(command: String): ShellSessionResult
-    fun stream(command: String, onLine: (line: String) -> Unit, onNeedInput: (prompt: String) -> String? = { null }): Int
+    fun stream(
+        command: String,
+        onLine: (line: String) -> Unit,
+        onNeedInput: (prompt: String) -> String? = { null },
+        // D1: fires alongside onLine with the same transcript's per-run ANSI color/attribute
+        // reading - see StyledTranscript.kt's own doc comment. Empty on every platform without a
+        // real ANSI-parsing terminal emulator behind it; only the Android actual ever populates it.
+        onStyledLine: (lines: List<List<StyledSpan>>) -> Unit = {}
+    ): Int
     fun close()
 }
