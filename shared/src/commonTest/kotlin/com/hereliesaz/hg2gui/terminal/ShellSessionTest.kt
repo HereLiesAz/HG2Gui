@@ -83,9 +83,30 @@ class ShellSessionTest {
 
     @Test
     fun capturesStandardError() {
+        // D3: this used to assert "oops" landed in r.output - the pipe tier merged stdout and
+        // stderr together (redirectErrorStream(true)) at the time, so that was actually correct
+        // for what the code did then. Now that the two are kept apart, stderr text belongs in
+        // its own field and stdout stays untouched by a command that never wrote to it.
         val s = shell ?: return
         val r = s.exec("echo oops >&2")
-        assertEquals("oops", r.output)
+        assertEquals("", r.output)
+        assertEquals("oops", r.stderr)
+    }
+
+    @Test
+    fun stdoutAndStderrDoNotLeakIntoEachOther() {
+        val s = shell ?: return
+        var stdoutSeen = ""
+        var stderrSeen = ""
+        val exitCode = s.stream(
+            "echo out-line; echo err-line >&2",
+            onLine = { line -> stdoutSeen = line },
+            onNeedInput = { null },
+            onStderrLine = { line -> stderrSeen = line }
+        )
+        assertEquals(0, exitCode)
+        assertEquals("out-line", stdoutSeen)
+        assertEquals("err-line", stderrSeen)
     }
 
     @Test
