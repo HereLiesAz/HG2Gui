@@ -83,29 +83,42 @@ fun CommandGuideScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // UI-7: the visible pill (padding(vertical = 7.dp) around 9sp type) renders well
+            // under the 48dp minimum touch target. Rather than growing the pill itself - which
+            // would blow up its compact look next to its sibling - the clickable region is a
+            // separate, invisible 48dp-tall Box the small pill is centered inside, the same
+            // pattern GuideReaderScreen's own Chip helper uses for the identical shape.
             Box(
-                Modifier
-                    .clip(RoundedCornerShape(percent = 50))
-                    .background(Azphalt.Ink)
-                    .clickable(onClick = onBack)
-                    .padding(horizontal = 14.dp, vertical = 7.dp)
+                Modifier.defaultMinSize(minHeight = 48.dp).clickable(onClick = onBack),
+                contentAlignment = Alignment.Center
             ) {
-                Text(
-                    "‹ BACK", color = Azphalt.Yellow,
-                    fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em
-                )
+                Box(
+                    Modifier
+                        .clip(RoundedCornerShape(percent = 50))
+                        .background(Azphalt.Ink)
+                        .padding(horizontal = 14.dp, vertical = 7.dp)
+                ) {
+                    Text(
+                        "‹ BACK", color = Azphalt.Yellow,
+                        fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em
+                    )
+                }
             }
             Box(
-                Modifier
-                    .clip(RoundedCornerShape(percent = 50))
-                    .background(Azphalt.hues[6])
-                    .clickable { readingGuide = true }
-                    .padding(horizontal = 14.dp, vertical = 7.dp)
+                Modifier.defaultMinSize(minHeight = 48.dp).clickable { readingGuide = true },
+                contentAlignment = Alignment.Center
             ) {
-                Text(
-                    "THE GUIDE", color = Azphalt.White,
-                    fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em
-                )
+                Box(
+                    Modifier
+                        .clip(RoundedCornerShape(percent = 50))
+                        .background(Azphalt.hues[6])
+                        .padding(horizontal = 14.dp, vertical = 7.dp)
+                ) {
+                    Text(
+                        "THE GUIDE", color = Azphalt.White,
+                        fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em
+                    )
+                }
             }
         }
 
