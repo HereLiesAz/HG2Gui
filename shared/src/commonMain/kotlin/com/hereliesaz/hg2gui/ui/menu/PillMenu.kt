@@ -2,6 +2,7 @@ package com.hereliesaz.hg2gui.ui.menu
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationState
+import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.DecayAnimationSpec
 import androidx.compose.animation.core.Easing
@@ -654,25 +655,18 @@ private fun StackPill(
     }
     val density = LocalDensity.current
     val pitchPx = with(density) { ROW_PITCH.toPx() }
-    // The row a pill rests on is now a fixed value, not an Animatable of its own - only
-    // StackEntrance's own per-variant riseY (below) supplies any vertical entrance motion, and
-    // it always settles back to 0, so translationY = restLift + riseY.value is correct on every
-    // frame without a LaunchedEffect keeping it in sync. (Previously `lift` animated to this same
-    // value on its own per-row-staggered clock; seven of eight entrances don't touch riseY at
-    // all, which is what "everything lands identically" - the rule that makes the entrance safe
-    // to randomise - actually depends on.)
+    // The row a pill rests on is now a fixed value, not an Animatable of its own - only a
+    // StackEntrance variant's own riseY (see StackEntranceMotion) supplies any vertical entrance
+    // motion, always settling back to 0, so translationY = restLift + riseY.value is correct on
+    // every frame without a LaunchedEffect keeping it in sync.
     val restLift = -pitchPx * row
+    val geometry = StackRowGeometry(row, rowCount, pitchPx, restWidthFraction)
 
-    // Six Animatables a StackEntrance variant can drive - see StackEntrance.kt/PillWobble.kt.
     // `offset` doubles as the leaving sweep's own translateX and Stack Entrances' `slideX`
     // (fraction of the pill's OWN width, per offsetByFractionOfParent's own semantics - it runs
     // after fillMaxWidth in this modifier chain, so its `constraints.maxWidth` is already this
     // pill's own target width, not the full screen's).
-    val offset = remember { Animatable(0f) }
-    val riseY = remember { Animatable(0f) } // px, added to restLift
-    val lenFrac = remember { Animatable(1f) } // fraction of restWidthFraction
-    val turn = remember { Animatable(0f) } // degrees
-    val tilt = remember { Animatable(0f) } // degrees
+    val motion = remember { StackEntranceMotion() }
     val sway = remember { Animatable(0f) } // degrees, additive wobble - see PillWobble.kt
 
     // Keyed on the stack's own arrival identity (entranceKey), not `entering` alone: a pill
@@ -680,151 +674,70 @@ private fun StackPill(
     // entrance (audit bug B1's fix, generalised - `remember` seeding from a value that changes is
     // the trap here, not any one Animatable in particular).
     LaunchedEffect(leaving, entering, entrance, entranceKey) {
-        if (!entering) {
-            // The exit never varies - always the same sweep left, whichever entrance brought this
-            // pill in. Reset every entrance-only animatable to its neutral resting value first, in
-            // case this pill is leaving mid-entrance (a host tapped again before a slow entrance
-            // like Drop's wobble has settled) - otherwise a stray riseY/turn/tilt left over from
-            // the interrupted entrance would leave the pill visibly off its row while it sweeps
-            // away.
-            riseY.snapTo(0f)
-            lenFrac.snapTo(1f)
-            turn.snapTo(0f)
-            tilt.snapTo(0f)
-            sway.snapTo(0f)
-            offset.animateTo(target, tween(Azphalt.SLIDE_MS, easing = LinearEasing))
-            return@LaunchedEffect
-        }
-        val slide = Azphalt.SLIDE_MS
-        when (entrance) {
-            StackEntrance.Slide -> {
-                offset.snapTo(-1.7f)
-                if (row == rowCount - 1) {
-                    // The top row alone leaves late and overshoots, correcting once it has
-                    // landed - the one piece of character in an otherwise rigid, one-clock
-                    // arrival (Amendment 7: no per-row stagger here - that belongs to Cascade).
-                    offset.animateTo(0f, keyframes {
-                        durationMillis = slide + 90
-                        -1.7f at 0 using LinearEasing
-                        0.06f at slide using LinearEasing
-                        0f at slide + 90
-                    })
-                } else {
-                    offset.animateTo(0f, tween(slide, easing = LinearEasing))
-                }
-            }
-
-            StackEntrance.Unfold -> {
-                // Length only, so nothing wobbles. `offset` stays 0 (its resting value) the whole
-                // time - the pill is anchored at its own LEFT edge (the end that bleeds offscreen
-                // in the real menu) via offsetByFractionOfParent(0), and lenFrac scales the width
-                // from that fixed left edge, so the right tip is what advances. Anchoring at the
-                // right tip instead would make the tip the fixed point and the offscreen edge
-                // would travel - invisible, reading as nothing happening.
-                lenFrac.snapTo(0f)
-                delay(row * 26L)
-                lenFrac.animateTo(1f, tween(Azphalt.UNFOLD_MS, easing = Azphalt.PAGE_EASE))
-            }
-
-            StackEntrance.Drop -> {
-                riseY.snapTo(-pitchPx * 1.4f)
-                // Stops short by 4% of a row pitch; the wobble below resolves the remainder -
-                // the one entrance where the sway is load-bearing rather than decorative.
-                riseY.animateTo(pitchPx * 0.04f, tween(slide, easing = LinearEasing))
-                riseY.animateTo(0f, tween(60, easing = LinearEasing))
-            }
-
-            StackEntrance.Cascade -> {
-                // The child hinge, applied to roots. Strictly sequential: a row does not begin
-                // until the one below it finishes.
-                val step = stackInterval(Azphalt.SWING_MS, rowCount)
-                riseY.snapTo(pitchPx) // stacked on the row below
-                turn.snapTo(if (row % 2 == 0) -360f else 360f)
-                delay(row * step.toLong())
-                coroutineScope {
-                    launch { turn.animateTo(0f, tween(step, easing = LinearEasing)) }
-                    launch {
-                        // Lift folded into the final tenth, so turn and lift land on one frame.
-                        riseY.animateTo(0f, keyframes {
-                            durationMillis = step
-                            pitchPx at 0 using LinearEasing
-                            pitchPx at (step * Azphalt.LIFT_FRACTION).toInt() using LinearEasing
-                            0f at step
-                        })
-                    }
-                }
-            }
-
-            StackEntrance.Deal -> {
-                val step = stackInterval(90, rowCount)
-                offset.snapTo(0.5f)
-                riseY.snapTo(pitchPx * 2f)
-                tilt.snapTo(18f)
-                delay(row * step.toLong())
-                coroutineScope {
-                    launch { offset.animateTo(0f, tween(step * 2, easing = LinearEasing)) }
-                    launch { riseY.animateTo(0f, tween(step * 2, easing = LinearEasing)) }
-                    launch { tilt.animateTo(0f, tween(step * 2, easing = LinearEasing)) }
-                }
-            }
-
-            StackEntrance.Split -> {
-                // Enters as ONE pill at host width on row 0, then divides upward.
-                offset.snapTo(-1.7f)
-                riseY.snapTo(pitchPx * row)
-                lenFrac.snapTo(HOST_WIDTH / restWidthFraction)
-                offset.animateTo(0f, tween(slide, easing = LinearEasing))
-                coroutineScope {
-                    launch { riseY.animateTo(0f, tween(slide, easing = LinearEasing)) }
-                    launch { lenFrac.animateTo(1f, tween(slide, easing = LinearEasing)) }
-                }
-            }
-
-            StackEntrance.Telescope -> {
-                val step = stackInterval(120, rowCount)
-                if (row == 0) {
-                    offset.snapTo(-1.7f)
-                    offset.animateTo(0f, tween(slide, easing = LinearEasing))
-                } else {
-                    // Drawn out from behind the row below, already at final length.
-                    riseY.snapTo(pitchPx * row)
-                    delay(slide + (row - 1) * step.toLong())
-                    riseY.animateTo(0f, tween(step, easing = LinearEasing))
-                }
-            }
-
-            StackEntrance.Rally -> {
-                // Alternate sides, one clock, no stagger. Struck from both directions, so the
-                // wobble below runs at double amplitude.
-                offset.snapTo(if (row % 2 == 0) -1.7f else 1.7f)
-                offset.animateTo(0f, tween(slide, easing = LinearEasing))
-            }
-        }
+        motion.enterOrLeave(entering, entrance, target, geometry, sway)
     }
-
-    // The wobble accompanies any entrance that travels as a pile. Three are excluded, for the
-    // same reason: Unfold does not move at all, while Cascade and Deal move one row at a time. A
-    // sway needs a pile in motion together; a single pill swinging alone has nothing to sway
-    // against.
     LaunchedEffect(entering, entrance, entranceKey) {
-        if (!entering) return@LaunchedEffect
-        val amplitudeScale = when (entrance) {
-            StackEntrance.Unfold, StackEntrance.Cascade, StackEntrance.Deal -> return@LaunchedEffect
-            StackEntrance.Rally -> 2f
-            else -> 1f
-        }
-        sway.wobble(row, Azphalt.SLIDE_MS, amplitudeScale)
+        playStackSway(sway, entering, entrance, row)
     }
 
+    StackPillVisual(
+        StackPillContext(node, row, restWidthFraction, restLift, scrollOffsetPx, leaving, isHost, aligned, entrance),
+        motion,
+        sway,
+        onClick
+    )
+}
+
+/** One row's worth of the geometry a [StackEntrance] variant needs - see [StackEntranceMotion.play]. */
+private data class StackRowGeometry(val row: Int, val rowCount: Int, val pitchPx: Float, val restWidthFraction: Float)
+
+/** Everything [StackPillVisual] needs besides the two Animatable bundles - see its own doc. */
+private data class StackPillContext(
+    val node: MenuNode,
+    val row: Int,
+    val restWidthFraction: Float,
+    val restLift: Float,
+    val scrollOffsetPx: Float,
+    val leaving: Boolean,
+    val isHost: Boolean,
+    val aligned: Boolean,
+    val entrance: StackEntrance
+)
+
+// The wobble accompanies any entrance that travels as a pile. Three are excluded, for the same
+// reason: Unfold does not move at all, while Cascade and Deal move one row at a time. A sway
+// needs a pile in motion together; a single pill swinging alone has nothing to sway against.
+private suspend fun playStackSway(
+    sway: Animatable<Float, AnimationVector1D>,
+    entering: Boolean,
+    entrance: StackEntrance,
+    row: Int
+) {
+    if (!entering) return
+    val amplitudeScale = when (entrance) {
+        StackEntrance.Unfold, StackEntrance.Cascade, StackEntrance.Deal -> return
+        StackEntrance.Rally -> 2f
+        else -> 1f
+    }
+    sway.wobble(row, Azphalt.SLIDE_MS, amplitudeScale)
+}
+
+@Composable
+private fun StackPillVisual(
+    ctx: StackPillContext,
+    motion: StackEntranceMotion,
+    sway: Animatable<Float, AnimationVector1D>,
+    onClick: () -> Unit
+) {
     Box(Modifier.fillMaxSize()) {
         Pill(
-            label = node.label,
-            cap = node.cap,
-            hue = Azphalt.hueOf(node.id),
+            label = ctx.node.label,
+            cap = ctx.node.cap,
+            hue = Azphalt.hueOf(ctx.node.id),
             // Ink is already what "open"/selected reads as everywhere in the menu; a pill that's
             // scrolled into the fixed row-0 spot gets the same treatment - primed to be tapped
             // next, not yet picked.
-            selected = (leaving && isHost) || (aligned && !leaving),
+            selected = (ctx.leaving && ctx.isHost) || (ctx.aligned && !ctx.leaving),
             touchTargetHeight = ROW_PITCH,
             modifier = Modifier
                 .align(Alignment.BottomStart)
@@ -833,21 +746,188 @@ private fun StackPill(
                 // HostPill renders once this phase completes, or `target`'s offset below (derived
                 // assuming HOST_WIDTH) lands the wrong row's right edge somewhere other than
                 // HOST_RIGHT_EDGE and then visibly pops into place the instant HostPill takes over.
-                .fillMaxWidth(restWidthFraction * lenFrac.value)
-                .offsetByFractionOfParent(offset.value)
+                .fillMaxWidth(ctx.restWidthFraction * motion.lenFrac.value)
+                .offsetByFractionOfParent(motion.offset.value)
                 .absoluteBleed(OVERHANG)
                 .graphicsLayer {
-                    transformOrigin = when (entrance) {
+                    transformOrigin = when (ctx.entrance) {
                         StackEntrance.Deal -> TransformOrigin(1f, 1f) // hinged bottom-right
                         StackEntrance.Cascade ->
-                            if (row % 2 == 0) TransformOrigin(0f, .5f) else TransformOrigin(1f, .5f)
+                            if (ctx.row % 2 == 0) TransformOrigin(0f, .5f) else TransformOrigin(1f, .5f)
                         else -> TransformOrigin(1f, .5f) // the visible right end
                     }
-                    rotationZ = turn.value + tilt.value + sway.value
-                    translationY = restLift + riseY.value + scrollOffsetPx
+                    rotationZ = motion.turn.value + motion.tilt.value + sway.value
+                    translationY = ctx.restLift + motion.riseY.value + ctx.scrollOffsetPx
                 }
-                .clickable(enabled = !leaving, onClick = onClick)
+                .clickable(enabled = !ctx.leaving, onClick = onClick)
         )
+    }
+}
+
+/**
+ * The five Animatables a [StackEntrance] variant can drive for one [StackPill], bundled so
+ * [play] - and every per-variant function it dispatches to - stays a short, single-purpose
+ * function instead of one function switching on all eight variants at once.
+ */
+private class StackEntranceMotion {
+    // Fraction of the pill's own width - see StackPill's own comment on why offsetByFractionOfParent
+    // makes that true, not full-screen fraction.
+    val offset = Animatable(0f)
+    val riseY = Animatable(0f) // px, added to the pill's resting row lift
+    val lenFrac = Animatable(1f) // fraction of the pill's own resting width
+    val turn = Animatable(0f) // degrees
+    val tilt = Animatable(0f) // degrees
+
+    suspend fun resetToRest() {
+        riseY.snapTo(0f)
+        lenFrac.snapTo(1f)
+        turn.snapTo(0f)
+        tilt.snapTo(0f)
+    }
+
+    /**
+     * The exit never varies - always the same sweep left, whichever entrance brought this pill
+     * in - so this is also where a pill leaving mid-entrance (a host tapped again before a slow
+     * entrance like Drop's wobble has settled) gets reset: a stray riseY/turn/tilt left over from
+     * the interrupted entrance would otherwise leave the pill visibly off its row while it sweeps
+     * away.
+     */
+    suspend fun enterOrLeave(
+        entering: Boolean,
+        entrance: StackEntrance,
+        leaveTarget: Float,
+        geometry: StackRowGeometry,
+        sway: Animatable<Float, AnimationVector1D>
+    ) {
+        if (!entering) {
+            resetToRest()
+            sway.snapTo(0f)
+            offset.animateTo(leaveTarget, tween(Azphalt.SLIDE_MS, easing = LinearEasing))
+            return
+        }
+        play(entrance, geometry)
+    }
+
+    private suspend fun play(entrance: StackEntrance, geometry: StackRowGeometry) {
+        val (row, rowCount, pitchPx, restWidthFraction) = geometry
+        when (entrance) {
+            StackEntrance.Slide -> playSlide(row, rowCount)
+            StackEntrance.Unfold -> playUnfold(row)
+            StackEntrance.Drop -> playDrop(pitchPx)
+            StackEntrance.Cascade -> playCascade(row, rowCount, pitchPx)
+            StackEntrance.Deal -> playDeal(row, rowCount, pitchPx)
+            StackEntrance.Split -> playSplit(row, pitchPx, restWidthFraction)
+            StackEntrance.Telescope -> playTelescope(row, rowCount, pitchPx)
+            StackEntrance.Rally -> playRally(row)
+        }
+    }
+
+    private suspend fun playSlide(row: Int, rowCount: Int) {
+        val slide = Azphalt.SLIDE_MS
+        offset.snapTo(-1.7f)
+        if (row == rowCount - 1) {
+            // The top row alone leaves late and overshoots, correcting once it has landed - the
+            // one piece of character in an otherwise rigid, one-clock arrival (Amendment 7: no
+            // per-row stagger here - that belongs to Cascade).
+            offset.animateTo(0f, keyframes {
+                durationMillis = slide + 90
+                -1.7f at 0 using LinearEasing
+                0.06f at slide using LinearEasing
+                0f at slide + 90
+            })
+        } else {
+            offset.animateTo(0f, tween(slide, easing = LinearEasing))
+        }
+    }
+
+    private suspend fun playUnfold(row: Int) {
+        // Length only, so nothing wobbles. `offset` stays 0 (its resting value) the whole time -
+        // the pill is anchored at its own LEFT edge (the end that bleeds offscreen in the real
+        // menu) via offsetByFractionOfParent(0), and lenFrac scales the width from that fixed
+        // left edge, so the right tip is what advances. Anchoring at the right tip instead would
+        // make the tip the fixed point and the offscreen edge would travel - invisible, reading
+        // as nothing happening.
+        lenFrac.snapTo(0f)
+        delay(row * 26L)
+        lenFrac.animateTo(1f, tween(Azphalt.UNFOLD_MS, easing = Azphalt.PAGE_EASE))
+    }
+
+    private suspend fun playDrop(pitchPx: Float) {
+        val slide = Azphalt.SLIDE_MS
+        riseY.snapTo(-pitchPx * 1.4f)
+        // Stops short by 4% of a row pitch; the wobble (StackPill's own sway) resolves the
+        // remainder - the one entrance where the sway is load-bearing rather than decorative.
+        riseY.animateTo(pitchPx * 0.04f, tween(slide, easing = LinearEasing))
+        riseY.animateTo(0f, tween(60, easing = LinearEasing))
+    }
+
+    private suspend fun playCascade(row: Int, rowCount: Int, pitchPx: Float) {
+        // The child hinge, applied to roots. Strictly sequential: a row does not begin until the
+        // one below it finishes.
+        val step = stackInterval(Azphalt.SWING_MS, rowCount)
+        riseY.snapTo(pitchPx) // stacked on the row below
+        turn.snapTo(if (row % 2 == 0) -360f else 360f)
+        delay(row * step.toLong())
+        coroutineScope {
+            launch { turn.animateTo(0f, tween(step, easing = LinearEasing)) }
+            launch {
+                // Lift folded into the final tenth, so turn and lift land on one frame.
+                riseY.animateTo(0f, keyframes {
+                    durationMillis = step
+                    pitchPx at 0 using LinearEasing
+                    pitchPx at (step * Azphalt.LIFT_FRACTION).toInt() using LinearEasing
+                    0f at step
+                })
+            }
+        }
+    }
+
+    private suspend fun playDeal(row: Int, rowCount: Int, pitchPx: Float) {
+        val step = stackInterval(90, rowCount)
+        offset.snapTo(0.5f)
+        riseY.snapTo(pitchPx * 2f)
+        tilt.snapTo(18f)
+        delay(row * step.toLong())
+        coroutineScope {
+            launch { offset.animateTo(0f, tween(step * 2, easing = LinearEasing)) }
+            launch { riseY.animateTo(0f, tween(step * 2, easing = LinearEasing)) }
+            launch { tilt.animateTo(0f, tween(step * 2, easing = LinearEasing)) }
+        }
+    }
+
+    private suspend fun playSplit(row: Int, pitchPx: Float, restWidthFraction: Float) {
+        // Enters as ONE pill at host width on row 0, then divides upward.
+        val slide = Azphalt.SLIDE_MS
+        offset.snapTo(-1.7f)
+        riseY.snapTo(pitchPx * row)
+        lenFrac.snapTo(HOST_WIDTH / restWidthFraction)
+        offset.animateTo(0f, tween(slide, easing = LinearEasing))
+        coroutineScope {
+            launch { riseY.animateTo(0f, tween(slide, easing = LinearEasing)) }
+            launch { lenFrac.animateTo(1f, tween(slide, easing = LinearEasing)) }
+        }
+    }
+
+    private suspend fun playTelescope(row: Int, rowCount: Int, pitchPx: Float) {
+        val slide = Azphalt.SLIDE_MS
+        val step = stackInterval(120, rowCount)
+        if (row == 0) {
+            offset.snapTo(-1.7f)
+            offset.animateTo(0f, tween(slide, easing = LinearEasing))
+        } else {
+            // Drawn out from behind the row below, already at final length.
+            riseY.snapTo(pitchPx * row)
+            delay(slide + (row - 1) * step.toLong())
+            riseY.animateTo(0f, tween(step, easing = LinearEasing))
+        }
+    }
+
+    private suspend fun playRally(row: Int) {
+        // Alternate sides, one clock, no stagger. Struck from both directions, so StackPill's
+        // own sway runs at double amplitude.
+        val slide = Azphalt.SLIDE_MS
+        offset.snapTo(if (row % 2 == 0) -1.7f else 1.7f)
+        offset.animateTo(0f, tween(slide, easing = LinearEasing))
     }
 }
 
