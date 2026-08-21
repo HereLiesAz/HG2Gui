@@ -9,6 +9,7 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform) apply false
     alias(libs.plugins.kotlinAndroid) apply false
     alias(libs.plugins.detekt) apply false
+    alias(libs.plugins.composeHotReload) apply false
 }
 
 // CodeQL's default-setup scanning covers this repo's Actions/JS but has no Kotlin support at
