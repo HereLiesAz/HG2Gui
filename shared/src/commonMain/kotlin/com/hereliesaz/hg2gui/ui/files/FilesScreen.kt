@@ -256,6 +256,9 @@ fun FilesScreen(
         openChain = openChain.take(idx) + renamed
     }
 
+    fun moveOrCopyErrorMessage(failed: Int, total: Int, isMove: Boolean): String? =
+        if (failed > 0) "$failed of $total didn't ${if (isMove) "move" else "copy"}." else null
+
     fun recordSearch(query: String) {
         val trimmed = query.trim()
         if (trimmed.isEmpty()) return
@@ -311,7 +314,7 @@ fun FilesScreen(
             onConfirm = {
                 scope.launch {
                     val failed = paths.filterNot { path -> if (isMove) onMove(path, target) else onCopy(path, target) }.toSet()
-                    opError = if (failed.isNotEmpty()) "${failed.size} of ${paths.size} didn't ${if (isMove) "move" else "copy"}." else null
+                    opError = moveOrCopyErrorMessage(failed.size, paths.size, isMove)
                     // Only a move actually removes the source - a copy leaves the open folder
                     // right where it was.
                     if (isMove) closeChainIfAffected(paths - failed)
@@ -340,7 +343,7 @@ fun FilesScreen(
                         pendingBatchOverwrite = Triple(selected, target, isMove)
                     } else {
                         val failed = selected.filterNot { path -> if (isMove) onMove(path, target) else onCopy(path, target) }.toSet()
-                        opError = if (failed.isNotEmpty()) "${failed.size} of ${selected.size} didn't ${if (isMove) "move" else "copy"}." else null
+                        opError = moveOrCopyErrorMessage(failed.size, selected.size, isMove)
                         if (isMove) closeChainIfAffected(selected - failed)
                         selected = emptySet()
                         selectMode = false
