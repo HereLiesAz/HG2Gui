@@ -62,6 +62,8 @@
     <ID>FunctionNaming:TerminalScreen.kt$@Composable internal fun Eyebrow(text: String)</ID>
     <ID>FunctionNaming:TerminalScreen.kt$@Composable private fun BlockActionPill(label: String, onClick: () -&gt; Unit)</ID>
     <ID>FunctionNaming:TerminalScreen.kt$@Composable private fun BufferEntry( entry: TerminalHistoryEntry, onCopy: (String) -&gt; Unit, onShare: (String) -&gt; Unit, onRerun: (String) -&gt; Unit )</ID>
+    <ID>FunctionNaming:TerminalScreen.kt$@Composable private fun ClassificationTogglePill(kind: OutputKind, showRaw: Boolean, onToggle: () -&gt; Unit)</ID>
+    <ID>FunctionNaming:TerminalScreen.kt$@Composable private fun ClassifiedOutput(kind: OutputKind, entry: TerminalHistoryEntry, onPage: Color, showRaw: Boolean)</ID>
     <ID>FunctionNaming:TerminalScreen.kt$@Composable private fun CommandLine( tokens: List&lt;String&gt;, inputText: String, onInputTextChange: (String) -&gt; Unit, hint: String, enabled: Boolean, onRun: () -&gt; Unit, runLabel: String = "RUN", masked: Boolean = false )</ID>
     <ID>FunctionNaming:TerminalScreen.kt$@Composable private fun ModifierKeys( keys: List&lt;String&gt; = listOf("ctrl", "alt", "esc", "tab", "↑", "↓"), onKeyClick: (String) -&gt; Unit = {} )</ID>
     <ID>FunctionNaming:TerminalScreen.kt$@Composable private fun OutputLines(entry: TerminalHistoryEntry)</ID>
@@ -70,6 +72,7 @@
     <ID>FunctionNaming:TerminalScreen.kt$@Composable private fun StatusDot(entry: TerminalHistoryEntry)</ID>
     <ID>FunctionNaming:TerminalScreen.kt$@Composable private fun StderrBlock(text: String)</ID>
     <ID>FunctionNaming:TypesetOutput.kt$@Composable fun KeyValueTable(text: String, ink: Color, modifier: Modifier = Modifier)</ID>
+    <ID>FunctionNaming:TypesetOutput.kt$@Composable fun WideTableRecords(text: String, ink: Color, modifier: Modifier = Modifier)</ID>
     <ID>LongMethod:AiChatScreen.kt$@Composable fun AiChatScreen( fullscreen: Boolean, messages: List&lt;AiMessage&gt;, apiKeyConfigured: Boolean, busy: Boolean, onAsk: (String) -&gt; Unit, onUseCommand: (String) -&gt; Unit, onOpenSettings: () -&gt; Unit, onBack: () -&gt; Unit )</ID>
     <ID>LongMethod:AiChatScreen.kt$@Composable private fun AiBubble(message: AiMessage, onUseCommand: (String) -&gt; Unit)</ID>
     <ID>LongMethod:AzpStoreScreen.kt$@Composable fun AzpStoreScreen( fullscreen: Boolean, results: List&lt;AzpListing&gt;, busy: Boolean, installingId: String?, onSearch: (query: String, kind: String) -&gt; Unit, onInstall: (AzpListing) -&gt; Unit, onBack: () -&gt; Unit, )</ID>
@@ -285,6 +288,7 @@
     <ID>MagicNumber:TerminalScreen.kt$0.6f</ID>
     <ID>MagicNumber:TerminalScreen.kt$4</ID>
     <ID>MagicNumber:TerminalScreen.kt$6</ID>
+    <ID>MagicNumber:TypesetOutput.kt$0x20</ID>
     <ID>MagicNumber:TypesetOutput.kt$3</ID>
     <ID>MagicNumber:VfsEntry.kt$10</ID>
     <ID>MagicNumber:VfsEntry.kt$1024</ID>

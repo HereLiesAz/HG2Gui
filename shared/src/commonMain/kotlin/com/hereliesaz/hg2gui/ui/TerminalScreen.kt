@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -382,10 +383,7 @@ private fun BufferEntry(
     // entry.output never carries raw ANSI/VT100 escapes to strip here: real shell output is
     // always pre-flattened through ShellSession's headless TerminalEmulator before it reaches the
     // buffer, and the bootstrap/Builtins branches only ever emit app-authored plain text.
-    val isArt = remember(entry.output) { looksLikeAsciiArt(entry.output) }
-    // Checked only when the output isn't already art - a block of `label: value` lines and a
-    // dense symbol-art block are mutually exclusive readings of the same text.
-    val isTable = remember(entry.output) { !isArt && looksLikeKeyValueTable(entry.output) }
+    val kind = remember(entry.output) { classifyOutput(entry.output) }
     // Keyed on the command, not the output - entry.output mutates on every streamed chunk while
     // a command is still running, and re-keying on it reset this toggle out from under anyone
     // reading the raw text of a long-running command.
@@ -421,20 +419,7 @@ private fun BufferEntry(
         }
         if (entry.output.isNotEmpty()) {
             Spacer(Modifier.height(4.dp))
-            if (isArt && !showRaw) {
-                // Vector-style rendering: flat filled cells sized by character density, not
-                // literal glyphs - a script's ASCII/box-drawing art reads as art, not text.
-                AsciiArtCanvas(entry.output, onPage.copy(alpha = .8f))
-            } else if (isTable && !showRaw) {
-                // "Output is set, not echoed": a block of label: value lines is set on the page
-                // as a two-column grid with hairline rules, not left as raw monospace text.
-                KeyValueTable(entry.output, onPage)
-            } else {
-                // "Output sets, not echoes" (RATTLE 5G / OUTPUT SETS): raw output reveals line by
-                // line via a clip-wipe + slight slide, the same idiom GuideReaderScreen's WipeItem
-                // uses for its own reveals, rather than the whole block appearing instantly.
-                OutputLines(entry)
-            }
+            ClassifiedOutput(kind, entry, onPage, showRaw)
         }
         if (entry.stderr.isNotEmpty()) {
             Spacer(Modifier.height(4.dp))
@@ -447,14 +432,65 @@ private fun BufferEntry(
                 BlockActionPill("COPY") { onCopy(copyText) }
                 BlockActionPill("RE-RUN") { onRerun(entry.command) }
                 BlockActionPill("SHARE") { onShare(copyText) }
-                if (isArt) {
-                    BlockActionPill(if (showRaw) "ART" else "PLAIN TEXT") { showRaw = !showRaw }
-                } else if (isTable) {
-                    BlockActionPill(if (showRaw) "READING" else "PLAIN TEXT") { showRaw = !showRaw }
-                }
+                ClassificationTogglePill(kind, showRaw) { showRaw = !showRaw }
             }
         }
     }
+}
+
+// Split out of BufferEntry so its own dispatch doesn't count against that composable's
+// complexity budget - see [OutputKind]'s own doc comment for why this is one classification
+// rather than a chain of independent booleans.
+@Composable
+private fun ClassifiedOutput(kind: OutputKind, entry: TerminalHistoryEntry, onPage: Color, showRaw: Boolean) {
+    when {
+        kind == OutputKind.BINARY && !showRaw -> {
+            // D6: "refused with an explanation rather than rendered" - garbled bytes typeset as
+            // if they were prose or a table is worse than admitting there's nothing readable
+            // here; showRaw is still one tap away for anyone who wants it anyway.
+            Text(
+                "Binary output - not displayed as text.",
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    color = onPage.copy(alpha = .55f),
+                    fontStyle = FontStyle.Italic
+                )
+            )
+        }
+        kind == OutputKind.ART && !showRaw -> {
+            // Vector-style rendering: flat filled cells sized by character density, not literal
+            // glyphs - a script's ASCII/box-drawing art reads as art, not text.
+            AsciiArtCanvas(entry.output, onPage.copy(alpha = .8f))
+        }
+        kind == OutputKind.TABLE && !showRaw -> {
+            // "Output is set, not echoed": a block of label: value lines is set on the page as a
+            // two-column grid with hairline rules, not left as raw monospace text.
+            KeyValueTable(entry.output, onPage)
+        }
+        kind == OutputKind.WIDE_TABLE && !showRaw -> {
+            // D6: a record per row, fields as labelled pairs - "suits this design better than a
+            // table anyway" per the audit's own recommendation, instead of either wrapping a wide
+            // row into unreadable ribbons or clipping it at the screen edge.
+            WideTableRecords(entry.output, onPage)
+        }
+        else -> {
+            // "Output sets, not echoes" (RATTLE 5G / OUTPUT SETS): raw output reveals line by
+            // line via a clip-wipe + slight slide, the same idiom GuideReaderScreen's WipeItem
+            // uses for its own reveals, rather than the whole block appearing instantly.
+            OutputLines(entry)
+        }
+    }
+}
+
+@Composable
+private fun ClassificationTogglePill(kind: OutputKind, showRaw: Boolean, onToggle: () -> Unit) {
+    val label = when (kind) {
+        OutputKind.BINARY -> "BINARY"
+        OutputKind.ART -> "ART"
+        OutputKind.TABLE -> "READING"
+        OutputKind.WIDE_TABLE -> "REFLOW"
+        OutputKind.PLAIN -> null
+    } ?: return
+    BlockActionPill(if (showRaw) label else "PLAIN TEXT", onToggle)
 }
 
 @Composable
