@@ -166,6 +166,30 @@ class ShellSessionTest {
     }
 
     @Test
+    fun interruptStopsAHangingCommandAndKeepsTheSessionUsable() {
+        // S2: sleep runs long enough that the assertion below (which fires well under a second)
+        // proves interrupt() actually cut it short rather than just happening to win a race
+        // against the command finishing on its own.
+        val s = shell ?: return
+        var streamReturned = false
+        val worker = kotlin.concurrent.thread {
+            s.stream("sleep 30", onLine = {}, onNeedInput = { null })
+            streamReturned = true
+        }
+        // Give stream() a moment to actually write the command and start reading, so interrupt()
+        // has a real child to kill rather than racing the write itself.
+        Thread.sleep(300)
+        s.interrupt()
+        worker.join(5_000)
+
+        assertTrue(streamReturned, "interrupt() must unblock the in-flight stream() call")
+        assertTrue(s.isAlive, "the session itself must survive an interrupt, not just the one command")
+
+        val r = s.exec("echo back")
+        assertEquals("back", r.output, "the session must still run new commands after an interrupt")
+    }
+
+    @Test
     fun outputExceedingTheScrollbackBufferIsFlaggedAsTruncated() {
         // MCP-13: the headless TerminalEmulator's scrollback is a fixed-size circular buffer
         // (1000 rows) - a command producing more lines than that silently loses its earliest

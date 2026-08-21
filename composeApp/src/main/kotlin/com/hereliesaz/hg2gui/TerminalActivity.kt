@@ -816,6 +816,9 @@ class TerminalActivity : FragmentActivity() {
                                 }
                             }
                         },
+                        onInterrupt = { sessionId ->
+                            sessions.firstOrNull { it.ui.id == sessionId }?.engine?.interrupt()
+                        },
                         onRun = { sessionId, line, onOutput, onNeedInput, onExit, onStderr, onStyledOutput ->
                             val session = sessions.first { it.ui.id == sessionId }
                             session.engine.run(line, onNeedInput, onExit, onStderr, onStyledOutput)

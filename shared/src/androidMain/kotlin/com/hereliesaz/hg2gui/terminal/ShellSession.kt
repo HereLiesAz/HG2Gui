@@ -17,6 +17,7 @@ import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.lang.reflect.Field
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.concurrent.thread
 
 import com.termux.terminal.JNI
@@ -56,9 +57,9 @@ class DummyTerminalOutput : TerminalOutput() {
  * this documented and unstarted.
  */
 actual class ShellSession private constructor(
-    home: File?,
-    command: Array<String>,
-    extraEnv: Map<String, String>,
+    private val home: File?,
+    private val command: Array<String>,
+    private val extraEnv: Map<String, String>,
     // Which of forAndroid()'s three tiers this session actually ended up on, and - only for the
     // last-resort system shell, since that's the one with no apt/pkg/coreutils - why the better
     // ones weren't used. forAndroid() used to pick silently: a session that landed on
@@ -80,6 +81,11 @@ actual class ShellSession private constructor(
         private const val TIMEOUT_MS = 15_000L
         private const val STARTUP_PROBE_MS = 300L
         private const val PROMPT_IDLE_MS = 400L
+
+        // S2: the INTR control character - what a real terminal's line discipline turns Ctrl-C
+        // into, and what [interrupt] writes straight to the pty master to reproduce that on the
+        // pty tier.
+        private const val INTR_BYTE = 0x03
 
         // D5: [pending] below accumulates every raw byte read for the life of one stream() call -
         // flush() only ever advances a read cursor into it, never shrinks it, so a command that
@@ -209,6 +215,21 @@ actual class ShellSession private constructor(
     private var stderr: BufferedReader? = null
 
     private val alive = AtomicBoolean(false)
+
+    // S2: bumped every time the pipe tier's child is (re)started - once at construction, again on
+    // every [interrupt]. A [stream] call already blocked reading a process that [interrupt] has
+    // since killed and replaced captures the generation it started with, and only ever writes
+    // `alive` back to false if that generation is still current - otherwise it would be reporting
+    // the *old*, now-dead process's death onto the *new* one interrupt() already brought up,
+    // leaving a freshly-recovered session looking dead when it isn't. Unused on the pty tier,
+    // which [interrupt] never respawns.
+    private val generation = AtomicInteger(0)
+
+    // See [generation]'s own doc comment - every `alive.set(false)` inside [stream] goes through
+    // this instead of setting the flag bare.
+    private fun markDeadIfCurrent(myGeneration: Int) {
+        if (generation.get() == myGeneration) alive.set(false)
+    }
 
     @Volatile
     private var _workingDirectory: String = home?.absolutePath ?: "/"
@@ -353,6 +374,10 @@ actual class ShellSession private constructor(
 
         var exitCode = -1
 
+        // S2: captured before this call touches anything else - see [generation]'s own doc
+        // comment for why every `alive.set(false)` below is guarded by it instead of set bare.
+        val myGeneration = generation.get()
+
         try {
             val sin = stdin ?: throw IOException("stdin is null")
             val sout = stdout ?: throw IOException("stdout is null")
@@ -407,18 +432,25 @@ actual class ShellSession private constructor(
                     // process alive but abandoned mid-read means the *next* stream() call writes
                     // its command straight into that stale read: the new command never runs, and
                     // its text gets silently consumed as the old prompt's answer instead.
-                    alive.set(false)
-                    killChild()
-                    try { stdin?.close() } catch (ignored: IOException) {}
-                    try { stdout?.close() } catch (ignored: IOException) {}
-                    try { stderr?.close() } catch (ignored: IOException) {}
+                    //
+                    // S2: only if this call's own generation is still current - otherwise
+                    // [interrupt] already killed and replaced the process this call was reading,
+                    // and killChild()/closing the streams here would tear down the *new* one
+                    // instead of the long-dead one this call actually timed out on.
+                    if (generation.get() == myGeneration) {
+                        alive.set(false)
+                        killChild()
+                        try { stdin?.close() } catch (ignored: IOException) {}
+                        try { stdout?.close() } catch (ignored: IOException) {}
+                        try { stderr?.close() } catch (ignored: IOException) {}
+                    }
                     break
                 }
 
                 if (sout.ready()) {
                     val n = sout.read(buf)
                     if (n == -1) {
-                        alive.set(false)
+                        markDeadIfCurrent(myGeneration)
                         break
                     }
                     if (n > 0) {
@@ -457,7 +489,7 @@ actual class ShellSession private constructor(
                         break
                     }
                     if (!processStillRunning()) {
-                        alive.set(false)
+                        markDeadIfCurrent(myGeneration)
                         break
                     }
                     continue
@@ -491,7 +523,7 @@ actual class ShellSession private constructor(
                 break
             }
         } catch (e: IOException) {
-            alive.set(false)
+            markDeadIfCurrent(myGeneration)
             onLine("shell died: ${e.message}")
             return -1
         }
@@ -536,6 +568,62 @@ actual class ShellSession private constructor(
         val truncated = screen.getActiveTranscriptRows() >= screen.mTotalRows - screen.mScreenRows
         val text = screen.transcriptTextWithFullLinesJoined
         return if (truncated) "[earlier output truncated - exceeded ${screen.mTotalRows}-line buffer]\n$text" else text
+    }
+
+    /**
+     * S2: stops whatever [stream] call is currently in flight, without ending this session -
+     * unlike [close]/[killChild]'s "the tab is done, tear everything down", a caller of this is
+     * expected to keep using the same [ShellSession] afterward.
+     *
+     * On the pty tier, this is a real, correctly-scoped interrupt: writing the INTR control byte
+     * (0x03, the same one a real terminal's line discipline turns Ctrl-C into) to the pty master
+     * lets the kernel deliver SIGINT to the foreground job's own process group only - bash itself
+     * sits in a different process group once it has handed a job to the foreground (standard job
+     * control), so it and its accumulated `cd`/`export` state are untouched.
+     *
+     * The pipe tier has no tty and therefore no job control - there is no foreground process
+     * group to target, and no way to learn the pid of whatever [command] itself forked, only the
+     * pid of the persistent `bash -l` process both share stdin/stdout through. The only thing this
+     * class can actually reach on that tier is that one persistent process, so this kills and
+     * immediately respawns it with the same startup arguments this session was originally built
+     * with - the session stays alive and usable (the caller never has to close the tab), at the
+     * honest cost of any accumulated `cd`/`export` state, which cannot outlive the shell process
+     * that held it. A child [command] itself forked (e.g. a `find` still walking the filesystem)
+     * is not part of that respawned process tree and may keep running in the background until it
+     * finishes on its own - the same residual risk force-quitting the whole app already carried,
+     * just no longer the only way to get the session back.
+     */
+    actual fun interrupt() {
+        if (usePty) {
+            try {
+                stdin?.write(INTR_BYTE)
+                stdin?.flush()
+            } catch (ignored: IOException) {
+            }
+            return
+        }
+        if (!isAlive) return
+        // Bumped first - see [generation]'s own doc comment for why a [stream] call already
+        // blocked reading the process this is about to kill must not mistake that death for the
+        // fresh process about to replace it.
+        generation.incrementAndGet()
+        try { stdin?.close() } catch (ignored: IOException) {}
+        try { stdout?.close() } catch (ignored: IOException) {}
+        try { stderr?.close() } catch (ignored: IOException) {}
+        // Forcibly (SIGKILL), not killChild()'s own SIGTERM - a deliberate user-triggered stop
+        // should be decisive, not dependent on the child choosing to honor a termination request.
+        process?.destroyForcibly()
+        process = null
+        stdin = null
+        stdout = null
+        stderr = null
+        try {
+            startPipe(home, command, extraEnv)
+            _workingDirectory = home?.absolutePath ?: "/"
+            alive.set(true)
+        } catch (ignored: IOException) {
+            alive.set(false)
+        }
     }
 
     actual fun close() {
