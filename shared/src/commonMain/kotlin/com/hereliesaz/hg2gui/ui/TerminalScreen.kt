@@ -53,6 +53,12 @@ import kotlinx.coroutines.launch
 // outer list of commands itself, which used to grow without limit for the life of a session.
 private const val MAX_BUFFER_ENTRIES = 200
 
+// Every in-flight update to one running entry - a streamed output/stderr chunk, the exit code
+// once it lands - is the same "find it by index, replace it" shape; this is that shape, once.
+private fun SessionUiState.updateBufferEntry(entryId: Int, transform: (TerminalHistoryEntry) -> TerminalHistoryEntry) {
+    buffer = buffer.mapIndexed { index, entry -> if (index == entryId) transform(entry) else entry }
+}
+
 @Composable
 fun TerminalScreen(
     tree: List<MenuNode>,
@@ -75,7 +81,8 @@ fun TerminalScreen(
         line: String,
         onOutput: (String) -> Unit,
         onNeedInput: suspend (prompt: String) -> String,
-        onExit: (Int?) -> Unit
+        onExit: (Int?) -> Unit,
+        onStderr: (String) -> Unit
     ) -> Unit
 ) {
     val active = sessions.first { it.id == activeSessionId }
@@ -136,18 +143,10 @@ fun TerminalScreen(
                         onRun(
                             session.id,
                             execLine,
-                            { outputChunk ->
-                                // Update the buffer with the streaming output
-                                session.buffer = session.buffer.mapIndexed { index, entry ->
-                                    if (index == entryId) {
-                                        entry.copy(output = outputChunk)
-                                    } else {
-                                        entry
-                                    }
-                                }
-                            },
+                            { outputChunk -> session.updateBufferEntry(entryId) { it.copy(output = outputChunk) } },
                             { prompt -> session.awaitPromptAnswer(prompt) },
-                            { code -> exitCode = code }
+                            { code -> exitCode = code },
+                            { stderrChunk -> session.updateBufferEntry(entryId) { it.copy(stderr = stderrChunk) } }
                         )
                     } catch (e: CancellationException) {
                         // Composition teardown (e.g. navigating away to Settings/Guide/Files
@@ -158,17 +157,9 @@ fun TerminalScreen(
                         // structured concurrency still sees the cancellation.
                         throw e
                     } catch (e: Exception) {
-                        session.buffer = session.buffer.mapIndexed { index, entry ->
-                            if (index == entryId) {
-                                entry.copy(output = entry.output + "\nerror: ${e.message}")
-                            } else {
-                                entry
-                            }
-                        }
+                        session.updateBufferEntry(entryId) { it.copy(output = it.output + "\nerror: ${e.message}") }
                     } finally {
-                        session.buffer = session.buffer.mapIndexed { index, entry ->
-                            if (index == entryId) entry.copy(isRunning = false, exitCode = exitCode) else entry
-                        }
+                        session.updateBufferEntry(entryId) { it.copy(isRunning = false, exitCode = exitCode) }
                         // SH-5: each entry's own VT100 scrollback is already capped, but nothing
                         // ever trimmed the *outer* list of commands itself - a long session just
                         // kept growing it forever. Only safe to trim here, once this entry is no
@@ -445,6 +436,10 @@ private fun BufferEntry(
                 OutputLines(entry)
             }
         }
+        if (entry.stderr.isNotEmpty()) {
+            Spacer(Modifier.height(4.dp))
+            StderrBlock(entry.stderr)
+        }
         if (expanded) {
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -548,6 +543,29 @@ private fun OutputWipeLine(seq: Int, line: String) {
             fontSize = 12.sp
         )
     )
+}
+
+// D3: stderr's own treatment - a hairline amber rule (the same hue StatusDot would use for a
+// warning, one step short of the red a failing exit code gets) above amber-tinted monospace
+// text, so "here is your answer" (stdout, above) and "something the program said on the side"
+// (stderr) read as visually distinct the moment either has anything in it. No wipe animation of
+// its own - OutputLines already carries that beat for the primary transcript, and stderr is
+// usually the smaller, secondary block sitting under it.
+@Composable
+private fun StderrBlock(text: String) {
+    val warn = Azphalt.hues[4]
+    Column(Modifier.fillMaxWidth()) {
+        Box(Modifier.fillMaxWidth().height(1.dp).background(warn.copy(alpha = .35f)))
+        Spacer(Modifier.height(6.dp))
+        Text(
+            text,
+            style = MaterialTheme.typography.bodyMedium.copy(
+                color = warn,
+                fontFamily = FontFamily.Monospace,
+                fontSize = 12.sp
+            )
+        )
+    }
 }
 
 @Composable
