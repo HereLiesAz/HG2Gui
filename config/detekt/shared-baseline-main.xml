@@ -11,7 +11,7 @@
     <ID>CyclomaticComplexMethod:Builtins.kt$Builtins$private fun vfs(context: Context, args: List&lt;String&gt;): String</ID>
     <ID>CyclomaticComplexMethod:Builtins.kt$Builtins$private fun volume(context: Context, args: List&lt;String&gt;): String</ID>
     <ID>CyclomaticComplexMethod:ContactManager.kt$ContactManager$fun about(phone: String): Array&lt;String?&gt;?</ID>
-    <ID>CyclomaticComplexMethod:ShellSession.kt$ShellSession$actual fun stream(command: String, onLine: (line: String) -&gt; Unit, onNeedInput: (prompt: String) -&gt; String?): Int</ID>
+    <ID>CyclomaticComplexMethod:ShellSession.kt$ShellSession$actual fun stream( command: String, onLine: (line: String) -&gt; Unit, onNeedInput: (prompt: String) -&gt; String?, onStderrLine: (line: String) -&gt; Unit ): Int</ID>
     <ID>EmptyFunctionBlock:ShellSession.kt$DummyTerminalOutput${}</ID>
     <ID>FunctionNaming:AiSettingsScreen.kt$@Composable fun AiSettingsScreen( fullscreen: Boolean, apiKey: String?, onSave: (String?) -&gt; Unit, onBack: () -&gt; Unit )</ID>
     <ID>FunctionNaming:AiSettingsScreen.kt$@Composable private fun Eyebrow(text: String)</ID>
@@ -34,7 +34,7 @@
     <ID>LongMethod:ContactManager.kt$ContactManager.&lt;no name provided&gt;$override fun run()</ID>
     <ID>LongMethod:McpServerScreen.kt$@Composable fun McpServerScreen( fullscreen: Boolean, running: Boolean, port: Int, token: String?, shellExecEnabled: Boolean, onStart: () -&gt; Unit, onStop: () -&gt; Unit, onRequestShellExec: () -&gt; Unit, onDisableShellExec: () -&gt; Unit, onBack: () -&gt; Unit )</ID>
     <ID>LongMethod:SettingsScreen.kt$@Composable fun SettingsScreen( fullscreen: Boolean, onFullscreenChange: (Boolean) -&gt; Unit, fontScalePercent: Int, onFontScalePercentChange: (Int) -&gt; Unit, usePty: Boolean, onUsePtyChange: (Boolean) -&gt; Unit, onOpenMcpServer: () -&gt; Unit, onOpenAiSettings: () -&gt; Unit, onBack: () -&gt; Unit )</ID>
-    <ID>LongMethod:ShellSession.kt$ShellSession$actual fun stream(command: String, onLine: (line: String) -&gt; Unit, onNeedInput: (prompt: String) -&gt; String?): Int</ID>
+    <ID>LongMethod:ShellSession.kt$ShellSession$actual fun stream( command: String, onLine: (line: String) -&gt; Unit, onNeedInput: (prompt: String) -&gt; String?, onStderrLine: (line: String) -&gt; Unit ): Int</ID>
     <ID>LongParameterList:AzpLibrary.kt$AzpLibrary$( context: Context, id: String, name: String, version: String, kind: String, skillIds: List&lt;String&gt;, trust: AzpTrust = AzpTrust.UNSIGNED, /** For `kind:"script"` only - the name it's callable as on PATH once [ScriptInstaller] * has written its wrapper, so the store row can show it. Blank if installation didn't * reach that point (e.g. no Termux bootstrap yet - see [ScriptInstaller.Result]). */ scriptCommand: String? = null, )</ID>
     <ID>LongParameterList:McpServerScreen.kt$( fullscreen: Boolean, running: Boolean, port: Int, token: String?, shellExecEnabled: Boolean, onStart: () -&gt; Unit, onStop: () -&gt; Unit, onRequestShellExec: () -&gt; Unit, onDisableShellExec: () -&gt; Unit, onBack: () -&gt; Unit )</ID>
     <ID>LongParameterList:SettingsScreen.kt$( fullscreen: Boolean, onFullscreenChange: (Boolean) -&gt; Unit, fontScalePercent: Int, onFontScalePercentChange: (Int) -&gt; Unit, usePty: Boolean, onUsePtyChange: (Boolean) -&gt; Unit, onOpenMcpServer: () -&gt; Unit, onOpenAiSettings: () -&gt; Unit, onBack: () -&gt; Unit )</ID>
@@ -69,7 +69,7 @@
     <ID>NestedBlockDepth:ContactManager.kt$ContactManager$fun about(phone: String): Array&lt;String?&gt;?</ID>
     <ID>NestedBlockDepth:ContactManager.kt$ContactManager$fun findNumber(name: String): String?</ID>
     <ID>NestedBlockDepth:ContactManager.kt$ContactManager$fun refreshContacts(context: Context)</ID>
-    <ID>NestedBlockDepth:ShellSession.kt$ShellSession$actual fun stream(command: String, onLine: (line: String) -&gt; Unit, onNeedInput: (prompt: String) -&gt; String?): Int</ID>
+    <ID>NestedBlockDepth:ShellSession.kt$ShellSession$actual fun stream( command: String, onLine: (line: String) -&gt; Unit, onNeedInput: (prompt: String) -&gt; String?, onStderrLine: (line: String) -&gt; Unit ): Int</ID>
     <ID>PackageNaming:ActualResourceCollectors.kt$package hg2gui.shared.generated.resources</ID>
     <ID>ReturnCount:AzpInstaller.kt$internal fun filesMatchDigests(extracted: Map&lt;String, String&gt;, declared: Map&lt;String, String&gt;): Boolean</ID>
     <ID>ReturnCount:AzpSignatureVerifier.kt$AzpSignatureVerifier$fun verify(manifestBytes: ByteArray, signature: AzpSignature?, trustedKeys: List&lt;String&gt;): AzpTrust</ID>
@@ -86,7 +86,7 @@
     <ID>ReturnCount:ContactManager.kt$ContactManager$fun fromPhone(phone: String): Uri?</ID>
     <ID>ReturnCount:McpTools.kt$McpTools$override suspend fun callTool(name: String, arguments: JsonObject?): ToolCallResult</ID>
     <ID>ReturnCount:ScriptInstaller.kt$ScriptInstaller$suspend fun install( context: Context, id: String, version: String, script: ScriptDto, ): Result</ID>
-    <ID>ReturnCount:ShellSession.kt$ShellSession$actual fun stream(command: String, onLine: (line: String) -&gt; Unit, onNeedInput: (prompt: String) -&gt; String?): Int</ID>
+    <ID>ReturnCount:ShellSession.kt$ShellSession$actual fun stream( command: String, onLine: (line: String) -&gt; Unit, onNeedInput: (prompt: String) -&gt; String?, onStderrLine: (line: String) -&gt; Unit ): Int</ID>
     <ID>ReturnCount:VfsManager.kt$VfsManager$fun cd(context: Context, name: String): Boolean</ID>
     <ID>ReturnCount:VfsManager.kt$VfsManager$fun cdInto(context: Context, absoluteDir: File): Boolean</ID>
     <ID>ReturnCount:VfsManager.kt$VfsManager$fun copy(context: Context, from: String, to: String): Boolean</ID>
