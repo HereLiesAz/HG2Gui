@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+
+<helmet>
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/tokens/colors.css">
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/tokens/typography.css">
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/tokens/motion.css">
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/tokens/base.css">
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/styles.css">
+<script src="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/_ds_bundle.js"></script>
+<style>
+  body{margin:0;background:var(--page);}
+  a{color:var(--ink);} a:hover{color:var(--hue-red);}
+  code{font:600 0.92em/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;}
+</style>
+</helmet>
+
+<div style="max-width:1040px;margin:0 auto;padding:56px 44px 140px;font-family:var(--font-core);color:var(--ink);display:flex;flex-direction:column;gap:46px;">
+
+  <div style="display:flex;flex-direction:column;gap:14px;max-width:730px;">
+    <div style="font:800 11px/1 var(--font-core);letter-spacing:.28em;text-transform:uppercase;color:var(--ink-55);">HG2Gui — Termux coverage</div>
+    <div style="font:900 58px/0.84 var(--font-core);letter-spacing:-.03em;text-transform:uppercase;">What the shell can do that the interface cannot</div>
+    <p style="margin:0;font:var(--type-body);color:var(--ink-78);text-wrap:pretty;">Read against <code>master</code>, tree <code>9906587</code>. Almost every gap below traces to one architectural fact: <strong>there is no pseudo-terminal between the interface and the shell.</strong> Commands run one-shot, output arrives as a finished block, and stdin is simulated by watching for a pause and popping a prompt. That decision bought the whole typographic treatment — you cannot set text beautifully on a page you do not control — and it is why this app looks the way it does. It also draws a hard line around what it can run.</p>
+    <p style="margin:0;font:var(--type-body);color:var(--ink-78);text-wrap:pretty;">The notable part: <code>terminal-emulator/</code> and <code>termux-shared/</code> are both vendored in the repository already, 177 files of working PTY implementation, and nothing in <code>shared/ui/</code> talks to them. The capability is in the building. The interface has never been introduced to it.</p>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+    <div style="border-radius:24px;padding:22px;background:var(--hue-red);display:flex;flex-direction:column;gap:6px;">
+      <span style="font:900 46px/0.9 var(--font-core);letter-spacing:-.02em;color:var(--white);">5</span>
+      <span style="font:800 10px/1.3 var(--font-core);letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.82);">Structural — whole classes of tool unusable</span>
+    </div>
+    <div style="border-radius:24px;padding:22px;background:var(--hue-orange);display:flex;flex-direction:column;gap:6px;">
+      <span style="font:900 46px/0.9 var(--font-core);letter-spacing:-.02em;color:var(--white);">6</span>
+      <span style="font:800 10px/1.3 var(--font-core);letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.82);">Fidelity — it runs, you cannot read it</span>
+    </div>
+    <div style="border-radius:24px;padding:22px;background:var(--hue-amber);display:flex;flex-direction:column;gap:6px;">
+      <span style="font:900 46px/0.9 var(--font-core);letter-spacing:-.02em;color:var(--ink);">5</span>
+      <span style="font:800 10px/1.3 var(--font-core);letter-spacing:.16em;text-transform:uppercase;color:var(--ink-78);">Workflow — one command at a time</span>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:9px;max-width:730px;">
+    <div style="font:800 11px/1 var(--font-core);letter-spacing:.28em;text-transform:uppercase;color:var(--action-done-cap);">Credit where it is due</div>
+    <p style="margin:0;font:var(--type-body);color:var(--ink-78);text-wrap:pretty;">Several hard things are already solved and should not be relitigated: interactive prompts are detected and answered inline rather than dropping the user into a raw shell; password prompts mask themselves by inspecting the prompt text; <code>ssh</code> has a purpose-built flow; tabular output is typeset as a real two-column grid instead of monospace; there is no spinner anywhere; and a plain-text editor exists precisely because <code>nano</code> cannot be handed a terminal. The interface has been designed around the constraint intelligently. The question is whether to keep designing around it.</p>
+  </div>
+
+  <sc-for list="{{ tiers }}" as="tier" hint-placeholder-count="3">
+    <div style="display:flex;flex-direction:column;gap:18px;">
+      <div style="display:flex;flex-direction:column;gap:9px;max-width:730px;">
+        <div style="font:800 11px/1 var(--font-core);letter-spacing:.28em;text-transform:uppercase;color:{{ tier.accent }};">{{ tier.eyebrow }}</div>
+        <div style="font:900 40px/1 var(--font-core);letter-spacing:-.02em;text-transform:uppercase;">{{ tier.title }}</div>
+        <p style="margin:0;font:var(--type-body);color:var(--ink-78);text-wrap:pretty;">{{ tier.intro }}</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <sc-for list="{{ tier.items }}" as="gap" hint-placeholder-count="5">
+          <div style="border-radius:24px;padding:24px;background:{{ gap.bg }};display:flex;flex-direction:column;gap:14px;">
+            <div style="display:flex;align-items:baseline;gap:12px;">
+              <span style="flex:none;font:900 13px/1 var(--font-core);letter-spacing:.02em;color:rgba(255,255,255,.6);">{{ gap.rank }}</span>
+              <span style="flex:1;font:900 22px/1.1 var(--font-core);letter-spacing:-.01em;text-transform:uppercase;color:var(--white);">{{ gap.title }}</span>
+            </div>
+            <span style="font:600 16px/1.5 var(--font-core);color:rgba(255,255,255,.92);text-wrap:pretty;">{{ gap.body }}</span>
+            <div style="border-radius:16px;padding:15px 17px;background:rgba(0,0,0,.26);display:flex;flex-direction:column;gap:7px;">
+              <span style="font:800 8px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.55);">Breaks on</span>
+              <span style="font:500 13px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;color:rgba(255,255,255,.86);white-space:pre-wrap;">{{ gap.breaks }}</span>
+            </div>
+            <div style="display:flex;align-items:baseline;gap:10px;">
+              <span style="flex:none;font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.55);">Needs</span>
+              <span style="flex:1;font:600 15px/1.5 var(--font-core);color:var(--white);text-wrap:pretty;">{{ gap.needs }}</span>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-for>
+
+  <div style="display:flex;flex-direction:column;gap:20px;">
+    <div style="display:flex;flex-direction:column;gap:9px;max-width:730px;">
+      <div style="font:800 11px/1 var(--font-core);letter-spacing:.28em;text-transform:uppercase;color:var(--ink-55);">The decision</div>
+      <div style="font:900 40px/1 var(--font-core);letter-spacing:-.02em;text-transform:uppercase;">Three ways forward, and only one of them is cheap</div>
+      <p style="margin:0;font:var(--type-body);color:var(--ink-78);text-wrap:pretty;">This is a product call rather than an engineering one, because each option decides what the app <em>is</em>. Worth taking deliberately rather than arriving at by accumulation.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <sc-for list="{{ options }}" as="opt" hint-placeholder-count="3">
+        <div style="border-radius:24px;padding:24px;background:var(--ink-09);display:flex;flex-direction:column;gap:12px;">
+          <div style="display:flex;align-items:baseline;gap:12px;">
+            <span style="flex:none;font:900 13px/1 var(--font-core);color:var(--ink-45);">{{ opt.n }}</span>
+            <span style="flex:1;font:900 19px/1.1 var(--font-core);letter-spacing:-.01em;text-transform:uppercase;">{{ opt.title }}</span>
+            <span style="flex:none;font:800 9px/1 var(--font-core);letter-spacing:.16em;text-transform:uppercase;color:var(--ink-45);">{{ opt.cost }}</span>
+          </div>
+          <span style="font:600 16px/1.5 var(--font-core);color:var(--ink-78);text-wrap:pretty;">{{ opt.body }}</span>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div style="border-radius:16px;padding:14px 16px;background:var(--ink-14);display:flex;flex-direction:column;gap:4px;">
+              <span style="font:800 8px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-45);">Buys</span>
+              <span style="font:600 14px/1.45 var(--font-core);text-wrap:pretty;">{{ opt.buys }}</span>
+            </div>
+            <div style="border-radius:16px;padding:14px 16px;background:var(--ink-14);display:flex;flex-direction:column;gap:4px;">
+              <span style="font:800 8px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-45);">Costs</span>
+              <span style="font:600 14px/1.45 var(--font-core);text-wrap:pretty;">{{ opt.costs }}</span>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="border-radius:24px;padding:24px;background:var(--ink);display:flex;flex-direction:column;gap:10px;">
+      <span style="font:800 10px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--yellow-bright);">Recommendation</span>
+      <span style="font:600 17px/1.5 var(--font-core);color:rgba(255,255,255,.92);text-wrap:pretty;">Option three, and start with the four smallest items in tier two — exit codes, stderr, streaming, output bounds. Each is a day or two, and together they are the difference between an app that looks composed and one you would trust with a build. Escape parsing and wide-output reflow belong in the same pass and are equally terminal-independent; they are simply larger pieces of work, not later ones. Nothing in tier two commits you to a terminal. Then wire the vendored emulator behind a single full-screen surface for the dozen tools that genuinely need one. The interface stays the interface; the terminal becomes a room you can walk into rather than the house you live in.</span>
+    </div>
+  </div>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1040,&quot;height&quot;:1400}}">
+const STRUCTURAL = [
+  {
+    rank: 'S1', bg: 'var(--hue-red)',
+    title: 'No full-screen program can run at all',
+    body: 'Anything that draws by moving a cursor around a screen needs a terminal to draw into, and there is none. This is not a long tail \u2014 it is a large fraction of why people install Termux. The app has already had to route around it twice: EditorScreen exists solely because nano cannot be handed a terminal, and its own comment says running nano through the non-PTY session "would render garbled." top and htop appear in the command guide as entries the app cannot actually run.',
+    breaks: 'vim, nano, micro, emacs\nhtop, top, btop, ncdu, ranger, mc\ntmux, screen\nless, more, man (pagers)\npython, node, sqlite3 (REPLs)\ngit rebase -i, git add -p, tig\nssh to an interactive remote shell',
+    needs: 'The vendored terminal-emulator, mounted behind one full-screen surface that a command can be handed off to and returned from. Everything needed is already in the repository.'
+  },
+  {
+    rank: 'S2', bg: 'var(--hue-red-cap)',
+    title: 'No way to interrupt a running command',
+    body: 'There is no Ctrl-C. A modifier row exists in the terminal screen \u2014 ctrl, alt, esc, tab, arrows \u2014 but with no PTY there is nothing on the other end to receive a signal, so a command that hangs or runs away cannot be stopped from the interface. The only exit is force-quitting the app, which on a phone also means losing whatever else was running. For a tool whose users routinely type things like a recursive find from root, this is the most likely first bad experience.',
+    breaks: 'A find across the whole filesystem\nA curl of something enormous\nAnything waiting on a network timeout\nAny loop with a typo in it',
+    needs: 'Real signal delivery (SIGINT/SIGTERM/EOF) to the child process, and a visible stop affordance on a running record rather than a modifier key that implies one.'
+  },
+  {
+    rank: 'S3', bg: 'var(--hue-red)',
+    title: 'stdin is inferred from a pause, not detected',
+    body: 'Interactive prompts are caught by watching for an idle gap in output and then guessing whether the text looks like a password. It is a clever workaround and it works for the common cases, but it is a heuristic wearing the costume of a feature: it cannot see a prompt that arrives without pausing, cannot know a prompt exists if it emits no newline, and cannot handle a program that wants a single keypress with no Enter. When it guesses wrong the command simply appears to hang, with no indication that something is waiting.',
+    breaks: 'read -n1 (y/n with no Enter)\nA prompt printed without a trailing newline\nTwo prompts in quick succession\nAny password prompt whose wording the matcher does not recognise\ndpkg conffile prompts under load',
+    needs: 'A real stdin channel. Short of that: a visible "this may be waiting for you" state on a running record, so a wrong guess degrades into a question rather than a hang.'
+  },
+  {
+    rank: 'S4', bg: 'var(--hue-magenta-cap)',
+    title: 'One command at a time, and no jobs',
+    body: 'There is no backgrounding, no job list, no second session. Termux users habitually leave a server or a sync running and carry on working; here a long command occupies the entire app until it finishes. The original surface list included a long-running job view, and nothing was ever built. Note that this is genuinely independent of the PTY question \u2014 you could add concurrent one-shot commands and a job list tomorrow.',
+    breaks: 'pkg upgrade while wanting to read anything\nA dev server, syncthing, an ssh tunnel\nAny build over a minute\ncommand &, jobs, fg, bg',
+    needs: 'Concurrent sessions with a job list, and a record state for "still running, come back later." The pill trail is already a natural home for a running-job indicator.'
+  },
+  {
+    rank: 'S5', bg: 'var(--hue-magenta-cap)',
+    title: 'Shell state may not survive between commands',
+    body: 'In a one-shot model each command is its own process, so anything that changes the shell rather than the filesystem does not persist: cd, export, aliases, activated virtualenvs, sourced scripts. The command guide offers cd and source as entries, which implies persistence the architecture may not provide. Worth confirming whether ShellSession threads a working directory through \u2014 if it does not, the guide is promising something that quietly does nothing.',
+    breaks: 'cd, then a command expecting the new directory\nexport KEY=value, then a command needing it\nsource venv/bin/activate\nAny alias or shell function',
+    needs: 'Either a persistent shell process, or explicit session state (cwd, env) carried between commands and shown somewhere the user can see and edit it.'
+  }
+];
+
+const FIDELITY = [
+  {
+    rank: 'D1', bg: 'var(--hue-orange)',
+    title: 'All colour and structure is stripped from output',
+    body: 'Escape sequences are removed before output reaches the interface. That is the right instinct \u2014 raw escapes would wreck the typography \u2014 but it discards information rather than translating it. Modern command-line tools use colour semantically: this line is an error, this hunk was added, this test failed. Throwing it away flattens a diff into undifferentiated text and makes a failing build look like a passing one. The app is uniquely well placed here: it already typesets output, so it could render that semantics as real design rather than as terminal green.',
+    breaks: 'git diff, git status\ngrep --color, ls --color, rg\npytest, cargo, npm, gradle output\nAnything with a progress bar: pip, curl, wget, apt\nSpinners and cursor-redraw animations',
+    needs: 'Parse the escapes instead of stripping them, and map colour intent onto the hue ramp: additions, deletions, errors, and warnings as typographic treatments. Carriage-return redraws collapse to a final value rather than a stack of partial lines.'
+  },
+  {
+    rank: 'D2', bg: 'var(--hue-orange-cap)',
+    title: 'Success and failure look identical',
+    body: 'No exit code appears anywhere in the UI package. A command that failed renders the same as one that succeeded, so the user has to read the output and infer \u2014 and a silent failure produces nothing to read. This is the smallest high-value fix on this page: one integer, already available from any process API, and the motion sheet has already designed the failure state for it.',
+    breaks: 'Any command that fails quietly\nmkdir on an existing path\nA compile error deep in output\nA command not found',
+    needs: 'Capture the exit code, surface it on the record, and drive the existing fail treatment from it. Nothing about the PTY question blocks this.'
+  },
+  {
+    rank: 'D3', bg: 'var(--hue-orange)',
+    title: 'Nothing distinguishes stderr from stdout',
+    body: 'The two streams are merged into one output string, so a warning printed to stderr is typeset identically to a result printed to stdout \u2014 and the ordering between them is not even reliable, since the streams buffer differently. In a design this typographically confident, having no visual distinction between "here is your answer" and "something went wrong" is a missed opportunity as much as a defect.',
+    breaks: 'Build tools that log progress to stderr\nCompiler warnings interleaved with results\nAnything piping stdout while diagnosing via stderr',
+    needs: 'Keep the streams separate through the model and give stderr its own treatment. Also PTY-independent.'
+  },
+  {
+    rank: 'D4', bg: 'var(--hue-orange-cap)',
+    title: 'Output appears only when the command ends',
+    body: 'A record fills in after the fact via the output wipe. Combined with the deliberate absence of a spinner \u2014 correct, and a rule worth keeping \u2014 a ten-minute upgrade is visually indistinguishable from a freeze for those ten minutes. The house rule was that the output wipe itself is the progress indicator, but that only holds if output arrives while the command runs.',
+    breaks: 'pkg upgrade\nAny build or compile\nA large download\nA long-running test suite',
+    needs: 'Stream lines into the record as they arrive, with the wipe applied per line as it lands. The mechanism already exists \u2014 there is a per-line stagger \u2014 it just runs over a finished string instead of a live one.'
+  },
+  {
+    rank: 'D5', bg: 'var(--hue-orange)',
+    title: 'Nothing bounds how much output a record can hold',
+    body: 'Records are lazily laid out, which handles many records \u2014 but one record holding a hundred thousand lines is a single item, and the whole string is held in memory, typeset, and made copyable. On a phone that is a stall or an out-of-memory, from a command as ordinary as cat on the wrong file.',
+    breaks: 'cat on a large or binary file\nfind / with no filter\nA verbose build log\nAny accidental infinite loop with output',
+    needs: 'A cap with an honest overflow state \u2014 the first N lines plus "and a great deal more, saved to a file" \u2014 which is more useful than a truncation notice anyway.'
+  },
+  {
+    rank: 'D6', bg: 'var(--hue-orange-cap)',
+    title: 'Wide and binary output has nowhere to go',
+    body: 'TypesetOutput handles the two-column case well, but plenty of real output is neither two columns nor prose: ps aux is eleven columns, ls -l is nine, and non-UTF8 bytes are not text at all. On a 390 dp screen wide tabular output either wraps into unreadable ribbons or is clipped. A design that refuses horizontal scrolling needs an answer for data that is genuinely wide.',
+    breaks: 'ps aux, ls -l, df -h, netstat\nA CSV or a wide log\ncat on anything binary',
+    needs: 'Detect column count and reflow beyond two columns \u2014 a record per row, fields as labelled pairs, which suits this design better than a table anyway. Binary content should be refused with an explanation rather than rendered.'
+  }
+];
+
+const WORKFLOW = [
+  {
+    rank: 'W1', bg: 'var(--hue-amber)',
+    title: 'No completion for anything the menu does not know',
+    body: 'File arguments come from the picker, which is better than completion. But package names, remote hosts, git branches, and flags have no completion at all, and the modifier row offers a tab key with nothing behind it. Typing a package name exactly right on a phone keyboard, from memory, is the single most error-prone act in the app.',
+    breaks: 'pkg install <anything>\ngit checkout <branch>\nssh <host>\nAny flag the guide has not catalogued',
+    needs: 'Wire the tab key to real completion, or drop it from the row. A key that does nothing is worse than an absent one.'
+  },
+  {
+    rank: 'W2', bg: 'var(--hue-amber)',
+    title: 'Output can only be copied whole',
+    body: 'A record copies its entire output or its command. There is no way to select the one line, path, or hash you actually want \u2014 and needing exactly one commit hash out of a log is an ordinary thing to want.',
+    breaks: 'Copying one commit hash from a log\nOne path out of a find\nOne IP from ifconfig',
+    needs: 'Per-line selection, or a tap-to-copy affordance on the structured fields TypesetOutput has already identified.'
+  },
+  {
+    rank: 'W3', bg: 'var(--hue-amber)',
+    title: 'No pipes, redirection, or command composition',
+    body: 'The pill menu builds a command as a flat token list, so the composition that makes a shell a shell \u2014 pipes, redirects, chains, substitution \u2014 has no representation. There is a free-text field as an escape hatch, which means the moment a user needs a pipe they leave the interface and type raw text, and the menu\u2019s whole premise stops applying.',
+    breaks: 'ls | grep foo\ncommand > file.txt\na && b\n$(command)',
+    needs: 'A pill that represents a pipe, so a composed command stays inside the menu language rather than falling out of it. Genuinely hard design work and worth its own exploration.'
+  },
+  {
+    rank: 'W4', bg: 'var(--hue-amber-cap)',
+    title: 'No environment or PATH visibility',
+    body: 'PATH is scanned to discover commands, but the user cannot see or edit their environment. On Termux, where a broken PATH or a missing variable is a common cause of "it worked yesterday," an environment the interface reads but never shows is an odd asymmetry.',
+    breaks: 'Diagnosing a missing binary\nA variable a script needs\nA PATH shadowing problem',
+    needs: 'A surface listing the environment, with editing. The nested-rectangle language would suit it.'
+  },
+  {
+    rank: 'W5', bg: 'var(--hue-amber-cap)',
+    title: 'Scrollback is per-record, with no history across sessions',
+    body: 'Command history exists within a session, but there is no searchable record across sessions \u2014 no way to find the incantation that worked last month. This was on the original surface list as scrollback history and remains the least-built of them.',
+    breaks: 'Finding a command from last week\nRe-running something after a restart',
+    needs: 'Persist records, and let the search that already exists in the file browser look through them.'
+  }
+];
+
+const OPTIONS = [
+  {
+    n: '1', title: 'Stay non-PTY, and say so out loud', cost: 'Cheapest',
+    body: 'Accept the boundary and make it visible. Commands that need a terminal are marked in the guide as unavailable, the modifier keys that cannot work are removed, and the app is honestly a beautiful front end for the subset of the shell that is one-shot and text-out. Fix the fidelity tier, which needs no PTY at all.',
+    buys: 'No architectural risk. The typography and motion stay exactly as designed. Ships in weeks.',
+    costs: 'No editor, no pager, no REPL, no top, no tmux, no interactive git. For many Termux users that is most of why they opened the app.'
+  },
+  {
+    n: '2', title: 'Go full PTY and typeset the terminal', cost: 'Most ambitious',
+    body: 'Wire the vendored emulator underneath everything and treat its screen buffer as the source of truth, then typeset from that rather than from captured stdout. Every tool works because there is a real terminal; the interface becomes a rendering of it.',
+    buys: 'Complete coverage. Everything in Termux runs, including the things nobody anticipated.',
+    costs: 'The hardest option by a distance, and it puts the entire visual language downstream of a character grid. Real risk that the design gets pulled back toward looking like a terminal emulator \u2014 which is the one thing this project set out not to be.'
+  },
+  {
+    n: '3', title: 'Hybrid — one-shot by default, terminal on demand', cost: 'Recommended',
+    body: 'Keep the current model for everything it handles, and mount the vendored emulator behind a single full-screen surface reached only when a command needs it. A known list of interactive tools routes there automatically; everything else stays typeset. The terminal is a room the app can walk into and come back from, not the floor it stands on.',
+    buys: 'Full coverage without surrendering the design. The typographic treatment stays canonical and the escape hatch is honest rather than hidden in a text field.',
+    costs: 'Two rendering paths to maintain, and a genuine design problem in the transition between them \u2014 though the run transition already establishes exactly that vocabulary: a pill breaking free and becoming a whole screen.'
+  }
+];
+
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      tiers: [
+        {
+          eyebrow: 'Tier one — structural', accent: 'var(--hue-red)',
+          title: 'Whole classes of tool cannot run',
+          intro: 'Every item here follows from the missing pseudo-terminal, except the last two \u2014 job control and shell state are independent, and could be built without answering the PTY question at all.',
+          items: STRUCTURAL
+        },
+        {
+          eyebrow: 'Tier two — fidelity', accent: 'var(--hue-orange-cap)',
+          title: 'It runs, but you cannot read what happened',
+          intro: 'The most valuable tier, because none of it requires a terminal and all of it is small. These six are the difference between an interface that looks composed and one you would trust with a build.',
+          items: FIDELITY
+        },
+        {
+          eyebrow: 'Tier three — workflow', accent: 'var(--hue-amber-cap)',
+          title: 'One command, one direction',
+          intro: 'Where the menu metaphor meets its edges. The pipe question in particular is real design work rather than implementation, and deserves its own exploration rather than a quick answer.',
+          items: WORKFLOW
+        }
+      ],
+      options: OPTIONS
+    };
+  }
+}
+
+</script>
+</body>
+</html>
