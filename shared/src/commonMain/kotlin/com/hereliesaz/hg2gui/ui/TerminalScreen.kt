@@ -456,7 +456,7 @@ private fun BufferEntry(
         }
         if (entry.output.isNotEmpty()) {
             Spacer(Modifier.height(4.dp))
-            ClassifiedOutput(kind, entry, onPage, showRaw)
+            ClassifiedOutput(kind, entry, onPage, showRaw, onCopy)
         }
         if (entry.stderr.isNotEmpty()) {
             Spacer(Modifier.height(4.dp))
@@ -479,7 +479,13 @@ private fun BufferEntry(
 // complexity budget - see [OutputKind]'s own doc comment for why this is one classification
 // rather than a chain of independent booleans.
 @Composable
-private fun ClassifiedOutput(kind: OutputKind, entry: TerminalHistoryEntry, onPage: Color, showRaw: Boolean) {
+private fun ClassifiedOutput(
+    kind: OutputKind,
+    entry: TerminalHistoryEntry,
+    onPage: Color,
+    showRaw: Boolean,
+    onCopyLine: (String) -> Unit
+) {
     when {
         kind == OutputKind.BINARY && !showRaw -> {
             // D6: "refused with an explanation rather than rendered" - garbled bytes typeset as
@@ -513,7 +519,7 @@ private fun ClassifiedOutput(kind: OutputKind, entry: TerminalHistoryEntry, onPa
             // "Output sets, not echoes" (RATTLE 5G / OUTPUT SETS): raw output reveals line by
             // line via a clip-wipe + slight slide, the same idiom GuideReaderScreen's WipeItem
             // uses for its own reveals, rather than the whole block appearing instantly.
-            OutputLines(entry)
+            OutputLines(entry, onCopyLine)
         }
     }
 }
@@ -572,7 +578,7 @@ private fun buildStyledLine(spans: List<StyledSpan>, onPage: Color): AnnotatedSt
 }
 
 @Composable
-private fun OutputLines(entry: TerminalHistoryEntry) {
+private fun OutputLines(entry: TerminalHistoryEntry, onCopyLine: (String) -> Unit) {
     // D4: this used to short-circuit to a flat, unanimated Text while entry.isRunning was true,
     // and only mount the per-line wipe below once the command finished - so a slow command (an
     // install, a build) sat there looking frozen for its entire run, then dumped its whole
@@ -600,7 +606,7 @@ private fun OutputLines(entry: TerminalHistoryEntry) {
         // costing real composition/layout work for content nobody's watching wipe on anyway. The
         // remaining tail renders as a single joined block instead.
         lines.take(OUTPUT_WIPE_STAGGER_CAP).forEachIndexed { index, spans ->
-            OutputWipeLine(seq = index, spans = spans)
+            OutputWipeLine(seq = index, spans = spans, onCopyLine = onCopyLine)
         }
         if (lines.size > OUTPUT_WIPE_STAGGER_CAP) {
             val onPage = Azphalt.currentGround.onPage
@@ -618,7 +624,7 @@ private fun OutputLines(entry: TerminalHistoryEntry) {
 }
 
 @Composable
-private fun OutputWipeLine(seq: Int, spans: List<StyledSpan>) {
+private fun OutputWipeLine(seq: Int, spans: List<StyledSpan>, onCopyLine: (String) -> Unit) {
     val progress = remember { Animatable(0f) }
     LaunchedEffect(Unit) {
         // D4: seq is this line's absolute index into the whole transcript, which keeps growing
@@ -632,13 +638,19 @@ private fun OutputWipeLine(seq: Int, spans: List<StyledSpan>) {
         progress.animateTo(1f, tween(OUTPUT_WIPE_MS, easing = OUTPUT_WIPE_EASE))
     }
     val onPage = Azphalt.currentGround.onPage
+    // W2: one commit hash out of a `git log`, one path out of a `find` - copying the whole block
+    // to get at a single line was the only option before this. Only offered on this animated
+    // prefix, not the joined tail block below it (see that block's own comment for why splitting
+    // *that* per-line isn't free) - the common case (most output is well under the stagger cap)
+    // gets it, a pathologically long one still has the whole-entry COPY action.
     Text(
         buildStyledLine(spans, onPage),
         modifier = Modifier
             .drawWithContent {
                 clipRect(right = size.width * progress.value) { this@drawWithContent.drawContent() }
             }
-            .graphicsLayer { translationX = -14.dp.toPx() * (1f - progress.value) },
+            .graphicsLayer { translationX = -14.dp.toPx() * (1f - progress.value) }
+            .clickable { onCopyLine(spans.joinToString("") { it.text }) },
         style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace, fontSize = 12.sp)
     )
 }
