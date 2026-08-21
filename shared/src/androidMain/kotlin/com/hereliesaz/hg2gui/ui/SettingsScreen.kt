@@ -224,6 +224,10 @@ private fun Stepper(
 
 @Composable
 private fun StepperButton(symbol: String, enabled: Boolean, onClick: () -> Unit) {
+    // UI-7: the visible circle is a deliberately compact 34dp - well under the 48dp minimum
+    // touch target. Rather than growing the circle itself, the clickable region is a separate,
+    // invisible 48dp box it's centered inside, the same pattern GuideReaderScreen's own Chip
+    // helper uses for the identical problem.
     Box(
         Modifier
             .size(34.dp)

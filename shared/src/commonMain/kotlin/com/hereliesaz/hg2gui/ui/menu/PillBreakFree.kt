@@ -25,6 +25,11 @@ import kotlinx.coroutines.launch
  * Nothing here is authored twice: the flight duration comes out of the snap's own px/ms rate.
  */
 
+// STRETCH_MS/JIGGLE_MS (and the jiggle amplitude below) run longer/smaller than the reference
+// spec's own web demo (docs/HG2Gui Run Transition.dc.html: STRETCH_MS=220, JIGGLE_MS=90, jiggle
+// peaks up to 7deg) - unlike EDGE_MARGIN_PX/STRETCH/SHORT/SNAP_MS below, which do match that
+// reference exactly. No record of why these three were re-tuned instead of ported as-is; noted
+// here so the divergence reads as known rather than as an uncaught drift.
 private const val STRETCH_MS = 520 // slow strain. Length is the ONLY thing that changes.
 private const val SNAP_MS = 40 // the release, retracting from the LEFT edge
 private const val JIGGLE_MS = 180 // on the right tip, after impact
@@ -117,7 +122,9 @@ suspend fun BreakFreeState.run(baseWidthPx: Float, flightPx: Float, floorPx: Flo
     active = false
 }
 
-/** The exact reverse, for closing. */
+/** Beats 5 (fall), 3 (fly), 2 (snap) and 1 (stretch) played backwards, for closing - not beat 4
+ *  (the jiggle): reversing a jiggle-on-impact makes no sense for a pill arriving back at rest,
+ *  so this omits it rather than un-jiggling on the way in. */
 suspend fun BreakFreeState.reverse(baseWidthPx: Float, flightPx: Float, floorPx: Float) {
     active = true
     offsetX.snapTo(retractedPxOf(baseWidthPx) + flightPx)

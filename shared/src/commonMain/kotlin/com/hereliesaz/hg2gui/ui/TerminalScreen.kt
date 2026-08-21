@@ -60,9 +60,13 @@ import kotlinx.coroutines.launch
 private const val MAX_BUFFER_ENTRIES = 200
 
 // Every in-flight update to one running entry - a streamed output/stderr/styled chunk, the exit
-// code once it lands - is the same "find it by index, replace it" shape; this is that shape, once.
-private fun SessionUiState.updateBufferEntry(entryId: Int, transform: (TerminalHistoryEntry) -> TerminalHistoryEntry) {
-    buffer = buffer.mapIndexed { index, entry -> if (index == entryId) transform(entry) else entry }
+// code once it lands - is the same "find it by id, replace it" shape; this is that shape, once.
+// Matched by entry.id rather than buffer position: only one command runs per session at a time
+// today, so a position-based match was never actually wrong in practice, but matching by identity
+// instead means these updates keep finding the right entry even if that stops being true, and
+// don't rely on the buffer's own trim (see MAX_BUFFER_ENTRIES below) never running mid-update.
+private fun SessionUiState.updateBufferEntry(entryId: Long, transform: (TerminalHistoryEntry) -> TerminalHistoryEntry) {
+    buffer = buffer.map { entry -> if (entry.id == entryId) transform(entry) else entry }
 }
 
 @Composable
@@ -137,8 +141,9 @@ fun TerminalScreen(
                 session.inputText = ""
 
                 // Add initial entry
-                val entryId = session.buffer.size
-                session.buffer = session.buffer + TerminalHistoryEntry(command = lineToRun, isRunning = true)
+                val newEntry = TerminalHistoryEntry(command = lineToRun, isRunning = true)
+                val entryId = newEntry.id
+                session.buffer = session.buffer + newEntry
 
                 scope.launch {
                     // D2: null until the command actually exits (or forever, for the
@@ -165,6 +170,12 @@ fun TerminalScreen(
                         // structured concurrency still sees the cancellation.
                         throw e
                     } catch (e: Exception) {
+                        // A thrown exception never reaches onExit, so exitCode (above) would
+                        // otherwise stay null forever - identical to a clean success as far as
+                        // StatusDot (which only special-cases isRunning and a non-null non-zero
+                        // exitCode) is concerned, leaving a real failure showing no failure signal
+                        // at all beyond text buried in the (possibly collapsed) output block.
+                        exitCode = -1
                         session.updateBufferEntry(entryId) { it.copy(output = it.output + "\nerror: ${e.message}") }
                     } finally {
                         session.updateBufferEntry(entryId) { it.copy(isRunning = false, exitCode = exitCode) }
@@ -233,7 +244,7 @@ fun TerminalScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = PaddingValues(bottom = 8.dp)
             ) {
-                items(active.buffer) { entry ->
+                items(active.buffer, key = { it.id }) { entry ->
                     BufferEntry(
                         entry = entry,
                         onCopy = onCopy,
@@ -386,15 +397,21 @@ private fun BufferEntry(
     // for the MCP pairing token. Re-run only ever populates the input line for review, never
     // fires the command itself - same "assemble, then let the user press Run" rule every
     // wizard-produced command already follows.
-    var expanded by remember { mutableStateOf(false) }
+    // Keyed on entry.id, not left unkeyed - items(active.buffer) is now itself keyed on entry.id
+    // (see its own call site), but that alone only protects which *entry* this composable sees;
+    // without also keying this remember, a trim that shifts a surviving entry into a
+    // previously-different slot's composable instance would still hand it that instance's own
+    // already-remembered `expanded` value from whatever command used to occupy it.
+    var expanded by remember(entry.id) { mutableStateOf(false) }
     // entry.output never carries raw ANSI/VT100 escapes to strip here: real shell output is
     // always pre-flattened through ShellSession's headless TerminalEmulator before it reaches the
     // buffer, and the bootstrap/Builtins branches only ever emit app-authored plain text.
     val kind = remember(entry.output) { classifyOutput(entry.output) }
-    // Keyed on the command, not the output - entry.output mutates on every streamed chunk while
-    // a command is still running, and re-keying on it reset this toggle out from under anyone
-    // reading the raw text of a long-running command.
-    var showRaw by remember(entry.command) { mutableStateOf(false) }
+    // Keyed on entry.id: entry.output mutates on every streamed chunk while a command is still
+    // running (ruling out entry.output as a key), and entry.command alone let two runs of the
+    // exact same command text leak this toggle's state between them - two distinct entries sharing
+    // one key is exactly what entry.id exists to prevent.
+    var showRaw by remember(entry.id) { mutableStateOf(false) }
     Column(
         Modifier
             .fillMaxWidth()
@@ -514,16 +531,18 @@ private fun StatusDot(entry: TerminalHistoryEntry) {
     }
 }
 
-// Line-by-line duration/stagger for the output "set" beat - 320ms sits inside the 300-360ms
-// window the motion sheet calls for, staggered 90ms apart, using the one house easing curve
-// everything else in the app already animates with.
+// Line-by-line duration/stagger for the output "set" beat - the motion sheet's own "Output sets"
+// tile calls for 360ms a line, 90ms apart (docs/HG2Gui Motion Sheet.dc.html); 320ms here runs
+// somewhat faster than that exact figure, using the one house easing curve everything else in
+// the app already animates with.
 private val OUTPUT_WIPE_EASE = CubicBezierEasing(0f, .9f, .1f, 1f)
 private const val OUTPUT_WIPE_MS = 320
 private const val OUTPUT_WIPE_STAGGER_MS = 90L
 
-// Mirrors PillMenu's own "26ms per row, capped at twenty" rule for a per-row stagger: only the
-// first STAGGER_CAP lines get the staggered wipe treatment, the rest of a very long output just
-// appears immediately rather than making the reader wait out dozens of staggered reveals.
+// PillMenu's own per-row stagger (UNFOLD_STAGGER_MS) has no such cap - a category with enough
+// rows delays its last one proportionally, uncapped. This is the fix that one doesn't have: only
+// the first STAGGER_CAP lines get the staggered wipe treatment, the rest of a very long output
+// just appears immediately rather than making the reader wait out dozens of staggered reveals.
 private const val OUTPUT_WIPE_STAGGER_CAP = 24
 
 // D1: an unstyled span's color - exactly what every line rendered as before ANSI-aware styling
@@ -611,12 +630,12 @@ private fun OutputWipeLine(seq: Int, spans: List<StyledSpan>) {
     )
 }
 
-// D3: stderr's own treatment - a hairline amber rule (the same hue StatusDot would use for a
-// warning, one step short of the red a failing exit code gets) above amber-tinted monospace
-// text, so "here is your answer" (stdout, above) and "something the program said on the side"
-// (stderr) read as visually distinct the moment either has anything in it. No wipe animation of
-// its own - OutputLines already carries that beat for the primary transcript, and stderr is
-// usually the smaller, secondary block sitting under it.
+// D3: stderr's own treatment - a hairline amber rule above amber-tinted monospace text, so "here
+// is your answer" (stdout, above) and "something the program said on the side" (stderr) read as
+// visually distinct the moment either has anything in it. StatusDot itself has only two tiers
+// (running/failure) and never uses amber - this is stderr's own distinct color, not a shade of a
+// StatusDot state. No wipe animation of its own - OutputLines already carries that beat for the
+// primary transcript, and stderr is usually the smaller, secondary block sitting under it.
 @Composable
 private fun StderrBlock(text: String) {
     val warn = Azphalt.hues[4]
@@ -636,22 +655,31 @@ private fun StderrBlock(text: String) {
 
 @Composable
 private fun BlockActionPill(label: String, onClick: () -> Unit) {
+    // UI-7: the visible pill (padding(vertical = 11.dp) around 11sp type) renders well under the
+    // 48dp minimum touch target. Rather than growing the pill itself - which would blow up its
+    // compact look next to its siblings in the same Row - the clickable region is a separate,
+    // invisible 48dp-tall Box the small pill is centered inside, the same pattern
+    // GuideReaderScreen's own Chip helper uses for the identical shape.
     Box(
-        Modifier
-            .clip(RoundedCornerShape(percent = 50))
-            .background(Azphalt.Ink.copy(alpha = .14f))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 18.dp, vertical = 11.dp)
+        Modifier.defaultMinSize(minHeight = 48.dp).clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
     ) {
-        Text(
-            label,
-            style = MaterialTheme.typography.titleMedium.copy(
-                color = Azphalt.currentGround.onPage.copy(alpha = .55f),
-                fontSize = 11.sp,
-                fontWeight = FontWeight.ExtraBold,
-                letterSpacing = 0.09.em
+        Box(
+            Modifier
+                .clip(RoundedCornerShape(percent = 50))
+                .background(Azphalt.Ink.copy(alpha = .14f))
+                .padding(horizontal = 18.dp, vertical = 11.dp)
+        ) {
+            Text(
+                label,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    color = Azphalt.currentGround.onPage.copy(alpha = .55f),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = 0.09.em
+                )
             )
-        )
+        }
     }
 }
 

@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
@@ -414,9 +415,13 @@ private fun GuideWash(word: String, wipeKey: Int) {
         letterSpacing = (-0.04).em,
         maxLines = 1,
         softWrap = false,
+        // Purely decorative - the same word renders again moments later as the entry's own real
+        // title (WipeItem below). Without this, a screen reader would surface this faint 100sp
+        // echo as its own navigable node, announcing the command name redundantly.
         modifier = Modifier
             .padding(top = 64.dp, start = 4.dp)
             .graphicsLayer { translationX = drift.value.dp.toPx() }
+            .clearAndSetSemantics {}
     )
 }
 
