@@ -133,23 +133,77 @@ class PerimeterRevealState {
         active = false
     }
 
-    private fun geometry(
-        fullWidthPx: Float,
-        fullHeightPx: Float,
-        defaultBaseWidthPx: Float,
-        minThicknessPx: Float
-    ): PerimeterBreakFreeGeometry {
-        val thickness = if (origin.height > 0f) origin.height else minThicknessPx
-        val originLeft = if (origin.width > 0f) origin.left else 0f
-        val originTop = if (origin.height > 0f) origin.top else fullHeightPx - thickness
-        val baseWidthPx = if (origin.width > 0f) origin.width else defaultBaseWidthPx
-        // "Distance from the pill's right tip to the right edge of the screen" - the pill's own
-        // RESTING tip, not the stretched one BreakFreeState briefly grows to internally; the few
-        // px that discrepancy leaves short of the literal edge is imperceptible next to a 6%
-        // stretch, and keeping that stretch factor private to PillBreakFree.kt is worth it.
-        val flightPx = (fullWidthPx - EDGE_MARGIN_PX - originLeft - baseWidthPx).coerceAtLeast(0f)
-        val floorPx = (fullHeightPx - thickness - originTop).coerceAtLeast(0f)
-        return PerimeterBreakFreeGeometry(baseWidthPx, flightPx, floorPx)
+    private suspend fun runLeadIn(reverse: Boolean) = try {
+        leadInActive = true
+        if (reverse) runLeadInReverse() else runLeadInForward()
+    } finally {
+        // Runs even if this coroutine is cancelled mid-animation, so leadInActive can never stay
+        // stuck true - the standalone lead-in pill it gates would otherwise keep rendering
+        // forever with nothing left animating it.
+        leadInActive = false
+    }
+
+    private suspend fun runLeadInForward() {
+        stretchWidth.snapTo(1f)
+        flyProgress.snapTo(0f)
+        rockAngle.snapTo(0f)
+        fallProgress.snapTo(0f)
+        coroutineScope {
+            launch {
+                // Stretch out, then snap thin - the "snap" sub-beat is the tight middle leg.
+                stretchWidth.animateTo(0.45f, keyframes {
+                    durationMillis = STRETCH_MS
+                    1f at 0 using LinearEasing
+                    1.6f at (STRETCH_MS * 0.35f).toInt() using LinearEasing
+                    0.45f at (STRETCH_MS * 0.55f).toInt() using LEG_EASE
+                })
+            }
+            launch {
+                // Stays put through the stretch+snap, then flies for the rest of the beat.
+                flyProgress.animateTo(1f, keyframes {
+                    durationMillis = STRETCH_MS
+                    0f at 0
+                    0f at (STRETCH_MS * 0.55f).toInt()
+                    1f at STRETCH_MS using LEG_EASE
+                })
+            }
+        }
+        rockAngle.animateTo(0f, keyframes {
+            durationMillis = BREAK_MS
+            0f at 0 using LinearEasing
+            14f at (BREAK_MS * 0.25f).toInt() using LinearEasing
+            (-8f) at (BREAK_MS * 0.5f).toInt() using LinearEasing
+            4f at (BREAK_MS * 0.75f).toInt() using LinearEasing
+        })
+        fallProgress.animateTo(1f, tween(FALL_MS, easing = LEG_EASE))
+    }
+
+    private suspend fun runLeadInReverse() {
+        fallProgress.animateTo(0f, tween(FALL_MS, easing = LEG_EASE))
+        rockAngle.animateTo(0f, keyframes {
+            durationMillis = BREAK_MS
+            0f at 0 using LinearEasing
+            4f at (BREAK_MS * 0.25f).toInt() using LinearEasing
+            (-8f) at (BREAK_MS * 0.5f).toInt() using LinearEasing
+            14f at (BREAK_MS * 0.75f).toInt() using LinearEasing
+        })
+        coroutineScope {
+            launch {
+                flyProgress.animateTo(0f, keyframes {
+                    durationMillis = STRETCH_MS
+                    1f at 0 using LEG_EASE
+                    0f at (STRETCH_MS * 0.45f).toInt()
+                })
+            }
+            launch {
+                stretchWidth.animateTo(1f, keyframes {
+                    durationMillis = STRETCH_MS
+                    0.45f at 0
+                    0.45f at (STRETCH_MS * 0.45f).toInt() using LEG_EASE
+                    1.6f at (STRETCH_MS * 0.65f).toInt() using LinearEasing
+                })
+            }
+        }
     }
 }
 
