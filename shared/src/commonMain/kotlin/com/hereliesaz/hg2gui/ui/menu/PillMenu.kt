@@ -756,11 +756,12 @@ private fun ChildPill(
     val aligned = absoluteRow == alignedRow && !leaving && !droppingOut
 
     val turn = remember(node.id) { Animatable(if (localIndex % 2 == 0) -360f else 360f) }
-    // Every pill in a band rises from the same place: the anchor's own row, exactly where
-    // HostPill (or the parent pill that opened this band) already rests. That shared origin is
-    // what makes it read as pills flying up out of the anchor into a stack, rather than each one
-    // nudging up off the pill before it.
-    val lift = remember(node.id) { Animatable(-pitchPx * BAND_BASE_ROW) }
+    // A child begins exactly behind the pill before it - the first one row above the host (row 0
+    // belongs to the host's own trail), every later one behind wherever its predecessor lands -
+    // matching the keyframe's own 90%-hold target below exactly, or a pill three or more deep in
+    // the band would visibly drift upward through its held rows instead of sitting invisibly at
+    // the one it's hidden behind until the final 10% lift.
+    val lift = remember(node.id) { Animatable(-pitchPx * (absoluteRow - 1).coerceAtLeast(BAND_BASE_ROW)) }
     val leaveOffset = remember(node.id) { Animatable(0f) }
     val scale = remember(node.id) { Animatable(1f) }
 
