@@ -805,6 +805,7 @@ private fun StackPillVisual(
                     }
                     rotationZ = motion.turn.value + motion.tilt.value + sway.value
                     translationY = ctx.restLift + motion.riseY.value + ctx.scrollOffsetPx
+                    alpha = motion.alpha.value
                 }
                 .clickable(enabled = !ctx.leaving, onClick = onClick)
         )
@@ -840,7 +841,16 @@ private data class StackEntrancePose(
     val riseY: Float = 0f,
     val lenFrac: Float = 1f,
     val turn: Float = 0f,
-    val tilt: Float = 0f
+    val tilt: Float = 0f,
+    // 1f (fully visible) for every variant except Cascade/Telescope: those two are the only ones
+    // that "hide" a waiting row by parking it at the row below's own position rather than off-
+    // canvas or at zero width - a trick that never actually worked, since rotating a full 360°
+    // reads identically to 0° and each row's width cycles (see rootWidthFraction) rather than
+    // shrinking monotonically, so a wider waiting row is never reliably covered by a narrower one
+    // in front of it. Those two variants instead start this at 0 and only raise it to 1 in lockstep
+    // with the same final-lift window that moves the row into its real resting spot, so nothing of
+    // the real pill is ever visible before it is actually being placed there.
+    val alpha: Float = 1f
 )
 
 /**
@@ -865,7 +875,8 @@ private fun initialPoseFor(entering: Boolean, entrance: StackEntrance, row: Int,
         StackEntrance.Drop -> StackEntrancePose(riseY = -pitchPx * DROP_START_MULTIPLIER)
         StackEntrance.Cascade -> StackEntrancePose(
             riseY = pitchPx,
-            turn = if (row % 2 == 0) -CASCADE_TURN_DEG else CASCADE_TURN_DEG
+            turn = if (row % 2 == 0) -CASCADE_TURN_DEG else CASCADE_TURN_DEG,
+            alpha = 0f
         )
         StackEntrance.Deal -> StackEntrancePose(
             offset = DEAL_START_X_FRACTION,
@@ -878,7 +889,11 @@ private fun initialPoseFor(entering: Boolean, entrance: StackEntrance, row: Int,
             lenFrac = HOST_WIDTH / geometry.restWidthFraction
         )
         StackEntrance.Telescope ->
-            if (row == 0) StackEntrancePose(offset = -OFFSCREEN_FRACTION) else StackEntrancePose(riseY = pitchPx * row)
+            if (row == 0) {
+                StackEntrancePose(offset = -OFFSCREEN_FRACTION)
+            } else {
+                StackEntrancePose(riseY = pitchPx * row, alpha = 0f)
+            }
         StackEntrance.Rally -> StackEntrancePose(offset = if (row % 2 == 0) -OFFSCREEN_FRACTION else OFFSCREEN_FRACTION)
     }
 }
@@ -891,6 +906,7 @@ private class StackEntranceMotion(pose: StackEntrancePose) {
     val lenFrac = Animatable(pose.lenFrac) // fraction of the pill's own resting width
     val turn = Animatable(pose.turn) // degrees
     val tilt = Animatable(pose.tilt) // degrees
+    val alpha = Animatable(pose.alpha) // 0..1, see StackEntrancePose's own doc comment
 
     /**
      * The exit never varies - always the same sweep left, whichever entrance brought this pill
@@ -912,6 +928,7 @@ private class StackEntranceMotion(pose: StackEntrancePose) {
             lenFrac.snapTo(1f)
             turn.snapTo(0f)
             tilt.snapTo(0f)
+            alpha.snapTo(1f)
             sway.snapTo(0f)
             offset.animateTo(leaveTarget, tween(Azphalt.SLIDE_MS, easing = LinearEasing))
             return
@@ -982,6 +999,7 @@ private class StackEntranceMotion(pose: StackEntrancePose) {
         val step = stackInterval(Azphalt.SWING_MS, rowCount)
         riseY.snapTo(pitchPx) // stacked on the row below
         turn.snapTo(if (row % 2 == 0) -CASCADE_TURN_DEG else CASCADE_TURN_DEG)
+        alpha.snapTo(0f) // genuinely hidden - see StackEntrancePose's own doc comment
         delay(row * step.toLong())
         coroutineScope {
             launch { turn.animateTo(0f, tween(step, easing = LinearEasing)) }
@@ -992,6 +1010,16 @@ private class StackEntranceMotion(pose: StackEntrancePose) {
                     pitchPx at 0 using LinearEasing
                     pitchPx at (step * Azphalt.LIFT_FRACTION).toInt() using LinearEasing
                     0f at step
+                })
+            }
+            launch {
+                // Alpha rides the same final-tenth window lift does, so the real pill only ever
+                // becomes visible as it lands, never while still rotating in behind its neighbor.
+                alpha.animateTo(1f, keyframes {
+                    durationMillis = step
+                    0f at 0 using LinearEasing
+                    0f at (step * Azphalt.LIFT_FRACTION).toInt() using LinearEasing
+                    1f at step
                 })
             }
         }
@@ -1032,8 +1060,12 @@ private class StackEntranceMotion(pose: StackEntrancePose) {
         } else {
             // Drawn out from behind the row below, already at final length.
             riseY.snapTo(pitchPx * row)
+            alpha.snapTo(0f) // genuinely hidden - see StackEntrancePose's own doc comment
             delay(slide + (row - 1) * step.toLong())
-            riseY.animateTo(0f, tween(step, easing = LinearEasing))
+            coroutineScope {
+                launch { riseY.animateTo(0f, tween(step, easing = LinearEasing)) }
+                launch { alpha.animateTo(1f, tween(step, easing = LinearEasing)) }
+            }
         }
     }
 
@@ -1150,6 +1182,13 @@ private fun ChildPill(
     // the band would visibly drift upward through its held rows instead of sitting invisibly at
     // the one it's hidden behind until the final 10% lift.
     val lift = remember(node.id) { Animatable(-pitchPx * (absoluteRow - 1).coerceAtLeast(BAND_BASE_ROW)) }
+    // Position (lift) alone was never enough to actually hide a pill waiting behind its
+    // predecessor: rotating a full 360° (turn's own starting value below) reads identically to 0°,
+    // and childWidthFraction cycles rather than shrinking monotonically, so a wider waiting row
+    // isn't reliably covered by a narrower one in front of it either. This starts genuinely
+    // invisible and only rises to 1 in the same final-tenth window that lift actually moves the
+    // pill into its resting spot - see the entrance LaunchedEffect below.
+    val pillAlpha = remember(node.id) { Animatable(0f) }
     val leaveOffset = remember(node.id) { Animatable(0f) }
     val scale = remember(node.id) { Animatable(1f) }
     // Only while leaving - a cascading child turns alone, not with a pile, so it has nothing to
@@ -1176,12 +1215,23 @@ private fun ChildPill(
                 (-pitchPx * (absoluteRow - 1).coerceAtLeast(BAND_BASE_ROW)) at (Azphalt.SWING_MS * Azphalt.LIFT_FRACTION).toInt() using LinearEasing
             })
         }
+        launch {
+            // Rides the same final-tenth window lift does, so the real pill only ever becomes
+            // visible as it lands, never while still turning in behind its predecessor.
+            pillAlpha.animateTo(1f, keyframes {
+                durationMillis = Azphalt.SWING_MS
+                0f at (Azphalt.SWING_MS * Azphalt.LIFT_FRACTION).toInt() using LinearEasing
+            })
+        }
     }
 
     // A newly-chosen pill drops to the shared bottom row and grows a little as it settles there;
     // its siblings leave exactly like the root stack's unselected pills do.
     LaunchedEffect(leaving, droppingOut) {
         if (droppingOut) {
+            // A tap can land while this pill is still mid-entrance (still hidden, alpha < 1) -
+            // becoming the host is its own reveal, so it must not stay invisible through it.
+            launch { pillAlpha.animateTo(1f, tween(Azphalt.DROP_MS, easing = LinearEasing)) }
             launch { turn.animateTo(0f, tween(Azphalt.DROP_MS, easing = LinearEasing)) }
             launch { lift.animateTo(0f, tween(Azphalt.DROP_MS, easing = LinearEasing)) }
             launch {
@@ -1217,6 +1267,7 @@ private fun ChildPill(
                     translationY = lift.value + scrollOffsetPx
                     scaleX = scale.value
                     scaleY = scale.value
+                    alpha = pillAlpha.value
                 }
                 .clickable(onClick = onClick)
         )
