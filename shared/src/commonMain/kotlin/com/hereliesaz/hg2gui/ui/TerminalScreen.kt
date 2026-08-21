@@ -420,16 +420,7 @@ private fun BufferEntry(
                     fontWeight = FontWeight.Bold
                 )
             )
-            if (entry.isRunning) {
-                Spacer(Modifier.width(8.dp))
-                Box(Modifier.size(8.dp).clip(RoundedCornerShape(percent = 50)).background(Azphalt.Yellow))
-            } else if (entry.exitCode != null && entry.exitCode != 0) {
-                // D2: success and failure used to render identically - no exit code reached the
-                // UI at all. "04 - Semantics" is explicit that a non-zero exit is red, the same
-                // hue Run/Primary already uses, rather than a separate error colour.
-                Spacer(Modifier.width(8.dp))
-                Box(Modifier.size(8.dp).clip(RoundedCornerShape(percent = 50)).background(Azphalt.hues[6]))
-            }
+            StatusDot(entry)
         }
         if (entry.output.isNotEmpty()) {
             Spacer(Modifier.height(4.dp))
@@ -462,6 +453,20 @@ private fun BufferEntry(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun StatusDot(entry: TerminalHistoryEntry) {
+    if (entry.isRunning) {
+        Spacer(Modifier.width(8.dp))
+        Box(Modifier.size(8.dp).clip(RoundedCornerShape(percent = 50)).background(Azphalt.Yellow))
+    } else if (entry.exitCode != null && entry.exitCode != 0) {
+        // D2: success and failure used to render identically - no exit code reached the UI at
+        // all. "04 - Semantics" is explicit that a non-zero exit is red, the same hue Run/Primary
+        // already uses, rather than a separate error colour.
+        Spacer(Modifier.width(8.dp))
+        Box(Modifier.size(8.dp).clip(RoundedCornerShape(percent = 50)).background(Azphalt.hues[6]))
     }
 }
 
