@@ -74,32 +74,48 @@ class PillWrapRevealState {
 
     suspend fun open() {
         active = true
-        leadInActive = true
-        leadIn.snapTo(0f)
-        leadIn.animateTo(1f, tween(LEAD_IN_MS, easing = WRAP_EASE))
-        leadInActive = false
+        // Reset every animatable up front, not only the ones about to move next - if a PREVIOUS
+        // open()/close() coroutine was cancelled mid-sequence (a back press, the phase changing
+        // while the reveal was still running), whichever animatables its own sequence hadn't
+        // reached yet are left holding a stale value from further back still. Starting every run
+        // from a fully-specified slate means a cancelled run can never leave a half-drawn frame
+        // for the next one to inherit.
         wrap.snapTo(0f)
         flood.snapTo(0f)
-        // setWipe sits at 0 (content hidden behind the border-only frame) through wrap+flood,
-        // rather than snapping there only after flood already finished - snapping afterward
-        // briefly showed the fully-revealed content, then hid it, then wiped it back on, a
-        // flicker rather than a single clean reveal.
         setWipe.snapTo(0f)
+        try {
+            leadInActive = true
+            leadIn.snapTo(0f)
+            leadIn.animateTo(1f, tween(LEAD_IN_MS, easing = WRAP_EASE))
+        } finally {
+            // Runs even if this coroutine is cancelled mid-animation, so leadInActive can never
+            // stay stuck true - the standalone lead-in pill it gates would otherwise keep
+            // rendering forever with nothing left animating it.
+            leadInActive = false
+        }
         wrap.animateTo(1f, tween(WRAP_MS, easing = WRAP_EASE))
         flood.animateTo(1f, tween(FLOOD_MS, easing = WRAP_EASE))
         setWipe.animateTo(1f, tween(SET_MS, easing = WRAP_EASE))
     }
 
     suspend fun close() {
+        // Same defensive snap open() makes, mirrored to the fully-open end of the range - a
+        // cancelled open() otherwise leaves an arbitrary animatable short, and close() would
+        // retreat whatever partial frame that left rather than the intended fully-drawn one.
+        wrap.snapTo(1f)
+        flood.snapTo(1f)
         // Left at 0 (content hidden) through the rest of the closing sequence below - the frame
         // itself is retreating anyway, so there's nothing to "gate" by leaving it hidden; forcing
         // it back to 1 here used to pop content instantly back into view mid-close.
         setWipe.animateTo(0f, tween(SET_MS, easing = WRAP_EASE))
         flood.animateTo(0f, tween(FLOOD_MS, easing = WRAP_EASE))
         wrap.animateTo(0f, tween(WRAP_MS, easing = WRAP_EASE))
-        leadInActive = true
-        leadIn.animateTo(0f, tween(LEAD_IN_MS, easing = WRAP_EASE))
-        leadInActive = false
+        try {
+            leadInActive = true
+            leadIn.animateTo(0f, tween(LEAD_IN_MS, easing = WRAP_EASE))
+        } finally {
+            leadInActive = false
+        }
         active = false
     }
 }

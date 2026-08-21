@@ -285,11 +285,18 @@ private const val BAND_BASE_ROW = 1
 private class StackScroll(val modifier: Modifier, val offsetPx: Float, val alignedRow: Int)
 
 @Composable
-private fun rememberStackScroll(rowMin: Int, rowMax: Int): StackScroll {
+private fun rememberStackScroll(rowMin: Int, rowMax: Int, resetKey: Any? = Unit): StackScroll {
     val density = LocalDensity.current
     val pitchPx = with(density) { ROW_PITCH.toPx() }
-    var offsetPx by remember { mutableStateOf(0f) }
-    var hasScrolled by remember { mutableStateOf(false) }
+    // Keyed on [resetKey], not bare `remember` - without it this state lives in the *call site's*
+    // own remember scope rather than the current stack's. A child band's call is already wrapped
+    // in key(anchor.id) at its own call site, so this is redundant there; the root stack's call
+    // has no such wrapper (Phase.Browsing/Leaving is one continuous call site across every visit),
+    // so its own scroll offset and "has this actually been scrolled" flag otherwise persist
+    // forever - scroll a long stack, close it, reopen a short one, and row 0 still renders primed
+    // from a scroll the new stack never had.
+    var offsetPx by remember(resetKey) { mutableStateOf(0f) }
+    var hasScrolled by remember(resetKey) { mutableStateOf(false) }
     // [offsetPx] is added on top of every pill's own already-correct resting `lift` (row R rests
     // at -pitchPx*R, so translationY = -pitchPx*R + offsetPx; row R lands exactly on the
     // breadcrumb, translationY 0, when offsetPx == +pitchPx*R - always non-negative, since every
@@ -439,6 +446,10 @@ fun PillMenu(
     // fanned out for the next choice's own children.
     var trail by remember { mutableStateOf<List<MenuNode>>(emptyList()) }
     var tokens by remember { mutableStateOf(listOf<String>()) }
+    // Bumped every time the root stack returns to Browsing - the identity the root's own
+    // rememberStackScroll resets against (see B5's comment there), since Phase.Browsing has no
+    // hostId of its own to key on the way a child band already keys on its anchor's id.
+    var rootArrivalToken by remember { mutableStateOf(0) }
     val scope = rememberCoroutineScope()
 
     fun openHost(node: MenuNode) {
@@ -461,7 +472,11 @@ fun PillMenu(
         when (val p = phase) {
             is Phase.Browsing, is Phase.Leaving -> {
                 val leavingHost = (p as? Phase.Leaving)?.hostId
-                val stackScroll = rememberStackScroll(rowMin = 0, rowMax = (roots.size - 1).coerceAtLeast(0))
+                val stackScroll = rememberStackScroll(
+                    rowMin = 0,
+                    rowMax = (roots.size - 1).coerceAtLeast(0),
+                    resetKey = rootArrivalToken
+                )
 
                 Box(Modifier.fillMaxSize().padding(bottom = 12.dp).then(stackScroll.modifier)) {
                     roots.forEachIndexed { i, node ->
@@ -585,6 +600,7 @@ fun PillMenu(
                                 phase = Phase.Browsing
                                 trail = emptyList()
                                 tokens = emptyList()
+                                rootArrivalToken++
                                 onRun(tokens, false)
                             }
                         }
@@ -611,7 +627,12 @@ private fun StackPill(
         isHost -> HOST_RIGHT_EDGE - 1f
         else -> -1.7f
     }
-    val offset = remember { Animatable(if (entering) -1.7f else 0f) }
+    // Never seeded from `entering` - remember evaluates once, so a pill first composed while
+    // already resting (entering == false on its very first frame) would freeze this at 0f
+    // forever, and the LaunchedEffect below would then animate 0f -> 0f: a pill that never
+    // slides again once it happens to be composed at rest. Start at rest and snapTo the entry
+    // value inside the effect instead, where `entering` is read fresh every time it changes.
+    val offset = remember { Animatable(0f) }
 
     // Leaving the stack (dismissing a host) still shares one clock across every pill - "dismissing
     // the host plays the exact same arrival as opening the app" only describes that shared-clock
@@ -620,6 +641,7 @@ private fun StackPill(
     // top-down instead of every root pill snapping into place on the same frame.
     LaunchedEffect(leaving, entering) {
         if (entering) {
+            offset.snapTo(-1.7f)
             delay(row.coerceAtMost(20) * 26L)
             offset.animateTo(0f, tween(Azphalt.SLIDE_MS, easing = LinearEasing))
         } else {
@@ -634,7 +656,11 @@ private fun StackPill(
     val density = LocalDensity.current
     val pitchPx = with(density) { ROW_PITCH.toPx() }
     val lift = remember { Animatable(0f) }
-    LaunchedEffect(entering) {
+    // Keyed on row and pitchPx too, not just entering: a stack rebuild (a trail push, a live
+    // PATH rescan adding a category) can hand a surviving composition a new `row` while
+    // `entering` stays unchanged. Keying on entering alone left the effect never re-running, so
+    // the pill stayed at its old row - overlapping pills, or a visible gap.
+    LaunchedEffect(entering, row, pitchPx) {
         if (entering) {
             // Same per-row 26ms stagger as the offset animation above, capped at twenty rows -
             // both Animatables drive one entrance motion, so both start on the same delayed beat.
@@ -765,7 +791,11 @@ private fun ChildPill(
     val leaveOffset = remember(node.id) { Animatable(0f) }
     val scale = remember(node.id) { Animatable(1f) }
 
-    LaunchedEffect(node.id) {
+    // Keyed on localIndex too, not just node.id: a band re-sort or a sibling filtered out changes
+    // every subsequent localIndex without changing any id, so the delay computed from it would go
+    // stale silently - the cascade would keep the old ordering, arriving in a sequence that no
+    // longer matches where the pills actually sit.
+    LaunchedEffect(node.id, localIndex) {
         delay((Azphalt.DROP_MS + localIndex * Azphalt.SWING_MS).toLong())
         launch {
             turn.animateTo(0f, keyframes {

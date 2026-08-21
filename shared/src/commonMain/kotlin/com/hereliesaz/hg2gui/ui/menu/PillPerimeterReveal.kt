@@ -98,13 +98,14 @@ class PerimeterRevealState {
     /** Beats 1-3 (stretch, break free, fall), then the perimeter legs + flood, then beat 4. */
     suspend fun open() {
         active = true
+        // Reset every leg/flood/wipe animatable up front, not only the ones about to move next -
+        // if a PREVIOUS open()/close() coroutine was cancelled mid-sequence (a back press, the
+        // phase changing while the reveal was still running), whichever animatables its own
+        // sequence hadn't reached yet are left holding a stale value from further back still.
+        // Starting every run from a fully-specified slate means a cancelled run can never leave a
+        // half-drawn frame for the next one to inherit.
+        listOf(bottomLeg, rightLeg, topLeg, leftLeg, flood, setWipe).forEach { it.snapTo(0f) }
         runLeadIn(reverse = false)
-        listOf(bottomLeg, rightLeg, topLeg, leftLeg, flood).forEach { it.snapTo(0f) }
-        // setWipe sits at 0 (content hidden behind the flat hue fill) through the whole
-        // perimeter+flood run, rather than snapping there only after flood already finished -
-        // snapping afterward briefly showed the fully-revealed content, then hid it, then wiped
-        // it back on, a flicker rather than a single clean reveal.
-        setWipe.snapTo(0f)
         bottomLeg.animateTo(1f, tween(LEG_MS, easing = LEG_EASE))
         rightLeg.animateTo(1f, tween(LEG_MS, easing = LEG_EASE))
         topLeg.animateTo(1f, tween(LEG_MS, easing = LEG_EASE))
@@ -117,6 +118,10 @@ class PerimeterRevealState {
 
     /** The exact reverse: beat 4 first, then perimeter+flood retreat, then beats 3-1 backwards. */
     suspend fun close() {
+        // Same defensive snap open() makes, mirrored to the fully-open end of the range - a
+        // cancelled open() otherwise leaves an arbitrary leg short, and close() would retreat
+        // whatever partial frame that left rather than the intended fully-drawn one.
+        listOf(bottomLeg, rightLeg, topLeg, leftLeg, flood).forEach { it.snapTo(1f) }
         // Left at 0 (content hidden) through the rest of the closing sequence below - the frame
         // itself is retreating anyway, so there's nothing to "gate" by leaving it hidden; forcing
         // it back to 1 here used to pop content instantly back into view mid-close.
@@ -132,8 +137,17 @@ class PerimeterRevealState {
         active = false
     }
 
-    private suspend fun runLeadIn(reverse: Boolean) {
+    private suspend fun runLeadIn(reverse: Boolean) = try {
         leadInActive = true
+        runLeadInBody(reverse)
+    } finally {
+        // Runs even if this coroutine is cancelled mid-animation, so leadInActive can never stay
+        // stuck true - the standalone lead-in pill it gates would otherwise keep rendering
+        // forever with nothing left animating it.
+        leadInActive = false
+    }
+
+    private suspend fun runLeadInBody(reverse: Boolean) {
         if (!reverse) {
             stretchWidth.snapTo(1f)
             flyProgress.snapTo(0f)
@@ -194,7 +208,6 @@ class PerimeterRevealState {
                 }
             }
         }
-        leadInActive = false
     }
 }
 
