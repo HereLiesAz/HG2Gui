@@ -2,8 +2,6 @@ package com.hereliesaz.hg2gui.ui.menu
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.keyframes
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -41,17 +39,17 @@ import kotlinx.coroutines.launch
  * wipe starts filling the frame it has enclosed with the pill's own colour, revealing whatever it
  * opened underneath as the wipe descends.
  *
- * Before any of that, per "THE SIX BEATS" in docs/HG2Gui Run Transition.html and specimens
- * 8/9 ("HAND-OFF" / "RUNNING A COMMAND") in docs/HG2Gui Motion Sheet.html, three lead-in beats
- * play out: the chosen pill stretches, snaps thin, and flies into the corner it lands in
- * (stretch); it rocks on the tip it just flew into as the rest of the stack sweeps away (break
- * free); then it drops straight down onto the bottom edge (fall) - which is exactly where the
- * perimeter run above begins. A final beat (set) wipes the revealed content on once the flood
- * completes. Going back is the same beats played backwards, per the doc's own note.
+ * Before any of that, per "THE SIX BEATS" in docs/HG2Gui Run Transition.html, beats 1-3 (stretch,
+ * break free, fall) play out via the shared [BreakFreeState] in PillBreakFree.kt - see that file
+ * for the choreography itself. Per the reference spec's own bars, the perimeter legs below stay
+ * anchored to the pill's original position throughout; the break-free pill is a flourish playing
+ * out to the side of it (flying off toward the right edge before falling), not a relocation of
+ * where the frame itself starts growing. A final beat (set) wipes the revealed content on once
+ * the flood completes. Going back is the same beats played backwards, per the doc's own note.
  *
- * The real pill stack lives in PillMenu's own composable tree, not this one, so the lead-in beats
- * are played by a small representative pill rendered inside this same Box, sized and positioned
- * from [PerimeterRevealState.origin] - the same crumb rect the perimeter legs already key off of.
+ * The real pill stack lives in PillMenu's own composable tree, not this one, so the break-free
+ * pill is a small representative rendered inside this same Box, sized and positioned from
+ * [PerimeterRevealState.origin] - the same crumb rect the perimeter legs already key off of.
  * "The rest of the stack sweeps off to the left" is PillMenu's own concern and isn't simulated
  * here.
  */
@@ -59,16 +57,16 @@ import kotlinx.coroutines.launch
 private val LEG_EASE = CubicBezierEasing(0f, .9f, .1f, 1f)
 private const val LEG_MS = 260
 private const val FLOOD_MS = 420
+private const val SET_MS = 90
 private val MIN_THICKNESS = 34.dp
 
-// The three lead-in beats (stretch, break free, fall) plus the trailing "set" beat. Durations are
-// the doc's own approximate figures - LEG_MS/FLOOD_MS above are untouched per instruction.
-private const val STRETCH_MS = 300
-private const val BREAK_MS = 140
-private const val FALL_MS = 300
-private const val SET_MS = 90
-private val LEAD_IN_FLY_DISTANCE = 150.dp
-private val LEAD_IN_DROP_HEIGHT = 70.dp
+// How close to the literal screen edge the break-free flight lands - keeps the pill's own
+// rounded tip from visually clipping into the edge, matching the reference spec's own margin.
+private const val EDGE_MARGIN_PX = 6f
+
+// The break-free pill pivots on its own right tip - the edge it flies into and thuds against.
+private const val TIP_ORIGIN_Y = 0.5f
+private val TIP_ORIGIN = TransformOrigin(1f, TIP_ORIGIN_Y)
 
 class PerimeterRevealState {
     var origin: Rect by mutableStateOf(Rect.Zero)
@@ -78,33 +76,31 @@ class PerimeterRevealState {
     val topLeg = Animatable(0f)
     val leftLeg = Animatable(0f)
     val flood = Animatable(0f)
+    val breakFree = BreakFreeState()
 
-    // Beat 1 "stretch": stretchWidth models the pill lengthening rightward then snapping to
-    // under half its width; flyProgress carries it the rest of the way horizontally. Both run
-    // over the same STRETCH_MS window - see runLeadIn for the keyframe split between them.
-    var leadInActive: Boolean by mutableStateOf(false)
-    val stretchWidth = Animatable(1f)
-    val flyProgress = Animatable(0f)
-    // Beat 2 "break free": a rapid, damping rock pivoting on the tip it just flew into.
-    val rockAngle = Animatable(0f)
-    // Beat 3 "fall": drops straight down from the break point onto the bottom edge (= origin).
-    val fallProgress = Animatable(0f)
     // Beat 4 "set": stays at 0 (content hidden behind the flat hue fill) through the perimeter
     // and flood legs, then wipes to 1 once flood completes - a plain top-level mirror of
     // GuideReaderScreen's WipeItem/wipeClip idiom (clip + slight slide) rather than a full
     // per-line wipe, since the wrapped content here is a whole screen, not a list of lines.
     val setWipe = Animatable(1f)
 
-    /** Beats 1-3 (stretch, break free, fall), then the perimeter legs + flood, then beat 4. */
-    suspend fun open() {
+    /**
+     * Beats 1-3 (stretch, break free, fall) via [BreakFreeState.run], then the perimeter legs +
+     * flood, then beat 4. [fullWidthPx]/[fullHeightPx]/[defaultBaseWidthPx] come from the
+     * composable's own BoxWithConstraints/density scope, which this plain suspend function has
+     * no access to - see PillPerimeterReveal's own call site.
+     */
+    suspend fun open(fullWidthPx: Float, fullHeightPx: Float, defaultBaseWidthPx: Float, minThicknessPx: Float) {
         active = true
-        runLeadIn(reverse = false)
-        listOf(bottomLeg, rightLeg, topLeg, leftLeg, flood).forEach { it.snapTo(0f) }
-        // setWipe sits at 0 (content hidden behind the flat hue fill) through the whole
-        // perimeter+flood run, rather than snapping there only after flood already finished -
-        // snapping afterward briefly showed the fully-revealed content, then hid it, then wiped
-        // it back on, a flicker rather than a single clean reveal.
-        setWipe.snapTo(0f)
+        // Reset every leg/flood/wipe animatable up front, not only the ones about to move next -
+        // if a PREVIOUS open()/close() coroutine was cancelled mid-sequence (a back press, the
+        // phase changing while the reveal was still running), whichever animatables its own
+        // sequence hadn't reached yet are left holding a stale value from further back still.
+        // Starting every run from a fully-specified slate means a cancelled run can never leave a
+        // half-drawn frame for the next one to inherit.
+        listOf(bottomLeg, rightLeg, topLeg, leftLeg, flood, setWipe).forEach { it.snapTo(0f) }
+        val geometry = geometry(fullWidthPx, fullHeightPx, defaultBaseWidthPx, minThicknessPx)
+        breakFree.run(geometry.baseWidthPx, geometry.flightPx, geometry.floorPx)
         bottomLeg.animateTo(1f, tween(LEG_MS, easing = LEG_EASE))
         rightLeg.animateTo(1f, tween(LEG_MS, easing = LEG_EASE))
         topLeg.animateTo(1f, tween(LEG_MS, easing = LEG_EASE))
@@ -116,7 +112,11 @@ class PerimeterRevealState {
     }
 
     /** The exact reverse: beat 4 first, then perimeter+flood retreat, then beats 3-1 backwards. */
-    suspend fun close() {
+    suspend fun close(fullWidthPx: Float, fullHeightPx: Float, defaultBaseWidthPx: Float, minThicknessPx: Float) {
+        // Same defensive snap open() makes, mirrored to the fully-open end of the range - a
+        // cancelled open() otherwise leaves an arbitrary leg short, and close() would retreat
+        // whatever partial frame that left rather than the intended fully-drawn one.
+        listOf(bottomLeg, rightLeg, topLeg, leftLeg, flood).forEach { it.snapTo(1f) }
         // Left at 0 (content hidden) through the rest of the closing sequence below - the frame
         // itself is retreating anyway, so there's nothing to "gate" by leaving it hidden; forcing
         // it back to 1 here used to pop content instantly back into view mid-close.
@@ -128,75 +128,32 @@ class PerimeterRevealState {
         topLeg.animateTo(0f, tween(LEG_MS, easing = LEG_EASE))
         rightLeg.animateTo(0f, tween(LEG_MS, easing = LEG_EASE))
         bottomLeg.animateTo(0f, tween(LEG_MS, easing = LEG_EASE))
-        runLeadIn(reverse = true)
+        val geometry = geometry(fullWidthPx, fullHeightPx, defaultBaseWidthPx, minThicknessPx)
+        breakFree.reverse(geometry.baseWidthPx, geometry.flightPx, geometry.floorPx)
         active = false
     }
 
-    private suspend fun runLeadIn(reverse: Boolean) {
-        leadInActive = true
-        if (!reverse) {
-            stretchWidth.snapTo(1f)
-            flyProgress.snapTo(0f)
-            rockAngle.snapTo(0f)
-            fallProgress.snapTo(0f)
-            coroutineScope {
-                launch {
-                    // Stretch out, then snap thin - the "snap" sub-beat is the tight middle leg.
-                    stretchWidth.animateTo(0.45f, keyframes {
-                        durationMillis = STRETCH_MS
-                        1f at 0 using LinearEasing
-                        1.6f at (STRETCH_MS * 0.35f).toInt() using LinearEasing
-                        0.45f at (STRETCH_MS * 0.55f).toInt() using LEG_EASE
-                    })
-                }
-                launch {
-                    // Stays put through the stretch+snap, then flies for the rest of the beat.
-                    flyProgress.animateTo(1f, keyframes {
-                        durationMillis = STRETCH_MS
-                        0f at 0
-                        0f at (STRETCH_MS * 0.55f).toInt()
-                        1f at STRETCH_MS using LEG_EASE
-                    })
-                }
-            }
-            rockAngle.animateTo(0f, keyframes {
-                durationMillis = BREAK_MS
-                0f at 0 using LinearEasing
-                14f at (BREAK_MS * 0.25f).toInt() using LinearEasing
-                (-8f) at (BREAK_MS * 0.5f).toInt() using LinearEasing
-                4f at (BREAK_MS * 0.75f).toInt() using LinearEasing
-            })
-            fallProgress.animateTo(1f, tween(FALL_MS, easing = LEG_EASE))
-        } else {
-            fallProgress.animateTo(0f, tween(FALL_MS, easing = LEG_EASE))
-            rockAngle.animateTo(0f, keyframes {
-                durationMillis = BREAK_MS
-                0f at 0 using LinearEasing
-                4f at (BREAK_MS * 0.25f).toInt() using LinearEasing
-                (-8f) at (BREAK_MS * 0.5f).toInt() using LinearEasing
-                14f at (BREAK_MS * 0.75f).toInt() using LinearEasing
-            })
-            coroutineScope {
-                launch {
-                    flyProgress.animateTo(0f, keyframes {
-                        durationMillis = STRETCH_MS
-                        1f at 0 using LEG_EASE
-                        0f at (STRETCH_MS * 0.45f).toInt()
-                    })
-                }
-                launch {
-                    stretchWidth.animateTo(1f, keyframes {
-                        durationMillis = STRETCH_MS
-                        0.45f at 0
-                        0.45f at (STRETCH_MS * 0.45f).toInt() using LEG_EASE
-                        1.6f at (STRETCH_MS * 0.65f).toInt() using LinearEasing
-                    })
-                }
-            }
-        }
-        leadInActive = false
+    private fun geometry(
+        fullWidthPx: Float,
+        fullHeightPx: Float,
+        defaultBaseWidthPx: Float,
+        minThicknessPx: Float
+    ): PerimeterBreakFreeGeometry {
+        val thickness = if (origin.height > 0f) origin.height else minThicknessPx
+        val originLeft = if (origin.width > 0f) origin.left else 0f
+        val originTop = if (origin.height > 0f) origin.top else fullHeightPx - thickness
+        val baseWidthPx = if (origin.width > 0f) origin.width else defaultBaseWidthPx
+        // "Distance from the pill's right tip to the right edge of the screen" - the pill's own
+        // RESTING tip, not the stretched one BreakFreeState briefly grows to internally; the few
+        // px that discrepancy leaves short of the literal edge is imperceptible next to a 6%
+        // stretch, and keeping that stretch factor private to PillBreakFree.kt is worth it.
+        val flightPx = (fullWidthPx - EDGE_MARGIN_PX - originLeft - baseWidthPx).coerceAtLeast(0f)
+        val floorPx = (fullHeightPx - thickness - originTop).coerceAtLeast(0f)
+        return PerimeterBreakFreeGeometry(baseWidthPx, flightPx, floorPx)
     }
 }
+
+private data class PerimeterBreakFreeGeometry(val baseWidthPx: Float, val flightPx: Float, val floorPx: Float)
 
 private fun lerp(a: Float, b: Float, t: Float) = a + (b - a) * t
 
@@ -222,26 +179,25 @@ fun PillPerimeterReveal(state: PerimeterRevealState, hue: Color, content: @Compo
         val leftBottom = lerp(0f, fullH, state.leftLeg.value)
 
         with(density) {
-            if (state.leadInActive) {
+            if (state.breakFree.active) {
                 // Beats 1-3: a stand-in pill (the real stack lives in PillMenu's own tree) that
-                // stretches/snaps/flies in from the left, rocks on its landed tip, then drops the
-                // remaining distance onto the bottom edge - ending exactly at the crumb's own
-                // rect, where the perimeter legs above pick up.
-                val flyDistancePx = LEAD_IN_FLY_DISTANCE.toPx()
-                val dropHeightPx = LEAD_IN_DROP_HEIGHT.toPx()
+                // strains, breaks free, flies toward the right edge, thuds, and falls onto the
+                // bottom edge - a flourish playing out to the side of the perimeter legs below,
+                // which stay anchored to the crumb's own position throughout.
                 val baseW = if (o.width > 0f) o.width else 64.dp.toPx()
-                val pillW = (baseW * state.stretchWidth.value).coerceAtLeast(1f)
-                val x = lerp(originLeft - flyDistancePx, originLeft, state.flyProgress.value)
-                val landedY = fullH - thickness
-                val y = lerp(landedY - dropHeightPx, landedY, state.fallProgress.value)
+                val originTop = if (o.height > 0f) o.top else fullH - thickness
                 Box(
                     Modifier
-                        .offset { IntOffset(x.toInt(), y.toInt()) }
-                        .size(pillW.toDp(), thickness.toDp())
+                        .offset {
+                            IntOffset(
+                                (originLeft + state.breakFree.offsetX.value).toInt(),
+                                (originTop + state.breakFree.offsetY.value).toInt()
+                            )
+                        }
+                        .size((baseW * state.breakFree.width.value).coerceAtLeast(1f).toDp(), thickness.toDp())
                         .graphicsLayer {
-                            // Rocks on its right tip, the edge it just flew into.
-                            transformOrigin = TransformOrigin(1f, 1f)
-                            rotationZ = state.rockAngle.value
+                            transformOrigin = TIP_ORIGIN // the tip, not the corner
+                            rotationZ = state.breakFree.tilt.value
                         }
                         .clip(RoundedCornerShape(percent = 50))
                         .background(hue)
