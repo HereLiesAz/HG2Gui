@@ -697,7 +697,15 @@ private fun StackPill(
     // (fraction of the pill's OWN width, per offsetByFractionOfParent's own semantics - it runs
     // after fillMaxWidth in this modifier chain, so its `constraints.maxWidth` is already this
     // pill's own target width, not the full screen's).
-    val motion = remember { StackEntranceMotion(initialPoseFor(entering, entrance, row, geometry)) }
+    // Keyed on entranceKey, not left unkeyed: `key(node.id)` above keeps the same root pill's
+    // composable slot alive across an entire open-then-back-to-Browsing cycle, so an unkeyed
+    // remember here only ever seeds StackEntranceMotion's initial pose once, the very first time
+    // this node is ever composed - every later re-arrival (closing an open category back to
+    // Browsing is the everyday case, not a rare one) reused that same instance, already settled
+    // at its previous entrance's rest pose, and depended on the entrance LaunchedEffect's own
+    // async snapTo() to hide it again - reintroducing the exact flash this seeding exists to
+    // prevent, just on every re-arrival after the first instead of on first mount.
+    val motion = remember(entranceKey) { StackEntranceMotion(initialPoseFor(entering, entrance, row, geometry)) }
     val sway = remember { Animatable(0f) } // degrees, additive wobble - see PillWobble.kt
 
     // Keyed on the stack's own arrival identity (entranceKey), not `entering` alone: a pill
