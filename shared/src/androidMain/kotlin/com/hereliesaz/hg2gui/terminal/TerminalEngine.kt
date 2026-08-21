@@ -155,6 +155,13 @@ class TerminalEngine(
         transcript to exitCode
     }
 
+    // S2: stops whatever command is currently mid-run on this engine's shell, without ending the
+    // session - see [ShellSession.interrupt]'s own doc comment for what "stop" actually does on
+    // each tier. A no-op if nothing is running.
+    fun interrupt() {
+        shell.interrupt()
+    }
+
     fun destroy() {
         shell.close()
     }

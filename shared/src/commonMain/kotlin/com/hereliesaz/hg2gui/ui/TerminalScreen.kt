@@ -86,6 +86,10 @@ fun TerminalScreen(
     onCrumbPositioned: (id: String, rect: Rect) -> Unit = { _, _ -> },
     onCopy: (String) -> Unit = {},
     onShare: (String) -> Unit = {},
+    // S2: stops whatever command is currently running in the given session, without ending the
+    // session itself - see ShellSession.interrupt's own doc comment for what "stop" means on each
+    // tier. A no-op if nothing is running there.
+    onInterrupt: (sessionId: String) -> Unit = {},
     onRun: suspend (
         sessionId: String,
         line: String,
@@ -252,7 +256,8 @@ fun TerminalScreen(
                         onRerun = { command ->
                             active.tokens = emptyList()
                             active.inputText = command
-                        }
+                        },
+                        onStop = { onInterrupt(active.id) }
                     )
                 }
             }
@@ -391,7 +396,8 @@ private fun BufferEntry(
     entry: TerminalHistoryEntry,
     onCopy: (String) -> Unit,
     onShare: (String) -> Unit,
-    onRerun: (String) -> Unit
+    onRerun: (String) -> Unit,
+    onStop: () -> Unit
 ) {
     // Blocks: tap an entry to reveal COPY/RE-RUN/SHARE - the tap-to-reveal idiom already used
     // for the MCP pairing token. Re-run only ever populates the input line for review, never
@@ -440,6 +446,13 @@ private fun BufferEntry(
                 )
             )
             StatusDot(entry)
+            if (entry.isRunning) {
+                // S2: visible on the running record itself, not buried behind the tap-to-expand
+                // COPY/RE-RUN/SHARE row below - those wait for a command to actually be worth
+                // acting on; a runaway command needs to be stoppable the instant it looks wrong.
+                Spacer(Modifier.weight(1f))
+                BlockActionPill("STOP", onStop)
+            }
         }
         if (entry.output.isNotEmpty()) {
             Spacer(Modifier.height(4.dp))

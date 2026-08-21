@@ -19,6 +19,11 @@ expect class ShellSession {
     val isAlive: Boolean
     val workingDirectory: String
     fun exec(command: String): ShellSessionResult
+    // S2: stops whatever `stream()` call is currently in flight on this session, without ending
+    // the session itself - see the actual implementation's own doc comment for what "stop" means
+    // on each tier (a real signal on the pty tier, a kill-and-respawn on the pipe tier). A no-op
+    // if nothing is running.
+    fun interrupt()
     fun stream(
         command: String,
         onLine: (line: String) -> Unit,
