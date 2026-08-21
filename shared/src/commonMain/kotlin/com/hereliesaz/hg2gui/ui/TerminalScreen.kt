@@ -193,6 +193,12 @@ fun TerminalScreen(
             .fillMaxSize()
             .background(Azphalt.currentGround.pageBrush())
             .then(if (fullscreen) Modifier else Modifier.windowInsetsPadding(WindowInsets.systemBars))
+            // The command line and modifier keys are pinned at the bottom, below the weighted
+            // PillMenu/buffer above them - with no IME inset, the keyboard just overlaid the
+            // screen on top of them instead of the layout making room. imePadding() shrinks this
+            // Column's own height by the keyboard's, so the weighted content above eats the
+            // difference and the input row stays above the keyboard rather than under it.
+            .imePadding()
     ) {
 
         SessionTabs(
