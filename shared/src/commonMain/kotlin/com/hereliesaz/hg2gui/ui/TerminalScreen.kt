@@ -60,9 +60,13 @@ import kotlinx.coroutines.launch
 private const val MAX_BUFFER_ENTRIES = 200
 
 // Every in-flight update to one running entry - a streamed output/stderr/styled chunk, the exit
-// code once it lands - is the same "find it by index, replace it" shape; this is that shape, once.
-private fun SessionUiState.updateBufferEntry(entryId: Int, transform: (TerminalHistoryEntry) -> TerminalHistoryEntry) {
-    buffer = buffer.mapIndexed { index, entry -> if (index == entryId) transform(entry) else entry }
+// code once it lands - is the same "find it by id, replace it" shape; this is that shape, once.
+// Matched by entry.id rather than buffer position: only one command runs per session at a time
+// today, so a position-based match was never actually wrong in practice, but matching by identity
+// instead means these updates keep finding the right entry even if that stops being true, and
+// don't rely on the buffer's own trim (see MAX_BUFFER_ENTRIES below) never running mid-update.
+private fun SessionUiState.updateBufferEntry(entryId: Long, transform: (TerminalHistoryEntry) -> TerminalHistoryEntry) {
+    buffer = buffer.map { entry -> if (entry.id == entryId) transform(entry) else entry }
 }
 
 @Composable
@@ -137,8 +141,9 @@ fun TerminalScreen(
                 session.inputText = ""
 
                 // Add initial entry
-                val entryId = session.buffer.size
-                session.buffer = session.buffer + TerminalHistoryEntry(command = lineToRun, isRunning = true)
+                val newEntry = TerminalHistoryEntry(command = lineToRun, isRunning = true)
+                val entryId = newEntry.id
+                session.buffer = session.buffer + newEntry
 
                 scope.launch {
                     // D2: null until the command actually exits (or forever, for the
@@ -165,6 +170,12 @@ fun TerminalScreen(
                         // structured concurrency still sees the cancellation.
                         throw e
                     } catch (e: Exception) {
+                        // A thrown exception never reaches onExit, so exitCode (above) would
+                        // otherwise stay null forever - identical to a clean success as far as
+                        // StatusDot (which only special-cases isRunning and a non-null non-zero
+                        // exitCode) is concerned, leaving a real failure showing no failure signal
+                        // at all beyond text buried in the (possibly collapsed) output block.
+                        exitCode = -1
                         session.updateBufferEntry(entryId) { it.copy(output = it.output + "\nerror: ${e.message}") }
                     } finally {
                         session.updateBufferEntry(entryId) { it.copy(isRunning = false, exitCode = exitCode) }
@@ -233,7 +244,7 @@ fun TerminalScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = PaddingValues(bottom = 8.dp)
             ) {
-                items(active.buffer) { entry ->
+                items(active.buffer, key = { it.id }) { entry ->
                     BufferEntry(
                         entry = entry,
                         onCopy = onCopy,
@@ -386,15 +397,21 @@ private fun BufferEntry(
     // for the MCP pairing token. Re-run only ever populates the input line for review, never
     // fires the command itself - same "assemble, then let the user press Run" rule every
     // wizard-produced command already follows.
-    var expanded by remember { mutableStateOf(false) }
+    // Keyed on entry.id, not left unkeyed - items(active.buffer) is now itself keyed on entry.id
+    // (see its own call site), but that alone only protects which *entry* this composable sees;
+    // without also keying this remember, a trim that shifts a surviving entry into a
+    // previously-different slot's composable instance would still hand it that instance's own
+    // already-remembered `expanded` value from whatever command used to occupy it.
+    var expanded by remember(entry.id) { mutableStateOf(false) }
     // entry.output never carries raw ANSI/VT100 escapes to strip here: real shell output is
     // always pre-flattened through ShellSession's headless TerminalEmulator before it reaches the
     // buffer, and the bootstrap/Builtins branches only ever emit app-authored plain text.
     val kind = remember(entry.output) { classifyOutput(entry.output) }
-    // Keyed on the command, not the output - entry.output mutates on every streamed chunk while
-    // a command is still running, and re-keying on it reset this toggle out from under anyone
-    // reading the raw text of a long-running command.
-    var showRaw by remember(entry.command) { mutableStateOf(false) }
+    // Keyed on entry.id: entry.output mutates on every streamed chunk while a command is still
+    // running (ruling out entry.output as a key), and entry.command alone let two runs of the
+    // exact same command text leak this toggle's state between them - two distinct entries sharing
+    // one key is exactly what entry.id exists to prevent.
+    var showRaw by remember(entry.id) { mutableStateOf(false) }
     Column(
         Modifier
             .fillMaxWidth()

@@ -7,7 +7,19 @@ package com.hereliesaz.hg2gui.managers
 // or the terminal's own default foreground) and renders in the surrounding text's normal ink.
 data class StyledSpan(val text: String, val hue: Int? = null, val bold: Boolean = false)
 
+// Monotonic, session-independent - only needs to be unique among entries actually alive in some
+// buffer at once, which a plain incrementing counter guarantees regardless of how many terminal
+// sessions exist or how fast a buffer trims and refills.
+private var nextEntryId = 0L
+
 data class TerminalHistoryEntry(
+    // Stable identity, independent of this entry's current position in a session's buffer - a
+    // long-running session trims its buffer's head past TerminalScreen's own MAX_BUFFER_ENTRIES,
+    // shifting every surviving entry's index. Keying UI state (LazyColumn rows, the expanded/
+    // showRaw toggles) off this instead of position keeps that state attached to the command it
+    // actually belongs to, rather than leaking onto whatever new command a trim hands the same
+    // composable slot to next.
+    val id: Long = nextEntryId++,
     val command: String,
     val output: String = "",
     val isRunning: Boolean = false,
