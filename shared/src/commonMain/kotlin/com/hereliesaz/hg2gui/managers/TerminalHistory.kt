@@ -15,6 +15,11 @@ data class TerminalHistoryEntry(
     // shell command with an exit status of its own) - only ever set once, in the same finally
     // block that flips isRunning back to false.
     val exitCode: Int? = null,
+    // D3: stays empty for the bootstrap/Builtins branches (neither has a real stderr of its own)
+    // and, on the real-shell branch, empty whenever ShellSession's pty tier is in use - a pty is
+    // one fd, so there is nothing to separate there. On the pipe tier this carries stderr's own
+    // cumulative transcript, kept apart from [output] rather than interleaved into it.
+    val stderr: String = "",
     // D1: one entry per terminal row, in order, empty for the bootstrap/Builtins branches
     // (neither produces real ANSI-styled output) and for a real shell command with no ANSI
     // color/attribute escapes in it at all - OutputLines falls back to plain [output] text

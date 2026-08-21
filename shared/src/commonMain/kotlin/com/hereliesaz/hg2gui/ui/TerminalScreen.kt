@@ -35,6 +35,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -58,8 +59,8 @@ import kotlinx.coroutines.launch
 // outer list of commands itself, which used to grow without limit for the life of a session.
 private const val MAX_BUFFER_ENTRIES = 200
 
-// Every in-flight update to one running entry - a streamed output/styled chunk, the exit code
-// once it lands - is the same "find it by index, replace it" shape; this is that shape, once.
+// Every in-flight update to one running entry - a streamed output/stderr/styled chunk, the exit
+// code once it lands - is the same "find it by index, replace it" shape; this is that shape, once.
 private fun SessionUiState.updateBufferEntry(entryId: Int, transform: (TerminalHistoryEntry) -> TerminalHistoryEntry) {
     buffer = buffer.mapIndexed { index, entry -> if (index == entryId) transform(entry) else entry }
 }
@@ -87,6 +88,7 @@ fun TerminalScreen(
         onOutput: (String) -> Unit,
         onNeedInput: suspend (prompt: String) -> String,
         onExit: (Int?) -> Unit,
+        onStderr: (String) -> Unit,
         onStyledOutput: (List<List<StyledSpan>>) -> Unit
     ) -> Unit
 ) {
@@ -151,6 +153,7 @@ fun TerminalScreen(
                             { outputChunk -> session.updateBufferEntry(entryId) { it.copy(output = outputChunk) } },
                             { prompt -> session.awaitPromptAnswer(prompt) },
                             { code -> exitCode = code },
+                            { stderrChunk -> session.updateBufferEntry(entryId) { it.copy(stderr = stderrChunk) } },
                             { styled -> session.updateBufferEntry(entryId) { it.copy(styledOutput = styled) } }
                         )
                     } catch (e: CancellationException) {
@@ -189,6 +192,12 @@ fun TerminalScreen(
             .fillMaxSize()
             .background(Azphalt.currentGround.pageBrush())
             .then(if (fullscreen) Modifier else Modifier.windowInsetsPadding(WindowInsets.systemBars))
+            // The command line and modifier keys are pinned at the bottom, below the weighted
+            // PillMenu/buffer above them - with no IME inset, the keyboard just overlaid the
+            // screen on top of them instead of the layout making room. imePadding() shrinks this
+            // Column's own height by the keyboard's, so the weighted content above eats the
+            // difference and the input row stays above the keyboard rather than under it.
+            .imePadding()
     ) {
 
         SessionTabs(
@@ -381,10 +390,7 @@ private fun BufferEntry(
     // entry.output never carries raw ANSI/VT100 escapes to strip here: real shell output is
     // always pre-flattened through ShellSession's headless TerminalEmulator before it reaches the
     // buffer, and the bootstrap/Builtins branches only ever emit app-authored plain text.
-    val isArt = remember(entry.output) { looksLikeAsciiArt(entry.output) }
-    // Checked only when the output isn't already art - a block of `label: value` lines and a
-    // dense symbol-art block are mutually exclusive readings of the same text.
-    val isTable = remember(entry.output) { !isArt && looksLikeKeyValueTable(entry.output) }
+    val kind = remember(entry.output) { classifyOutput(entry.output) }
     // Keyed on the command, not the output - entry.output mutates on every streamed chunk while
     // a command is still running, and re-keying on it reset this toggle out from under anyone
     // reading the raw text of a long-running command.
@@ -420,20 +426,11 @@ private fun BufferEntry(
         }
         if (entry.output.isNotEmpty()) {
             Spacer(Modifier.height(4.dp))
-            if (isArt && !showRaw) {
-                // Vector-style rendering: flat filled cells sized by character density, not
-                // literal glyphs - a script's ASCII/box-drawing art reads as art, not text.
-                AsciiArtCanvas(entry.output, onPage.copy(alpha = .8f))
-            } else if (isTable && !showRaw) {
-                // "Output is set, not echoed": a block of label: value lines is set on the page
-                // as a two-column grid with hairline rules, not left as raw monospace text.
-                KeyValueTable(entry.output, onPage)
-            } else {
-                // "Output sets, not echoes" (RATTLE 5G / OUTPUT SETS): raw output reveals line by
-                // line via a clip-wipe + slight slide, the same idiom GuideReaderScreen's WipeItem
-                // uses for its own reveals, rather than the whole block appearing instantly.
-                OutputLines(entry)
-            }
+            ClassifiedOutput(kind, entry, onPage, showRaw)
+        }
+        if (entry.stderr.isNotEmpty()) {
+            Spacer(Modifier.height(4.dp))
+            StderrBlock(entry.stderr)
         }
         if (expanded) {
             Spacer(Modifier.height(8.dp))
@@ -442,14 +439,65 @@ private fun BufferEntry(
                 BlockActionPill("COPY") { onCopy(copyText) }
                 BlockActionPill("RE-RUN") { onRerun(entry.command) }
                 BlockActionPill("SHARE") { onShare(copyText) }
-                if (isArt) {
-                    BlockActionPill(if (showRaw) "ART" else "PLAIN TEXT") { showRaw = !showRaw }
-                } else if (isTable) {
-                    BlockActionPill(if (showRaw) "READING" else "PLAIN TEXT") { showRaw = !showRaw }
-                }
+                ClassificationTogglePill(kind, showRaw) { showRaw = !showRaw }
             }
         }
     }
+}
+
+// Split out of BufferEntry so its own dispatch doesn't count against that composable's
+// complexity budget - see [OutputKind]'s own doc comment for why this is one classification
+// rather than a chain of independent booleans.
+@Composable
+private fun ClassifiedOutput(kind: OutputKind, entry: TerminalHistoryEntry, onPage: Color, showRaw: Boolean) {
+    when {
+        kind == OutputKind.BINARY && !showRaw -> {
+            // D6: "refused with an explanation rather than rendered" - garbled bytes typeset as
+            // if they were prose or a table is worse than admitting there's nothing readable
+            // here; showRaw is still one tap away for anyone who wants it anyway.
+            Text(
+                "Binary output - not displayed as text.",
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    color = onPage.copy(alpha = .55f),
+                    fontStyle = FontStyle.Italic
+                )
+            )
+        }
+        kind == OutputKind.ART && !showRaw -> {
+            // Vector-style rendering: flat filled cells sized by character density, not literal
+            // glyphs - a script's ASCII/box-drawing art reads as art, not text.
+            AsciiArtCanvas(entry.output, onPage.copy(alpha = .8f))
+        }
+        kind == OutputKind.TABLE && !showRaw -> {
+            // "Output is set, not echoed": a block of label: value lines is set on the page as a
+            // two-column grid with hairline rules, not left as raw monospace text.
+            KeyValueTable(entry.output, onPage)
+        }
+        kind == OutputKind.WIDE_TABLE && !showRaw -> {
+            // D6: a record per row, fields as labelled pairs - "suits this design better than a
+            // table anyway" per the audit's own recommendation, instead of either wrapping a wide
+            // row into unreadable ribbons or clipping it at the screen edge.
+            WideTableRecords(entry.output, onPage)
+        }
+        else -> {
+            // "Output sets, not echoes" (RATTLE 5G / OUTPUT SETS): raw output reveals line by
+            // line via a clip-wipe + slight slide, the same idiom GuideReaderScreen's WipeItem
+            // uses for its own reveals, rather than the whole block appearing instantly.
+            OutputLines(entry)
+        }
+    }
+}
+
+@Composable
+private fun ClassificationTogglePill(kind: OutputKind, showRaw: Boolean, onToggle: () -> Unit) {
+    val label = when (kind) {
+        OutputKind.BINARY -> "BINARY"
+        OutputKind.ART -> "ART"
+        OutputKind.TABLE -> "READING"
+        OutputKind.WIDE_TABLE -> "REFLOW"
+        OutputKind.PLAIN -> null
+    } ?: return
+    BlockActionPill(if (showRaw) label else "PLAIN TEXT", onToggle)
 }
 
 @Composable
@@ -561,6 +609,29 @@ private fun OutputWipeLine(seq: Int, spans: List<StyledSpan>) {
             .graphicsLayer { translationX = -14.dp.toPx() * (1f - progress.value) },
         style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace, fontSize = 12.sp)
     )
+}
+
+// D3: stderr's own treatment - a hairline amber rule (the same hue StatusDot would use for a
+// warning, one step short of the red a failing exit code gets) above amber-tinted monospace
+// text, so "here is your answer" (stdout, above) and "something the program said on the side"
+// (stderr) read as visually distinct the moment either has anything in it. No wipe animation of
+// its own - OutputLines already carries that beat for the primary transcript, and stderr is
+// usually the smaller, secondary block sitting under it.
+@Composable
+private fun StderrBlock(text: String) {
+    val warn = Azphalt.hues[4]
+    Column(Modifier.fillMaxWidth()) {
+        Box(Modifier.fillMaxWidth().height(1.dp).background(warn.copy(alpha = .35f)))
+        Spacer(Modifier.height(6.dp))
+        Text(
+            text,
+            style = MaterialTheme.typography.bodyMedium.copy(
+                color = warn,
+                fontFamily = FontFamily.Monospace,
+                fontSize = 12.sp
+            )
+        )
+    }
 }
 
 @Composable

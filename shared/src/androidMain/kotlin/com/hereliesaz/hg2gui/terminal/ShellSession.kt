@@ -203,6 +203,10 @@ actual class ShellSession private constructor(
     private var ptyPid: Int = -1
     private var stdin: BufferedWriter? = null
     private var stdout: BufferedReader? = null
+    // D3: only ever populated on the plain-pipe tier (startPipe, below) - a real pty is a single
+    // fd, so startPty has no second stream to separate this from. Null here is exactly the
+    // signal stream()'s own drainStderr uses to skip stderr handling entirely on that tier.
+    private var stderr: BufferedReader? = null
 
     private val alive = AtomicBoolean(false)
 
@@ -247,7 +251,12 @@ actual class ShellSession private constructor(
 
     private fun startPipe(home: File?, command: Array<String>, extraEnv: Map<String, String>) {
         val builder = ProcessBuilder(*command)
-        builder.redirectErrorStream(true)
+        // D3: used to be redirectErrorStream(true), which folds stderr into the same pipe as
+        // stdout before either ever reaches this class - by the time stream() sees a byte there
+        // is no way left to tell which stream it came from. Keeping them apart here is what makes
+        // a separate stderr transcript possible at all; stream() drains this reader on its own
+        // schedule, same non-blocking style as stdout, so the child never stalls on a full stderr
+        // pipe buffer just because nothing was reading it.
         if (home != null && home.isDirectory) builder.directory(home)
         if (extraEnv.isNotEmpty()) {
             builder.environment().putAll(extraEnv)
@@ -257,6 +266,7 @@ actual class ShellSession private constructor(
         process = p
         stdin = BufferedWriter(OutputStreamWriter(p.outputStream))
         stdout = BufferedReader(InputStreamReader(p.inputStream))
+        stderr = BufferedReader(InputStreamReader(p.errorStream))
     }
 
     /** A real pseudoterminal via the app's own bundled native pty bridge (terminal-emulator's
@@ -318,14 +328,22 @@ actual class ShellSession private constructor(
 
     actual fun exec(command: String): ShellSessionResult {
         var output = ""
-        val exitCode = stream(command, onLine = { line -> output = line }, onNeedInput = { null }, onStyledLine = {})
-        return ShellSessionResult(output, exitCode, _workingDirectory)
+        var stderrOutput = ""
+        val exitCode = stream(
+            command,
+            onLine = { line -> output = line },
+            onNeedInput = { null },
+            onStderrLine = { line -> stderrOutput = line },
+            onStyledLine = {}
+        )
+        return ShellSessionResult(output, exitCode, _workingDirectory, stderrOutput)
     }
 
     actual fun stream(
         command: String,
         onLine: (line: String) -> Unit,
         onNeedInput: (prompt: String) -> String?,
+        onStderrLine: (line: String) -> Unit,
         onStyledLine: (lines: List<List<StyledSpan>>) -> Unit
     ): Int {
         if (!isAlive) {
@@ -338,8 +356,10 @@ actual class ShellSession private constructor(
         try {
             val sin = stdin ?: throw IOException("stdin is null")
             val sout = stdout ?: throw IOException("stdout is null")
+            val serr = stderr
 
             val emulator = TerminalEmulator(DummyTerminalOutput(), 120, 24, 10, 10, 1000, null)
+            val stderrEmulator = TerminalEmulator(DummyTerminalOutput(), 120, 24, 10, 10, 1000, null)
 
             sin.write(command)
             sin.write("\n")
@@ -348,12 +368,35 @@ actual class ShellSession private constructor(
 
             val pending = StringBuilder()
             var emittedUpTo = 0
+            val pendingErr = StringBuilder()
+            var emittedUpToErr = 0
+            val errBuf = CharArray(4096)
             var deadline = System.currentTimeMillis() + TIMEOUT_MS
             var lastDataAt = System.currentTimeMillis()
             var promptOfferedForThisStall = false
             val buf = CharArray(4096)
 
+            // D3: a local function, not a private member, so it can close over this call's own
+            // mutable emittedUpToErr directly instead of threading it through as a parameter and
+            // a return value on every call site - [serr] is null outright on the pty tier (see
+            // the [stderr] field's own doc comment), so this is a no-op there and stderr stays
+            // folded into the single pty transcript the way it always has.
+            fun drainStderr() {
+                if (serr == null) return
+                if (serr.ready()) {
+                    val n = serr.read(errBuf)
+                    if (n > 0) pendingErr.append(errBuf, 0, n)
+                }
+                if (pendingErr.length <= emittedUpToErr) return
+                emittedUpToErr = trimConsumedPrefix(
+                    pendingErr,
+                    flush(pendingErr, emittedUpToErr, pendingErr.length, stderrEmulator, onStderrLine)
+                )
+            }
+
             while (true) {
+                drainStderr()
+
                 if (System.currentTimeMillis() > deadline) {
                     val bytes = "\r\n[timed out after ${TIMEOUT_MS / 1000}s]".toByteArray()
                     emulator.append(bytes, bytes.size)
@@ -368,6 +411,7 @@ actual class ShellSession private constructor(
                     killChild()
                     try { stdin?.close() } catch (ignored: IOException) {}
                     try { stdout?.close() } catch (ignored: IOException) {}
+                    try { stderr?.close() } catch (ignored: IOException) {}
                     break
                 }
 
@@ -441,6 +485,7 @@ actual class ShellSession private constructor(
                     val pwd = tail.substring(split + 1)
                     if (pwd.isNotEmpty()) _workingDirectory = pwd
                 }
+                drainStderr()
                 onLine(emulator.transcriptText())
                 onStyledLine(emulator.styledTranscript())
                 break
@@ -505,6 +550,10 @@ actual class ShellSession private constructor(
         }
         try {
             stdout?.close()
+        } catch (ignored: IOException) {
+        }
+        try {
+            stderr?.close()
         } catch (ignored: IOException) {
         }
         killChild()

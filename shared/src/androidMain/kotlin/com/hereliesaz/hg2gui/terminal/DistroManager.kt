@@ -258,18 +258,23 @@ object DistroManager {
     // check fails before bash (or whatever's named) ever runs - a real command extractBootstrap
     // never touches otherwise, since only the ~330 manifest-covered ELF files need the
     // exec-exemption trick; a plain script just needs its own first line to name a real path.
-    // Only the first line is ever touched - nothing else about the file's content changes.
+    //
+    // The shebang isn't the only hardcoded reference a script can carry, though - `pkg` itself
+    // also calls other bootstrap tools (termux-setup-package-manager among them) by the same
+    // ITS-package absolute path, not by $PREFIX or a bare command name that PATH would resolve,
+    // so those calls failed with "No such file or directory" even once the shebang fix alone let
+    // the script start running at all. Once a file is confirmed to be a script (shebang-gated,
+    // same as before - never touches the ~330 manifest-covered ELF files, and never risks
+    // corrupting a byte sequence inside a real binary that only coincidentally matches this
+    // text), every occurrence of the hardcoded prefix throughout its whole body is rewritten, not
+    // just the first line.
     private fun rewriteShebangIfNeeded(file: File, prefix: File) {
         if (file.length() < 3) return
         val bytes = file.readBytes()
         if (bytes.size < 2 || bytes[0] != '#'.code.toByte() || bytes[1] != '!'.code.toByte()) return
-        val newlineIndex = bytes.indexOf('\n'.code.toByte())
-        val firstLineEnd = if (newlineIndex < 0) bytes.size else newlineIndex
-        val firstLine = String(bytes, 0, firstLineEnd, Charsets.UTF_8)
-        if (!firstLine.contains(HARDCODED_TERMUX_PREFIX)) return
-        val patchedLine = firstLine.replace(HARDCODED_TERMUX_PREFIX, prefix.absolutePath)
-        val rest = if (newlineIndex < 0) ByteArray(0) else bytes.copyOfRange(newlineIndex, bytes.size)
-        file.writeBytes(patchedLine.toByteArray(Charsets.UTF_8) + rest)
+        val text = String(bytes, Charsets.UTF_8)
+        if (!text.contains(HARDCODED_TERMUX_PREFIX)) return
+        file.writeBytes(text.replace(HARDCODED_TERMUX_PREFIX, prefix.absolutePath).toByteArray(Charsets.UTF_8))
     }
 
     // apt's own Dir::* settings (where it looks for apt.conf.d, sources.list, its package cache,

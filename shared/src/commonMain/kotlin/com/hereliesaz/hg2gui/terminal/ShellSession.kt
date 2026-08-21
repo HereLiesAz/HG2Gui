@@ -5,7 +5,11 @@ import com.hereliesaz.hg2gui.managers.StyledSpan
 data class ShellSessionResult(
     val output: String,
     val exitCode: Int,
-    val workingDirectory: String
+    val workingDirectory: String,
+    // D3: empty whenever the command wrote nothing to stderr, and always empty on the pty tier
+    // (a single fd - see ShellSession.stream's own doc comment on why that tier has nothing to
+    // separate stderr from).
+    val stderr: String = ""
 )
 
 expect class ShellSession {
@@ -19,6 +23,7 @@ expect class ShellSession {
         command: String,
         onLine: (line: String) -> Unit,
         onNeedInput: (prompt: String) -> String? = { null },
+        onStderrLine: (line: String) -> Unit = {},
         // D1: fires alongside onLine with the same transcript's per-run ANSI color/attribute
         // reading - see StyledTranscript.kt's own doc comment. Empty on every platform without a
         // real ANSI-parsing terminal emulator behind it; only the Android actual ever populates it.
