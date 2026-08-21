@@ -37,6 +37,12 @@ import com.hereliesaz.hg2gui.ui.menu.pageBrush
  * breakdown, and the worst offenders named.
  */
 
+// docs/HG2Gui File Manager.html's own mock predates this taxonomy - it illustrates a 4-category
+// example (Source/Photos/Documents/Other) from before Code and Archives existed as their own
+// categories (VfsManager.kt's real StorageCategory has 5). Kept as an illustrative mock rather
+// than updated to match, but noted here so the two not lining up reads as known drift, not an
+// oversight - in particular "Other" no longer uses the mock's own hue-orange (now Archives'),
+// so don't assume this map's colors trace back to that doc's legend one-for-one.
 private val CATEGORY_HUES = mapOf(
     "Images" to 0, "Documents" to 2, "Code" to 9, "Archives" to 5, "Other" to 4
 )
@@ -50,6 +56,13 @@ fun StorageScreen(
     onBack: () -> Unit,
     fullscreen: Boolean,
     onFreeUpSpace: () -> Unit = {},
+    // A failed delete used to have nowhere to show up while this screen was the one on screen -
+    // FilesScreen's own opError banner lives in a Column this screen's caller returns out of
+    // reaching, so the failure only surfaced later, disconnected from the tap, if the user
+    // happened to navigate back to Browse first. This screen now owns its own copy of that banner
+    // instead of relying on a parent Column it may never actually be composed inside of.
+    errorMessage: String? = null,
+    onErrorDismiss: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var tab by remember { mutableStateOf(StorageTab.BY_TYPE) }
@@ -70,6 +83,20 @@ fun StorageScreen(
             // byCategory is this fixed 5-entry taxonomy (StorageCategory), not a count of where
             // things live - "N PLACES" read as the latter while counting the former.
             Chip("${stats?.byCategory?.size ?: 0} CATEGORIES", filled = false, clickable = false)
+        }
+
+        errorMessage?.let { message ->
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(start = 20.dp, end = 20.dp, top = 8.dp)
+                    .clip(RoundedCornerShape(percent = 50))
+                    .background(Azphalt.hues[6])
+                    .clickable(onClick = onErrorDismiss)
+                    .padding(horizontal = 16.dp, vertical = 10.dp)
+            ) {
+                Text(message, color = Azphalt.White, fontSize = 10.sp, fontWeight = FontWeight.ExtraBold)
+            }
         }
 
         if (stats == null) {

@@ -531,16 +531,18 @@ private fun StatusDot(entry: TerminalHistoryEntry) {
     }
 }
 
-// Line-by-line duration/stagger for the output "set" beat - 320ms sits inside the 300-360ms
-// window the motion sheet calls for, staggered 90ms apart, using the one house easing curve
-// everything else in the app already animates with.
+// Line-by-line duration/stagger for the output "set" beat - the motion sheet's own "Output sets"
+// tile calls for 360ms a line, 90ms apart (docs/HG2Gui Motion Sheet.dc.html); 320ms here runs
+// somewhat faster than that exact figure, using the one house easing curve everything else in
+// the app already animates with.
 private val OUTPUT_WIPE_EASE = CubicBezierEasing(0f, .9f, .1f, 1f)
 private const val OUTPUT_WIPE_MS = 320
 private const val OUTPUT_WIPE_STAGGER_MS = 90L
 
-// Mirrors PillMenu's own "26ms per row, capped at twenty" rule for a per-row stagger: only the
-// first STAGGER_CAP lines get the staggered wipe treatment, the rest of a very long output just
-// appears immediately rather than making the reader wait out dozens of staggered reveals.
+// PillMenu's own per-row stagger (UNFOLD_STAGGER_MS) has no such cap - a category with enough
+// rows delays its last one proportionally, uncapped. This is the fix that one doesn't have: only
+// the first STAGGER_CAP lines get the staggered wipe treatment, the rest of a very long output
+// just appears immediately rather than making the reader wait out dozens of staggered reveals.
 private const val OUTPUT_WIPE_STAGGER_CAP = 24
 
 // D1: an unstyled span's color - exactly what every line rendered as before ANSI-aware styling
@@ -628,12 +630,12 @@ private fun OutputWipeLine(seq: Int, spans: List<StyledSpan>) {
     )
 }
 
-// D3: stderr's own treatment - a hairline amber rule (the same hue StatusDot would use for a
-// warning, one step short of the red a failing exit code gets) above amber-tinted monospace
-// text, so "here is your answer" (stdout, above) and "something the program said on the side"
-// (stderr) read as visually distinct the moment either has anything in it. No wipe animation of
-// its own - OutputLines already carries that beat for the primary transcript, and stderr is
-// usually the smaller, secondary block sitting under it.
+// D3: stderr's own treatment - a hairline amber rule above amber-tinted monospace text, so "here
+// is your answer" (stdout, above) and "something the program said on the side" (stderr) read as
+// visually distinct the moment either has anything in it. StatusDot itself has only two tiers
+// (running/failure) and never uses amber - this is stderr's own distinct color, not a shade of a
+// StatusDot state. No wipe animation of its own - OutputLines already carries that beat for the
+// primary transcript, and stderr is usually the smaller, secondary block sitting under it.
 @Composable
 private fun StderrBlock(text: String) {
     val warn = Azphalt.hues[4]
@@ -653,22 +655,31 @@ private fun StderrBlock(text: String) {
 
 @Composable
 private fun BlockActionPill(label: String, onClick: () -> Unit) {
+    // UI-7: the visible pill (padding(vertical = 11.dp) around 11sp type) renders well under the
+    // 48dp minimum touch target. Rather than growing the pill itself - which would blow up its
+    // compact look next to its siblings in the same Row - the clickable region is a separate,
+    // invisible 48dp-tall Box the small pill is centered inside, the same pattern
+    // GuideReaderScreen's own Chip helper uses for the identical shape.
     Box(
-        Modifier
-            .clip(RoundedCornerShape(percent = 50))
-            .background(Azphalt.Ink.copy(alpha = .14f))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 18.dp, vertical = 11.dp)
+        Modifier.defaultMinSize(minHeight = 48.dp).clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
     ) {
-        Text(
-            label,
-            style = MaterialTheme.typography.titleMedium.copy(
-                color = Azphalt.currentGround.onPage.copy(alpha = .55f),
-                fontSize = 11.sp,
-                fontWeight = FontWeight.ExtraBold,
-                letterSpacing = 0.09.em
+        Box(
+            Modifier
+                .clip(RoundedCornerShape(percent = 50))
+                .background(Azphalt.Ink.copy(alpha = .14f))
+                .padding(horizontal = 18.dp, vertical = 11.dp)
+        ) {
+            Text(
+                label,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    color = Azphalt.currentGround.onPage.copy(alpha = .55f),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = 0.09.em
+                )
             )
-        )
+        }
     }
 }
 

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -64,10 +65,15 @@ fun ConfirmDialog(
                     Box(
                         Modifier
                             .weight(1f)
+                            // UI-7: padding(vertical = 12.dp) around 10sp text renders under the
+                            // 48dp minimum touch target - unlike GuideReaderScreen's own Chip,
+                            // this button already fills half the row via weight(1f), so growing
+                            // its own height to the minimum (rather than wrapping it in a second,
+                            // larger invisible box) doesn't distort its visual proportions.
+                            .defaultMinSize(minHeight = 48.dp)
                             .clip(RoundedCornerShape(percent = 50))
                             .background(Azphalt.White.copy(alpha = .12f))
-                            .clickable(onClick = onDismiss)
-                            .padding(vertical = 12.dp),
+                            .clickable(onClick = onDismiss),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
@@ -78,12 +84,13 @@ fun ConfirmDialog(
                     Box(
                         Modifier
                             .weight(1f)
+                            // UI-7: same 48dp minimum touch target as CANCEL above.
+                            .defaultMinSize(minHeight = 48.dp)
                             .clip(RoundedCornerShape(percent = 50))
                             // hues[6] is the same "red — primary / run" acquire hue AzphaltColors
                             // marks as the destructive/primary-action tone elsewhere in the app.
                             .background(Azphalt.hues[6])
-                            .clickable(onClick = onConfirm)
-                            .padding(vertical = 12.dp),
+                            .clickable(onClick = onConfirm),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
