@@ -37,6 +37,12 @@ import com.hereliesaz.hg2gui.ui.menu.pageBrush
  * breakdown, and the worst offenders named.
  */
 
+// docs/HG2Gui File Manager.html's own mock predates this taxonomy - it illustrates a 4-category
+// example (Source/Photos/Documents/Other) from before Code and Archives existed as their own
+// categories (VfsManager.kt's real StorageCategory has 5). Kept as an illustrative mock rather
+// than updated to match, but noted here so the two not lining up reads as known drift, not an
+// oversight - in particular "Other" no longer uses the mock's own hue-orange (now Archives'),
+// so don't assume this map's colors trace back to that doc's legend one-for-one.
 private val CATEGORY_HUES = mapOf(
     "Images" to 0, "Documents" to 2, "Code" to 9, "Archives" to 5, "Other" to 4
 )
