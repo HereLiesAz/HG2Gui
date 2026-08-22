@@ -63,9 +63,35 @@ object DistroManager {
     // bootstrap shell at all, so a command picked from such a tree fell through to the bare
     // /system/bin/sh fallback and failed with its "inaccessible or not found" instead of
     // whatever apt/coreutils would have actually said.
+    //
+    // bin/bash not executing is the one failure this repairs before giving up on it: it's also
+    // exactly what a stale exec-exempt link looks like (see repairExecLinks's own doc comment) -
+    // a routine app update, not a corrupted or missing install - so a single cheap relink pass is
+    // tried here before this reports "not installed" and TerminalActivity's own onCreate falls
+    // back to wiping the prefix and re-downloading the whole multi-megabyte archive from scratch.
     fun isInstalled(context: Context): Boolean {
         val usrDir = prefixDir(context)
-        return usrDir.isDirectory && File(usrDir, "bin").isDirectory && File(usrDir, "bin/bash").canExecute()
+        if (!usrDir.isDirectory || !File(usrDir, "bin").isDirectory) return false
+        val bash = File(usrDir, "bin/bash")
+        if (bash.canExecute()) return true
+        repairExecLinks(context)
+        return bash.canExecute()
+    }
+
+    /**
+     * Re-links every manifest-covered exec-exempt binary/library (see [BootstrapManifest]) against
+     * the CURRENT [Context.getApplicationInfo]`.nativeLibraryDir`. Android assigns that directory a
+     * new path on every reinstall or update of this APK - even though the rest of a bootstrap
+     * install ([prefixDir], extracted once) is completely unaffected by that - so the links
+     * [extractBootstrap] created against the PREVIOUS install's nativeLibraryDir go stale purely
+     * from updating the app, with nothing actually wrong in the extracted rootfs itself. A no-op
+     * when [prefixDir] doesn't exist yet (nothing to repair before a first bootstrap) and equally a
+     * no-op once every link already resolves, so safe to call unconditionally.
+     */
+    private fun repairExecLinks(context: Context) {
+        val prefix = prefixDir(context)
+        if (!prefix.isDirectory) return
+        linkManifestEntries(prefix, context.applicationInfo.nativeLibraryDir)
     }
 
     fun bootstrap(context: Context, client: OkHttpClient): Flow<String> = flow {
@@ -203,8 +229,15 @@ object DistroManager {
             }
         }
         linkMainRepoKeyring(prefix)
+        linkManifestEntries(prefix, nativeLibraryDir)
+        writeAptConf(prefix)
+    }
 
-        for ((realPath, flatName) in manifest) {
+    // Shared by extractBootstrap (fresh install) and repairExecLinks (an existing install whose
+    // links now point at a previous, no-longer-valid nativeLibraryDir) - see repairExecLinks's own
+    // doc comment for why that happens on nothing more than a routine app update.
+    private fun linkManifestEntries(prefix: File, nativeLibraryDir: String) {
+        for ((realPath, flatName) in BootstrapManifest.ENTRIES) {
             val linkFile = File(prefix, realPath)
             linkFile.parentFile?.mkdirs()
             linkFile.delete()
@@ -226,8 +259,6 @@ object DistroManager {
                 }
             }
         }
-
-        writeAptConf(prefix)
     }
 
     // The bootstrap zip's own SYMLINKS.txt wires every *community* keyring under
