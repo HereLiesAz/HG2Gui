@@ -169,6 +169,10 @@ object Azphalt {
     const val DROP_MS = 420 / 3
     const val SWING_MS = 520 / 3
     const val LIFT_FRACTION = 0.90f
+    // How much of a Cascade/Telescope row's own motion its fade-in takes: fast enough that the
+    // parked, pre-swing pill never flashes into view, short enough that the swing/draw-out itself
+    // - the actual point of the entrance - plays out visibly instead of hiding behind it.
+    const val REVEAL_FRACTION = 1f / 6f
     // Stack Entrances' own Unfold variant - a capsule revealed by growing in length, the same
     // 420ms figure already documented for that primitive in the motion sheet and reused as-is
     // (FLOOD_MS in PillWrapReveal.kt/PillPerimeterReveal.kt) rather than a new duration.
@@ -847,9 +851,12 @@ private data class StackEntrancePose(
     // canvas or at zero width - a trick that never actually worked, since rotating a full 360°
     // reads identically to 0° and each row's width cycles (see rootWidthFraction) rather than
     // shrinking monotonically, so a wider waiting row is never reliably covered by a narrower one
-    // in front of it. Those two variants instead start this at 0 and only raise it to 1 in lockstep
-    // with the same final-lift window that moves the row into its real resting spot, so nothing of
-    // the real pill is ever visible before it is actually being placed there.
+    // in front of it. Those two variants instead start this at 0, so nothing of the real pill is
+    // visible while it's still parked behind its predecessor waiting its turn - but it fades back
+    // in over Azphalt.REVEAL_FRACTION once its OWN motion actually begins, not withheld until the
+    // final lift lands: holding it at 0 across the whole swing/draw-out (as this first shipped)
+    // hid the very motion the entrance exists to show, so the pill only ever seemed to "pop" into
+    // its resting row with no visible cascade at all.
     val alpha: Float = 1f
 )
 
@@ -1013,14 +1020,10 @@ private class StackEntranceMotion(pose: StackEntrancePose) {
                 })
             }
             launch {
-                // Alpha rides the same final-tenth window lift does, so the real pill only ever
-                // becomes visible as it lands, never while still rotating in behind its neighbor.
-                alpha.animateTo(1f, keyframes {
-                    durationMillis = step
-                    0f at 0 using LinearEasing
-                    0f at (step * Azphalt.LIFT_FRACTION).toInt() using LinearEasing
-                    1f at step
-                })
+                // Fades in as soon as the turn actually starts unwinding, not held until the
+                // final-tenth lift - holding it that long hid the swing itself, the one thing
+                // this entrance exists to show, and left only a pop at the very end to look at.
+                alpha.animateTo(1f, tween((step * Azphalt.REVEAL_FRACTION).toInt(), easing = LinearEasing))
             }
         }
     }
@@ -1216,12 +1219,10 @@ private fun ChildPill(
             })
         }
         launch {
-            // Rides the same final-tenth window lift does, so the real pill only ever becomes
-            // visible as it lands, never while still turning in behind its predecessor.
-            pillAlpha.animateTo(1f, keyframes {
-                durationMillis = Azphalt.SWING_MS
-                0f at (Azphalt.SWING_MS * Azphalt.LIFT_FRACTION).toInt() using LinearEasing
-            })
+            // Fades in as soon as the turn actually starts unwinding, not held until the
+            // final-tenth lift - holding it that long hid the swing itself, the one thing this
+            // entrance exists to show, and left only a pop at the very end to look at.
+            pillAlpha.animateTo(1f, tween((Azphalt.SWING_MS * Azphalt.REVEAL_FRACTION).toInt(), easing = LinearEasing))
         }
     }
 
