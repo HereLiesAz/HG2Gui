@@ -23,14 +23,32 @@ enum class StackEntrance(val weight: Int) {
     Deal(WEIGHT_OCCASIONAL),
     Telescope(WEIGHT_OCCASIONAL),
     Split(WEIGHT_RARE),
-    Rally(WEIGHT_RARE);
+    Rally(WEIGHT_RARE),
+    Extend(WEIGHT_OCCASIONAL),
+    Unroll(WEIGHT_OCCASIONAL),
+    Tumble(WEIGHT_OCCASIONAL);
 
     companion object {
         private var last: StackEntrance? = null
 
-        /** Excludes whatever ran last, so the variation is actually perceptible. */
-        fun roll(random: Random = Random.Default): StackEntrance {
-            val pool = entries.filter { it != last }
+        // Unroll and Tumble are a root-stack-only flourish - a wide, staggered wave reads fine
+        // sweeping across a whole screen of rows, but a child band is only ever a handful of
+        // pills tall, where that same overlap reads as indistinguishable from Cascade itself.
+        // Cascade already covers "the child hinge" for a band; these two are the ROOT borrowing
+        // it back, not something a band needs a version of too.
+        private val CHILD_BAND_POOL = entries.filterNot { it == Unroll || it == Tumble }
+
+        /** Excludes whatever ran last, so the variation is actually perceptible. Shared across
+         *  root and child-band rolls on purpose - a child band opening still "spends" a turn, so
+         *  the root doesn't keep re-rolling the same handful of variants around it. */
+        fun roll(random: Random = Random.Default): StackEntrance = rollFrom(entries, random)
+
+        /** Same lottery, restricted to the entrances a child band can actually use - see
+         *  [CHILD_BAND_POOL]'s own doc comment. */
+        fun rollForChildBand(random: Random = Random.Default): StackEntrance = rollFrom(CHILD_BAND_POOL, random)
+
+        private fun rollFrom(candidates: List<StackEntrance>, random: Random): StackEntrance {
+            val pool = candidates.filter { it != last }
             var n = random.nextInt(pool.sumOf { it.weight })
             for (e in pool) {
                 if (n < e.weight) {

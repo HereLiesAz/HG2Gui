@@ -16,6 +16,7 @@ import androidx.biometric.BiometricPrompt
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Text
@@ -66,6 +67,8 @@ import com.hereliesaz.hg2gui.ui.AiSettingsScreen
 import com.hereliesaz.hg2gui.ui.BackStepState
 import com.hereliesaz.hg2gui.ui.ConfirmDialog
 import com.hereliesaz.hg2gui.ui.HG2GuiTheme
+import com.hereliesaz.hg2gui.ui.JobProgressBar
+import com.hereliesaz.hg2gui.ui.JobProgressBarState
 import com.hereliesaz.hg2gui.ui.McpServerScreen
 import com.hereliesaz.hg2gui.ui.SessionUiState
 import com.hereliesaz.hg2gui.ui.SettingsScreen
@@ -110,10 +113,28 @@ private const val PREFS_NAME = "hg2gui_prefs"
 private const val PREF_FULLSCREEN = "fullscreen"
 private const val PREF_FONT_SCALE_PERCENT = "font_scale_percent"
 
+// DistroManager.bootstrap()'s own progress line - "Downloaded: 12MB / 40MB" - parsed rather than
+// having that Flow<String> emit structured progress instead, which would ripple the shared
+// TerminalEngine.run contract every other command (a real shell command, a Builtin) also uses.
+// Total is "?" when the server didn't report Content-Length, which this simply doesn't match -
+// no fraction to show without a real denominator, so the bar just holds wherever it last was.
+private val BOOTSTRAP_PROGRESS_LINE = Regex("""Downloaded: (\d+)MB / (\d+)MB""")
+
+internal fun bootstrapDownloadFraction(line: String): Float? =
+    BOOTSTRAP_PROGRESS_LINE.find(line)?.destructured?.let { (downloaded, total) ->
+        total.toFloatOrNull()?.takeIf { it > 0f }?.let { totalMb ->
+            (downloaded.toFloat() / totalMb).coerceIn(0f, 1f)
+        }
+    }
+
 class TerminalActivity : FragmentActivity() {
 
     private var sessions by mutableStateOf(listOf<TerminalSession>())
     private var nextSessionNumber = 2
+    // Non-null only while the first-launch bootstrap download is in flight - see the
+    // JobProgressBar overlay and its own doc comment for why this tracks real byte progress
+    // rather than the fixed, indeterminate timeline the Motion Sheet's own demo uses.
+    private var bootstrapProgress by mutableStateOf<JobProgressBarState?>(null)
 
     private enum class Screen { Terminal, Settings, Guide, Files, Mcp, Ai, AiSettings, Azp }
 
@@ -449,11 +470,24 @@ class TerminalActivity : FragmentActivity() {
                     firstUi.running = true
                     val entryId = firstUi.buffer.size
                     firstUi.buffer = firstUi.buffer + TerminalHistoryEntry(command = "bootstrap", isRunning = true)
+                    // "job"/"fail" (Motion Sheet): a real progress bar for the one long-running
+                    // task this app has real byte-count data for, replacing what used to be only
+                    // a wall of scrolling "Downloaded: XMB / YMB" text lines.
+                    val progress = JobProgressBarState()
+                    bootstrapProgress = progress
+                    var failed = false
                     built.engine.run("bootstrap", onNeedInput = { "" }).collect { output ->
                         firstUi.buffer = firstUi.buffer.mapIndexed { i, e ->
                             if (i == entryId) e.copy(output = output) else e
                         }
+                        if (output.startsWith("Error")) {
+                            failed = true
+                        } else {
+                            bootstrapDownloadFraction(output)?.let { progress.advanceTo(it) }
+                        }
                     }
+                    if (failed) progress.fail() else progress.complete()
+                    bootstrapProgress = null
                     firstUi.buffer = firstUi.buffer.mapIndexed { i, e ->
                         if (i == entryId) e.copy(isRunning = false) else e
                     }
@@ -846,6 +880,15 @@ class TerminalActivity : FragmentActivity() {
                     else -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text("Loading…")
                     }
+                }
+
+                bootstrapProgress?.let { progress ->
+                    JobProgressBar(
+                        state = progress,
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
                 }
 
                 azpTrustConfirm?.let { (listing, decision) ->
