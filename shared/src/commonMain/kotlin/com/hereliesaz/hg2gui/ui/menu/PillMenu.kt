@@ -747,9 +747,11 @@ private data class StackPillContext(
     val entrance: StackEntrance
 )
 
-// The wobble accompanies any entrance that travels as a pile. Three are excluded, for the same
-// reason: Unfold does not move at all, while Cascade and Deal move one row at a time. A sway
-// needs a pile in motion together; a single pill swinging alone has nothing to sway against.
+// The wobble accompanies any entrance that travels as a pile. Six are excluded, for the same
+// reason: Unfold and Extend do not move at all (only their own width does), while Cascade,
+// Unroll, Tumble, and Deal move one row at a time (or in Unroll/Tumble's case, an overlapping
+// few at once, but still each on its own hinge). A sway needs a pile in motion together; a
+// single pill swinging (or growing) alone has nothing to sway against.
 private suspend fun playStackSway(
     sway: Animatable<Float, AnimationVector1D>,
     entering: Boolean,
@@ -758,7 +760,8 @@ private suspend fun playStackSway(
 ) {
     if (!entering) return
     val amplitudeScale = when (entrance) {
-        StackEntrance.Unfold, StackEntrance.Cascade, StackEntrance.Deal -> return
+        StackEntrance.Unfold, StackEntrance.Cascade, StackEntrance.Deal, StackEntrance.Extend,
+        StackEntrance.Unroll, StackEntrance.Tumble -> return
         StackEntrance.Rally -> 2f
         else -> 1f
     }
@@ -768,6 +771,9 @@ private suspend fun playStackSway(
 // The vertical component of every "pivot on the right (or left) tip" TransformOrigin below -
 // dead centre of the pill's own height, never the top or bottom edge.
 private const val ORIGIN_CENTER_Y = .5f
+// Tumble's own horizontal counterpart - dead centre of the pill's own width, for a pivot on its
+// top or bottom edge instead of a left/right tip.
+private const val ORIGIN_CENTER_X = .5f
 
 @Composable
 private fun StackPillVisual(
@@ -799,11 +805,19 @@ private fun StackPillVisual(
                 .graphicsLayer {
                     transformOrigin = when (ctx.entrance) {
                         StackEntrance.Deal -> TransformOrigin(1f, 1f) // hinged bottom-right
-                        StackEntrance.Cascade ->
+                        StackEntrance.Cascade, StackEntrance.Unroll ->
                             if (ctx.row % 2 == 0) {
                                 TransformOrigin(0f, ORIGIN_CENTER_Y)
                             } else {
                                 TransformOrigin(1f, ORIGIN_CENTER_Y)
+                            }
+                        // Tumble is Unroll's own wave with the hinge rotated 90 - top edge, then
+                        // bottom, alternating - instead of Cascade/Unroll's left-tip/right-tip.
+                        StackEntrance.Tumble ->
+                            if (ctx.row % 2 == 0) {
+                                TransformOrigin(ORIGIN_CENTER_X, 0f)
+                            } else {
+                                TransformOrigin(ORIGIN_CENTER_X, 1f)
                             }
                         else -> TransformOrigin(1f, ORIGIN_CENTER_Y) // the visible right end
                     }
@@ -836,6 +850,11 @@ private const val DEAL_START_X_FRACTION = 0.5f
 private const val DEAL_START_Y_MULTIPLIER = 2f
 private const val DEAL_TILT_DEG = 18f
 private const val TELESCOPE_STEP_MS = 120
+private const val EXTEND_ANCHOR_START_FRACTION = 0.62f
+// Unroll/Tumble's own per-row delay, as a fraction of the swing's own duration rather than a
+// fixed ms figure - short enough that several rows are visibly mid-swing at once, long enough
+// that the wave still reads as travelling row to row rather than firing all at once.
+private const val SWING_WAVE_STAGGER_FRACTION = 0.4f
 
 /** A [StackEntranceMotion]'s five Animatables, as plain values - see [initialPoseFor]. Defaults
  *  are the at-rest pose (nothing displaced), the correct starting point for a pill that mounts
@@ -880,7 +899,7 @@ private fun initialPoseFor(entering: Boolean, entrance: StackEntrance, row: Int,
         StackEntrance.Slide -> StackEntrancePose(offset = -OFFSCREEN_FRACTION)
         StackEntrance.Unfold -> StackEntrancePose(lenFrac = 0f)
         StackEntrance.Drop -> StackEntrancePose(riseY = -pitchPx * DROP_START_MULTIPLIER)
-        StackEntrance.Cascade -> StackEntrancePose(
+        StackEntrance.Cascade, StackEntrance.Unroll, StackEntrance.Tumble -> StackEntrancePose(
             riseY = pitchPx,
             turn = if (row % 2 == 0) -CASCADE_TURN_DEG else CASCADE_TURN_DEG,
             alpha = 0f
@@ -902,8 +921,14 @@ private fun initialPoseFor(entering: Boolean, entrance: StackEntrance, row: Int,
                 StackEntrancePose(riseY = pitchPx * row, alpha = 0f)
             }
         StackEntrance.Rally -> StackEntrancePose(offset = if (row % 2 == 0) -OFFSCREEN_FRACTION else OFFSCREEN_FRACTION)
+        StackEntrance.Extend -> extendPose(row)
     }
 }
+
+// Split out of initialPoseFor's own `when` to keep that function's cyclomatic complexity under
+// detekt's ceiling. The anchor row (0) starts already most of the way to its resting width - see
+// playExtend's own doc comment for why only row 0 is special-cased here.
+private fun extendPose(row: Int) = StackEntrancePose(lenFrac = if (row == 0) EXTEND_ANCHOR_START_FRACTION else 0f)
 
 private class StackEntranceMotion(pose: StackEntrancePose) {
     // Fraction of the pill's own width - see StackPill's own comment on why offsetByFractionOfParent
@@ -920,8 +945,9 @@ private class StackEntranceMotion(pose: StackEntrancePose) {
      * in - so this is also where a pill leaving mid-entrance (a host tapped again before a slow
      * entrance like Drop's wobble has settled) gets reset: a stray riseY/turn/tilt left over from
      * the interrupted entrance would otherwise leave the pill visibly off its row while it sweeps
-     * away. (Folded into one function rather than a separate resetToRest(), to keep this class's
-     * own function count under detekt's TooManyFunctions ceiling.)
+     * away. (Folded into one function rather than a separate resetToRest() - and, below, its own
+     * play() dispatch inlined here too rather than a separate function - to keep this class's own
+     * function count under detekt's TooManyFunctions ceiling.)
      */
     suspend fun enterOrLeave(
         entering: Boolean,
@@ -940,11 +966,9 @@ private class StackEntranceMotion(pose: StackEntrancePose) {
             offset.animateTo(leaveTarget, tween(Azphalt.SLIDE_MS, easing = LinearEasing))
             return
         }
-        play(entrance, geometry)
-    }
-
-    private suspend fun play(entrance: StackEntrance, geometry: StackRowGeometry) {
         // Not destructured (detekt caps that at 3 components) - read straight off the bundle.
+        // Folded into enterOrLeave rather than its own play() (as this once was), to keep this
+        // class's own function count under detekt's TooManyFunctions ceiling.
         val row = geometry.row
         val rowCount = geometry.rowCount
         val pitchPx = geometry.pitchPx
@@ -958,6 +982,11 @@ private class StackEntranceMotion(pose: StackEntrancePose) {
             StackEntrance.Split -> playSplit(row, pitchPx, restWidthFraction)
             StackEntrance.Telescope -> playTelescope(row, rowCount, pitchPx)
             StackEntrance.Rally -> playRally(row)
+            StackEntrance.Extend -> playExtend(row)
+            // Unroll and Tumble share playCascade's own mechanic at a shorter stagger - they
+            // differ only in which edge they hinge on, a StackPillVisual/TransformOrigin concern.
+            StackEntrance.Unroll, StackEntrance.Tumble ->
+                playCascade(row, rowCount, pitchPx, SWING_WAVE_STAGGER_FRACTION)
         }
     }
 
@@ -1000,30 +1029,35 @@ private class StackEntranceMotion(pose: StackEntrancePose) {
         riseY.animateTo(0f, tween(DROP_SETTLE_MS, easing = LinearEasing))
     }
 
-    private suspend fun playCascade(row: Int, rowCount: Int, pitchPx: Float) {
-        // The child hinge, applied to roots. Strictly sequential: a row does not begin until the
-        // one below it finishes.
-        val step = stackInterval(Azphalt.SWING_MS, rowCount)
+    // Shared by Cascade and Unroll/Tumble: the exact same hinge - full turn, lift folded into the
+    // final tenth - differing only in [staggerFraction] of the swing's own duration. Cascade's own
+    // 1f makes each row wait for the WHOLE previous swing (strictly sequential, one row finishes
+    // before the next begins); Unroll/Tumble's smaller fraction (see SWING_WAVE_STAGGER_FRACTION)
+    // starts the next row before the previous one lands, reading as a continuous wave instead of a
+    // one-at-a-time hand-off.
+    private suspend fun playCascade(row: Int, rowCount: Int, pitchPx: Float, staggerFraction: Float = 1f) {
+        val duration = stackInterval(Azphalt.SWING_MS, rowCount)
+        val stagger = (duration * staggerFraction).toInt()
         riseY.snapTo(pitchPx) // stacked on the row below
         turn.snapTo(if (row % 2 == 0) -CASCADE_TURN_DEG else CASCADE_TURN_DEG)
         alpha.snapTo(0f) // genuinely hidden - see StackEntrancePose's own doc comment
-        delay(row * step.toLong())
+        delay(row * stagger.toLong())
         coroutineScope {
-            launch { turn.animateTo(0f, tween(step, easing = LinearEasing)) }
+            launch { turn.animateTo(0f, tween(duration, easing = LinearEasing)) }
             launch {
                 // Lift folded into the final tenth, so turn and lift land on one frame.
                 riseY.animateTo(0f, keyframes {
-                    durationMillis = step
+                    durationMillis = duration
                     pitchPx at 0 using LinearEasing
-                    pitchPx at (step * Azphalt.LIFT_FRACTION).toInt() using LinearEasing
-                    0f at step
+                    pitchPx at (duration * Azphalt.LIFT_FRACTION).toInt() using LinearEasing
+                    0f at duration
                 })
             }
             launch {
                 // Fades in as soon as the turn actually starts unwinding, not held until the
                 // final-tenth lift - holding it that long hid the swing itself, the one thing
                 // this entrance exists to show, and left only a pop at the very end to look at.
-                alpha.animateTo(1f, tween((step * Azphalt.REVEAL_FRACTION).toInt(), easing = LinearEasing))
+                alpha.animateTo(1f, tween((duration * Azphalt.REVEAL_FRACTION).toInt(), easing = LinearEasing))
             }
         }
     }
@@ -1079,6 +1113,19 @@ private class StackEntranceMotion(pose: StackEntrancePose) {
         offset.snapTo(if (row % 2 == 0) -OFFSCREEN_FRACTION else OFFSCREEN_FRACTION)
         offset.animateTo(0f, tween(slide, easing = LinearEasing))
     }
+
+    private suspend fun playExtend(row: Int) {
+        // Nothing here ever moves - only lenFrac. Row 0 (the anchor) is already most of the way
+        // to its resting width and finishes growing first; every row above it starts from zero
+        // and only begins once the anchor's own growth completes, staggered the same 26ms/row
+        // Unfold already uses - the anchor extends, then its siblings unfold alongside it.
+        if (row == 0) {
+            lenFrac.animateTo(1f, tween(Azphalt.UNFOLD_MS, easing = Azphalt.PAGE_EASE))
+        } else {
+            delay(Azphalt.UNFOLD_MS.toLong() + (row - 1) * UNFOLD_STAGGER_MS)
+            lenFrac.animateTo(1f, tween(Azphalt.UNFOLD_MS, easing = Azphalt.PAGE_EASE))
+        }
+    }
 }
 
 @Composable
@@ -1132,7 +1179,11 @@ private fun ChildBand(
     onPick: (MenuNode) -> Unit
 ) {
     // No key needed here - the call site already wraps this whole band in key(anchor.id), so a
-    // new anchor tears down and recreates this state automatically.
+    // new anchor tears down and recreates this state automatically - including this roll, so
+    // drilling into a different category always has a chance at a fresh entrance, the same way
+    // the root stack rerolls on every arrival. See StackEntrance.rollForChildBand's own doc
+    // comment for why this pulls from a smaller pool than the root stack's own roll().
+    val entrance = remember { StackEntrance.rollForChildBand() }
     var selected by remember { mutableStateOf<String?>(null) }
     val stackScroll = rememberStackScroll(
         rowMin = BAND_BASE_ROW,
@@ -1145,11 +1196,13 @@ private fun ChildBand(
                 val isSelected = child.id == selected
                 ChildPill(
                     node = child,
-                    localIndex = idx,
-                    scrollOffsetPx = stackScroll.offsetPx,
-                    leaving = selected != null && !isSelected,
-                    droppingOut = isSelected,
-                    alignedRow = stackScroll.alignedRow,
+                    position = ChildPillPosition(idx, children.size, stackScroll.offsetPx),
+                    entrance = entrance,
+                    phase = ChildPillPhase(
+                        leaving = selected != null && !isSelected,
+                        droppingOut = isSelected,
+                        alignedRow = stackScroll.alignedRow
+                    ),
                     onClick = {
                         if (selected == null) {
                             selected = child.id
@@ -1162,79 +1215,234 @@ private fun ChildBand(
     }
 }
 
+/** A [ChildEntranceMotion]'s six Animatables, as plain values - see [initialChildPoseFor]. Unlike
+ *  [StackEntrancePose], [lift] is the pill's absolute translationY (this band's own BAND_BASE_ROW
+ *  offset baked in), not a rest-position-plus-delta split: [ChildPill]'s own droppingOut hand-off
+ *  moves the WHOLE lift value down to row 0 (becoming the next host), which a fixed "resting row"
+ *  the way [StackPillContext.restLift] has one can't express - there is no separate rest value to
+ *  hold steady while only a delta animates. */
+private data class ChildEntrancePose(
+    val offset: Float = 0f,
+    val lift: Float,
+    val lenFrac: Float = 1f,
+    val turn: Float = 0f,
+    val tilt: Float = 0f,
+    val alpha: Float = 1f
+)
+
+/**
+ * The pose a child band's own rolled [StackEntrance] snaps to before animating - the child-band
+ * equivalent of [initialPoseFor], seeding [ChildEntranceMotion] at construction for the same
+ * no-flash reason that one exists for. [absoluteRow] already includes [BAND_BASE_ROW]; [restLift]
+ * is where this pill sits once fully settled, the baseline every branch below displaces from.
+ */
+private fun initialChildPoseFor(entrance: StackEntrance, localIndex: Int, absoluteRow: Int, pitchPx: Float): ChildEntrancePose {
+    val restLift = -pitchPx * absoluteRow
+    return when (entrance) {
+        StackEntrance.Slide -> ChildEntrancePose(offset = -OFFSCREEN_FRACTION, lift = restLift)
+        StackEntrance.Unfold -> ChildEntrancePose(lenFrac = 0f, lift = restLift)
+        StackEntrance.Drop -> ChildEntrancePose(lift = restLift - pitchPx * DROP_START_MULTIPLIER)
+        StackEntrance.Cascade, StackEntrance.Unroll, StackEntrance.Tumble -> ChildEntrancePose(
+            lift = -pitchPx * (absoluteRow - 1).coerceAtLeast(BAND_BASE_ROW),
+            turn = if (localIndex % 2 == 0) -CASCADE_TURN_DEG else CASCADE_TURN_DEG,
+            alpha = 0f
+        )
+        StackEntrance.Deal -> ChildEntrancePose(
+            offset = DEAL_START_X_FRACTION,
+            lift = restLift + pitchPx * DEAL_START_Y_MULTIPLIER,
+            tilt = DEAL_TILT_DEG
+        )
+        // Root's Split starts as one pill at host width; a band has no separate host-width pill
+        // to borrow, so it starts stacked at the band's own bottom row instead - visually the
+        // same "starts compressed at one spot, divides upward" shape.
+        StackEntrance.Split -> ChildEntrancePose(offset = -OFFSCREEN_FRACTION, lift = -pitchPx * BAND_BASE_ROW)
+        StackEntrance.Telescope ->
+            if (localIndex == 0) {
+                ChildEntrancePose(offset = -OFFSCREEN_FRACTION, lift = restLift)
+            } else {
+                ChildEntrancePose(lift = -pitchPx * (absoluteRow - 1).coerceAtLeast(BAND_BASE_ROW), alpha = 0f)
+            }
+        StackEntrance.Rally -> ChildEntrancePose(
+            offset = if (localIndex % 2 == 0) -OFFSCREEN_FRACTION else OFFSCREEN_FRACTION,
+            lift = restLift
+        )
+        StackEntrance.Extend -> ChildEntrancePose(
+            lenFrac = if (localIndex == 0) EXTEND_ANCHOR_START_FRACTION else 0f,
+            lift = restLift
+        )
+    }
+}
+
+/** The child-band equivalent of [StackEntranceMotion] - see [ChildEntrancePose]'s own doc comment
+ *  for why this doesn't just reuse that class directly. */
+private class ChildEntranceMotion(pose: ChildEntrancePose) {
+    val offset = Animatable(pose.offset)
+    val lift = Animatable(pose.lift)
+    val lenFrac = Animatable(pose.lenFrac)
+    val turn = Animatable(pose.turn)
+    val tilt = Animatable(pose.tilt)
+    val alpha = Animatable(pose.alpha)
+
+    suspend fun play(entrance: StackEntrance, localIndex: Int, rowCount: Int, pitchPx: Float, absoluteRow: Int) {
+        val restLift = -pitchPx * absoluteRow
+        when (entrance) {
+            StackEntrance.Slide -> playSlide(restLift)
+            StackEntrance.Unfold -> playUnfold(localIndex, restLift)
+            StackEntrance.Drop -> playDrop(restLift, pitchPx)
+            StackEntrance.Cascade -> playCascade(localIndex, absoluteRow, pitchPx)
+            // Unroll/Tumble aren't in a child band's own roll pool (see
+            // StackEntrance.rollForChildBand's doc comment) - handled here anyway so this `when`
+            // stays exhaustive over the whole enum rather than an arbitrary subset of it.
+            StackEntrance.Unroll, StackEntrance.Tumble -> playCascade(localIndex, absoluteRow, pitchPx)
+            StackEntrance.Deal -> playDeal(localIndex, rowCount, restLift)
+            StackEntrance.Split -> playSplit(restLift)
+            StackEntrance.Telescope -> playTelescope(localIndex, rowCount, restLift)
+            StackEntrance.Rally -> playRally(restLift)
+            StackEntrance.Extend -> playExtend(localIndex, restLift)
+        }
+    }
+
+    private suspend fun playSlide(restLift: Float) {
+        lift.snapTo(restLift)
+        offset.animateTo(0f, tween(Azphalt.SLIDE_MS, easing = LinearEasing))
+    }
+
+    private suspend fun playUnfold(localIndex: Int, restLift: Float) {
+        lift.snapTo(restLift)
+        delay(localIndex * UNFOLD_STAGGER_MS)
+        lenFrac.animateTo(1f, tween(Azphalt.UNFOLD_MS, easing = Azphalt.PAGE_EASE))
+    }
+
+    private suspend fun playDrop(restLift: Float, pitchPx: Float) {
+        lift.animateTo(restLift + pitchPx * DROP_SHORT_FRACTION, tween(Azphalt.SLIDE_MS, easing = LinearEasing))
+        lift.animateTo(restLift, tween(DROP_SETTLE_MS, easing = LinearEasing))
+    }
+
+    private suspend fun playCascade(localIndex: Int, absoluteRow: Int, pitchPx: Float) {
+        delay(localIndex * Azphalt.SWING_MS.toLong())
+        coroutineScope {
+            launch { turn.animateTo(0f, tween(Azphalt.SWING_MS, easing = LinearEasing)) }
+            launch {
+                // Lift folded into the final tenth, so turn and lift land on one frame.
+                lift.animateTo(-pitchPx * absoluteRow, keyframes {
+                    durationMillis = Azphalt.SWING_MS
+                    (-pitchPx * (absoluteRow - 1).coerceAtLeast(BAND_BASE_ROW)) at
+                        (Azphalt.SWING_MS * Azphalt.LIFT_FRACTION).toInt() using LinearEasing
+                })
+            }
+            launch {
+                // Fades in as soon as the turn actually starts unwinding - see the root stack's
+                // own playCascade for why this isn't held until the final-tenth lift instead.
+                alpha.animateTo(1f, tween((Azphalt.SWING_MS * Azphalt.REVEAL_FRACTION).toInt(), easing = LinearEasing))
+            }
+        }
+    }
+
+    private suspend fun playDeal(localIndex: Int, rowCount: Int, restLift: Float) {
+        val step = stackInterval(DEAL_STEP_MS, rowCount)
+        delay(localIndex * step.toLong())
+        coroutineScope {
+            launch { offset.animateTo(0f, tween(step * 2, easing = LinearEasing)) }
+            launch { lift.animateTo(restLift, tween(step * 2, easing = LinearEasing)) }
+            launch { tilt.animateTo(0f, tween(step * 2, easing = LinearEasing)) }
+        }
+    }
+
+    private suspend fun playSplit(restLift: Float) {
+        val slide = Azphalt.SLIDE_MS
+        coroutineScope {
+            launch { offset.animateTo(0f, tween(slide, easing = LinearEasing)) }
+            launch { lift.animateTo(restLift, tween(slide, easing = LinearEasing)) }
+        }
+    }
+
+    private suspend fun playTelescope(localIndex: Int, rowCount: Int, restLift: Float) {
+        val slide = Azphalt.SLIDE_MS
+        val step = stackInterval(TELESCOPE_STEP_MS, rowCount)
+        if (localIndex == 0) {
+            offset.animateTo(0f, tween(slide, easing = LinearEasing))
+        } else {
+            delay(slide + (localIndex - 1) * step.toLong())
+            coroutineScope {
+                launch { lift.animateTo(restLift, tween(step, easing = LinearEasing)) }
+                launch { alpha.animateTo(1f, tween(step, easing = LinearEasing)) }
+            }
+        }
+    }
+
+    private suspend fun playRally(restLift: Float) {
+        lift.snapTo(restLift)
+        offset.animateTo(0f, tween(Azphalt.SLIDE_MS, easing = LinearEasing))
+    }
+
+    private suspend fun playExtend(localIndex: Int, restLift: Float) {
+        lift.snapTo(restLift)
+        if (localIndex == 0) {
+            lenFrac.animateTo(1f, tween(Azphalt.UNFOLD_MS, easing = Azphalt.PAGE_EASE))
+        } else {
+            delay(Azphalt.UNFOLD_MS.toLong() + (localIndex - 1) * UNFOLD_STAGGER_MS)
+            lenFrac.animateTo(1f, tween(Azphalt.UNFOLD_MS, easing = Azphalt.PAGE_EASE))
+        }
+    }
+}
+
+/** [ChildPill]'s own position within its band, bundled to stay under detekt's LongParameterList
+ *  ceiling - see [StackPillPosition]'s equivalent role for the root stack. */
+private data class ChildPillPosition(val localIndex: Int, val rowCount: Int, val scrollOffsetPx: Float)
+
+/** The three booleans/row [ChildPill] needs to know where it sits in the pick hand-off - the
+ *  child-band equivalent of [StackPillPhase]. */
+private data class ChildPillPhase(val leaving: Boolean, val droppingOut: Boolean, val alignedRow: Int)
+
 @Composable
 private fun ChildPill(
     node: MenuNode,
-    localIndex: Int,
-    scrollOffsetPx: Float,
-    leaving: Boolean,
-    droppingOut: Boolean,
-    alignedRow: Int,
+    position: ChildPillPosition,
+    entrance: StackEntrance,
+    phase: ChildPillPhase,
     onClick: () -> Unit
 ) {
+    val (localIndex, rowCount, scrollOffsetPx) = position
+    // Not destructured (detekt caps that at 3 components) - read straight off the bundle.
+    val leaving = phase.leaving
+    val droppingOut = phase.droppingOut
+    val alignedRow = phase.alignedRow
+
     val density = LocalDensity.current
     val pitchPx = with(density) { ROW_PITCH.toPx() }
 
     val absoluteRow = BAND_BASE_ROW + localIndex
     val aligned = absoluteRow == alignedRow && !leaving && !droppingOut
 
-    val turn = remember(node.id) { Animatable(if (localIndex % 2 == 0) -360f else 360f) }
-    // A child begins exactly behind the pill before it - the first one row above the host (row 0
-    // belongs to the host's own trail), every later one behind wherever its predecessor lands -
-    // matching the keyframe's own 90%-hold target below exactly, or a pill three or more deep in
-    // the band would visibly drift upward through its held rows instead of sitting invisibly at
-    // the one it's hidden behind until the final 10% lift.
-    val lift = remember(node.id) { Animatable(-pitchPx * (absoluteRow - 1).coerceAtLeast(BAND_BASE_ROW)) }
-    // Position (lift) alone was never enough to actually hide a pill waiting behind its
-    // predecessor: rotating a full 360° (turn's own starting value below) reads identically to 0°,
-    // and childWidthFraction cycles rather than shrinking monotonically, so a wider waiting row
-    // isn't reliably covered by a narrower one in front of it either. This starts genuinely
-    // invisible and only rises to 1 in the same final-tenth window that lift actually moves the
-    // pill into its resting spot - see the entrance LaunchedEffect below.
-    val pillAlpha = remember(node.id) { Animatable(0f) }
+    val motion = remember(node.id) { ChildEntranceMotion(initialChildPoseFor(entrance, localIndex, absoluteRow, pitchPx)) }
     val leaveOffset = remember(node.id) { Animatable(0f) }
     val scale = remember(node.id) { Animatable(1f) }
-    // Only while leaving - a cascading child turns alone, not with a pile, so it has nothing to
-    // sway against; the band's siblings leaving together are a pile again. See PillWobble.kt.
+    // Only while leaving - a single child turns/grows alone, not with a pile, so it has nothing
+    // to sway against; the band's siblings leaving together are a pile again. See PillWobble.kt.
     val sway = remember(node.id) { Animatable(0f) }
 
     // Keyed on localIndex too, not just node.id: a band re-sort or a sibling filtered out changes
     // every subsequent localIndex without changing any id, so the delay computed from it would go
-    // stale silently - the cascade would keep the old ordering, arriving in a sequence that no
+    // stale silently - the entrance would keep the old ordering, arriving in a sequence that no
     // longer matches where the pills actually sit.
     LaunchedEffect(node.id, localIndex) {
-        delay((Azphalt.DROP_MS + localIndex * Azphalt.SWING_MS).toLong())
-        launch {
-            turn.animateTo(0f, keyframes {
-                durationMillis = Azphalt.SWING_MS
-                (if (localIndex % 2 == 0) -360f else 360f) at 0 using LinearEasing
-                (if (localIndex % 2 == 0) -36f else 36f) at (Azphalt.SWING_MS * Azphalt.LIFT_FRACTION).toInt() using LinearEasing
-                0f at Azphalt.SWING_MS
-            })
-        }
-        launch {
-            lift.animateTo(-pitchPx * absoluteRow, keyframes {
-                durationMillis = Azphalt.SWING_MS
-                (-pitchPx * (absoluteRow - 1).coerceAtLeast(BAND_BASE_ROW)) at (Azphalt.SWING_MS * Azphalt.LIFT_FRACTION).toInt() using LinearEasing
-            })
-        }
-        launch {
-            // Fades in as soon as the turn actually starts unwinding, not held until the
-            // final-tenth lift - holding it that long hid the swing itself, the one thing this
-            // entrance exists to show, and left only a pop at the very end to look at.
-            pillAlpha.animateTo(1f, tween((Azphalt.SWING_MS * Azphalt.REVEAL_FRACTION).toInt(), easing = LinearEasing))
-        }
+        delay(Azphalt.DROP_MS.toLong())
+        motion.play(entrance, localIndex, rowCount, pitchPx, absoluteRow)
     }
 
     // A newly-chosen pill drops to the shared bottom row and grows a little as it settles there;
     // its siblings leave exactly like the root stack's unselected pills do.
     LaunchedEffect(leaving, droppingOut) {
         if (droppingOut) {
-            // A tap can land while this pill is still mid-entrance (still hidden, alpha < 1) -
-            // becoming the host is its own reveal, so it must not stay invisible through it.
-            launch { pillAlpha.animateTo(1f, tween(Azphalt.DROP_MS, easing = LinearEasing)) }
-            launch { turn.animateTo(0f, tween(Azphalt.DROP_MS, easing = LinearEasing)) }
-            launch { lift.animateTo(0f, tween(Azphalt.DROP_MS, easing = LinearEasing)) }
+            // A tap can land while this pill is still mid-entrance (still hidden/offset/turned/
+            // narrowed) - becoming the host is its own reveal, so nothing here should stay
+            // parked in an entrance-only pose through it.
+            launch { motion.alpha.animateTo(1f, tween(Azphalt.DROP_MS, easing = LinearEasing)) }
+            launch { motion.turn.animateTo(0f, tween(Azphalt.DROP_MS, easing = LinearEasing)) }
+            launch { motion.lift.animateTo(0f, tween(Azphalt.DROP_MS, easing = LinearEasing)) }
+            launch { motion.offset.animateTo(0f, tween(Azphalt.DROP_MS, easing = LinearEasing)) }
+            launch { motion.lenFrac.animateTo(1f, tween(Azphalt.DROP_MS, easing = LinearEasing)) }
+            launch { motion.tilt.animateTo(0f, tween(Azphalt.DROP_MS, easing = LinearEasing)) }
             launch {
                 scale.animateTo(1.15f, tween(Azphalt.DROP_MS * 2 / 3, easing = LinearEasing))
                 scale.animateTo(1f, tween(Azphalt.DROP_MS / 3, easing = LinearEasing))
@@ -1245,30 +1453,66 @@ private fun ChildPill(
         }
     }
 
-    Box(Modifier.fillMaxSize().zIndex(if (droppingOut) 100f else 50f - absoluteRow)) {
+    ChildPillVisual(
+        ChildPillVisualContext(node, localIndex, entrance, aligned, droppingOut, absoluteRow, scrollOffsetPx),
+        ChildPillMotion(motion, leaveOffset, scale, sway),
+        onClick
+    )
+}
+
+/** Everything [ChildPillVisual] needs besides the Animatable bundles - see its own doc. */
+private data class ChildPillVisualContext(
+    val node: MenuNode,
+    val localIndex: Int,
+    val entrance: StackEntrance,
+    val aligned: Boolean,
+    val droppingOut: Boolean,
+    val absoluteRow: Int,
+    val scrollOffsetPx: Float
+)
+
+/** Every Animatable-holder [ChildPillVisual] paints from, bundled to stay under detekt's
+ *  LongParameterList ceiling - [entrance] is the entrance's own turn/lift/offset/lenFrac/tilt/
+ *  alpha, [leaveOffset]/[scale]/[sway] are the separate leaving/dropping-out flourishes. */
+private class ChildPillMotion(
+    val entrance: ChildEntranceMotion,
+    val leaveOffset: Animatable<Float, AnimationVector1D>,
+    val scale: Animatable<Float, AnimationVector1D>,
+    val sway: Animatable<Float, AnimationVector1D>
+)
+
+@Composable
+private fun ChildPillVisual(ctx: ChildPillVisualContext, motion: ChildPillMotion, onClick: () -> Unit) {
+    Box(Modifier.fillMaxSize().zIndex(if (ctx.droppingOut) 100f else 50f - ctx.absoluteRow)) {
         Pill(
-            label = node.label,
-            cap = node.cap,
+            label = ctx.node.label,
+            cap = ctx.node.cap,
             // Each pill in the band its own hue, the same way StackPill's root stack already
             // varies by the pill's own id rather than sharing one color across every row -
             // hueOwner is still threaded through for TrailCrumb, where a shared color is the
             // point (the trail reads as one continuous path off the host), just not here.
-            hue = Azphalt.hueOf(node.id),
+            hue = Azphalt.hueOf(ctx.node.id),
             // Same "ink means primed" treatment StackPill gives its own row-0-aligned pill.
-            selected = aligned,
+            selected = ctx.aligned,
             touchTargetHeight = ROW_PITCH,
             modifier = Modifier
                 .align(Alignment.BottomStart)
-                .fillMaxWidth(childWidthFraction(localIndex))
-                .offsetByFractionOfParent(CHILD_LEFT + leaveOffset.value)
+                .fillMaxWidth(childWidthFraction(ctx.localIndex) * motion.entrance.lenFrac.value)
+                .offsetByFractionOfParent(CHILD_LEFT + motion.leaveOffset.value + motion.entrance.offset.value)
                 .graphicsLayer {
-                    transformOrigin =
-                        if (localIndex % 2 == 0) TransformOrigin(0f, 0.5f) else TransformOrigin(1f, 0.5f)
-                    rotationZ = turn.value + sway.value
-                    translationY = lift.value + scrollOffsetPx
-                    scaleX = scale.value
-                    scaleY = scale.value
-                    alpha = pillAlpha.value
+                    transformOrigin = when (ctx.entrance) {
+                        StackEntrance.Deal -> TransformOrigin(1f, 1f) // hinged bottom-right
+                        StackEntrance.Cascade, StackEntrance.Unroll ->
+                            if (ctx.localIndex % 2 == 0) TransformOrigin(0f, 0.5f) else TransformOrigin(1f, 0.5f)
+                        StackEntrance.Tumble ->
+                            if (ctx.localIndex % 2 == 0) TransformOrigin(0.5f, 0f) else TransformOrigin(0.5f, 1f)
+                        else -> TransformOrigin(1f, 0.5f)
+                    }
+                    rotationZ = motion.entrance.turn.value + motion.entrance.tilt.value + motion.sway.value
+                    translationY = motion.entrance.lift.value + ctx.scrollOffsetPx
+                    scaleX = motion.scale.value
+                    scaleY = motion.scale.value
+                    alpha = motion.entrance.alpha.value
                 }
                 .clickable(onClick = onClick)
         )
