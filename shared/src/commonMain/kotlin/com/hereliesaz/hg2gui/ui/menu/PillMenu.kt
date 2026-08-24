@@ -846,8 +846,10 @@ private const val DROP_SHORT_FRACTION = 0.04f // of a row pitch, short of the re
 private const val DROP_SETTLE_MS = 60
 private const val CASCADE_TURN_DEG = 360f
 private const val DEAL_STEP_MS = 90
-private const val DEAL_START_X_FRACTION = 0.5f
-private const val DEAL_START_Y_MULTIPLIER = 2f
+// Genuinely offscreen: past the tile's own bottom-right corner, not a small nudge - the arrival
+// has to read as "from outside the frame" (docs/HG2Gui Stack Entrances.dc.html).
+private const val DEAL_START_X_FRACTION = 2.6f
+private const val DEAL_START_Y_MULTIPLIER = 6f
 private const val DEAL_TILT_DEG = 18f
 private const val TELESCOPE_STEP_MS = 120
 private const val EXTEND_ANCHOR_START_FRACTION = 0.62f

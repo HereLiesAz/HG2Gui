@@ -110,60 +110,71 @@ actual class ShellSession private constructor(
         // was - see the bootstrap RUNPATH fix's commit for the underlying bug. Pulled out for now
         // rather than shipping a shell tier known to carry the same defect unfixed; forAndroid()
         // goes straight to the Termux bootstrap.
+        /** The env every bootstrap-tier `bash -l` invocation needs - shared between [forAndroid]
+         *  and FullScreenPtySession (S1's full-screen surface), which spawns its own dedicated
+         *  bash rather than reusing a tab's already-running one. Null if the bootstrap isn't
+         *  installed or its bash isn't executable - see [forAndroid]'s own fallback chain for
+         *  what each of those means. */
+        fun bootstrapBashEnv(context: Context, home: File?): Pair<File, Map<String, String>>? {
+            val prefix = DistroManager.prefixDir(context)
+            val bash = File(prefix, "bin/bash")
+            if (!DistroManager.isInstalled(context) || !bash.canExecute()) return null
+            val bootstrapHome = home ?: DistroManager.homeDir(context)
+            if (!bootstrapHome.exists()) bootstrapHome.mkdirs()
+            val env = mapOf(
+                "HOME" to bootstrapHome.absolutePath,
+                "PREFIX" to prefix.absolutePath,
+                "PATH" to "${prefix.absolutePath}/bin",
+                "LD_LIBRARY_PATH" to "${prefix.absolutePath}/lib",
+                "TMPDIR" to "${prefix.absolutePath}/tmp",
+                "LANG" to "en_US.UTF-8",
+                // apt's own Dir::* defaults are compiled in against Termux's own package - this
+                // points it at the apt.conf DistroManager writes (with every Dir:: pointed at
+                // this app's real prefix instead) before it ever falls back to those. See
+                // DistroManager.writeAptConf's own doc comment for why a config file, not an env
+                // var alone, is what apt actually needs here.
+                "APT_CONFIG" to "${prefix.absolutePath}/etc/apt/apt.conf",
+                // apt.conf's Acquire::https::CaInfo covers apt itself; these are the same bundle
+                // for every other bootstrap-tier tool that talks TLS (curl, wget, git, ...) via
+                // the conventions each already knows to check.
+                "SSL_CERT_FILE" to "${prefix.absolutePath}/etc/tls/cert.pem",
+                "CURL_CA_BUNDLE" to "${prefix.absolutePath}/etc/tls/cert.pem",
+                // Only matters on the pty tier (a plain pipe was never a tty to begin with, so no
+                // ncurses program would trust TERM over it either way), but harmless to set
+                // regardless. ncurses' own compiled-in terminfo search path is baked in against
+                // Termux's own package the same way apt's Dir::* defaults are - TERMINFO
+                // overrides that with the copy this bootstrap actually ships, confirmed present
+                // at share/terminfo/x/xterm-256color.
+                "TERM" to "xterm-256color",
+                "TERMINFO" to "${prefix.absolutePath}/share/terminfo"
+            )
+            return bootstrapHome to env
+        }
+
         fun forAndroid(home: File?, context: Context): ShellSession {
             // Collected only to explain the last-resort fallback below, if it comes to that -
             // never surfaced when the bootstrap actually works.
             val reasons = mutableListOf<String>()
             val usePty = PtyPreference.isEnabled(context)
 
-            if (DistroManager.isInstalled(context)) {
-                val prefix = DistroManager.prefixDir(context)
-                val bash = File(prefix, "bin/bash")
-                if (bash.canExecute()) {
-                    val bootstrapHome = home ?: DistroManager.homeDir(context)
-                    if (!bootstrapHome.exists()) bootstrapHome.mkdirs()
-                    val env = mapOf(
-                        "HOME" to bootstrapHome.absolutePath,
-                        "PREFIX" to prefix.absolutePath,
-                        "PATH" to "${prefix.absolutePath}/bin",
-                        "LD_LIBRARY_PATH" to "${prefix.absolutePath}/lib",
-                        "TMPDIR" to "${prefix.absolutePath}/tmp",
-                        "LANG" to "en_US.UTF-8",
-                        // apt's own Dir::* defaults are compiled in against Termux's own package -
-                        // this points it at the apt.conf DistroManager writes (with every Dir::
-                        // pointed at this app's real prefix instead) before it ever falls back to
-                        // those. See DistroManager.writeAptConf's own doc comment for why a config
-                        // file, not an env var alone, is what apt actually needs here.
-                        "APT_CONFIG" to "${prefix.absolutePath}/etc/apt/apt.conf",
-                        // apt.conf's Acquire::https::CaInfo covers apt itself; these are the same
-                        // bundle for every other bootstrap-tier tool that talks TLS (curl, wget,
-                        // git, ...) via the conventions each already knows to check.
-                        "SSL_CERT_FILE" to "${prefix.absolutePath}/etc/tls/cert.pem",
-                        "CURL_CA_BUNDLE" to "${prefix.absolutePath}/etc/tls/cert.pem",
-                        // Only matters on the pty tier (a plain pipe was never a tty to begin
-                        // with, so no ncurses program would trust TERM over it either way), but
-                        // harmless to set regardless. ncurses' own compiled-in terminfo search
-                        // path is baked in against Termux's own package the same way apt's Dir::*
-                        // defaults are - TERMINFO overrides that with the copy this bootstrap
-                        // actually ships, confirmed present at share/terminfo/x/xterm-256color.
-                        "TERM" to "xterm-256color",
-                        "TERMINFO" to "${prefix.absolutePath}/share/terminfo"
-                    )
-                    val session = ShellSession(
-                        bootstrapHome, arrayOf(bash.absolutePath, "-l"), env, "bash (Termux bootstrap)", usePty
-                    )
-                    if (session.survivedStartup()) return session
-                    session.close()
-                    // The most likely real cause on a modern device: Android's blocked executing
-                    // binaries out of app-private storage since API 29 (write-xor-execute) unless
-                    // they're the APK's own bundled native libs - a downloaded-and-extracted
-                    // bin/bash never qualifies for that exemption on its own.
-                    reasons += "the Termux bootstrap's bash started but exited immediately - " +
-                        "possibly blocked from executing a binary extracted into app-private " +
-                        "storage (Android disallows this since API 29 unless it shipped in the APK)"
-                } else {
-                    reasons += "the Termux bootstrap's bash isn't executable"
-                }
+            val bootstrap = bootstrapBashEnv(context, home)
+            if (bootstrap != null) {
+                val (bootstrapHome, env) = bootstrap
+                val bash = File(env.getValue("PREFIX"), "bin/bash")
+                val session = ShellSession(
+                    bootstrapHome, arrayOf(bash.absolutePath, "-l"), env, "bash (Termux bootstrap)", usePty
+                )
+                if (session.survivedStartup()) return session
+                session.close()
+                // The most likely real cause on a modern device: Android's blocked executing
+                // binaries out of app-private storage since API 29 (write-xor-execute) unless
+                // they're the APK's own bundled native libs - a downloaded-and-extracted
+                // bin/bash never qualifies for that exemption on its own.
+                reasons += "the Termux bootstrap's bash started but exited immediately - " +
+                    "possibly blocked from executing a binary extracted into app-private " +
+                    "storage (Android disallows this since API 29 unless it shipped in the APK)"
+            } else if (DistroManager.isInstalled(context)) {
+                reasons += "the Termux bootstrap's bash isn't executable"
             } else {
                 reasons += "no Termux bootstrap is installed"
             }
