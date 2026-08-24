@@ -80,7 +80,11 @@ class McpTools(
             if (dir == null || !dir.isDirectory) {
                 ToolCallResult.Failure(McpJsonRpc.INVALID_PARAMS, "Not a directory: $path")
             } else {
-                val listing = (dir.listFiles() ?: emptyArray())
+                // TRASH-2: raw dir.listFiles() bypassed VfsManager's own trash-directory filter,
+                // the same gap vfsListDir (the GUI's own listing path) had - a paired agent could
+                // vfs.list the sandbox root, see ".trash", and vfs.write a stray file into it with
+                // no meta.json, which the next purgeExpiredTrash() sweep would silently delete.
+                val listing = VfsManager.listChildren(dir)
                     .sortedBy { it.name.lowercase() }
                     .joinToString("\n") { "${if (it.isDirectory) "d" else "f"} ${it.name}" }
                 ToolCallResult.Success(textContent(listing.ifEmpty { "(empty)" }))

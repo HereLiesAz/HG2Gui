@@ -22,6 +22,21 @@ data class VfsSearchResult(val entry: VfsEntry, val parentPath: String)
 
 data class StorageCategoryStat(val label: String, val bytes: Long)
 
+/**
+ * A trashed item, as this commonMain screen needs it - a copy of managers/VfsManager.kt's own
+ * (androidMain-only) TrashEntry, the same "shared UI, platform-only I/O" boundary [VfsEntry]
+ * itself already draws. [id] is opaque here; restoring/purging still happens by handing the
+ * whole entry back to the platform callback, not by this screen re-deriving anything from it.
+ */
+data class VfsTrashEntry(
+    val id: String,
+    val originalPath: String,
+    val name: String,
+    val isDirectory: Boolean,
+    val sizeBytes: Long,
+    val deletedAtMillis: Long
+)
+
 /** [totalCapacityBytes] and [usedCapacityBytes] are the real device/partition capacity and usage,
  *  when the platform can supply them (e.g. via `StatFs` on Android) - null when it can't, since
  *  commonMain has no cross-platform way to ask the OS how big the disk is or how full it is. The
