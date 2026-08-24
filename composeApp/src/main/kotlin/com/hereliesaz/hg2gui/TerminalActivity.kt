@@ -50,8 +50,10 @@ import com.hereliesaz.hg2gui.azp.AzpTrust
 import com.hereliesaz.hg2gui.azp.ScriptInstaller
 import com.hereliesaz.hg2gui.managers.AiSettings
 import com.hereliesaz.hg2gui.managers.AzpLibrary
+import com.hereliesaz.hg2gui.managers.CommandHistoryStore
 import com.hereliesaz.hg2gui.managers.ContactManager
 import com.hereliesaz.hg2gui.managers.OsContextStore
+import com.hereliesaz.hg2gui.managers.previewFile
 import com.hereliesaz.hg2gui.managers.PtyPreference
 import com.hereliesaz.hg2gui.managers.SshPresets
 import com.hereliesaz.hg2gui.managers.TerminalHistoryEntry
@@ -60,12 +62,17 @@ import com.hereliesaz.hg2gui.managers.WorkflowStore
 import com.hereliesaz.hg2gui.mcp.McpServerService
 import com.hereliesaz.hg2gui.terminal.Builtins
 import com.hereliesaz.hg2gui.terminal.DistroManager
+import com.hereliesaz.hg2gui.terminal.FullScreenPtySession
+import com.hereliesaz.hg2gui.terminal.ShellSession
 import com.hereliesaz.hg2gui.terminal.TerminalEngine
+import com.hereliesaz.hg2gui.terminal.fullScreenCommandOf
 import com.hereliesaz.hg2gui.util.GenericFileProvider
 import com.hereliesaz.hg2gui.util.Utils
 import com.hereliesaz.hg2gui.ui.AiSettingsScreen
 import com.hereliesaz.hg2gui.ui.BackStepState
 import com.hereliesaz.hg2gui.ui.ConfirmDialog
+import com.hereliesaz.hg2gui.ui.EnvironmentScreen
+import com.hereliesaz.hg2gui.ui.HistoryScreen
 import com.hereliesaz.hg2gui.ui.HG2GuiTheme
 import com.hereliesaz.hg2gui.ui.JobProgressBar
 import com.hereliesaz.hg2gui.ui.JobProgressBarState
@@ -91,9 +98,8 @@ import com.hereliesaz.hg2gui.ui.menu.FileBrowser
 import com.hereliesaz.hg2gui.ui.menu.MenuNode
 import com.hereliesaz.hg2gui.ui.menu.PerimeterRevealState
 import com.hereliesaz.hg2gui.ui.menu.PillPerimeterReveal
-import com.hereliesaz.hg2gui.ui.menu.PillWrapReveal
-import com.hereliesaz.hg2gui.ui.menu.PillWrapRevealState
 import com.hereliesaz.hg2gui.ui.ssh.SshFlow
+import com.hereliesaz.hg2gui.ui.terminal.FullScreenTerminalScreen
 import java.io.File
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -136,7 +142,7 @@ class TerminalActivity : FragmentActivity() {
     // rather than the fixed, indeterminate timeline the Motion Sheet's own demo uses.
     private var bootstrapProgress by mutableStateOf<JobProgressBarState?>(null)
 
-    private enum class Screen { Terminal, Settings, Guide, Files, Mcp, Ai, AiSettings, Azp }
+    private enum class Screen { Terminal, Settings, Guide, Files, Mcp, Ai, AiSettings, Azp, FullScreenApp, Environment, History }
 
     /** Confirms enabling shell.* MCP tools with a biometric prompt before persisting the flag -
      *  this is the one switch that lets a paired agent run arbitrary commands, so it gets a
@@ -233,6 +239,13 @@ class TerminalActivity : FragmentActivity() {
 
         setContent {
             var tree by remember { mutableStateOf<List<MenuNode>?>(null) }
+            // W1: recomputed whenever tree itself changes (initial load, a package-manager
+            // command, an OS-context switch) rather than threaded through every individual site
+            // that rebuilds tree - same data source, cheaper to keep in sync this way.
+            var knownCommands by remember { mutableStateOf<List<String>>(emptyList()) }
+            LaunchedEffect(tree) {
+                knownCommands = withContext(Dispatchers.IO) { CommandTree.knownCommandNames(this@TerminalActivity) }
+            }
             var activeSessionId by remember { mutableStateOf("") }
             var screen by remember {
                 mutableStateOf(if (intent?.getBooleanExtra(McpServerService.EXTRA_OPEN_MCP, false) == true) Screen.Mcp else Screen.Terminal)
@@ -266,6 +279,13 @@ class TerminalActivity : FragmentActivity() {
             // no warning today - this pauses on a tap first; a tab that's just sitting idle still
             // closes immediately, same as before.
             var closeSessionConfirm by remember { mutableStateOf<TerminalSession?>(null) }
+            // S1: set right before screen = Screen.FullScreenApp (onRun's dispatch below); torn
+            // down (session.kill()) on every exit path - back gesture, the ✕ pill, or the child
+            // process finishing on its own - so a killed/finished pty never lingers.
+            var fullScreenSession by remember { mutableStateOf<FullScreenPtySession?>(null) }
+            // W5: cleared every time History opens so a stale search from a previous visit
+            // doesn't linger; see CommandHistoryStore's own doc comment for the log itself.
+            var historyQuery by remember { mutableStateOf("") }
             fun closeSession(closing: TerminalSession) {
                 val remaining = sessions.filterNot { it.ui.id == closing.ui.id }
                 sessions = remaining
@@ -294,10 +314,10 @@ class TerminalActivity : FragmentActivity() {
                 }
             }
 
-            // "The pill becomes the page": the Files pill grows out around the screen edge,
-            // then the loop it closes floods with a vertical wipe that reveals the file
-            // explorer already open on its root - see PillWrapReveal.
-            val filesWrap = remember { PillWrapRevealState() }
+            // "The pill becomes the page": the Files pill runs the screen's full perimeter edge
+            // by edge, the same choreography every entrance into Files or the picker uses - see
+            // PillPerimeterReveal.
+            val filesWrap = remember { PerimeterRevealState() }
             var filesOrigin by remember { mutableStateOf(Rect.Zero) }
             val filesHue = remember { Azphalt.hues[Azphalt.hueOf("/")] }
             // Tracks whichever of open()/close() is currently driving filesWrap's Animatables, so
@@ -529,6 +549,13 @@ class TerminalActivity : FragmentActivity() {
                     screen == Screen.Guide && guideBackStep.canStepBack -> guideBackStep.stepBack()
                     screen == Screen.AiSettings -> screen = aiSettingsCameFrom
                     screen == Screen.Mcp -> screen = Screen.Settings
+                    screen == Screen.Environment -> screen = Screen.Settings
+                    screen == Screen.History -> screen = Screen.Settings
+                    screen == Screen.FullScreenApp -> {
+                        fullScreenSession?.kill()
+                        fullScreenSession = null
+                        screen = Screen.Terminal
+                    }
                     else -> screen = Screen.Terminal
                 }
             }
@@ -555,7 +582,32 @@ class TerminalActivity : FragmentActivity() {
                         },
                         onOpenMcpServer = { screen = Screen.Mcp },
                         onOpenAiSettings = { aiSettingsCameFrom = Screen.Settings; screen = Screen.AiSettings },
+                        onOpenEnvironment = { screen = Screen.Environment },
+                        onOpenHistory = { historyQuery = ""; screen = Screen.History },
                         onBack = { screen = Screen.Terminal }
+                    )
+
+                    screen == Screen.Environment -> {
+                        val bootstrap = ShellSession.bootstrapBashEnv(this@TerminalActivity, null)
+                        EnvironmentScreen(
+                            installed = bootstrap != null,
+                            env = bootstrap?.second.orEmpty(),
+                            onBack = { screen = Screen.Settings },
+                            fullscreen = fullscreen
+                        )
+                    }
+
+                    screen == Screen.History -> HistoryScreen(
+                        entries = CommandHistoryStore.search(this@TerminalActivity, historyQuery),
+                        query = historyQuery,
+                        onQueryChange = { historyQuery = it },
+                        onSelect = { command ->
+                            sessions.firstOrNull { it.ui.id == activeSessionId }?.ui?.inputText = command
+                            screen = Screen.Terminal
+                        },
+                        onBack = { screen = Screen.Settings },
+                        fullscreen = fullscreen,
+                        nowMillis = System.currentTimeMillis()
                     )
 
                     screen == Screen.AiSettings -> AiSettingsScreen(
@@ -753,6 +805,7 @@ class TerminalActivity : FragmentActivity() {
 
                     sessions.isNotEmpty() && currentTree != null -> TerminalScreen(
                         tree = currentTree,
+                        knownCommands = knownCommands,
                         sessions = sessions.map { it.ui },
                         activeSessionId = activeSessionId,
                         onSessionPick = { activeSessionId = it },
@@ -853,8 +906,35 @@ class TerminalActivity : FragmentActivity() {
                         onInterrupt = { sessionId ->
                             sessions.firstOrNull { it.ui.id == sessionId }?.engine?.interrupt()
                         },
-                        onRun = { sessionId, line, onOutput, onNeedInput, onExit, onStderr, onStyledOutput ->
+                        onRun = onRun@{ sessionId, line, onOutput, onNeedInput, onExit, onStderr, onStyledOutput ->
                             val session = sessions.first { it.ui.id == sessionId }
+                            // W5: recorded regardless of which path this takes below, or whether
+                            // the command later succeeds - a shell's own history does the same.
+                            CommandHistoryStore.record(this@TerminalActivity, session.ui.name, line, System.currentTimeMillis())
+                            val fullScreenCommand = fullScreenCommandOf(line)
+                            if (fullScreenCommand != null) {
+                                if (!PtyPreference.isEnabled(this@TerminalActivity)) {
+                                    onOutput(
+                                        "$fullScreenCommand needs a real pseudoterminal - enable " +
+                                            "\"Real pseudoterminal\" in Settings first"
+                                    )
+                                    onExit(1)
+                                } else {
+                                    val launched = FullScreenPtySession.launch(
+                                        this@TerminalActivity, session.engine.workingDirectory, line
+                                    )
+                                    if (launched == null) {
+                                        onOutput("no Termux bootstrap installed - can't run $fullScreenCommand")
+                                        onExit(1)
+                                    } else {
+                                        fullScreenSession = launched
+                                        screen = Screen.FullScreenApp
+                                        onOutput("opening $fullScreenCommand full-screen…")
+                                        onExit(0)
+                                    }
+                                }
+                                return@onRun
+                            }
                             session.engine.run(line, onNeedInput, onExit, onStderr, onStyledOutput)
                                 .collect { output -> onOutput(output) }
                             session.ui.cwd = session.engine.workingDirectory
@@ -874,6 +954,15 @@ class TerminalActivity : FragmentActivity() {
                                     CommandTree.from(this@TerminalActivity)
                                 }
                             }
+                        }
+                    )
+
+                    screen == Screen.FullScreenApp && fullScreenSession != null -> FullScreenTerminalScreen(
+                        holder = fullScreenSession!!,
+                        onExit = {
+                            fullScreenSession?.kill()
+                            fullScreenSession = null
+                            screen = Screen.Terminal
                         }
                     )
 
@@ -914,13 +1003,14 @@ class TerminalActivity : FragmentActivity() {
                 }
 
                 if (screen == Screen.Files || filesWrap.active) {
-                    PillWrapReveal(state = filesWrap, hue = filesHue) {
+                    PillPerimeterReveal(state = filesWrap, hue = filesHue) {
                         FilesScreen(
                             fullscreen = fullscreen,
                             nowMillis = System.currentTimeMillis(),
                             listDir = { path -> vfsListDir(path) },
                             search = { query -> vfsSearch(query) },
                             storageStats = { vfsStorageStats() },
+                            previewFile = { path -> withContext(Dispatchers.IO) { previewFile(this@TerminalActivity, path) } },
                             onOpenFile = { path ->
                                 scope.launch {
                                     val file = withContext(Dispatchers.IO) {

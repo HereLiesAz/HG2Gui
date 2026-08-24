@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.sp
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
 import com.hereliesaz.hg2gui.ui.menu.onPage
 import com.hereliesaz.hg2gui.ui.menu.pageBrush
+import com.hereliesaz.hg2gui.ui.theme.AzphaltSurface
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
@@ -46,12 +47,6 @@ import kotlinx.coroutines.launch
  */
 
 private const val COLUMNS = 3
-private val GRID_GAP = 6.dp
-private val ROD_WIDTH = 14.dp
-private val ROD_GAP = 4.dp
-private const val MORPH_MS = 480
-
-private data class Rect(val x: Float, val y: Float, val w: Float, val h: Float)
 
 @Composable
 fun FolderPicker(
@@ -144,27 +139,20 @@ fun FolderPicker(
 
 /** The grid rect (nothing open), the panel rect (this tile is open), or a rod rect (some other
  *  tile is open) for item [i] of [count], in px against a canvas [canvasWidthPx] wide. */
-private fun targetRect(i: Int, count: Int, openIndex: Int?, canvasWidthPx: Float, density: Density): Rect = with(density) {
-    val gapPx = GRID_GAP.toPx()
-    val tileSize = (canvasWidthPx - gapPx * (COLUMNS - 1)) / COLUMNS
-
-    when {
-        openIndex == null -> {
-            val row = i / COLUMNS
-            val col = i % COLUMNS
-            Rect(col * (tileSize + gapPx), row * (tileSize + gapPx), tileSize, tileSize)
-        }
-        openIndex == i -> {
-            Rect(0f, 0f, canvasWidthPx, tileSize * 1.6f)
-        }
-        else -> {
-            val rodWidthPx = ROD_WIDTH.toPx()
-            val rodGapPx = ROD_GAP.toPx()
-            val others = (0 until count).filter { it != openIndex }
-            val slot = others.indexOf(i)
-            val panelHeight = tileSize * 1.6f
-            Rect(slot * (rodWidthPx + rodGapPx), panelHeight + GRID_GAP.toPx(), rodWidthPx, tileSize * 0.7f)
-        }
+private fun targetRect(i: Int, count: Int, openIndex: Int?, canvasWidthPx: Float, density: Density): TileRect = when {
+    openIndex == null -> gridTileRect(i, COLUMNS, canvasWidthPx, density)
+    openIndex == i -> with(density) {
+        TileRect(0f, 0f, canvasWidthPx, gridTileSizePx(COLUMNS, canvasWidthPx, density) * 1.6f)
+    }
+    else -> {
+        val tileSize = gridTileSizePx(COLUMNS, canvasWidthPx, density)
+        val panelHeight = tileSize * 1.6f
+        val rodLengthPx = tileSize * 0.7f
+        val others = (0 until count).filter { it != openIndex }
+        rodTileRect(
+            others.indexOf(i), canvasWidthPx, rodLengthPx, density,
+            startY = panelHeight + with(density) { GRID_GAP.toPx() }
+        )
     }
 }
 
@@ -172,7 +160,7 @@ private fun targetRect(i: Int, count: Int, openIndex: Int?, canvasWidthPx: Float
 private fun MorphTile(
     label: String,
     hue: Color,
-    rect: Rect,
+    rect: TileRect,
     isOpen: Boolean,
     onClick: () -> Unit,
     onOpenDescend: () -> Unit
@@ -186,10 +174,10 @@ private fun MorphTile(
 
     LaunchedEffect(rect) {
         launchAll(
-            { x.animateTo(rect.x, tween(MORPH_MS, easing = easing)) },
-            { y.animateTo(rect.y, tween(MORPH_MS, easing = easing)) },
-            { w.animateTo(rect.w, tween(MORPH_MS, easing = easing)) },
-            { h.animateTo(rect.h, tween(MORPH_MS, easing = easing)) }
+            { x.animateTo(rect.x, tween(TILE_MORPH_MS, easing = easing)) },
+            { y.animateTo(rect.y, tween(TILE_MORPH_MS, easing = easing)) },
+            { w.animateTo(rect.w, tween(TILE_MORPH_MS, easing = easing)) },
+            { h.animateTo(rect.h, tween(TILE_MORPH_MS, easing = easing)) }
         )
     }
 
@@ -199,7 +187,15 @@ private fun MorphTile(
                 .offset { IntOffset(x.value.toInt(), y.value.toInt()) }
                 .width(w.value.toDp())
                 .height(h.value.toDp())
-                .clip(RoundedCornerShape(if (isOpen) 18.dp else if (w.value.toDp() < 20.dp) 999.dp else 13.dp))
+                .clip(
+                    if (isOpen) {
+                        AzphaltSurface.recordTile
+                    } else if (w.value.toDp() < 20.dp) {
+                        AzphaltSurface.capsule
+                    } else {
+                        AzphaltSurface.note
+                    }
+                )
                 .background(hue)
                 .clickable { if (isOpen) onOpenDescend() else onClick() }
                 .padding(if (isOpen) 14.dp else 6.dp),

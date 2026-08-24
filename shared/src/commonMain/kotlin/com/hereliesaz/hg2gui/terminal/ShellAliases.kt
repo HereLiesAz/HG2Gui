@@ -59,6 +59,18 @@ object ShellAliases {
         return null
     }
 
+    private const val MAX_COMMAND_NAME_COMPLETIONS = 5
+
+    /** W1 (docs/HG2Gui Termux Coverage.dc.html): "tab key does nothing" for a package name still
+     *  being typed - known command names (real PATH binaries plus this app's own builtins)
+     *  starting with [prefix], nearest matches first, capped at [limit]. Only meaningful while
+     *  [prefix] is still the whole line (no space yet) - the caller is responsible for that
+     *  check, same as [autosuggest] leaves whole-vs-partial-line judgment to its own caller. */
+    fun commandNameCompletions(prefix: String, known: List<String>, limit: Int = MAX_COMMAND_NAME_COMPLETIONS): List<String> {
+        if (prefix.isBlank()) return emptyList()
+        return known.filter { it != prefix && it.startsWith(prefix) }.sorted().take(limit)
+    }
+
     private val NOT_FOUND_PATTERNS = listOf("not found", "no such file or directory")
 
     fun looksLikeNotFound(output: String): Boolean {
