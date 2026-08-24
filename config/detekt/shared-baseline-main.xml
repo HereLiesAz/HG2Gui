@@ -15,6 +15,10 @@
     <ID>EmptyFunctionBlock:ShellSession.kt$DummyTerminalOutput${}</ID>
     <ID>FunctionNaming:AiSettingsScreen.kt$@Composable fun AiSettingsScreen( fullscreen: Boolean, apiKey: String?, onSave: (String?) -&gt; Unit, onBack: () -&gt; Unit )</ID>
     <ID>FunctionNaming:AiSettingsScreen.kt$@Composable private fun Eyebrow(text: String)</ID>
+    <ID>FunctionNaming:FullScreenTerminalScreen.kt$@Composable fun FullScreenTerminalScreen(holder: FullScreenPtySession, onExit: () -&gt; Unit)</ID>
+    <ID>FunctionNaming:FullScreenTerminalScreen.kt$@Composable private fun TerminalExtraKeysRow(holder: FullScreenPtySession)</ID>
+    <ID>FunctionNaming:FullScreenTerminalScreen.kt$@Composable private fun TerminalTopBar( holder: FullScreenPtySession, ctrlArmed: Boolean, onCtrlToggle: () -&gt; Unit, onExit: () -&gt; Unit )</ID>
+    <ID>FunctionNaming:FullScreenTerminalScreen.kt$@Suppress("LongParameterList") // A live pty grid's own layout state - every param is genuinely // distinct state the canvas/input pair below both need, not incidental plumbing. @Composable private fun TerminalGrid( holder: FullScreenPtySession, measurer: TextMeasurer, focusRequester: FocusRequester, ctrlArmed: Boolean, onCtrlConsumed: () -&gt; Unit, cellWidthPx: Int, cellHeightPx: Int, columns: Int, rows: Int, onGridSized: (Int, Int) -&gt; Unit, modifier: Modifier = Modifier )</ID>
     <ID>FunctionNaming:McpServerScreen.kt$@Composable fun McpServerScreen( fullscreen: Boolean, running: Boolean, port: Int, token: String?, shellExecEnabled: Boolean, onStart: () -&gt; Unit, onStop: () -&gt; Unit, onRequestShellExec: () -&gt; Unit, onDisableShellExec: () -&gt; Unit, onBack: () -&gt; Unit )</ID>
     <ID>FunctionNaming:McpServerScreen.kt$@Composable private fun McpSettingRow(title: String, description: String, control: @Composable () -&gt; Unit)</ID>
     <ID>FunctionNaming:McpServerScreen.kt$@Composable private fun McpToggle( leftLabel: String, rightLabel: String, rightSelected: Boolean, onSelectRight: (Boolean) -&gt; Unit )</ID>
@@ -115,6 +119,7 @@
     <ID>TooGenericExceptionCaught:VfsManager.kt$VfsManager$e: Exception</ID>
     <ID>TooManyFunctions:Builtins.kt$Builtins</ID>
     <ID>TooManyFunctions:CommandTree.kt$CommandTree</ID>
+    <ID>TooManyFunctions:FullScreenTerminalScreen.kt$com.hereliesaz.hg2gui.ui.terminal.FullScreenTerminalScreen.kt</ID>
     <ID>TooManyFunctions:ShellSession.kt$ShellSession</ID>
     <ID>TooManyFunctions:VfsManager.kt$VfsManager</ID>
     <ID>UnreachableCode:AzpLibrary.kt$AzpLibrary$for (skillId in skillIds) { if (remaining &lt;= 0) break val skillMd = root.resolve("skills/$skillId/SKILL.md") if (!skillMd.exists()) continue val text = skillMd.readText().take(remaining) remaining -= text.length out += skillId to text }</ID>

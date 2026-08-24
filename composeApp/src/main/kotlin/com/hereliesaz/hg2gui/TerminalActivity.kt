@@ -61,7 +61,9 @@ import com.hereliesaz.hg2gui.managers.WorkflowStore
 import com.hereliesaz.hg2gui.mcp.McpServerService
 import com.hereliesaz.hg2gui.terminal.Builtins
 import com.hereliesaz.hg2gui.terminal.DistroManager
+import com.hereliesaz.hg2gui.terminal.FullScreenPtySession
 import com.hereliesaz.hg2gui.terminal.TerminalEngine
+import com.hereliesaz.hg2gui.terminal.fullScreenCommandOf
 import com.hereliesaz.hg2gui.util.GenericFileProvider
 import com.hereliesaz.hg2gui.util.Utils
 import com.hereliesaz.hg2gui.ui.AiSettingsScreen
@@ -93,6 +95,7 @@ import com.hereliesaz.hg2gui.ui.menu.MenuNode
 import com.hereliesaz.hg2gui.ui.menu.PerimeterRevealState
 import com.hereliesaz.hg2gui.ui.menu.PillPerimeterReveal
 import com.hereliesaz.hg2gui.ui.ssh.SshFlow
+import com.hereliesaz.hg2gui.ui.terminal.FullScreenTerminalScreen
 import java.io.File
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -135,7 +138,7 @@ class TerminalActivity : FragmentActivity() {
     // rather than the fixed, indeterminate timeline the Motion Sheet's own demo uses.
     private var bootstrapProgress by mutableStateOf<JobProgressBarState?>(null)
 
-    private enum class Screen { Terminal, Settings, Guide, Files, Mcp, Ai, AiSettings, Azp }
+    private enum class Screen { Terminal, Settings, Guide, Files, Mcp, Ai, AiSettings, Azp, FullScreenApp }
 
     /** Confirms enabling shell.* MCP tools with a biometric prompt before persisting the flag -
      *  this is the one switch that lets a paired agent run arbitrary commands, so it gets a
@@ -265,6 +268,10 @@ class TerminalActivity : FragmentActivity() {
             // no warning today - this pauses on a tap first; a tab that's just sitting idle still
             // closes immediately, same as before.
             var closeSessionConfirm by remember { mutableStateOf<TerminalSession?>(null) }
+            // S1: set right before screen = Screen.FullScreenApp (onRun's dispatch below); torn
+            // down (session.kill()) on every exit path - back gesture, the ✕ pill, or the child
+            // process finishing on its own - so a killed/finished pty never lingers.
+            var fullScreenSession by remember { mutableStateOf<FullScreenPtySession?>(null) }
             fun closeSession(closing: TerminalSession) {
                 val remaining = sessions.filterNot { it.ui.id == closing.ui.id }
                 sessions = remaining
@@ -528,6 +535,11 @@ class TerminalActivity : FragmentActivity() {
                     screen == Screen.Guide && guideBackStep.canStepBack -> guideBackStep.stepBack()
                     screen == Screen.AiSettings -> screen = aiSettingsCameFrom
                     screen == Screen.Mcp -> screen = Screen.Settings
+                    screen == Screen.FullScreenApp -> {
+                        fullScreenSession?.kill()
+                        fullScreenSession = null
+                        screen = Screen.Terminal
+                    }
                     else -> screen = Screen.Terminal
                 }
             }
@@ -852,8 +864,32 @@ class TerminalActivity : FragmentActivity() {
                         onInterrupt = { sessionId ->
                             sessions.firstOrNull { it.ui.id == sessionId }?.engine?.interrupt()
                         },
-                        onRun = { sessionId, line, onOutput, onNeedInput, onExit, onStderr, onStyledOutput ->
+                        onRun = onRun@{ sessionId, line, onOutput, onNeedInput, onExit, onStderr, onStyledOutput ->
                             val session = sessions.first { it.ui.id == sessionId }
+                            val fullScreenCommand = fullScreenCommandOf(line)
+                            if (fullScreenCommand != null) {
+                                if (!PtyPreference.isEnabled(this@TerminalActivity)) {
+                                    onOutput(
+                                        "$fullScreenCommand needs a real pseudoterminal - enable " +
+                                            "\"Real pseudoterminal\" in Settings first"
+                                    )
+                                    onExit(1)
+                                } else {
+                                    val launched = FullScreenPtySession.launch(
+                                        this@TerminalActivity, session.engine.workingDirectory, line
+                                    )
+                                    if (launched == null) {
+                                        onOutput("no Termux bootstrap installed - can't run $fullScreenCommand")
+                                        onExit(1)
+                                    } else {
+                                        fullScreenSession = launched
+                                        screen = Screen.FullScreenApp
+                                        onOutput("opening $fullScreenCommand full-screen…")
+                                        onExit(0)
+                                    }
+                                }
+                                return@onRun
+                            }
                             session.engine.run(line, onNeedInput, onExit, onStderr, onStyledOutput)
                                 .collect { output -> onOutput(output) }
                             session.ui.cwd = session.engine.workingDirectory
@@ -873,6 +909,15 @@ class TerminalActivity : FragmentActivity() {
                                     CommandTree.from(this@TerminalActivity)
                                 }
                             }
+                        }
+                    )
+
+                    screen == Screen.FullScreenApp && fullScreenSession != null -> FullScreenTerminalScreen(
+                        holder = fullScreenSession!!,
+                        onExit = {
+                            fullScreenSession?.kill()
+                            fullScreenSession = null
+                            screen = Screen.Terminal
                         }
                     )
 
