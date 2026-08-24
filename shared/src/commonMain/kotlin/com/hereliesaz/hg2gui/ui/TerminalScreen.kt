@@ -45,7 +45,9 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.hereliesaz.hg2gui.managers.StyledSpan
 import com.hereliesaz.hg2gui.managers.TerminalHistoryEntry
+import com.hereliesaz.hg2gui.terminal.ChainOperator
 import com.hereliesaz.hg2gui.terminal.ShellAliases
+import com.hereliesaz.hg2gui.terminal.chainSegment
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
 import com.hereliesaz.hg2gui.ui.menu.onPage
 import com.hereliesaz.hg2gui.ui.menu.pageBrush
@@ -68,6 +70,17 @@ private const val MAX_BUFFER_ENTRIES = 200
 private fun SessionUiState.updateBufferEntry(entryId: Long, transform: (TerminalHistoryEntry) -> TerminalHistoryEntry) {
     buffer = buffer.map { entry -> if (entry.id == entryId) transform(entry) else entry }
 }
+
+/** The raw command text this session's picked tokens plus any trailing free text add up to,
+ *  trimmed - the same "resolved tokens, then whatever's still being typed" shape a fresh command
+ *  line, a chain pick (W3), and a pending-prompt answer all build from alike. */
+private fun SessionUiState.pendingSegment(): String = buildString {
+    if (tokens.isNotEmpty()) append(tokens.joinToString(" "))
+    if (inputText.isNotBlank()) {
+        if (isNotEmpty()) append(" ")
+        append(inputText.trim())
+    }
+}.trim()
 
 @Composable
 fun TerminalScreen(
@@ -116,24 +129,15 @@ fun TerminalScreen(
             // RUN doubles as SEND while a command is stalled waiting on us - the answer is
             // whatever's built up exactly like a normal command line would be, just handed to
             // the running process instead of starting a new one.
-            val answer = buildString {
-                if (session.tokens.isNotEmpty()) append(session.tokens.joinToString(" "))
-                if (session.inputText.isNotBlank()) {
-                    if (isNotEmpty()) append(" ")
-                    append(session.inputText.trim())
-                }
-            }.trim()
+            val answer = session.pendingSegment()
             session.tokens = emptyList()
             session.inputText = ""
             session.answerPrompt(answer)
         } else {
-            val fullLine = buildString {
-                if (session.tokens.isNotEmpty()) append(session.tokens.joinToString(" "))
-                if (session.inputText.isNotBlank()) {
-                    if (isNotEmpty()) append(" ")
-                    append(session.inputText.trim())
-                }
-            }.trim()
+            // W3: whatever earlier segments have already folded into composedPrefix ("ls | ")
+            // comes first - it always ends in its own trailing space when non-empty, so the
+            // current segment can just be appended directly after it with no extra separator.
+            val fullLine = (session.composedPrefix + session.pendingSegment()).trim()
 
             if (fullLine.isNotEmpty() && !session.running) {
                 session.running = true
@@ -148,6 +152,7 @@ fun TerminalScreen(
                 val execLine = ShellAliases.expand(lineToRun)
                 session.tokens = emptyList()
                 session.inputText = ""
+                session.composedPrefix = ""
 
                 // Add initial entry
                 val newEntry = TerminalHistoryEntry(command = lineToRun, isRunning = true)
@@ -312,30 +317,44 @@ fun TerminalScreen(
             }
         }
 
-        // The suggestion host, when it has anything to offer, rides along as just one more
-        // root in the same stack every other command lives in - not a second PillMenu next to
-        // it. Whichever of these lands last fans out from the row closest to the command line -
-        // a pending answer takes that spot over a suggestion, since it's the more urgent one.
+        // The suggestion and chain hosts, when either has anything to offer, ride along as just
+        // one more root in the same stack every other command lives in - not a second PillMenu
+        // next to it. Whichever of these lands last fans out from the row closest to the command
+        // line - a pending answer takes that spot over the other two, since it's the most urgent.
         val suggestionNode = suggestionNodeFor(active, knownCommands)
-        val effectiveTree = tree + listOfNotNull(suggestionNode, answerNode)
+        val chainNode = chainNodeFor(active)
+        val effectiveTree = tree + listOfNotNull(suggestionNode, chainNode, answerNode)
 
         PillMenu(
             roots = effectiveTree,
             modifier = Modifier.weight(if (active.buffer.isEmpty()) 1f else 0.6f).padding(horizontal = 20.dp, vertical = 12.dp),
             onRun = { picked, isTerminal ->
-                active.tokens = picked
-                // Opening a root pill fires this same callback with an empty `picked` before any
-                // child is actually chosen (PillMenu's openHost, mid-descent animation) - clearing
-                // inputText right then would erase whatever's still being typed, and for a
-                // contextual root like the suggestion host - which only exists in `roots` while
-                // inputText is non-blank - it'd vanish the host out from under its own
-                // still-descending animation before the child band ever gets to render, making the
-                // pill untappable. Only an actual pick (non-empty) should touch inputText.
-                if (picked.isNotEmpty()) active.inputText = ""
-                // A pick that just fully resolved every parameter a command needs runs right
-                // away instead of waiting for a separate tap on RUN - or, if a prompt is
-                // pending, sends the pick as that prompt's answer the same way.
-                if (isTerminal) executeCommand()
+                val chainOperator = chainOperatorFromPick(picked)
+                if (chainOperator != null) {
+                    // W3: this pick didn't resolve a command token, it named an operator to fold
+                    // the segment built so far behind - so it feeds composedPrefix instead of
+                    // tokens, and clears the segment fields for the next one rather than running
+                    // anything. chainNodeFor's own existence check (tokens/inputText both empty)
+                    // then makes the Chain host vanish next recomposition, same self-collapse
+                    // Suggest already relies on.
+                    active.composedPrefix = chainSegment(active.composedPrefix, active.pendingSegment(), chainOperator)
+                    active.tokens = emptyList()
+                    active.inputText = ""
+                } else {
+                    active.tokens = picked
+                    // Opening a root pill fires this same callback with an empty `picked` before
+                    // any child is actually chosen (PillMenu's openHost, mid-descent animation) -
+                    // clearing inputText right then would erase whatever's still being typed, and
+                    // for a contextual root like Suggest or Chain - which only exist in `roots`
+                    // while there's a segment to work with - it'd vanish the host out from under
+                    // its own still-descending animation before the child band ever gets to
+                    // render, making the pill untappable. Only an actual pick should touch it.
+                    if (picked.isNotEmpty()) active.inputText = ""
+                    // A pick that just fully resolved every parameter a command needs runs right
+                    // away instead of waiting for a separate tap on RUN - or, if a prompt is
+                    // pending, sends the pick as that prompt's answer the same way.
+                    if (isTerminal) executeCommand()
+                }
             },
             onWizard = onWizard,
             onCrumbPositioned = onCrumbPositioned
@@ -348,6 +367,7 @@ fun TerminalScreen(
         val maskInput = pendingPrompt != null && ShellAliases.looksLikePassword(pendingPrompt)
 
         CommandLine(
+            composedPrefix = active.composedPrefix,
             tokens = active.tokens,
             inputText = active.inputText,
             onInputTextChange = { active.inputText = it },
@@ -865,6 +885,10 @@ private fun SessionTabs(
 
 @Composable
 private fun CommandLine(
+    // W3: whatever earlier segments have already folded into a pipeline ("ls | grep foo | "),
+    // shown as plain already-resolved text ahead of the pill crumbs for the segment still being
+    // built - distinct from those crumbs since it can span more than the one command they show.
+    composedPrefix: String = "",
     tokens: List<String>,
     inputText: String,
     onInputTextChange: (String) -> Unit,
@@ -895,9 +919,19 @@ private fun CommandLine(
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Text(
-                    "$", 
+                    "$",
                     style = MaterialTheme.typography.titleMedium.copy(color = Azphalt.Yellow)
                 )
+                if (composedPrefix.isNotEmpty()) {
+                    Text(
+                        composedPrefix.trimEnd(),
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = Azphalt.Yellow.copy(alpha = .6f),
+                            fontSize = 12.sp,
+                            fontFamily = FontFamily.Monospace
+                        )
+                    )
+                }
                 tokens.forEach { t ->
                     Box(
                         Modifier
@@ -1004,6 +1038,40 @@ private fun suggestionNodeFor(session: SessionUiState, knownCommands: List<Strin
         label = "Suggest",
         children = children,
         emitsToken = false
+    )
+}
+
+// A chain-operator leaf's `value` (see chainNodeFor) so onRun's picked list can recognize the
+// pick without PillMenu itself needing to know Chain is special - a NUL prefix real command text
+// can never contain, so there's no ambiguity with an actual token a user typed or picked.
+private const val CHAIN_VALUE_PREFIX = "\u0000chain:"
+
+/** The [ChainOperator] a pick resolved to, if [picked] is a single chain-leaf value - i.e. the
+ *  pick came from [chainNodeFor]'s own children, not a real command pick. */
+private fun chainOperatorFromPick(picked: List<String>): ChainOperator? {
+    val value = picked.singleOrNull()?.takeIf { it.startsWith(CHAIN_VALUE_PREFIX) } ?: return null
+    return ChainOperator.entries.firstOrNull { it.name == value.removePrefix(CHAIN_VALUE_PREFIX) }
+}
+
+/**
+ * W3 (docs/HG2Gui Termux Coverage.dc.html): a "Chain" host, riding along next to Suggest, that
+ * offers one pill per [ChainOperator]. Picking one doesn't resolve a command token - TerminalScreen's
+ * onRun recognizes the pick via [chainOperatorFromPick] and folds the segment built so far into
+ * composedPrefix instead (see ChainOperator.kt's own doc comment for why a literal-prefix
+ * fold, not a parsed pipeline, is enough). Hidden with nothing built yet to chain from, or while
+ * a command's running or a prompt's pending - chaining onto mid-flight input doesn't make sense.
+ */
+private fun chainNodeFor(session: SessionUiState): MenuNode? {
+    val idle = !session.running && session.pendingPrompt == null
+    val hasSegment = session.tokens.isNotEmpty() || session.inputText.isNotBlank()
+    if (!idle || !hasSegment) return null
+    return MenuNode(
+        id = "chain",
+        label = "Chain",
+        emitsToken = false,
+        children = ChainOperator.entries.map { op ->
+            MenuNode(id = "chain-${op.name}", label = op.symbol, value = CHAIN_VALUE_PREFIX + op.name, cap = op.cap)
+        }
     )
 }
 
