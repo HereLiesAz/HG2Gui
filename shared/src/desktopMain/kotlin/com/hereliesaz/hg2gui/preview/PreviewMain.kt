@@ -1,11 +1,27 @@
 package com.hereliesaz.hg2gui.preview
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.singleWindowApplication
+import com.hereliesaz.hg2gui.ui.BackStepState
+import com.hereliesaz.hg2gui.ui.SessionUiState
+import com.hereliesaz.hg2gui.ui.TerminalScreen
+import com.hereliesaz.hg2gui.ui.guide.GuideReaderScreen
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
 import com.hereliesaz.hg2gui.ui.menu.MenuNode
 import com.hereliesaz.hg2gui.ui.menu.PillMenu
@@ -15,11 +31,13 @@ import com.hereliesaz.hg2gui.ui.menu.pageBrush
  * Dev tooling, not the real app: the real HG2Gui is Android-only (its actual shell execution,
  * biometrics, and Termux integration are all androidMain-specific), and Compose Hot Reload's MCP
  * server - the thing this whole desktop target exists for - only runs against a JVM target, which
- * Android isn't. Rather than block UI iteration entirely, this renders the pure-UI pieces of the
- * menu system - PillMenu, StackPill's entrance animations, the pill-stack layout this session's
- * own PRs #186/#187 touched - against mock data and no-op callbacks, so both a human at Android
- * Studio and an AI agent driving the hot-reload MCP server's click/screenshot/get_semantic_tree
- * tools can see and interact with the real composables, live, without a device or emulator.
+ * Android isn't. Rather than block UI iteration entirely, this renders the pure-UI, commonMain
+ * pieces of the app - PillMenu (and, riding along in it, StackPill's own entrance animations),
+ * the Guide reader, and TerminalScreen itself - against mock data and no-op callbacks, so both a
+ * human at Android Studio and an AI agent driving the hot-reload MCP server's click/screenshot/
+ * get_semantic_tree tools can see and interact with the real composables, live, without a device
+ * or emulator. The three androidMain-only screens (EnvironmentScreen, HistoryScreen,
+ * FullScreenTerminalScreen - all need a real Context) aren't previewable here for that reason.
  *
  * Run via `./gradlew :shared:hotRunDesktop` (or Android Studio's own "Run with Compose Hot
  * Reload" gutter action once IDE support for a non-default main function is configured); the MCP
@@ -40,11 +58,70 @@ fun main() {
     }
 }
 
+private enum class PreviewMode { PillMenu, Guide, Terminal }
+
 @Composable
 private fun PreviewRoot() {
+    var mode by remember { mutableStateOf(PreviewMode.PillMenu) }
+    Column(Modifier.fillMaxSize()) {
+        Row(Modifier.fillMaxWidth().background(Azphalt.Ink)) {
+            PreviewMode.entries.forEach { candidate ->
+                Text(
+                    candidate.name,
+                    color = if (candidate == mode) Azphalt.Yellow else Azphalt.White,
+                    modifier = Modifier.padding(12.dp).clickable { mode = candidate }
+                )
+            }
+        }
+        Box(Modifier.fillMaxSize()) {
+            when (mode) {
+                PreviewMode.PillMenu -> PillMenuPreview()
+                PreviewMode.Guide -> GuidePreview()
+                PreviewMode.Terminal -> TerminalPreview()
+            }
+        }
+    }
+}
+
+@Composable
+private fun PillMenuPreview() {
     Box(Modifier.fillMaxSize().background(Azphalt.currentGround.pageBrush())) {
         PillMenu(roots = mockCommandTree())
     }
+}
+
+@Composable
+private fun GuidePreview() {
+    val backStep = remember { BackStepState() }
+    GuideReaderScreen(fullscreen = true, onBack = {}, backStep = backStep)
+}
+
+@Composable
+private fun TerminalPreview() {
+    val session = remember { SessionUiState(id = "preview", name = "bash", cwd = "/data/data/com.hereliesaz.hg2gui/files/home") }
+    TerminalScreen(
+        tree = mockCommandTree(),
+        knownCommands = listOf("ls", "less", "ln", "locate", "git", "grep", "htop", "vim", "tmux", "curl", "ssh"),
+        sessions = listOf(session),
+        activeSessionId = session.id,
+        onSessionPick = {},
+        onNewSession = {},
+        onCloseSession = {},
+        fullscreen = true,
+        onOpenSettings = {},
+        onOpenGuide = {},
+        onOpenFiles = {},
+        onFilesButtonPositioned = {},
+        onWizard = {},
+        onCrumbPositioned = { _, _ -> },
+        onCopy = {},
+        onShare = {},
+        onInterrupt = {},
+        onRun = { _, line, onOutput, _, onExit, _, _ ->
+            onOutput("(preview - no real shell) would have run: $line")
+            onExit(0)
+        }
+    )
 }
 
 // A small, representative slice of the real command tree (see CommandTree.kt, androidMain-only

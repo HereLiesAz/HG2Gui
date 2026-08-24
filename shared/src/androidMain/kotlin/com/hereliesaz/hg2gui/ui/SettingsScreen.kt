@@ -34,6 +34,8 @@ fun SettingsScreen(
     onUsePtyChange: (Boolean) -> Unit,
     onOpenMcpServer: () -> Unit,
     onOpenAiSettings: () -> Unit,
+    onOpenEnvironment: () -> Unit,
+    onOpenHistory: () -> Unit,
     onBack: () -> Unit
 ) {
     Column(
@@ -105,6 +107,44 @@ fun SettingsScreen(
                 rightSelected = usePty,
                 onSelectRight = onUsePtyChange
             )
+        }
+
+        SettingRow(
+            title = "Environment",
+            description = "The PATH and env vars every command actually runs under - the same " +
+                "map ShellSession builds fresh for each bootstrap-tier session. Read-only."
+        ) {
+            Box(
+                Modifier
+                    .clip(RoundedCornerShape(percent = 50))
+                    .background(Azphalt.Ink)
+                    .clickable(onClick = onOpenEnvironment)
+                    .padding(horizontal = 16.dp, vertical = 9.dp)
+            ) {
+                Text(
+                    "VIEW ENVIRONMENT ›", color = Azphalt.Yellow,
+                    fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em
+                )
+            }
+        }
+
+        SettingRow(
+            title = "History",
+            description = "Every command run in any tab, searchable - not just the current " +
+                "tab's own up/down-arrow recall."
+        ) {
+            Box(
+                Modifier
+                    .clip(RoundedCornerShape(percent = 50))
+                    .background(Azphalt.Ink)
+                    .clickable(onClick = onOpenHistory)
+                    .padding(horizontal = 16.dp, vertical = 9.dp)
+            ) {
+                Text(
+                    "SEARCH HISTORY ›", color = Azphalt.Yellow,
+                    fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em
+                )
+            }
         }
 
         SettingRow(
