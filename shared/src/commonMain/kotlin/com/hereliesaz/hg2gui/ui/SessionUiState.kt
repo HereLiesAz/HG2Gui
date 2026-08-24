@@ -19,6 +19,11 @@ class SessionUiState(val id: String, name: String, cwd: String) {
     var historyIndex by mutableStateOf(-1)
     var tokens by mutableStateOf(listOf<String>())
     var inputText by mutableStateOf("")
+    // W3: a literal prefix, already ending in "<operator> " when non-empty, that earlier
+    // segments have folded into via the terminal's Chain pill (see ChainOperator.kt) -
+    // "ls | " while the user is still building the next segment to pipe into. Prepended to the
+    // line executeCommand sends and cleared once that line actually runs.
+    var composedPrefix by mutableStateOf("")
     var running by mutableStateOf(false)
 
     // The prompt text of a command that's stalled mid-run waiting on stdin, or null the rest of

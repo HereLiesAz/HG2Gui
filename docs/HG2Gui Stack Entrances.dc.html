@@ -282,7 +282,9 @@ const KT = {
     '',
     '            StackEntrance.Deal -> {',
     '                val step = stackInterval(90, rowCount)',
-    '                slideX.snapTo(0.5f); riseY.snapTo(pitchPx * 2f); tilt.snapTo(18f)',
+    '                // Genuinely offscreen: past the tile\'s own bottom-right corner, not a',
+    '                // small nudge - the arrival has to read as \\"from outside the frame\\".',
+    '                slideX.snapTo(2.6f); riseY.snapTo(pitchPx * 6f); tilt.snapTo(18f)',
     '                delay(row * step.toLong())',
     '                coroutineScope {',
     '                    launch { slideX.animateTo(0f, tween(step * 2, easing = LinearEasing)) }',
@@ -434,7 +436,7 @@ class Component extends DCLogic {
       pills.forEach((p, i) => {
         p.style.transformOrigin = '100% 100%';
         go(p, [
-          { translate: '50% ' + (PITCH * 2) + 'px', rotate: '18deg' },
+          { translate: '260% 220%', rotate: '18deg' },
           { translate: '0 0', rotate: '0deg' }
         ], s * 2, i * s);
       });
