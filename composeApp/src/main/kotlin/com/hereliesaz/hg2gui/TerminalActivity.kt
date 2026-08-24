@@ -50,6 +50,7 @@ import com.hereliesaz.hg2gui.azp.AzpTrust
 import com.hereliesaz.hg2gui.azp.ScriptInstaller
 import com.hereliesaz.hg2gui.managers.AiSettings
 import com.hereliesaz.hg2gui.managers.AzpLibrary
+import com.hereliesaz.hg2gui.managers.CommandHistoryStore
 import com.hereliesaz.hg2gui.managers.ContactManager
 import com.hereliesaz.hg2gui.managers.OsContextStore
 import com.hereliesaz.hg2gui.managers.previewFile
@@ -71,6 +72,7 @@ import com.hereliesaz.hg2gui.ui.AiSettingsScreen
 import com.hereliesaz.hg2gui.ui.BackStepState
 import com.hereliesaz.hg2gui.ui.ConfirmDialog
 import com.hereliesaz.hg2gui.ui.EnvironmentScreen
+import com.hereliesaz.hg2gui.ui.HistoryScreen
 import com.hereliesaz.hg2gui.ui.HG2GuiTheme
 import com.hereliesaz.hg2gui.ui.JobProgressBar
 import com.hereliesaz.hg2gui.ui.JobProgressBarState
@@ -140,7 +142,7 @@ class TerminalActivity : FragmentActivity() {
     // rather than the fixed, indeterminate timeline the Motion Sheet's own demo uses.
     private var bootstrapProgress by mutableStateOf<JobProgressBarState?>(null)
 
-    private enum class Screen { Terminal, Settings, Guide, Files, Mcp, Ai, AiSettings, Azp, FullScreenApp, Environment }
+    private enum class Screen { Terminal, Settings, Guide, Files, Mcp, Ai, AiSettings, Azp, FullScreenApp, Environment, History }
 
     /** Confirms enabling shell.* MCP tools with a biometric prompt before persisting the flag -
      *  this is the one switch that lets a paired agent run arbitrary commands, so it gets a
@@ -274,6 +276,9 @@ class TerminalActivity : FragmentActivity() {
             // down (session.kill()) on every exit path - back gesture, the ✕ pill, or the child
             // process finishing on its own - so a killed/finished pty never lingers.
             var fullScreenSession by remember { mutableStateOf<FullScreenPtySession?>(null) }
+            // W5: cleared every time History opens so a stale search from a previous visit
+            // doesn't linger; see CommandHistoryStore's own doc comment for the log itself.
+            var historyQuery by remember { mutableStateOf("") }
             fun closeSession(closing: TerminalSession) {
                 val remaining = sessions.filterNot { it.ui.id == closing.ui.id }
                 sessions = remaining
@@ -538,6 +543,7 @@ class TerminalActivity : FragmentActivity() {
                     screen == Screen.AiSettings -> screen = aiSettingsCameFrom
                     screen == Screen.Mcp -> screen = Screen.Settings
                     screen == Screen.Environment -> screen = Screen.Settings
+                    screen == Screen.History -> screen = Screen.Settings
                     screen == Screen.FullScreenApp -> {
                         fullScreenSession?.kill()
                         fullScreenSession = null
@@ -570,6 +576,7 @@ class TerminalActivity : FragmentActivity() {
                         onOpenMcpServer = { screen = Screen.Mcp },
                         onOpenAiSettings = { aiSettingsCameFrom = Screen.Settings; screen = Screen.AiSettings },
                         onOpenEnvironment = { screen = Screen.Environment },
+                        onOpenHistory = { historyQuery = ""; screen = Screen.History },
                         onBack = { screen = Screen.Terminal }
                     )
 
@@ -582,6 +589,19 @@ class TerminalActivity : FragmentActivity() {
                             fullscreen = fullscreen
                         )
                     }
+
+                    screen == Screen.History -> HistoryScreen(
+                        entries = CommandHistoryStore.search(this@TerminalActivity, historyQuery),
+                        query = historyQuery,
+                        onQueryChange = { historyQuery = it },
+                        onSelect = { command ->
+                            sessions.firstOrNull { it.ui.id == activeSessionId }?.ui?.inputText = command
+                            screen = Screen.Terminal
+                        },
+                        onBack = { screen = Screen.Settings },
+                        fullscreen = fullscreen,
+                        nowMillis = System.currentTimeMillis()
+                    )
 
                     screen == Screen.AiSettings -> AiSettingsScreen(
                         fullscreen = fullscreen,
@@ -880,6 +900,9 @@ class TerminalActivity : FragmentActivity() {
                         },
                         onRun = onRun@{ sessionId, line, onOutput, onNeedInput, onExit, onStderr, onStyledOutput ->
                             val session = sessions.first { it.ui.id == sessionId }
+                            // W5: recorded regardless of which path this takes below, or whether
+                            // the command later succeeds - a shell's own history does the same.
+                            CommandHistoryStore.record(this@TerminalActivity, session.ui.name, line, System.currentTimeMillis())
                             val fullScreenCommand = fullScreenCommandOf(line)
                             if (fullScreenCommand != null) {
                                 if (!PtyPreference.isEnabled(this@TerminalActivity)) {

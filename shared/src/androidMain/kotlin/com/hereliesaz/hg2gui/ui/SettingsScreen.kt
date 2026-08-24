@@ -35,6 +35,7 @@ fun SettingsScreen(
     onOpenMcpServer: () -> Unit,
     onOpenAiSettings: () -> Unit,
     onOpenEnvironment: () -> Unit,
+    onOpenHistory: () -> Unit,
     onBack: () -> Unit
 ) {
     Column(
@@ -122,6 +123,25 @@ fun SettingsScreen(
             ) {
                 Text(
                     "VIEW ENVIRONMENT ›", color = Azphalt.Yellow,
+                    fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em
+                )
+            }
+        }
+
+        SettingRow(
+            title = "History",
+            description = "Every command run in any tab, searchable - not just the current " +
+                "tab's own up/down-arrow recall."
+        ) {
+            Box(
+                Modifier
+                    .clip(RoundedCornerShape(percent = 50))
+                    .background(Azphalt.Ink)
+                    .clickable(onClick = onOpenHistory)
+                    .padding(horizontal = 16.dp, vertical = 9.dp)
+            ) {
+                Text(
+                    "SEARCH HISTORY ›", color = Azphalt.Yellow,
                     fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em
                 )
             }
