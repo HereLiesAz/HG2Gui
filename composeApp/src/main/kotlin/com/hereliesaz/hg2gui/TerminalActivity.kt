@@ -62,6 +62,7 @@ import com.hereliesaz.hg2gui.mcp.McpServerService
 import com.hereliesaz.hg2gui.terminal.Builtins
 import com.hereliesaz.hg2gui.terminal.DistroManager
 import com.hereliesaz.hg2gui.terminal.FullScreenPtySession
+import com.hereliesaz.hg2gui.terminal.ShellSession
 import com.hereliesaz.hg2gui.terminal.TerminalEngine
 import com.hereliesaz.hg2gui.terminal.fullScreenCommandOf
 import com.hereliesaz.hg2gui.util.GenericFileProvider
@@ -69,6 +70,7 @@ import com.hereliesaz.hg2gui.util.Utils
 import com.hereliesaz.hg2gui.ui.AiSettingsScreen
 import com.hereliesaz.hg2gui.ui.BackStepState
 import com.hereliesaz.hg2gui.ui.ConfirmDialog
+import com.hereliesaz.hg2gui.ui.EnvironmentScreen
 import com.hereliesaz.hg2gui.ui.HG2GuiTheme
 import com.hereliesaz.hg2gui.ui.JobProgressBar
 import com.hereliesaz.hg2gui.ui.JobProgressBarState
@@ -138,7 +140,7 @@ class TerminalActivity : FragmentActivity() {
     // rather than the fixed, indeterminate timeline the Motion Sheet's own demo uses.
     private var bootstrapProgress by mutableStateOf<JobProgressBarState?>(null)
 
-    private enum class Screen { Terminal, Settings, Guide, Files, Mcp, Ai, AiSettings, Azp, FullScreenApp }
+    private enum class Screen { Terminal, Settings, Guide, Files, Mcp, Ai, AiSettings, Azp, FullScreenApp, Environment }
 
     /** Confirms enabling shell.* MCP tools with a biometric prompt before persisting the flag -
      *  this is the one switch that lets a paired agent run arbitrary commands, so it gets a
@@ -535,6 +537,7 @@ class TerminalActivity : FragmentActivity() {
                     screen == Screen.Guide && guideBackStep.canStepBack -> guideBackStep.stepBack()
                     screen == Screen.AiSettings -> screen = aiSettingsCameFrom
                     screen == Screen.Mcp -> screen = Screen.Settings
+                    screen == Screen.Environment -> screen = Screen.Settings
                     screen == Screen.FullScreenApp -> {
                         fullScreenSession?.kill()
                         fullScreenSession = null
@@ -566,8 +569,19 @@ class TerminalActivity : FragmentActivity() {
                         },
                         onOpenMcpServer = { screen = Screen.Mcp },
                         onOpenAiSettings = { aiSettingsCameFrom = Screen.Settings; screen = Screen.AiSettings },
+                        onOpenEnvironment = { screen = Screen.Environment },
                         onBack = { screen = Screen.Terminal }
                     )
+
+                    screen == Screen.Environment -> {
+                        val bootstrap = ShellSession.bootstrapBashEnv(this@TerminalActivity, null)
+                        EnvironmentScreen(
+                            installed = bootstrap != null,
+                            env = bootstrap?.second.orEmpty(),
+                            onBack = { screen = Screen.Settings },
+                            fullscreen = fullscreen
+                        )
+                    }
 
                     screen == Screen.AiSettings -> AiSettingsScreen(
                         fullscreen = fullscreen,
