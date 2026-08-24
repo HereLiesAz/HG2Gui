@@ -239,6 +239,13 @@ class TerminalActivity : FragmentActivity() {
 
         setContent {
             var tree by remember { mutableStateOf<List<MenuNode>?>(null) }
+            // W1: recomputed whenever tree itself changes (initial load, a package-manager
+            // command, an OS-context switch) rather than threaded through every individual site
+            // that rebuilds tree - same data source, cheaper to keep in sync this way.
+            var knownCommands by remember { mutableStateOf<List<String>>(emptyList()) }
+            LaunchedEffect(tree) {
+                knownCommands = withContext(Dispatchers.IO) { CommandTree.knownCommandNames(this@TerminalActivity) }
+            }
             var activeSessionId by remember { mutableStateOf("") }
             var screen by remember {
                 mutableStateOf(if (intent?.getBooleanExtra(McpServerService.EXTRA_OPEN_MCP, false) == true) Screen.Mcp else Screen.Terminal)
@@ -798,6 +805,7 @@ class TerminalActivity : FragmentActivity() {
 
                     sessions.isNotEmpty() && currentTree != null -> TerminalScreen(
                         tree = currentTree,
+                        knownCommands = knownCommands,
                         sessions = sessions.map { it.ui },
                         activeSessionId = activeSessionId,
                         onSessionPick = { activeSessionId = it },

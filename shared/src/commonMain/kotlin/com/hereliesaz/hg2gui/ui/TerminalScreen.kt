@@ -72,6 +72,11 @@ private fun SessionUiState.updateBufferEntry(entryId: Long, transform: (Terminal
 @Composable
 fun TerminalScreen(
     tree: List<MenuNode>,
+    // W1: real PATH binaries plus this app's own builtins, for command-name completion while the
+    // first word of the line is still being typed - see CommandTree.knownCommandNames's own doc
+    // comment for what's in it. Empty is a valid, harmless state (no bootstrap yet): completion
+    // just has nothing to offer, same as it would for a fresh install with no history either.
+    knownCommands: List<String> = emptyList(),
     sessions: List<SessionUiState>,
     activeSessionId: String,
     onSessionPick: (String) -> Unit,
@@ -311,7 +316,7 @@ fun TerminalScreen(
         // root in the same stack every other command lives in - not a second PillMenu next to
         // it. Whichever of these lands last fans out from the row closest to the command line -
         // a pending answer takes that spot over a suggestion, since it's the more urgent one.
-        val suggestionNode = suggestionNodeFor(active)
+        val suggestionNode = suggestionNodeFor(active, knownCommands)
         val effectiveTree = tree + listOfNotNull(suggestionNode, answerNode)
 
         PillMenu(
@@ -953,11 +958,19 @@ private fun CommandLine(
  * real shell line editor to attach to - ShellSession only ever sends one complete line at a
  * time and reads a complete result back - so this is the delivery mechanism instead.
  */
-private fun suggestionNodeFor(session: SessionUiState): MenuNode? {
+private fun suggestionNodeFor(session: SessionUiState, knownCommands: List<String>): MenuNode? {
     val children = buildList {
         if (session.inputText.isNotBlank()) {
-            ShellAliases.autosuggest(session.inputText, session.commandHistory)?.let { rest ->
-                add(MenuNode(id = "suggest-tab", label = session.inputText + rest, cap = "TAB"))
+            val historyMatch = ShellAliases.autosuggest(session.inputText, session.commandHistory)
+            if (historyMatch != null) {
+                add(MenuNode(id = "suggest-tab", label = session.inputText + historyMatch, cap = "TAB"))
+            } else if (!session.inputText.contains(' ')) {
+                // W1: only once history has nothing to offer, and only while the first word is
+                // still being typed - a package name mid-line has nowhere near as clean a
+                // "the rest of the line" completion as history's own exact-continuation match.
+                ShellAliases.commandNameCompletions(session.inputText, knownCommands).forEach { name ->
+                    add(MenuNode(id = "suggest-cmd-$name", label = name, cap = "TAB"))
+                }
             }
         }
 
