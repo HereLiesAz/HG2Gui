@@ -136,6 +136,12 @@ fun FilesScreen(
     onCreateFolder: suspend (parentPath: String, name: String) -> Boolean,
     onCreateFile: suspend (parentPath: String, name: String) -> Boolean,
     onDelete: suspend (path: String) -> Boolean,
+    // TRASH-1: onDelete above no longer means "gone" - it moves into the trash, and these three
+    // are how the Storage screen's TRASH tab reads and reverses that.
+    trashedItems: suspend () -> List<VfsTrashEntry>,
+    onRestore: suspend (entry: VfsTrashEntry) -> Boolean,
+    onPurgeTrash: suspend (entry: VfsTrashEntry) -> Boolean,
+    onEmptyTrash: suspend () -> Int,
     onRename: suspend (path: String, newName: String) -> Boolean,
     onMove: suspend (path: String, targetDirPath: String) -> Boolean,
     onCopy: suspend (path: String, targetDirPath: String) -> Boolean,
@@ -182,6 +188,9 @@ fun FilesScreen(
     var createInput by remember { mutableStateOf("") }
 
     var storage by remember { mutableStateOf<StorageStats?>(null) }
+    // Refreshed alongside storage - both describe "what's using space right now," and a
+    // delete/restore/purge is exactly the kind of mutation refreshTick already exists to catch.
+    var trash by remember { mutableStateOf<List<VfsTrashEntry>>(emptyList()) }
     var opError by remember { mutableStateOf<String?>(null) }
 
     // F3: the one file currently expanded in place - re-tapping it, or tapping a different file,
@@ -232,7 +241,7 @@ fun FilesScreen(
     // F4: item hue is share-of-total-storage, so the total has to be known in the browse view
     // too, not just on the dedicated Storage screen - refreshed on every mutating op the same way
     // levelCache is, so a delete/move doesn't leave every remaining item's hue stale.
-    LaunchedEffect(refreshTick) { storage = storageStats() }
+    LaunchedEffect(refreshTick) { storage = storageStats(); trash = trashedItems() }
 
     // VFS-14: null means "this depth's listing hasn't come back from [listDir] yet," distinct
     // from a present-but-empty list ("it came back and there's genuinely nothing here") - the
@@ -405,7 +414,26 @@ fun FilesScreen(
             onDelete = { path ->
                 scope.launch {
                     if (!onDelete(path)) opError = "Couldn't delete that."
-                    storage = storageStats(); refresh()
+                    storage = storageStats(); trash = trashedItems(); refresh()
+                }
+            },
+            trash = trash,
+            onRestore = { entry ->
+                scope.launch {
+                    if (!onRestore(entry)) opError = "Couldn't restore ${entry.name}."
+                    storage = storageStats(); trash = trashedItems(); refresh()
+                }
+            },
+            onPurgeTrash = { entry ->
+                scope.launch {
+                    if (!onPurgeTrash(entry)) opError = "Couldn't delete ${entry.name}."
+                    trash = trashedItems()
+                }
+            },
+            onEmptyTrash = {
+                scope.launch {
+                    onEmptyTrash()
+                    trash = trashedItems()
                 }
             },
             onBack = { screen = FMScreen.Browse },
@@ -726,10 +754,11 @@ fun FilesScreen(
         deleteTarget?.let { entry ->
             ConfirmDialog(
                 title = "DELETE ${entry.name}?",
+                // TRASH-1: no longer final - moved into Storage > Trash, recoverable there.
                 message = if (entry.isDirectory) {
-                    "This deletes ${entry.name} and everything inside it. This can't be undone."
+                    "This moves ${entry.name} and everything inside it to the trash."
                 } else {
-                    "This deletes ${entry.name}. This can't be undone."
+                    "This moves ${entry.name} to the trash."
                 },
                 confirmLabel = "DELETE",
                 onConfirm = {
@@ -748,8 +777,9 @@ fun FilesScreen(
         if (batchDeleteConfirm) {
             ConfirmDialog(
                 title = "DELETE ${selected.size} THINGS?",
-                message = "This deletes everything selected, including the contents of any selected " +
-                    "folders. This can't be undone.",
+                // TRASH-1: no longer final - moved into Storage > Trash, recoverable there.
+                message = "This moves everything selected, including the contents of any selected " +
+                    "folders, to the trash.",
                 confirmLabel = "DELETE",
                 onConfirm = {
                     scope.launch {

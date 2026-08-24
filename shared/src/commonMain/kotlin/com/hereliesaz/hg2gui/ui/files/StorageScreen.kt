@@ -47,12 +47,17 @@ private val CATEGORY_HUES = mapOf(
     "Images" to 0, "Documents" to 2, "Code" to 9, "Archives" to 5, "Other" to 4
 )
 
-private enum class StorageTab { BY_TYPE, LARGEST }
+private enum class StorageTab { BY_TYPE, LARGEST, TRASH }
 
 @Composable
 fun StorageScreen(
     stats: StorageStats?,
     onDelete: (path: String) -> Unit,
+    // TRASH-1: onDelete above moves something in; these three are the trash's own lifecycle.
+    trash: List<VfsTrashEntry> = emptyList(),
+    onRestore: (VfsTrashEntry) -> Unit = {},
+    onPurgeTrash: (VfsTrashEntry) -> Unit = {},
+    onEmptyTrash: () -> Unit = {},
     onBack: () -> Unit,
     fullscreen: Boolean,
     onFreeUpSpace: () -> Unit = {},
@@ -67,6 +72,8 @@ fun StorageScreen(
 ) {
     var tab by remember { mutableStateOf(StorageTab.BY_TYPE) }
     var deleteTarget by remember { mutableStateOf<VfsEntry?>(null) }
+    var purgeTarget by remember { mutableStateOf<VfsTrashEntry?>(null) }
+    var confirmEmptyTrash by remember { mutableStateOf(false) }
 
     Column(
         modifier
@@ -168,6 +175,10 @@ fun StorageScreen(
         ) {
             Chip("BY TYPE", filled = tab == StorageTab.BY_TYPE, onClick = { tab = StorageTab.BY_TYPE })
             Chip("LARGEST", filled = tab == StorageTab.LARGEST, onClick = { tab = StorageTab.LARGEST })
+            Chip(
+                if (trash.isEmpty()) "TRASH" else "TRASH (${trash.size})",
+                filled = tab == StorageTab.TRASH, onClick = { tab = StorageTab.TRASH }
+            )
             // No bulk-cleanup flow of its own - the sensible existing action is just surfacing
             // the worst offenders, so this jumps to LARGEST (where DELETE is one tap away) and
             // also hands off to whatever the caller wants to do with it.
@@ -175,6 +186,12 @@ fun StorageScreen(
                 "FREE UP SPACE", background = Azphalt.hues[6], foreground = Azphalt.White,
                 onClick = { tab = StorageTab.LARGEST; onFreeUpSpace() }
             )
+            if (tab == StorageTab.TRASH && trash.isNotEmpty()) {
+                Chip(
+                    "EMPTY TRASH", background = Azphalt.hues[6], foreground = Azphalt.White,
+                    onClick = { confirmEmptyTrash = true }
+                )
+            }
         }
 
         when (tab) {
@@ -237,19 +254,84 @@ fun StorageScreen(
                     }
                 }
             }
+
+            // TRASH-1: each row offers both directions - RESTORE puts it back where it came
+            // from, × purges that one item for good (its own ConfirmDialog below, since unlike
+            // the soft delete above this one really is final).
+            StorageTab.TRASH -> if (trash.isEmpty()) {
+                Text(
+                    "NOTHING IN THE TRASH", color = Azphalt.currentGround.onPage.copy(alpha = .4f),
+                    fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.1.em,
+                    modifier = Modifier.padding(start = 20.dp, top = 12.dp)
+                )
+            } else {
+                LazyColumn(
+                    Modifier.weight(1f).fillMaxWidth().padding(horizontal = 20.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(trash, key = { it.id }) { entry ->
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(percent = 50))
+                                .background(Azphalt.Ink.copy(alpha = .10f))
+                                .padding(start = 16.dp, end = 8.dp, top = 10.dp, bottom = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column {
+                                Text(entry.name, color = Azphalt.currentGround.onPage, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                                Text(formatFileSize(entry.sizeBytes), color = Azphalt.currentGround.onPage.copy(alpha = .55f), fontSize = 9.sp)
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                Chip("RESTORE", background = Azphalt.hues[3], foreground = Azphalt.White, onClick = { onRestore(entry) })
+                                Text(
+                                    "×", color = Azphalt.currentGround.onPage.copy(alpha = .7f), fontSize = 15.sp,
+                                    modifier = Modifier.clickable { purgeTarget = entry }.padding(start = 4.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         deleteTarget?.let { entry ->
             ConfirmDialog(
                 title = "DELETE ${entry.name}?",
+                // TRASH-1: no longer final - moved into the TRASH tab above, recoverable there.
+                message = if (entry.isDirectory) {
+                    "This moves ${entry.name} and everything inside it to the trash."
+                } else {
+                    "This moves ${entry.name} to the trash."
+                },
+                confirmLabel = "DELETE",
+                onConfirm = { onDelete(entry.path); deleteTarget = null },
+                onDismiss = { deleteTarget = null }
+            )
+        }
+
+        purgeTarget?.let { entry ->
+            ConfirmDialog(
+                title = "DELETE ${entry.name} FOR GOOD?",
                 message = if (entry.isDirectory) {
                     "This deletes ${entry.name} and everything inside it. This can't be undone."
                 } else {
                     "This deletes ${entry.name}. This can't be undone."
                 },
                 confirmLabel = "DELETE",
-                onConfirm = { onDelete(entry.path); deleteTarget = null },
-                onDismiss = { deleteTarget = null }
+                onConfirm = { onPurgeTrash(entry); purgeTarget = null },
+                onDismiss = { purgeTarget = null }
+            )
+        }
+
+        if (confirmEmptyTrash) {
+            ConfirmDialog(
+                title = "EMPTY TRASH?",
+                message = "This deletes everything in the trash for good. This can't be undone.",
+                confirmLabel = "EMPTY TRASH",
+                onConfirm = { onEmptyTrash(); confirmEmptyTrash = false },
+                onDismiss = { confirmEmptyTrash = false }
             )
         }
     }

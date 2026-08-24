@@ -91,6 +91,7 @@ import com.hereliesaz.hg2gui.ui.files.StorageCategoryStat
 import com.hereliesaz.hg2gui.ui.files.StorageStats
 import com.hereliesaz.hg2gui.ui.files.VfsEntry
 import com.hereliesaz.hg2gui.ui.files.VfsSearchResult
+import com.hereliesaz.hg2gui.ui.files.VfsTrashEntry
 import com.hereliesaz.hg2gui.ui.guide.CommandGuideScreen
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
 import com.hereliesaz.hg2gui.ui.menu.CommandTree
@@ -395,8 +396,14 @@ class TerminalActivity : FragmentActivity() {
 
             suspend fun vfsListDir(path: String): List<VfsEntry> = withContext(Dispatchers.IO) {
                 val dir = VfsManager.resolve(this@TerminalActivity, path) ?: return@withContext emptyList()
-                (dir.listFiles() ?: emptyArray())
-                    .sortedWith(compareBy({ !it.isDirectory }, { it.name.lowercase() }))
+                // TRASH-2: this used to call dir.listFiles() directly, bypassing VfsManager's own
+                // .trash filter entirely - the nested-accordion browser lists whatever File it has
+                // open at each level, which almost never equals the shell's own cwd that
+                // VfsManager.list(context) reads. With Show Hidden on, .trash was a normal,
+                // browsable, movable, deletable folder, and a stray file moved into it (rather
+                // than into one of trash's own id-named slots) had no meta.json - the next
+                // purgeExpiredTrash() sweep would see the orphan and delete it for good, silently.
+                VfsManager.listChildren(dir)
                     .map { f ->
                         VfsEntry(
                             name = f.name,
@@ -458,6 +465,15 @@ class TerminalActivity : FragmentActivity() {
                     usedCapacityBytes = usedBytes
                 )
             }
+
+            suspend fun vfsTrashedItems(): List<VfsTrashEntry> = withContext(Dispatchers.IO) {
+                VfsManager.trashedItems(this@TerminalActivity).map { e ->
+                    VfsTrashEntry(e.id, e.originalPath, e.name, e.isDirectory, e.sizeBytes, e.deletedAtMillis)
+                }
+            }
+
+            fun toManagerEntry(e: VfsTrashEntry) =
+                VfsManager.TrashEntry(e.id, e.originalPath, e.name, e.isDirectory, e.sizeBytes, e.deletedAtMillis)
 
             LaunchedEffect(Unit) {
                 val built = withContext(Dispatchers.Default) {
@@ -1034,11 +1050,24 @@ class TerminalActivity : FragmentActivity() {
                                     VfsManager.resolve(this@TerminalActivity, parentPath)?.let { VfsManager.touch(it, name) } ?: false
                                 }
                             },
+                            // TRASH-1: a delete no longer removes anything outright - it moves
+                            // into VfsManager's trash, recoverable from the Storage screen's own
+                            // TRASH tab. See VfsManager.kt's "Trash" section for the full mechanism.
                             onDelete = { path ->
                                 withContext(Dispatchers.IO) {
-                                    VfsManager.resolve(this@TerminalActivity, path)?.let { VfsManager.delete(it) } ?: false
+                                    VfsManager.resolve(this@TerminalActivity, path)?.let { VfsManager.trash(this@TerminalActivity, it) != null } ?: false
                                 }
                             },
+                            onRestore = { entry ->
+                                withContext(Dispatchers.IO) { VfsManager.restore(this@TerminalActivity, toManagerEntry(entry)) }
+                            },
+                            onPurgeTrash = { entry ->
+                                withContext(Dispatchers.IO) { VfsManager.purgeTrash(this@TerminalActivity, toManagerEntry(entry)) }
+                            },
+                            onEmptyTrash = {
+                                withContext(Dispatchers.IO) { VfsManager.emptyTrash(this@TerminalActivity) }
+                            },
+                            trashedItems = { vfsTrashedItems() },
                             onRename = { path, newName ->
                                 withContext(Dispatchers.IO) {
                                     VfsManager.resolve(this@TerminalActivity, path)?.let { VfsManager.rename(it, newName) } ?: false
