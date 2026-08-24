@@ -173,6 +173,14 @@ fun PillPerimeterReveal(state: PerimeterRevealState, hue: Color, content: @Compo
         val thickness = if (o.height > 0f) o.height else with(density) { MIN_THICKNESS.toPx() }
         val originLeft = if (o.width > 0f) o.left else 0f
 
+        // The left leg's own descent is what "closes the loop back over the crumb's own start" -
+        // without tying the bottom edge's own left end to that same progress, a crumb sitting
+        // anywhere right of x=thickness (almost always, since crumbs live mid-row, not flush against
+        // the screen edge) left a permanent gap between the left leg's own width and the bottom
+        // leg's start: the bottom leg only ever grew rightward from originLeft, so it never once
+        // reached x=0 the way the top leg does. Blending the bottom leg's left end from originLeft
+        // to 0 as the left leg completes closes that corner exactly when the loop itself closes.
+        val bottomLeft = lerp(originLeft, 0f, state.leftLeg.value)
         val bottomRight = lerp(originLeft, fullW, state.bottomLeg.value)
         val rightTop = lerp(fullH, 0f, state.rightLeg.value)
         val topLeft = lerp(fullW, 0f, state.topLeg.value)
@@ -204,11 +212,12 @@ fun PillPerimeterReveal(state: PerimeterRevealState, hue: Color, content: @Compo
                 )
             }
 
-            // Bottom edge: the crumb's own left end, growing right to the bottom-right corner.
+            // Bottom edge: the crumb's own left end, growing right to the bottom-right corner -
+            // and, as the left leg closes the loop, its own left end pulled back to x=0 with it.
             Box(
                 Modifier
-                    .offset { IntOffset(originLeft.toInt(), (fullH - thickness).toInt()) }
-                    .size((bottomRight - originLeft).coerceAtLeast(0f).toDp(), thickness.toDp())
+                    .offset { IntOffset(bottomLeft.toInt(), (fullH - thickness).toInt()) }
+                    .size((bottomRight - bottomLeft).coerceAtLeast(0f).toDp(), thickness.toDp())
                     .background(hue)
             )
             // Right edge: the bottom-right corner, growing up to the top-right corner.

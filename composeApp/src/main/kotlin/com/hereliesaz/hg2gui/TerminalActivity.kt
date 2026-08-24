@@ -91,8 +91,6 @@ import com.hereliesaz.hg2gui.ui.menu.FileBrowser
 import com.hereliesaz.hg2gui.ui.menu.MenuNode
 import com.hereliesaz.hg2gui.ui.menu.PerimeterRevealState
 import com.hereliesaz.hg2gui.ui.menu.PillPerimeterReveal
-import com.hereliesaz.hg2gui.ui.menu.PillWrapReveal
-import com.hereliesaz.hg2gui.ui.menu.PillWrapRevealState
 import com.hereliesaz.hg2gui.ui.ssh.SshFlow
 import java.io.File
 import kotlinx.coroutines.CompletableDeferred
@@ -294,10 +292,10 @@ class TerminalActivity : FragmentActivity() {
                 }
             }
 
-            // "The pill becomes the page": the Files pill grows out around the screen edge,
-            // then the loop it closes floods with a vertical wipe that reveals the file
-            // explorer already open on its root - see PillWrapReveal.
-            val filesWrap = remember { PillWrapRevealState() }
+            // "The pill becomes the page": the Files pill runs the screen's full perimeter edge
+            // by edge, the same choreography every entrance into Files or the picker uses - see
+            // PillPerimeterReveal.
+            val filesWrap = remember { PerimeterRevealState() }
             var filesOrigin by remember { mutableStateOf(Rect.Zero) }
             val filesHue = remember { Azphalt.hues[Azphalt.hueOf("/")] }
             // Tracks whichever of open()/close() is currently driving filesWrap's Animatables, so
@@ -914,7 +912,7 @@ class TerminalActivity : FragmentActivity() {
                 }
 
                 if (screen == Screen.Files || filesWrap.active) {
-                    PillWrapReveal(state = filesWrap, hue = filesHue) {
+                    PillPerimeterReveal(state = filesWrap, hue = filesHue) {
                         FilesScreen(
                             fullscreen = fullscreen,
                             nowMillis = System.currentTimeMillis(),

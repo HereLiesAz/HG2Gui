@@ -40,8 +40,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
@@ -49,6 +51,7 @@ import com.hereliesaz.hg2gui.ui.ConfirmDialog
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
 import com.hereliesaz.hg2gui.ui.menu.onPage
 import com.hereliesaz.hg2gui.ui.menu.pageBrush
+import com.hereliesaz.hg2gui.ui.theme.AzphaltSurface
 import kotlinx.coroutines.launch
 
 /*
@@ -197,6 +200,11 @@ fun FilesScreen(
         val paths = listOf("/") + openChain.map { it.path }
         levelCache = paths.associateWith { listDir(it).filteredAndSorted() }
     }
+
+    // F4: item hue is share-of-total-storage, so the total has to be known in the browse view
+    // too, not just on the dedicated Storage screen - refreshed on every mutating op the same way
+    // levelCache is, so a delete/move doesn't leave every remaining item's hue stale.
+    LaunchedEffect(refreshTick) { storage = storageStats() }
 
     // VFS-14: null means "this depth's listing hasn't come back from [listDir] yet," distinct
     // from a present-but-empty list ("it came back and there's genuinely nothing here") - the
@@ -358,7 +366,8 @@ fun FilesScreen(
     }
 
     if (screen == FMScreen.Storage) {
-        LaunchedEffect(Unit) { storage = storageStats() }
+        // Loaded unconditionally above (LaunchedEffect(refreshTick)) now that the browse view
+        // needs the same total for its own per-file hue.
         StorageScreen(
             stats = storage,
             onDelete = { path ->
@@ -570,7 +579,8 @@ fun FilesScreen(
                         onLongPress = { selectMode = true; selected = selected + it.path },
                         onRename = { renameTarget = it; renameInput = it.name },
                         onDelete = { deleteTarget = it },
-                        onShare = { onShare(it.path) }
+                        onShare = { onShare(it.path) },
+                        totalBytes = storage?.totalBytes
                     )
                 }
             }
@@ -732,6 +742,42 @@ fun FilesScreen(
  * pill tree - this tree is arbitrary-depth and lazily loaded, so animating the aggregate size
  * change is the direct equivalent for data that isn't known until a folder is actually opened.
  */
+// F2: the open panel's own inset and its recursed child's start/top inset each compound with
+// every level down - a fixed 14dp/10dp makes depth five effectively unusable on a phone-width
+// screen. Thin both toward a floor as depth grows instead.
+private const val NESTING_INSET_STEP_DP = 3
+private const val NESTING_TOP_INSET_STEP_DP = 2
+private val NESTING_INSET_MIN = 4.dp
+private val NESTING_INSET_BASE = 14.dp
+private val NESTING_TOP_INSET_BASE = 10.dp
+
+private fun nestingInset(depth: Int): Dp =
+    (NESTING_INSET_BASE - (depth * NESTING_INSET_STEP_DP).dp).coerceAtLeast(NESTING_INSET_MIN)
+
+private fun nestingTopInset(depth: Int): Dp =
+    (NESTING_TOP_INSET_BASE - (depth * NESTING_TOP_INSET_STEP_DP).dp).coerceAtLeast(NESTING_INSET_MIN)
+
+// F4: a file's hue is its share of total storage, cool for small and red for the outliers - the
+// first seven entries of Azphalt.hues run violet -> cyan -> teal -> green -> amber -> orange ->
+// red, exactly that ramp, before the list moves on to the grounds/category-recolor extension
+// hues that don't belong in a size gradient. Folders keep the identity hash (Azphalt.hueOf
+// directly) - a folder's hue changing as its contents change would be disorienting.
+private val SIZE_HUE_RAMP = Azphalt.hues.subList(0, 7)
+
+private fun hueForShare(fraction: Float): Color {
+    val steps = SIZE_HUE_RAMP.size - 1
+    val scaled = fraction.coerceIn(0f, 1f) * steps
+    val index = scaled.toInt().coerceIn(0, steps - 1)
+    return lerp(SIZE_HUE_RAMP[index], SIZE_HUE_RAMP[index + 1], scaled - index)
+}
+
+private fun fileHue(entry: VfsEntry, totalBytes: Long?): Color =
+    if (totalBytes != null && totalBytes > 0) {
+        hueForShare(entry.sizeBytes.toFloat() / totalBytes.toFloat())
+    } else {
+        Azphalt.hues[Azphalt.hueOf(entry.path)]
+    }
+
 @Composable
 private fun ExpandableLevel(
     depth: Int,
@@ -744,7 +790,8 @@ private fun ExpandableLevel(
     onLongPress: (VfsEntry) -> Unit,
     onRename: (VfsEntry) -> Unit,
     onDelete: (VfsEntry) -> Unit,
-    onShare: (VfsEntry) -> Unit
+    onShare: (VfsEntry) -> Unit,
+    totalBytes: Long?
 ) {
     val entries = entriesAt(depth)
     val openEntry = openChain.getOrNull(depth)
@@ -782,12 +829,12 @@ private fun ExpandableLevel(
                     .fillMaxWidth()
                     // The style guide's canonical "record tile" radius - the one other ad hoc
                     // radius this screen used to carry (18dp) reconciled to it.
-                    .clip(RoundedCornerShape(26.dp))
+                    .clip(AzphaltSurface.recordTile)
                     // A selected row goes to ink with an inverted (yellow) foreground - same
                     // "ink means selected/open" convention PillMenu's open pills use.
                     .background(if (isSelected) Azphalt.Ink else Azphalt.hues[Azphalt.hueOf(openEntry.path)])
                     .clickable { onTap(depth, openEntry) }
-                    .padding(14.dp)
+                    .padding(nestingInset(depth))
             ) {
                 Column {
                     Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
@@ -803,7 +850,7 @@ private fun ExpandableLevel(
                         // could delete the very folder whose contents you were selecting inside.
                         if (!selectMode) EntryMenu(openEntry, onRename, onDelete, onShare, tint = Azphalt.White)
                     }
-                    Box(Modifier.padding(start = 14.dp, top = 10.dp)) {
+                    Box(Modifier.padding(start = nestingInset(depth), top = nestingTopInset(depth))) {
                         ExpandableLevel(
                             depth = depth + 1,
                             openChain = openChain,
@@ -815,7 +862,8 @@ private fun ExpandableLevel(
                             onLongPress = onLongPress,
                             onRename = onRename,
                             onDelete = onDelete,
-                            onShare = onShare
+                            onShare = onShare,
+                            totalBytes = totalBytes
                         )
                     }
                 }
@@ -851,7 +899,7 @@ private fun ExpandableLevel(
                     modifier = Modifier.padding(top = 4.dp)
                 )
             }
-            FileRows(files, selectMode, selected, { onTap(depth, it) }, onLongPress, onRename, onDelete, onShare)
+            FileRows(files, selectMode, selected, { onTap(depth, it) }, onLongPress, onRename, onDelete, onShare, totalBytes)
         }
     }
 }
@@ -917,7 +965,8 @@ private fun FileRows(
     onLongPress: (VfsEntry) -> Unit,
     onRename: (VfsEntry) -> Unit,
     onDelete: (VfsEntry) -> Unit,
-    onShare: (VfsEntry) -> Unit
+    onShare: (VfsEntry) -> Unit,
+    totalBytes: Long?
 ) {
     val images = files.filter { it.isImage }
     val others = files.filterNot { it.isImage }
@@ -940,9 +989,9 @@ private fun FileRows(
                     Box(
                         Modifier
                             .aspectRatio(1f)
-                            .clip(RoundedCornerShape(7.dp))
+                            .clip(AzphaltSurface.note)
                             // The tile's own hue never changes on selection - only the mark does.
-                            .background(Azphalt.hues[Azphalt.hueOf(img.path)])
+                            .background(fileHue(img, totalBytes))
                             .combinedClickable(onClick = { onTap(img) }, onLongClick = { onLongPress(img) })
                     ) {
                         Text(
