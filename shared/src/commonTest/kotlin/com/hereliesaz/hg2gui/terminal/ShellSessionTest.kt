@@ -75,6 +75,25 @@ class ShellSessionTest {
     }
 
     @Test
+    fun sourcingAScriptPersistsAcrossCommands() {
+        // S5 (docs/HG2Gui Termux Coverage.dc.html): "the command guide offers cd and source as
+        // entries, which implies persistence the architecture may not provide" - it does. Every
+        // stream()/exec() call writes into the SAME already-running shell process's stdin (see
+        // startPipe/startPty - the child is started once, in init{}, not respawned per command),
+        // so a sourced script's exports/functions/aliases outlive the exec() call that sourced it,
+        // exactly like a plain export or cd already do (see the two tests above).
+        val s = shell ?: return
+        val script = java.io.File.createTempFile("hg2gui-source-test", ".sh")
+        script.writeText("export SOURCED_MARKER=from-script\nsourced_fn() { echo called; }\n")
+        s.exec("source ${script.absolutePath}")
+        val exported = s.exec("echo \$SOURCED_MARKER")
+        val fn = s.exec("sourced_fn")
+        script.delete()
+        assertEquals("from-script", exported.output)
+        assertEquals("called", fn.output)
+    }
+
+    @Test
     fun outputContainingSentinelPrefixIsNotTruncated() {
         val s = shell ?: return
         val r = s.exec("echo '__HG2GUI_ __HG2GUI__ done'")

@@ -28,15 +28,28 @@
 
   <div style="display:flex;flex-direction:column;gap:14px;max-width:730px;">
     <div style="font:800 11px/1 var(--font-core);letter-spacing:.28em;text-transform:uppercase;color:var(--ink-55);">HG2Gui — Termux coverage</div>
-    <div style="font:900 58px/0.84 var(--font-core);letter-spacing:-.03em;text-transform:uppercase;">What the shell can do that the interface cannot</div>
-    <p style="margin:0;font:var(--type-body);color:var(--ink-78);text-wrap:pretty;">Read against <code>master</code>, tree <code>9906587</code>. Almost every gap below traces to one architectural fact: <strong>there is no pseudo-terminal between the interface and the shell.</strong> Commands run one-shot, output arrives as a finished block, and stdin is simulated by watching for a pause and popping a prompt. That decision bought the whole typographic treatment — you cannot set text beautifully on a page you do not control — and it is why this app looks the way it does. It also draws a hard line around what it can run.</p>
-    <p style="margin:0;font:var(--type-body);color:var(--ink-78);text-wrap:pretty;">The notable part: <code>terminal-emulator/</code> and <code>termux-shared/</code> are both vendored in the repository already, 177 files of working PTY implementation, and nothing in <code>shared/ui/</code> talks to them. The capability is in the building. The interface has never been introduced to it.</p>
+    <div style="font:900 58px/0.84 var(--font-core);letter-spacing:-.03em;text-transform:uppercase;">Equivalent, or missing one</div>
+    <p style="margin:0;font:var(--type-body);color:var(--ink-78);text-wrap:pretty;">Read against <code>master</code>, tree <code>9906587</code>. The standard this document holds the app to: a piece of Termux functionality that has a <strong>touch-native equivalent</strong> — a screen or flow built for it, even if it isn't a terminal — is covered, full stop, whether or not a raw PTY sits behind it. <code>EditorScreen</code> is the proof this already works: nano cannot run here, and it does not need to, because editing a file has its own screen. What is listed below is only what has <strong>no equivalent yet</strong> — nothing to reach for, touch-native or otherwise.</p>
+    <p style="margin:0;font:var(--type-body);color:var(--ink-78);text-wrap:pretty;">Almost all of it still traces to one fact: <strong>there is no pseudo-terminal between the interface and the shell</strong>, and <code>terminal-emulator/</code> + <code>termux-shared/</code> sit vendored and unwired in the repository, 177 files nothing calls. That matters here only for the tools where no touch-native equivalent is a realistic answer — a full interactive remote shell is one; most single-purpose tools are not.</p>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:12px;">
+    <div style="font:800 11px/1 var(--font-core);letter-spacing:.28em;text-transform:uppercase;color:var(--action-done-cap);">Already covered</div>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;">
+      <sc-for list="{{ covered }}" as="c" hint-placeholder-count="5">
+        <div style="border-radius:18px;padding:16px;background:var(--action-done-cap);display:flex;flex-direction:column;gap:6px;">
+          <span style="font:900 13px/1.2 var(--font-core);letter-spacing:-.01em;color:var(--white);">{{ c.title }}</span>
+          <span style="font:700 10px/1.3 ui-monospace,SFMono-Regular,Menlo,monospace;color:rgba(255,255,255,.75);">{{ c.tool }}</span>
+          <span style="font:600 11.5px/1.4 var(--font-core);color:rgba(255,255,255,.9);text-wrap:pretty;">{{ c.equivalent }}</span>
+        </div>
+      </sc-for>
+    </div>
   </div>
 
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
     <div style="border-radius:24px;padding:22px;background:var(--hue-red);display:flex;flex-direction:column;gap:6px;">
-      <span style="font:900 46px/0.9 var(--font-core);letter-spacing:-.02em;color:var(--white);">5</span>
-      <span style="font:800 10px/1.3 var(--font-core);letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.82);">Structural — whole classes of tool unusable</span>
+      <span style="font:900 46px/0.9 var(--font-core);letter-spacing:-.02em;color:var(--white);">6</span>
+      <span style="font:800 10px/1.3 var(--font-core);letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.82);">No equivalent — needs one</span>
     </div>
     <div style="border-radius:24px;padding:22px;background:var(--hue-orange);display:flex;flex-direction:column;gap:6px;">
       <span style="font:900 46px/0.9 var(--font-core);letter-spacing:-.02em;color:var(--white);">6</span>
@@ -120,13 +133,21 @@
 
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1040,&quot;height&quot;:1400}}">
+const COVERED = [
+  { title: 'Text editing', tool: 'vim, nano, micro, emacs', equivalent: 'EditorScreen \u2014 a real touch-native editor. The comment in the code is explicit that this exists BECAUSE nano cannot be handed a terminal. This is the model to repeat, not a workaround.' },
+  { title: 'File browsing', tool: 'ls, cd, mc, ranger', equivalent: 'FilesScreen / FolderPicker \u2014 the nested-rectangle browser. (Its choreography has its own gaps \u2014 see the Implementation Audit \u2014 but the equivalent exists.)' },
+  { title: 'Remote hosts', tool: 'ssh (non-interactive use)', equivalent: 'The purpose-built ssh flow for connecting and running commands against a host.' },
+  { title: 'Disk usage', tool: 'df, du, ncdu (read-only)', equivalent: 'StorageScreen, with size-of-total already computed once the file explorer\u2019s colour-by-size gap is closed.' },
+  { title: 'Package status', tool: 'pkg list, dpkg -l', equivalent: 'AzpStoreScreen covers install/search; a package LIST view is the one piece worth confirming exists.' }
+];
+
 const STRUCTURAL = [
   {
     rank: 'S1', bg: 'var(--hue-red)',
-    title: 'No full-screen program can run at all',
-    body: 'Anything that draws by moving a cursor around a screen needs a terminal to draw into, and there is none. This is not a long tail \u2014 it is a large fraction of why people install Termux. The app has already had to route around it twice: EditorScreen exists solely because nano cannot be handed a terminal, and its own comment says running nano through the non-PTY session "would render garbled." top and htop appear in the command guide as entries the app cannot actually run.',
-    breaks: 'vim, nano, micro, emacs\nhtop, top, btop, ncdu, ranger, mc\ntmux, screen\nless, more, man (pagers)\npython, node, sqlite3 (REPLs)\ngit rebase -i, git add -p, tig\nssh to an interactive remote shell',
-    needs: 'The vendored terminal-emulator, mounted behind one full-screen surface that a command can be handed off to and returned from. Everything needed is already in the repository.'
+    title: 'No equivalent for anything that needs a live, moving screen',
+    body: 'This is the one class where a touch-native equivalent genuinely is not a realistic answer \u2014 a process monitor or a REPL is defined by updating in place, which a discrete record cannot do. top/htop appear in the command guide as entries the app cannot actually run. Note what is NOT in this list: nano already has its equivalent (EditorScreen) and is covered, not missing.',
+    breaks: 'htop, top, btop (live process monitors)\ntmux, screen (session multiplexers)\npython, node, sqlite3 (REPLs)\ngit rebase -i, git add -p, tig (interactive git)\nssh to an interactive remote shell\nless, more, man, when the content is large enough to need real paging',
+    needs: 'Two different answers, not one. Live monitors and REPLs want purpose-built touch-native equivalents \u2014 a process list screen with tap-to-kill is a better phone experience than htop anyway. Interactive git and a raw interactive remote shell are the cases where no equivalent will ever beat the real thing, and that is where the vendored terminal-emulator earns its place: one full-screen surface, reached only for these.'
   },
   {
     rank: 'S2', bg: 'var(--hue-red-cap)',
@@ -134,6 +155,13 @@ const STRUCTURAL = [
     body: 'There is no Ctrl-C. A modifier row exists in the terminal screen \u2014 ctrl, alt, esc, tab, arrows \u2014 but with no PTY there is nothing on the other end to receive a signal, so a command that hangs or runs away cannot be stopped from the interface. The only exit is force-quitting the app, which on a phone also means losing whatever else was running. For a tool whose users routinely type things like a recursive find from root, this is the most likely first bad experience.',
     breaks: 'A find across the whole filesystem\nA curl of something enormous\nAnything waiting on a network timeout\nAny loop with a typo in it',
     needs: 'Real signal delivery (SIGINT/SIGTERM/EOF) to the child process, and a visible stop affordance on a running record rather than a modifier key that implies one.'
+  },
+  {
+    rank: 'S2b', bg: 'var(--hue-red-cap)',
+    title: 'No equivalent for stopping a running command',
+    body: 'Covered by the same logic as S1: a stop affordance on a running record is a perfectly good touch-native equivalent for Ctrl-C and does not require a PTY. It simply does not exist yet \u2014 the modifier row shows a ctrl key that has nothing to send it to.',
+    breaks: 'A find across the whole filesystem\nA curl of something enormous\nAnything waiting on a network timeout',
+    needs: 'A visible stop control on the running record, wired to real signal delivery (SIGINT/SIGTERM) to the child process. No terminal required \u2014 this is a gap in the one-shot model itself.'
   },
   {
     rank: 'S3', bg: 'var(--hue-red)',
@@ -265,11 +293,12 @@ const OPTIONS = [
 class Component extends DCLogic {
   renderVals() {
     return {
+      covered: COVERED,
       tiers: [
         {
-          eyebrow: 'Tier one — structural', accent: 'var(--hue-red)',
-          title: 'Whole classes of tool cannot run',
-          intro: 'Every item here follows from the missing pseudo-terminal, except the last two \u2014 job control and shell state are independent, and could be built without answering the PTY question at all.',
+          eyebrow: 'Tier one — no equivalent yet', accent: 'var(--hue-red)',
+          title: 'Nothing to reach for',
+          intro: 'Only S1 and the interactive-remote-shell case in it genuinely require a terminal. Everything else here \u2014 stopping a command, real stdin, job control, shell state \u2014 is a touch-native equivalent that has simply not been built.',
           items: STRUCTURAL
         },
         {
