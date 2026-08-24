@@ -486,6 +486,12 @@ object CommandTree {
         return binDir to names
     }
 
+    /** W1: every real binary on the shell's own PATH, plus this app's own hand-rolled builtins
+     *  (System/Apps/Features) - the full set TerminalScreen's command-name completion matches a
+     *  typed prefix against. Empty before a bootstrap is installed, same as [discoverBinaries]. */
+    fun knownCommandNames(context: Context): List<String> =
+        (discoverBinaries(context)?.second.orEmpty() + SYSTEM + APPS + FEATURES).distinct()
+
     /** Kicks off (or continues) background discovery of `--help` flags for every real binary on
      *  PATH, so the next tree rebuild's [hintsForBinary] calls can pick up whatever this finds -
      *  see [HelpCatalog]. Blocks the calling thread for as long as any still-uncached binary
