@@ -53,11 +53,9 @@ private enum class StorageTab { BY_TYPE, LARGEST, TRASH }
 fun StorageScreen(
     stats: StorageStats?,
     onDelete: (path: String) -> Unit,
-    // TRASH-1: onDelete above moves something in; these three are the trash's own lifecycle.
-    trash: List<VfsTrashEntry> = emptyList(),
-    onRestore: (VfsTrashEntry) -> Unit = {},
-    onPurgeTrash: (VfsTrashEntry) -> Unit = {},
-    onEmptyTrash: () -> Unit = {},
+    // TRASH-1: onDelete above moves something in; this is the trash's own lifecycle - bundled
+    // (see TrashPanelState) rather than four more parameters here.
+    trash: TrashPanelState = TrashPanelState(),
     onBack: () -> Unit,
     fullscreen: Boolean,
     onFreeUpSpace: () -> Unit = {},
@@ -176,7 +174,7 @@ fun StorageScreen(
             Chip("BY TYPE", filled = tab == StorageTab.BY_TYPE, onClick = { tab = StorageTab.BY_TYPE })
             Chip("LARGEST", filled = tab == StorageTab.LARGEST, onClick = { tab = StorageTab.LARGEST })
             Chip(
-                if (trash.isEmpty()) "TRASH" else "TRASH (${trash.size})",
+                if (trash.items.isEmpty()) "TRASH" else "TRASH (${trash.items.size})",
                 filled = tab == StorageTab.TRASH, onClick = { tab = StorageTab.TRASH }
             )
             // No bulk-cleanup flow of its own - the sensible existing action is just surfacing
@@ -186,7 +184,7 @@ fun StorageScreen(
                 "FREE UP SPACE", background = Azphalt.hues[6], foreground = Azphalt.White,
                 onClick = { tab = StorageTab.LARGEST; onFreeUpSpace() }
             )
-            if (tab == StorageTab.TRASH && trash.isNotEmpty()) {
+            if (tab == StorageTab.TRASH && trash.items.isNotEmpty()) {
                 Chip(
                     "EMPTY TRASH", background = Azphalt.hues[6], foreground = Azphalt.White,
                     onClick = { confirmEmptyTrash = true }
@@ -258,7 +256,7 @@ fun StorageScreen(
             // TRASH-1: each row offers both directions - RESTORE puts it back where it came
             // from, × purges that one item for good (its own ConfirmDialog below, since unlike
             // the soft delete above this one really is final).
-            StorageTab.TRASH -> if (trash.isEmpty()) {
+            StorageTab.TRASH -> if (trash.items.isEmpty()) {
                 Text(
                     "NOTHING IN THE TRASH", color = Azphalt.currentGround.onPage.copy(alpha = .4f),
                     fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.1.em,
@@ -269,7 +267,7 @@ fun StorageScreen(
                     Modifier.weight(1f).fillMaxWidth().padding(horizontal = 20.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(trash, key = { it.id }) { entry ->
+                    items(trash.items, key = { it.id }) { entry ->
                         Row(
                             Modifier
                                 .fillMaxWidth()
@@ -280,11 +278,23 @@ fun StorageScreen(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Column {
-                                Text(entry.name, color = Azphalt.currentGround.onPage, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-                                Text(formatFileSize(entry.sizeBytes), color = Azphalt.currentGround.onPage.copy(alpha = .55f), fontSize = 9.sp)
+                                Text(
+                                    entry.name, color = Azphalt.currentGround.onPage,
+                                    fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1
+                                )
+                                Text(
+                                    formatFileSize(entry.sizeBytes),
+                                    color = Azphalt.currentGround.onPage.copy(alpha = .55f), fontSize = 9.sp
+                                )
                             }
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                Chip("RESTORE", background = Azphalt.hues[3], foreground = Azphalt.White, onClick = { onRestore(entry) })
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Chip(
+                                    "RESTORE", background = Azphalt.hues[3], foreground = Azphalt.White,
+                                    onClick = { trash.onRestore(entry) }
+                                )
                                 Text(
                                     "×", color = Azphalt.currentGround.onPage.copy(alpha = .7f), fontSize = 15.sp,
                                     modifier = Modifier.clickable { purgeTarget = entry }.padding(start = 4.dp)
@@ -320,7 +330,7 @@ fun StorageScreen(
                     "This deletes ${entry.name}. This can't be undone."
                 },
                 confirmLabel = "DELETE",
-                onConfirm = { onPurgeTrash(entry); purgeTarget = null },
+                onConfirm = { trash.onPurgeTrash(entry); purgeTarget = null },
                 onDismiss = { purgeTarget = null }
             )
         }
@@ -330,7 +340,7 @@ fun StorageScreen(
                 title = "EMPTY TRASH?",
                 message = "This deletes everything in the trash for good. This can't be undone.",
                 confirmLabel = "EMPTY TRASH",
-                onConfirm = { onEmptyTrash(); confirmEmptyTrash = false },
+                onConfirm = { trash.onEmptyTrash(); confirmEmptyTrash = false },
                 onDismiss = { confirmEmptyTrash = false }
             )
         }
