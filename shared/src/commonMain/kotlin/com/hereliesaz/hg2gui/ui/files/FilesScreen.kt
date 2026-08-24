@@ -4,6 +4,7 @@ package com.hereliesaz.hg2gui.ui.files
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
@@ -22,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -40,15 +42,27 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.hereliesaz.hg2gui.ui.ConfirmDialog
+import com.hereliesaz.hg2gui.ui.buildStyledLine
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
 import com.hereliesaz.hg2gui.ui.menu.onPage
 import com.hereliesaz.hg2gui.ui.menu.pageBrush
+import com.hereliesaz.hg2gui.ui.theme.AzphaltSurface
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /*
@@ -111,6 +125,9 @@ fun FilesScreen(
     listDir: suspend (path: String) -> List<VfsEntry>,
     search: suspend (query: String) -> List<VfsSearchResult>,
     storageStats: suspend () -> StorageStats,
+    // F3: a tapped file reveals its own contents in place, inside its own row - this is the read,
+    // separate from onOpenFile below (which still opens the real editor, for actually changing it).
+    previewFile: suspend (path: String) -> FilePreview,
     onOpenFile: (path: String) -> Unit,
     // VFS-13: every one of these used to discard its own success/failure - create-with-an-
     // existing-name reported fake success (the underlying call is a no-op that still returns
@@ -167,6 +184,20 @@ fun FilesScreen(
     var storage by remember { mutableStateOf<StorageStats?>(null) }
     var opError by remember { mutableStateOf<String?>(null) }
 
+    // F3: the one file currently expanded in place - re-tapping it, or tapping a different file,
+    // closes/replaces it, the same one-open-at-a-time rule openChain already applies to folders.
+    // Cached by path so re-opening a file already previewed this session doesn't re-read/re-
+    // highlight it, but a rename/edit elsewhere never invalidates a stale entry here - acceptable,
+    // since the cache only ever lives as long as this composition.
+    var previewPath by remember { mutableStateOf<String?>(null) }
+    var previewCache by remember { mutableStateOf<Map<String, FilePreview>>(emptyMap()) }
+    LaunchedEffect(previewPath) {
+        val path = previewPath
+        if (path != null && path !in previewCache) {
+            previewCache = previewCache + (path to previewFile(path))
+        }
+    }
+
     // VFS-2/VFS-3: every one of these gates a call into onDelete/onRename/onMove/onCopy behind a
     // ConfirmDialog rather than firing on the tap itself - deleteTarget and batchDeleteConfirm for
     // the two delete entry points, pendingRenameOverwrite/pendingBatchOverwrite for the silent-
@@ -197,6 +228,11 @@ fun FilesScreen(
         val paths = listOf("/") + openChain.map { it.path }
         levelCache = paths.associateWith { listDir(it).filteredAndSorted() }
     }
+
+    // F4: item hue is share-of-total-storage, so the total has to be known in the browse view
+    // too, not just on the dedicated Storage screen - refreshed on every mutating op the same way
+    // levelCache is, so a delete/move doesn't leave every remaining item's hue stale.
+    LaunchedEffect(refreshTick) { storage = storageStats() }
 
     // VFS-14: null means "this depth's listing hasn't come back from [listDir] yet," distinct
     // from a present-but-empty list ("it came back and there's genuinely nothing here") - the
@@ -272,8 +308,12 @@ fun FilesScreen(
             selected = if (entry.path in selected) selected - entry.path else selected + entry.path
         } else if (entry.isDirectory) {
             openEntry(depth, entry)
-        } else {
+        } else if (entry.isImage) {
+            // Images already get their own thumbnail grid (FileRows) - a tap opens the real
+            // editor/viewer directly rather than an inline text preview that doesn't apply to them.
             onOpenFile(entry.path)
+        } else {
+            previewPath = if (previewPath == entry.path) null else entry.path
         }
     }
 
@@ -358,7 +398,8 @@ fun FilesScreen(
     }
 
     if (screen == FMScreen.Storage) {
-        LaunchedEffect(Unit) { storage = storageStats() }
+        // Loaded unconditionally above (LaunchedEffect(refreshTick)) now that the browse view
+        // needs the same total for its own per-file hue.
         StorageScreen(
             stats = storage,
             onDelete = { path ->
@@ -559,18 +600,23 @@ fun FilesScreen(
                     ExpandableLevel(
                         depth = 0,
                         openChain = openChain,
-                        entriesAt = ::entriesAt,
-                        onToggle = { d, e -> openEntry(d, e) },
-                        selectMode = selectMode,
-                        selected = selected,
-                        onTap = { d, e -> tapEntry(d, e) },
-                        // Long-pressing while already selecting adds to the set, same as tapping
-                        // a row already does in select mode - replacing it wiped everything else
-                        // picked so far the moment a second long-press landed on a new row.
-                        onLongPress = { selectMode = true; selected = selected + it.path },
-                        onRename = { renameTarget = it; renameInput = it.name },
-                        onDelete = { deleteTarget = it },
-                        onShare = { onShare(it.path) }
+                        ctx = LevelContext(
+                            entriesAt = ::entriesAt,
+                            selection = SelectionState(selectMode, selected),
+                            actions = LevelActions(
+                                onTap = { d, e -> tapEntry(d, e) },
+                                // Long-pressing while already selecting adds to the set, same as
+                                // tapping a row already does in select mode - replacing it wiped
+                                // everything else picked so far the moment a second long-press
+                                // landed on a new row.
+                                onLongPress = { selectMode = true; selected = selected + it.path },
+                                onRename = { renameTarget = it; renameInput = it.name },
+                                onDelete = { deleteTarget = it },
+                                onShare = { onShare(it.path) }
+                            ),
+                            totalBytes = storage?.totalBytes,
+                            preview = PreviewContext(previewPath, previewCache, onOpenFile)
+                        )
                     )
                 }
             }
@@ -721,104 +767,394 @@ fun FilesScreen(
 }
 
 /**
- * A folder is a whole rounded rectangle in its own hue. Tapping one opens it in place: its
- * sibling folders squish into thin coloured rods beside it, and its own contents render inside
- * it - which, if one of *those* is itself opened, means this composable calling itself again for
- * [depth] + 1, exactly the way an opened rectangle's children are still nested inside the parent
- * rectangle they've always belonged to. Nothing caps how deep that goes; it bottoms out on its
- * own the moment a level has nothing open in it. [animateContentSize] reuses PillMenu's own
- * [Azphalt.SLIDE_MS]/linear timing for the size change this produces (a squish, an expand) rather
- * than the hand-rolled per-pill Animatable choreography PillMenu itself uses for a fixed, static
- * pill tree - this tree is arbitrary-depth and lazily loaded, so animating the aggregate size
- * change is the direct equivalent for data that isn't known until a folder is actually opened.
+ * A folder is a tile in its own hue. Tapping one opens it in place: its sibling folders drop,
+ * race, and climb into a thin coloured rod column beside it (see [FolderBand]), and its own
+ * contents render below it - which, if one of *those* is itself opened, means this composable
+ * calling itself again for [depth] + 1, exactly the way an opened folder's children are still
+ * nested inside the parent it's always belonged to. Nothing caps how deep that goes; it bottoms
+ * out on its own the moment a level has nothing open in it.
  */
+// F2: the open panel's own inset and its recursed child's start/top inset each compound with
+// every level down - a fixed 14dp/10dp makes depth five effectively unusable on a phone-width
+// screen. Thin both toward a floor as depth grows instead.
+private const val NESTING_INSET_STEP_DP = 3
+private const val NESTING_TOP_INSET_STEP_DP = 2
+private val NESTING_INSET_MIN = 4.dp
+private val NESTING_INSET_BASE = 14.dp
+private val NESTING_TOP_INSET_BASE = 10.dp
+
+private fun nestingInset(depth: Int): Dp =
+    (NESTING_INSET_BASE - (depth * NESTING_INSET_STEP_DP).dp).coerceAtLeast(NESTING_INSET_MIN)
+
+private fun nestingTopInset(depth: Int): Dp =
+    (NESTING_TOP_INSET_BASE - (depth * NESTING_TOP_INSET_STEP_DP).dp).coerceAtLeast(NESTING_INSET_MIN)
+
+// F4: a file's hue is its share of total storage, cool for small and red for the outliers - the
+// first seven entries of Azphalt.hues run violet -> cyan -> teal -> green -> amber -> orange ->
+// red, exactly that ramp, before the list moves on to the grounds/category-recolor extension
+// hues that don't belong in a size gradient. Folders keep the identity hash (Azphalt.hueOf
+// directly) - a folder's hue changing as its contents change would be disorienting.
+private const val SIZE_HUE_RAMP_LENGTH = 7
+private val SIZE_HUE_RAMP = Azphalt.hues.subList(0, SIZE_HUE_RAMP_LENGTH)
+
+private fun hueForShare(fraction: Float): Color {
+    val steps = SIZE_HUE_RAMP.size - 1
+    val scaled = fraction.coerceIn(0f, 1f) * steps
+    val index = scaled.toInt().coerceIn(0, steps - 1)
+    return lerp(SIZE_HUE_RAMP[index], SIZE_HUE_RAMP[index + 1], scaled - index)
+}
+
+private fun fileHue(entry: VfsEntry, totalBytes: Long?): Color =
+    if (totalBytes != null && totalBytes > 0) {
+        hueForShare(entry.sizeBytes.toFloat() / totalBytes.toFloat())
+    } else {
+        Azphalt.hues[Azphalt.hueOf(entry.path)]
+    }
+
+// F1/F6: tap a folder and its siblings drop, race, and climb into a thin column at the trailing
+// edge while the tapped one grows to fill the width - a directed Rect choreography (shared with
+// FolderPicker's own MorphTile via TileMorph.kt) in place of the single animateContentSize this
+// screen used to lean on for the whole level. Folders arrive as a tile grid, capped at two rows
+// with the remainder behind a "+N" tile, the same way a PillMenu category caps what it shows at
+// once. The open tile itself only ever renders a header bar - the folder's own recursive contents
+// (arbitrarily deep, arbitrarily tall) still reveal below it via ExpandableLevel's own recursion,
+// unchanged, since no fixed-size Rect can represent that up front.
+private const val FOLDER_GRID_COLUMNS = 3
+private const val FOLDER_GRID_ROW_CAP = 2
+private const val FOLDER_TILE_CAP = FOLDER_GRID_COLUMNS * FOLDER_GRID_ROW_CAP
+private val OPEN_HEADER_HEIGHT = 56.dp
+private const val TILE_DROP_FRACTION = 0.35f
+private const val TILE_RACE_FRACTION = 0.7f
+private val TILE_MOTION_EASING = CubicBezierEasing(0f, .9f, .1f, 1f)
+private const val DROP_OVERSHOOT_FRACTION = 0.5f
+
+private data class FolderEntryActions(
+    val onTap: (VfsEntry) -> Unit,
+    val onLongPress: (VfsEntry) -> Unit,
+    val onRename: (VfsEntry) -> Unit,
+    val onDelete: (VfsEntry) -> Unit,
+    val onShare: (VfsEntry) -> Unit
+)
+
+private data class SelectionState(val selectMode: Boolean, val selected: Set<String>)
+private data class FolderTileSelection(val selectMode: Boolean, val isSelected: Boolean)
+
+// ExpandableLevel recurses through however many levels are currently open - everything here
+// except [depth]/[openChain] themselves stays identical from one level to the next, so it's
+// threaded straight through recursive calls rather than re-listed at every one.
+private class LevelActions(
+    val onTap: (Int, VfsEntry) -> Unit,
+    val onLongPress: (VfsEntry) -> Unit,
+    val onRename: (VfsEntry) -> Unit,
+    val onDelete: (VfsEntry) -> Unit,
+    val onShare: (VfsEntry) -> Unit
+)
+
+private class LevelContext(
+    val entriesAt: (Int) -> List<VfsEntry>?,
+    val selection: SelectionState,
+    val actions: LevelActions,
+    val totalBytes: Long?,
+    val preview: PreviewContext
+)
+
+// F3: the one file currently expanded in place (across the whole tree, same "one at a time" rule
+// openChain applies to folders), its already-loaded/loading previews, and the escape hatch into
+// the real editor for actually changing a file rather than just reading it.
+private class PreviewContext(
+    val openPath: String?,
+    val cache: Map<String, FilePreview>,
+    val onOpenFile: (String) -> Unit
+)
+
+private fun LevelContext.entryActionsAt(depth: Int) = FolderEntryActions(
+    onTap = { actions.onTap(depth, it) },
+    onLongPress = actions.onLongPress,
+    onRename = actions.onRename,
+    onDelete = actions.onDelete,
+    onShare = actions.onShare
+)
+
+private class FolderBandGeometry(
+    val density: Density,
+    val canvasWidthPx: Float,
+    val tileSizePx: Float,
+    val gapPx: Float,
+    val headerHeightPx: Float,
+    val rodLengthPx: Float
+)
+
+private fun folderBandGeometry(canvasWidthPx: Float, density: Density): FolderBandGeometry {
+    val tileSizePx = if (canvasWidthPx > 0f) gridTileSizePx(FOLDER_GRID_COLUMNS, canvasWidthPx, density) else 0f
+    return FolderBandGeometry(
+        density = density,
+        canvasWidthPx = canvasWidthPx,
+        tileSizePx = tileSizePx,
+        gapPx = with(density) { GRID_GAP.toPx() },
+        headerHeightPx = with(density) { OPEN_HEADER_HEIGHT.toPx() },
+        rodLengthPx = tileSizePx * ROD_LENGTH_FRACTION
+    )
+}
+
+private fun folderBandHeightPx(g: FolderBandGeometry, openEntry: VfsEntry?, visibleCount: Int, overflow: Int): Float = when {
+    g.canvasWidthPx <= 0f -> 0f
+    openEntry != null -> {
+        val othersCount = (visibleCount - 1).coerceAtLeast(0)
+        g.headerHeightPx + if (othersCount > 0) g.gapPx + othersCount * g.rodLengthPx + (othersCount - 1) * g.gapPx else 0f
+    }
+    else -> {
+        val slotCount = visibleCount + if (overflow > 0) 1 else 0
+        val rows = (slotCount - 1) / FOLDER_GRID_COLUMNS + 1
+        rows * g.tileSizePx + (rows - 1) * g.gapPx
+    }
+}
+
+private fun folderTileTarget(g: FolderBandGeometry, visible: List<VfsEntry>, openEntry: VfsEntry?, i: Int, f: VfsEntry): TileRect {
+    val isOpen = openEntry?.path == f.path
+    return when {
+        isOpen -> TileRect(0f, 0f, g.canvasWidthPx, g.headerHeightPx)
+        openEntry != null -> {
+            val others = visible.filter { it.path != openEntry.path }
+            rodTileRect(others.indexOf(f), g.canvasWidthPx, g.rodLengthPx, g.density, startY = g.headerHeightPx + g.gapPx)
+        }
+        else -> gridTileRect(i, FOLDER_GRID_COLUMNS, g.canvasWidthPx, g.density)
+    }
+}
+
 @Composable
-private fun ExpandableLevel(
-    depth: Int,
-    openChain: List<VfsEntry>,
-    entriesAt: (Int) -> List<VfsEntry>?,
-    onToggle: (Int, VfsEntry) -> Unit,
-    selectMode: Boolean,
-    selected: Set<String>,
-    onTap: (Int, VfsEntry) -> Unit,
-    onLongPress: (VfsEntry) -> Unit,
-    onRename: (VfsEntry) -> Unit,
-    onDelete: (VfsEntry) -> Unit,
-    onShare: (VfsEntry) -> Unit
+private fun FolderBand(
+    folders: List<VfsEntry>,
+    openEntry: VfsEntry?,
+    selection: SelectionState,
+    actions: FolderEntryActions
 ) {
-    val entries = entriesAt(depth)
+    if (folders.isEmpty()) return
+    var expanded by remember { mutableStateOf(false) }
+    val density = LocalDensity.current
+    var canvasWidthPx by remember { mutableStateOf(0f) }
+    val capped = !expanded && openEntry == null && folders.size > FOLDER_TILE_CAP
+    val visible = if (capped) folders.take(FOLDER_TILE_CAP - 1) else folders
+    val overflow = folders.size - visible.size
+    val g = folderBandGeometry(canvasWidthPx, density)
+    val bandHeightPx = folderBandHeightPx(g, openEntry, visible.size, overflow)
+
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .onGloballyPositioned { canvasWidthPx = it.size.width.toFloat() }
+            .then(with(density) { Modifier.height(bandHeightPx.toDp()) })
+    ) {
+        if (canvasWidthPx > 0f) {
+            visible.forEachIndexed { i, f ->
+                key(f.path) {
+                    FolderTile(
+                        entry = f,
+                        hue = Azphalt.hues[Azphalt.hueOf(f.path)],
+                        geometry = FolderTileGeometry(
+                            rect = folderTileTarget(g, visible, openEntry, i, f),
+                            isOpen = openEntry?.path == f.path,
+                            referenceSizePx = g.tileSizePx
+                        ),
+                        selection = FolderTileSelection(selection.selectMode, f.path in selection.selected),
+                        actions = actions
+                    )
+                }
+            }
+            if (openEntry == null && overflow > 0) {
+                key("__more__") {
+                    OverflowTile(
+                        rect = gridTileRect(visible.size, FOLDER_GRID_COLUMNS, canvasWidthPx, density),
+                        count = overflow,
+                        onClick = { expanded = true }
+                    )
+                }
+            }
+        }
+    }
+}
+
+private const val ROD_LENGTH_FRACTION = 0.7f
+
+private class TileMotion(
+    val x: Animatable<Float, AnimationVector1D>,
+    val y: Animatable<Float, AnimationVector1D>,
+    val w: Animatable<Float, AnimationVector1D>,
+    val h: Animatable<Float, AnimationVector1D>,
+    val scale: Animatable<Float, AnimationVector1D>
+)
+
+/** Animates [motion]'s x/y/w/h/scale from wherever they currently sit toward [to] - a drop, then
+ *  a race across, then a climb up the far side, instead of a straight interpolation, so a tile
+ *  visibly travels rather than just resizing in place. Landing in a square grid slot (closing back
+ *  from a rod or from being open) gets a brief overshoot - "siblings ballooning and popping into
+ *  place" on the way back in. */
+private suspend fun animateDirected(motion: TileMotion, to: TileRect, referenceSizePx: Float) {
+    val x = motion.x
+    val y = motion.y
+    val w = motion.w
+    val h = motion.h
+    val scale = motion.scale
+    val dropY = maxOf(y.value, to.y) + referenceSizePx * DROP_OVERSHOOT_FRACTION
+    val dropMs = (TILE_MORPH_MS * TILE_DROP_FRACTION).toInt()
+    val raceMs = (TILE_MORPH_MS * (TILE_RACE_FRACTION - TILE_DROP_FRACTION)).toInt()
+    val climbMs = TILE_MORPH_MS - dropMs - raceMs
+    coroutineScope {
+        launch {
+            y.animateTo(dropY, tween(dropMs, easing = TILE_MOTION_EASING))
+            delay(raceMs.toLong())
+            y.animateTo(to.y, tween(climbMs, easing = TILE_MOTION_EASING))
+        }
+        launch {
+            delay(dropMs.toLong())
+            x.animateTo(to.x, tween(raceMs, easing = TILE_MOTION_EASING))
+        }
+        launch { w.animateTo(to.w, tween(TILE_MORPH_MS, easing = TILE_MOTION_EASING)) }
+        launch { h.animateTo(to.h, tween(TILE_MORPH_MS, easing = TILE_MOTION_EASING)) }
+        if (to.w == to.h) {
+            launch {
+                delay((TILE_MORPH_MS - POP_MS).toLong().coerceAtLeast(0L))
+                scale.animateTo(POP_OVERSHOOT, tween(POP_MS / 2, easing = TILE_MOTION_EASING))
+                scale.animateTo(1f, tween(POP_MS / 2, easing = TILE_MOTION_EASING))
+            }
+        } else if (scale.value != 1f) {
+            launch { scale.snapTo(1f) }
+        }
+    }
+}
+
+private const val POP_MS = 180
+private const val POP_OVERSHOOT = 1.12f
+
+private class FolderTileGeometry(val rect: TileRect, val isOpen: Boolean, val referenceSizePx: Float)
+
+@Composable
+private fun FolderTile(
+    entry: VfsEntry,
+    hue: Color,
+    geometry: FolderTileGeometry,
+    selection: FolderTileSelection,
+    actions: FolderEntryActions
+) {
+    val (rect, isOpen, referenceSizePx) = geometry
+    val density = LocalDensity.current
+    val motion = remember {
+        TileMotion(
+            x = Animatable(rect.x), y = Animatable(rect.y),
+            w = Animatable(rect.w), h = Animatable(rect.h),
+            scale = Animatable(1f)
+        )
+    }
+
+    LaunchedEffect(rect) { animateDirected(motion, rect, referenceSizePx.coerceAtLeast(1f)) }
+
+    with(density) {
+        Box(
+            Modifier
+                .offset { IntOffset(motion.x.value.toInt(), motion.y.value.toInt()) }
+                .width(motion.w.value.toDp())
+                .height(motion.h.value.toDp())
+                .graphicsLayer { scaleX = motion.scale.value; scaleY = motion.scale.value }
+                .clip(folderTileShape(isOpen, motion.w.value.toDp()))
+                .background(if (isOpen && selection.selectMode && selection.isSelected) Azphalt.Ink else hue)
+                .combinedClickable(
+                    onClick = { actions.onTap(entry) },
+                    onLongClick = { actions.onLongPress(entry) }
+                )
+                .padding(if (isOpen) 14.dp else 6.dp),
+            contentAlignment = if (isOpen) Alignment.CenterStart else Alignment.BottomStart
+        ) {
+            FolderTileContent(entry, isOpen, motion.w.value.toDp(), selection, actions)
+        }
+    }
+}
+
+private fun folderTileShape(isOpen: Boolean, width: Dp) = when {
+    isOpen -> AzphaltSurface.recordTile
+    width < 20.dp -> AzphaltSurface.capsule
+    else -> AzphaltSurface.note
+}
+
+private operator fun FolderTileGeometry.component1() = rect
+private operator fun FolderTileGeometry.component2() = isOpen
+private operator fun FolderTileGeometry.component3() = referenceSizePx
+
+@Composable
+private fun FolderTileContent(
+    entry: VfsEntry,
+    isOpen: Boolean,
+    width: Dp,
+    selection: FolderTileSelection,
+    actions: FolderEntryActions
+) {
+    if (isOpen) {
+        val isSelectedTint = selection.selectMode && selection.isSelected
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (selection.selectMode) SelectMark(selection.isSelected, dark = true)
+                Text(
+                    entry.name.uppercase(), color = if (isSelectedTint) Azphalt.Yellow else Azphalt.White,
+                    fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.06.em, maxLines = 1
+                )
+            }
+            if (!selection.selectMode) EntryMenu(entry, actions.onRename, actions.onDelete, actions.onShare, tint = Azphalt.White)
+        }
+    } else if (width > 24.dp) {
+        Text(
+            entry.name.uppercase(), color = Azphalt.White, fontSize = 8.sp,
+            fontWeight = FontWeight.ExtraBold, letterSpacing = 0.06.em, maxLines = 2
+        )
+    }
+}
+
+@Composable
+private fun OverflowTile(rect: TileRect, count: Int, onClick: () -> Unit) {
+    val density = LocalDensity.current
+    with(density) {
+        Box(
+            Modifier
+                .offset { IntOffset(rect.x.toInt(), rect.y.toInt()) }
+                .width(rect.w.toDp())
+                .height(rect.h.toDp())
+                .clip(AzphaltSurface.note)
+                .background(Azphalt.Ink.copy(alpha = .14f))
+                .clickable(onClick = onClick),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                "+$count", color = Azphalt.currentGround.onPage, fontSize = 13.sp,
+                fontWeight = FontWeight.ExtraBold, letterSpacing = 0.06.em
+            )
+        }
+    }
+}
+
+@Composable
+private fun ExpandableLevel(depth: Int, openChain: List<VfsEntry>, ctx: LevelContext) {
+    val entries = ctx.entriesAt(depth)
     val openEntry = openChain.getOrNull(depth)
     val folders = entries?.filter { it.isDirectory } ?: emptyList()
     val files = entries?.filterNot { it.isDirectory } ?: emptyList()
 
-    Column(
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-        modifier = Modifier.animateContentSize(tween(Azphalt.SLIDE_MS, easing = LinearEasing))
-    ) {
-        if (openEntry != null) {
-            val others = folders.filter { it.path != openEntry.path }
-            if (others.isNotEmpty()) {
-                Row(
-                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    others.forEach { f ->
-                        key(f.path) {
-                            Box(
-                                Modifier
-                                    .width(10.dp)
-                                    .height(40.dp)
-                                    .clip(RoundedCornerShape(percent = 50))
-                                    .background(Azphalt.hues[Azphalt.hueOf(f.path)])
-                                    .clickable { onToggle(depth, f) }
-                            )
-                        }
-                    }
-                }
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        if (folders.isNotEmpty()) {
+            if (openEntry == null) {
+                Text(
+                    // .55f, the app-wide "text-muted, eyebrows and captions" tier (style guide "03 -
+                    // Transparency") - the 45% tier is for micro labels inside a pill, which this
+                    // section caption isn't.
+                    "FOLDERS · ${folders.size}", color = Azphalt.Ink.copy(alpha = .55f),
+                    fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.18.em
+                )
             }
-            val isSelected = selectMode && openEntry.path in selected
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    // The style guide's canonical "record tile" radius - the one other ad hoc
-                    // radius this screen used to carry (18dp) reconciled to it.
-                    .clip(RoundedCornerShape(26.dp))
-                    // A selected row goes to ink with an inverted (yellow) foreground - same
-                    // "ink means selected/open" convention PillMenu's open pills use.
-                    .background(if (isSelected) Azphalt.Ink else Azphalt.hues[Azphalt.hueOf(openEntry.path)])
-                    .clickable { onTap(depth, openEntry) }
-                    .padding(14.dp)
-            ) {
-                Column {
-                    Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            if (selectMode) SelectMark(openEntry.path in selected, dark = true)
-                            Text(
-                                openEntry.name.uppercase(), color = if (isSelected) Azphalt.Yellow else Azphalt.White,
-                                fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.06.em
-                            )
-                        }
-                        // Guarded the same as every sibling row's own menu (FolderRow, FileRows) -
-                        // this was the one place still left live during select mode, so its ×
-                        // could delete the very folder whose contents you were selecting inside.
-                        if (!selectMode) EntryMenu(openEntry, onRename, onDelete, onShare, tint = Azphalt.White)
-                    }
-                    Box(Modifier.padding(start = 14.dp, top = 10.dp)) {
-                        ExpandableLevel(
-                            depth = depth + 1,
-                            openChain = openChain,
-                            entriesAt = entriesAt,
-                            onToggle = onToggle,
-                            selectMode = selectMode,
-                            selected = selected,
-                            onTap = onTap,
-                            onLongPress = onLongPress,
-                            onRename = onRename,
-                            onDelete = onDelete,
-                            onShare = onShare
-                        )
-                    }
-                }
+            FolderBand(folders = folders, openEntry = openEntry, selection = ctx.selection, actions = ctx.entryActionsAt(depth))
+        }
+        if (openEntry != null) {
+            Box(Modifier.padding(start = nestingInset(depth), top = nestingTopInset(depth))) {
+                ExpandableLevel(depth = depth + 1, openChain = openChain, ctx = ctx)
             }
         } else if (entries == null) {
             // VFS-14: this depth's own listing hasn't come back yet - a folder just tapped open,
@@ -826,19 +1162,6 @@ private fun ExpandableLevel(
             LoadingLabel()
         } else if (folders.isEmpty() && files.isEmpty()) {
             EmptyLabel()
-        } else if (folders.isNotEmpty()) {
-            Text(
-                // .55f, the app-wide "text-muted, eyebrows and captions" tier (style guide "03 -
-                // Transparency") - the 45% tier is for micro labels inside a pill, which this
-                // section caption isn't.
-                "FOLDERS · ${folders.size}", color = Azphalt.Ink.copy(alpha = .55f),
-                fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.18.em
-            )
-            folders.forEach { f ->
-                key(f.path) {
-                    FolderRow(f, selectMode, f.path in selected, { onTap(depth, it) }, onLongPress, onRename, onDelete, onShare)
-                }
-            }
         }
 
         if (files.isNotEmpty()) {
@@ -851,7 +1174,7 @@ private fun ExpandableLevel(
                     modifier = Modifier.padding(top = 4.dp)
                 )
             }
-            FileRows(files, selectMode, selected, { onTap(depth, it) }, onLongPress, onRename, onDelete, onShare)
+            FileRows(files, ctx.selection, ctx.entryActionsAt(depth), ctx.totalBytes, ctx.preview)
         }
     }
 }
@@ -873,51 +1196,12 @@ private fun LoadingLabel() {
 }
 
 @Composable
-private fun FolderRow(
-    entry: VfsEntry,
-    selectMode: Boolean,
-    isSelected: Boolean,
-    onTap: (VfsEntry) -> Unit,
-    onLongPress: (VfsEntry) -> Unit,
-    onRename: (VfsEntry) -> Unit,
-    onDelete: (VfsEntry) -> Unit,
-    onShare: (VfsEntry) -> Unit
-) {
-    val selectedTint = selectMode && isSelected
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(percent = 50))
-            // A selected row goes to ink with an inverted (yellow) foreground - same
-            // "ink means selected/open" convention PillMenu's open pills use.
-            .background(if (selectedTint) Azphalt.Ink else Azphalt.hues[Azphalt.hueOf(entry.path)])
-            .combinedClickable(onClick = { onTap(entry) }, onLongClick = { onLongPress(entry) })
-            .padding(start = 16.dp, end = 8.dp, top = 10.dp, bottom = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (selectMode) SelectMark(isSelected, dark = true)
-            Text(
-                (entry.name + "/").uppercase(),
-                color = if (selectedTint) Azphalt.Yellow else Azphalt.White,
-                fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em, maxLines = 1
-            )
-        }
-        if (!selectMode) EntryMenu(entry, onRename, onDelete, onShare, tint = Azphalt.White)
-    }
-}
-
-@Composable
 private fun FileRows(
     files: List<VfsEntry>,
-    selectMode: Boolean,
-    selected: Set<String>,
-    onTap: (VfsEntry) -> Unit,
-    onLongPress: (VfsEntry) -> Unit,
-    onRename: (VfsEntry) -> Unit,
-    onDelete: (VfsEntry) -> Unit,
-    onShare: (VfsEntry) -> Unit
+    selection: SelectionState,
+    actions: FolderEntryActions,
+    totalBytes: Long?,
+    preview: PreviewContext
 ) {
     val images = files.filter { it.isImage }
     val others = files.filterNot { it.isImage }
@@ -936,63 +1220,119 @@ private fun FileRows(
                 horizontalArrangement = Arrangement.spacedBy(5.dp),
                 verticalArrangement = Arrangement.spacedBy(5.dp)
             ) {
-                items(images, key = { it.path }) { img ->
-                    Box(
-                        Modifier
-                            .aspectRatio(1f)
-                            .clip(RoundedCornerShape(7.dp))
-                            // The tile's own hue never changes on selection - only the mark does.
-                            .background(Azphalt.hues[Azphalt.hueOf(img.path)])
-                            .combinedClickable(onClick = { onTap(img) }, onLongClick = { onLongPress(img) })
-                    ) {
-                        Text(
-                            img.name, color = Azphalt.White.copy(alpha = .8f), fontSize = 7.sp,
-                            fontWeight = FontWeight.Bold, maxLines = 1,
-                            modifier = Modifier.align(Alignment.BottomStart).padding(6.dp)
-                        )
-                        if (selectMode) {
-                            Box(Modifier.align(Alignment.TopEnd).padding(4.dp)) {
-                                SelectMark(img.path in selected, dark = true)
-                            }
-                        }
-                    }
-                }
+                items(images, key = { it.path }) { img -> ImageTile(img, selection, actions, totalBytes) }
             }
         }
         others.forEach { f ->
-            key(f.path) {
-                val selectedTint = selectMode && f.path in selected
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(percent = 50))
-                        // A selected row goes to ink with an inverted (yellow) foreground - same
-                        // "ink means selected/open" convention PillMenu's open pills use.
-                        .background(if (selectedTint) Azphalt.Ink else Azphalt.Ink.copy(alpha = .09f))
-                        .combinedClickable(onClick = { onTap(f) }, onLongClick = { onLongPress(f) })
-                        .padding(start = 16.dp, end = 8.dp, top = 10.dp, bottom = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        if (selectMode) SelectMark(f.path in selected, dark = false)
-                        // Filenames are literal, not labels - the one place real case survives
-                        // outside body copy, same as every other identifier here that names an
-                        // actual leaf item rather than a folder/chrome label.
-                        Text(
-                            f.name, color = if (selectedTint) Azphalt.Yellow else Azphalt.Ink,
-                            fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em, maxLines = 1
-                        )
-                        Text(
-                            formatFileSize(f.sizeBytes),
-                            color = if (selectedTint) Azphalt.Yellow.copy(alpha = .75f) else Azphalt.Ink.copy(alpha = .55f),
-                            fontSize = 9.sp
-                        )
-                    }
-                    if (!selectMode) EntryMenu(f, onRename, onDelete, onShare, tint = Azphalt.Ink)
-                }
+            key(f.path) { FileRow(f, selection, actions, preview) }
+        }
+    }
+}
+
+@Composable
+private fun ImageTile(img: VfsEntry, selection: SelectionState, actions: FolderEntryActions, totalBytes: Long?) {
+    Box(
+        Modifier
+            .aspectRatio(1f)
+            .clip(AzphaltSurface.note)
+            // The tile's own hue never changes on selection - only the mark does.
+            .background(fileHue(img, totalBytes))
+            .combinedClickable(onClick = { actions.onTap(img) }, onLongClick = { actions.onLongPress(img) })
+    ) {
+        Text(
+            img.name, color = Azphalt.White.copy(alpha = .8f), fontSize = 7.sp,
+            fontWeight = FontWeight.Bold, maxLines = 1,
+            modifier = Modifier.align(Alignment.BottomStart).padding(6.dp)
+        )
+        if (selection.selectMode) {
+            Box(Modifier.align(Alignment.TopEnd).padding(4.dp)) {
+                SelectMark(img.path in selection.selected, dark = true)
             }
         }
+    }
+}
+
+@Composable
+private fun FileRow(f: VfsEntry, selection: SelectionState, actions: FolderEntryActions, preview: PreviewContext) {
+    val selectedTint = selection.selectMode && f.path in selection.selected
+    // F3: open widens the shape from a pill into the same "note" surface every other expanding
+    // panel on this screen uses - a fully-rounded pill reads oddly once it's tall enough to hold
+    // a multi-line preview.
+    val isOpen = preview.openPath == f.path
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clip(if (isOpen) AzphaltSurface.note else RoundedCornerShape(percent = 50))
+            // A selected row goes to ink with an inverted (yellow) foreground - same
+            // "ink means selected/open" convention PillMenu's open pills use.
+            .background(if (selectedTint) Azphalt.Ink else Azphalt.Ink.copy(alpha = .09f))
+            .animateContentSize(tween(Azphalt.SLIDE_MS, easing = LinearEasing))
+    ) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .combinedClickable(onClick = { actions.onTap(f) }, onLongClick = { actions.onLongPress(f) })
+                .padding(start = 16.dp, end = 8.dp, top = 10.dp, bottom = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (selection.selectMode) SelectMark(f.path in selection.selected, dark = false)
+                // Filenames are literal, not labels - the one place real case survives outside
+                // body copy, same as every other identifier here that names an actual leaf item
+                // rather than a folder/chrome label.
+                Text(
+                    f.name, color = if (selectedTint) Azphalt.Yellow else Azphalt.Ink,
+                    fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em, maxLines = 1
+                )
+                Text(
+                    formatFileSize(f.sizeBytes),
+                    color = if (selectedTint) Azphalt.Yellow.copy(alpha = .75f) else Azphalt.Ink.copy(alpha = .55f),
+                    fontSize = 9.sp
+                )
+            }
+            if (!selection.selectMode) EntryMenu(f, actions.onRename, actions.onDelete, actions.onShare, tint = Azphalt.Ink)
+        }
+        if (isOpen) FilePreviewPane(f, preview.cache[f.path]) { preview.onOpenFile(f.path) }
+    }
+}
+
+private val PREVIEW_MAX_HEIGHT = 260.dp
+
+/** F3: "the design has a tapped file reveal its contents inside its own rectangle - scrollable,
+ *  with markdown rendered rather than shown as source, and syntax highlighting from whichever
+ *  linters the user has chosen to install." [preview] is null while still loading; a null
+ *  [FilePreview.text] means the read either failed or found something that isn't text - either
+ *  way this says what happened instead of appearing inert. */
+@Composable
+private fun FilePreviewPane(entry: VfsEntry, preview: FilePreview?, onOpenInEditor: () -> Unit) {
+    val onPage = Azphalt.currentGround.onPage
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .heightIn(max = PREVIEW_MAX_HEIGHT)
+            .verticalScroll(rememberScrollState())
+            .padding(start = 16.dp, end = 16.dp, bottom = 12.dp)
+    ) {
+        when {
+            preview == null -> LoadingLabel()
+            preview.text == null -> {
+                val kind = entry.name.substringAfterLast('.', "THIS").uppercase()
+                Text(
+                    if (preview.truncated) "TOO LARGE TO PREVIEW" else "CAN'T PREVIEW $kind",
+                    color = Azphalt.Ink.copy(alpha = .5f), fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.12.em
+                )
+            }
+            preview.isMarkdown -> MarkdownPreview(preview.text, onPage, Azphalt.Ink)
+            preview.styled.isNotEmpty() -> preview.styled.forEach { line ->
+                Text(buildStyledLine(line, Azphalt.Ink), fontSize = 10.sp, fontFamily = FontFamily.Monospace)
+            }
+            else -> Text(preview.text, color = Azphalt.Ink, fontSize = 10.sp, fontFamily = FontFamily.Monospace)
+        }
+        Text(
+            "OPEN IN EDITOR", color = Azphalt.Ink.copy(alpha = .7f), fontSize = 8.sp, fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(top = 8.dp).clickable(onClick = onOpenInEditor)
+        )
     }
 }
 

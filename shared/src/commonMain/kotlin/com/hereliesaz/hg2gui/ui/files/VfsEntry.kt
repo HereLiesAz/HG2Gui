@@ -1,5 +1,7 @@
 package com.hereliesaz.hg2gui.ui.files
 
+import com.hereliesaz.hg2gui.managers.StyledSpan
+
 /**
  * One node in the sandboxed filesystem, identified by an absolute path from the vfs root
  * (e.g. "/Downloads/photo.png") - not a `java.io.File`, so this stays platform-agnostic and the
@@ -47,6 +49,19 @@ fun vfsChildPath(parent: String, name: String): String {
     val base = parent.trimEnd('/')
     return if (base.isEmpty()) "/$name" else "$base/$name"
 }
+
+/** F3: a tapped file's own in-place preview - [text] is null for anything not readable as text
+ *  (a binary, or a read that failed), in which case the preview surface says what the file is
+ *  instead of appearing inert rather than attempting to render raw bytes. [styled] is non-empty
+ *  only when a highlighter was actually found installed and ran cleanly; empty means "render
+ *  [text] plain" - a pluggable highlighter that reports what's present, never assumed. [isMarkdown]
+ *  routes [text] through the markdown renderer instead of either plain or [styled] rendering. */
+data class FilePreview(
+    val text: String?,
+    val styled: List<List<StyledSpan>> = emptyList(),
+    val isMarkdown: Boolean = false,
+    val truncated: Boolean = false
+)
 
 fun formatFileSize(bytes: Long): String = when {
     bytes < 1024 -> "$bytes B"

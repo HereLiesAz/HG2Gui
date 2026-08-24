@@ -566,10 +566,11 @@ private const val OUTPUT_WIPE_STAGGER_CAP = 24
 
 // D1: an unstyled span's color - exactly what every line rendered as before ANSI-aware styling
 // existed, kept as the fallback for plain text and for any run whose color didn't map to a
-// named Azphalt hue (StyledTranscript.kt's own ansiHueOf).
-private fun StyledSpan.inkColor(onPage: Color): Color = hue?.let { Azphalt.hues[it] } ?: onPage.copy(alpha = .8f)
+// named Azphalt hue (StyledTranscript.kt's own ansiHueOf). internal, not private - FilesScreen's
+// own F3 file preview reuses this exact styling for a highlighter's ANSI-coloured output too.
+internal fun StyledSpan.inkColor(onPage: Color): Color = hue?.let { Azphalt.hues[it] } ?: onPage.copy(alpha = .8f)
 
-private fun buildStyledLine(spans: List<StyledSpan>, onPage: Color): AnnotatedString = buildAnnotatedString {
+internal fun buildStyledLine(spans: List<StyledSpan>, onPage: Color): AnnotatedString = buildAnnotatedString {
     spans.forEach { span ->
         withStyle(SpanStyle(color = span.inkColor(onPage), fontWeight = if (span.bold) FontWeight.Bold else null)) {
             append(span.text)
