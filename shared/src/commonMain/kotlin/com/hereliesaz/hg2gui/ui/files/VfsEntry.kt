@@ -37,6 +37,28 @@ data class VfsTrashEntry(
     val deletedAtMillis: Long
 )
 
+/**
+ * The trash's own suspend lifecycle, bundled - [FilesScreen] threads these straight through to
+ * [StorageScreen] with no per-callback logic of its own, so they don't earn four separate
+ * parameter slots on a composable signature that's already long before they're added.
+ */
+data class TrashActions(
+    val items: suspend () -> List<VfsTrashEntry>,
+    val restore: suspend (VfsTrashEntry) -> Boolean,
+    val purge: suspend (VfsTrashEntry) -> Boolean,
+    val empty: suspend () -> Int
+)
+
+/** [StorageScreen]'s own trash tab: the current snapshot plus its three UI-thread actions
+ *  (already wrapped in `scope.launch` by the caller) - the same bundling [TrashActions] does,
+ *  one level down. */
+data class TrashPanelState(
+    val items: List<VfsTrashEntry> = emptyList(),
+    val onRestore: (VfsTrashEntry) -> Unit = {},
+    val onPurgeTrash: (VfsTrashEntry) -> Unit = {},
+    val onEmptyTrash: () -> Unit = {}
+)
+
 /** [totalCapacityBytes] and [usedCapacityBytes] are the real device/partition capacity and usage,
  *  when the platform can supply them (e.g. via `StatFs` on Android) - null when it can't, since
  *  commonMain has no cross-platform way to ask the OS how big the disk is or how full it is. The

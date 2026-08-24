@@ -89,6 +89,7 @@ import com.hereliesaz.hg2gui.ui.files.FilesScreen
 import com.hereliesaz.hg2gui.ui.files.PathPickerScreen
 import com.hereliesaz.hg2gui.ui.files.StorageCategoryStat
 import com.hereliesaz.hg2gui.ui.files.StorageStats
+import com.hereliesaz.hg2gui.ui.files.TrashActions
 import com.hereliesaz.hg2gui.ui.files.VfsEntry
 import com.hereliesaz.hg2gui.ui.files.VfsSearchResult
 import com.hereliesaz.hg2gui.ui.files.VfsTrashEntry
@@ -1055,19 +1056,27 @@ class TerminalActivity : FragmentActivity() {
                             // TRASH tab. See VfsManager.kt's "Trash" section for the full mechanism.
                             onDelete = { path ->
                                 withContext(Dispatchers.IO) {
-                                    VfsManager.resolve(this@TerminalActivity, path)?.let { VfsManager.trash(this@TerminalActivity, it) != null } ?: false
+                                    VfsManager.resolve(this@TerminalActivity, path)
+                                        ?.let { VfsManager.trash(this@TerminalActivity, it) != null }
+                                        ?: false
                                 }
                             },
-                            onRestore = { entry ->
-                                withContext(Dispatchers.IO) { VfsManager.restore(this@TerminalActivity, toManagerEntry(entry)) }
-                            },
-                            onPurgeTrash = { entry ->
-                                withContext(Dispatchers.IO) { VfsManager.purgeTrash(this@TerminalActivity, toManagerEntry(entry)) }
-                            },
-                            onEmptyTrash = {
-                                withContext(Dispatchers.IO) { VfsManager.emptyTrash(this@TerminalActivity) }
-                            },
-                            trashedItems = { vfsTrashedItems() },
+                            trash = TrashActions(
+                                items = { vfsTrashedItems() },
+                                restore = { entry ->
+                                    withContext(Dispatchers.IO) {
+                                        VfsManager.restore(this@TerminalActivity, toManagerEntry(entry))
+                                    }
+                                },
+                                purge = { entry ->
+                                    withContext(Dispatchers.IO) {
+                                        VfsManager.purgeTrash(this@TerminalActivity, toManagerEntry(entry))
+                                    }
+                                },
+                                empty = {
+                                    withContext(Dispatchers.IO) { VfsManager.emptyTrash(this@TerminalActivity) }
+                                }
+                            ),
                             onRename = { path, newName ->
                                 withContext(Dispatchers.IO) {
                                     VfsManager.resolve(this@TerminalActivity, path)?.let { VfsManager.rename(it, newName) } ?: false

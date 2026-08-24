@@ -27,7 +27,6 @@
     <ID>FunctionNaming:McpServerScreen.kt$@Composable fun McpServerScreen( fullscreen: Boolean, running: Boolean, port: Int, token: String?, shellExecEnabled: Boolean, onStart: () -&gt; Unit, onStop: () -&gt; Unit, onRequestShellExec: () -&gt; Unit, onDisableShellExec: () -&gt; Unit, onBack: () -&gt; Unit )</ID>
     <ID>FunctionNaming:McpServerScreen.kt$@Composable private fun McpSettingRow(title: String, description: String, control: @Composable () -&gt; Unit)</ID>
     <ID>FunctionNaming:McpServerScreen.kt$@Composable private fun McpToggle( leftLabel: String, rightLabel: String, rightSelected: Boolean, onSelectRight: (Boolean) -&gt; Unit )</ID>
-    <ID>FunctionNaming:PreviewMain.kt$@Composable private fun PreviewRoot()</ID>
     <ID>FunctionNaming:SettingsScreen.kt$@Composable fun SettingsScreen( fullscreen: Boolean, onFullscreenChange: (Boolean) -&gt; Unit, fontScalePercent: Int, onFontScalePercentChange: (Int) -&gt; Unit, usePty: Boolean, onUsePtyChange: (Boolean) -&gt; Unit, onOpenMcpServer: () -&gt; Unit, onOpenAiSettings: () -&gt; Unit, onOpenEnvironment: () -&gt; Unit, onOpenHistory: () -&gt; Unit, onBack: () -&gt; Unit )</ID>
     <ID>FunctionNaming:SettingsScreen.kt$@Composable private fun SegmentedToggle( leftLabel: String, rightLabel: String, rightSelected: Boolean, onSelectRight: (Boolean) -&gt; Unit )</ID>
     <ID>FunctionNaming:SettingsScreen.kt$@Composable private fun SettingRow(title: String, description: String, control: @Composable () -&gt; Unit)</ID>
@@ -105,7 +104,9 @@
     <ID>ReturnCount:VfsManager.kt$VfsManager$fun move(context: Context, from: String, to: String): Boolean</ID>
     <ID>ReturnCount:VfsManager.kt$VfsManager$fun moveInto(file: File, targetDir: File): Boolean</ID>
     <ID>ReturnCount:VfsManager.kt$VfsManager$fun rename(file: File, newName: String): Boolean</ID>
+    <ID>ReturnCount:VfsManager.kt$VfsManager$fun restore(context: Context, entry: TrashEntry): Boolean</ID>
     <ID>ReturnCount:VfsManager.kt$VfsManager$fun touch(dir: File, name: String): Boolean</ID>
+    <ID>ReturnCount:VfsManager.kt$VfsManager$fun trash(context: Context, file: File): TrashEntry?</ID>
     <ID>ReturnCount:VfsManager.kt$VfsManager$private fun searchWalk( dir: File, q: String, into: MutableList&lt;File&gt;, limit: Int, seen: MutableSet&lt;String&gt; = mutableSetOf(), depth: Int = 0 )</ID>
     <ID>SpreadOperator:ShellSession.kt$ShellSession$(*command)</ID>
     <ID>SwallowedException:AzpInstaller.kt$AzpInstaller$e: Exception</ID>
@@ -159,13 +160,15 @@
     <ID>UnreachableCode:McpJsonRpc.kt$McpJsonRpc$return json.encodeToString(JsonRpcResponse.serializer(), response)</ID>
     <ID>UnreachableCode:McpJsonRpc.kt$McpJsonRpc$val request = try { json.decodeFromString(JsonRpcRequest.serializer(), line) } catch (e: Exception) { return json.encodeToString( JsonRpcResponse.serializer(), JsonRpcResponse(error = JsonRpcError(PARSE_ERROR, "Parse error: ${e.message}")) ) }</ID>
     <ID>UnreachableCode:McpJsonRpc.kt$McpJsonRpc$val response = dispatch(request, tools)</ID>
+    <ID>UnreachableCode:VfsManager.kt$VfsManager$for (child in children) { if (into.size &gt;= limit) return if (child.name.lowercase().contains(q)) into.add(child) if (child.isDirectory) searchWalk(child, q, into, limit, seen, depth + 1) }</ID>
+    <ID>UnreachableCode:VfsManager.kt$VfsManager$for (child in children) { into.add(child) if (child.isDirectory) walk(child, into, seen, depth + 1) }</ID>
+    <ID>UnreachableCode:VfsManager.kt$VfsManager$val children = dir.listFiles() ?.filterNot { it.name == TRASH_DIR_NAME } // TRASH-1, see list() above ?.sortedWith(compareBy({ !it.isDirectory }, { it.name.lowercase() })) ?: return</ID>
     <ID>UnsafeCallOnNullableType:ContactManager.kt$ContactManager$about[NUMBERS]!!</ID>
     <ID>UseIsNullOrEmpty:ContactManager.kt$ContactManager$mCursor == null || mCursor.count == 0</ID>
     <ID>UseIsNullOrEmpty:ContactManager.kt$ContactManager$snapshot == null || snapshot.isEmpty()</ID>
     <ID>UseOrEmpty:AzpLibrary.kt$AzpLibrary$p.getString("$id.version", "") ?: ""</ID>
     <ID>UseOrEmpty:CommandTree.kt$CommandTree$binDir.listFiles() ?: emptyArray()</ID>
     <ID>UseOrEmpty:McpServerScreen.kt$token ?: ""</ID>
-    <ID>UseOrEmpty:McpTools.kt$McpTools$dir.listFiles() ?: emptyArray()</ID>
     <ID>UseOrEmpty:SshPresets.kt$SshPresets$p.getString("$name.user", "") ?: ""</ID>
     <ID>WildcardImport:AiSettingsScreen.kt$import androidx.compose.foundation.layout.*</ID>
     <ID>WildcardImport:McpServerScreen.kt$import androidx.compose.foundation.layout.*</ID>
