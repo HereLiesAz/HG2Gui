@@ -2,6 +2,7 @@
 
 package com.hereliesaz.hg2gui.ui.files
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.CubicBezierEasing
@@ -22,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -44,6 +46,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.Density
@@ -53,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.hereliesaz.hg2gui.ui.ConfirmDialog
+import com.hereliesaz.hg2gui.ui.buildStyledLine
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
 import com.hereliesaz.hg2gui.ui.menu.onPage
 import com.hereliesaz.hg2gui.ui.menu.pageBrush
@@ -121,6 +125,9 @@ fun FilesScreen(
     listDir: suspend (path: String) -> List<VfsEntry>,
     search: suspend (query: String) -> List<VfsSearchResult>,
     storageStats: suspend () -> StorageStats,
+    // F3: a tapped file reveals its own contents in place, inside its own row - this is the read,
+    // separate from onOpenFile below (which still opens the real editor, for actually changing it).
+    previewFile: suspend (path: String) -> FilePreview,
     onOpenFile: (path: String) -> Unit,
     // VFS-13: every one of these used to discard its own success/failure - create-with-an-
     // existing-name reported fake success (the underlying call is a no-op that still returns
@@ -176,6 +183,20 @@ fun FilesScreen(
 
     var storage by remember { mutableStateOf<StorageStats?>(null) }
     var opError by remember { mutableStateOf<String?>(null) }
+
+    // F3: the one file currently expanded in place - re-tapping it, or tapping a different file,
+    // closes/replaces it, the same one-open-at-a-time rule openChain already applies to folders.
+    // Cached by path so re-opening a file already previewed this session doesn't re-read/re-
+    // highlight it, but a rename/edit elsewhere never invalidates a stale entry here - acceptable,
+    // since the cache only ever lives as long as this composition.
+    var previewPath by remember { mutableStateOf<String?>(null) }
+    var previewCache by remember { mutableStateOf<Map<String, FilePreview>>(emptyMap()) }
+    LaunchedEffect(previewPath) {
+        val path = previewPath
+        if (path != null && path !in previewCache) {
+            previewCache = previewCache + (path to previewFile(path))
+        }
+    }
 
     // VFS-2/VFS-3: every one of these gates a call into onDelete/onRename/onMove/onCopy behind a
     // ConfirmDialog rather than firing on the tap itself - deleteTarget and batchDeleteConfirm for
@@ -287,8 +308,12 @@ fun FilesScreen(
             selected = if (entry.path in selected) selected - entry.path else selected + entry.path
         } else if (entry.isDirectory) {
             openEntry(depth, entry)
-        } else {
+        } else if (entry.isImage) {
+            // Images already get their own thumbnail grid (FileRows) - a tap opens the real
+            // editor/viewer directly rather than an inline text preview that doesn't apply to them.
             onOpenFile(entry.path)
+        } else {
+            previewPath = if (previewPath == entry.path) null else entry.path
         }
     }
 
@@ -589,7 +614,8 @@ fun FilesScreen(
                                 onDelete = { deleteTarget = it },
                                 onShare = { onShare(it.path) }
                             ),
-                            totalBytes = storage?.totalBytes
+                            totalBytes = storage?.totalBytes,
+                            preview = PreviewContext(previewPath, previewCache, onOpenFile)
                         )
                     )
                 }
@@ -828,7 +854,17 @@ private class LevelContext(
     val entriesAt: (Int) -> List<VfsEntry>?,
     val selection: SelectionState,
     val actions: LevelActions,
-    val totalBytes: Long?
+    val totalBytes: Long?,
+    val preview: PreviewContext
+)
+
+// F3: the one file currently expanded in place (across the whole tree, same "one at a time" rule
+// openChain applies to folders), its already-loaded/loading previews, and the escape hatch into
+// the real editor for actually changing a file rather than just reading it.
+private class PreviewContext(
+    val openPath: String?,
+    val cache: Map<String, FilePreview>,
+    val onOpenFile: (String) -> Unit
 )
 
 private fun LevelContext.entryActionsAt(depth: Int) = FolderEntryActions(
@@ -1138,7 +1174,7 @@ private fun ExpandableLevel(depth: Int, openChain: List<VfsEntry>, ctx: LevelCon
                     modifier = Modifier.padding(top = 4.dp)
                 )
             }
-            FileRows(files, ctx.selection, ctx.entryActionsAt(depth), ctx.totalBytes)
+            FileRows(files, ctx.selection, ctx.entryActionsAt(depth), ctx.totalBytes, ctx.preview)
         }
     }
 }
@@ -1160,7 +1196,13 @@ private fun LoadingLabel() {
 }
 
 @Composable
-private fun FileRows(files: List<VfsEntry>, selection: SelectionState, actions: FolderEntryActions, totalBytes: Long?) {
+private fun FileRows(
+    files: List<VfsEntry>,
+    selection: SelectionState,
+    actions: FolderEntryActions,
+    totalBytes: Long?,
+    preview: PreviewContext
+) {
     val images = files.filter { it.isImage }
     val others = files.filterNot { it.isImage }
 
@@ -1182,7 +1224,7 @@ private fun FileRows(files: List<VfsEntry>, selection: SelectionState, actions: 
             }
         }
         others.forEach { f ->
-            key(f.path) { FileRow(f, selection, actions) }
+            key(f.path) { FileRow(f, selection, actions, preview) }
         }
     }
 }
@@ -1211,36 +1253,86 @@ private fun ImageTile(img: VfsEntry, selection: SelectionState, actions: FolderE
 }
 
 @Composable
-private fun FileRow(f: VfsEntry, selection: SelectionState, actions: FolderEntryActions) {
+private fun FileRow(f: VfsEntry, selection: SelectionState, actions: FolderEntryActions, preview: PreviewContext) {
     val selectedTint = selection.selectMode && f.path in selection.selected
-    Row(
+    // F3: open widens the shape from a pill into the same "note" surface every other expanding
+    // panel on this screen uses - a fully-rounded pill reads oddly once it's tall enough to hold
+    // a multi-line preview.
+    val isOpen = preview.openPath == f.path
+    Column(
         Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(percent = 50))
+            .clip(if (isOpen) AzphaltSurface.note else RoundedCornerShape(percent = 50))
             // A selected row goes to ink with an inverted (yellow) foreground - same
             // "ink means selected/open" convention PillMenu's open pills use.
             .background(if (selectedTint) Azphalt.Ink else Azphalt.Ink.copy(alpha = .09f))
-            .combinedClickable(onClick = { actions.onTap(f) }, onLongClick = { actions.onLongPress(f) })
-            .padding(start = 16.dp, end = 8.dp, top = 10.dp, bottom = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+            .animateContentSize(tween(Azphalt.SLIDE_MS, easing = LinearEasing))
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (selection.selectMode) SelectMark(f.path in selection.selected, dark = false)
-            // Filenames are literal, not labels - the one place real case survives outside body
-            // copy, same as every other identifier here that names an actual leaf item rather
-            // than a folder/chrome label.
-            Text(
-                f.name, color = if (selectedTint) Azphalt.Yellow else Azphalt.Ink,
-                fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em, maxLines = 1
-            )
-            Text(
-                formatFileSize(f.sizeBytes),
-                color = if (selectedTint) Azphalt.Yellow.copy(alpha = .75f) else Azphalt.Ink.copy(alpha = .55f),
-                fontSize = 9.sp
-            )
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .combinedClickable(onClick = { actions.onTap(f) }, onLongClick = { actions.onLongPress(f) })
+                .padding(start = 16.dp, end = 8.dp, top = 10.dp, bottom = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (selection.selectMode) SelectMark(f.path in selection.selected, dark = false)
+                // Filenames are literal, not labels - the one place real case survives outside
+                // body copy, same as every other identifier here that names an actual leaf item
+                // rather than a folder/chrome label.
+                Text(
+                    f.name, color = if (selectedTint) Azphalt.Yellow else Azphalt.Ink,
+                    fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em, maxLines = 1
+                )
+                Text(
+                    formatFileSize(f.sizeBytes),
+                    color = if (selectedTint) Azphalt.Yellow.copy(alpha = .75f) else Azphalt.Ink.copy(alpha = .55f),
+                    fontSize = 9.sp
+                )
+            }
+            if (!selection.selectMode) EntryMenu(f, actions.onRename, actions.onDelete, actions.onShare, tint = Azphalt.Ink)
         }
-        if (!selection.selectMode) EntryMenu(f, actions.onRename, actions.onDelete, actions.onShare, tint = Azphalt.Ink)
+        if (isOpen) FilePreviewPane(f, preview.cache[f.path]) { preview.onOpenFile(f.path) }
+    }
+}
+
+private val PREVIEW_MAX_HEIGHT = 260.dp
+
+/** F3: "the design has a tapped file reveal its contents inside its own rectangle - scrollable,
+ *  with markdown rendered rather than shown as source, and syntax highlighting from whichever
+ *  linters the user has chosen to install." [preview] is null while still loading; a null
+ *  [FilePreview.text] means the read either failed or found something that isn't text - either
+ *  way this says what happened instead of appearing inert. */
+@Composable
+private fun FilePreviewPane(entry: VfsEntry, preview: FilePreview?, onOpenInEditor: () -> Unit) {
+    val onPage = Azphalt.currentGround.onPage
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .heightIn(max = PREVIEW_MAX_HEIGHT)
+            .verticalScroll(rememberScrollState())
+            .padding(start = 16.dp, end = 16.dp, bottom = 12.dp)
+    ) {
+        when {
+            preview == null -> LoadingLabel()
+            preview.text == null -> {
+                val kind = entry.name.substringAfterLast('.', "THIS").uppercase()
+                Text(
+                    if (preview.truncated) "TOO LARGE TO PREVIEW" else "CAN'T PREVIEW $kind",
+                    color = Azphalt.Ink.copy(alpha = .5f), fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.12.em
+                )
+            }
+            preview.isMarkdown -> MarkdownPreview(preview.text, onPage, Azphalt.Ink)
+            preview.styled.isNotEmpty() -> preview.styled.forEach { line ->
+                Text(buildStyledLine(line, Azphalt.Ink), fontSize = 10.sp, fontFamily = FontFamily.Monospace)
+            }
+            else -> Text(preview.text, color = Azphalt.Ink, fontSize = 10.sp, fontFamily = FontFamily.Monospace)
+        }
+        Text(
+            "OPEN IN EDITOR", color = Azphalt.Ink.copy(alpha = .7f), fontSize = 8.sp, fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(top = 8.dp).clickable(onClick = onOpenInEditor)
+        )
     }
 }
 

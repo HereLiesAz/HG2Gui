@@ -52,6 +52,7 @@ import com.hereliesaz.hg2gui.managers.AiSettings
 import com.hereliesaz.hg2gui.managers.AzpLibrary
 import com.hereliesaz.hg2gui.managers.ContactManager
 import com.hereliesaz.hg2gui.managers.OsContextStore
+import com.hereliesaz.hg2gui.managers.previewFile
 import com.hereliesaz.hg2gui.managers.PtyPreference
 import com.hereliesaz.hg2gui.managers.SshPresets
 import com.hereliesaz.hg2gui.managers.TerminalHistoryEntry
@@ -919,6 +920,7 @@ class TerminalActivity : FragmentActivity() {
                             listDir = { path -> vfsListDir(path) },
                             search = { query -> vfsSearch(query) },
                             storageStats = { vfsStorageStats() },
+                            previewFile = { path -> withContext(Dispatchers.IO) { previewFile(this@TerminalActivity, path) } },
                             onOpenFile = { path ->
                                 scope.launch {
                                     val file = withContext(Dispatchers.IO) {
