@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="./support.js"></script>
+<template id="__bundler_thumbnail" data-bg-color="#e8c81e">
+  <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+    <rect width="1200" height="800" fill="#e8c81e"/>
+    <rect x="260" y="330" width="500" height="140" rx="70" fill="#1a1a1a"/>
+    <circle cx="640" cy="400" r="42" fill="#e8c81e"/>
+  </svg>
+</template>
 </head>
 <body>
 <x-dc>
@@ -191,7 +198,7 @@
         </div>
         <div style="display:flex;flex-direction:column;gap:5px;">
           <span style="font:900 17px/1 var(--font-core);letter-spacing:-.01em;text-transform:uppercase;">Flood</span>
-          <span style="font:600 13px/1.4 var(--font-core);color:var(--ink-78);">420ms · the colour swipes up from the bottom edge until the space is full</span>
+          <span style="font:600 13px/1.4 var(--font-core);color:var(--ink-78);">420ms · the colour swipes down from the top edge until the space is full</span>
         </div>
       </button>
 
@@ -258,6 +265,56 @@
     </div>
   </div>
 
+  <div style="display:flex;flex-direction:column;gap:24px;">
+    <div style="display:flex;flex-direction:column;gap:9px;max-width:700px;">
+      <div style="font:800 11px/1 var(--font-core);letter-spacing:.28em;text-transform:uppercase;color:var(--ink-55);">Implementation — Kotlin Compose</div>
+      <div style="font:900 40px/1 var(--font-core);letter-spacing:-.02em;text-transform:uppercase;">The same sixteen, in code</div>
+      <p style="margin:0;font:var(--type-body);color:var(--ink-78);text-wrap:pretty;">Every specimen above reduces to one of four primitives: a length animation, a hinged rotation, a sequential cascade, and a wipe. Nothing here needs a physics engine or a third-party library — <code style="font:600 15px/1 ui-monospace,SFMono-Regular,Menlo,monospace;">Animatable</code>, <code style="font:600 15px/1 ui-monospace,SFMono-Regular,Menlo,monospace;">graphicsLayer</code>, and a <code style="font:600 15px/1 ui-monospace,SFMono-Regular,Menlo,monospace;">for</code> loop cover all of it. Code below is the reference implementation; it belongs in <code style="font:600 15px/1 ui-monospace,SFMono-Regular,Menlo,monospace;">ui/menu/</code> alongside <code style="font:600 15px/1 ui-monospace,SFMono-Regular,Menlo,monospace;">PillMenu.kt</code>.</p>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-55);">00 — Timing tokens</div>
+      <p style="margin:0;font:600 15px/1.5 var(--font-core);color:var(--ink-78);max-width:700px;">The menu is linear; the page keeps the house curve. Two easings, four durations — anything else is a bug.</p>
+      <div style="overflow-x:auto;border-radius:20px;padding:20px 22px;background:var(--ink);"><span style="display:block;font:500 9.5px/1.65 ui-monospace,SFMono-Regular,Menlo,monospace;color:#f2e6b8;white-space:pre;">{{ kt.k0 }}</span></div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-55);">01 — Unfold, row stagger, press to extend</div>
+      <p style="margin:0;font:600 15px/1.5 var(--font-core);color:var(--ink-78);max-width:700px;">All three are the same animation: interpolate <em>width</em>, never scale and never clip. Scaling distorts the label and the end-caps; clipping shears a rounded tip off. Animating the width keeps both tips on the shape the whole way.</p>
+      <div style="overflow-x:auto;border-radius:20px;padding:20px 22px;background:var(--ink);"><span style="display:block;font:500 9.5px/1.65 ui-monospace,SFMono-Regular,Menlo,monospace;color:#f2e6b8;white-space:pre;">{{ kt.k1 }}</span></div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-55);">02 — Stack arrives, stack leaves, host drops</div>
+      <p style="margin:0;font:600 15px/1.5 var(--font-core);color:var(--ink-78);max-width:700px;">The stack travels as one column on one clock — no per-row stagger — so it reads as a physical pile rather than a list animating itself. Only the top pill overshoots, and it corrects after it has landed.</p>
+      <div style="overflow-x:auto;border-radius:20px;padding:20px 22px;background:var(--ink);"><span style="display:block;font:500 9.5px/1.65 ui-monospace,SFMono-Regular,Menlo,monospace;color:#f2e6b8;white-space:pre;">{{ kt.k2 }}</span></div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-55);">03 — Children cascade (the hinge)</div>
+      <p style="margin:0;font:600 15px/1.5 var(--font-core);color:var(--ink-78);max-width:700px;">The defining animation. Each child swings a <strong>full 360°</strong> — not 180° — so it starts and ends face-up while spending the middle of the arc hidden behind the pill it came from. The hinge alternates ends: child 0 pivots on its right tip, child 1 on its left, and so on. Each child's origin is <em>the pill below it</em>, so the whole run reads as one thing unpacking itself. The upward lift is folded into the last 10% of the swing, so both finish on the same frame.</p>
+      <div style="overflow-x:auto;border-radius:20px;padding:20px 22px;background:var(--ink);"><span style="display:block;font:500 9.5px/1.65 ui-monospace,SFMono-Regular,Menlo,monospace;color:#f2e6b8;white-space:pre;">{{ kt.k3 }}</span></div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-55);">04 — Struggle, break free, fall (and hand-off)</div>
+      <p style="margin:0;font:600 15px/1.5 var(--font-core);color:var(--ink-78);max-width:700px;">One continuous motion, not four chained animations. The pill stretches slowly to 1.06× as if stuck, snaps in from its left edge down to 0.4×, then flies right at the speed the snap was retracting it — the flight duration is <em>derived</em> from the snap's px/ms rate, which is what makes the release read as elastic rather than scripted. It hits the right edge and jiggles on that tip. Hand-off is the same run, with the last third of the fall swooping back to land as the breadcrumb.</p>
+      <div style="overflow-x:auto;border-radius:20px;padding:20px 22px;background:var(--ink);"><span style="display:block;font:500 9.5px/1.65 ui-monospace,SFMono-Regular,Menlo,monospace;color:#f2e6b8;white-space:pre;">{{ kt.k4 }}</span></div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-55);">05 — The wobble</div>
+      <p style="margin:0;font:600 15px/1.5 var(--font-core);color:var(--ink-78);max-width:700px;">Whenever the pills move together, the stack sways: it is a pile, so the higher a pill sits the further it swings, hinged on its visible right end and damping out in three diminishing swings. Never a loop, never a bounce back into motion.</p>
+      <div style="overflow-x:auto;border-radius:20px;padding:20px 22px;background:var(--ink);"><span style="display:block;font:500 9.5px/1.65 ui-monospace,SFMono-Regular,Menlo,monospace;color:#f2e6b8;white-space:pre;">{{ kt.k5 }}</span></div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-55);">06 — Reading motion: wipe-on and parallax</div>
+      <p style="margin:0;font:600 15px/1.5 var(--font-core);color:var(--ink-78);max-width:700px;">Text assembles in reading order along one axis and stops dead — no fade, no loop. The background wash drifts on a slower clock than the text over it, which is the whole of the parallax: two clocks, one direction.</p>
+      <div style="overflow-x:auto;border-radius:20px;padding:20px 22px;background:var(--ink);"><span style="display:block;font:500 9.5px/1.65 ui-monospace,SFMono-Regular,Menlo,monospace;color:#f2e6b8;white-space:pre;">{{ kt.k6 }}</span></div>
+    </div>
+  </div>
+
   <div style="display:flex;flex-direction:column;gap:9px;max-width:700px;">
     <div style="font:800 11px/1 var(--font-core);letter-spacing:.28em;text-transform:uppercase;color:var(--ink-55);">What holds across all sixteen</div>
     <p style="margin:0;font:var(--type-body);color:var(--ink-78);text-wrap:pretty;">A stack that moves as one sways: it is a pile, and the higher a pill sits the further it swings, damping out in three diminishing swings. The motion is allowed to be funny, and the joke is always timing rather than a wink — a pill that is stuck and straining, one that leaves late and overshoots, a host that lands like it weighs something, a failed command that gets a third of the way round and thinks better of it. Nothing is ever cute about it: no bouncing, no cartoon squash beyond a hair, no character where a plain move would do. Nothing fades: a capsule is revealed by growing in length — both rounded ends belong to the shape, so neither is ever masked off — and text is wiped so the glyphs never stretch. Nothing loops: a thing plays once and settles, and replay is a button. Nothing idles: there is no spinner anywhere, because a running job is the unfold itself, slowed. Motion in the menu is linear — at those speeds an eased pill reads as a fault — while the page keeps the house curve, fast out and long settle. And every change of state is animated end to end: nothing on this sheet appears or vanishes on the spot.</p>
@@ -301,6 +358,20 @@ function grow(el, opts) {
     Object.assign({ fill: 'both' }, opts)
   );
 }
+
+
+// Kotlin lives here, not in the template: the template parser rewrites camelCase
+// `identifier = value` lines inside literal markup as kebab-cased attributes, which
+// silently corrupted every snippet. Through a {{ }} hole the text passes untouched.
+const KT = {
+  k0: "object Motion {\n    // The menu moves linearly. At these speeds an eased pill reads as a fault.\n    val menu = LinearEasing\n    // The page keeps the house curve: fast out, long settle.\n    val page = CubicBezierEasing(0f, 0.9f, 0.1f, 1f)\n\n    const val SLIDE = 140      // stack arrives / leaves, host drops\n    const val SWING = 173      // one child's 360° hinge\n    const val UNFOLD = 420     // a capsule grows in length\n    const val ROW_GAP = 26     // stagger between rows\n    const val LIFT_FRACTION = 0.9f  // the lift starts at 90% of the swing\n}",
+  k1: "@Composable\nfun Capsule(\n    label: String,\n    hue: Color,\n    targetWidth: Dp,\n    visible: Boolean,\n    startDelayMs: Int = 0,\n    modifier: Modifier = Modifier\n) {\n    // The animated value IS the length. 0.dp is a legitimate resting state:\n    // a zero-width capsule is invisible without ever being faded.\n    val width = remember { Animatable(if (visible) targetWidth.value else 0f) }\n\n    LaunchedEffect(visible, targetWidth) {\n        if (startDelayMs > 0) delay(startDelayMs.toLong())\n        width.animateTo(\n            targetValue = if (visible) targetWidth.value else 0f,\n            animationSpec = tween(Motion.UNFOLD, easing = Motion.page)\n        )\n    }\n\n    Box(\n        modifier\n            .width(width.value.dp)\n            .height(17.dp)   // PILL_HEIGHT; the clickable region pads out to 48.dp separately\n            .clip(RoundedCornerShape(percent = 50))   // 999px equivalent\n            .background(hue),\n        contentAlignment = Alignment.CenterStart\n    ) {\n        // Text is wiped, not scaled — clip the text layer to the revealed fraction\n        // so glyphs never stretch as the capsule lengthens.\n        val revealed = (width.value / targetWidth.value).coerceIn(0f, 1f)\n        Text(\n            label.uppercase(),\n            modifier = Modifier\n                .padding(start = 22.dp, end = 11.dp)   // left ≈ 2× right\n                .drawWithContent {\n                    clipRect(right = size.width * revealed) { this@drawWithContent.drawContent() }\n                },\n            maxLines = 1,\n            softWrap = false\n        )\n    }\n}\n\n// Row stagger: one clock, offset per row. Not a per-row LaunchedEffect —\n// a shared coroutine keeps the whole stack on the same timebase.\n@Composable\nfun StaggeredStack(items: List<MenuNode>, visible: Boolean) {\n    Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {\n        items.forEachIndexed { i, node ->\n            Capsule(\n                label = node.label,\n                hue = AzphaltColors.hues[AzphaltColors.hueOf(node.id)],\n                targetWidth = node.width,\n                visible = visible,\n                startDelayMs = i * Motion.ROW_GAP\n            )\n        }\n    }\n}",
+  k2: "@Composable\nfun ArrivingStack(items: List<MenuNode>, arrived: Boolean, screenWidth: Dp) {\n    // ONE animatable for the whole column: shared timebase, shared distance.\n    val columnX = remember { Animatable(-screenWidth.value) }\n\n    LaunchedEffect(arrived) {\n        columnX.animateTo(\n            if (arrived) 0f else -screenWidth.value,\n            tween(Motion.SLIDE, easing = Motion.menu)\n        )\n    }\n\n    Column(\n        Modifier.graphicsLayer { translationX = columnX.value.dp.toPx() },\n        verticalArrangement = Arrangement.spacedBy(9.dp)\n    ) {\n        items.forEachIndexed { i, node ->\n            val isTop = i == 0\n            // The top pill alone leaves late and overshoots, then corrects.\n            val extra = remember { Animatable(0f) }\n            LaunchedEffect(arrived) {\n                if (!isTop) return@LaunchedEffect\n                extra.animateTo(0f, keyframes {\n                    durationMillis = Motion.SLIDE + 90\n                    0f at 0 using Motion.menu\n                    18f at Motion.SLIDE using Motion.menu     // overshoot past its slot\n                    0f at Motion.SLIDE + 90                    // correct, once landed\n                })\n            }\n            PillRow(node, Modifier.graphicsLayer { translationX = extra.value.dp.toPx() })\n        }\n    }\n}\n\n// The host drops to the bottom edge like it weighs something, and stays there.\nsuspend fun Animatable<Float, AnimationVector1D>.dropToFloor(floorY: Float) =\n    animateTo(floorY, tween(Motion.SLIDE, easing = Motion.menu))",
+  k3: "/**\n * One child's entrance. It begins stacked exactly on its predecessor (offset 0),\n * swings 360° hinged on one tip, and lifts into its own row in the final 10%.\n *\n * @param index      position in the cascade; parity picks the hinge end\n * @param rowHeight  vertical distance from the predecessor to this child's row\n */\n@Composable\nfun CascadingChild(index: Int, rowHeight: Dp, content: @Composable () -> Unit) {\n    val progress = remember { Animatable(0f) }\n    // Even children hinge on the RIGHT tip, odd on the LEFT — alternating, so the\n    // cascade zig-zags open instead of pinwheeling from one corner.\n    val origin = if (index % 2 == 0) TransformOrigin(1f, 0.5f) else TransformOrigin(0f, 0.5f)\n    val direction = if (index % 2 == 0) 1f else -1f\n\n    LaunchedEffect(Unit) {\n        // Sequential, not staggered: this child does not start until the one\n        // before it has finished. The caller awaits each in turn.\n        progress.animateTo(1f, tween(Motion.SWING, easing = Motion.menu))\n    }\n\n    val p = progress.value\n    // Lift is compressed into the tail of the swing so both land on one frame.\n    val lift = ((p - Motion.LIFT_FRACTION) / (1f - Motion.LIFT_FRACTION)).coerceIn(0f, 1f)\n\n    Box(\n        Modifier.graphicsLayer {\n            transformOrigin = origin\n            rotationZ = 360f * direction * p     // full turn: face-up to face-up\n            translationY = -rowHeight.toPx() * lift\n        }\n    ) { content() }\n}\n\n// Drive the run sequentially — each child's intro begins only when the last one ends.\nsuspend fun runCascade(children: List<Animatable<Float, AnimationVector1D>>) {\n    children.forEach { it.animateTo(1f, tween(Motion.SWING, easing = Motion.menu)) }\n}",
+  k4: "private const val STRETCH_MS = 520   // slow strain — nothing else moves\nprivate const val SNAP_MS = 40       // the release, from the LEFT edge\nprivate const val JIGGLE_MS = 180\nprivate const val STRETCH = 1.06f\nprivate const val SHORT = 0.40f\n\n/**\n * Struggle → break free → fly → jiggle → fall, as one coroutine.\n * The flight speed is not authored: it is the snap's own retraction rate.\n */\nsuspend fun runBreakFree(\n    width: Animatable<Float, AnimationVector1D>,\n    offsetX: Animatable<Float, AnimationVector1D>,\n    offsetY: Animatable<Float, AnimationVector1D>,\n    tilt: Animatable<Float, AnimationVector1D>,\n    baseWidth: Float,\n    flightDistance: Float,\n    floorY: Float\n) = coroutineScope {\n    // 1. Struggle: it only gets longer. No wobble, no shake — strain is length.\n    width.animateTo(baseWidth * STRETCH, tween(STRETCH_MS, easing = Motion.menu))\n\n    // 2. Break free: shorten from the LEFT, so the right tip stays put.\n    val shortWidth = baseWidth * SHORT\n    val retracted = width.value - shortWidth\n    launch { offsetX.animateTo(offsetX.value + retracted, tween(SNAP_MS, easing = Motion.menu)) }\n    width.animateTo(shortWidth, tween(SNAP_MS, easing = Motion.menu))\n\n    // 3. Fly right at the rate the snap was retracting it — derived, not authored.\n    val snapRate = retracted / SNAP_MS                       // px per ms\n    val flightMs = (flightDistance / snapRate).toInt().coerceAtLeast(1)\n    offsetX.animateTo(offsetX.value + flightDistance, tween(flightMs, easing = Motion.menu))\n\n    // 4. Thud: it jiggles on its right tip — rotation, never a length bounce.\n    tilt.animateTo(0f, keyframes {\n        durationMillis = JIGGLE_MS\n        0f at 0; 3.2f at 40; -2.1f at 85; 1.1f at 130; 0f at JIGGLE_MS\n    })\n\n    // 5. Fall to the trail. For a hand-off, the last third swoops back left.\n    offsetY.animateTo(floorY, tween(Motion.SLIDE * 2, easing = Motion.page))\n}",
+  k5: "/** Amplitude grows with height in the pile, capped so the top never flails. */\nfun wobbleAmplitude(row: Int): Float = min(0.9f + row * 0.7f, 3.4f)\n\nsuspend fun Animatable<Float, AnimationVector1D>.wobble(row: Int, durationMs: Int) {\n    val a = wobbleAmplitude(row)\n    animateTo(0f, keyframes {\n        durationMillis = durationMs\n        0f at 0\n        a at (durationMs * 0.30f).toInt()            // out\n        -a * 0.55f at (durationMs * 0.58f).toInt()   // back, damped\n        a * 0.24f at (durationMs * 0.82f).toInt()    // and again, smaller\n        0f at durationMs                              // settled. Does not resume.\n    })\n}\n\n// Applied per row, hinged on the visible right end:\nModifier.graphicsLayer {\n    transformOrigin = TransformOrigin(1f, 0.5f)\n    rotationZ = sway.value\n}",
+  k6: "/** Wipe a block on along one axis. Reading order comes from the index. */\n@Composable\nfun WipeOn(index: Int, content: @Composable () -> Unit) {\n    val p = remember { Animatable(0f) }\n    LaunchedEffect(Unit) {\n        delay(100L + index * 90L)   // reading order, 90ms apart\n        p.animateTo(1f, tween(320, easing = Motion.page))\n    }\n    Box(\n        Modifier\n            .graphicsLayer { translationX = -14.dp.toPx() * (1f - p.value) }\n            .drawWithContent {\n                clipRect(right = size.width * p.value) { this@drawWithContent.drawContent() }\n            }\n    ) { content() }\n}\n\n/** The wash behind the text runs the same direction on a much longer clock. */\n@Composable\nfun ParallaxWash(word: String) {\n    val drift = remember { Animatable(40f) }\n    LaunchedEffect(word) { drift.animateTo(0f, tween(2000, easing = Motion.page)) }\n    Text(\n        word.uppercase(),\n        color = AzphaltColors.Ink.copy(alpha = 0.09f),\n        fontSize = 190.sp,\n        maxLines = 1,\n        softWrap = false,\n        modifier = Modifier.graphicsLayer { translationX = drift.value.dp.toPx() }\n    )\n}",
+};
 
 class Component extends DCLogic {
   componentDidMount() {
@@ -544,10 +615,10 @@ class Component extends DCLogic {
       const hole = this.els(name, 'hole')[0];
       const T = 8;
       Object.assign(hole.style, { top: T + 'px', left: T + 'px', width: (W - T * 2) + 'px', height: (H - T * 2) + 'px' });
-      // the colour swipes up from the bottom edge: the page retreats toward the top
+      // the colour swipes down from the top edge: the page retreats toward the bottom
       A(hole, [
         { top: T + 'px', height: (H - T * 2) + 'px' },
-        { top: T + 'px', height: '0px' }
+        { top: (H - T) + 'px', height: '0px' }
       ], { duration: q(420), easing: EASE });
     }
 
@@ -585,7 +656,7 @@ class Component extends DCLogic {
     ['unfold', 'stagger', 'extend', 'enter', 'leave', 'drop', 'cascade', 'handoff',
       'struggle', 'perimeter', 'fail', 'flood', 'set', 'entry', 'parallax', 'job']
       .forEach(n => { plays[n] = () => this.play(n); });
-    return { plays, playAll: () => this.playAll(), note: 'Sixteen specimens · tap any tile' };
+    return { kt: KT, plays, playAll: () => this.playAll(), note: 'Sixteen specimens · tap any tile' };
   }
 }
 </script>
