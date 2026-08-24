@@ -324,7 +324,14 @@ fun TerminalScreen(
             modifier = Modifier.weight(if (active.buffer.isEmpty()) 1f else 0.6f).padding(horizontal = 20.dp, vertical = 12.dp),
             onRun = { picked, isTerminal ->
                 active.tokens = picked
-                active.inputText = ""
+                // Opening a root pill fires this same callback with an empty `picked` before any
+                // child is actually chosen (PillMenu's openHost, mid-descent animation) - clearing
+                // inputText right then would erase whatever's still being typed, and for a
+                // contextual root like the suggestion host - which only exists in `roots` while
+                // inputText is non-blank - it'd vanish the host out from under its own
+                // still-descending animation before the child band ever gets to render, making the
+                // pill untappable. Only an actual pick (non-empty) should touch inputText.
+                if (picked.isNotEmpty()) active.inputText = ""
                 // A pick that just fully resolved every parameter a command needs runs right
                 // away instead of waiting for a separate tap on RUN - or, if a prompt is
                 // pending, sends the pick as that prompt's answer the same way.
