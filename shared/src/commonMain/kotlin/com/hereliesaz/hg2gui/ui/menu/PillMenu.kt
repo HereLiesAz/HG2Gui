@@ -31,6 +31,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
@@ -187,26 +188,9 @@ object Azphalt {
     val PAGE_EASE: Easing = CubicBezierEasing(0f, PAGE_EASE_CONTROL_1, PAGE_EASE_CONTROL_2, 1f)
 }
 
-// The style guide's own token is a 5-stop gradient - a highlight band on either side of a darker
-// fold centre, not a flat dip straight from page to foldDark and back. [Ground.foldLight] exists
-// for exactly this and was going unread everywhere pageBrush() is the app's actual background
-// (all 14 screens) - these three stops are its position within the doc's own layout, kept
-// ground-agnostic (every Ground supplies its own foldLight) rather than hardcoding the doc's
-// literal Mustard-only highlight color.
-private const val FOLD_HIGHLIGHT_STOP_BEFORE = 0.46f
-private const val FOLD_CENTER_STOP = 0.5f
-private const val FOLD_HIGHLIGHT_STOP_AFTER = 0.54f
-
-/** The page gradient for this ground - page/foldLight/foldDark/foldLight/page, the highlight-
- *  flanked-fold shape the style guide's own `--page-gradient` token describes. Top-level (not
- *  nested in [Azphalt]) so it's callable as `Azphalt.currentGround.pageBrush()`. */
-fun Azphalt.Ground.pageBrush(): Brush = Brush.linearGradient(
-    0f to page,
-    FOLD_HIGHLIGHT_STOP_BEFORE to foldLight,
-    FOLD_CENTER_STOP to foldDark,
-    FOLD_HIGHLIGHT_STOP_AFTER to foldLight,
-    1f to page
-)
+/** The page background for this ground - a flat fill, not a gradient. Top-level (not nested in
+ *  [Azphalt]) so it's callable as `Azphalt.currentGround.pageBrush()`. */
+fun Azphalt.Ground.pageBrush(): Brush = SolidColor(page)
 
 // House rule: text (and any glyph carrying meaning - an icon, an end-cap) always reads as the
 // opposite of whatever it sits on, never a fixed color assumed to work against every background.
