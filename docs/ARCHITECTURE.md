@@ -135,10 +135,11 @@ Compose. A screen is a function of state; there is no view-hierarchy manager cla
 *   **`ui/`**: Compose UI and the pill menu, `ui/editor/`, `ui/files/`, `ui/guide/` (the command
     glossary), `ui/ssh/` (the ssh connection wizard), `ui/ai/` (the AI chat screen), `ui/azp/`
     (the Store browser).
-*   **`managers/`**: `ContactManager` (contacts, backs `call`/`contacts`), `VfsManager` (a
-    sandboxed file layer rooted at `filesDir/vfs`; normal operations stay confined to app-private
-    storage, while the explicit root-only `vfs mount` command can bind-mount it into the real
-    filesystem), `SshPresets`/`WorkflowStore`/`AzpLibrary` (flat-`SharedPreferences` stores),
+*   **`managers/`**: `ContactManager` (contacts, backs `call`/`contacts`), `VfsManager` (a file
+    layer rooted, by default, at `filesDir/home` - the real Termux `$HOME`, still app-private
+    storage; normal operations stay confined there or, opt-in, to real device storage
+    (`StorageAccessManager`), while the explicit root-only `vfs mount` command can bind-mount it
+    into the real filesystem), `SshPresets`/`WorkflowStore`/`AzpLibrary` (flat-`SharedPreferences` stores),
     `PtyPreference` (the real-pty Settings toggle), `flashlight/` (the torch implementation
     behind `flash`).
 *   **`terminal/`**: `ShellSession`, `TerminalEngine`, `Builtins` (the eleven built-in commands),
@@ -187,8 +188,9 @@ Compose. A screen is a function of state; there is no view-hierarchy manager cla
 2.  Built-ins are an explicit eleven-verb dispatch table; no reflection discovers commands.
 3.  `bootstrap` routes first, built-ins win command-name ties, and all other input reaches the shell.
 4.  Every terminal tab owns its engine, shell, UI state, history, scrollback, and working directory.
-5.  VFS operations resolve paths canonically beneath `filesDir/vfs`; shell access requires the
-    explicit, root-only `vfs mount` escape hatch.
+5.  VFS operations resolve paths canonically beneath whichever root is active (`filesDir/home` by
+    default, opt-in real device storage otherwise); shell access requires the explicit,
+    root-only `vfs mount` escape hatch.
 6.  Shell processes are persistent but have no PTY, job control, or full-screen cursor semantics.
 7.  Wizard- and AI-produced commands are assembled for review, never executed automatically.
 8.  MCP binds only to loopback; shell tools remain disabled until explicit biometric approval.

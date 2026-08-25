@@ -2,16 +2,22 @@ package com.hereliesaz.hg2gui.managers
 
 import android.content.Context
 import android.os.Environment
+import com.hereliesaz.hg2gui.terminal.DistroManager
 import java.io.File
 import java.util.UUID
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 /**
- * A sandboxed filesystem rooted at the app's private storage, so `mkdir`/`touch`/editing
- * never touches real Android storage unless explicitly mounted (see `vfs mount`, which
- * requires root) or switched to real device storage (see [setDeviceStorageMode], gated on
- * [StorageAccessManager] - opt-in, never the default). Confined by construction: every path
+ * A filesystem rooted, by default, at the app's own private storage - specifically
+ * [DistroManager.homeDir], the real Termux `$HOME` every shell command already reads and writes -
+ * so `mkdir`/`touch`/editing never touches real Android storage unless explicitly mounted (see
+ * `vfs mount`, which requires root) or switched to real device storage (see
+ * [setDeviceStorageMode], gated on [StorageAccessManager] - opt-in, never the default). This is
+ * NOT a second, app-invented sandbox layered on top of Android's own per-app storage isolation -
+ * that isolation is already free and automatic for every app. It's just *which* already-private
+ * directory "my files" means: the shell's real working directory, not a separate, disconnected
+ * pocket nothing else in the app ever writes to. Confined by construction regardless: every path
  * resolves through [resolve], which refuses anything that canonicalizes outside whichever root
  * is currently active.
  *
@@ -46,7 +52,10 @@ object VfsManager {
         return created
     }
 
-    private fun sandboxDir(context: Context): File = File(context.filesDir, "vfs").apply { mkdirs() }
+    // Termux's real $HOME, not a bespoke "vfs" subfolder nobody's shell session ever touches -
+    // mkdirs() covers the case bash hasn't extracted the bootstrap yet, so the Files screen
+    // still has somewhere real to browse/create into before that finishes.
+    private fun sandboxDir(context: Context): File = DistroManager.homeDir(context).apply { mkdirs() }
 
     fun isDeviceStorageActive(): Boolean = deviceStorageMode
 

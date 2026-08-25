@@ -26,11 +26,13 @@ the menu *is* the interface. Every command, subcommand and argument is a pill yo
         entry per session: that would reintroduce the multi-task/launcher-lifecycle
         complexity Phase 1 deliberately dropped, for a benefit real terminal apps (Termux
         included) don't bother with either.
--   [x] **Virtual Filesystem:** A sandbox rooted at the app's private storage (`VfsManager`,
-        `filesDir/vfs`) — real files, but invisible to every other app and cleared on
-        uninstall. Reached two ways: the **Files** screen (graphical, tree-style, Azphalt
-        capsules — no icons, folders read by a trailing `/` and a hue) for browsing/creating/
-        deleting, and the `vfs` command (`vfs mkdir`, `vfs ls`, `vfs cat`, …) for the same
+-   [x] **Virtual Filesystem:** Rooted, by default, at the app's private storage (`VfsManager`,
+        `filesDir/home` — the real Termux `$HOME` every shell command already reads and writes,
+        not a separate empty pocket) — real files, invisible to every other app and cleared on
+        uninstall, opt-in-switchable to real device storage (DEV-STORAGE-1). Reached two ways:
+        the **Files** screen (graphical, tree-style, Azphalt capsules — no icons, folders read
+        by a trailing `/` and a hue) for browsing/creating/deleting, and the `vfs` command
+        (`vfs mkdir`, `vfs ls`, `vfs cat`, …) for the same
         operations from the command line.
 
         This does **not** virtualize the real shell. `ls`, `cat`, `rm` and friends still run
