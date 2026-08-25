@@ -140,6 +140,9 @@ fun FilesScreen(
     // the Storage screen's TRASH tab reads and reverses that. Bundled (see TrashActions) rather
     // than four more parameters on a signature already past detekt's own threshold before them.
     trash: TrashActions,
+    // DEV-STORAGE-1: opt-in - the sandbox above is the whole app on its own, this is the
+    // "point it at my real files instead" escape hatch for whoever wants it.
+    deviceStorage: DeviceStorageState,
     onRename: suspend (path: String, newName: String) -> Boolean,
     onMove: suspend (path: String, targetDirPath: String) -> Boolean,
     onCopy: suspend (path: String, targetDirPath: String) -> Boolean,
@@ -542,6 +545,22 @@ fun FilesScreen(
                     ) {
                         Text(
                             "STORAGE ›", color = Azphalt.currentGround.onPage.copy(alpha = .55f),
+                            fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.1.em
+                        )
+                    }
+                    // DEV-STORAGE-1: not gated on `deviceStorage.granted` - tapping it without
+                    // the permission yet is exactly what should kick off asking for it, same as
+                    // every other permission-backed builtin in this app (see Builtins.kt).
+                    Row(
+                        Modifier
+                            .clip(RoundedCornerShape(percent = 50))
+                            .background(if (deviceStorage.active) Azphalt.Yellow else Azphalt.Ink.copy(alpha = .10f))
+                            .clickable { deviceStorage.onToggle() }
+                            .padding(horizontal = 14.dp, vertical = 8.dp)
+                    ) {
+                        Text(
+                            if (deviceStorage.active) "DEVICE" else "SANDBOX",
+                            color = if (deviceStorage.active) Azphalt.Ink else Azphalt.currentGround.onPage.copy(alpha = .55f),
                             fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.1.em
                         )
                     }

@@ -59,6 +59,20 @@ data class TrashPanelState(
     val onEmptyTrash: () -> Unit = {}
 )
 
+/**
+ * Real device storage as an opt-in alternative root, alongside (never instead of) the app's own
+ * private sandbox - the app works fully on the sandbox alone; this is what lets someone who wants
+ * more point the file explorer at their actual device storage instead. [active] is which root is
+ * currently in use; [granted] is whether the OS permission that makes [active]=true possible has
+ * actually been given. Tapping the toggle while `!granted` should ask for it (a Settings page on
+ * newer Android, a runtime dialog below that) rather than silently failing to switch.
+ */
+data class DeviceStorageState(
+    val active: Boolean,
+    val granted: Boolean,
+    val onToggle: () -> Unit
+)
+
 /** [totalCapacityBytes] and [usedCapacityBytes] are the real device/partition capacity and usage,
  *  when the platform can supply them (e.g. via `StatFs` on Android) - null when it can't, since
  *  commonMain has no cross-platform way to ask the OS how big the disk is or how full it is. The

@@ -1,6 +1,7 @@
 package com.hereliesaz.hg2gui.managers
 
 import android.content.Context
+import android.os.Environment
 import java.io.File
 import java.util.UUID
 import kotlinx.serialization.Serializable
@@ -9,8 +10,10 @@ import kotlinx.serialization.json.Json
 /**
  * A sandboxed filesystem rooted at the app's private storage, so `mkdir`/`touch`/editing
  * never touches real Android storage unless explicitly mounted (see `vfs mount`, which
- * requires root). Confined by construction: every path resolves through [resolve], which
- * refuses anything that canonicalizes outside the root.
+ * requires root) or switched to real device storage (see [setDeviceStorageMode], gated on
+ * [StorageAccessManager] - opt-in, never the default). Confined by construction: every path
+ * resolves through [resolve], which refuses anything that canonicalizes outside whichever root
+ * is currently active.
  *
  * Global and shared across the whole app rather than per-session — this is the same "one
  * Files app" model a phone's real file manager uses, not a per-terminal-tab concept.
@@ -27,13 +30,41 @@ object VfsManager {
     private var root: File? = null
     @Volatile
     private var relativePath: String = ""
+    // DEV-STORAGE-1: which root [root] currently points at - the sandbox (false, the default
+    // every app launch starts on) or real device storage (true). Purely in-memory, like `root`/
+    // `relativePath` above: switching back to real storage after a restart is a deliberate
+    // re-tap, not something that should silently persist past the OS revoking the permission
+    // that made it possible in the first place.
+    @Volatile
+    private var deviceStorageMode: Boolean = false
 
     fun init(context: Context): File {
         val existing = root
         if (existing != null) return existing
-        val created = File(context.filesDir, "vfs").apply { mkdirs() }
+        val created = sandboxDir(context)
         root = created
         return created
+    }
+
+    private fun sandboxDir(context: Context): File = File(context.filesDir, "vfs").apply { mkdirs() }
+
+    fun isDeviceStorageActive(): Boolean = deviceStorageMode
+
+    fun isDeviceStorageAvailable(context: Context): Boolean = StorageAccessManager.hasFullAccess(context)
+
+    /**
+     * Switches the vfs root between the private sandbox and real device storage. Refuses to
+     * switch to device storage without [StorageAccessManager.hasFullAccess] already granted -
+     * silently staying on whatever root was already active - so a revoked permission (or one
+     * never granted) never leaves the explorer pointed at a root every subsequent read/write
+     * then fails against. Returns whether the requested mode is now active.
+     */
+    fun setDeviceStorageMode(context: Context, enabled: Boolean): Boolean {
+        if (enabled && !isDeviceStorageAvailable(context)) return false
+        deviceStorageMode = enabled
+        relativePath = ""
+        root = if (enabled) Environment.getExternalStorageDirectory() else sandboxDir(context)
+        return true
     }
 
     /** The directory currently open in the explorer / used by relative `vfs` commands. */

@@ -23,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -57,6 +58,7 @@ import com.hereliesaz.hg2gui.managers.previewFile
 import com.hereliesaz.hg2gui.managers.PtyPreference
 import com.hereliesaz.hg2gui.managers.SshPresets
 import com.hereliesaz.hg2gui.managers.TerminalHistoryEntry
+import com.hereliesaz.hg2gui.managers.StorageAccessManager
 import com.hereliesaz.hg2gui.managers.VfsManager
 import com.hereliesaz.hg2gui.managers.WorkflowStore
 import com.hereliesaz.hg2gui.mcp.McpServerService
@@ -85,6 +87,7 @@ import com.hereliesaz.hg2gui.ui.ai.AiChatScreen
 import com.hereliesaz.hg2gui.ui.ai.AiMessage
 import com.hereliesaz.hg2gui.ui.azp.AzpListing
 import com.hereliesaz.hg2gui.ui.azp.AzpStoreScreen
+import com.hereliesaz.hg2gui.ui.files.DeviceStorageState
 import com.hereliesaz.hg2gui.ui.files.FilesScreen
 import com.hereliesaz.hg2gui.ui.files.PathPickerScreen
 import com.hereliesaz.hg2gui.ui.files.StorageCategoryStat
@@ -230,6 +233,28 @@ class TerminalActivity : FragmentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         lastIntentExtra = intent
+    }
+
+    // DEV-STORAGE-1: Activity-level (not `remember`-scoped) because the OS answers this
+    // permission outside Compose entirely - a Settings-page return on API 30+ (re-checked in
+    // onResume below, since there's no callback for MANAGE_EXTERNAL_STORAGE) or the ordinary
+    // onRequestPermissionsResult dialog below that, which also triggers onResume on its way
+    // back regardless of API level.
+    private var deviceStorageGranted by mutableStateOf(false)
+    private var deviceStorageActive by mutableStateOf(false)
+    // Set the moment a tap on the Files screen's DEVICE chip kicks off asking for the
+    // permission, so onResume can tell "it's now possible to switch" apart from "and the tap
+    // that got us here actually wanted to."
+    private var deviceStoragePendingActivation = false
+
+    override fun onResume() {
+        super.onResume()
+        val granted = StorageAccessManager.hasFullAccess(this)
+        deviceStorageGranted = granted
+        if (granted && deviceStoragePendingActivation) {
+            deviceStoragePendingActivation = false
+            deviceStorageActive = VfsManager.setDeviceStorageMode(this, true)
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -1021,6 +1046,11 @@ class TerminalActivity : FragmentActivity() {
 
                 if (screen == Screen.Files || filesWrap.active) {
                     PillPerimeterReveal(state = filesWrap, hue = filesHue) {
+                        // DEV-STORAGE-1: keyed on which root is active - a toggle mid-browse
+                        // means every path already open (openChain, a search, a rename prompt)
+                        // describes a place in a *different* filesystem now, so a fresh instance
+                        // (dropping all that `remember`-scoped state) is correct, not a bug.
+                        key(deviceStorageActive) {
                         FilesScreen(
                             fullscreen = fullscreen,
                             nowMillis = System.currentTimeMillis(),
@@ -1133,10 +1163,30 @@ class TerminalActivity : FragmentActivity() {
                             },
                             onBack = { closeFiles() },
                             backStep = filesBackStep,
+                            deviceStorage = DeviceStorageState(
+                                active = deviceStorageActive,
+                                granted = deviceStorageGranted,
+                                onToggle = {
+                                    when {
+                                        deviceStorageActive -> {
+                                            VfsManager.setDeviceStorageMode(this@TerminalActivity, false)
+                                            deviceStorageActive = false
+                                        }
+                                        deviceStorageGranted -> {
+                                            deviceStorageActive = VfsManager.setDeviceStorageMode(this@TerminalActivity, true)
+                                        }
+                                        else -> {
+                                            deviceStoragePendingActivation = true
+                                            StorageAccessManager.requestFullAccess(this@TerminalActivity)
+                                        }
+                                    }
+                                }
+                            ),
                             modifier = Modifier.then(
                                 if (fullscreen) Modifier else Modifier.windowInsetsPadding(WindowInsets.systemBars)
                             )
                         )
+                        }
                     }
                 }
 
