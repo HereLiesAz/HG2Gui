@@ -238,11 +238,10 @@ reflection-based command engine underneath it — eleven built-ins are a fixed d
     session tab is a deliberate tap, never mid-gesture, so it's a safe moment to swap the
     background without fighting an in-flight pill animation.
 *   Every screen that used to define its own local `PageYellow` gradient constant now calls the
-    top-level `Azphalt.Ground.pageBrush()` extension (`Brush.linearGradient(page, foldDark,
-    page)`, the same shape the old per-screen constants used) against `Azphalt.currentGround`
-    instead - `TerminalScreen`, `SettingsScreen`, `McpServerScreen`, `AiSettingsScreen`,
-    `AiChatScreen`, `AzpStoreScreen`, `CommandGuideScreen`, `GuideReaderScreen`, `FilesScreen`,
-    `StorageScreen`, `FolderPicker`, `EditorScreen`.
+    top-level `Azphalt.Ground.pageBrush()` extension (a flat `SolidColor(page)` fill, no gradient)
+    against `Azphalt.currentGround` instead - `TerminalScreen`, `SettingsScreen`, `McpServerScreen`,
+    `AiSettingsScreen`, `AiChatScreen`, `AzpStoreScreen`, `CommandGuideScreen`, `GuideReaderScreen`,
+    `FilesScreen`, `StorageScreen`, `FolderPicker`, `EditorScreen`.
 
 ### 11. Guide reader motion (Kotlin, `commonMain`)
 *   **`ui/guide/GuideReaderScreen.kt`**: an entry never just appears - each field wipes on in
