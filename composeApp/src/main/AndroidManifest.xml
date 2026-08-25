@@ -31,10 +31,12 @@
     <!--
       DEV-STORAGE-1: the Files screen's opt-in "DEVICE" mode (StorageAccessManager,
       VfsManager.setDeviceStorageMode) - never requested unless the user taps that chip. Full
-      device storage access, not the sandbox's own filesDir/vfs. MANAGE_EXTERNAL_STORAGE is the
-      only route to that on API 30+ (its own Settings-page grant flow, not a runtime dialog);
-      READ/WRITE_EXTERNAL_STORAGE cover the ordinary runtime-dialog path below that, capped at
-      the API levels where they still mean anything.
+      device storage access, not the app's own private storage (Termux's real $HOME, still
+      inside the app's already-sandboxed filesDir - see VfsManager's own doc comment).
+      MANAGE_EXTERNAL_STORAGE is the only route to real device storage on API 30+ (its own
+      Settings-page grant flow, not a runtime dialog); READ/WRITE_EXTERNAL_STORAGE cover the
+      ordinary runtime-dialog path below that, capped at the API levels where they still mean
+      anything.
     -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" />
