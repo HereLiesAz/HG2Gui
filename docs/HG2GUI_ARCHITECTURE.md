@@ -120,6 +120,19 @@ reflection-based command engine underneath it — eleven built-ins are a fixed d
     `BiometricPrompt` confirmation (`TerminalActivity.requestEnableShellExec`). The gate is
     enforced server-side, in `McpTools.callTool`, on every `shell.*` invocation — not just by
     what `tools/list` chooses to advertise (it always advertises both groups).
+*   **DEV-STORAGE-1**: `VfsManager`'s root is the private sandbox by default — the app is fully
+    functional on that alone — but `setDeviceStorageMode(context, true)` can point it at real
+    device storage (`Environment.getExternalStorageDirectory()`) instead, in-memory only (resets
+    to the sandbox on every process start). `StorageAccessManager` is the one place that knows how
+    "full access" is actually granted per API level — `MANAGE_EXTERNAL_STORAGE`'s own Settings-page
+    flow on 30+ (re-checked from `TerminalActivity.onResume`, since there's no
+    `onRequestPermissionsResult` callback for it), the ordinary `READ`/`WRITE_EXTERNAL_STORAGE`
+    runtime dialog below that. `VfsManager` refuses to switch without `hasFullAccess` already true,
+    so a revoked/never-granted permission can't strand the explorer on a root every op then fails
+    against. The Files screen's SANDBOX/DEVICE chip (`FilesScreen.kt`) is the one entry point;
+    `TerminalActivity` wraps the `FilesScreen` call in `key(deviceStorageActive)` so a toggle
+    mid-browse resets every path-dependent bit of that screen's own `remember`-scoped state
+    instead of describing a place in a filesystem it no longer means.
 
 ### 8. Blocks, Workflows, AI chat (Kotlin, `commonMain`/`androidMain`)
 *   **Blocks**: no new state layer — `TerminalScreen`'s existing `BufferEntry` gained tap-to-

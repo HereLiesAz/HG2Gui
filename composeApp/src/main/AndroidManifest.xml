@@ -29,6 +29,17 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <!--
+      DEV-STORAGE-1: the Files screen's opt-in "DEVICE" mode (StorageAccessManager,
+      VfsManager.setDeviceStorageMode) - never requested unless the user taps that chip. Full
+      device storage access, not the sandbox's own filesDir/vfs. MANAGE_EXTERNAL_STORAGE is the
+      only route to that on API 30+ (its own Settings-page grant flow, not a runtime dialog);
+      READ/WRITE_EXTERNAL_STORAGE cover the ordinary runtime-dialog path below that, capped at
+      the API levels where they still mean anything.
+    -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" />
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+    <!--
       For McpServerService: a loopback-only JSON-RPC server an external AI agent can pair with
       (see docs/HG2GUI_ARCHITECTURE.md). FOREGROUND_SERVICE_SPECIAL_USE is the closest fit
       Android's typed foreground-service categories offer for "an on-device dev server the user
