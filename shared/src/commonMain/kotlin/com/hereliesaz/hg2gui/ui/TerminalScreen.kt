@@ -103,6 +103,12 @@ fun TerminalScreen(
     val active = sessions.first { it.id == activeSessionId }
     val scope = rememberCoroutineScope()
     val listState = remember(active.id) { LazyListState() }
+    var selectedEntryId by remember(active.id) { mutableStateOf<Long?>(null) }
+    var selectedShowRaw by remember(active.id) { mutableStateOf(false) }
+
+    LaunchedEffect(selectedEntryId) {
+        selectedShowRaw = false
+    }
 
     val executeCommand = {
         val session = active
@@ -202,25 +208,46 @@ fun TerminalScreen(
 
         if (active.buffer.isNotEmpty()) {
             Eyebrow("00 — Buffer")
-            LazyColumn(
-                state = listState,
-                modifier = Modifier
+            Column(
+                Modifier
                     .weight(0.4f)
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(bottom = 8.dp)
             ) {
-                items(active.buffer, key = { it.id }) { entry ->
-                    BufferEntry(
-                        entry = entry,
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(bottom = 8.dp)
+                ) {
+                    items(active.buffer, key = { it.id }) { entry ->
+                        BufferEntry(
+                            entry = entry,
+                            selected = selectedEntryId == entry.id,
+                            showRaw = selectedEntryId == entry.id && selectedShowRaw,
+                            onSelect = {
+                                selectedEntryId = if (selectedEntryId == entry.id) null else entry.id
+                            },
+                            onCopyLine = onCopy,
+                            onStop = { onInterrupt(active.id) }
+                        )
+                    }
+                }
+
+                val selectedEntry = active.buffer.firstOrNull { it.id == selectedEntryId }
+                if (selectedEntry != null) {
+                    BufferActionDock(
+                        entry = selectedEntry,
+                        showRaw = selectedShowRaw,
                         onCopy = onCopy,
                         onShare = onShare,
                         onRerun = { command ->
                             active.tokens = emptyList()
                             active.inputText = command
                         },
-                        onStop = { onInterrupt(active.id) }
+                        onToggleRaw = { selectedShowRaw = !selectedShowRaw }
                     )
                 }
             }
@@ -399,20 +426,19 @@ private fun LiveStatusStrip(status: String) {
 @Composable
 private fun BufferEntry(
     entry: TerminalHistoryEntry,
-    onCopy: (String) -> Unit,
-    onShare: (String) -> Unit,
-    onRerun: (String) -> Unit,
+    selected: Boolean,
+    showRaw: Boolean,
+    onSelect: () -> Unit,
+    onCopyLine: (String) -> Unit,
     onStop: () -> Unit
 ) {
-    var expanded by remember(entry.id) { mutableStateOf(false) }
     val kind = remember(entry.output) { classifyOutput(entry.output) }
-    var showRaw by remember(entry.id) { mutableStateOf(false) }
     Column(
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(26.dp))
-            .background(Azphalt.Ink.copy(alpha = .09f))
-            .clickable { expanded = !expanded }
+            .background(Azphalt.Ink.copy(alpha = if (selected) .15f else .09f))
+            .clickable(onClick = onSelect)
             .padding(12.dp)
     ) {
         val onPage = Azphalt.currentGround.onPage
@@ -440,22 +466,39 @@ private fun BufferEntry(
         }
         if (entry.output.isNotEmpty()) {
             Spacer(Modifier.height(4.dp))
-            ClassifiedOutput(kind, entry, onPage, showRaw, onCopy)
+            ClassifiedOutput(kind, entry, onPage, showRaw, onCopyLine)
         }
         if (entry.stderr.isNotEmpty()) {
             Spacer(Modifier.height(4.dp))
             StderrBlock(entry.stderr)
         }
-        if (expanded) {
-            Spacer(Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                val copyText = entry.output.ifEmpty { entry.command }
-                BlockActionPill("COPY") { onCopy(copyText) }
-                BlockActionPill("RE-RUN") { onRerun(entry.command) }
-                BlockActionPill("SHARE") { onShare(copyText) }
-                ClassificationTogglePill(kind, showRaw) { showRaw = !showRaw }
-            }
-        }
+    }
+}
+
+@Composable
+private fun BufferActionDock(
+    entry: TerminalHistoryEntry,
+    showRaw: Boolean,
+    onCopy: (String) -> Unit,
+    onShare: (String) -> Unit,
+    onRerun: (String) -> Unit,
+    onToggleRaw: () -> Unit
+) {
+    val copyText = entry.output.ifEmpty { entry.command }
+    val kind = remember(entry.output) { classifyOutput(entry.output) }
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .background(Azphalt.currentGround.pageBrush())
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = 20.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        BlockActionPill("COPY") { onCopy(copyText) }
+        BlockActionPill("RE-RUN") { onRerun(entry.command) }
+        BlockActionPill("SHARE") { onShare(copyText) }
+        ClassificationTogglePill(kind, showRaw, onToggleRaw)
     }
 }
 
