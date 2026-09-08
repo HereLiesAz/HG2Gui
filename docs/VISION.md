@@ -2,12 +2,9 @@
 
 ## Goal
 The ultimate "Hitchhiker's Guide" terminal for Android — a device that feels like a powerful,
-futuristic tool and stays usable with one thumb. **A terminal app, not a launcher.** It does
-not replace the home screen; it sits alongside everything else and is opened when you want a
-shell.
+futuristic tool and stays usable with one thumb. 
 
-The premise: a real command line is unusable on a phone because typing one is miserable. So
-the menu *is* the interface. Every command, subcommand and argument is a pill you tap.
+The premise: a real command line is unusable on a phone because typing one is miserable. So the menu *is* the interface. Every command, subcommand and argument is a pill to cure that headache.
 
 ## Roadmap
 
@@ -101,7 +98,4 @@ the menu *is* the interface. Every command, subcommand and argument is a pill yo
         **USE ▸** pill drops the command onto the input line for you to review and press Run,
         same as every wizard-produced command in the app.
 
-## Non-goals
--   Being a home screen. The launcher lineage is where this came from, not where it is going.
--   A widget grid, an app drawer, or anything else that competes with the system launcher.
--   Hiding the shell behind a chat box. The command line stays visible and literal.
+
