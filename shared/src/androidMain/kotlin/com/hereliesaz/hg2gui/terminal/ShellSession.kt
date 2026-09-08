@@ -253,17 +253,12 @@ actual class ShellSession private constructor(
             val emulator = TerminalEmulator(DummyTerminalOutput(), 120, 24, 10, 10, 1000, null)
             val stderrEmulator = TerminalEmulator(DummyTerminalOutput(), 120, 24, 10, 10, 1000, null)
 
-            // Bash parses the complete brace group before the user command starts, so apt/dpkg
-            // cannot consume HG2Gui's status framing as stdin. The sentinel is deliberately split
-            // into two shell arguments here: on a PTY bash echoes the source text it receives, and
-            // a literal full sentinel in that echo used to fool this parser into terminating on
-            // the echoed printf command instead of on printf's actual output.
             sin.write("{\n")
             sin.write(command)
             sin.write("\n__hg2gui_status=$?\n")
             sin.write(
                 "printf '%s%s%d:%s\\n' \"$SENTINEL_HEAD\" \"$SENTINEL_TAIL\" " +
-                    "\"$__hg2gui_status\" \"\$PWD\"\n"
+                    "\"\$__hg2gui_status\" \"\$PWD\"\n"
             )
             sin.write("}\n")
             sin.flush()
