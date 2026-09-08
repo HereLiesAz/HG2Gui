@@ -6,6 +6,9 @@ import android.system.Os
 import android.system.OsConstants
 import com.hereliesaz.hg2gui.managers.PtyPreference
 import com.hereliesaz.hg2gui.managers.StyledSpan
+import com.termux.terminal.JNI
+import com.termux.terminal.TerminalEmulator
+import com.termux.terminal.TerminalOutput
 import java.io.BufferedReader
 import java.io.BufferedWriter
 import java.io.File
@@ -19,10 +22,6 @@ import java.lang.reflect.Field
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.concurrent.thread
-
-import com.termux.terminal.JNI
-import com.termux.terminal.TerminalEmulator
-import com.termux.terminal.TerminalOutput
 
 class DummyTerminalOutput : TerminalOutput() {
     override fun write(data: ByteArray, offset: Int, count: Int) {}
@@ -42,6 +41,8 @@ actual class ShellSession private constructor(
 ) {
     companion object {
         private const val SENTINEL = "__HG2GUI_EOC_a7f3__"
+        private const val SENTINEL_HEAD = "__HG2GUI_EOC_"
+        private const val SENTINEL_TAIL = "a7f3__"
         private const val DEFAULT_SHELL = "/system/bin/sh"
         private const val TIMEOUT_MS = 15_000L
         private const val STARTUP_PROBE_MS = 300L
@@ -135,10 +136,6 @@ actual class ShellSession private constructor(
     private val alive = AtomicBoolean(false)
     private val generation = AtomicInteger(0)
 
-    private fun markDeadIfCurrent(myGeneration: Int) {
-        if (generation.get() == myGeneration) alive.set(false)
-    }
-
     @Volatile
     private var _workingDirectory: String = home?.absolutePath ?: "/"
 
@@ -152,6 +149,10 @@ actual class ShellSession private constructor(
 
     init {
         startChild(home, command, extraEnv)
+    }
+
+    private fun markDeadIfCurrent(myGeneration: Int) {
+        if (generation.get() == myGeneration) alive.set(false)
     }
 
     @Suppress("TooGenericExceptionCaught")
@@ -252,16 +253,18 @@ actual class ShellSession private constructor(
             val emulator = TerminalEmulator(DummyTerminalOutput(), 120, 24, 10, 10, 1000, null)
             val stderrEmulator = TerminalEmulator(DummyTerminalOutput(), 120, 24, 10, 10, 1000, null)
 
-            // Parse the command, exit-status capture, sentinel and closing brace as one compound
-            // shell command before executing any child. This is essential for interactive tools:
-            // the old implementation wrote the sentinel as a second input line, so apt/dpkg could
-            // read that line from their inherited stdin as the answer to [Y/n] and abort or stall.
-            // A brace group preserves shell state (cd/export) while forcing bash to consume the
-            // entire framing syntax before the user's command starts.
+            // Bash parses the complete brace group before the user command starts, so apt/dpkg
+            // cannot consume HG2Gui's status framing as stdin. The sentinel is deliberately split
+            // into two shell arguments here: on a PTY bash echoes the source text it receives, and
+            // a literal full sentinel in that echo used to fool this parser into terminating on
+            // the echoed printf command instead of on printf's actual output.
             sin.write("{\n")
             sin.write(command)
             sin.write("\n__hg2gui_status=$?\n")
-            sin.write("printf '%s%d:%s\\n' \"$SENTINEL\" \"$__hg2gui_status\" \"\$PWD\"\n")
+            sin.write(
+                "printf '%s%s%d:%s\\n' \"$SENTINEL_HEAD\" \"$SENTINEL_TAIL\" " +
+                    "\"$__hg2gui_status\" \"\$PWD\"\n"
+            )
             sin.write("}\n")
             sin.flush()
 
