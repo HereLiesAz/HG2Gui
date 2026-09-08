@@ -57,23 +57,12 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-// SH-5: each entry's own VT100 scrollback is already capped independently - this bounds the
-// outer list of commands itself, which used to grow without limit for the life of a session.
 private const val MAX_BUFFER_ENTRIES = 200
 
-// Every in-flight update to one running entry - a streamed output/stderr/styled chunk, the exit
-// code once it lands - is the same "find it by id, replace it" shape; this is that shape, once.
-// Matched by entry.id rather than buffer position: only one command runs per session at a time
-// today, so a position-based match was never actually wrong in practice, but matching by identity
-// instead means these updates keep finding the right entry even if that stops being true, and
-// don't rely on the buffer's own trim (see MAX_BUFFER_ENTRIES below) never running mid-update.
 private fun SessionUiState.updateBufferEntry(entryId: Long, transform: (TerminalHistoryEntry) -> TerminalHistoryEntry) {
     buffer = buffer.map { entry -> if (entry.id == entryId) transform(entry) else entry }
 }
 
-/** The raw command text this session's picked tokens plus any trailing free text add up to,
- *  trimmed - the same "resolved tokens, then whatever's still being typed" shape a fresh command
- *  line, a chain pick (W3), and a pending-prompt answer all build from alike. */
 private fun SessionUiState.pendingSegment(): String = buildString {
     if (tokens.isNotEmpty()) append(tokens.joinToString(" "))
     if (inputText.isNotBlank()) {
@@ -85,10 +74,6 @@ private fun SessionUiState.pendingSegment(): String = buildString {
 @Composable
 fun TerminalScreen(
     tree: List<MenuNode>,
-    // W1: real PATH binaries plus this app's own builtins, for command-name completion while the
-    // first word of the line is still being typed - see CommandTree.knownCommandNames's own doc
-    // comment for what's in it. Empty is a valid, harmless state (no bootstrap yet): completion
-    // just has nothing to offer, same as it would for a fresh install with no history either.
     knownCommands: List<String> = emptyList(),
     sessions: List<SessionUiState>,
     activeSessionId: String,
@@ -104,9 +89,6 @@ fun TerminalScreen(
     onCrumbPositioned: (id: String, rect: Rect) -> Unit = { _, _ -> },
     onCopy: (String) -> Unit = {},
     onShare: (String) -> Unit = {},
-    // S2: stops whatever command is currently running in the given session, without ending the
-    // session itself - see ShellSession.interrupt's own doc comment for what "stop" means on each
-    // tier. A no-op if nothing is running there.
     onInterrupt: (sessionId: String) -> Unit = {},
     onRun: suspend (
         sessionId: String,
@@ -126,78 +108,53 @@ fun TerminalScreen(
         val session = active
         val pendingPrompt = session.pendingPrompt
         if (pendingPrompt != null) {
-            // RUN doubles as SEND while a command is stalled waiting on us - the answer is
-            // whatever's built up exactly like a normal command line would be, just handed to
-            // the running process instead of starting a new one.
             val answer = session.pendingSegment()
             session.tokens = emptyList()
             session.inputText = ""
             session.answerPrompt(answer)
         } else {
-            // W3: whatever earlier segments have already folded into composedPrefix ("ls | ")
-            // comes first - it always ends in its own trailing space when non-empty, so the
-            // current segment can just be appended directly after it with no extra separator.
             val fullLine = (session.composedPrefix + session.pendingSegment()).trim()
 
             if (fullLine.isNotEmpty() && !session.running) {
                 session.running = true
+                session.transientStatus = null
                 if (session.commandHistory.isEmpty() || session.commandHistory.last() != fullLine) {
                     session.commandHistory = (session.commandHistory + fullLine).takeLast(MAX_BUFFER_ENTRIES)
                 }
                 session.historyIndex = -1
                 val lineToRun = fullLine
-                // Aliases are expanded only for what actually reaches the shell - hintForRanCommand
-                // needs the line the user actually typed, unexpanded, to know whether they already
-                // used the shortcut.
                 val execLine = ShellAliases.expand(lineToRun)
                 session.tokens = emptyList()
                 session.inputText = ""
                 session.composedPrefix = ""
 
-                // Add initial entry
                 val newEntry = TerminalHistoryEntry(command = lineToRun, isRunning = true)
                 val entryId = newEntry.id
                 session.buffer = session.buffer + newEntry
 
                 scope.launch {
-                    // D2: null until the command actually exits (or forever, for the
-                    // bootstrap/Builtins branches - neither is a real shell command with an exit
-                    // status of its own) - captured here rather than read straight off onRun's
-                    // own return value, since a CancellationException below skips past that.
                     var exitCode: Int? = null
                     try {
                         onRun(
                             session.id,
                             execLine,
-                            { outputChunk -> session.updateBufferEntry(entryId) { it.copy(output = outputChunk) } },
+                            { outputChunk ->
+                                session.transientStatus = ShellAliases.transientStatusLine(outputChunk)
+                                session.updateBufferEntry(entryId) { it.copy(output = outputChunk) }
+                            },
                             { prompt -> session.awaitPromptAnswer(prompt) },
                             { code -> exitCode = code },
                             { stderrChunk -> session.updateBufferEntry(entryId) { it.copy(stderr = stderrChunk) } },
                             { styled -> session.updateBufferEntry(entryId) { it.copy(styledOutput = styled) } }
                         )
                     } catch (e: CancellationException) {
-                        // Composition teardown (e.g. navigating away to Settings/Guide/Files
-                        // while a command is still running) cancels this scope, which surfaces
-                        // here as a CancellationException - not a real command failure. Nothing
-                        // was wrong, the screen just went away, so don't write a fake "error:"
-                        // line into a buffer nobody but the next visit will see; rethrow so
-                        // structured concurrency still sees the cancellation.
                         throw e
                     } catch (e: Exception) {
-                        // A thrown exception never reaches onExit, so exitCode (above) would
-                        // otherwise stay null forever - identical to a clean success as far as
-                        // StatusDot (which only special-cases isRunning and a non-null non-zero
-                        // exitCode) is concerned, leaving a real failure showing no failure signal
-                        // at all beyond text buried in the (possibly collapsed) output block.
                         exitCode = -1
                         session.updateBufferEntry(entryId) { it.copy(output = it.output + "\nerror: ${e.message}") }
                     } finally {
+                        session.transientStatus = null
                         session.updateBufferEntry(entryId) { it.copy(isRunning = false, exitCode = exitCode) }
-                        // SH-5: each entry's own VT100 scrollback is already capped, but nothing
-                        // ever trimmed the *outer* list of commands itself - a long session just
-                        // kept growing it forever. Only safe to trim here, once this entry is no
-                        // longer being updated by its own entryId - trimming mid-run would shift
-                        // every index the streaming/error/finally branches above still target.
                         if (session.buffer.size > MAX_BUFFER_ENTRIES) {
                             session.buffer = session.buffer.takeLast(MAX_BUFFER_ENTRIES)
                         }
@@ -217,14 +174,8 @@ fun TerminalScreen(
             .fillMaxSize()
             .background(Azphalt.currentGround.pageBrush())
             .then(if (fullscreen) Modifier else Modifier.windowInsetsPadding(WindowInsets.systemBars))
-            // The command line and modifier keys are pinned at the bottom, below the weighted
-            // PillMenu/buffer above them - with no IME inset, the keyboard just overlaid the
-            // screen on top of them instead of the layout making room. imePadding() shrinks this
-            // Column's own height by the keyboard's, so the weighted content above eats the
-            // difference and the input row stays above the keyboard rather than under it.
             .imePadding()
     ) {
-
         SessionTabs(
             sessions = sessions,
             activeId = activeSessionId,
@@ -246,6 +197,8 @@ fun TerminalScreen(
             ),
             modifier = Modifier.padding(start = 20.dp, top = 10.dp)
         )
+
+        active.transientStatus?.takeIf { active.running }?.let { LiveStatusStrip(it) }
 
         if (active.buffer.isNotEmpty()) {
             Eyebrow("00 — Buffer")
@@ -275,14 +228,6 @@ fun TerminalScreen(
 
         Eyebrow("01 — Command tree")
 
-        // A stalled command shaped like a question with a known, enumerable set of answers gets
-        // a dedicated Answer stack so the reply is a tap, not typed text - each option is an
-        // ordinary terminal leaf, so picking one auto-runs (here, auto-sends) via the exact same
-        // isTerminal path a normal command completes through. Checked in order of how much
-        // structure each shape actually offers: a numbered `select`-style menu names every
-        // option, so it wins over a same-prompt bracketed list; a plain y/n question gets its
-        // own clearer YES/NO pair before falling back to a generic bracketed/lettered list
-        // (dpkg conffile prompts, git's interactive add, ...).
         val pendingPrompt = active.pendingPrompt
         val answerNode = when {
             pendingPrompt == null -> null
@@ -317,10 +262,6 @@ fun TerminalScreen(
             }
         }
 
-        // The suggestion and chain hosts, when either has anything to offer, ride along as just
-        // one more root in the same stack every other command lives in - not a second PillMenu
-        // next to it. Whichever of these lands last fans out from the row closest to the command
-        // line - a pending answer takes that spot over the other two, since it's the most urgent.
         val suggestionNode = suggestionNodeFor(active, knownCommands)
         val chainNode = chainNodeFor(active)
         val effectiveTree = tree + listOfNotNull(suggestionNode, chainNode, answerNode)
@@ -331,28 +272,12 @@ fun TerminalScreen(
             onRun = { picked, isTerminal ->
                 val chainOperator = chainOperatorFromPick(picked)
                 if (chainOperator != null) {
-                    // W3: this pick didn't resolve a command token, it named an operator to fold
-                    // the segment built so far behind - so it feeds composedPrefix instead of
-                    // tokens, and clears the segment fields for the next one rather than running
-                    // anything. chainNodeFor's own existence check (tokens/inputText both empty)
-                    // then makes the Chain host vanish next recomposition, same self-collapse
-                    // Suggest already relies on.
                     active.composedPrefix = chainSegment(active.composedPrefix, active.pendingSegment(), chainOperator)
                     active.tokens = emptyList()
                     active.inputText = ""
                 } else {
                     active.tokens = picked
-                    // Opening a root pill fires this same callback with an empty `picked` before
-                    // any child is actually chosen (PillMenu's openHost, mid-descent animation) -
-                    // clearing inputText right then would erase whatever's still being typed, and
-                    // for a contextual root like Suggest or Chain - which only exist in `roots`
-                    // while there's a segment to work with - it'd vanish the host out from under
-                    // its own still-descending animation before the child band ever gets to
-                    // render, making the pill untappable. Only an actual pick should touch it.
                     if (picked.isNotEmpty()) active.inputText = ""
-                    // A pick that just fully resolved every parameter a command needs runs right
-                    // away instead of waiting for a separate tap on RUN - or, if a prompt is
-                    // pending, sends the pick as that prompt's answer the same way.
                     if (isTerminal) executeCommand()
                 }
             },
@@ -360,10 +285,6 @@ fun TerminalScreen(
             onCrumbPositioned = onCrumbPositioned
         )
 
-        // A password/passphrase prompt (ssh, sudo, su - anything ShellSession's own idle-gap
-        // detector catches) masks the free-text answer field the same way any password field
-        // would; a yes/no prompt never reaches here as text at all, it gets the Answer pill
-        // stack above instead, so no need to exclude it explicitly.
         val maskInput = pendingPrompt != null && ShellAliases.looksLikePassword(pendingPrompt)
 
         CommandLine(
@@ -373,6 +294,7 @@ fun TerminalScreen(
             onInputTextChange = { active.inputText = it },
             hint = when {
                 pendingPrompt != null -> pendingPrompt.substringAfterLast('\n').ifBlank { "Waiting for input…" }
+                active.transientStatus != null -> active.transientStatus!!
                 active.running -> "Running…"
                 active.tokens.isNotEmpty() || active.inputText.isNotBlank() -> "Ready — press run"
                 active.tokens.isEmpty() -> "Pick a category"
@@ -413,13 +335,64 @@ fun TerminalScreen(
                         active.inputText = ""
                     }
                     "tab" -> {
-                        if (active.inputText.isNotEmpty() && !active.inputText.endsWith(" ")) {
-                            active.inputText += " "
-                        }
+                        if (active.inputText.isNotEmpty() && !active.inputText.endsWith(" ")) active.inputText += " "
                     }
                 }
             }
         )
+    }
+}
+
+@Composable
+private fun LiveStatusStrip(status: String) {
+    val onPage = Azphalt.currentGround.onPage
+    val percent = Regex("""\b(\d{1,3})%""").find(status)?.groupValues?.getOrNull(1)?.toIntOrNull()?.coerceIn(0, 100)
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 8.dp)
+            .clip(RoundedCornerShape(18.dp))
+            .background(Azphalt.Ink.copy(alpha = .09f))
+            .padding(12.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                "LIVE",
+                style = MaterialTheme.typography.labelSmall.copy(
+                    color = Azphalt.Yellow,
+                    fontWeight = FontWeight.Black,
+                    fontSize = 9.sp
+                )
+            )
+            Spacer(Modifier.width(10.dp))
+            Text(
+                status,
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    color = onPage,
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 11.sp
+                )
+            )
+        }
+        if (percent != null) {
+            Spacer(Modifier.height(8.dp))
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(5.dp)
+                    .clip(RoundedCornerShape(percent = 50))
+                    .background(Azphalt.Ink.copy(alpha = .14f))
+            ) {
+                Box(
+                    Modifier
+                        .fillMaxHeight()
+                        .fillMaxWidth(percent / 100f)
+                        .clip(RoundedCornerShape(percent = 50))
+                        .background(Azphalt.Yellow)
+                )
+            }
+        }
     }
 }
 
@@ -431,30 +404,12 @@ private fun BufferEntry(
     onRerun: (String) -> Unit,
     onStop: () -> Unit
 ) {
-    // Blocks: tap an entry to reveal COPY/RE-RUN/SHARE - the tap-to-reveal idiom already used
-    // for the MCP pairing token. Re-run only ever populates the input line for review, never
-    // fires the command itself - same "assemble, then let the user press Run" rule every
-    // wizard-produced command already follows.
-    // Keyed on entry.id, not left unkeyed - items(active.buffer) is now itself keyed on entry.id
-    // (see its own call site), but that alone only protects which *entry* this composable sees;
-    // without also keying this remember, a trim that shifts a surviving entry into a
-    // previously-different slot's composable instance would still hand it that instance's own
-    // already-remembered `expanded` value from whatever command used to occupy it.
     var expanded by remember(entry.id) { mutableStateOf(false) }
-    // entry.output never carries raw ANSI/VT100 escapes to strip here: real shell output is
-    // always pre-flattened through ShellSession's headless TerminalEmulator before it reaches the
-    // buffer, and the bootstrap/Builtins branches only ever emit app-authored plain text.
     val kind = remember(entry.output) { classifyOutput(entry.output) }
-    // Keyed on entry.id: entry.output mutates on every streamed chunk while a command is still
-    // running (ruling out entry.output as a key), and entry.command alone let two runs of the
-    // exact same command text leak this toggle's state between them - two distinct entries sharing
-    // one key is exactly what entry.id exists to prevent.
     var showRaw by remember(entry.id) { mutableStateOf(false) }
     Column(
         Modifier
             .fillMaxWidth()
-            // "Radii are 999px for anything pressable, 26px for a record tile" - DESIGN.md's own
-            // literal figures for this exact element.
             .clip(RoundedCornerShape(26.dp))
             .background(Azphalt.Ink.copy(alpha = .09f))
             .clickable { expanded = !expanded }
@@ -479,9 +434,6 @@ private fun BufferEntry(
             )
             StatusDot(entry)
             if (entry.isRunning) {
-                // S2: visible on the running record itself, not buried behind the tap-to-expand
-                // COPY/RE-RUN/SHARE row below - those wait for a command to actually be worth
-                // acting on; a runaway command needs to be stoppable the instant it looks wrong.
                 Spacer(Modifier.weight(1f))
                 BlockActionPill("STOP", onStop)
             }
@@ -507,9 +459,6 @@ private fun BufferEntry(
     }
 }
 
-// Split out of BufferEntry so its own dispatch doesn't count against that composable's
-// complexity budget - see [OutputKind]'s own doc comment for why this is one classification
-// rather than a chain of independent booleans.
 @Composable
 private fun ClassifiedOutput(
     kind: OutputKind,
@@ -519,40 +468,17 @@ private fun ClassifiedOutput(
     onCopyLine: (String) -> Unit
 ) {
     when {
-        kind == OutputKind.BINARY && !showRaw -> {
-            // D6: "refused with an explanation rather than rendered" - garbled bytes typeset as
-            // if they were prose or a table is worse than admitting there's nothing readable
-            // here; showRaw is still one tap away for anyone who wants it anyway.
-            Text(
-                "Binary output - not displayed as text.",
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    color = onPage.copy(alpha = .55f),
-                    fontStyle = FontStyle.Italic
-                )
+        kind == OutputKind.BINARY && !showRaw -> Text(
+            "Binary output - not displayed as text.",
+            style = MaterialTheme.typography.bodyMedium.copy(
+                color = onPage.copy(alpha = .55f),
+                fontStyle = FontStyle.Italic
             )
-        }
-        kind == OutputKind.ART && !showRaw -> {
-            // Vector-style rendering: flat filled cells sized by character density, not literal
-            // glyphs - a script's ASCII/box-drawing art reads as art, not text.
-            AsciiArtCanvas(entry.output, onPage.copy(alpha = .8f))
-        }
-        kind == OutputKind.TABLE && !showRaw -> {
-            // "Output is set, not echoed": a block of label: value lines is set on the page as a
-            // two-column grid with hairline rules, not left as raw monospace text.
-            KeyValueTable(entry.output, onPage)
-        }
-        kind == OutputKind.WIDE_TABLE && !showRaw -> {
-            // D6: a record per row, fields as labelled pairs - "suits this design better than a
-            // table anyway" per the audit's own recommendation, instead of either wrapping a wide
-            // row into unreadable ribbons or clipping it at the screen edge.
-            WideTableRecords(entry.output, onPage)
-        }
-        else -> {
-            // "Output sets, not echoes" (RATTLE 5G / OUTPUT SETS): raw output reveals line by
-            // line via a clip-wipe + slight slide, the same idiom GuideReaderScreen's WipeItem
-            // uses for its own reveals, rather than the whole block appearing instantly.
-            OutputLines(entry, onCopyLine)
-        }
+        )
+        kind == OutputKind.ART && !showRaw -> AsciiArtCanvas(entry.output, onPage.copy(alpha = .8f))
+        kind == OutputKind.TABLE && !showRaw -> KeyValueTable(entry.output, onPage)
+        kind == OutputKind.WIDE_TABLE && !showRaw -> WideTableRecords(entry.output, onPage)
+        else -> OutputLines(entry, onCopyLine)
     }
 }
 
@@ -574,32 +500,16 @@ private fun StatusDot(entry: TerminalHistoryEntry) {
         Spacer(Modifier.width(8.dp))
         Box(Modifier.size(8.dp).clip(RoundedCornerShape(percent = 50)).background(Azphalt.Yellow))
     } else if (entry.exitCode != null && entry.exitCode != 0) {
-        // D2: success and failure used to render identically - no exit code reached the UI at
-        // all. "04 - Semantics" is explicit that a non-zero exit is red, the same hue Run/Primary
-        // already uses, rather than a separate error colour.
         Spacer(Modifier.width(8.dp))
         Box(Modifier.size(8.dp).clip(RoundedCornerShape(percent = 50)).background(Azphalt.hues[6]))
     }
 }
 
-// Line-by-line duration/stagger for the output "set" beat - the motion sheet's own "Output sets"
-// tile calls for 360ms a line, 90ms apart (docs/HG2Gui Motion Sheet.dc.html); 320ms here runs
-// somewhat faster than that exact figure, using the one house easing curve everything else in
-// the app already animates with.
 private val OUTPUT_WIPE_EASE = CubicBezierEasing(0f, .9f, .1f, 1f)
 private const val OUTPUT_WIPE_MS = 320
 private const val OUTPUT_WIPE_STAGGER_MS = 90L
-
-// PillMenu's own per-row stagger (UNFOLD_STAGGER_MS) has no such cap - a category with enough
-// rows delays its last one proportionally, uncapped. This is the fix that one doesn't have: only
-// the first STAGGER_CAP lines get the staggered wipe treatment, the rest of a very long output
-// just appears immediately rather than making the reader wait out dozens of staggered reveals.
 private const val OUTPUT_WIPE_STAGGER_CAP = 24
 
-// D1: an unstyled span's color - exactly what every line rendered as before ANSI-aware styling
-// existed, kept as the fallback for plain text and for any run whose color didn't map to a
-// named Azphalt hue (StyledTranscript.kt's own ansiHueOf). internal, not private - FilesScreen's
-// own F3 file preview reuses this exact styling for a highlighter's ANSI-coloured output too.
 internal fun StyledSpan.inkColor(onPage: Color): Color = hue?.let { Azphalt.hues[it] } ?: onPage.copy(alpha = .8f)
 
 internal fun buildStyledLine(spans: List<StyledSpan>, onPage: Color): AnnotatedString = buildAnnotatedString {
@@ -612,32 +522,11 @@ internal fun buildStyledLine(spans: List<StyledSpan>, onPage: Color): AnnotatedS
 
 @Composable
 private fun OutputLines(entry: TerminalHistoryEntry, onCopyLine: (String) -> Unit) {
-    // D4: this used to short-circuit to a flat, unanimated Text while entry.isRunning was true,
-    // and only mount the per-line wipe below once the command finished - so a slow command (an
-    // install, a build) sat there looking frozen for its entire run, then dumped its whole
-    // transcript in one staggered burst at the very end. Using the same per-line composable
-    // structure whether running or not means each NEW line gets its own wipe the moment it
-    // actually streams in - each OutputWipeLine's `spans` param can keep growing after its own
-    // LaunchedEffect(Unit) has already fired (a line still being written, with no trailing
-    // newline yet), which just reads as text extending live rather than re-wiping.
-    //
-    // D1: entry.styledOutput (one entry per real terminal row, ANSI-aware) takes over rendering
-    // whenever it's non-empty - the bootstrap/Builtins branches, and any real command with no
-    // ANSI escapes in its output at all, leave it empty and this falls back to a single unstyled
-    // span per plain-text line, exactly what rendered before styling existed.
     val lines = remember(entry.output, entry.styledOutput) {
-        if (entry.styledOutput.isNotEmpty()) {
-            entry.styledOutput
-        } else {
-            entry.output.split("\n").map { listOf(StyledSpan(it)) }
-        }
+        if (entry.styledOutput.isNotEmpty()) entry.styledOutput
+        else entry.output.split("\n").map { listOf(StyledSpan(it)) }
     }
     Column {
-        // Only the animated prefix gets one composable per line - the stagger cap already bounds
-        // how many lines wipe on individually, but the *rest* of a very long output (a recursive
-        // listing, a package inventory, thousands of lines) used to still get one Text node each,
-        // costing real composition/layout work for content nobody's watching wipe on anyway. The
-        // remaining tail renders as a single joined block instead.
         lines.take(OUTPUT_WIPE_STAGGER_CAP).forEachIndexed { index, spans ->
             OutputWipeLine(seq = index, spans = spans, onCopyLine = onCopyLine)
         }
@@ -660,22 +549,10 @@ private fun OutputLines(entry: TerminalHistoryEntry, onCopyLine: (String) -> Uni
 private fun OutputWipeLine(seq: Int, spans: List<StyledSpan>, onCopyLine: (String) -> Unit) {
     val progress = remember { Animatable(0f) }
     LaunchedEffect(Unit) {
-        // D4: seq is this line's absolute index into the whole transcript, which keeps growing
-        // for the life of a long-running command - a plain `seq * STAGGER_MS` delay would make a
-        // line arriving live at, say, index 400 wait another 36s past its own actual arrival
-        // before it's even allowed to start wiping in. Wrapping the multiplier by the same cap
-        // that already bounds how many lines animate individually keeps every line's own delay
-        // small and bounded, whether it's part of a big finished-block burst or arriving alone
-        // seconds into a stream.
         delay((seq % OUTPUT_WIPE_STAGGER_CAP) * OUTPUT_WIPE_STAGGER_MS)
         progress.animateTo(1f, tween(OUTPUT_WIPE_MS, easing = OUTPUT_WIPE_EASE))
     }
     val onPage = Azphalt.currentGround.onPage
-    // W2: one commit hash out of a `git log`, one path out of a `find` - copying the whole block
-    // to get at a single line was the only option before this. Only offered on this animated
-    // prefix, not the joined tail block below it (see that block's own comment for why splitting
-    // *that* per-line isn't free) - the common case (most output is well under the stagger cap)
-    // gets it, a pathologically long one still has the whole-entry COPY action.
     Text(
         buildStyledLine(spans, onPage),
         modifier = Modifier
@@ -688,12 +565,6 @@ private fun OutputWipeLine(seq: Int, spans: List<StyledSpan>, onCopyLine: (Strin
     )
 }
 
-// D3: stderr's own treatment - a hairline amber rule above amber-tinted monospace text, so "here
-// is your answer" (stdout, above) and "something the program said on the side" (stderr) read as
-// visually distinct the moment either has anything in it. StatusDot itself has only two tiers
-// (running/failure) and never uses amber - this is stderr's own distinct color, not a shade of a
-// StatusDot state. No wipe animation of its own - OutputLines already carries that beat for the
-// primary transcript, and stderr is usually the smaller, secondary block sitting under it.
 @Composable
 private fun StderrBlock(text: String) {
     val warn = Azphalt.hues[4]
@@ -713,11 +584,6 @@ private fun StderrBlock(text: String) {
 
 @Composable
 private fun BlockActionPill(label: String, onClick: () -> Unit) {
-    // UI-7: the visible pill (padding(vertical = 11.dp) around 11sp type) renders well under the
-    // 48dp minimum touch target. Rather than growing the pill itself - which would blow up its
-    // compact look next to its siblings in the same Row - the clickable region is a separate,
-    // invisible 48dp-tall Box the small pill is centered inside, the same pattern
-    // GuideReaderScreen's own Chip helper uses for the identical shape.
     Box(
         Modifier.defaultMinSize(minHeight = 48.dp).clickable(onClick = onClick),
         contentAlignment = Alignment.Center
@@ -783,26 +649,11 @@ private fun SessionTabs(
                         )
                         if (on && sessions.size > 1) {
                             Spacer(Modifier.width(6.dp))
-                            // UI-7: a bare glyph-sized clickable here would hit the same well-
-                            // under-48dp problem the guide Chip had. The full 48dp minimum isn't
-                            // used - this sits inside a horizontally-scrolling multi-tab strip,
-                            // and a 48dp close target per tab would make more than two or three
-                            // tabs unreachable on a phone-width screen - but the hitbox is grown
-                            // well past the bare glyph via padding, a deliberate middle ground
-                            // between the two, not an oversight.
                             Box(
-                                Modifier
-                                    .clickable { onClose(s.id) }
-                                    .padding(8.dp),
+                                Modifier.clickable { onClose(s.id) }.padding(8.dp),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text(
-                                    "×",
-                                    style = MaterialTheme.typography.titleMedium.copy(
-                                        color = Azphalt.Yellow,
-                                        fontSize = 10.sp
-                                    )
-                                )
+                                Text("×", style = MaterialTheme.typography.titleMedium.copy(color = Azphalt.Yellow, fontSize = 10.sp))
                             }
                         }
                     }
@@ -815,13 +666,7 @@ private fun SessionTabs(
                     .clickable(onClick = onNew)
                     .padding(horizontal = 10.dp, vertical = 5.dp)
             ) {
-                Text(
-                    "+",
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        color = onPage.copy(alpha = .55f),
-                        fontSize = 10.sp
-                    )
-                )
+                Text("+", style = MaterialTheme.typography.titleMedium.copy(color = onPage.copy(alpha = .55f), fontSize = 10.sp))
             }
         }
         Box(
@@ -832,52 +677,28 @@ private fun SessionTabs(
                 .clickable(onClick = onOpenFiles)
                 .padding(horizontal = 10.dp, vertical = 5.dp)
         ) {
-            Text(
-                "FILES",
-                style = MaterialTheme.typography.titleMedium.copy(color = Azphalt.White, fontSize = 8.sp, fontWeight = FontWeight.Black)
-            )
+            Text("FILES", style = MaterialTheme.typography.titleMedium.copy(color = Azphalt.White, fontSize = 8.sp, fontWeight = FontWeight.Black))
         }
-        // UI-7: the visible circle stays its small designed 22dp size; the clickable region is a
-        // separate, invisible 48dp-minimum Box the circle is centered inside, matching the pattern
-        // GuideReaderScreen's own Chip() uses for this exact problem. Settings and Guide sit only
-        // 6dp apart, so their 48dp hit areas necessarily overlap - that's an intentional generous
-        // tap zone, not a bug, since each hit area is still centered on its own glyph.
         Box(
-            Modifier
-                .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
-                .clickable(onClick = onOpenSettings),
+            Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp).clickable(onClick = onOpenSettings),
             contentAlignment = Alignment.Center
         ) {
             Box(
-                Modifier
-                    .size(22.dp)
-                    .clip(RoundedCornerShape(percent = 50))
-                    .background(Azphalt.Ink.copy(alpha = .14f)),
+                Modifier.size(22.dp).clip(RoundedCornerShape(percent = 50)).background(Azphalt.Ink.copy(alpha = .14f)),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    "⚙",
-                    style = MaterialTheme.typography.titleMedium.copy(color = onPage, fontSize = 12.sp)
-                )
+                Text("⚙", style = MaterialTheme.typography.titleMedium.copy(color = onPage, fontSize = 12.sp))
             }
         }
         Box(
-            Modifier
-                .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
-                .clickable(onClick = onOpenGuide),
+            Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp).clickable(onClick = onOpenGuide),
             contentAlignment = Alignment.Center
         ) {
             Box(
-                Modifier
-                    .size(22.dp)
-                    .clip(RoundedCornerShape(percent = 50))
-                    .background(Azphalt.Ink.copy(alpha = .14f)),
+                Modifier.size(22.dp).clip(RoundedCornerShape(percent = 50)).background(Azphalt.Ink.copy(alpha = .14f)),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    "?",
-                    style = MaterialTheme.typography.titleMedium.copy(color = onPage, fontSize = 12.sp)
-                )
+                Text("?", style = MaterialTheme.typography.titleMedium.copy(color = onPage, fontSize = 12.sp))
             }
         }
     }
@@ -885,9 +706,6 @@ private fun SessionTabs(
 
 @Composable
 private fun CommandLine(
-    // W3: whatever earlier segments have already folded into a pipeline ("ls | grep foo | "),
-    // shown as plain already-resolved text ahead of the pill crumbs for the segment still being
-    // built - distinct from those crumbs since it can span more than the one command they show.
     composedPrefix: String = "",
     tokens: List<String>,
     inputText: String,
@@ -918,10 +736,7 @@ private fun CommandLine(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                Text(
-                    "$",
-                    style = MaterialTheme.typography.titleMedium.copy(color = Azphalt.Yellow)
-                )
+                Text("$", style = MaterialTheme.typography.titleMedium.copy(color = Azphalt.Yellow))
                 if (composedPrefix.isNotEmpty()) {
                     Text(
                         composedPrefix.trimEnd(),
@@ -934,18 +749,11 @@ private fun CommandLine(
                 }
                 tokens.forEach { t ->
                     Box(
-                        Modifier
-                            .clip(RoundedCornerShape(percent = 50))
-                            .background(Azphalt.Yellow)
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                        Modifier.clip(RoundedCornerShape(percent = 50)).background(Azphalt.Yellow).padding(horizontal = 8.dp, vertical = 4.dp)
                     ) {
                         Text(
                             t.uppercase(),
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                color = Azphalt.Ink,
-                                fontSize = 8.sp,
-                                letterSpacing = 0.06.em
-                            )
+                            style = MaterialTheme.typography.titleMedium.copy(color = Azphalt.Ink, fontSize = 8.sp, letterSpacing = 0.06.em)
                         )
                     }
                 }
@@ -968,9 +776,6 @@ private fun CommandLine(
             Row(
                 Modifier
                     .clip(RoundedCornerShape(percent = 50))
-                    // A capsule is never tinted, faded, or given alpha (style guide "03 -
-                    // Transparency") - idle uses the same ink-14% wash every other disabled
-                    // capsule in the app does, not a faded copy of its own hue.
                     .background(if (enabled) Azphalt.hues[6] else Azphalt.Ink.copy(alpha = .14f))
                     .clickable(enabled = enabled, onClick = onRun)
                     .padding(start = 16.dp, end = 6.dp, top = 7.dp, bottom = 7.dp),
@@ -990,15 +795,6 @@ private fun CommandLine(
     }
 }
 
-/*
- * The Kotlin-native stand-ins for what a live zsh line editor would offer - autosuggestion,
- * "did you mean", alias hints - built as an ordinary MenuNode host+children, so they render
- * through the exact same PillMenu stack every other command uses, instead of a bespoke row of
- * pills. Each leaf's label is the literal input text a tap should adopt, matching the
- * convention the real command tree already uses for its own pills. There's no live PTY for a
- * real shell line editor to attach to - ShellSession only ever sends one complete line at a
- * time and reads a complete result back - so this is the delivery mechanism instead.
- */
 private fun suggestionNodeFor(session: SessionUiState, knownCommands: List<String>): MenuNode? {
     val children = buildList {
         if (session.inputText.isNotBlank()) {
@@ -1006,9 +802,6 @@ private fun suggestionNodeFor(session: SessionUiState, knownCommands: List<Strin
             if (historyMatch != null) {
                 add(MenuNode(id = "suggest-tab", label = session.inputText + historyMatch, cap = "TAB"))
             } else if (!session.inputText.contains(' ')) {
-                // W1: only once history has nothing to offer, and only while the first word is
-                // still being typed - a package name mid-line has nowhere near as clean a
-                // "the rest of the line" completion as history's own exact-continuation match.
                 ShellAliases.commandNameCompletions(session.inputText, knownCommands).forEach { name ->
                     add(MenuNode(id = "suggest-cmd-$name", label = name, cap = "TAB"))
                 }
@@ -1041,26 +834,13 @@ private fun suggestionNodeFor(session: SessionUiState, knownCommands: List<Strin
     )
 }
 
-// A chain-operator leaf's `value` (see chainNodeFor) so onRun's picked list can recognize the
-// pick without PillMenu itself needing to know Chain is special - a NUL prefix real command text
-// can never contain, so there's no ambiguity with an actual token a user typed or picked.
 private const val CHAIN_VALUE_PREFIX = "\u0000chain:"
 
-/** The [ChainOperator] a pick resolved to, if [picked] is a single chain-leaf value - i.e. the
- *  pick came from [chainNodeFor]'s own children, not a real command pick. */
 private fun chainOperatorFromPick(picked: List<String>): ChainOperator? {
     val value = picked.singleOrNull()?.takeIf { it.startsWith(CHAIN_VALUE_PREFIX) } ?: return null
     return ChainOperator.entries.firstOrNull { it.name == value.removePrefix(CHAIN_VALUE_PREFIX) }
 }
 
-/**
- * W3 (docs/HG2Gui Termux Coverage.dc.html): a "Chain" host, riding along next to Suggest, that
- * offers one pill per [ChainOperator]. Picking one doesn't resolve a command token - TerminalScreen's
- * onRun recognizes the pick via [chainOperatorFromPick] and folds the segment built so far into
- * composedPrefix instead (see ChainOperator.kt's own doc comment for why a literal-prefix
- * fold, not a parsed pipeline, is enough). Hidden with nothing built yet to chain from, or while
- * a command's running or a prompt's pending - chaining onto mid-flight input doesn't make sense.
- */
 private fun chainNodeFor(session: SessionUiState): MenuNode? {
     val idle = !session.running && session.pendingPrompt == null
     val hasSegment = session.tokens.isNotEmpty() || session.inputText.isNotBlank()
@@ -1085,31 +865,17 @@ private fun ModifierKeys(
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         keys.forEach { k ->
-            // UI-7: the visible pill keeps its small designed 26dp height; the clickable region
-            // is a separate, invisible 48dp-minimum-height Box the pill is centered inside, same
-            // pattern as GuideReaderScreen's Chip(). Still `.weight(1f)` so the six keys divide
-            // the row's width evenly - only the height grows past the visible pill.
             Box(
-                Modifier
-                    .weight(1f)
-                    .defaultMinSize(minHeight = 48.dp)
-                    .clickable { onKeyClick(k) },
+                Modifier.weight(1f).defaultMinSize(minHeight = 48.dp).clickable { onKeyClick(k) },
                 contentAlignment = Alignment.Center
             ) {
                 Box(
-                    Modifier
-                        .fillMaxWidth()
-                        .height(26.dp)
-                        .clip(RoundedCornerShape(percent = 50))
-                        .background(Azphalt.Ink.copy(alpha = .14f)),
+                    Modifier.fillMaxWidth().height(26.dp).clip(RoundedCornerShape(percent = 50)).background(Azphalt.Ink.copy(alpha = .14f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         k.uppercase(),
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            color = Azphalt.currentGround.onPage,
-                            fontSize = 8.sp
-                        )
+                        style = MaterialTheme.typography.titleMedium.copy(color = Azphalt.currentGround.onPage, fontSize = 8.sp)
                     )
                 }
             }
