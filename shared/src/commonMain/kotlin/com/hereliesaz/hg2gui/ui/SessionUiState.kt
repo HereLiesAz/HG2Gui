@@ -4,6 +4,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.hereliesaz.hg2gui.managers.TerminalHistoryEntry
+import com.hereliesaz.hg2gui.terminal.ShellAliases
 import kotlinx.coroutines.CompletableDeferred
 
 /**
@@ -19,21 +20,27 @@ class SessionUiState(val id: String, name: String, cwd: String) {
     var historyIndex by mutableStateOf(-1)
     var tokens by mutableStateOf(listOf<String>())
     var inputText by mutableStateOf("")
-    // W3: a literal prefix, already ending in "<operator> " when non-empty, that earlier
-    // segments have folded into via the terminal's Chain pill (see ChainOperator.kt) -
-    // "ls | " while the user is still building the next segment to pipe into. Prepended to the
-    // line executeCommand sends and cleared once that line actually runs.
     var composedPrefix by mutableStateOf("")
     var running by mutableStateOf(false)
 
-    // The prompt text of a command that's stalled mid-run waiting on stdin, or null the rest of
-    // the time. Set by awaitPromptAnswer (called from the platform layer's onNeedInput bridge,
-    // on a background thread) and cleared once answerPrompt delivers a reply.
+    /** A carriage-return style progress/status frame currently being rewritten by the child. */
+    var transientStatus by mutableStateOf<String?>(null)
+
     var pendingPrompt by mutableStateOf<String?>(null)
         private set
     private var pendingAnswer: CompletableDeferred<String>? = null
 
     suspend fun awaitPromptAnswer(prompt: String): String {
+        ShellAliases.transientStatusLine(prompt)?.let { status ->
+            transientStatus = status
+            // This callback is only reached because ShellSession's generic idle-gap detector saw
+            // an unterminated line. Returning immediately keeps a progress frame from becoming a
+            // fake blocking prompt. A blank line is harmless to apt/dpkg while they are drawing
+            // progress and lets the reader continue until the next real output frame arrives.
+            return ""
+        }
+
+        transientStatus = null
         val deferred = CompletableDeferred<String>()
         pendingAnswer = deferred
         pendingPrompt = prompt
