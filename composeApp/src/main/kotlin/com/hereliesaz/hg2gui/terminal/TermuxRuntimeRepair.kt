@@ -20,23 +20,35 @@ object TermuxRuntimeRepair {
         val bin = File(prefix, "bin")
         if (!prefix.isDirectory || !bin.isDirectory) return
 
-        // Old persistent bootstraps can still contain Termux's package-name-specific absolute
-        // paths. Rewriting on every launch is cheap after the first pass because files no longer
-        // contain TERMUX_PREFIX.
-        bin.listFiles().orEmpty().forEach { file ->
-            if (!file.isFile || Files.isSymbolicLink(file.toPath()) || isElf(file)) return@forEach
-            val bytes = runCatching { file.readBytes() }.getOrNull() ?: return@forEach
-            if (bytes.size < 2 || bytes[0] != '#'.code.toByte() || bytes[1] != '!'.code.toByte()) return@forEach
-            val text = bytes.toString(Charsets.UTF_8)
-            if (TERMUX_PREFIX in text) {
-                runCatching { file.writeText(text.replace(TERMUX_PREFIX, prefix.absolutePath)) }
-            }
-            runCatching { file.setExecutable(true) }
+        // Termux's bootstrap contains executable helper scripts outside bin as well. apt is a
+        // particularly important example: bin/apt-key invokes helpers under libexec/apt/, and
+        // those helpers carry Termux's original package-specific interpreter path. Rewriting only
+        // bin therefore lets pkg/apt start but makes signature verification fail later with the
+        // misleading "Couldn't execute .../bin/apt-key" / "repository is not signed" error.
+        // Walk every executable-script-bearing prefix tree, but only rewrite shebang-gated text
+        // files so ELF binaries and package data are never touched.
+        listOf("bin", "libexec", "lib").forEach { subdir ->
+            val root = File(prefix, subdir)
+            if (!root.exists()) return@forEach
+            root.walkTopDown().forEach { file -> repairScript(file, prefix) }
         }
 
         repairMainRepoKey(prefix)
         writeAptConfig(prefix)
         writeScriptWrappers(prefix, DistroManager.homeDir(context))
+    }
+
+    private fun repairScript(file: File, prefix: File) {
+        if (!file.isFile || Files.isSymbolicLink(file.toPath()) || isElf(file)) return
+        val bytes = runCatching { file.readBytes() }.getOrNull() ?: return
+        if (bytes.size < 2 || bytes[0] != '#'.code.toByte() || bytes[1] != '!'.code.toByte()) return
+        val text = String(bytes, Charsets.UTF_8)
+        if (TERMUX_PREFIX in text) {
+            runCatching {
+                file.writeBytes(text.replace(TERMUX_PREFIX, prefix.absolutePath).toByteArray(Charsets.UTF_8))
+            }
+        }
+        runCatching { file.setExecutable(true) }
     }
 
     private fun repairMainRepoKey(prefix: File) {
@@ -60,6 +72,8 @@ object TermuxRuntimeRepair {
             Dir::Etc "$p/etc/apt/";
             Dir::Etc::sourcelist "$p/etc/apt/sources.list";
             Dir::Etc::sourceparts "$p/etc/apt/sources.list.d/";
+            Dir::Etc::vendorlist "$p/etc/apt/vendors.list";
+            Dir::Etc::vendorparts "$p/etc/apt/vendors.list.d/";
             Dir::Etc::main "$p/etc/apt/apt.conf";
             Dir::Etc::parts "$p/etc/apt/apt.conf.d/";
             Dir::Etc::preferences "$p/etc/apt/preferences";
@@ -94,8 +108,6 @@ object TermuxRuntimeRepair {
             }
         })
 
-        // The previous implementation only added this when .bash_profile did not exist. A user
-        // profile (or an older HG2Gui-created one) therefore silently disabled every wrapper.
         val profile = File(home, ".bash_profile")
         val existing = if (profile.exists()) profile.readText() else ""
         if (PROFILE_LINE !in existing) {
