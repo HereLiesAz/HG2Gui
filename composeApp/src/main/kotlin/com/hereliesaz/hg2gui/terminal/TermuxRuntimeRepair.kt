@@ -9,6 +9,7 @@ object TermuxRuntimeRepair {
     private const val TERMUX_PREFIX = "/data/data/com.termux/files/usr"
     private const val WRAPPERS = ".hg2gui-script-wrappers.sh"
     private const val PROFILE_LINE = "[ -f \"\$HOME/$WRAPPERS\" ] && . \"\$HOME/$WRAPPERS\""
+    private const val APT_KEY_LAUNCHER = "libhg2gui_apt_key.so"
 
     fun repair(context: Context) {
         val prefix = DistroManager.prefixDir(context)
@@ -19,7 +20,7 @@ object TermuxRuntimeRepair {
             if (root.exists()) root.walkTopDown().forEach { repairScript(it, prefix) }
         }
         repairMainRepoKey(prefix)
-        writeAptConfig(prefix)
+        writeAptConfig(prefix, context.applicationInfo.nativeLibraryDir)
         writeScriptWrappers(prefix, DistroManager.homeDir(context))
         TermuxElfAudit.audit(context)
     }
@@ -43,8 +44,9 @@ object TermuxRuntimeRepair {
         runCatching { Os.symlink(target.absolutePath, link.absolutePath) }
     }
 
-    private fun writeAptConfig(prefix: File) {
+    private fun writeAptConfig(prefix: File, nativeLibraryDir: String) {
         val p = prefix.absolutePath
+        val aptKeyLauncher = File(nativeLibraryDir, APT_KEY_LAUNCHER)
         File(prefix, "var/cache/apt/archives/partial").mkdirs()
         File(prefix, "var/lib/apt/lists/partial").mkdirs()
         val etc = File(prefix, "etc/apt").apply { mkdirs() }
@@ -72,7 +74,7 @@ object TermuxRuntimeRepair {
             Dir::Bin::solvers:: "$p/lib/apt/solvers/";
             Dir::Bin::dpkg "$p/bin/dpkg";
             Dir::Bin::gpg "$p/bin/gpgv";
-            Dir::Bin::apt-key "$p/bin/apt-key";
+            Dir::Bin::apt-key "${aptKeyLauncher.absolutePath}";
             APT::Key::gpgvcommand "$p/bin/gpgv";
             Acquire::gpgv::Command "$p/bin/gpgv";
             Acquire::https::CaInfo "$p/etc/tls/cert.pem";
