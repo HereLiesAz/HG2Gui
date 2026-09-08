@@ -11,6 +11,8 @@ object TermuxRuntimeRepair {
     private const val PROFILE_LINE = "[ -f \"\$HOME/$WRAPPERS\" ] && . \"\$HOME/$WRAPPERS\""
     private const val APT_KEY_LAUNCHER = "libhg2gui_apt_key.so"
     private const val MAIN_REPO = "https://packages.termux.dev/apt/termux-main"
+    private const val ROOT_REPO = "https://packages.termux.dev/apt/termux-root"
+    private const val X11_REPO = "https://packages.termux.dev/apt/termux-x11"
 
     fun repair(context: Context) {
         val prefix = DistroManager.prefixDir(context)
@@ -47,24 +49,38 @@ object TermuxRuntimeRepair {
     }
 
     /**
-     * The raw Termux bootstrap can leave the main repository configured through its mirror-group
-     * machinery. In HG2Gui that made every `pkg install` benchmark dozens of mirrors and then pick
-     * one at random from the currently reachable set. A mirror can answer the short health probe
-     * and still time out on the actual InRelease/package request, leaving apt on stale indexes and
-     * producing misleading "Unable to locate package" errors.
+     * Pin HG2Gui to Termux's primary package host instead of letting `pkg` benchmark the entire
+     * public mirror list and randomly choose one. A mirror can pass pkg's tiny health probe and
+     * still time out on the real InRelease/package request, which leaves stale indexes behind and
+     * turns an otherwise valid install into "Unable to locate package".
      *
-     * HG2Gui does not need automatic mirror roulette. Pin the normal upstream endpoint directly;
-     * users can still replace sources.list themselves if they deliberately want another mirror.
+     * termux-tools does not treat chosen_mirrors as a URL file: for a single selected mirror it
+     * expects chosen_mirrors to be a symlink to a shell-formatted mirror descriptor that it can
+     * `source`. We create exactly that shape here, alongside the concrete apt sources.list.
      */
     private fun writeMainRepoSource(prefix: File) {
         val aptDir = File(prefix, "etc/apt").apply { mkdirs() }
         File(aptDir, "sources.list").writeText("deb $MAIN_REPO stable main\n")
 
-        // termux-tools also consults this file when deciding whether a mirror/group has already
-        // been selected. Keeping it aligned with sources.list stops pkg from dropping back into
-        // the expensive all-mirror benchmark even though apt itself already has a concrete repo.
         val termuxDir = File(prefix, "etc/termux").apply { mkdirs() }
-        File(termuxDir, "chosen_mirrors").writeText("$MAIN_REPO\n")
+        val mirrorDir = File(termuxDir, "mirrors/hg2gui").apply { mkdirs() }
+        val descriptor = File(mirrorDir, "packages.termux.dev")
+        descriptor.writeText(
+            """
+            # This file is sourced by pkg
+            # HG2Gui pinned Termux primary host
+            # Termux primary package host | https://packages.termux.dev
+            # Managed by HG2Gui runtime repair.
+            WEIGHT=10
+            MAIN="$MAIN_REPO"
+            ROOT="$ROOT_REPO"
+            X11="$X11_REPO"
+            """.trimIndent() + "\n"
+        )
+
+        val chosen = File(termuxDir, "chosen_mirrors")
+        runCatching { chosen.deleteRecursively() }
+        runCatching { Os.symlink(descriptor.absolutePath, chosen.absolutePath) }
     }
 
     private fun writeAptConfig(prefix: File, nativeLibraryDir: String) {
