@@ -79,7 +79,7 @@ android {
         versionCode = resolvedVersionCode
         versionName = resolvedVersionName
     }
-    sourceSets.getByName("main").jniLibs.directories.add(generatedAptKeyJniDir.get().asFile)
+    sourceSets.getByName("main").jniLibs.directories.add(generatedAptKeyJniDir.get().asFile.absolutePath)
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
