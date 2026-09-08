@@ -37,7 +37,7 @@ if (releaseRequireSigning && !hasReleaseSigningEnv) error("REQUIRE_SIGNING is se
 
 kotlin { compilerOptions { jvmTarget.set(JvmTarget.JVM_21) } }
 
-val generatedAptKeyJniDir = layout.buildDirectory.dir("generated/aptKeyLauncher/jniLibs")
+val generatedLauncherJniDir = layout.buildDirectory.dir("generated/nativeLaunchers/jniLibs")
 
 android {
     namespace = "com.hereliesaz.hg2gui"
@@ -49,7 +49,7 @@ android {
         versionCode = resolvedVersionCode
         versionName = resolvedVersionName
     }
-    sourceSets.getByName("main").jniLibs.directories.add(generatedAptKeyJniDir.get().asFile.absolutePath)
+    sourceSets.getByName("main").jniLibs.directories.add(generatedLauncherJniDir.get().asFile.absolutePath)
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -87,9 +87,9 @@ android {
     buildToolsVersion = "37.0.0"
 }
 
-val buildAptKeyLauncher = tasks.register("buildAptKeyLauncher") {
-    val source = layout.projectDirectory.file("src/main/cpp/apt_key_launcher.c")
-    val output = layout.buildDirectory.file("generated/aptKeyLauncher/jniLibs/arm64-v8a/libhg2gui_apt_key.so")
+fun registerNativeLauncherTask(taskName: String, sourceName: String, outputName: String) = tasks.register(taskName) {
+    val source = layout.projectDirectory.file("src/main/cpp/$sourceName")
+    val output = layout.buildDirectory.file("generated/nativeLaunchers/jniLibs/arm64-v8a/$outputName")
     inputs.file(source)
     outputs.file(output)
 
@@ -122,11 +122,24 @@ val buildAptKeyLauncher = tasks.register("buildAptKeyLauncher") {
         )
             .inheritIO()
             .start()
-        check(process.waitFor() == 0) { "Failed to compile apt-key launcher" }
+        check(process.waitFor() == 0) { "Failed to compile $sourceName" }
     }
 }
 
-tasks.matching { it.name == "preBuild" }.configureEach { dependsOn(buildAptKeyLauncher) }
+val buildAptKeyLauncher = registerNativeLauncherTask(
+    "buildAptKeyLauncher",
+    "apt_key_launcher.c",
+    "libhg2gui_apt_key.so"
+)
+val buildDpkgLauncher = registerNativeLauncherTask(
+    "buildDpkgLauncher",
+    "dpkg_launcher.c",
+    "libhg2gui_dpkg.so"
+)
+
+tasks.matching { it.name == "preBuild" }.configureEach {
+    dependsOn(buildAptKeyLauncher, buildDpkgLauncher)
+}
 
 androidComponents {
     onVariants(selector().all()) { variant ->
