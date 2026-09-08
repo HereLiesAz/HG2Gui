@@ -78,6 +78,22 @@ object ShellAliases {
         return NOT_FOUND_PATTERNS.any { lower.contains(it) }
     }
 
+    // Matches apt/dpkg/curl/wget-style carriage-return status frames. These are transient display
+    // state, not questions: treating `0% [Working]` as an input prompt deadlocks the UI waiting for
+    // an answer the child never requested. The final logical line is all that matters because a
+    // status frame is continuously rewritten in place.
+    private val PROGRESS_STATUS_PATTERN = Regex(
+        """(?i)^(?:\d{1,3}%\s+\[[^]]+]|\d{1,3}%\s+.*|(?:get|fetch|download|upload)(?:ing)?\b.*\d{1,3}%.*|.*\b\d+(?:\.\d+)?\s*(?:kb|mb|gb|kib|mib|gib)/s\b.*)$"""
+    )
+
+    fun transientStatusLine(text: String): String? {
+        val tail = text.substringAfterLast('\n').substringAfterLast('\r').trim()
+        if (tail.isEmpty()) return null
+        return tail.takeIf { PROGRESS_STATUS_PATTERN.matches(it) }
+    }
+
+    fun looksLikeTransientStatus(text: String): Boolean = transientStatusLine(text) != null
+
     // Matches the shapes real prompts actually use: "[y/N]", "(yes/no)", "Y/n?", etc.
     private val YES_NO_PATTERN = Regex("""(?i)[\[(]\s*y(?:es)?\s*/\s*n(?:o)?\s*[\])]|\by\s*/\s*n\b""")
 
