@@ -54,6 +54,8 @@ kotlin {
     }
 }
 
+val generatedAptKeyJniDir = layout.buildDirectory.dir("generated/aptKeyLauncher/jniLibs")
+
 android {
     namespace = "com.hereliesaz.hg2gui"
     compileSdk = 37
@@ -65,6 +67,8 @@ android {
         versionCode = resolvedVersionCode
         versionName = resolvedVersionName
     }
+
+    sourceSets.getByName("main").jniLibs.srcDir(generatedAptKeyJniDir)
     
     packaging {
         resources {
@@ -121,6 +125,49 @@ android {
     }
     ndkVersion = "29.0.14206865"
     buildToolsVersion = "37.0.0"
+}
+
+// apt invokes apt-key with execve(), but Android 10+ deliberately rejects execve() for scripts
+// extracted into the app's writable files directory. Build a tiny PIE launcher with the NDK and
+// package it under lib/<abi>/ so PackageManager installs it in nativeLibraryDir, the same
+// exec-allowed location already used by the bundled Termux ELF files. The launcher immediately
+// execs the installed bash ELF and passes $PREFIX/bin/apt-key as bash's script argument.
+val buildAptKeyLauncher by tasks.registering {
+    val source = layout.projectDirectory.file("src/main/cpp/apt_key_launcher.c")
+    val output = generatedAptKeyJniDir.map { it.file("arm64-v8a/libhg2gui_apt_key.so") }
+    inputs.file(source)
+    outputs.file(output)
+
+    doLast {
+        val hostTag = when {
+            System.getProperty("os.name").startsWith("Windows", ignoreCase = true) -> "windows-x86_64"
+            System.getProperty("os.name").startsWith("Mac", ignoreCase = true) ->
+                if (System.getProperty("os.arch") == "aarch64") "darwin-arm64" else "darwin-x86_64"
+            else -> "linux-x86_64"
+        }
+        val executableSuffix = if (hostTag.startsWith("windows")) ".cmd" else ""
+        val clang = android.sdkDirectory.resolve(
+            "ndk/${android.ndkVersion}/toolchains/llvm/prebuilt/$hostTag/bin/aarch64-linux-android24-clang$executableSuffix"
+        )
+        check(clang.isFile) { "Android NDK clang not found: $clang" }
+        val outFile = output.get().asFile
+        outFile.parentFile.mkdirs()
+        project.exec {
+            commandLine(
+                clang.absolutePath,
+                source.asFile.absolutePath,
+                "-O2",
+                "-fPIE",
+                "-pie",
+                "-o",
+                outFile.absolutePath
+            )
+        }
+    }
+}
+
+tasks.matching { it.name == "preBuild" }.configureEach {
+    dependsOn(buildAptKeyLauncher)
 }
 
 // The default output name (composeApp-<flavor>-<buildType>.apk) carries no version at all - every
