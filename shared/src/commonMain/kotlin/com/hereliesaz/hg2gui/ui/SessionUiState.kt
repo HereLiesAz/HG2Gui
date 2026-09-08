@@ -33,17 +33,28 @@ class SessionUiState(val id: String, name: String, cwd: String) {
     suspend fun awaitPromptAnswer(prompt: String): String {
         ShellAliases.transientStatusLine(prompt)?.let { status ->
             transientStatus = status
-            // This callback is only reached because ShellSession's generic idle-gap detector saw
-            // an unterminated line. Returning immediately keeps a progress frame from becoming a
-            // fake blocking prompt. A blank line is harmless to apt/dpkg while they are drawing
-            // progress and lets the reader continue until the next real output frame arrives.
             return ""
         }
 
         transientStatus = null
+
+        // The PTY reader can have an entire command transcript buffered when an unterminated
+        // prompt stalls. Interactive UI must classify the prompt the child is waiting on, not
+        // every line that happened before it. Keep a multi-line numbered menu intact, but reduce
+        // ordinary y/n, password and bracket prompts to their final carriage-return/logical line.
+        val logicalTail = prompt.substringAfterLast('\n').substringAfterLast('\r').trim()
+        val uiPrompt = when {
+            ShellAliases.numberedMenuChoices(prompt) != null -> prompt
+            ShellAliases.looksLikeYesNo(logicalTail) -> logicalTail
+            ShellAliases.looksLikePassword(logicalTail) -> logicalTail
+            ShellAliases.bracketedChoices(logicalTail) != null -> logicalTail
+            logicalTail.isNotEmpty() -> logicalTail
+            else -> prompt
+        }
+
         val deferred = CompletableDeferred<String>()
         pendingAnswer = deferred
-        pendingPrompt = prompt
+        pendingPrompt = uiPrompt
         val answer = deferred.await()
         pendingPrompt = null
         pendingAnswer = null
