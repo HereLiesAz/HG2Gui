@@ -43,6 +43,7 @@ actual class ShellSession private constructor(
         private const val SENTINEL = "__HG2GUI_EOC_a7f3__"
         private const val SENTINEL_HEAD = "__HG2GUI_EOC_"
         private const val SENTINEL_TAIL = "a7f3__"
+        private const val NATIVE_BASH = "libbin_bash.so"
         private const val DEFAULT_SHELL = "/system/bin/sh"
         private const val TIMEOUT_MS = 15_000L
         private const val STARTUP_PROBE_MS = 300L
@@ -56,8 +57,10 @@ actual class ShellSession private constructor(
 
         fun bootstrapBashEnv(context: Context, home: File?): Pair<File, Map<String, String>>? {
             val prefix = DistroManager.prefixDir(context)
-            val bash = File(prefix, "bin/bash")
-            if (!DistroManager.isInstalled(context) || !bash.canExecute()) return null
+            val bin = File(prefix, "bin")
+            val nativeBash = File(context.applicationInfo.nativeLibraryDir, NATIVE_BASH)
+            if (!prefix.isDirectory || !bin.isDirectory || !nativeBash.canExecute()) return null
+
             val bootstrapHome = home ?: DistroManager.homeDir(context)
             if (!bootstrapHome.exists()) bootstrapHome.mkdirs()
             val env = mapOf(
@@ -71,7 +74,8 @@ actual class ShellSession private constructor(
                 "SSL_CERT_FILE" to "${prefix.absolutePath}/etc/tls/cert.pem",
                 "CURL_CA_BUNDLE" to "${prefix.absolutePath}/etc/tls/cert.pem",
                 "TERM" to "xterm-256color",
-                "TERMINFO" to "${prefix.absolutePath}/share/terminfo"
+                "TERMINFO" to "${prefix.absolutePath}/share/terminfo",
+                "HG2GUI_BASH" to nativeBash.absolutePath
             )
             return bootstrapHome to env
         }
@@ -82,19 +86,19 @@ actual class ShellSession private constructor(
             val bootstrap = bootstrapBashEnv(context, home)
             if (bootstrap != null) {
                 val (bootstrapHome, env) = bootstrap
-                val bash = File(env.getValue("PREFIX"), "bin/bash")
+                val bash = File(env.getValue("HG2GUI_BASH"))
                 val session = ShellSession(
                     bootstrapHome,
                     arrayOf(bash.absolutePath, "-l"),
                     env,
-                    "bash (Termux bootstrap)",
+                    "bash (Termux bootstrap via nativeLibraryDir)",
                     usePty
                 )
                 if (session.survivedStartup()) return session
                 session.close()
-                reasons += "the Termux bootstrap's bash started but exited immediately"
+                reasons += "the exec-exempt Termux bash started but exited immediately"
             } else if (DistroManager.isInstalled(context)) {
-                reasons += "the Termux bootstrap's bash isn't executable"
+                reasons += "the APK-installed exec-exempt Termux bash is unavailable"
             } else {
                 reasons += "no Termux bootstrap is installed"
             }
