@@ -115,29 +115,41 @@ class FullScreenPtySession private constructor(
         fun launch(context: Context, cwd: String, commandLine: String): FullScreenPtySession? {
             val home = File(cwd).takeIf { it.isDirectory }
             val (_, env) = ShellSession.bootstrapBashEnv(context, home) ?: return null
-            val bash = File(env.getValue("PREFIX"), "bin/bash")
+            val selectedName = ShellPreference.selected(context)
+            val selected = ShellPreference.executable(context, selectedName)
+                ?: ShellPreference.executable(context, ShellPreference.BASH)
+                ?: return null
+            val selectedFamily = ShellCommandProtocol.family(
+                if (selectedName == ShellPreference.BASH || selected.name != "libbin_bash.so") selectedName
+                else ShellPreference.BASH
+            )
             val envArray = env.map { (k, v) -> "$k=$v" }.toTypedArray()
+            val args = when (selectedFamily) {
+                ShellFamily.FISH -> arrayOf(selected.absolutePath, "-l", "-c", commandLine)
+                ShellFamily.BASH, ShellFamily.ZSH -> arrayOf(selected.absolutePath, "-l", "-c", commandLine)
+                else -> arrayOf(selected.absolutePath, "-c", commandLine)
+            }
             val termuxSession = TerminalSession(
-                bash.absolutePath,
+                selected.absolutePath,
                 cwd,
-                arrayOf(bash.absolutePath, "-l", "-c", commandLine),
+                args,
                 envArray,
                 INITIAL_TRANSCRIPT_ROWS,
                 null
             )
             val detected = ShellAdapterRegistry.detect(context, cwd)
             val leading = commandLine.trim().substringBefore(' ').substringAfterLast('/')
-            val shell = when (leading) {
+            val explicitShell = when (leading) {
                 "bash" -> ShellFamily.BASH
                 "zsh" -> ShellFamily.ZSH
                 "fish" -> ShellFamily.FISH
                 "sh" -> ShellFamily.SH
                 else -> ShellFamily.UNKNOWN
             }
-            val presentation = if (shell == ShellFamily.UNKNOWN) {
+            val presentation = if (explicitShell == ShellFamily.UNKNOWN) {
                 ShellPresentation(cwd = cwd)
             } else {
-                detected.copy(shell = shell, cwd = cwd, completionProvider = when (shell) {
+                detected.copy(shell = explicitShell, cwd = cwd, completionProvider = when (explicitShell) {
                     ShellFamily.BASH -> ShellCompletionProvider.BASH_COMPLETION
                     ShellFamily.ZSH -> ShellCompletionProvider.ZSH_COMPLETION
                     ShellFamily.FISH -> ShellCompletionProvider.FISH_COMPLETION
