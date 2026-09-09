@@ -166,6 +166,7 @@ dependencies {
     implementation(libs.ui)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.listenablefuture)
+    implementation(libs.okhttp)
     coreLibraryDesugaring(libs.desugar.jdk.libs)
     debugImplementation(libs.ui.tooling)
     testImplementation(libs.junit)
