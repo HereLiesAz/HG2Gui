@@ -3,7 +3,7 @@ package com.hereliesaz.hg2gui.terminal
 import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.flowOn
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -28,22 +28,22 @@ class Hg2Downloader(
 
     fun handles(line: String): Boolean = line.trim().substringBefore(' ') in setOf("download", "hg2download")
 
-    fun run(line: String): Flow<String> = flow {
+    fun run(line: String): Flow<String> = channelFlow {
         val args = words(line).drop(1)
         val url = args.firstOrNull()
         if (url.isNullOrBlank()) {
-            emit("usage: download <url> [filename]")
-            return@flow
+            send("usage: download <url> [filename]")
+            return@channelFlow
         }
         val requestedName = args.getOrNull(1)
         val target = File(downloadsDir, sanitizeFileName(requestedName ?: fileNameFromUrl(url)))
         val result = download(url, target) { done, total ->
             val percent = if (total > 0L) ((done * 100L) / total).coerceIn(0L, 100L) else 0L
-            emit("$percent% [${target.name} ${formatBytes(done)}/${if (total > 0L) formatBytes(total) else "?"}]")
+            send("$percent% [${target.name} ${formatBytes(done)}/${if (total > 0L) formatBytes(total) else "?"}]")
         }
-        emit("Downloaded ${result.file.name} (${formatBytes(result.bytes)})")
-        emit("Saved to ${result.file.absolutePath}")
-        emit("SHA-256 ${result.sha256}")
+        send("Downloaded ${result.file.name} (${formatBytes(result.bytes)})")
+        send("Saved to ${result.file.absolutePath}")
+        send("SHA-256 ${result.sha256}")
     }.flowOn(Dispatchers.IO)
 
     fun download(
