@@ -7,9 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.ScrollState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
@@ -26,7 +24,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.graphicsLayer
@@ -44,9 +41,8 @@ import kotlinx.coroutines.delay
 
 /*
  * The Guide: a chapter index of real commands paired with invented, Hitchhiker's-Guide-style
- * definitions - reading material, not a command picker. Nested inside the existing command
- * picker (also historically called "the Guide") rather than replacing it, reachable through a
- * pill at that screen's top.
+ * definitions. Every real command heading is also an input affordance: tapping it hands the
+ * command back to the terminal's normal command-composition path for review.
  *
  * Every screen change wipes on: one axis, reading order, no fade, never loops. Text and rules
  * reveal via a left-to-right clip; pills grow their actual width instead, so a rounded end grows
@@ -60,7 +56,7 @@ import kotlinx.coroutines.delay
  * never going to hold one.
  */
 
-private val GUIDE_HUES = intArrayOf(6, 5, 4, 2, 9, 0, 7) // red, orange, amber, teal, blue, violet, magenta
+private val GUIDE_HUES = intArrayOf(6, 5, 4, 2, 9, 0, 7)
 
 private enum class GuideView { Index, Entry }
 
@@ -68,9 +64,7 @@ private enum class GuideView { Index, Entry }
 fun GuideReaderScreen(
     fullscreen: Boolean,
     onBack: () -> Unit,
-    // UI-2: this screen is always "somewhere with a level to step up from" while it's showing -
-    // either up to its own index (from an entry) or out entirely via [onBack] (from the index) -
-    // so it owns backStep unconditionally rather than only when it has state of its own to unwind.
+    onCommandSelected: (String) -> Unit = {},
     backStep: BackStepState,
     modifier: Modifier = Modifier
 ) {
@@ -101,6 +95,7 @@ fun GuideReaderScreen(
                 number = entryIndex + 1,
                 total = GuideBook.entries.size,
                 wipeKey = wipeKey,
+                onCommandSelected = onCommandSelected,
                 onBackToIndex = { view = GuideView.Index },
                 onPrev = {
                     entryIndex = (entryIndex - 1 + GuideBook.entries.size) % GuideBook.entries.size
@@ -151,9 +146,6 @@ private fun ColumnScope.GuideIndex(onBack: () -> Unit, onOpenEntry: (Int) -> Uni
         contentPadding = androidx.compose.foundation.layout.PaddingValues(top = 18.dp, bottom = 40.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-        // GuideBook.entries is chapters.flatMap { it.entries }, in the same order this loop
-        // visits them - tracking that running offset avoids an indexOf scan (over the whole,
-        // flattened entries list) per entry.
         var globalOffset = 0
         GuideBook.chapters.forEach { chapter ->
             val chapterStart = globalOffset
@@ -162,9 +154,6 @@ private fun ColumnScope.GuideIndex(onBack: () -> Unit, onOpenEntry: (Int) -> Uni
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(
                         chapter.label.uppercase(),
-                        // .55f, the app-wide "text-muted, eyebrows and captions" tier (style
-                        // guide "03 - Transparency") - the 45% tier is for micro labels inside a
-                        // pill, which this caption isn't.
                         color = Azphalt.currentGround.onPage.copy(alpha = .55f),
                         fontSize = 9.sp,
                         fontWeight = FontWeight.ExtraBold,
@@ -180,9 +169,6 @@ private fun ColumnScope.GuideIndex(onBack: () -> Unit, onOpenEntry: (Int) -> Uni
                     Spacer(Modifier.height(2.dp))
                     Box(Modifier.fillMaxWidth().height(1.dp).background(Azphalt.Ink.copy(alpha = .16f)))
                     if (chapter.entries.isEmpty()) {
-                        // A chapter that never earns a command entry (the missing Chapter 5 gag) -
-                        // its intro is the whole chapter, so it reads right here instead of behind
-                        // a pick that would otherwise never exist.
                         Text(
                             chapter.intro,
                             color = Azphalt.currentGround.onPage.copy(alpha = .7f),
@@ -230,175 +216,171 @@ private fun ColumnScope.GuideEntryReader(
     number: Int,
     total: Int,
     wipeKey: Int,
+    onCommandSelected: (String) -> Unit,
     onBackToIndex: () -> Unit,
     onPrev: () -> Unit,
     onNext: () -> Unit,
     onReplay: () -> Unit
 ) {
-    // `number` is already this entry's 1-based global index, handed down by the caller - no need
-    // to re-derive it with a linear GuideBook.entries.indexOf(entry) scan.
     val hue = GUIDE_HUES[(number - 1) % GUIDE_HUES.size]
     var seq = 4
 
     Box(Modifier.fillMaxSize().clipToBounds()) {
-    GuideWash(entry.cmd.uppercase(), wipeKey)
-    Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
-        Row(
-            Modifier.fillMaxWidth().padding(top = 18.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            WipeItem(0, wipeKey, wide = false) { Chip("GUIDE", onClick = onBackToIndex) }
-            Chip("REPLAY", onClick = onReplay)
-        }
+        GuideWash(entry.cmd.uppercase(), wipeKey)
+        Column(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
+            Row(
+                Modifier.fillMaxWidth().padding(top = 18.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                WipeItem(0, wipeKey, wide = false) { Chip("GUIDE", onClick = onBackToIndex) }
+                Chip("REPLAY", onClick = onReplay)
+            }
 
-        WipeItem(1, wipeKey, wide = false, modifier = Modifier.padding(top = 14.dp)) {
-            Chip("ENTRY $number OF $total", filled = false, clickable = false)
-        }
+            WipeItem(1, wipeKey, wide = false, modifier = Modifier.padding(top = 14.dp)) {
+                Chip("ENTRY $number OF $total", filled = false, clickable = false)
+            }
 
-        WipeItem(2, wipeKey, wide = true, modifier = Modifier.padding(top = 16.dp)) {
+            WipeItem(2, wipeKey, wide = true, modifier = Modifier.padding(top = 16.dp)) {
+                Text(
+                    entry.cmd.uppercase(),
+                    color = Azphalt.currentGround.onPage,
+                    fontSize = 34.sp,
+                    lineHeight = 30.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = (-0.02).em,
+                    modifier = Modifier.clickable { onCommandSelected(entry.cmd) }
+                )
+            }
+
             Text(
-                entry.cmd.uppercase(),
-                color = Azphalt.currentGround.onPage,
-                fontSize = 34.sp,
-                lineHeight = 30.sp,
-                fontWeight = FontWeight.Black,
-                letterSpacing = (-0.02).em
+                "TAP COMMAND TO USE",
+                color = Azphalt.currentGround.onPage.copy(alpha = .55f),
+                fontSize = 9.sp,
+                fontWeight = FontWeight.ExtraBold,
+                letterSpacing = 0.14.em,
+                modifier = Modifier.padding(top = 6.dp)
             )
-        }
 
-        WipeItem(3, wipeKey, wide = true, modifier = Modifier.padding(top = 12.dp)) {
-            Box(
-                Modifier
-                    .width(220.dp)
-                    .height(4.dp)
-                    .clip(RoundedCornerShape(percent = 50))
-                    .background(Azphalt.hues[hue])
-            )
-        }
-
-        // Entries now run long enough (multi-paragraph blurbs, an optional animation-candidate
-        // scene, an optional trailing editorial note) that the fixed header above and the
-        // PREV/NEXT row below stay put while only this middle stretch scrolls.
-        // GD-1: keyed on wipeKey (bumped on every Prev/Next/Replay) rather than the unkeyed
-        // rememberScrollState() this used to be - the composable's own call site never changes
-        // between entries, so an unkeyed ScrollState carried its offset over into whatever
-        // showed up next, landing a short entry on its own footer if the last one ended scrolled
-        // down.
-        val scrollState = remember(wipeKey) { ScrollState(0) }
-        Column(Modifier.weight(1f).verticalScroll(scrollState)) {
-            WipeItem(seq++, wipeKey, wide = true, modifier = Modifier.padding(top = 16.dp)) {
-                Text(
-                    entry.blurb,
-                    color = Azphalt.currentGround.onPage.copy(alpha = .78f),
-                    fontSize = 15.sp,
-                    lineHeight = 21.sp
+            WipeItem(3, wipeKey, wide = true, modifier = Modifier.padding(top = 12.dp)) {
+                Box(
+                    Modifier
+                        .width(220.dp)
+                        .height(4.dp)
+                        .clip(RoundedCornerShape(percent = 50))
+                        .background(Azphalt.hues[hue])
                 )
             }
 
-            WipeItem(seq++, wipeKey, wide = true, modifier = Modifier.padding(top = 10.dp)) {
-                Text(
-                    "STANDS FOR “${entry.full.uppercase()}”",
-                    color = Azphalt.currentGround.onPage.copy(alpha = .45f),
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = 0.14.em
-                )
-            }
-
-            WipeItem(seq++, wipeKey, wide = true, modifier = Modifier.padding(top = 20.dp)) {
-                Column {
-                    FactRow("Chapter", entry.chapterTitle)
-                    FactRow("Actually does something", "Yes")
+            val scrollState = remember(wipeKey) { ScrollState(0) }
+            Column(Modifier.weight(1f).verticalScroll(scrollState)) {
+                WipeItem(seq++, wipeKey, wide = true, modifier = Modifier.padding(top = 16.dp)) {
+                    Text(
+                        entry.blurb,
+                        color = Azphalt.currentGround.onPage.copy(alpha = .78f),
+                        fontSize = 15.sp,
+                        lineHeight = 21.sp
+                    )
                 }
-            }
 
-            entry.animation?.let { anim ->
+                WipeItem(seq++, wipeKey, wide = true, modifier = Modifier.padding(top = 10.dp)) {
+                    Text(
+                        "STANDS FOR “${entry.full.uppercase()}”",
+                        color = Azphalt.currentGround.onPage.copy(alpha = .45f),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = 0.14.em
+                    )
+                }
+
                 WipeItem(seq++, wipeKey, wide = true, modifier = Modifier.padding(top = 20.dp)) {
-                    Column(
-                        Modifier
-                            .fillMaxWidth()
-                            .clip(AzphaltSurface.note)
-                            .background(Azphalt.Ink.copy(alpha = .06f))
-                            .padding(16.dp)
-                    ) {
+                    Column {
+                        FactRow("Chapter", entry.chapterTitle)
+                        FactRow("Actually does something", "Yes")
+                    }
+                }
+
+                entry.animation?.let { anim ->
+                    WipeItem(seq++, wipeKey, wide = true, modifier = Modifier.padding(top = 20.dp)) {
+                        Column(
+                            Modifier
+                                .fillMaxWidth()
+                                .clip(AzphaltSurface.note)
+                                .background(Azphalt.Ink.copy(alpha = .06f))
+                                .padding(16.dp)
+                        ) {
+                            Text(
+                                "ANIMATION CANDIDATE",
+                                color = Azphalt.hues[hue],
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                letterSpacing = 0.18.em
+                            )
+                            Text(
+                                anim,
+                                color = Azphalt.currentGround.onPage.copy(alpha = .78f),
+                                fontSize = 13.sp,
+                                lineHeight = 19.sp,
+                                modifier = Modifier.padding(top = 8.dp)
+                            )
+                        }
+                    }
+                }
+
+                entry.note?.let { note ->
+                    WipeItem(seq++, wipeKey, wide = true, modifier = Modifier.padding(top = 16.dp)) {
                         Text(
-                            "ANIMATION CANDIDATE",
-                            color = Azphalt.hues[hue],
+                            note,
+                            color = Azphalt.currentGround.onPage.copy(alpha = .55f),
+                            fontSize = 12.sp,
+                            lineHeight = 17.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+
+                WipeItem(seq++, wipeKey, wide = true, modifier = Modifier.padding(top = 20.dp, bottom = 20.dp)) {
+                    Column {
+                        Text(
+                            "FROM THE CHAPTER",
+                            color = Azphalt.currentGround.onPage.copy(alpha = .55f),
                             fontSize = 9.sp,
                             fontWeight = FontWeight.ExtraBold,
                             letterSpacing = 0.18.em
                         )
                         Text(
-                            anim,
+                            entry.chapterIntro,
                             color = Azphalt.currentGround.onPage.copy(alpha = .78f),
-                            fontSize = 13.sp,
-                            lineHeight = 19.sp,
-                            modifier = Modifier.padding(top = 8.dp)
+                            fontSize = 12.sp,
+                            lineHeight = 17.sp,
+                            modifier = Modifier.padding(top = 6.dp)
                         )
                     }
                 }
             }
 
-            entry.note?.let { note ->
-                WipeItem(seq++, wipeKey, wide = true, modifier = Modifier.padding(top = 16.dp)) {
-                    Text(
-                        note,
-                        color = Azphalt.currentGround.onPage.copy(alpha = .55f),
-                        fontSize = 12.sp,
-                        lineHeight = 17.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-            }
-
-            WipeItem(seq++, wipeKey, wide = true, modifier = Modifier.padding(top = 20.dp, bottom = 20.dp)) {
-                Column {
-                    Text(
-                        "FROM THE CHAPTER",
-                        // .55f, the app-wide "text-muted, eyebrows and captions" tier - see the
-                        // chapter-label caption above for the same reasoning.
-                        color = Azphalt.currentGround.onPage.copy(alpha = .55f),
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = 0.18.em
-                    )
-                    Text(
-                        entry.chapterIntro,
-                        color = Azphalt.currentGround.onPage.copy(alpha = .78f),
-                        fontSize = 12.sp,
-                        lineHeight = 17.sp,
-                        modifier = Modifier.padding(top = 6.dp)
-                    )
-                }
-            }
-        }
-
-        Row(
-            Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 22.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            // Continues the same running `seq` the scrollable content above used, rather than the
-            // hardcoded 8/9 this used to be - an entry with a `note` (or both `animation` and
-            // `note`) pushes the content's own last item past index 8, which used to fire this
-            // row's stagger at the same moment as "FROM THE CHAPTER".
-            WipeItem(seq++, wipeKey, wide = false) { Chip("PREV", onClick = onPrev) }
-            WipeItem(
-                seq++, wipeKey, wide = false,
-                modifier = Modifier.weight(1f)
+            Row(
+                Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 22.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Chip("NEXT ENTRY", background = Azphalt.hues[6], foreground = Azphalt.White, onClick = onNext, fillWidth = true)
+                WipeItem(seq++, wipeKey, wide = false) { Chip("PREV", onClick = onPrev) }
+                WipeItem(
+                    seq++, wipeKey, wide = false,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Chip(
+                        "NEXT ENTRY",
+                        background = Azphalt.hues[6],
+                        foreground = Azphalt.White,
+                        onClick = onNext,
+                        fillWidth = true
+                    )
+                }
             }
         }
-    }
     }
 }
 
-/**
- * The faint oversized echo of the entry's own word, drifting in from the right at a fraction of
- * the entry's own pace - "depth is speed," not blur or dimming. Plays once per [wipeKey], same as
- * every WipeItem, so Replay restarts it too.
- */
 @Composable
 private fun GuideWash(word: String, wipeKey: Int) {
     val drift = remember(wipeKey) { Animatable(40f) }
@@ -415,9 +397,6 @@ private fun GuideWash(word: String, wipeKey: Int) {
         letterSpacing = (-0.04).em,
         maxLines = 1,
         softWrap = false,
-        // Purely decorative - the same word renders again moments later as the entry's own real
-        // title (WipeItem below). Without this, a screen reader would surface this faint 100sp
-        // echo as its own navigable node, announcing the command name redundantly.
         modifier = Modifier
             .padding(top = 64.dp, start = 4.dp)
             .graphicsLayer { translationX = drift.value.dp.toPx() }
@@ -453,10 +432,6 @@ private fun Chip(
 ) {
     val bg = if (filled) background else Azphalt.Ink.copy(alpha = .14f)
     val fg = if (filled) foreground else Azphalt.currentGround.onPage.copy(alpha = .55f)
-    // UI-7: the visible chip (padding(vertical = 8.dp) around 9sp type) renders well under the
-    // 48dp minimum touch target. Rather than growing the chip itself - which would blow up its
-    // whole visual proportions - the clickable region is a separate, invisible 48dp-tall Box the
-    // small chip is centered inside, so the tap target grows without the chip's own look changing.
     Box(
         modifier
             .then(if (fillWidth) Modifier.fillMaxWidth() else Modifier)
@@ -476,15 +451,14 @@ private fun Chip(
     }
 }
 
-/**
- * One element of the wipe-on sequence: `wide` elements (text/rules) reveal via a left-to-right
- * clip with a slight slide, since the content is already full width - only visibility grows.
- * Non-wide elements are pills/chips, whose actual layout width is animated instead of just
- * clip-revealing a static full-width shape, so a chip's *slot* in its Row grows along with it
- * rather than the Row reserving full width for it from the first frame.
- */
 @Composable
-private fun WipeItem(seq: Int, wipeKey: Int, wide: Boolean, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+private fun WipeItem(
+    seq: Int,
+    wipeKey: Int,
+    wide: Boolean,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
     val duration = if (wide) 420 else 300
     val progress = remember(wipeKey) { Animatable(0f) }
     LaunchedEffect(wipeKey) {
@@ -509,9 +483,4 @@ private fun Modifier.wipeGrow(progress: Float): Modifier = this
         val w = (placeable.width * progress).toInt().coerceIn(0, placeable.width)
         layout(w, placeable.height) { placeable.placeRelative(0, 0) }
     }
-    // The layout above only shrinks the reported *size* - Compose never clips a child to that
-    // reported size on its own, so without this the full-size pill still drew at every progress
-    // value and overlapped whatever the Row placed next to it. clipToBounds costs the rounded
-    // corner's leading curve mid-animation (a flat edge for a few frames instead), which is a far
-    // smaller cost than two chips rendering on top of each other.
     .clipToBounds()
