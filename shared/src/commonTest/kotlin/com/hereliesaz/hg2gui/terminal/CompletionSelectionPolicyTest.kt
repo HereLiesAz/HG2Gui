@@ -6,10 +6,10 @@ import kotlin.test.assertTrue
 
 class CompletionSelectionPolicyTest {
     @Test
-    fun finiteSemanticChoicesReplaceBlankFreeFormInput() {
+    fun exhaustiveChoicesReplaceBlankFreeFormInput() {
         val candidates = listOf(
-            CompletionCandidate("main", kind = CompletionKind.BRANCH),
-            CompletionCandidate("develop", kind = CompletionKind.BRANCH)
+            CompletionCandidate("main", kind = CompletionKind.BRANCH, enumerationComplete = true),
+            CompletionCandidate("develop", kind = CompletionKind.BRANCH, enumerationComplete = true)
         )
 
         assertTrue(CompletionSelectionPolicy.shouldReplaceFreeForm("", candidates))
@@ -17,14 +17,17 @@ class CompletionSelectionPolicyTest {
 
     @Test
     fun typedFilterKeepsTextInputAvailable() {
-        val candidates = listOf(CompletionCandidate("main", kind = CompletionKind.BRANCH))
+        val candidates = listOf(
+            CompletionCandidate("main", kind = CompletionKind.BRANCH, enumerationComplete = true)
+        )
 
         assertFalse(CompletionSelectionPolicy.shouldReplaceFreeForm("ma", candidates))
     }
 
     @Test
-    fun filesAndOpenValuesDoNotReplaceFreeFormInput() {
+    fun advisoryCandidatesDoNotReplaceFreeFormInput() {
         val candidates = listOf(
+            CompletionCandidate("known-host", kind = CompletionKind.HOST, enumerationComplete = false),
             CompletionCandidate("Documents/", kind = CompletionKind.DIRECTORY),
             CompletionCandidate("needle", kind = CompletionKind.VALUE)
         )
