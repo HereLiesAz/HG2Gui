@@ -49,6 +49,9 @@ class TermuxRepositoryClient(
         preferredMirror: String?,
         progress: suspend (done: Long, total: Long) -> Unit
     ): Hg2Downloader.Result {
+        require(SHA256.matches(expectedSha256)) {
+            "Authenticated package metadata is missing a valid SHA-256 for $filename"
+        }
         val failures = mutableListOf<String>()
         for (url in packageUrls(filename, preferredMirror)) {
             runCatching { return downloader.download(url, target, expectedSha256, progress) }
@@ -119,14 +122,15 @@ class TermuxRepositoryClient(
     }
 
     private fun clearSignedPayload(text: String): String {
+        val normalized = text.replace("\r\n", "\n")
         val marker = "-----BEGIN PGP SIGNED MESSAGE-----"
         val signature = "-----BEGIN PGP SIGNATURE-----"
-        require(text.startsWith(marker)) { "InRelease is not an OpenPGP clear-signed message" }
-        val bodyStart = text.indexOf("\n\n")
+        require(normalized.startsWith(marker)) { "InRelease is not an OpenPGP clear-signed message" }
+        val bodyStart = normalized.indexOf("\n\n")
         require(bodyStart >= 0) { "InRelease clear-signed headers are malformed" }
-        val signatureStart = text.indexOf(signature, bodyStart + 2)
+        val signatureStart = normalized.indexOf(signature, bodyStart + 2)
         require(signatureStart > bodyStart) { "InRelease signature block is missing" }
-        return text.substring(bodyStart + 2, signatureStart)
+        return normalized.substring(bodyStart + 2, signatureStart)
             .lineSequence()
             .joinToString("\n") { line -> if (line.startsWith("- ")) line.removePrefix("- ") else line }
             .trimEnd()
