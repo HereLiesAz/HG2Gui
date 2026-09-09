@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.flowOn
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
+import java.nio.file.Files
 import java.util.ArrayDeque
 import java.util.Locale
 import java.util.zip.GZIPInputStream
@@ -26,6 +27,14 @@ class Hg2PackageManager(
     private val bash = File(prefix, "bin/bash")
     private val dpkgInfoDir = File(prefix, "var/lib/dpkg/info")
 
+    data class Relation(
+        val name: String,
+        val operator: String? = null,
+        val version: String? = null
+    ) {
+        override fun toString(): String = if (operator != null && version != null) "$name ($operator $version)" else name
+    }
+
     data class PackageRecord(
         val name: String,
         val version: String,
@@ -33,11 +42,22 @@ class Hg2PackageManager(
         val filename: String,
         val sha256: String,
         val size: Long,
-        val depends: List<List<String>>,
+        val preDepends: List<List<Relation>>,
+        val depends: List<List<Relation>>,
+        val provides: List<Relation>,
+        val conflicts: List<Relation>,
+        val breaks: List<Relation>,
+        val replaces: List<Relation>,
         val description: String
     )
 
-    private data class Installed(val name: String, val version: String)
+    private data class Installed(
+        val name: String,
+        val version: String,
+        val provides: List<Relation> = emptyList(),
+        val conflicts: List<Relation> = emptyList(),
+        val breaks: List<Relation> = emptyList()
+    )
 
     private data class PreparedPackage(
         val pkg: PackageRecord,
@@ -122,7 +142,12 @@ class Hg2PackageManager(
                 appendLine("Architecture: ${pkg.architecture}")
                 appendLine("Installed: ${installed[name]?.version ?: "no"}")
                 appendLine("Download size: ${formatBytes(pkg.size)}")
-                if (pkg.depends.isNotEmpty()) appendLine("Depends: ${pkg.depends.joinToString(", ") { it.joinToString(" | ") }}")
+                if (pkg.preDepends.isNotEmpty()) appendLine("Pre-Depends: ${formatRelations(pkg.preDepends)}")
+                if (pkg.depends.isNotEmpty()) appendLine("Depends: ${formatRelations(pkg.depends)}")
+                if (pkg.provides.isNotEmpty()) appendLine("Provides: ${pkg.provides.joinToString(", ")}")
+                if (pkg.conflicts.isNotEmpty()) appendLine("Conflicts: ${pkg.conflicts.joinToString(", ")}")
+                if (pkg.breaks.isNotEmpty()) appendLine("Breaks: ${pkg.breaks.joinToString(", ")}")
+                if (pkg.replaces.isNotEmpty()) appendLine("Replaces: ${pkg.replaces.joinToString(", ")}")
                 append("Description: ${pkg.description}")
             })
         }
@@ -252,6 +277,7 @@ class Hg2PackageManager(
         if (relocated > 0) {
             emit("Relocated $relocated top-level payload item${if (relocated == 1) "" else "s"} for ${pkg.name}.")
         }
+        val symlinksRewritten = rewriteRelocatedSymlinks(workDir)
 
         val metadataRewritten = rewriteRelocatedControlMetadata(workDir)
         var rewritten = 0
@@ -261,7 +287,8 @@ class Hg2PackageManager(
 
         val extractedScripts = extractMaintainerScripts(workDir, scriptsDir)
         assertArchiveControlHasNoMaintainerScripts(workDir, pkg.name)
-        emit("Rewrote ${rewritten + metadataRewritten} file${if (rewritten + metadataRewritten == 1) "" else "s"} and externalized $extractedScripts maintainer script${if (extractedScripts == 1) "" else "s"} for ${pkg.name}.")
+        val rewriteTotal = rewritten + metadataRewritten + symlinksRewritten
+        emit("Rewrote $rewriteTotal file/path reference${if (rewriteTotal == 1) "" else "s"} and externalized $extractedScripts maintainer script${if (extractedScripts == 1) "" else "s"} for ${pkg.name}.")
 
         runTool(listOf(dpkgDeb.absolutePath, "-b", workDir.absolutePath, patched.absolutePath), "dpkg-deb build")
         if (!patched.isFile || patched.length() == 0L) error("Failed to rebuild ${pkg.name}")
@@ -356,7 +383,8 @@ class Hg2PackageManager(
     ) {
         if (!script.isFile) return
         rewriteTextPrefix(script)
-        val process = ProcessBuilder(listOf(bash.absolutePath, script.absolutePath) + args)
+        val interpreter = maintainerInterpreter(script)
+        val process = ProcessBuilder(listOf(interpreter.absolutePath, script.absolutePath) + args)
             .directory(prefix)
             .redirectErrorStream(true)
             .apply {
@@ -364,7 +392,7 @@ class Hg2PackageManager(
                 environment()["DPKG_MAINTSCRIPT_NAME"] = script.name.substringAfterLast('.')
                 environment()["DPKG_MAINTSCRIPT_PACKAGE"] = packageName
                 environment()["DPKG_MAINTSCRIPT_PACKAGE_REFCOUNT"] = "1"
-                environment()["DPKG_MAINTSCRIPT_ARCH"] = "aarch64"
+                environment()["DPKG_MAINTSCRIPT_ARCH"] = packageArchitecture()
                 environment()["DPKG_MAINTSCRIPT_VERSION"] = packageVersion
             }
             .start()
@@ -382,6 +410,27 @@ class Hg2PackageManager(
         if (code != 0) {
             val detail = tail.joinToString("\n").trim()
             error("${packageName}.${script.name} exited with code $code${if (detail.isBlank()) "" else ":\n$detail"}")
+        }
+    }
+
+    /**
+     * Maintainer scripts are not all Bash scripts. HG2Gui executes POSIX-shell-family shebangs
+     * through its known-good bundled Bash, which is compatible with sh/dash syntax. Unknown
+     * interpreters are rejected explicitly rather than silently feeding Python/Perl/etc. to Bash.
+     */
+    private fun maintainerInterpreter(script: File): File {
+        val shebang = runCatching { script.bufferedReader().use { it.readLine().orEmpty() } }.getOrDefault("")
+        if (!shebang.startsWith("#!")) return bash
+        val command = shebang.removePrefix("#!").trim()
+        val words = command.split(Regex("\\s+")).filter(String::isNotBlank)
+        val interpreterName = if (words.firstOrNull()?.substringAfterLast('/') == "env") {
+            words.drop(1).firstOrNull { !it.startsWith("-") }?.substringAfterLast('/')
+        } else {
+            words.firstOrNull()?.substringAfterLast('/')
+        }
+        return when (interpreterName) {
+            null, "", "sh", "bash", "dash" -> bash
+            else -> error("Unsupported maintainer-script interpreter '$interpreterName' in ${script.name}; refusing to run it as Bash")
         }
     }
 
@@ -403,6 +452,25 @@ class Hg2PackageManager(
             current = parent
         }
         return children.size
+    }
+
+    private fun rewriteRelocatedSymlinks(workDir: File): Int {
+        var rewritten = 0
+        runCatching {
+            Files.walk(workDir.toPath()).use { stream ->
+                stream.filter(Files::isSymbolicLink).forEach { path ->
+                    val target = runCatching { Files.readSymbolicLink(path).toString() }.getOrNull() ?: return@forEach
+                    if (!target.startsWith(OLD_PREFIX)) return@forEach
+                    val replacement = target.replaceFirst(OLD_PREFIX, prefix.absolutePath)
+                    runCatching {
+                        Files.delete(path)
+                        Files.createSymbolicLink(path, java.nio.file.Path.of(replacement))
+                        rewritten++
+                    }.getOrElse { error("Could not rewrite relocated symlink $path → $target: ${it.message}") }
+                }
+            }
+        }.getOrElse { error("Could not audit relocated symlinks: ${it.message}") }
+        return rewritten
     }
 
     private fun rewriteRelocatedControlMetadata(workDir: File): Int {
@@ -464,8 +532,9 @@ class Hg2PackageManager(
     }
 
     private suspend fun updateIndex(emit: suspend (String) -> Unit) {
-        val url = "$REPO/dists/stable/main/binary-aarch64/Packages.gz"
-        emit("Downloading HG2Gui package index…")
+        val architecture = packageArchitecture()
+        val url = "$REPO/dists/stable/main/binary-$architecture/Packages.gz"
+        emit("Downloading HG2Gui package index for $architecture…")
         val request = Request.Builder().url(url).header("Cache-Control", "no-cache").build()
         client.newCall(request).execute().use { response ->
             if (!response.isSuccessful) error("Package index download failed: HTTP ${response.code}")
@@ -494,24 +563,119 @@ class Hg2PackageManager(
         val requestedSet = requested.toSet()
         val visiting = HashSet<String>()
         val planned = LinkedHashMap<String, PackageRecord>()
-
-        fun visit(name: String) {
-            if (name in planned) return
-            if (name in installed && !(forceRequested && name in requestedSet)) return
-            if (!visiting.add(name)) return
-            val pkg = available[name] ?: error("Package '$name' was not found in the Termux repository")
-            for (alternatives in pkg.depends) {
-                if (alternatives.any { it in installed || it in planned }) continue
-                val choice = alternatives.firstOrNull { it in available }
-                    ?: error("${pkg.name} depends on unavailable alternative: ${alternatives.joinToString(" | ")}")
-                visit(choice)
+        val providers = buildMap<String, MutableList<PackageRecord>> {
+            available.values.forEach { pkg ->
+                pkg.provides.forEach { provided -> getOrPut(provided.name) { mutableListOf() }.add(pkg) }
             }
-            visiting.remove(name)
-            planned[name] = pkg
         }
 
-        requested.forEach(::visit)
+        fun installedSatisfies(relation: Relation): Boolean = installed.values.any { item ->
+            if (item.name == relation.name && versionSatisfies(item.version, relation)) return@any true
+            item.provides.any { provided -> provided.name == relation.name && providedVersionSatisfies(provided, relation) }
+        }
+
+        fun plannedSatisfies(relation: Relation): Boolean = planned.values.any { item ->
+            if (item.name == relation.name && versionSatisfies(item.version, relation)) return@any true
+            item.provides.any { provided -> provided.name == relation.name && providedVersionSatisfies(provided, relation) }
+        }
+
+        fun candidateFor(relation: Relation): PackageRecord? {
+            val exact = available[relation.name]
+            if (exact != null && versionSatisfies(exact.version, relation)) return exact
+            return providers[relation.name].orEmpty().firstOrNull { provider ->
+                provider.provides.any { it.name == relation.name && providedVersionSatisfies(it, relation) }
+            }
+        }
+
+        fun installedConflict(pkg: PackageRecord): String? {
+            val relations = pkg.conflicts + pkg.breaks
+            for (relation in relations) {
+                val hit = installed.values.firstOrNull { item ->
+                    item.name != pkg.name && (
+                        (item.name == relation.name && versionSatisfies(item.version, relation)) ||
+                            item.provides.any { it.name == relation.name && providedVersionSatisfies(it, relation) }
+                        )
+                }
+                if (hit != null) return "${pkg.name} ${if (relation in pkg.breaks) "breaks" else "conflicts with"} installed ${hit.name} (${relation})"
+            }
+            for (item in installed.values) {
+                if (item.name == pkg.name) continue
+                val reverse = (item.conflicts + item.breaks).firstOrNull { relation ->
+                    (pkg.name == relation.name && versionSatisfies(pkg.version, relation)) ||
+                        pkg.provides.any { it.name == relation.name && providedVersionSatisfies(it, relation) }
+                }
+                if (reverse != null) return "installed ${item.name} conflicts with/breaks ${pkg.name} (${reverse})"
+            }
+            return null
+        }
+
+        fun plannedConflict(pkg: PackageRecord): String? {
+            for (other in planned.values) {
+                if (other.name == pkg.name) continue
+                val forward = (pkg.conflicts + pkg.breaks).firstOrNull { relation ->
+                    (other.name == relation.name && versionSatisfies(other.version, relation)) ||
+                        other.provides.any { it.name == relation.name && providedVersionSatisfies(it, relation) }
+                }
+                if (forward != null) return "${pkg.name} conflicts with/breaks planned ${other.name} ($forward)"
+                val reverse = (other.conflicts + other.breaks).firstOrNull { relation ->
+                    (pkg.name == relation.name && versionSatisfies(pkg.version, relation)) ||
+                        pkg.provides.any { it.name == relation.name && providedVersionSatisfies(it, relation) }
+                }
+                if (reverse != null) return "planned ${other.name} conflicts with/breaks ${pkg.name} ($reverse)"
+            }
+            return null
+        }
+
+        fun visitRelation(alternatives: List<Relation>, owner: String, kind: String) {
+            if (alternatives.any(::installedSatisfies) || alternatives.any(::plannedSatisfies)) return
+            val candidate = alternatives.firstNotNullOfOrNull(::candidateFor)
+                ?: error("$owner $kind unavailable alternative: ${alternatives.joinToString(" | ")}")
+            visitPackage(candidate)
+            if (!alternatives.any(::installedSatisfies) && !alternatives.any(::plannedSatisfies)) {
+                error("$owner $kind was not satisfied after planning: ${alternatives.joinToString(" | ")}")
+            }
+        }
+
+        fun visitPackage(pkg: PackageRecord) {
+            if (pkg.name in planned) return
+            if (pkg.name in installed && !(forceRequested && (pkg.name in requestedSet || requested.any { it in pkg.provides.map(Relation::name) }))) return
+            if (!visiting.add(pkg.name)) return
+            installedConflict(pkg)?.let { error("Cannot install ${pkg.name}: $it. HG2Gui will not auto-remove conflicting packages.") }
+            plannedConflict(pkg)?.let { error("Cannot install ${pkg.name}: $it") }
+            pkg.preDepends.forEach { visitRelation(it, pkg.name, "pre-depends on") }
+            pkg.depends.forEach { visitRelation(it, pkg.name, "depends on") }
+            visiting.remove(pkg.name)
+            planned[pkg.name] = pkg
+        }
+
+        fun visitRequested(name: String) {
+            val relation = Relation(name.substringBefore(':'))
+            if (installedSatisfies(relation) && !forceRequested) return
+            val pkg = candidateFor(relation) ?: error("Package or provider '$name' was not found in the Termux repository")
+            visitPackage(pkg)
+        }
+
+        requested.forEach(::visitRequested)
         return planned.values.toList()
+    }
+
+    private fun versionSatisfies(candidateVersion: String, relation: Relation): Boolean {
+        val op = relation.operator ?: return true
+        val wanted = relation.version ?: return true
+        if (!dpkgLauncher.canExecute()) return false
+        val process = ProcessBuilder(dpkgLauncher.absolutePath, "--compare-versions", candidateVersion, op, wanted)
+            .directory(prefix)
+            .redirectErrorStream(true)
+            .apply { applyPackageEnvironment(environment()) }
+            .start()
+        process.inputStream.close()
+        return process.waitFor() == 0
+    }
+
+    private fun providedVersionSatisfies(provided: Relation, requested: Relation): Boolean {
+        if (requested.operator == null) return true
+        val providedVersion = provided.version ?: return false
+        return versionSatisfies(providedVersion, requested)
     }
 
     private fun isVersionLessThan(installed: String, available: String): Boolean {
@@ -563,17 +727,41 @@ class Hg2PackageManager(
         val status = File(prefix, "var/lib/dpkg/status")
         if (!status.isFile) return emptyMap()
         return status.readText().split("\n\n").mapNotNull { paragraph ->
-            val fields = paragraph.lineSequence().mapNotNull { line ->
-                val i = line.indexOf(':')
-                if (i <= 0) null else line.substring(0, i) to line.substring(i + 1).trim()
-            }.toMap()
+            val fields = parseParagraph(paragraph)
             val name = fields["Package"] ?: return@mapNotNull null
             if (fields["Status"] != "install ok installed") return@mapNotNull null
-            Installed(name, fields["Version"].orEmpty())
+            Installed(
+                name = name,
+                version = fields["Version"].orEmpty(),
+                provides = parseRelationList(fields["Provides"].orEmpty()),
+                conflicts = parseRelationList(fields["Conflicts"].orEmpty()),
+                breaks = parseRelationList(fields["Breaks"].orEmpty())
+            )
         }.associateBy { it.name }
     }
 
     private fun parsePackages(text: String): List<PackageRecord> = text.split("\n\n").mapNotNull { paragraph ->
+        val fields = parseParagraph(paragraph)
+        val name = fields["Package"] ?: return@mapNotNull null
+        val filename = fields["Filename"] ?: return@mapNotNull null
+        PackageRecord(
+            name = name,
+            version = fields["Version"].orEmpty(),
+            architecture = fields["Architecture"].orEmpty(),
+            filename = filename,
+            sha256 = fields["SHA256"].orEmpty(),
+            size = fields["Size"]?.toLongOrNull() ?: 0L,
+            preDepends = parseRelationGroups(fields["Pre-Depends"].orEmpty()),
+            depends = parseRelationGroups(fields["Depends"].orEmpty()),
+            provides = parseRelationList(fields["Provides"].orEmpty()),
+            conflicts = parseRelationList(fields["Conflicts"].orEmpty()),
+            breaks = parseRelationList(fields["Breaks"].orEmpty()),
+            replaces = parseRelationList(fields["Replaces"].orEmpty()),
+            description = fields["Description"].orEmpty()
+        )
+    }
+
+    private fun parseParagraph(paragraph: String): Map<String, String> {
         val fields = LinkedHashMap<String, String>()
         var current: String? = null
         for (line in paragraph.lineSequence()) {
@@ -586,27 +774,39 @@ class Hg2PackageManager(
             current = line.substring(0, i)
             fields[current] = line.substring(i + 1).trim()
         }
-        val name = fields["Package"] ?: return@mapNotNull null
-        val filename = fields["Filename"] ?: return@mapNotNull null
-        PackageRecord(
+        return fields
+    }
+
+    private fun parseRelationGroups(raw: String): List<List<Relation>> {
+        if (raw.isBlank()) return emptyList()
+        return raw.split(',').mapNotNull { clause ->
+            clause.split('|').mapNotNull(::parseRelation).takeIf { it.isNotEmpty() }
+        }
+    }
+
+    private fun parseRelationList(raw: String): List<Relation> =
+        if (raw.isBlank()) emptyList() else raw.split(',').mapNotNull(::parseRelation)
+
+    private fun parseRelation(raw: String): Relation? {
+        val withoutRestrictions = raw.replace(ARCH_RESTRICTION, "").replace(PROFILE_RESTRICTION, "").trim()
+        val name = withoutRestrictions.substringBefore(' ').substringBefore(':').trim().takeIf(String::isNotBlank) ?: return null
+        val match = VERSION_RELATION.find(withoutRestrictions)
+        return Relation(
             name = name,
-            version = fields["Version"].orEmpty(),
-            architecture = fields["Architecture"].orEmpty(),
-            filename = filename,
-            sha256 = fields["SHA256"].orEmpty(),
-            size = fields["Size"]?.toLongOrNull() ?: 0L,
-            depends = parseDepends(fields["Depends"].orEmpty()),
-            description = fields["Description"].orEmpty()
+            operator = match?.groupValues?.getOrNull(1)?.takeIf(String::isNotBlank),
+            version = match?.groupValues?.getOrNull(2)?.trim()?.takeIf(String::isNotBlank)
         )
     }
 
-    private fun parseDepends(raw: String): List<List<String>> {
-        if (raw.isBlank()) return emptyList()
-        return raw.split(',').mapNotNull { clause ->
-            clause.split('|').mapNotNull { alt ->
-                alt.trim().substringBefore(' ').substringBefore(':').takeIf { it.isNotBlank() }
-            }.takeIf { it.isNotEmpty() }
-        }
+    private fun formatRelations(groups: List<List<Relation>>): String =
+        groups.joinToString(", ") { it.joinToString(" | ") }
+
+    private fun packageArchitecture(): String = when (android.os.Build.SUPPORTED_ABIS.firstOrNull()) {
+        "arm64-v8a" -> "aarch64"
+        "armeabi-v7a", "armeabi" -> "arm"
+        "x86_64" -> "x86_64"
+        "x86" -> "i686"
+        else -> error("Unsupported Android ABI for Termux packages: ${android.os.Build.SUPPORTED_ABIS.joinToString()}")
     }
 
     private fun words(line: String): List<String> = Regex("""(?:[^\s\"']+|\"[^\"]*\"|'[^']*')+""")
@@ -626,6 +826,9 @@ class Hg2PackageManager(
         private const val OLD_PREFIX = "/data/data/com.termux/files/usr"
         private const val DPKG_ERROR_TAIL_LINES = 40
         private val MAINTAINER_SCRIPTS = listOf("preinst", "postinst", "prerm", "postrm")
+        private val VERSION_RELATION = Regex("\\((<<|<=|=|>=|>>)\\s*([^)]+)\\)")
+        private val ARCH_RESTRICTION = Regex("\\[[^]]*]")
+        private val PROFILE_RESTRICTION = Regex("<[^>]*>")
         private const val USAGE = "HG2Gui package manager\nusage: pkg <install|update|upgrade|remove|purge|search|show|list-installed|clean> …"
     }
 }
