@@ -12,6 +12,7 @@ class FullScreenCommandsTest {
         assertNull(fullScreenCommandOf("cat foo.txt"))
         assertNull(fullScreenCommandOf("git status"))
         assertNull(fullScreenCommandOf("git log --oneline"))
+        assertNull(fullScreenCommandOf("gh repo view"))
         assertNull(fullScreenCommandOf(""))
         assertNull(fullScreenCommandOf("   "))
     }
@@ -25,6 +26,15 @@ class FullScreenCommandsTest {
         assertEquals("less", fullScreenCommandOf("less README.md"))
         assertEquals("man", fullScreenCommandOf("man ls"))
         assertEquals("ssh", fullScreenCommandOf("ssh user@host"))
+    }
+
+    @Test
+    fun modernInteractiveAiClis_areRoutedToPty() {
+        assertEquals("claude", fullScreenCommandOf("claude"))
+        assertEquals("gemini", fullScreenCommandOf("gemini"))
+        assertEquals("codex", fullScreenCommandOf("codex"))
+        assertEquals("copilot", fullScreenCommandOf("copilot"))
+        assertEquals("gh", fullScreenCommandOf("gh copilot suggest 'find large files'"))
     }
 
     @Test
