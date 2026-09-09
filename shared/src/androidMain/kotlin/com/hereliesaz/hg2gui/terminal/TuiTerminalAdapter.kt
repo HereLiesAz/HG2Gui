@@ -32,7 +32,11 @@ object TuiTerminalAdapter {
                 )
             }
         }
-        return TuiSemanticParser.parse(rows, emulator.isAlternateBufferActive())
+        return TuiSemanticParser.parse(
+            rows = rows,
+            alternateScreen = emulator.isAlternateBufferActive(),
+            mouseAware = emulator.isMouseTrackingActive()
+        )
     }
 
     private data class RowStyle(
