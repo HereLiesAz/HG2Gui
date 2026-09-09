@@ -1,12 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <supports-screens
-        android:anyDensity="true"
-        android:largeScreens="true"
-        android:normalScreens="true"
-        android:resizeable="true"
-        android:smallScreens="true" />
+    <supports-screens android:anyDensity="true" android:largeScreens="true" android:normalScreens="true" android:resizeable="true" android:smallScreens="true" />
 
     <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -30,10 +25,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
-    <!-- Same-signature transport, matching the trust model of the Termux API add-on family. -->
-    <permission
-        android:name="com.hereliesaz.hg2gui.permission.API"
-        android:protectionLevel="signature" />
+    <permission android:name="com.hereliesaz.hg2gui.permission.API" android:protectionLevel="signature" />
 
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-feature android:name="android.hardware.camera.flash" android:required="false" />
@@ -56,29 +48,21 @@
         android:label="@string/app_name"
         android:theme="@style/Custom.Solid">
 
-        <provider
-            android:name=".util.GenericFileProvider"
-            android:authorities="${applicationId}.FILE_PROVIDER"
-            android:exported="false"
-            android:grantUriPermissions="true">
-            <meta-data
-                android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/provider_paths"/>
+        <provider android:name=".util.GenericFileProvider" android:authorities="${applicationId}.FILE_PROVIDER" android:exported="false" android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/provider_paths" />
         </provider>
 
         <receiver android:name=".update.UpdateActionReceiver" android:exported="false" />
         <receiver android:name=".update.UpdateInstallReceiver" android:exported="false" />
 
-        <receiver
-            android:name=".api.Hg2ApiReceiver"
-            android:exported="true"
-            android:permission="com.hereliesaz.hg2gui.permission.API">
+        <receiver android:name=".api.Hg2ApiReceiver" android:exported="true" android:permission="com.hereliesaz.hg2gui.permission.API">
             <intent-filter>
                 <action android:name="com.hereliesaz.hg2gui.api.EXECUTE" />
                 <action android:name="com.hereliesaz.hg2gui.api.PACKAGE" />
                 <action android:name="com.hereliesaz.hg2gui.api.PICK_FILE" />
                 <action android:name="com.hereliesaz.hg2gui.api.PICK_DIRECTORY" />
                 <action android:name="com.hereliesaz.hg2gui.api.NOTIFY" />
+                <action android:name="com.hereliesaz.hg2gui.api.DIALOG" />
                 <action android:name="com.hereliesaz.hg2gui.api.CLIPBOARD_GET" />
                 <action android:name="com.hereliesaz.hg2gui.api.CLIPBOARD_SET" />
                 <action android:name="com.hereliesaz.hg2gui.api.DEVICE_INFO" />
@@ -88,6 +72,9 @@
                 <action android:name="com.hereliesaz.hg2gui.api.AUTHORITY" />
             </intent-filter>
         </receiver>
+
+        <activity android:name=".api.Hg2ApiPickerActivity" android:exported="false" android:excludeFromRecents="true" android:noHistory="true" />
+        <activity android:name=".api.Hg2ApiDialogActivity" android:exported="false" android:excludeFromRecents="true" android:noHistory="true" />
 
         <activity
             android:name=".TerminalActivity"
@@ -111,14 +98,12 @@
             android:exported="true"
             android:windowSoftInputMode="stateAlwaysVisible|adjustResize">
             <meta-data android:name="android.support.PARENT_ACTIVITY" android:value=".TerminalActivity" />
-
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <action android:name="android.intent.action.EDIT" />
                 <data android:mimeType="text/*" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
-
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <action android:name="android.intent.action.EDIT" />
@@ -139,13 +124,8 @@
             </intent-filter>
         </activity>
 
-        <service
-            android:name=".mcp.McpServerService"
-            android:exported="false"
-            android:foregroundServiceType="specialUse">
-            <property
-                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="Loopback MCP server for on-device AI agent pairing, user-started" />
+        <service android:name=".mcp.McpServerService" android:exported="false" android:foregroundServiceType="specialUse">
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="Loopback MCP server for on-device AI agent pairing, user-started" />
         </service>
 
     </application>
