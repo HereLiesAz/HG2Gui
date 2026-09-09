@@ -136,28 +136,27 @@ class TerminalEngine(
             else -> launch(Dispatchers.IO) {
                 val notice = pendingBackendNotice
                 pendingBackendNotice = null
-                val exitCode = if (packageOwner?.isolated == true) {
-                    runIsolatedPackage(
+                val emitWithNotice: suspend (String) -> Unit = { output ->
+                    trySend(if (notice != null) "$notice\n$output" else output)
+                }
+                val exitCode = if (packageOwner != null) {
+                    runOwnedPackage(
                         packageOwner,
+                        verb,
                         trimmed,
-                        emit = { output -> trySend(if (notice != null) "$notice\n$output" else output) },
+                        emit = emitWithNotice,
                         onNeedInput = onNeedInput,
                         onStderr = onStderr,
                         onStyledOutput = onStyledOutput
                     )
                 } else {
-                    val snapshot = packageOwner?.let { PackageLifecycleStore.beginRun(context, it, shell.workingDirectory) }
-                    try {
-                        shell.stream(
-                            trimmed,
-                            onLine = { output -> trySend(if (notice != null) "$notice\n$output" else output) },
-                            onNeedInput = { prompt -> runBlocking { onNeedInput(prompt) } },
-                            onStderrLine = { output -> onStderr(output) },
-                            onStyledLine = { lines -> onStyledOutput(lines) }
-                        )
-                    } finally {
-                        PackageLifecycleStore.finishRun(context, snapshot)
-                    }
+                    shell.stream(
+                        trimmed,
+                        onLine = { output -> runBlocking { emitWithNotice(output) } },
+                        onNeedInput = { prompt -> runBlocking { onNeedInput(prompt) } },
+                        onStderrLine = onStderr,
+                        onStyledLine = onStyledOutput
+                    )
                 }
                 onExit(exitCode)
                 close()
@@ -225,10 +224,11 @@ class TerminalEngine(
             }
         }
 
-        if (owner?.isolated == true) {
+        if (owner != null) {
             val transcript = StringBuilder()
-            val code = runIsolatedPackage(
+            val code = runOwnedPackage(
                 owner,
+                verb,
                 trimmed,
                 emit = { output ->
                     if (transcript.isNotEmpty()) transcript.append('\n')
@@ -241,19 +241,14 @@ class TerminalEngine(
             return@withContext transcript.toString() to code
         }
 
-        val snapshot = owner?.let { PackageLifecycleStore.beginRun(context, it, shell.workingDirectory) }
         var transcript = ""
-        val exitCode = try {
-            shell.stream(
-                trimmed,
-                onLine = { transcript = it },
-                onNeedInput = { null },
-                onStderrLine = {},
-                onStyledLine = {}
-            )
-        } finally {
-            PackageLifecycleStore.finishRun(context, snapshot)
-        }
+        val exitCode = shell.stream(
+            trimmed,
+            onLine = { transcript = it },
+            onNeedInput = { null },
+            onStderrLine = {},
+            onStyledLine = {}
+        )
         transcript to exitCode
     }
 
@@ -263,6 +258,67 @@ class TerminalEngine(
 
     fun destroy() {
         shell.close()
+    }
+
+    private suspend fun runOwnedPackage(
+        pkg: PackageLifecycleStore.InstalledPackage,
+        verb: String,
+        command: String,
+        emit: suspend (String) -> Unit,
+        onNeedInput: suspend (String) -> String?,
+        onStderr: (String) -> Unit,
+        onStyledOutput: (List<List<StyledSpan>>) -> Unit
+    ): Int {
+        val decision = PackageExecutionBackend.select(context, pkg, verb)
+        return when (decision.backend) {
+            PackageExecutionBackend.Backend.PROOT_ISOLATED -> runIsolatedPackage(
+                pkg,
+                command,
+                emit,
+                onNeedInput,
+                onStderr,
+                onStyledOutput
+            )
+            PackageExecutionBackend.Backend.PROOT_COMPAT -> {
+                ensureProotEngine(emit, "compatibility")
+                emit("Execution backend: PRoot compatibility (${decision.reason}).")
+                val snapshot = PackageLifecycleStore.beginRun(context, pkg, shell.workingDirectory)
+                try {
+                    shell.stream(
+                        PackageExecutionBackend.compatibilityCommand(context, command, shell.workingDirectory),
+                        onLine = { output -> runBlocking { emit(output) } },
+                        onNeedInput = { prompt -> runBlocking { onNeedInput(prompt) } },
+                        onStderrLine = onStderr,
+                        onStyledLine = onStyledOutput
+                    )
+                } finally {
+                    PackageLifecycleStore.finishRun(context, snapshot)
+                }
+            }
+            PackageExecutionBackend.Backend.DIRECT_LINKER -> {
+                val snapshot = PackageLifecycleStore.beginRun(context, pkg, shell.workingDirectory)
+                try {
+                    shell.stream(
+                        command,
+                        onLine = { output -> runBlocking { emit(output) } },
+                        onNeedInput = { prompt -> runBlocking { onNeedInput(prompt) } },
+                        onStderrLine = onStderr,
+                        onStyledLine = onStyledOutput
+                    )
+                } finally {
+                    PackageLifecycleStore.finishRun(context, snapshot)
+                }
+            }
+        }
+    }
+
+    private suspend fun ensureProotEngine(emit: suspend (String) -> Unit, purpose: String) {
+        if (PackageIsolation.engine(context) != null) return
+        emit("Installing PRoot $purpose engine…")
+        packages.run("pkg install proot").collect { emit(it) }
+        if (PackageIsolation.engine(context) == null) {
+            error("PRoot was installed but is not executable in this Android runtime.")
+        }
     }
 
     private suspend fun runIsolatedPackage(
@@ -443,13 +499,7 @@ class TerminalEngine(
                 0
             }
             "isolate" -> {
-                if (PackageIsolation.engine(context) == null) {
-                    emit("Installing PRoot isolation engine…")
-                    packages.run("pkg install proot").collect { emit(it) }
-                }
-                if (PackageIsolation.engine(context) == null) {
-                    error("PRoot was installed but is not executable in this Android runtime.")
-                }
+                ensureProotEngine(emit, "isolation")
                 PackageIsolation.wipe(context, pkg)
                 PackageLifecycleStore.setIsolated(context, manager, name, true)
                 emit("Isolated: ${pkg.name}. Future runs use a private runtime and cannot inherit HG2Gui ADB/root authority.")
