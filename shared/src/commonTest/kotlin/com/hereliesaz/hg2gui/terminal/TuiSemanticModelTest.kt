@@ -32,6 +32,28 @@ class TuiSemanticModelTest {
     }
 
     @Test
+    fun indentedLaterMenu_isModeledAsTopModalLayer() {
+        val snapshot = TuiSemanticParser.parse(
+            rows = listOf(
+                TuiRow(0, "Settings"),
+                TuiRow(1, "> General", highlighted = true),
+                TuiRow(2, "  Accounts"),
+                TuiRow(5, "    Confirm action"),
+                TuiRow(6, "    > Continue", highlighted = true),
+                TuiRow(7, "      Cancel")
+            ),
+            alternateScreen = true
+        )
+
+        assertEquals(2, snapshot.layers.size)
+        assertEquals(0, snapshot.layers[0].depth)
+        assertFalse(snapshot.layers[0].modal)
+        assertEquals(1, snapshot.layers[1].depth)
+        assertTrue(snapshot.layers[1].modal)
+        assertEquals(1, snapshot.activeLayerIndex)
+    }
+
+    @Test
     fun highlightedPlainRows_canFormMenuWithoutGlyphs() {
         val snapshot = TuiSemanticParser.parse(
             rows = listOf(
