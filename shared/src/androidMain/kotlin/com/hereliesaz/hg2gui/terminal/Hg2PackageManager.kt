@@ -40,8 +40,9 @@ class Hg2PackageManager(
     fun run(line: String): Flow<String> = flow {
         val args = words(line).drop(1)
         when (args.firstOrNull()) {
-            "install", "in" -> install(requirePackages(args, "install")) { emit(it) }
-            "update", "up" -> updateIndex { emit(it) }
+            "install", "in" -> install(requirePackages(args, "install"), forceRequested = false) { emit(it) }
+            "update" -> updateIndex { emit(it) }
+            "upgrade", "up" -> upgrade { emit(it) }
             "remove", "rm", "uninstall" -> remove(requirePackages(args, "remove"), purge = false) { emit(it) }
             "purge" -> remove(requirePackages(args, "purge"), purge = true) { emit(it) }
             "clean" -> {
@@ -64,6 +65,23 @@ class Hg2PackageManager(
         val packages = args.drop(1).filterNot { it.startsWith("-") }
         if (packages.isEmpty()) error("usage: pkg $operation <package> [package…]")
         return packages
+    }
+
+    private suspend fun upgrade(emit: suspend (String) -> Unit) {
+        updateIndex(emit)
+        val available = parsePackages(packagesFile.readText()).associateBy { it.name }
+        val installed = readInstalled()
+        val upgrades = installed.values.mapNotNull { current ->
+            val candidate = available[current.name] ?: return@mapNotNull null
+            candidate.takeIf { isVersionLessThan(current.version, candidate.version) }
+        }
+        if (upgrades.isEmpty()) {
+            emit("All installed packages are up to date.")
+            return
+        }
+        emit("Upgrading ${upgrades.size} package${if (upgrades.size == 1) "" else "s"}:")
+        upgrades.forEach { emit("  ${it.name}: ${installed.getValue(it.name).version} → ${it.version}") }
+        install(upgrades.map { it.name }, forceRequested = true, emit = emit)
     }
 
     private suspend fun search(query: String, emit: suspend (String) -> Unit) {
@@ -105,11 +123,11 @@ class Hg2PackageManager(
         emit("Done: ${present.joinToString(" ")}")
     }
 
-    private suspend fun install(requested: List<String>, emit: suspend (String) -> Unit) {
+    private suspend fun install(requested: List<String>, forceRequested: Boolean, emit: suspend (String) -> Unit) {
         ensureIndex(emit)
         val available = parsePackages(packagesFile.readText()).associateBy { it.name }
         val installed = readInstalled()
-        val plan = resolve(requested, available, installed)
+        val plan = resolve(requested, available, installed, forceRequested)
         if (plan.isEmpty()) {
             emit("Already satisfied: ${requested.joinToString(" ")}")
             return
@@ -162,11 +180,18 @@ class Hg2PackageManager(
         if (!packagesFile.isFile || packagesFile.length() == 0L) updateIndex(emit)
     }
 
-    private fun resolve(requested: List<String>, available: Map<String, PackageRecord>, installed: Map<String, Installed>): List<PackageRecord> {
+    private fun resolve(
+        requested: List<String>,
+        available: Map<String, PackageRecord>,
+        installed: Map<String, Installed>,
+        forceRequested: Boolean
+    ): List<PackageRecord> {
+        val requestedSet = requested.toSet()
         val visiting = HashSet<String>()
         val planned = LinkedHashMap<String, PackageRecord>()
         fun visit(name: String) {
-            if (name in planned || name in installed) return
+            if (name in planned) return
+            if (name in installed && !(forceRequested && name in requestedSet)) return
             if (!visiting.add(name)) return
             val pkg = available[name] ?: error("Package '$name' was not found in the Termux repository")
             for (alternatives in pkg.depends) {
@@ -180,6 +205,24 @@ class Hg2PackageManager(
         }
         requested.forEach(::visit)
         return planned.values.toList()
+    }
+
+    private fun isVersionLessThan(installed: String, available: String): Boolean {
+        if (installed == available) return false
+        if (!dpkgLauncher.canExecute()) return false
+        val process = ProcessBuilder(dpkgLauncher.absolutePath, "--compare-versions", installed, "lt", available)
+            .directory(prefix)
+            .redirectErrorStream(true)
+            .apply {
+                environment()["PREFIX"] = prefix.absolutePath
+                environment()["HOME"] = DistroManager.homeDir(context).absolutePath
+                environment()["PATH"] = "${prefix.absolutePath}/bin:/system/bin"
+                environment()["LD_LIBRARY_PATH"] = "${prefix.absolutePath}/lib"
+                environment()["TMPDIR"] = "${prefix.absolutePath}/tmp"
+            }
+            .start()
+        process.inputStream.close()
+        return process.waitFor() == 0
     }
 
     private suspend fun runDpkg(args: List<String>, emit: suspend (String) -> Unit) {
@@ -275,6 +318,6 @@ class Hg2PackageManager(
     companion object {
         private const val REPO = "https://packages.termux.dev/apt/termux-main"
         private const val OLD_PREFIX = "/data/data/com.termux/files/usr"
-        private const val USAGE = "HG2Gui package manager\nusage: pkg <install|update|remove|purge|search|show|list-installed|clean> …"
+        private const val USAGE = "HG2Gui package manager\nusage: pkg <install|update|upgrade|remove|purge|search|show|list-installed|clean> …"
     }
 }
