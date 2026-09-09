@@ -69,7 +69,7 @@ object CommandTree {
     /**
      * Which category a package's binaries belong to. Termux's own packages carry no Debian
      * "Section" field to read this from (verified against a real bootstrap - 0 of 82 base
-     * packages have one), so unlike SHELL_HINTS this can't fall back to "discover it, hint it";
+     * packages already on disk have one), so unlike SHELL_HINTS this can't fall back to "discover it, hint it";
      * there is no live source of truth at all, only which package owns a binary
      * (`DpkgCatalog.binariesByPackage`). Covers every package the base bootstrap actually
      * installs, plus common `pkg install` targets; anything else still shows up, just under
@@ -173,7 +173,7 @@ object CommandTree {
     /** The Workflows root pill: saved templates as picks (each launches its own fill-in-the-
      *  placeholders wizard), plus a "new…" leaf that launches the save wizard. Same lazy
      *  resolveChildren reasoning as [sshLeaf] - a freshly-saved workflow shows up next time this
-     *  pill opens. This is a synthesized root like sys/apps/feat, not a shell binary, so it's
+     *  pill opens, without waiting on the next unrelated command's tree rebuild. This is a synthesized root like sys/apps/feat, not a shell binary, so it's
      *  added in [from] rather than discovered from PATH. */
     private fun workflowsRoot(context: Context): MenuNode = MenuNode(
         id = "wf",
@@ -551,6 +551,7 @@ object CommandTree {
             MenuNode("sys", "Device", SYSTEM.size.toString(), SYSTEM.sorted().map { node(it) }, emitsToken = false),
             MenuNode("apps", "Apps & nav", APPS.size.toString(), APPS.sorted().map { node(it) }, emitsToken = false),
             MenuNode("feat", "Features", FEATURES.size.toString(), FEATURES.sorted().map { node(it) }, emitsToken = false),
+            PackageLifecycleTree.root(context),
             workflowsRoot(context),
             aiRoot(),
             azpRoot(),
