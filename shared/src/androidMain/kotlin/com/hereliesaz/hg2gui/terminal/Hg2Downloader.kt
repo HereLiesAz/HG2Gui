@@ -46,7 +46,7 @@ class Hg2Downloader(
         send("SHA-256 ${result.sha256}")
     }.flowOn(Dispatchers.IO)
 
-    fun download(
+    suspend fun download(
         url: String,
         target: File,
         expectedSha256: String? = null,
@@ -99,7 +99,7 @@ class Hg2Downloader(
                         out.write(buffer, 0, n)
                         digest.update(buffer, 0, n)
                         done += n
-                        kotlinx.coroutines.runBlocking { progress(done, total) }
+                        progress(done, total)
                     }
                 }
             }
