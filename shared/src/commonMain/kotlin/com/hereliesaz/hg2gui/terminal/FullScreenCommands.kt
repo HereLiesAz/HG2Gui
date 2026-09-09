@@ -1,11 +1,9 @@
 package com.hereliesaz.hg2gui.terminal
 
 /**
- * S1 (docs/HG2Gui Termux Coverage.dc.html): the commands that draw a full screen against a real
- * tty - a pager, an editor, a system monitor, a multiplexer, a bare REPL - rather than printing
- * line-by-line output a one-shot pipe can already handle. Dispatched to a dedicated pty-backed
- * surface instead of the normal flattened transcript; see FullScreenPtySession/
- * FullScreenTerminalScreen (androidMain) for the surface itself.
+ * Commands that need an interactive PTY surface rather than flattened line-by-line output.
+ * This list is only a launch hint. Once a program is running, the Adaptive TUI Wrapper decides
+ * whether to replace the raw terminal grid from live terminal state, not from the command name.
  */
 private val FULLSCREEN_BASE_COMMANDS = setOf(
     "vim", "vi", "nvim", "nano", "pico",
@@ -14,7 +12,10 @@ private val FULLSCREEN_BASE_COMMANDS = setOf(
     "less", "more", "man",
     "python3", "python", "node", "irb", "ghci",
     "ssh",
-    "watch", "mc"
+    "watch", "mc",
+    // Modern interactive CLIs frequently render layered menus, prompts and alternate-screen
+    // interfaces. Routing them to a PTY is a prerequisite for semantic wrapping.
+    "claude", "gemini", "codex", "copilot", "gh"
 )
 
 /** Matches "git rebase -i"/"--interactive" specifically - every other `git` invocation (status,
@@ -23,6 +24,11 @@ private fun isInteractiveGitRebase(tokens: List<String>): Boolean {
     if (tokens.getOrNull(0) != "git" || tokens.getOrNull(1) != "rebase") return false
     return tokens.drop(2).any { it == "-i" || it == "--interactive" }
 }
+
+/** Matches GitHub Copilot's interactive suggestion/explain surfaces without forcing every `gh`
+ * invocation into a full-screen PTY. */
+private fun isInteractiveGh(tokens: List<String>): Boolean =
+    tokens.getOrNull(0) == "gh" && tokens.getOrNull(1) == "copilot"
 
 /** The leading token of [commandLine] if it names a command that needs the full-screen pty
  *  surface, or null if it's plain one-shot output the existing flattened transcript already
@@ -33,6 +39,7 @@ fun fullScreenCommandOf(commandLine: String): String? {
     val leading = tokens.firstOrNull()
     return when {
         leading == null -> null
+        leading == "gh" && !isInteractiveGh(tokens) -> null
         leading in FULLSCREEN_BASE_COMMANDS -> leading
         isInteractiveGitRebase(tokens) -> "git rebase -i"
         else -> null
