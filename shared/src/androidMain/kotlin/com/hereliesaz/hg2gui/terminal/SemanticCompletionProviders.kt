@@ -40,7 +40,8 @@ object SemanticCompletionProviders {
                     description = version.takeIf(String::isNotBlank)?.let { "installed $it" } ?: "installed package",
                     kind = CompletionKind.PACKAGE,
                     source = CompletionSource.PACKAGE_MANAGER,
-                    priority = 30
+                    priority = 30,
+                    enumerationComplete = true
                 )
             }
             .toList()
@@ -72,7 +73,8 @@ object SemanticCompletionProviders {
                     description = "git branch",
                     kind = CompletionKind.BRANCH,
                     source = CompletionSource.COMMAND_PROTOCOL,
-                    priority = 40
+                    priority = 40,
+                    enumerationComplete = true
                 )
             }
             .toList()
@@ -98,7 +100,8 @@ object SemanticCompletionProviders {
                     description = "known SSH host",
                     kind = CompletionKind.HOST,
                     source = CompletionSource.COMMAND_PROTOCOL,
-                    priority = 35
+                    priority = 35,
+                    enumerationComplete = false
                 )
             }
             .toList()
