@@ -76,6 +76,7 @@
         <activity android:name=".api.Hg2ApiPickerActivity" android:exported="false" android:excludeFromRecents="true" android:noHistory="true" />
         <activity android:name=".api.Hg2ApiDialogActivity" android:exported="false" android:excludeFromRecents="true" android:noHistory="true" />
         <activity android:name=".api.Hg2ApiAuthorityActivity" android:exported="false" android:excludeFromRecents="true" android:noHistory="true" />
+        <activity android:name=".IsolationAuditActivity" android:exported="false" android:excludeFromRecents="true" />
 
         <activity
             android:name=".TerminalActivity"
