@@ -216,14 +216,24 @@ Future AI should understand HG2Gui's structured model rather than bypass it:
 
 ## The Guide
 
-The Guide remains more than documentation. It is the product's cultural interface: real commands explained with Douglas-Adams-style literalism, animation, and visual metaphor.
+The Guide is both explanation and command entry: real commands are explained with Douglas-Adams-style literalism, animation, and visual metaphor, and the command heading in an entry can be tapped to hand that command into HG2Gui's normal input flow for review.
 
-The large Guide manuscript and animation production files under `docs/` are creative source material. They are intentionally allowed to say things like “a user runs `pwd`” without becoming normative descriptions of the current terminal UI. Runtime behavior belongs in the software documentation; Guide canon belongs in the Guide.
+Reading and composing are intentionally allowed to interleave. The user should not have to leave the Guide, remember a command, and reconstruct it elsewhere just because they discovered it while reading.
+
+The large Guide manuscript and animation production files under `docs/` are creative source material. Runtime behavior belongs in the software documentation; Guide canon belongs in the Guide.
+
+Implemented:
+
+- [x] Guide entries are backed by real command names/tokens;
+- [x] the command heading in an entry is tappable;
+- [x] tapping a Guide command composes it through the same terminal-selection callback used by the command browser;
+- [x] selecting a Guide command does not auto-execute it.
 
 Future:
 
 - [ ] continue Guide animation production using the established canonical packets/style rules;
-- [ ] connect Guide entries more deeply to discovered commands/package metadata without turning the Guide into a second execution surface;
+- [ ] connect Guide entries more deeply to discovered command/package/help metadata;
+- [ ] let examples and subcommands inside Guide prose become structured command-entry affordances where unambiguous;
 - [ ] surface runtime/package/isolation concepts as Guide entries once the behavior is stable enough to deserve a joke.
 
 ## Long-term product principle
