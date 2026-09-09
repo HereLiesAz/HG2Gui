@@ -3,61 +3,62 @@
 Thank you for your interest in contributing.
 
 ## What this project is
-A **terminal app** for Android. Not a launcher. Contributions that reintroduce home-screen
-behaviour — app drawers, widget grids, a `category.HOME` filter, launcher lifecycle flags —
-are out of scope.
 
-## Project Structure
-HG2Gui is a Kotlin Multiplatform project: `:composeApp` is now just the thin Android entry point
-(`TerminalActivity.kt`, `EditorActivity.kt`, `mcp/McpServerService.kt`); the actual UI and
-execution logic lives in the separate `:shared` module.
-*   **Kotlin shared across platforms:** `shared/src/commonMain/kotlin/com/hereliesaz/hg2gui/`
-    — Compose UI (`ui/`), the `ShellSession` contract and `ShellAliases` (`terminal/`), the
-    `calc` expression parser (`util/CalculationEngine.kt`), plus `managers/`/`mcp/` code that
-    doesn't need an Android-specific API.
-*   **Kotlin, Android-specific:** `shared/src/androidMain/kotlin/com/hereliesaz/hg2gui/`
-    — the `ShellSession`/`DistroManager`/`TerminalEngine`/`Builtins` implementations
-    (`terminal/`), `ContactManager`/`VfsManager`/`flashlight/` (`managers/`), the AI chat client
-    (`ai/`) and the azphalt Store client (`azp/`), a handful of shared helpers (`util/`), and the
-    Android-only parts of the UI (`ui/menu/CommandTree.kt`, `ui/menu/FileBrowser.kt`,
-    `ui/editor/`).
-*   **`:terminal-emulator`**: a vendored VT100 parser plus the native pty JNI bridge
-    (`JNI.kt`/`jni/termux.c`) — used by default only to normalize shell output; the real pty
-    path is wired in but off by default (Settings → Real pseudoterminal).
-*   **`:termux-shared`**: Termux-compatible Android filesystem/process/terminal utilities;
-    depends on `:terminal-emulator`.
-*   **Resources:** `composeApp/src/main/res/`
+HG2Gui is a touch-first Android terminal built around a real Termux-derived runtime, structured command composition, package lifecycle management, execution authority, isolation, and native graphical surfaces where plain terminal interaction is unnecessarily hostile.
 
-## Coding Standards
-*   **Language:** Kotlin for everything, old and new. There is no separate legacy engine to
-    match — a new built-in command is a branch in `terminal/Builtins.kt`, not a new class.
-*   **UI:** Compose only. No new XML layouts. A screen is a function of state; a composable
-    that reaches for a manager is doing too much — pass a callback instead.
-*   **Design:** Follow the Azphalt system and `docs/DESIGN.md`. Concretely: no borders, no
-    shadows, no icons, no blur, no gradients on surfaces, 999px radii, Jost only, and the ten
-    capsule hues assigned by hashing the identifier. If a new surface needs a glyph, it does
-    not — use an end-cap.
-*   **Motion:** Motion values are specified in `docs/DESIGN.md` and implemented in
-    `PillMenu.kt`. Do not add easing, fades or spinners; Azphalt has none.
-*   **Documentation:** All new code must be documented.
-    *   **Class doc:** explain the purpose.
-    *   **Function doc:** explain parameters and return values.
-    *   **Inline comments:** explain the logical steps, especially anything non-obvious about
-        timing or layout.
+## Project structure
+
+HG2Gui is a Kotlin Multiplatform project: `:composeApp` is the thin Android entry point (`TerminalActivity.kt`, `EditorActivity.kt`, `mcp/McpServerService.kt`); the actual UI and execution logic lives in the separate `:shared` module.
+
+- **Kotlin shared across platforms:** `shared/src/commonMain/kotlin/com/hereliesaz/hg2gui/` — Compose UI (`ui/`), the `ShellSession` contract and `ShellAliases` (`terminal/`), the `calc` expression parser (`util/CalculationEngine.kt`), plus managers/MCP code that does not need an Android-specific API.
+- **Kotlin, Android-specific:** `shared/src/androidMain/kotlin/com/hereliesaz/hg2gui/` — `ShellSession`, `DistroManager`, `TerminalEngine`, `Builtins`, package management/lifecycle/isolation/authority, Android managers, AI/Store integration, and Android-only UI such as `ui/menu/CommandTree.kt` and `ui/menu/FileBrowser.kt`.
+- **`:terminal-emulator`** — vendored VT100/PTY implementation used by the terminal stack.
+- **`:termux-shared`** — vendored Termux-compatible Android filesystem/process/terminal utilities.
+- **Resources:** `composeApp/src/main/res/`.
+
+## Coding standards
+
+- **Language:** Kotlin for application code. Native C exists only for Android-safe executable entry points and terminal JNI where required.
+- **UI:** Compose. A screen is a function of state; pass callbacks rather than reaching into managers from composables.
+- **Design:** Follow the Azphalt system and `docs/DESIGN.md`: capsules, Jost, hashed capsule hues, no gratuitous icons/shadows/blur, and the established motion language.
+- **Command interaction:** normal command-tree choices compose; explicit **RUN** executes. If a value can be enumerated, expose a selection UI. File/directory values use the graphical picker. Free-form input must identify what the user is expected to type.
+- **Packages:** compatibility fixes should address a class of package/runtime assumptions rather than special-casing package names unless the package truly has unique semantics.
+- **Authority:** ordinary commands do not inherit ADB/root. Elevated operations remain explicit and confirmed. Headless paths must not bypass that rule.
+- **Isolation:** an isolated package must fail closed if the isolation boundary cannot be established.
+- **Documentation:** all behavior claims must be checked against current code before they are added or retained.
+
+### Documentation requirements
+
+- Class documentation explains purpose and boundary.
+- Function documentation explains non-obvious parameters, return values, side effects, and security behavior.
+- Inline comments explain constraints or reasoning, especially Android/runtime compatibility work.
+- Update the live product docs when behavior changes: `README.md`, `docs/ARCHITECTURE.md`, `docs/HG2GUI_ARCHITECTURE.md`, `docs/COMMANDS.md`, `docs/USER_GUIDE.md`, `docs/DESIGN.md`, and `docs/VISION.md` as applicable.
 
 ## Toolchain
-JDK 21, Gradle 9.7.0, AGP 9.3.1, Kotlin 2.4.10, Compose Multiplatform 1.11.1,
-`compileSdk` 37, `minSdk` 24.
 
-## Pull Requests
-1.  Fork the repository.
-2.  Create a feature branch.
-3.  Make your changes.
-4.  Document them thoroughly.
-5.  Check that nothing you added assumes the app is the home screen.
-6.  Submit a PR.
+Current authoritative versions live in Gradle/version files. At this documentation pass:
+
+- JDK 21
+- Gradle 9.7.0
+- AGP 9.3.2
+- Kotlin 2.4.10
+- Compose Multiplatform 1.12.0
+- `compileSdk` / `targetSdk` 37
+- `minSdk` 24
+- NDK `29.0.14206865`
+
+## Pull requests
+
+1. Fork the repository.
+2. Create a feature branch.
+3. Make the smallest coherent change.
+4. Update affected documentation.
+5. Verify behavior against the current architecture invariants.
+6. Build/test the affected modules.
+7. Submit the PR.
 
 ## Building
+
 ```bash
 ./gradlew assembleDebug
 ```
