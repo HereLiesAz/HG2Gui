@@ -29,6 +29,9 @@ class TuiSemanticModelTest {
         assertEquals(listOf("General", "Appearance", "Accounts"), snapshot.layers[0].items.map { it.label })
         assertEquals(0, snapshot.layers[0].activeIndex)
         assertEquals(listOf("Personal", "Work"), snapshot.layers[1].items.map { it.label })
+        assertEquals(TuiControlKind.CHECKBOX, snapshot.layers[1].items[0].control)
+        assertFalse(snapshot.layers[1].items[0].checked ?: true)
+        assertTrue(snapshot.layers[1].items[1].checked == true)
     }
 
     @Test
@@ -54,18 +57,53 @@ class TuiSemanticModelTest {
     }
 
     @Test
-    fun highlightedPlainRows_canFormMenuWithoutGlyphs() {
+    fun emphasizedRows_canExposeSelectionWithoutInverseVideo() {
         val snapshot = TuiSemanticParser.parse(
             rows = listOf(
                 TuiRow(0, "Choose model"),
-                TuiRow(1, "Claude Sonnet", highlighted = true),
-                TuiRow(2, "Claude Opus", highlighted = true)
+                TuiRow(1, "  Claude Sonnet", emphasized = true),
+                TuiRow(2, "  Claude Opus")
             ),
             alternateScreen = true
         )
-
         assertTrue(snapshot.isWrappable)
-        assertEquals(1, snapshot.layers.size)
+        assertEquals(0, snapshot.layers.single().activeIndex)
+    }
+
+    @Test
+    fun radioControls_areTypedAndChecked() {
+        val snapshot = TuiSemanticParser.parse(
+            rows = listOf(
+                TuiRow(0, "Mode"),
+                TuiRow(1, "( ) Safe", highlighted = true),
+                TuiRow(2, "(*) Fast")
+            ),
+            alternateScreen = true
+        )
+        assertEquals(TuiControlKind.RADIO, snapshot.layers.single().items[0].control)
+        assertFalse(snapshot.layers.single().items[0].checked ?: true)
+        assertTrue(snapshot.layers.single().items[1].checked == true)
+    }
+
+    @Test
+    fun tabsProgressTableAndPanes_areProjected() {
+        val snapshot = TuiSemanticParser.parse(
+            rows = listOf(
+                TuiRow(0, "[Chat] | Files | Settings"),
+                TuiRow(2, "Downloading 42%"),
+                TuiRow(4, "| NAME | VALUE |"),
+                TuiRow(5, "| foo  | bar   |"),
+                TuiRow(7, "left │ right"),
+                TuiRow(8, "more │ detail")
+            ),
+            alternateScreen = true,
+            mouseAware = true
+        )
+        assertTrue(snapshot.tabs.size >= 2)
+        assertTrue(snapshot.regions.any { it.kind == TuiRegionKind.PROGRESS && it.progress == .42f })
+        assertTrue(snapshot.regions.any { it.kind == TuiRegionKind.TABLE })
+        assertTrue(snapshot.regions.any { it.kind == TuiRegionKind.PANE })
+        assertTrue(snapshot.mouseAware)
     }
 
     @Test
@@ -81,6 +119,15 @@ class TuiSemanticModelTest {
         assertTrue(snapshot.isWrappable)
         val prompt = assertNotNull(snapshot.prompt)
         assertEquals(TuiPromptKind.PASSWORD, prompt.kind)
+    }
+
+    @Test
+    fun confirmationPrompt_isTyped() {
+        val snapshot = TuiSemanticParser.parse(
+            rows = listOf(TuiRow(0, "Delete this item? [y/n]", cursorColumn = 24)),
+            alternateScreen = true
+        )
+        assertEquals(TuiPromptKind.CONFIRMATION, assertNotNull(snapshot.prompt).kind)
     }
 
     @Test
