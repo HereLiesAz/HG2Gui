@@ -27,16 +27,35 @@ class TermuxRepositoryClient(
     private val prefix = DistroManager.prefixDir(context)
     private val gpgv = File(prefix, "bin/gpgv")
     private val keyring = File(prefix, "etc/apt/trusted.gpg.d/termux-pacman.gpg")
+    private val repositoryState = File(prefix, "var/lib/hg2pkg")
+    private val cachedPackages = File(repositoryState, "Packages")
+    private val authenticatedMarker = File(repositoryState, "Packages.authenticated")
+
+    init {
+        // Builds predating signed-index enforcement may have left a perfectly parseable but
+        // unauthenticated Packages cache behind. Never grandfather it into the new trust model.
+        if (cachedPackages.exists() && !authenticatedMarker.isFile) cachedPackages.delete()
+    }
 
     fun fetchAuthenticatedIndex(architecture: String, workDir: File): IndexResult {
         require(gpgv.canExecute()) { "HG2Gui gpgv is unavailable at ${gpgv.absolutePath}" }
         require(keyring.isFile) { "Termux repository keyring is unavailable at ${keyring.absolutePath}" }
         workDir.mkdirs()
 
+        // A refresh invalidates the old cache before network work begins. If the process dies at
+        // any point before the caller atomically promotes the newly authenticated index, the next
+        // package operation sees no usable Packages file and performs authentication again.
+        authenticatedMarker.delete()
+        cachedPackages.delete()
+
         val failures = mutableListOf<String>()
         for (mirror in MAIN_MIRRORS) {
-            runCatching { return fetchFromMirror(mirror, architecture, workDir) }
-                .onFailure { failures += "$mirror — ${it.message ?: it::class.java.simpleName}" }
+            runCatching {
+                val result = fetchFromMirror(mirror, architecture, workDir)
+                authenticatedMarker.parentFile?.mkdirs()
+                authenticatedMarker.writeText("$architecture\n${result.mirror}\n${sha256(result.packagesGz)}\n")
+                return result
+            }.onFailure { failures += "$mirror — ${it.message ?: it::class.java.simpleName}" }
         }
         error("No authenticated Termux repository mirror succeeded:\n${failures.joinToString("\n")}")
     }
