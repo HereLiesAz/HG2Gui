@@ -16,7 +16,9 @@ object SemanticCompletionProviders {
     fun complete(context: Context, request: CompletionRequest): List<CompletionCandidate> = buildList {
         addAll(packageCandidates(context, request))
         addAll(gitBranchCandidates(context, request))
+        addAll(gitRemoteCandidates(context, request))
         addAll(sshHostCandidates(context, request))
+        addAll(serviceCandidates(context, request))
     }.take(MAX_CANDIDATES)
 
     private fun packageCandidates(context: Context, request: CompletionRequest): List<CompletionCandidate> {
@@ -80,6 +82,37 @@ object SemanticCompletionProviders {
             .toList()
     }
 
+    private fun gitRemoteCandidates(context: Context, request: CompletionRequest): List<CompletionCandidate> {
+        val words = request.beforeCursor.trimStart().split(Regex("\\s+")).filter(String::isNotBlank)
+        if (words.firstOrNull()?.substringAfterLast('/') != "git") return emptyList()
+
+        val operation = words.getOrNull(1) ?: return emptyList()
+        val remoteOperation = operation in setOf("fetch", "pull", "push") ||
+            (operation == "remote" && words.getOrNull(2) in setOf("get-url", "remove", "rename", "set-head", "set-url", "show", "prune"))
+        if (!remoteOperation) return emptyList()
+
+        val git = executable(context, "git") ?: return emptyList()
+        val output = runProbe(git, listOf("remote"), request.cwd) ?: return emptyList()
+        return output.lineSequence()
+            .map(String::trim)
+            .filter(String::isNotBlank)
+            .filter { it.startsWith(request.tokenPrefix, ignoreCase = true) }
+            .distinct()
+            .sorted()
+            .take(MAX_CANDIDATES)
+            .map { remote ->
+                CompletionCandidate(
+                    value = remote,
+                    description = "git remote",
+                    kind = CompletionKind.VALUE,
+                    source = CompletionSource.COMMAND_PROTOCOL,
+                    priority = 38,
+                    enumerationComplete = false
+                )
+            }
+            .toList()
+    }
+
     private fun sshHostCandidates(context: Context, request: CompletionRequest): List<CompletionCandidate> {
         val words = request.beforeCursor.trimStart().split(Regex("\\s+")).filter(String::isNotBlank)
         val verb = words.firstOrNull()?.substringAfterLast('/') ?: return emptyList()
@@ -102,6 +135,43 @@ object SemanticCompletionProviders {
                     source = CompletionSource.COMMAND_PROTOCOL,
                     priority = 35,
                     enumerationComplete = false
+                )
+            }
+            .toList()
+    }
+
+    private fun serviceCandidates(context: Context, request: CompletionRequest): List<CompletionCandidate> {
+        val words = request.beforeCursor.trimStart().split(Regex("\\s+")).filter(String::isNotBlank)
+        val verb = words.firstOrNull()?.substringAfterLast('/') ?: return emptyList()
+        val acceptsService = when (verb) {
+            "sv-enable", "sv-disable" -> true
+            "sv" -> words.getOrNull(1) in setOf(
+                "up", "down", "status", "once", "pause", "cont", "hup", "alarm",
+                "interrupt", "1", "2", "term", "kill", "exit", "start", "stop", "restart"
+            )
+            else -> false
+        }
+        if (!acceptsService) return emptyList()
+
+        val serviceDir = File(DistroManager.prefixDir(context), "var/service")
+        val services = serviceDir.listFiles { file -> file.isDirectory && File(file, "run").exists() }
+            ?: return emptyList()
+        return services.asSequence()
+            .map(File::getName)
+            .filter { it.startsWith(request.tokenPrefix, ignoreCase = true) }
+            .distinct()
+            .sorted()
+            .take(MAX_CANDIDATES)
+            .map { service ->
+                CompletionCandidate(
+                    value = service,
+                    description = "Termux runit service",
+                    kind = CompletionKind.SERVICE,
+                    source = CompletionSource.COMMAND_PROTOCOL,
+                    priority = 40,
+                    // sv-enable/sv-disable specifically operate on the configured service names.
+                    // Plain sv also accepts explicit service paths, so its inventory is advisory.
+                    enumerationComplete = verb == "sv-enable" || verb == "sv-disable"
                 )
             }
             .toList()
