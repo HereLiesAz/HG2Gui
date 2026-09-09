@@ -22,7 +22,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
-import com.hereliesaz.hg2gui.IsolationAuditActivity
 import com.hereliesaz.hg2gui.terminal.ShellPreference
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
 import com.hereliesaz.hg2gui.ui.menu.onPage
@@ -199,7 +198,12 @@ fun SettingsScreen(
                     .clip(RoundedCornerShape(percent = 50))
                     .background(Azphalt.Ink)
                     .clickable {
-                        context.startActivity(Intent(context, IsolationAuditActivity::class.java))
+                        context.startActivity(
+                            Intent().setClassName(
+                                context.packageName,
+                                "${context.packageName}.IsolationAuditActivity"
+                            )
+                        )
                     }
                     .padding(horizontal = 16.dp, vertical = 9.dp)
             ) {
