@@ -1,234 +1,343 @@
 # Architecture
 
-**Current version:** 0.7.28 build 299 (`version.properties`)
+**Current repository version:** `0.7.218` with `versionBuild=489` in `version.properties` at the time of this documentation pass. CI may advance the build counter independently.
 
-HG2Gui is an Android **terminal application** — not a launcher. The UI and execution layer are
-Kotlin Multiplatform (Compose); there is no separate reflection-based command framework. Built-in
-commands are a fixed dispatch table in `terminal/Builtins.kt`. `:shared` currently builds for
-Android only (no other KMP targets are declared) — "multiplatform" here names the tooling/module
-split (a thin `:composeApp` entry point over shared UI/logic), not a live cross-platform target.
+HG2Gui is an Android terminal application, not a launcher. The product is built around one principle: **the shell remains real, while HG2Gui supplies the touch interface and the Android-specific policy/compatibility layers that the shell cannot safely provide by itself.**
 
-## Core Components
+The application is Kotlin/Compose. `:composeApp` is the thin Android entry point; most UI and execution logic lives in `:shared`. The shared module currently targets Android.
 
-### 1. TerminalActivity (`TerminalActivity.kt`)
-The entry point.
-*   **Role:** Initialises the application, manages permissions and lifecycle, and sets the
-    Compose content.
-*   **Key Responsibilities:**
-    *   Building the first `TerminalEngine`/`ShellSession` pair and running the bootstrap
-        installer automatically if the Termux prefix isn't there yet.
-    *   Persisting `fullscreen`/`font_scale_percent` via plain `SharedPreferences`.
-    *   Edge-to-edge window handling (required from `compileSdk` 35).
+## 1. Execution model
 
-### 2. Execution layer (`terminal/`)
-*   `ShellSession.kt` — an `expect`/`actual` pair (`commonMain`/`androidMain`). The Android
-    `actual` prefers a real Termux bootstrap (see `DistroManager` below) if one is installed,
-    falling back to bare `/system/bin/sh` as the last resort. Whichever wins is kept alive for
-    the life of the session so `cd` and exported variables persist. Commands are framed by a
-    sentinel the shell echoes after each line, carrying `$?` and `$PWD`. Output is read as a raw
-    buffer, not line-by-line — a real prompt (`Overwrite file? [y/N] `) never prints its own
-    trailing newline while it waits, so an idle gap with an unterminated tail is treated as a
-    live prompt and surfaced through `stream`'s `onNeedInput` callback rather than blocking
-    forever. The default backend is a plain `ProcessBuilder` pipe: no job control, no cursor
-    addressing, full-screen programs will not behave — which is exactly why `edit` exists as a
-    separate Compose screen rather than trying to run `nano` through this. An experimental,
-    off-by-default Settings toggle (`PtyPreference`) swaps this for the app's own bundled native
-    pty bridge (`:terminal-emulator`'s `JNI.kt`) instead; unverified on real hardware, so the
-    pipe stays the default.
-*   `DistroManager.kt` (`androidMain`) — downloads and extracts the real Termux bootstrap: the
-    same rootfs zip archive the official Termux app installs, giving genuine `bash`, `apt`/
-    `pkg`, and coreutils. Runs automatically on first launch (see `TerminalActivity`) and can
-    also be triggered by hand via the `bootstrap` verb. Also symlinks the bootstrap's main-repo
-    APT keyring, writes a custom `apt.conf` pointing every `Dir::*` setting at this app's real
-    prefix, rewrites hardcoded-Termux-package shebangs, and writes a bash-function wrapper
-    profile so bootstrap-shipped shell scripts (which can't use Android's exec-exemption trick)
-    still run via `source`.
-*   `AptCatalog.kt` (`androidMain`) — everything `apt install` could install, not just what's on
-    disk: parsed from `apt update`'s own downloaded `var/lib/apt/lists/*_Packages` index and
-    heuristically categorized by name/description (Termux's repo carries no Section/Tag
-    metadata). Backs the `install` pill's browsable catalog under `apt`/`apt-get`/`pkg`.
-*   `HelpCatalog.kt` (`androidMain`) — background-probes each real binary on PATH with
-    `<binary> --help` (bounded timeout, cached in `SharedPreferences`) to discover flag hints
-    beyond `CommandTree`'s hand-curated `SHELL_HINTS` list. Read-only and synchronous at
-    pill-composition time; the actual probing runs off-thread.
-*   `Builtins.kt` — the eleven commands the real shell has no path to: `wifi`, `bluetooth`,
-    `airplane`, `flash`, `volume`, `brightness` (system toggles with no shell binary behind
-    them), `call`/`contacts` (via `ContactManager`), `vfs` (the sandboxed filesystem, see below),
-    `calc` (via `util/CalculationEngine.kt`), and `edit` (the Compose editor). A plain
-    `fun run(context, line): String` dispatch
-    on the verb — no interface, no reflection, no per-command class.
-*   `TerminalEngine.kt` — decides where a line runs: `bootstrap` streams from `DistroManager`,
-    a verb in `Builtins.NAMES` goes to `Builtins.run` (a single synchronous result), anything
-    else goes to the shell. Built-ins win ties. Also bridges `ShellSession`'s blocking
-    `onNeedInput` callback to a suspend function via `runBlocking`, safe here since this branch
-    already runs on a background dispatcher.
-*   `ShellAliases.kt` (`commonMain`) — Kotlin-native replacements for what a live shell line
-    editor would offer (autosuggestion, "did you mean", alias hints), since `ShellSession` sends
-    one complete line at a time and reads one complete result back by default — there's no live
-    PTY for a real line editor to attach to unless the experimental pty setting is on. Also
-    detects the *shape* of a stalled interactive prompt (yes/no, a bracketed/comma-separated
-    choice list, a `select`-style numbered menu, a password field) so `TerminalScreen` can offer
-    a tap-only reply instead of a text field wherever the shape allows it. Surfaced through
-    `TerminalScreen` as an ordinary `MenuNode` host+children, rendered by the same `PillMenu`
-    every other command uses.
+Each terminal session owns a persistent `ShellSession` and a `TerminalEngine`. `ShellSession` preserves working-directory and shell state between commands. `TerminalEngine` is the policy boundary in front of that shell.
 
-Sessions are one `ShellSession` + `TerminalEngine` pair each, so scrollback, command history and
-working directory never leak between tabs. `TerminalActivity` owns the list and switches which
-pair is "active"; nothing below the UI layer knows sessions exist.
+The current dispatch order is intentionally broader than `builtin-or-shell`:
 
-### 3. UI layer (`ui/`)
-Compose. A screen is a function of state; there is no view-hierarchy manager class behind it.
-*   `TerminalScreen.kt` — session tabs, working directory, command line, modifier keys, output.
-    Reads and writes through `SessionUiState`, one instance per session, so switching tabs
-    never touches another session's scrollback or in-progress input. Also owns the
-    auto-run-on-terminal-pick behaviour (a pill pick that leaves no further parameters runs
-    immediately) and the pending-prompt hand-off (`SessionUiState.awaitPromptAnswer` /
-    `answerPrompt`, a `CompletableDeferred` pair) that lets a stalled interactive command
-    suspend the UI without a second channel.
-*   `ui/menu/PillMenu.kt` — the suggestion tree and its motion. `MenuNode` children can be
-    static (`children`) or resolved lazily on first navigation into a node (`resolveChildren`,
-    e.g. the ssh/workflow presets lists) instead of eager materialization of a combinatorially
-    large subtree. A node's `value` is the token text it contributes if different from its
-    display `label`; `emitsToken = false` marks a purely navigational pick that should never
-    itself land on the command line. `wizardId` hands a pick off to the caller's own multi-step
-    flow instead of drilling into more children or emitting a token; `settleBeforeWizard` delays
-    that hand-off until the pick's own trail crumb has actually settled and reported its on-screen
-    position (`onCrumbPositioned`) - for a wizard whose entrance animation needs to grow out from
-    that exact spot, like the Select File/Folder pill.
-*   `ui/menu/CommandTree.kt` — builds the tree: the eleven `Builtins` verbs (fixed lists, not
-    discovered) into Device / Apps & nav / Features, and the shell's real PATH binaries into one
-    root category per package category — `DpkgCatalog` reads which package owns a binary from
-    dpkg's own bookkeeping, and a hand-curated map (Termux's packages carry no Debian Section
-    field to read a category from directly) turns that into "Package management", "Network",
-    "System", "Development", and so on — with hyphenated command families nested under a shared
-    parent. "Device" (the fixed hardware-toggle builtins: wifi/bluetooth/airplane/flash/volume/
-    brightness) is named apart from the shell-discovered "System" category (procps/tmux/htop and
-    the like) on purpose - both used to be labelled "System", two identically-named root pills
-    with nothing but hue to tell them apart. A small `CATEGORY_OF_BINARY` override map takes
-    priority over the package-level map for binaries whose package doesn't reflect their actual
-    role (`pkg` ships in `termux-tools`, mapped to "System", but belongs with `apt`/`dpkg` in
-    "Package management"). See [COMMANDS.md](COMMANDS.md).
-*   `ui/menu/FileBrowser.kt` — the Select File/Folder pill: a `file…` trigger (`wizardId`,
-    `settleBeforeWizard = true`) that opens the graphical path picker (`ui/files/
-    PathPickerScreen.kt`) rather than drilling further into the pill stack, wrapped in
-    `PillPerimeterReveal` (see below) so the pill itself runs the screen's perimeter and becomes
-    the browser.
-*   `ui/menu/PillPerimeterReveal.kt` — the entrance/exit motion for the Select File/Folder pill:
-    from wherever its trail crumb landed, a `hue`-coloured bar grows right along the bottom edge
-    to the bottom-right corner, up the right edge, left across the top, then down the left edge -
-    closing the loop back over its own start. The instant that last leg begins, a downward wipe
-    fills the enclosed frame and reveals the browser underneath. The fuller, edge-by-edge sibling
-    of `PillWrapReveal`'s single-rect "run the perimeter" simplification, used specifically here
-    because the file picker's origin is a trail crumb, not a fixed root pill.
-*   `ui/editor/EditorScreen.kt` — the `edit` command's text editor: a plain Compose screen (Save/
-    Back pills, a text field), hosted by `EditorActivity` so it's also a valid target for another
-    app's VIEW/EDIT intent on a text file.
-*   `ui/files/FilesScreen.kt` — the graphical explorer over `VfsManager`'s sandbox, with search,
-    sorting, kind/hidden/recency filters, batch actions, rename, media grid, and storage views.
-*   `Theme.kt` — Azphalt colour and type tokens.
+1. `bootstrap` → `DistroManager`
+2. `download` / `hg2download` → `Hg2Downloader`
+3. `hg2auth` → explicit execution-authority layer
+4. `hg2package` → installed-package lifecycle layer
+5. package-owner lookup → block a disabled package before execution
+6. `pkg` / `hg2pkg`, plus translated mutating `apt`/`apt-get` operations → `Hg2PackageManager`
+7. verbs in `Builtins.NAMES` → Android built-ins
+8. commands owned by an isolated package → private-root execution
+9. everything else → the normal persistent shell
 
-## Package Structure (`com.hereliesaz.hg2gui`)
+This order is an architectural invariant. Package safety, isolation, and elevated authority are not shell aliases; they are enforced before a command reaches the ordinary shell.
 
-*   **`composeApp` root**: `TerminalActivity`, `EditorActivity` — the only two activities — plus
-    `mcp/McpServerService.kt`, the MCP server's foreground `Service`. Everything else below lives
-    in the separate `:shared` module (`commonMain`/`androidMain`).
-*   **`ui/`**: Compose UI and the pill menu, `ui/editor/`, `ui/files/`, `ui/guide/` (the command
-    glossary), `ui/ssh/` (the ssh connection wizard), `ui/ai/` (the AI chat screen), `ui/azp/`
-    (the Store browser).
-*   **`managers/`**: `ContactManager` (contacts, backs `call`/`contacts`), `VfsManager` (a file
-    layer rooted, by default, at `filesDir/home` - the real Termux `$HOME`, still app-private
-    storage; normal operations stay confined there or, opt-in, to real device storage
-    (`StorageAccessManager`), while the explicit root-only `vfs mount` command can bind-mount it
-    into the real filesystem), `SshPresets`/`WorkflowStore`/`AzpLibrary` (flat-`SharedPreferences` stores),
-    `PtyPreference` (the real-pty Settings toggle), `flashlight/` (the torch implementation
-    behind `flash`).
-*   **`terminal/`**: `ShellSession`, `TerminalEngine`, `Builtins` (the eleven built-in commands),
-    `DistroManager` (the Termux bootstrap installer), `DpkgCatalog` (reads dpkg's own bookkeeping
-    for which package owns an installed binary), `AptCatalog` (everything `apt install` could
-    install, for the browsable install catalog), `HelpCatalog` (background `--help`-flag
-    discovery) — `CommandTree`'s hand-curated map turns package ownership into a category.
-*   **`ai/`**: the AI chat's Anthropic API client. **`azp/`**: the azphalt Store client (search,
-    download, Ed25519 signature verification, dependency-resolving script installs). **`mcp/`**:
-    the MCP server's JSON-RPC protocol and tool registry.
-*   **`util/`**: `CalculationEngine` (the `calc` expression parser, `commonMain`), plus a handful
-    of Android-only helpers still in use — logging/crash reporting, the interactive-shell wrapper
-    `vfs mount` needs for `su`, `GenericFileProvider`.
+### Headless execution
 
-## Gradle Module Boundaries
+`TerminalEngine.runToCompletion()` is used by non-interactive callers. It may run normal shell/package work and isolated packages, but **ADB-shell and root elevation are denied headlessly**. `hg2auth status` is readable; elevated actions require the interactive UI's confirmation path.
 
-*   **`:composeApp`** — the thin Android entry point: the two activities, the MCP foreground
-    service, resources, product flavor config. No terminal/UI logic of its own.
-*   **`:shared`** — the Kotlin Multiplatform module (Android-only today; no other targets are
-    declared) holding the actual Compose UI, terminal routing, managers, and platform
-    integrations described above.
-*   **`:terminal-emulator`** — a vendored VT100 output parser plus a native pty JNI bridge
-    (`JNI.kt`/`jni/termux.c`). The parser is used unconditionally to flatten shell output for
-    display; the pty bridge itself is only live when `PtyPreference`'s experimental setting is
-    on — the default shell backend is still a `ProcessBuilder` process over ordinary streams.
-*   **`:termux-shared`** — a vendored Termux-compatible Android utility library, declared as a
-    dependency of both `:composeApp` and `:shared` but not currently called by any
-    HG2Gui-authored code.
+## 2. Termux-derived runtime
 
-## Product Subsystems
+`DistroManager.kt` installs a pinned Termux bootstrap into HG2Gui's private prefix, typically:
 
-*   **MCP:** an explicit-start, loopback-only JSON-RPC server. VFS tools are sandboxed; shell
-    execution is separately biometric-gated and uses a service-owned terminal engine.
-*   **Workflows and AI:** workflows expand reviewed command templates; AI produces command
-    suggestions and optional token explanations. Neither path executes a suggestion automatically.
-*   **Azphalt store:** package extraction is path-contained and signature-checked; every extracted
-    payload must be declared and match its declared SHA-256 digest. Skill text can augment AI
-    prompts. `script` packages can
-    resolve Termux dependencies and install a PATH wrapper; other package kinds remain stored data.
-*   **Context and Guide:** the OS-context tree offers static remote-OS reference commands, while
-    the Guide is reading material. Neither pretends to discover a remote machine.
+```text
+/data/user/0/com.hereliesaz.hg2gui/files/usr
+```
 
-## Invariants
+The bootstrap release is pinned in source. Upgrading it is not a URL-only change: the native executable manifest and packaged native libraries must remain in lockstep with the bootstrap.
 
-1.  The app is a terminal, not a launcher: there is no `HOME` intent filter.
-2.  Built-ins are an explicit eleven-verb dispatch table; no reflection discovers commands.
-3.  `bootstrap` routes first, built-ins win command-name ties, and all other input reaches the shell.
-4.  Every terminal tab owns its engine, shell, UI state, history, scrollback, and working directory.
-5.  VFS operations resolve paths canonically beneath whichever root is active (`filesDir/home` by
-    default, opt-in real device storage otherwise); shell access requires the explicit,
-    root-only `vfs mount` escape hatch.
-6.  Shell processes are persistent but have no PTY, job control, or full-screen cursor semantics.
-7.  Wizard- and AI-produced commands are assembled for review, never executed automatically.
-8.  MCP binds only to loopback; shell tools remain disabled until explicit biometric approval.
-9.  Azphalt extraction never writes outside its package directory; every extracted payload must be
-    declared and match its declared SHA-256 digest, and the package must pass signature policy.
+### Android native-execution constraint
 
-## Decisions and Reasons
+Modern Android does not treat arbitrary native executables copied into writable app data the same way it treats native code delivered with the APK. HG2Gui therefore packages bootstrap executables as Android-legal `.so` names in the APK native-library directory and links the corresponding `$PREFIX/bin/...` paths to them according to `BootstrapManifest.kt`.
 
-*   **Compose-only presentation:** separate editor and file surfaces replace cursor-addressed terminal
-    programs because the shell transport deliberately has no PTY.
-*   **Fixed built-ins:** only Android capabilities with no useful shell binary live in Kotlin, keeping
-    the real shell authoritative for everything else.
-*   **Per-session engines:** persistent shell state is useful, but leaking it between tabs is not.
-*   **Curated command categories:** Termux package metadata has no reliable Debian Section field, so
-    dpkg supplies ownership while a checked-in map supplies human-facing categories.
-*   **Review before execution:** graphical wizards and AI may assemble commands, but user intent is
-    established only when the user runs them.
+That mechanism is why the runtime must not be documented as "just unzip Termux somewhere else." HG2Gui has to preserve Termux userspace semantics while satisfying a different Android application ID and Android's executable-loading rules.
 
-## Data Flow
+## 3. Package-management architecture
 
-1.  **Input:** The user taps pills in `PillMenu`; `TerminalScreen` accumulates tokens. Typing
-    is possible but secondary. A pick that leaves no further parameters runs immediately.
-2.  **Processing:** Run joins the tokens and calls `TerminalEngine.run`, off the main thread.
-3.  **Routing:** The first token decides the path — `bootstrap` streams from `DistroManager`, a
-    `Builtins.NAMES` verb goes to `Builtins.run`, anything else to `ShellSession`.
-4.  **Execution:**
-    *   A built-in runs its branch in `Builtins.run` and returns a single result string
-        synchronously (`bootstrap` is the one exception, streaming progress as it downloads).
-    *   Otherwise the line is written to the shell and read back to the sentinel. If the shell
-        stalls waiting on stdin (a real prompt, not a hang), `SessionUiState` surfaces it and
-        suspends until the UI answers — a yes/no-shaped prompt gets a dedicated Answer stack.
-5.  **Output:** The result returns as a string and becomes screen state, rendered in a record
-    tile.
+### 3.1 Command routing
 
-## Migration status
+Top-level mutating `apt`/`apt-get` operations are translated into HG2Gui package operations before upstream apt can invoke dpkg directly. Current translated operations include install, remove, purge, update, upgrade, dist-upgrade, and full-upgrade.
 
-| Layer | State |
-| --- | --- |
-| Entry point, terminal screen, suggestion menu, built-in commands, editor | Kotlin + Compose |
-| XML layouts | Removed — Compose only |
-| Launcher-specific code (drawer, app menus, fake launcher) | Removed |
+Read-only commands that are not translated can still reach the real shell tools.
+
+This avoids two problems exposed by real-device testing:
+
+- upstream apt prompting for confirmation when HG2Gui already owns the interaction model;
+- upstream apt/dpkg transactions assuming Termux's own application environment and helper execution rules.
+
+### 3.2 Downloader
+
+`Hg2Downloader.kt` provides package/update downloads with reuse and resume behavior:
+
+- a valid completed target is reused;
+- expected SHA-256 can validate an existing file;
+- remote length can be compared when no SHA is supplied;
+- `.part` files resume with HTTP Range when possible;
+- complete partials can be promoted;
+- oversized/invalid partials restart cleanly.
+
+The downloader streams progress and is shared by package/update paths rather than reimplementing network transfer per feature.
+
+### 3.3 `.deb` preparation
+
+`Hg2PackageManager.kt` transforms Termux packages into an archive layout dpkg can install correctly under HG2Gui.
+
+The preparation pipeline currently handles:
+
+- relocation of archive payloads rooted at Termux's hardcoded `/data/data/com.termux/files/usr`;
+- text-prefix rewriting where appropriate;
+- special treatment of `DEBIAN/conffiles` so conffile paths remain archive-root absolute (`/etc/...`), not HG2Gui-host absolute;
+- special treatment of `DEBIAN/md5sums` so payload paths remain package-relative;
+- extraction of maintainer scripts (`preinst`, `postinst`, `prerm`, `postrm`) out of dpkg's direct-exec path;
+- verified/atomic staging of existing installed maintainer scripts before upgrade/remove transactions.
+
+The original downloaded SHA is verified before archive transformation where an expected digest is available. The transformed archive is deliberately not byte-identical to the repository package.
+
+### 3.4 dpkg launcher
+
+The bundled dpkg launcher supplies:
+
+- `--admindir=$PREFIX/var/lib/dpkg`
+- `--instdir=$PREFIX`
+- `--force-script-chrootless`
+
+`script-chrootless` is required because a normal Android application UID cannot perform the chroot behavior dpkg otherwise expects for maintainer scripts.
+
+### 3.5 Maintainer scripts
+
+Directly executing maintainer scripts from writable app-private storage produced Android `Permission denied` failures even when their Unix executable bits were correct. HG2Gui therefore:
+
+1. moves package maintainer scripts out of the rebuilt `.deb` control directory;
+2. moves already-installed maintainer scripts out of `var/lib/dpkg/info` during a transaction;
+3. verifies the source paths are actually absent rather than trusting `File.delete()`/copy side effects;
+4. invokes the scripts explicitly through bundled Bash with dpkg maintainer-script environment variables;
+5. lets dpkg unpack/configure while those scripts are outside its direct-exec path;
+6. stores the scripts back for future HG2Gui-managed transactions;
+7. restores staged scripts on failure where possible.
+
+If staging cannot remove a script from dpkg's reach, HG2Gui fails before dpkg instead of continuing into a misleading execute-permission failure.
+
+### 3.6 Compatibility scope
+
+The package layer is general, not a `python-pip` special case. Real-device testing has successfully crossed download → prepare → unpack/configure → execute for packages including `python-pip`, `nsnake`, and `curl`.
+
+This is still **compatibility engineering, not a blanket guarantee that every Termux package works unchanged**. Packages can contain hardcoded application paths, unusual maintainer-script interpreters, absolute symlinks, ELF/linker assumptions, services, triggers, alternatives/diversions, dependency relationships, or native delivery requirements that expose additional Android differences.
+
+## 4. Installed-package lifecycle
+
+`PackageLifecycleStore.kt` adds lifecycle semantics above whichever package manager installed the software.
+
+### Inventory adapters
+
+The current on-device inventory recognizes:
+
+- `pkg` / dpkg — dpkg status and ownership metadata;
+- Python / `pip` — `.dist-info` metadata and console entry points;
+- Node / `npm` — global `node_modules` package metadata and declared bins;
+- Ruby / `gem` — gem specifications and executables.
+
+The adapters normalize packages into a common `InstalledPackage` model containing manager, name, version, runnable binaries, disabled state, and isolated state.
+
+### Package UI
+
+`PackageLifecycleTree.kt` renders:
+
+```text
+Packages
+  → package manager
+    → installed package
+      → Run
+      → Enable / Disable
+      → Isolate / Release isolation
+      → Update
+      → Reset
+      → Info
+      → Remove
+      → Purge (where supported)
+```
+
+Only discoverable executables appear under **Run**.
+
+### Disable
+
+Disable is HG2Gui-owned; the package manager does not need to support it. A disabled package remains installed, versioned, inspectable, updateable, resettable, and removable. Before ordinary execution, `TerminalEngine` resolves the command's package owner and returns exit code 126 when that owner is disabled.
+
+### Reset
+
+Reset is also HG2Gui-owned.
+
+For a normal package, the reset candidate set includes:
+
+- conventional package/binary-named XDG cache/config/data/state locations under HG2Gui home;
+- matching package-specific `var/cache`, `var/log`, and `var/tmp` locations;
+- paths HG2Gui positively observed appearing in the package's working directory during a run.
+
+HG2Gui does **not** claim to know every file a non-isolated program may have modified. The non-isolated tracker is intentionally conservative so Reset does not guess its way into deleting unrelated user data.
+
+For an isolated package, Reset discards the private isolation root. The next run reseeds it from the currently installed runtime/package version.
+
+## 5. Package isolation
+
+`PackageIsolation.kt` provides a filesystem boundary for package-owned commands when an executable PRoot engine is available.
+
+### Private root
+
+An isolated package receives a private root under app-private storage. On first run (or after a version change/reset), HG2Gui:
+
+- clears the prior private root;
+- copies the HG2Gui prefix into the matching guest prefix path;
+- creates a private home and XDG cache/config/data/state/tmp tree;
+- records the installed package version in the seed marker;
+- removes privileged tools such as `adb`, `su`, `tsu`, `magisk`, and `proot` from the guest prefix.
+
+The real HG2Gui prefix and home are not bind-mounted into the guest.
+
+### Host exposure
+
+The PRoot command exposes only the Android paths currently needed for process/runtime operation (`/system`, `/apex`, `/proc` when present). Common host `su` paths are masked by binding a denied file over them.
+
+Isolation is therefore separate from authority: **a package does not gain ADB/root merely because HG2Gui can use those authorities itself.**
+
+### Audit
+
+Before and after an isolated run, HG2Gui snapshots the private root's path/size/mtime/type metadata and reports:
+
+- created paths;
+- modified paths;
+- deleted paths.
+
+The output is an observation of private-root filesystem changes. It is not presently a syscall-level network/process trace.
+
+### Failure posture
+
+If a package is marked isolated but no executable PRoot engine is available, execution fails explicitly. HG2Gui does not silently fall back to unsandboxed execution.
+
+## 6. Execution authority
+
+`ExecutionAuthority.kt` separates privilege from ordinary command execution.
+
+### App
+
+Normal HG2Gui/app authority is the default. Merely having ADB or root available does not change ordinary command authority.
+
+### ADB shell
+
+HG2Gui looks for an executable ADB client in its native-library directory or `$PREFIX/bin/adb`. If none exists, the UI points the user toward the `android-tools` package.
+
+The `hg2auth adb` surface supports:
+
+- `devices`
+- `pair <endpoint> <code>`
+- `connect <endpoint>`
+- `disconnect [endpoint]`
+- `shell <command...>`
+
+Pair/connect use Android's normal ADB/Wireless Debugging model; possessing an ADB client is not itself authorization.
+
+ADB-shell execution asks for interactive confirmation before running.
+
+### Root
+
+HG2Gui searches common executable `su` locations. A provider being present only means root may be requestable; the device's root manager still controls authorization.
+
+The `hg2auth root` surface supports:
+
+- `test` — requests root and runs `id` after confirmation;
+- `shell <command...>` — requests confirmation, then executes through `su -c`.
+
+### No ambient elevation
+
+ADB/root authority is never inherited by:
+
+- ordinary shell commands;
+- package lifecycle operations merely because a package is installed;
+- isolated package commands;
+- headless `runToCompletion` calls.
+
+This is a core security invariant.
+
+## 7. Command tree and input semantics
+
+`CommandTree.kt` combines fixed Android roots with live shell discovery.
+
+- Android built-ins are fixed and explicit.
+- shell binaries are discovered from the HG2Gui prefix;
+- dpkg ownership informs package/category grouping;
+- command families such as `apt-get`/`apt-key`/`apt-mark` can nest under a shared family host;
+- `HelpCatalog` adds flags discovered from real `--help` output;
+- installation uses `AptCatalog` to enumerate package names;
+- package lifecycle uses actual installed-manager inventories;
+- path operands use `FileBrowser`/the graphical picker.
+
+### No normal leaf auto-run
+
+Normal command-tree leaves compose the command and leave it on the input line. **RUN is explicit.** Prompt-answer choices are different because they answer a command that is already running.
+
+### Missing operand guidance
+
+When a composed command still needs free-form input, the text field is focused and the UI names the expected kind of value (for example URL, host/address, search pattern, or generic argument). Values that can be enumerated should be pills instead; paths should use the picker.
+
+### Interactive prompts
+
+- yes/no → confirmation dialog;
+- numbered/bracketed finite choices → graphical choices;
+- password → masked text input;
+- other free-form prompts → focused text input / Send.
+
+The active output record auto-scrolls while stdout/stderr changes.
+
+## 8. Other product subsystems
+
+### Built-ins
+
+`Builtins.kt` remains a fixed explicit dispatch table for Android-facing capabilities that are not represented honestly as ordinary runtime binaries: device toggles/settings bridges, contacts/calls, VFS, calculator, and editor entry.
+
+### Files / VFS
+
+The Files UI and `vfs` command provide a managed filesystem surface. Device-storage access remains a permission-controlled mode; it is distinct from package isolation.
+
+### Workflows and AI
+
+Workflows and AI suggestions assemble commands for review. They do not bypass the explicit Run step.
+
+### MCP
+
+The MCP server remains loopback-only and explicit-start. Its own shell execution gate does not grant `hg2auth` elevation because `runToCompletion` rejects elevated authority operations.
+
+### Azphalt Store
+
+`.azp` packages are a separate package system from Termux/dpkg/pip/npm/gem lifecycle inventory. Store extraction/trust rules remain under the Store subsystem; do not conflate `.azp` lifecycle with the installed shell-package lifecycle UI.
+
+## 9. Module boundaries
+
+- `:composeApp` — Android application, activities/services, resources, product flavor/signing/build packaging, generated native launchers.
+- `:shared` — UI, terminal engine, package manager, lifecycle/isolation/authority, managers and integrations.
+- `:terminal-emulator` — vendored terminal/PTY support.
+- `:termux-shared` — vendored Termux-compatible Android utilities.
+
+## 10. Current invariants
+
+1. HG2Gui is a terminal application, not a launcher.
+2. Normal command-tree leaves compose; explicit **RUN** executes.
+3. Enumerable inputs should be selected, not typed.
+4. File/directory operands use the graphical picker when recognized.
+5. Package names should come from package/catalog inventories where available.
+6. `TerminalEngine` enforces lifecycle/isolation/authority before the normal shell.
+7. Disabled packages remain installed but their owned commands are blocked.
+8. Isolated packages never silently fall back to unsandboxed execution.
+9. ADB/root are explicit authorities, not ambient capabilities.
+10. Headless callers cannot elevate through `hg2auth`.
+11. Mutating top-level apt operations route through the HG2Gui package transaction layer.
+12. Package compatibility fixes must be class/general fixes, not package-name special cases unless a package truly requires package-specific semantics.
+
+## 11. Build/runtime configuration
+
+Current authoritative values live in Gradle/version files rather than this prose. At this documentation pass:
+
+- JDK 21
+- AGP 9.3.2
+- Kotlin 2.4.10
+- Compose Multiplatform 1.12.0
+- `compileSdk` / `targetSdk` 37
+- `minSdk` 24
+- NDK `29.0.14206865`
+
+The bootstrap version is pinned in `DistroManager.kt`; native executable mappings are pinned in `BootstrapManifest.kt`.
+
+## 12. Documentation authority
+
+This file, `README.md`, `HG2GUI_ARCHITECTURE.md`, `COMMANDS.md`, `USER_GUIDE.md`, `DESIGN.md`, `VISION.md`, and `CONTRIBUTING.md` are the live software/product documentation.
+
+The large Hitchhiker's Guide manuscript, animation production packets, style-lock prompts, HTML motion studies, screenshots, and videos under `docs/` are creative/reference assets. They may intentionally describe a story, visual metaphor, or historical production state rather than current runtime behavior.
