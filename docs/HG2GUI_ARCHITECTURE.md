@@ -1,10 +1,10 @@
 # HG2Gui Android Architecture
 
-This document is the Android-focused companion to [ARCHITECTURE.md](ARCHITECTURE.md). It describes the concrete Android implementation rather than the product history or Guide/animation material.
+This document is the Android-focused companion to [ARCHITECTURE.md](ARCHITECTURE.md). It describes the concrete Android implementation rather than product history or Guide/animation material.
 
 ## Application boundary
 
-HG2Gui is a normal Android application (`com.hereliesaz.hg2gui`), not a launcher. It runs a Termux-derived userspace inside its own application sandbox and adds explicit bridges for Android capabilities that cannot be modeled honestly as ordinary Linux commands.
+HG2Gui is an Android application (`com.hereliesaz.hg2gui`) that runs a Termux-derived userspace inside its own application sandbox and adds explicit bridges for Android capabilities that cannot be modeled honestly as ordinary Linux commands.
 
 Current platform configuration:
 
@@ -13,7 +13,7 @@ Current platform configuration:
 - `minSdk` 24
 - JDK/JVM target 21
 - NDK `29.0.14206865`
-- ARM64 native runtime/launcher path is the primary packaged native target
+- ARM64 native runtime path is the primary packaged native target
 
 ## Modules
 
@@ -26,7 +26,7 @@ Thin Android application shell:
 - MCP foreground service
 - Android manifest/resources
 - signing/product-flavor/build configuration
-- generated native launcher binaries
+- generated native entry binaries
 
 ### `:shared`
 
@@ -43,7 +43,7 @@ The product implementation:
 
 ### `:terminal-emulator`
 
-Vendored terminal/PTTY support and parser code used by the terminal stack.
+Vendored terminal/PTY support and parser code used by the terminal stack.
 
 ### `:termux-shared`
 
@@ -91,7 +91,7 @@ normal persistent shell
 
 The ordering matters. A command owned by a disabled package cannot bypass the lifecycle layer merely because the binary exists on disk. A command owned by an isolated package is redirected before it can touch the normal shell environment. ADB/root cannot be reached accidentally by ordinary execution.
 
-## Termux bootstrap on another application ID
+## Termux bootstrap under HG2Gui
 
 HG2Gui cannot treat a stock Termux bootstrap as an ordinary relocatable Linux rootfs.
 
@@ -109,11 +109,11 @@ HG2Gui instead owns its own prefix under its Android application data directory.
 
 This avoids relying on newly extracted executable files in writable app storage for the bootstrap's critical native command set.
 
-### Native launchers
+### Native entry binaries
 
-`composeApp/build.gradle.kts` generates native launcher binaries for components that need an Android-safe entry path plus HG2Gui-specific arguments. Current generated launchers include apt-key and dpkg launchers.
+`composeApp/build.gradle.kts` generates native entry binaries for components that need an Android-safe entry path plus HG2Gui-specific arguments. Current generated entries include apt-key and dpkg.
 
-The dpkg launcher injects HG2Gui's dpkg database/install root and script-chrootless behavior before invoking the packaged dpkg implementation.
+The dpkg entry injects HG2Gui's dpkg database/install root and script-chrootless behavior before invoking the packaged dpkg implementation.
 
 ## HG2 package manager
 
@@ -146,7 +146,7 @@ Existing installed scripts are staged out of `var/lib/dpkg/info` during upgrade/
 
 ### dpkg database/root
 
-The packaged launcher uses HG2Gui's own:
+The packaged native entry uses HG2Gui's own:
 
 ```text
 $PREFIX/var/lib/dpkg
