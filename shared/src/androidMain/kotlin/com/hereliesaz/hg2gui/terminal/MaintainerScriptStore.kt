@@ -16,6 +16,8 @@ import java.nio.file.StandardCopyOption
  */
 object MaintainerScriptStore {
     private val SCRIPT_NAMES = setOf("preinst", "postinst", "prerm", "postrm")
+    private val SHELLS = setOf("sh", "bash", "dash")
+    private const val OLD_PREFIX = "/data/data/com.termux/files/usr"
 
     fun migrateInstalled(context: Context) {
         val infoDir = infoDir(context)
@@ -26,6 +28,8 @@ object MaintainerScriptStore {
             if (scriptName !in SCRIPT_NAMES) return@forEach
             if (Files.isSymbolicLink(entry.toPath())) return@forEach
             if (!entry.isFile) return@forEach
+            normalizeBody(context, entry)
+            requireShellCompatible(entry)
             installAtomic(entry, entry, launcher)
         }
     }
@@ -56,6 +60,8 @@ object MaintainerScriptStore {
         SCRIPT_NAMES.forEach { scriptName ->
             val source = File(scriptsDir, scriptName)
             if (!source.isFile) return@forEach
+            normalizeBody(context, source)
+            requireShellCompatible(source)
             installAtomic(source, File(info, "$packageName.$scriptName"), launcher)
         }
     }
@@ -96,6 +102,28 @@ object MaintainerScriptStore {
             )
         }.getOrElse {
             Files.move(linkTemp.toPath(), entry.toPath(), StandardCopyOption.REPLACE_EXISTING)
+        }
+    }
+
+    private fun normalizeBody(context: Context, file: File) {
+        val bytes = runCatching { file.readBytes() }.getOrNull() ?: return
+        if (bytes.any { it == 0.toByte() }) return
+        val text = runCatching { bytes.toString(Charsets.UTF_8) }.getOrNull() ?: return
+        if (!text.contains(OLD_PREFIX)) return
+        file.writeText(text.replace(OLD_PREFIX, DistroManager.prefixDir(context).absolutePath))
+    }
+
+    private fun requireShellCompatible(file: File) {
+        val first = runCatching { file.bufferedReader().use { it.readLine().orEmpty() } }.getOrDefault("")
+        if (!first.startsWith("#!")) return
+        val words = first.removePrefix("#!").trim().split(Regex("\\s+")).filter(String::isNotBlank)
+        val interpreter = if (words.firstOrNull()?.substringAfterLast('/') == "env") {
+            words.drop(1).firstOrNull { !it.startsWith("-") }?.substringAfterLast('/')
+        } else {
+            words.firstOrNull()?.substringAfterLast('/')
+        }
+        require(interpreter.isNullOrBlank() || interpreter in SHELLS) {
+            "Unsupported stored maintainer-script interpreter '$interpreter' in ${file.name}"
         }
     }
 
