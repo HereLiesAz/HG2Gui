@@ -2,6 +2,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/syscall.h>
@@ -36,8 +37,7 @@ static int raw_execve(const char *pathname, char *const argv[], char *const envp
     return (int)syscall(__NR_execve, pathname, argv, envp);
 }
 
-__attribute__((visibility("default")))
-int execve(const char *pathname, char *const argv[], char *const envp[]) {
+static int hg2_execve(const char *pathname, char *const argv[], char *const envp[]) {
     if (!pathname || !*pathname) {
         errno = ENOENT;
         return -1;
@@ -48,7 +48,7 @@ int execve(const char *pathname, char *const argv[], char *const envp[]) {
     if (realpath(pathname, resolved) != NULL) candidate = resolved;
 
     if (!hg2gui_owned_path(candidate) || !is_elf(candidate)) {
-        return raw_execve(pathname, argv, envp);
+        return raw_execve(pathname, argv, envp ? envp : environ);
     }
 
 #if defined(__aarch64__) || defined(__x86_64__)
@@ -76,4 +76,175 @@ int execve(const char *pathname, char *const argv[], char *const envp[]) {
     free(next);
     errno = saved_errno;
     return result;
+}
+
+static int path_exec(const char *name, char *const argv[], char *const envp[]) {
+    if (!name || !*name) {
+        errno = ENOENT;
+        return -1;
+    }
+    if (strchr(name, '/')) return hg2_execve(name, argv, envp);
+
+    const char *path = getenv("PATH");
+    if (!path || !*path) path = "/system/bin:/system/xbin";
+
+    int saw_eacces = 0;
+    const char *cursor = path;
+    while (1) {
+        const char *colon = strchr(cursor, ':');
+        size_t dir_len = colon ? (size_t)(colon - cursor) : strlen(cursor);
+        const char *dir = cursor;
+        if (dir_len == 0) {
+            dir = ".";
+            dir_len = 1;
+        }
+
+        if (dir_len + 1 + strlen(name) + 1 <= PATH_MAX) {
+            char candidate[PATH_MAX];
+            memcpy(candidate, dir, dir_len);
+            candidate[dir_len] = '/';
+            strcpy(candidate + dir_len + 1, name);
+
+            hg2_execve(candidate, argv, envp);
+            if (errno == EACCES) {
+                saw_eacces = 1;
+            } else if (errno != ENOENT && errno != ENOTDIR) {
+                return -1;
+            }
+        }
+
+        if (!colon) break;
+        cursor = colon + 1;
+    }
+
+    errno = saw_eacces ? EACCES : ENOENT;
+    return -1;
+}
+
+static char **collect_argv(const char *arg, va_list ap, char *const **envp_out, int has_envp) {
+    size_t capacity = 8;
+    size_t count = 0;
+    char **argv = calloc(capacity, sizeof(char *));
+    if (!argv) {
+        errno = ENOMEM;
+        return NULL;
+    }
+
+    const char *current = arg;
+    while (current) {
+        if (count + 1 >= capacity) {
+            size_t next_capacity = capacity * 2;
+            char **grown = realloc(argv, next_capacity * sizeof(char *));
+            if (!grown) {
+                int saved_errno = errno;
+                free(argv);
+                errno = saved_errno ? saved_errno : ENOMEM;
+                return NULL;
+            }
+            argv = grown;
+            capacity = next_capacity;
+        }
+        argv[count++] = (char *)current;
+        current = va_arg(ap, const char *);
+    }
+    argv[count] = NULL;
+
+    if (has_envp && envp_out) {
+        *envp_out = va_arg(ap, char *const *);
+    }
+    return argv;
+}
+
+__attribute__((visibility("default")))
+int execve(const char *pathname, char *const argv[], char *const envp[]) {
+    return hg2_execve(pathname, argv, envp);
+}
+
+__attribute__((visibility("default")))
+int execv(const char *pathname, char *const argv[]) {
+    return hg2_execve(pathname, argv, environ);
+}
+
+__attribute__((visibility("default")))
+int execvp(const char *name, char *const argv[]) {
+    return path_exec(name, argv, environ);
+}
+
+__attribute__((visibility("default")))
+int execvpe(const char *name, char *const argv[], char *const envp[]) {
+    return path_exec(name, argv, envp ? envp : environ);
+}
+
+__attribute__((visibility("default")))
+int execl(const char *pathname, const char *arg, ...) {
+    va_list ap;
+    va_start(ap, arg);
+    char **argv = collect_argv(arg, ap, NULL, 0);
+    va_end(ap);
+    if (!argv) return -1;
+
+    int result = hg2_execve(pathname, argv, environ);
+    int saved_errno = errno;
+    free(argv);
+    errno = saved_errno;
+    return result;
+}
+
+__attribute__((visibility("default")))
+int execlp(const char *name, const char *arg, ...) {
+    va_list ap;
+    va_start(ap, arg);
+    char **argv = collect_argv(arg, ap, NULL, 0);
+    va_end(ap);
+    if (!argv) return -1;
+
+    int result = path_exec(name, argv, environ);
+    int saved_errno = errno;
+    free(argv);
+    errno = saved_errno;
+    return result;
+}
+
+__attribute__((visibility("default")))
+int execle(const char *pathname, const char *arg, ...) {
+    va_list ap;
+    va_start(ap, arg);
+    char *const *supplied_envp = NULL;
+    char **argv = collect_argv(arg, ap, &supplied_envp, 1);
+    va_end(ap);
+    if (!argv) return -1;
+
+    int result = hg2_execve(pathname, argv, supplied_envp ? supplied_envp : environ);
+    int saved_errno = errno;
+    free(argv);
+    errno = saved_errno;
+    return result;
+}
+
+__attribute__((visibility("default")))
+int fexecve(int fd, char *const argv[], char *const envp[]) {
+    if (fd < 0) {
+        errno = EBADF;
+        return -1;
+    }
+
+    char proc_path[64];
+    char resolved[PATH_MAX];
+    int written = snprintf(proc_path, sizeof(proc_path), "/proc/self/fd/%d", fd);
+    if (written > 0 && (size_t)written < sizeof(proc_path)) {
+        ssize_t length = readlink(proc_path, resolved, sizeof(resolved) - 1);
+        if (length > 0) {
+            resolved[length] = '\0';
+            if (hg2gui_owned_path(resolved) && is_elf(resolved)) {
+                return hg2_execve(resolved, argv, envp);
+            }
+        }
+    }
+
+#if defined(__NR_execveat) && defined(AT_EMPTY_PATH)
+    return (int)syscall(__NR_execveat, fd, "", argv, envp ? envp : environ, AT_EMPTY_PATH);
+#else
+    errno = ENOSYS;
+    return -1;
+#endif
 }
