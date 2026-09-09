@@ -41,6 +41,22 @@ class TermuxRepositoryClient(
         error("No authenticated Termux repository mirror succeeded:\n${failures.joinToString("\n")}")
     }
 
+    suspend fun downloadVerifiedPackage(
+        downloader: Hg2Downloader,
+        filename: String,
+        target: File,
+        expectedSha256: String,
+        preferredMirror: String?,
+        progress: suspend (done: Long, total: Long) -> Unit
+    ): Hg2Downloader.Result {
+        val failures = mutableListOf<String>()
+        for (url in packageUrls(filename, preferredMirror)) {
+            runCatching { return downloader.download(url, target, expectedSha256, progress) }
+                .onFailure { failures += "$url — ${it.message ?: it::class.java.simpleName}" }
+        }
+        error("Package download failed on every mirror:\n${failures.joinToString("\n")}")
+    }
+
     fun packageUrls(filename: String, preferredMirror: String?): List<String> {
         if (filename.startsWith("https://")) return listOf(filename)
         if (filename.startsWith("http://")) error("Refusing insecure package URL: $filename")
