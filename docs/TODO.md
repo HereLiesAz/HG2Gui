@@ -8,10 +8,12 @@ This is the active implementation roadmap. Keep it current with feature commits.
   - [x] Define shell-agnostic completion candidate/request/provider model.
   - [x] Normalize Bash, Zsh, Fish, filesystem, package-manager, and command-protocol candidates into one semantic model.
   - [x] Store completion candidates per HG2Gui session.
-  - [ ] Finish safe live Bash/Zsh/Fish completion adapters.
+  - [x] Add safe live Bash/Zsh/Fish completion adapters without executing the partially composed command.
+  - [x] Add installed-package, Git branch, and known SSH host semantic completion providers.
   - [ ] Feed semantic completion candidates into HG2Gui-native selection surfaces.
   - [ ] Replace free-form typing with selectable values whenever a provider can enumerate valid choices.
-  - [ ] Add package-manager, Git branch, host/service, and command-specific completion providers.
+  - [ ] Add service and richer command-specific completion providers.
+  - [ ] Consume native Bash/Zsh completion definitions beyond the conservative command/file fallback where it can be done safely.
 
 ## Next
 
