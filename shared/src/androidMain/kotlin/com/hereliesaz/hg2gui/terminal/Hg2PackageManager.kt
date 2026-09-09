@@ -155,6 +155,7 @@ class Hg2PackageManager(
     }
 
     private suspend fun remove(names: List<String>, purge: Boolean, emit: suspend (String) -> Unit) {
+        recoverInterruptedTransactions(emit)
         val installed = readInstalled()
         val present = names.filter { it in installed }
         val missing = names.filterNot { it in installed }
@@ -164,24 +165,32 @@ class Hg2PackageManager(
         if (!bash.canExecute()) error("HG2Gui Bash is unavailable at ${bash.absolutePath}")
         emit("${if (purge) "Purging" else "Removing"}: ${present.joinToString(" ")}")
 
-        for (name in present) {
-            val oldScripts = stageInstalledScripts(name)
-            try {
-                runMaintainerScript(File(oldScripts, "prerm"), name, installed.getValue(name).version, listOf("remove"), emit)
-                assertDpkgHasNoMaintainerScripts(name)
-                runDpkg(listOf("--remove", name), emit)
-                runMaintainerScript(File(oldScripts, "postrm"), name, installed.getValue(name).version, listOf("remove"), emit)
-                if (purge) runDpkg(listOf("--purge", name), emit)
-                oldScripts.deleteRecursively()
-            } catch (t: Throwable) {
-                restoreInstalledScripts(name, oldScripts)
-                throw t
+        val transaction = PackageTransactionGroup(context)
+        try {
+            for (name in present) {
+                transaction.begin(name)
+                val oldScripts = stageInstalledScripts(name)
+                try {
+                    runMaintainerScript(File(oldScripts, "prerm"), name, installed.getValue(name).version, listOf("remove"), emit)
+                    assertDpkgHasNoMaintainerScripts(name)
+                    runDpkg(listOf("--remove", name), emit)
+                    runMaintainerScript(File(oldScripts, "postrm"), name, installed.getValue(name).version, listOf("remove"), emit)
+                    if (purge) runDpkg(listOf("--purge", name), emit)
+                    oldScripts.deleteRecursively()
+                } catch (t: Throwable) {
+                    restoreInstalledScripts(name, oldScripts)
+                    throw t
+                }
             }
+            transaction.commit()
+        } catch (t: Throwable) {
+            throw rollbackFailure("package removal", transaction, t, emit)
         }
         emit("Done: ${present.joinToString(" ")}")
     }
 
     private suspend fun install(requested: List<String>, forceRequested: Boolean, emit: suspend (String) -> Unit) {
+        recoverInterruptedTransactions(emit)
         ensureIndex(emit)
         val available = parsePackages(packagesFile.readText()).associateBy { it.name }
         val installed = readInstalled()
@@ -215,10 +224,45 @@ class Hg2PackageManager(
         }
 
         emit("Installing ${prepared.size} verified package archive${if (prepared.size == 1) "" else "s"}…")
-        for (item in prepared) {
-            installPreparedPackage(item, installed[item.pkg.name], emit)
+        val transaction = PackageTransactionGroup(context)
+        try {
+            for (item in prepared) {
+                transaction.begin(item.pkg.name)
+                installPreparedPackage(item, installed[item.pkg.name], emit)
+            }
+            transaction.commit()
+        } catch (t: Throwable) {
+            throw rollbackFailure("package installation", transaction, t, emit)
         }
         emit("Installed: ${requested.joinToString(" ")}")
+    }
+
+    private suspend fun recoverInterruptedTransactions(emit: suspend (String) -> Unit) {
+        val recovery = PackageTransactionJournal.recoverAbandoned(context)
+        if (recovery.isEmpty()) return
+        recovery.forEach { emit(it) }
+        val failed = recovery.filter { it.startsWith("Could not recover") }
+        if (failed.isNotEmpty()) {
+            error("HG2Gui cannot safely continue package mutation until interrupted transaction recovery succeeds:\n${failed.joinToString("\n")}")
+        }
+    }
+
+    private suspend fun rollbackFailure(
+        operation: String,
+        transaction: PackageTransactionGroup,
+        cause: Throwable,
+        emit: suspend (String) -> Unit
+    ): Throwable {
+        emit("$operation failed; rolling back the complete package plan…")
+        val failures = transaction.rollback()
+        return if (failures.isEmpty()) {
+            emit("Rollback complete. Package payload and dpkg metadata were restored.")
+            cause
+        } else {
+            val detail = failures.joinToString("\n")
+            emit("Rollback was incomplete:\n$detail")
+            IllegalStateException("${cause.message ?: operation} (rollback incomplete: $detail)", cause)
+        }
     }
 
     private suspend fun installPreparedPackage(
