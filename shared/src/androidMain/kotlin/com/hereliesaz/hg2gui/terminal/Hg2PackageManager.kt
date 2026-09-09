@@ -3,7 +3,7 @@ package com.hereliesaz.hg2gui.terminal
 import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.flowOn
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -37,27 +37,28 @@ class Hg2PackageManager(
 
     fun handles(line: String): Boolean = words(line).firstOrNull() in setOf("pkg", "hg2pkg")
 
-    fun run(line: String): Flow<String> = flow {
+    fun run(line: String): Flow<String> = channelFlow {
+        val output: suspend (String) -> Unit = { send(it) }
         val args = words(line).drop(1)
         when (args.firstOrNull()) {
-            "install", "in" -> install(requirePackages(args, "install"), forceRequested = false) { emit(it) }
-            "update" -> updateIndex { emit(it) }
-            "upgrade", "up" -> upgrade { emit(it) }
-            "remove", "rm", "uninstall" -> remove(requirePackages(args, "remove"), purge = false) { emit(it) }
-            "purge" -> remove(requirePackages(args, "purge"), purge = true) { emit(it) }
+            "install", "in" -> install(requirePackages(args, "install"), forceRequested = false, emit = output)
+            "update" -> updateIndex(output)
+            "upgrade", "up" -> upgrade(output)
+            "remove", "rm", "uninstall" -> remove(requirePackages(args, "remove"), purge = false, emit = output)
+            "purge" -> remove(requirePackages(args, "purge"), purge = true, emit = output)
             "clean" -> {
                 val count = cacheDir.listFiles().orEmpty().count { it.isFile && (it.extension == "deb" || it.name.endsWith(".part")) }
                 cacheDir.listFiles().orEmpty().forEach { if (it.isFile && (it.extension == "deb" || it.name.endsWith(".part"))) it.delete() }
-                emit("Removed $count cached package file${if (count == 1) "" else "s"}.")
+                send("Removed $count cached package file${if (count == 1) "" else "s"}.")
             }
-            "search" -> search(args.drop(1).joinToString(" ")) { emit(it) }
-            "show", "info" -> show(requirePackages(args, "show")) { emit(it) }
+            "search" -> search(args.drop(1).joinToString(" "), output)
+            "show", "info" -> show(requirePackages(args, "show"), output)
             "list-installed" -> {
                 val installed = readInstalled().values.sortedBy { it.name }
-                emit(if (installed.isEmpty()) "No installed packages recorded by dpkg." else installed.joinToString("\n") { "${it.name} ${it.version}" })
+                send(if (installed.isEmpty()) "No installed packages recorded by dpkg." else installed.joinToString("\n") { "${it.name} ${it.version}" })
             }
-            null -> emit(USAGE)
-            else -> emit("HG2Gui package manager: unsupported operation '${args.first()}'.\n$USAGE")
+            null -> send(USAGE)
+            else -> send("HG2Gui package manager: unsupported operation '${args.first()}'.\n$USAGE")
         }
     }.flowOn(Dispatchers.IO)
 
