@@ -142,6 +142,7 @@ class Hg2PackageManager(
             val oldScripts = stageInstalledScripts(name)
             try {
                 runMaintainerScript(File(oldScripts, "prerm"), name, installed.getValue(name).version, listOf("remove"), emit)
+                assertDpkgHasNoMaintainerScripts(name)
                 runDpkg(listOf("--remove", name), emit)
                 runMaintainerScript(File(oldScripts, "postrm"), name, installed.getValue(name).version, listOf("remove"), emit)
                 if (purge) runDpkg(listOf("--purge", name), emit)
@@ -209,6 +210,7 @@ class Hg2PackageManager(
                 runMaintainerScript(File(prepared.scriptsDir, "preinst"), pkg.name, pkg.version, listOf("install"), emit)
             }
 
+            assertDpkgHasNoMaintainerScripts(pkg.name)
             runDpkg(listOf("--unpack", prepared.archive.absolutePath), emit)
 
             if (old != null) {
@@ -217,6 +219,7 @@ class Hg2PackageManager(
 
             val postinstArgs = if (old != null) listOf("configure", old.version) else listOf("configure")
             runMaintainerScript(File(prepared.scriptsDir, "postinst"), pkg.name, pkg.version, postinstArgs, emit)
+            assertDpkgHasNoMaintainerScripts(pkg.name)
             runDpkg(listOf("--configure", pkg.name), emit)
             installStoredScripts(pkg.name, prepared.scriptsDir)
             oldScripts.deleteRecursively()
@@ -257,6 +260,7 @@ class Hg2PackageManager(
         }
 
         val extractedScripts = extractMaintainerScripts(workDir, scriptsDir)
+        assertArchiveControlHasNoMaintainerScripts(workDir, pkg.name)
         emit("Rewrote ${rewritten + metadataRewritten} file${if (rewritten + metadataRewritten == 1) "" else "s"} and externalized $extractedScripts maintainer script${if (extractedScripts == 1) "" else "s"} for ${pkg.name}.")
 
         runTool(listOf(dpkgDeb.absolutePath, "-b", workDir.absolutePath, patched.absolutePath), "dpkg-deb build")
@@ -271,8 +275,7 @@ class Hg2PackageManager(
         for (name in MAINTAINER_SCRIPTS) {
             val source = File(debianDir, name)
             if (!source.isFile) continue
-            source.copyTo(File(scriptsDir, name), overwrite = true)
-            source.delete()
+            moveFileVerified(source, File(scriptsDir, name), "externalize $name")
             count++
         }
         return count
@@ -285,9 +288,9 @@ class Hg2PackageManager(
         for (name in MAINTAINER_SCRIPTS) {
             val source = File(dpkgInfoDir, "$packageName.$name")
             if (!source.isFile) continue
-            source.copyTo(File(dir, name), overwrite = true)
-            source.delete()
+            moveFileVerified(source, File(dir, name), "stage $packageName.$name")
         }
+        assertDpkgHasNoMaintainerScripts(packageName)
         return dir
     }
 
@@ -304,11 +307,44 @@ class Hg2PackageManager(
         dpkgInfoDir.mkdirs()
         for (name in MAINTAINER_SCRIPTS) {
             val destination = File(dpkgInfoDir, "$packageName.$name")
-            destination.delete()
+            if (destination.exists() && !destination.delete()) {
+                error("Cannot replace stored maintainer script ${destination.absolutePath}")
+            }
             val source = File(scriptsDir, name)
             if (source.isFile) source.copyTo(destination, overwrite = true)
         }
         scriptsDir.deleteRecursively()
+    }
+
+    private fun moveFileVerified(source: File, destination: File, label: String) {
+        destination.parentFile?.mkdirs()
+        if (destination.exists() && !destination.delete()) {
+            error("Cannot clear destination while trying to $label: ${destination.absolutePath}")
+        }
+        if (!source.renameTo(destination)) {
+            source.copyTo(destination, overwrite = true)
+            if (!source.delete()) {
+                destination.delete()
+                error("Cannot remove source while trying to $label: ${source.absolutePath}")
+            }
+        }
+        if (source.exists()) error("Source still exists after $label: ${source.absolutePath}")
+        if (!destination.isFile) error("Destination missing after $label: ${destination.absolutePath}")
+    }
+
+    private fun assertArchiveControlHasNoMaintainerScripts(workDir: File, packageName: String) {
+        val debianDir = File(workDir, "DEBIAN")
+        val remaining = MAINTAINER_SCRIPTS.map { File(debianDir, it) }.filter { it.exists() }
+        if (remaining.isNotEmpty()) {
+            error("Failed to externalize maintainer scripts for $packageName: ${remaining.joinToString { it.name }}")
+        }
+    }
+
+    private fun assertDpkgHasNoMaintainerScripts(packageName: String) {
+        val remaining = MAINTAINER_SCRIPTS.map { File(dpkgInfoDir, "$packageName.$it") }.filter { it.exists() }
+        if (remaining.isNotEmpty()) {
+            error("Failed to stage installed maintainer scripts for $packageName: ${remaining.joinToString { it.name }}")
+        }
     }
 
     private suspend fun runMaintainerScript(
