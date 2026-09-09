@@ -57,7 +57,7 @@ class TerminalEngine(
                 close()
             }
 
-            downloader.handles(trimmed) -> launch(Dispatchers.IO) {
+            verb == "download" || verb == "hg2download" -> launch(Dispatchers.IO) {
                 try {
                     downloader.run(trimmed).collect { trySend(it) }
                     onExit(0)
@@ -69,7 +69,7 @@ class TerminalEngine(
                 }
             }
 
-            packages.handles(trimmed) -> launch(Dispatchers.IO) {
+            verb == "pkg" || verb == "hg2pkg" -> launch(Dispatchers.IO) {
                 try {
                     packages.run(trimmed).collect { trySend(it) }
                     onExit(0)
@@ -107,9 +107,10 @@ class TerminalEngine(
     /** Headless one-shot execution used by installers and MCP callers. */
     suspend fun runToCompletion(line: String): Pair<String, Int> = withContext(Dispatchers.IO) {
         val trimmed = line.trim()
-        val hg2Flow = when {
-            downloader.handles(trimmed) -> downloader.run(trimmed)
-            packages.handles(trimmed) -> packages.run(trimmed)
+        val verb = trimmed.substringBefore(' ')
+        val hg2Flow = when (verb) {
+            "download", "hg2download" -> downloader.run(trimmed)
+            "pkg", "hg2pkg" -> packages.run(trimmed)
             else -> null
         }
         if (hg2Flow != null) {
