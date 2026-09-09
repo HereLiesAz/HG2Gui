@@ -28,8 +28,11 @@ object PackageIsolation {
     fun marker(context: Context, pkg: PackageLifecycleStore.InstalledPackage): File =
         File(root(context, pkg), ".hg2gui-seeded")
 
-    fun isSeeded(context: Context, pkg: PackageLifecycleStore.InstalledPackage): Boolean =
-        marker(context, pkg).isFile
+    fun isSeeded(context: Context, pkg: PackageLifecycleStore.InstalledPackage): Boolean {
+        val marker = marker(context, pkg)
+        if (!marker.isFile) return false
+        return runCatching { marker.readText().trim() == pkg.version.trim() }.getOrDefault(false)
+    }
 
     fun seedCommand(context: Context, pkg: PackageLifecycleStore.InstalledPackage): String {
         val root = root(context, pkg)
@@ -40,6 +43,7 @@ object PackageIsolation {
         val marker = marker(context, pkg)
 
         return listOf(
+            "rm -rf ${q(root.absolutePath)}",
             "mkdir -p ${q(guestPrefixHostPath.absolutePath)} ${q(guestHomeHostPath.absolutePath)}",
             "cp -a ${q(hostPrefix.absolutePath + "/.")} ${q(guestPrefixHostPath.absolutePath + "/")}",
             "mkdir -p ${q(File(guestHomeHostPath, ".cache").absolutePath)} ${q(File(guestHomeHostPath, ".config").absolutePath)} ${q(File(guestHomeHostPath, ".local/share").absolutePath)} ${q(File(guestHomeHostPath, ".local/state").absolutePath)} ${q(File(guestHomeHostPath, ".tmp").absolutePath)}",
@@ -103,9 +107,7 @@ object PackageIsolation {
     fun audit(before: Map<String, FileStamp>, after: Map<String, FileStamp>): Audit {
         val created = (after.keys - before.keys).sorted()
         val deleted = (before.keys - after.keys).sorted()
-        val modified = (before.keys intersect after.keys)
-            .filter { before[it] != after[it] }
-            .sorted()
+        val modified = (before.keys intersect after.keys).filter { before[it] != after[it] }.sorted()
         return Audit(created, modified, deleted)
     }
 
