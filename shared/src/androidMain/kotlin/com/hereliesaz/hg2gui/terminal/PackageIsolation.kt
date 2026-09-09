@@ -109,57 +109,53 @@ object PackageIsolation {
      * observed process descendants, their live file descriptors/open modes, socket endpoints and
      * privilege-tool attempts without granting the child any extra authority.
      */
-    private fun monitorScript(original: String, audit: String): String = """
-        audit=${q(audit)}
-        mkdir -p "\$(dirname "\$audit")"
-        : > "\$audit"
-        seen="\$audit.seen"
-        : > "\$seen"
-        hg2_log() { grep -Fqx -- "\$1" "\$seen" 2>/dev/null || { printf '%s\n' "\$1" >> "\$seen"; printf '%s\n' "\$1" >> "\$audit"; }; }
-        hg2_scan_pid() {
-          local p="\$1" child fd target flags mode inode proto row
-          [ -r "/proc/\$p/cmdline" ] || return
-          local cmd="\$(tr '\000' ' ' < "/proc/\$p/cmdline" 2>/dev/null)"
-          local ppid="\$(awk '/^PPid:/ {print \$2}' "/proc/\$p/status" 2>/dev/null)"
-          hg2_log "process:\$p:\$ppid:\$cmd"
-          case "\$cmd" in *"/su "*|*" su "*|*"adb"*|*"magisk"*|*"tsu"*) hg2_log "authority-attempt:\$p:\$cmd" ;; esac
-          for fd in /proc/\$p/fd/*; do
-            [ -e "\$fd" ] || continue
-            target="\$(readlink "\$fd" 2>/dev/null)"
-            [ -n "\$target" ] || continue
-            flags="\$(awk '/^flags:/ {print \$2}' "/proc/\$p/fdinfo/\${fd##*/}" 2>/dev/null)"
-            if [ "\${target#socket:[}" != "\$target" ]; then
-              inode="\${target#socket:[}"; inode="\${inode%]}"
-              for proto in tcp tcp6 udp udp6; do
-                [ -r "/proc/\$p/net/\$proto" ] || continue
-                row="\$(awk -v i="\$inode" '\$10==i {print \$2 ":" \$3 ":" \$4 ":" \$10; exit}' "/proc/\$p/net/\$proto" 2>/dev/null)"
-                [ -n "\$row" ] && hg2_log "network:\$proto:\$row"
-              done
-            elif [ "\${target#/}" != "\$target" ]; then
-              mode="unknown"
-              case "\$flags" in
-                *1|*100001|*1000001) mode="write" ;;
-                *2|*100002|*1000002) mode="readwrite" ;;
-                *) mode="read" ;;
-              esac
-              hg2_log "file-\$mode:\$p:\$target"
-              case "\$target" in *" (deleted)") hg2_log "file-deleted-open:\$p:\$target" ;; esac
-            fi
-          done
-          if [ -r "/proc/\$p/task/\$p/children" ]; then
-            for child in \$(cat "/proc/\$p/task/\$p/children" 2>/dev/null); do hg2_scan_pid "\$child"; done
-          fi
-        }
-        ( eval ${q(original)} ) &
-        main=\$!
-        hg2_log "root-process:\$main"
-        while kill -0 "\$main" 2>/dev/null; do hg2_scan_pid "\$main"; sleep 0.05; done
-        hg2_scan_pid "\$main"
-        wait "\$main"
-        code=\$?
-        rm -f "\$seen"
-        exit "\$code"
-    """.trimIndent()
+    private fun monitorScript(original: String, audit: String): String = listOf(
+        "audit=${q(audit)}",
+        "mkdir -p \"\$(dirname \"\$audit\")\"",
+        ": > \"\$audit\"",
+        "seen=\"\$audit.seen\"",
+        ": > \"\$seen\"",
+        "hg2_log() { grep -Fqx -- \"\$1\" \"\$seen\" 2>/dev/null || { printf '%s\\n' \"\$1\" >> \"\$seen\"; printf '%s\\n' \"\$1\" >> \"\$audit\"; }; }",
+        "hg2_scan_pid() {",
+        "  local p=\"\$1\" child fd target flags mode inode proto row",
+        "  [ -r \"/proc/\$p/cmdline\" ] || return",
+        "  local cmd=\"\$(tr '\\000' ' ' < \"/proc/\$p/cmdline\" 2>/dev/null)\"",
+        "  local ppid=\"\$(awk '/^PPid:/ {print \$2}' \"/proc/\$p/status\" 2>/dev/null)\"",
+        "  hg2_log \"process:\$p:\$ppid:\$cmd\"",
+        "  case \"\$cmd\" in *\"/su \"*|*\" su \"*|*\"adb\"*|*\"magisk\"*|*\"tsu\"*) hg2_log \"authority-attempt:\$p:\$cmd\" ;; esac",
+        "  for fd in /proc/\$p/fd/*; do",
+        "    [ -e \"\$fd\" ] || continue",
+        "    target=\"\$(readlink \"\$fd\" 2>/dev/null)\"",
+        "    [ -n \"\$target\" ] || continue",
+        "    flags=\"\$(awk '/^flags:/ {print \$2}' \"/proc/\$p/fdinfo/\${fd##*/}\" 2>/dev/null)\"",
+        "    if [ \"\${target#socket:[}\" != \"\$target\" ]; then",
+        "      inode=\"\${target#socket:[}\"; inode=\"\${inode%]}\"",
+        "      for proto in tcp tcp6 udp udp6; do",
+        "        [ -r \"/proc/\$p/net/\$proto\" ] || continue",
+        "        row=\"\$(awk -v i=\"\$inode\" '\$10==i {print \$2 \":\" \$3 \":\" \$4 \":\" \$10; exit}' \"/proc/\$p/net/\$proto\" 2>/dev/null)\"",
+        "        [ -n \"\$row\" ] && hg2_log \"network:\$proto:\$row\"",
+        "      done",
+        "    elif [ \"\${target#/}\" != \"\$target\" ]; then",
+        "      mode=unknown",
+        "      case \"\$flags\" in *1|*100001|*1000001) mode=write ;; *2|*100002|*1000002) mode=readwrite ;; *) mode=read ;; esac",
+        "      hg2_log \"file-\$mode:\$p:\$target\"",
+        "      case \"\$target\" in *\" (deleted)\") hg2_log \"file-deleted-open:\$p:\$target\" ;; esac",
+        "    fi",
+        "  done",
+        "  if [ -r \"/proc/\$p/task/\$p/children\" ]; then",
+        "    for child in \$(cat \"/proc/\$p/task/\$p/children\" 2>/dev/null); do hg2_scan_pid \"\$child\"; done",
+        "  fi",
+        "}",
+        "( eval ${q(original)} ) &",
+        "main=\$!",
+        "hg2_log \"root-process:\$main\"",
+        "while kill -0 \"\$main\" 2>/dev/null; do hg2_scan_pid \"\$main\"; sleep 0.05; done",
+        "hg2_scan_pid \"\$main\"",
+        "wait \"\$main\"",
+        "code=\$?",
+        "rm -f \"\$seen\"",
+        "exit \"\$code\""
+    ).joinToString("\n")
 
     fun snapshot(context: Context, pkg: PackageLifecycleStore.InstalledPackage): Map<String, FileStamp> {
         val root = root(context, pkg)
