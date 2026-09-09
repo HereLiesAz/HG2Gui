@@ -18,7 +18,7 @@ This is the active implementation roadmap. Keep it current with feature commits.
 ## In progress
 
 - [ ] Deepen the Adaptive TUI Wrapper.
-  - [ ] Nested/modal menus.
+  - [x] Nested/modal menus.
   - [ ] Checkbox and radio lists.
   - [ ] Tabs.
   - [ ] Scrolling lists.
