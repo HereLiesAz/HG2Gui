@@ -64,7 +64,7 @@ actual class ShellSession private constructor(
 
             val bootstrapHome = home ?: DistroManager.homeDir(context)
             if (!bootstrapHome.exists()) bootstrapHome.mkdirs()
-            val env = mapOf(
+            val env = mutableMapOf(
                 "HOME" to bootstrapHome.absolutePath,
                 "PREFIX" to prefix.absolutePath,
                 "PATH" to "${prefix.absolutePath}/bin",
@@ -78,6 +78,7 @@ actual class ShellSession private constructor(
                 "TERMINFO" to "${prefix.absolutePath}/share/terminfo",
                 "HG2GUI_BASH" to nativeBash.absolutePath
             )
+            Hg2ExecEnvironment.apply(context, env, bootstrapHome)
             return bootstrapHome to env
         }
 
