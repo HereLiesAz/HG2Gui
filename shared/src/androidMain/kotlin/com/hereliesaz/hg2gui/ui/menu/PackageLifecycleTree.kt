@@ -10,7 +10,7 @@ object PackageLifecycleTree {
         label = "Packages",
         cap = "manage",
         emitsToken = false,
-        resolveChildren = { managerNodes(context) }
+        resolveChildren = { listOf(AuthorityTree.root(context)) + managerNodes(context) }
     )
 
     private fun managerNodes(context: Context): List<MenuNode> {
