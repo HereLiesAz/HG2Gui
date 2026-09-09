@@ -27,6 +27,9 @@ object Utils {
         applicationContext = context.applicationContext
     }
 
+    /** Returns the process-wide app context after [init], or null during uninitialized previews/tests. */
+    fun applicationContextOrNull(): Context? = applicationContext
+
     /** Broadcasts [s] on [PrivateIOReceiver.ACTION_OUTPUT] - nothing has listened for this since
      *  the legacy engine's output view went away, but it's a harmless no-op destination rather
      *  than a crash for the couple of call sites (flashlight errors) that still fire it. */
