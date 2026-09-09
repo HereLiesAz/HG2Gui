@@ -29,11 +29,9 @@ import com.hereliesaz.hg2gui.ui.menu.MenuNode
 import com.hereliesaz.hg2gui.ui.menu.PillMenu
 
 /*
- * The guide is a read-through of the exact tree PillMenu itself runs on - picking a command
- * here writes it into the input instead of running it, so browsing and picking are the same
- * interaction the terminal already teaches, not a second UI to learn. Staying open across
- * picks (no auto-close) mirrors how the terminal's own PillMenu behaves: nothing closes it but
- * the user.
+ * The Guide and the command tree are both command-entry surfaces. The tree exposes the runtime
+ * structurally; the Guide exposes the same world through explanation and narrative. Picking a
+ * command in either surface writes it into the terminal input for review instead of executing it.
  */
 @Composable
 fun CommandGuideScreen(
@@ -50,15 +48,13 @@ fun CommandGuideScreen(
     backStep: BackStepState,
     modifier: Modifier = Modifier
 ) {
-    // The real Hitchhiker's Guide - a chapter index of parody command entries, not a picker -
-    // is nested inside this screen rather than replacing it: this remains "pick a command",
-    // that remains "read about one", one pill apart.
     var readingGuide by remember { mutableStateOf(false) }
 
     if (readingGuide) {
         GuideReaderScreen(
             fullscreen = fullscreen,
             onBack = { readingGuide = false },
+            onCommandSelected = { command -> onCommandSelected(listOf(command)) },
             backStep = backStep,
             modifier = modifier
         )
@@ -135,8 +131,6 @@ fun CommandGuideScreen(
         PillMenu(
             roots = tree,
             modifier = Modifier.weight(1f).padding(horizontal = 20.dp, vertical = 12.dp),
-            // The guide only ever writes a pick into the input - see the doc comment above -
-            // so isTerminal (the auto-run signal) is irrelevant here.
             onRun = { picked, _ -> onCommandSelected(picked) }
         )
     }
