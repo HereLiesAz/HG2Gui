@@ -15,13 +15,17 @@ object ShellCompletionBridge {
     private const val MAX_CANDIDATES = 200
 
     fun complete(context: Context, request: CompletionRequest): List<CompletionCandidate> {
-        val raw = when (request.provider) {
+        val shellCandidates = when (request.provider) {
             ShellCompletionProvider.FISH_COMPLETION -> completeFish(context, request)
             ShellCompletionProvider.ZSH_COMPLETION -> completeZsh(context, request)
             ShellCompletionProvider.BASH_COMPLETION -> completeBash(context, request)
             ShellCompletionProvider.NONE -> completeFilesystem(request)
         }
-        return CompletionNormalizer.filterFor(request, CompletionNormalizer.merge(raw)).take(MAX_CANDIDATES)
+        val semanticCandidates = SemanticCompletionProviders.complete(context, request)
+        return CompletionNormalizer.filterFor(
+            request,
+            CompletionNormalizer.merge(semanticCandidates + shellCandidates)
+        ).take(MAX_CANDIDATES)
     }
 
     private fun completeFish(context: Context, request: CompletionRequest): List<CompletionCandidate> {
