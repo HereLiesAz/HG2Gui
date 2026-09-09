@@ -117,6 +117,7 @@ fun FullScreenTerminalScreen(
 
     Column(Modifier.fillMaxSize().background(Azphalt.Ink)) {
         TerminalTopBar(holder, ctrlArmed, onCtrlToggle = { ctrlArmed = !ctrlArmed }, onExit = onExit)
+        StructuredShellStatus(holder)
         TerminalGrid(
             holder = holder,
             measurer = measurer,
