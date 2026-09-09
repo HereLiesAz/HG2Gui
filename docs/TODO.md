@@ -2,9 +2,9 @@
 
 This is the active implementation roadmap. Keep it current with feature commits.
 
-## In progress
+## Completed
 
-- [ ] Completion Bridge
+- [x] Completion Bridge
   - [x] Define shell-agnostic completion candidate/request/provider model.
   - [x] Normalize Bash, Zsh, Fish, filesystem, package-manager, and command-protocol candidates into one semantic model.
   - [x] Store completion candidates per HG2Gui session.
@@ -13,9 +13,9 @@ This is the active implementation roadmap. Keep it current with feature commits.
   - [x] Feed semantic completion candidates into HG2Gui-native selection surfaces.
   - [x] Replace free-form typing with selectable values whenever a provider can enumerate valid choices.
   - [x] Add service and richer command-specific completion providers.
-  - [ ] Consume native Bash/Zsh completion definitions beyond the conservative command/file fallback where it can be done safely.
+  - [x] Consume the declarative subset of native Bash/Zsh completion definitions without sourcing or executing completion scripts.
 
-## Next
+## In progress
 
 - [ ] Deepen the Adaptive TUI Wrapper.
   - [ ] Nested/modal menus.
@@ -29,6 +29,8 @@ This is the active implementation roadmap. Keep it current with feature commits.
   - [ ] Multiple panes.
   - [ ] Mouse-aware TUIs.
   - [ ] Detect selection represented by color/style beyond inverse text.
+
+## Next
 
 - [ ] Make Adaptive TUI interaction semantic rather than blind key-count emulation.
   - [ ] Observe screen evolution after each generated navigation action.
