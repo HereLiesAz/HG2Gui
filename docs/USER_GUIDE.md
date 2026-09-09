@@ -2,231 +2,231 @@
 
 ## Getting started
 
-HG2Gui is a touch-first terminal application for Android.
+HG2Gui is a touch-first Android command-line environment built on a real Termux-derived runtime.
 
-Its main difference from a traditional terminal is the input model: **if HG2Gui can discover the valid choices, you tap them instead of typing them.** The keyboard is for genuinely open-ended values.
+You are not restricted to one input style. Depending on what you are doing, HG2Gui can use command composition, semantic completion, Guide links, graphical file selection, shell prompt projections, adaptive TUI controls, or raw terminal input.
 
-On first use, HG2Gui installs its pinned Termux-derived runtime into app-private storage. Bootstrap/package progress appears in the output card.
+On first use, HG2Gui installs its pinned runtime into app-private storage. Package/bootstrap progress appears in the active output record.
 
-## The terminal screen
+## Terminal sessions
 
-The terminal contains:
+Each terminal tab keeps its own shell state, working directory, output, and history context.
 
-- **session tabs** — each session keeps its own shell state, history, working directory, and output;
-- **working directory** — where the next normal shell command will run;
-- **command input** — the command assembled from pills and/or typed text;
-- **RUN** — the explicit execution action;
-- **terminal modifier keys** — controls such as Ctrl, Alt, Esc, Tab, and history arrows;
-- **command tree** — live shell commands plus HG2Gui features;
-- **output/result cards** — command records; the active result auto-scrolls as new output arrives.
+New sessions can use an installed **Bash**, **Zsh**, or **Fish** shell selected in Settings. Changing the default shell affects new sessions, not an already-running one.
 
-## Building a command by touch
+Oh My Zsh, Powerlevel10k, Starship, Pure, and similar prompt/theme systems remain part of the shell presentation layer. HG2Gui can extract useful prompt state from them without requiring the raw theme layout to become the native UI.
 
-1. Tap a root/category.
-2. Tap a command.
-3. Tap any subcommand/options that apply.
-4. Supply any remaining operand using the appropriate UI.
-5. Press **RUN**.
+## Composing commands
 
-**Normal command-tree leaves do not auto-run.** A leaf may still need a positional value that was not discoverable from its help output, so selecting it means “compose this command,” not “execute now.”
+Commands can be assembled from any combination of:
 
-### What happens when another value is needed
+- native command/option controls;
+- semantic completion candidates;
+- typed text;
+- Guide command links;
+- file/folder picker results;
+- workflow/AI suggestions;
+- shell prompt projections such as Git branch selection.
 
-HG2Gui chooses the input surface by value type:
+Ordinary command composition does not auto-run. Press **RUN** when you want the composed command executed.
 
-- **package name** → package/catalog pills;
-- **installed package** → installed-package pills;
-- **file or directory** → graphical file/folder picker;
-- **finite known choice** → pills;
-- **yes/no prompt from a running command** → confirmation dialog;
-- **URL, host, search pattern, arbitrary text, etc.** → text field.
+### Completion Bridge
 
-When text really is required, HG2Gui focuses the input box and tells you what kind of value it expects, for example **TYPE URL**, **TYPE HOST OR ADDRESS**, or **TYPE ARGUMENT** when no more specific type can be inferred.
+While composing a command, HG2Gui can surface candidates from Bash, Zsh, Fish, files, installed packages, Git branches, SSH hosts, services, and supported command-specific completion protocols.
 
-## Interactive commands
+Choosing a completion replaces only the current partial token. It does not execute the command or write a fake history entry.
 
-A command that is already running may stop and ask a question. That is different from composing a new command:
+## The Guide
 
-- yes/no → modal **YES / NO** confirmation;
-- numbered/bracketed choices → tappable choices;
-- password/passphrase → masked input;
-- other open input → text field and **Send**.
+The Guide is both documentation and an active command-entry surface.
 
-Package installs handled by HG2Gui do not expose apt's normal `Do you want to continue? [Y/n]` prompt.
+When a Guide entry shows a real command, tap the command to hand it to the active terminal session for review. You can continue reading and composing without leaving the Guide. Tapping a Guide command does not auto-run it.
+
+## Interactive shell applications
+
+### Shell presentation
+
+For normal interactive shells, HG2Gui can project:
+
+- cwd;
+- Git branch and dirty state;
+- last exit status;
+- user/host where meaningful.
+
+The raw prompt remains available.
+
+### Adaptive TUI Wrapper
+
+When an application takes over the terminal as a screen-oriented interface, HG2Gui can recognize the live terminal state and replace the character-grid presentation with native controls when it has enough confidence.
+
+Current wrapper semantics include:
+
+- layered and modal menus;
+- checkboxes and radio choices;
+- tabs;
+- scrolling lists;
+- tables and selectable results;
+- confirmation dialogs;
+- text/password prompts;
+- progress/status regions;
+- multiple panes;
+- mouse-aware terminal state.
+
+Examples include many Python `curses`, Rich/Textual applications and interactive CLI tools such as AI coding assistants.
+
+HG2Gui verifies generated navigation against what the child program actually displays. If the state cannot be reconciled, use **RAW** to return to the literal terminal interface.
+
+## Files and paths
+
+When a command needs a file or directory and HG2Gui recognizes that operand, it can open the graphical picker instead of requiring a typed path.
+
+The broader **Files** surface provides purpose-built browsing and file operations. Files is its own native interface; it is not just another command submenu.
 
 ## Installing packages
 
-Use the package-manager pills rather than memorizing package names.
+Mutating `pkg`/`apt`/`apt-get` work runs through HG2Gui's Android-compatible package transaction layer.
 
-For `pkg`/`apt`/`apt-get`, the **install** branch reads HG2Gui's downloaded APT package index and presents packages by category. If the index has not been downloaded yet, run/update the package index first.
+The current transaction layer handles repository verification, download reuse/resume, Termux-prefix relocation, package metadata repair, dependency planning, maintainer scripts, triggers, alternatives/diversions, rollback/recovery, and Android native-execution compatibility.
 
-Mutating top-level `apt`/`apt-get` commands are routed through HG2Gui's Android-safe package transaction layer. This is deliberate: upstream apt can download correctly but otherwise hands the transaction to dpkg using assumptions inherited from the Termux app's own package path and Android environment.
-
-HG2Gui's package layer relocates package payloads into HG2Gui's prefix, repairs relevant control metadata, runs maintainer scripts through bundled Bash instead of direct-executing them from writable app data, and keeps dpkg's database/install root under HG2Gui.
-
-Downloads are reused/resumed where possible instead of starting over every time.
+Package-name choices are populated from package/catalog metadata whenever available.
 
 ## Managing installed packages
 
-Open:
+Open **Packages** to inspect installed manager inventories.
 
-**Packages → package manager → installed package**
+Current adapters include:
 
-HG2Gui currently discovers installed packages from:
+- Termux / pkg
+- Python / pip
+- Python apps / pipx
+- Node / npm
+- Ruby / gem
 
-- **Termux / pkg**
-- **Python / pip**
-- **Node / npm**
-- **Ruby / gem**
+Packages may expose:
 
-A package can expose these actions depending on its manager and metadata:
-
-### Run
-
-Shows executable commands HG2Gui can attribute to the package. Selecting an executable composes it on the command line; press **RUN** after supplying any needed arguments.
+- **Run**
+- **Disable / Enable**
+- **Isolate / Release isolation**
+- **Update**
+- **Reset**
+- **Info**
+- **Remove**
+- **Purge** where meaningful
 
 ### Disable / Enable
 
-**Disable** does not uninstall the package. It remains visible and installed, but HG2Gui blocks its owned commands from running. Use **Enable** to make them runnable again.
-
-### Update
-
-Uses the package's owning manager to update/reinstall it appropriately.
+Disable keeps the package installed and visible while HG2Gui blocks commands it can attribute to that package. Enable restores normal execution.
 
 ### Reset
 
-Keeps the package installed while clearing runtime state HG2Gui can safely attribute to it.
+Reset retains the installed package payload while clearing runtime state HG2Gui can safely attribute to it. For isolated packages, Reset removes the private root so the next run reseeds it.
 
-For normal packages this includes conventional package-scoped cache/config/data/state/log locations and paths HG2Gui positively observed being created during use. HG2Gui deliberately does not guess that every arbitrary user file with a similar name belongs to a package.
+### Package execution backends
 
-For isolated packages, Reset removes the entire private runtime. The next run reseeds it cleanly from the installed version.
+HG2Gui chooses among three package execution paths:
 
-Reset asks for confirmation.
+- **DIRECT_LINKER** — normal Android-compatible Termux execution;
+- **PROOT_COMPAT** — compatibility execution for specifically classified ELF/runtime cases;
+- **PROOT_ISOLATED** — private-root execution for isolated packages.
 
-### Remove / Purge
-
-Uses the owning manager's removal operation. **Purge** appears where the manager has meaningful purge semantics. Destructive actions ask for confirmation.
+A generic command failure is not enough to trigger a silent PRoot retry.
 
 ## Isolating a package
 
-Open:
+Choose **Isolate** on an installed package.
 
-**Packages → manager → package → Isolate**
+An isolated package receives:
 
-Isolation is HG2Gui-owned. It is not dependent on whether `apt`, `pip`, `npm`, or `gem` has a sandbox feature.
+- a private root;
+- private HOME/XDG state;
+- no bind mount of the real HG2Gui home/prefix;
+- common privilege tools removed from the guest prefix;
+- common host `su` paths masked;
+- fail-closed behavior when isolation cannot be established.
 
-When an isolated package runs:
+HG2Gui also performs best-effort runtime observation of:
 
-- HG2Gui creates/seeds a private filesystem root for it;
-- the package sees a private copy of the HG2Gui runtime and a private HOME/XDG state tree;
-- the real HG2Gui prefix/home are not bind-mounted into the guest;
-- common privilege tools (`adb`, `su`, `tsu`, `magisk`, `proot`) are removed from the private prefix;
-- common host `su` paths are masked where present;
-- after the run, HG2Gui reports which paths inside the private root were created, modified, or deleted.
+- process descendants;
+- live opened files and observed access modes;
+- TCP/TCP6/UDP/UDP6 socket endpoints;
+- ADB/root-like privilege-tool attempts;
+- before/after private-root filesystem changes.
 
-If the package is marked isolated but no executable PRoot isolation engine is available, **the command fails closed**. HG2Gui will not quietly run it outside the sandbox.
+This is not complete kernel syscall tracing. Very short-lived events can escape observation.
 
-Use **Release isolation** to return the package to normal execution.
+### Isolation Audit
 
-### What isolation currently observes
-
-The audit is a private-filesystem before/after comparison. It gives strong visibility into filesystem changes in the sandbox, but it is **not yet a full syscall/network/process trace**.
+Open **Settings → Isolation audit** to inspect latest observed activity for isolated packages. The view groups authority attempts, network observations, processes, and file observations and shows current sandbox size/state.
 
 ## Execution authority
 
-Open:
-
-**Packages → Authority**
-
-Authority is separate from packages and separate from isolation.
+**Packages → Authority** exposes explicit authority backends.
 
 ### App
 
-Normal default execution. Commands run with HG2Gui's Android application UID and permissions.
+Normal default Android app authority.
 
 ### ADB shell
 
-When an executable ADB client is available, HG2Gui exposes:
+When an executable ADB client is available, HG2Gui can perform devices/pair/connect/disconnect/shell operations. Android's normal Wireless Debugging authorization still applies.
 
-- **Devices**
-- **Pair**
-- **Connect**
-- **Disconnect**
-- **Shell**
-
-If no ADB client is available, install `android-tools` through the package UI.
-
-For same-device access, Android Wireless Debugging still controls pairing and connection. HG2Gui does not bypass Android's ADB authorization model.
-
-Running an ADB-shell command asks for explicit confirmation first.
+ADB shell execution requires foreground confirmation.
 
 ### Root
 
-If HG2Gui detects an executable `su` provider, Root exposes:
-
-- **Test root** — requests root and runs `id`;
-- **Root command** — executes a chosen command through `su -c`.
-
-HG2Gui asks for confirmation before the elevated request. The device's root manager still decides whether root is actually granted.
+When an executable `su` provider is present, HG2Gui can request root execution. The device's root manager remains authoritative and HG2Gui asks for foreground confirmation.
 
 ### No inherited privilege
 
-A package does not gain ADB/root just because HG2Gui can use those backends. In particular, isolated packages have privilege tools stripped/masked from their private runtime.
+Normal commands, isolated packages, and headless callers do not inherit ADB/root merely because HG2Gui can access those backends.
 
-Headless/MCP command execution cannot invoke ADB-shell or root authority through `hg2auth`.
+## External Android API
 
-## Files and path selection
+HG2Gui exposes a signature-protected capability API for trusted companion applications signed with the same certificate.
 
-When HG2Gui recognizes that a command needs a file or directory, it opens the graphical picker instead of telling you to type a path.
+Typed capabilities include:
 
-The broader **Files** surface provides graphical browsing and file operations over HG2Gui's managed storage/device-storage modes. This is separate from package isolation: the Files/VFS sandbox is a user-facing filesystem feature; package isolation is a per-package private execution root.
+- command execution;
+- package operations;
+- file/folder picker with returned result;
+- notifications;
+- foreground dialogs;
+- clipboard get/set;
+- device information;
+- share/open actions;
+- package lifecycle operations;
+- foreground-approved ADB/root authority requests.
+
+The API does not make background callers automatically privileged.
 
 ## SSH
 
-The `ssh` command has a dedicated branch with saved presets and a **new…** flow. Host, user, port, and key choices are assembled into the command for review. Key paths use the graphical picker. Host-key yes/no questions and password/passphrase prompts use the same generic interactive prompt UI as any other command.
+SSH presets and host/key choices can be assembled natively. Known SSH hosts can also feed the Completion Bridge. Password/passphrase and host-key questions use the normal interactive prompt surfaces.
 
 ## Workflows
 
-**Workflows** stores command templates such as:
-
-```text
-git commit -m "{message}"
-```
-
-Running a workflow collects placeholder values and puts the completed command on the input line. It does not execute until you press **RUN**.
+Workflows collect template values and compose the resulting command for review. They do not bypass the explicit RUN step for ordinary commands.
 
 ## AI
 
-The **AI** surface can turn a natural-language request into a suggested shell command. A suggestion is inserted into the command line for review; it does not execute automatically.
-
-AI authority does not bypass package isolation, package disabling, or the explicit ADB/root authority rules enforced by `TerminalEngine`.
-
-## Context
-
-**Context** adds a static reference command tree for selected remote OS families (for example Ubuntu, macOS, Windows) while you work over SSH. This is reference composition, not live discovery of the remote machine.
+The AI surface can propose commands and return them to the terminal for review. AI suggestions remain subject to the same package, isolation, and authority policy as manually composed commands.
 
 ## Store
 
-The **Store** browses azphalt.store `.azp` packages. `.azp` packages are separate from the Termux/dpkg/pip/npm/gem package lifecycle described above. Store packages have their own extraction, digest, and signature/trust rules.
+The Store manages `.azp` packages separately from Termux/dpkg/pip/pipx/npm/gem lifecycle inventory.
 
-## MCP server
+## MCP
 
-HG2Gui can expose an explicit-start, loopback-only MCP server. Shell execution has its own gate, but MCP/headless callers still cannot use `hg2auth` to obtain ADB-shell or root authority.
+The MCP server is loopback-only and explicitly started. Its shell execution gate does not grant ADB/root authority because headless elevation remains blocked.
 
-## Output cards
+## Settings
 
-The newest output in the active command record stays in view as stdout/stderr arrives. Tap completed records for the actions offered by that surface, such as copying or reusing output/commands.
+The Settings screen scrolls vertically whenever its contents exceed the viewport, including at larger text scales.
 
-## Built-in Android commands
-
-HG2Gui retains a small explicit set of Android-facing built-ins for capabilities that are not represented honestly by ordinary Termux binaries, including device controls/settings bridges, calls/contacts, VFS, calculator, and editor entry.
-
-See [COMMANDS.md](COMMANDS.md) for the current command/control reference.
+Current settings include display/text controls, PTY behavior, default shell, environment/history navigation, isolation audit, AI settings, and MCP/developer controls.
 
 ## Compatibility expectations
 
-HG2Gui uses a real Termux-derived userspace, but it runs under a different Android application ID and security context. Many Termux packages work after HG2Gui's relocation/maintainer-script compatibility transformations; successful real-device examples include `python-pip`, `nsnake`, and `curl`.
+HG2Gui runs under its own Android application ID and security context, so Android linker, ICU, permission, package, ADB/root, and PRoot behavior must be validated on real devices in addition to CI.
 
-Do not interpret that as “every Termux package must work unchanged.” Native executables, services, hardcoded paths, unusual interpreters, symlinks, dependency metadata, triggers, alternatives, and linker assumptions can expose additional compatibility work.
-
-When a package fails, the goal is to fix the **class of incompatibility**, not add a one-off package-name exception unless the package truly has unique semantics.
+When a package/runtime case fails, compatibility work should fix the class of incompatibility rather than adding a package-name exception unless the package truly has unique semantics.
