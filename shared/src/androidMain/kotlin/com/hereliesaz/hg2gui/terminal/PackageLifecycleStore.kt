@@ -354,15 +354,15 @@ object PackageLifecycleStore {
 
     private val JSON_NAME = Regex("\\\"name\\\"\\s*:\\s*\\\"([^\\\"]+)\\\"")
     private val JSON_VERSION = Regex("\\\"version\\\"\\s*:\\s*\\\"([^\\\"]+)\\\"")
-    private val JSON_BIN_OBJECT = Regex("\\\"bin\\\"\\s*:\\s*\\{([^}]*)}", RegexOption.DOT_MATCHES_ALL)
+    private val JSON_BIN_OBJECT = Regex("\\\"bin\\\"\\s*:\\s*\\{([^}]*)\\}", RegexOption.DOT_MATCHES_ALL)
     private val JSON_BIN_STRING = Regex("\\\"bin\\\"\\s*:\\s*\\\"[^\\\"]+\\\"")
     private val JSON_KEY = Regex("\\\"([^\\\"]+)\\\"\\s*:")
     private val PIPX_PACKAGE = Regex("\\\"package\\\"\\s*:\\s*\\\"([^\\\"]+)\\\"")
     private val PIPX_VERSION = Regex("\\\"package_version\\\"\\s*:\\s*\\\"([^\\\"]*)\\\"")
-    private val PIPX_APPS = Regex("\\\"apps\\\"\\s*:\\s*\\[([^]]*)]", RegexOption.DOT_MATCHES_ALL)
+    private val PIPX_APPS = Regex("\\\"apps\\\"\\s*:\\s*\\[([^]]*)\\]", RegexOption.DOT_MATCHES_ALL)
     private val GEM_NAME = Regex("\\.name\\s*=\\s*[\\\"']([^\\\"']+)[\\\"']")
     private val GEM_VERSION = Regex("\\.version\\s*=\\s*[\\\"']([^\\\"']+)[\\\"']")
-    private val GEM_EXECUTABLES = Regex("\\.executables\\s*=\\s*\\[([^]]*)]", RegexOption.DOT_MATCHES_ALL)
+    private val GEM_EXECUTABLES = Regex("\\.executables\\s*=\\s*\\[([^]]*)\\]", RegexOption.DOT_MATCHES_ALL)
     private val QUOTED = Regex("[\\\"']([^\\\"']+)[\\\"']")
     private val STATE_NAME_DENYLIST = setOf("sh", "env", "test", "true", "false", "yes", "no")
 }
