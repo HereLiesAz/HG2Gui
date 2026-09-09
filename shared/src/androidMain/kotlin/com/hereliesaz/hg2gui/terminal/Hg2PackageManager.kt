@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.flowOn
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
+import java.util.ArrayDeque
 import java.util.Locale
 import java.util.zip.GZIPInputStream
 
@@ -21,6 +22,7 @@ class Hg2PackageManager(
     private val stateDir = File(prefix, "var/lib/hg2pkg").apply { mkdirs() }
     private val packagesFile = File(stateDir, "Packages")
     private val dpkgLauncher = File(context.applicationInfo.nativeLibraryDir, "libhg2gui_dpkg.so")
+    private val dpkgDeb = File(prefix, "bin/dpkg-deb")
 
     data class PackageRecord(
         val name: String,
@@ -46,11 +48,7 @@ class Hg2PackageManager(
             "upgrade", "up" -> upgrade(output)
             "remove", "rm", "uninstall" -> remove(requirePackages(args, "remove"), purge = false, emit = output)
             "purge" -> remove(requirePackages(args, "purge"), purge = true, emit = output)
-            "clean" -> {
-                val count = cacheDir.listFiles().orEmpty().count { it.isFile && (it.extension == "deb" || it.name.endsWith(".part")) }
-                cacheDir.listFiles().orEmpty().forEach { if (it.isFile && (it.extension == "deb" || it.name.endsWith(".part"))) it.delete() }
-                send("Removed $count cached package file${if (count == 1) "" else "s"}.")
-            }
+            "clean" -> clean(output)
             "search" -> search(args.drop(1).joinToString(" "), output)
             "show", "info" -> show(requirePackages(args, "show"), output)
             "list-installed" -> {
@@ -61,6 +59,18 @@ class Hg2PackageManager(
             else -> send("HG2Gui package manager: unsupported operation '${args.first()}'.\n$USAGE")
         }
     }.flowOn(Dispatchers.IO)
+
+    private suspend fun clean(emit: suspend (String) -> Unit) {
+        val files = cacheDir.listFiles().orEmpty()
+        val removable = files.filter {
+            it.isFile && (it.extension == "deb" || it.name.endsWith(".part")) ||
+                it.isDirectory && it.name.startsWith("prepare-")
+        }
+        removable.forEach {
+            if (it.isDirectory) it.deleteRecursively() else it.delete()
+        }
+        emit("Removed ${removable.size} cached package item${if (removable.size == 1) "" else "s"}.")
+    }
 
     private fun requirePackages(args: List<String>, operation: String): List<String> {
         val packages = args.drop(1).filterNot { it.startsWith("-") }
@@ -149,7 +159,8 @@ class Hg2PackageManager(
                 val percent = if (total > 0L) ((combined * 100L) / total).coerceIn(0L, 100L) else 0L
                 emit("$percent% [${pkg.name} ${formatBytes(packageDone)}/${formatBytes(pkg.size)}]")
             }
-            archives += result.file
+            emit("Preparing ${pkg.name} for HG2Gui prefix…")
+            archives += prepareArchive(result.file, pkg, emit)
             overallDone += pkg.size.coerceAtLeast(0L)
         }
 
@@ -161,6 +172,61 @@ class Hg2PackageManager(
         emit("Installed: ${requested.joinToString(" ")}")
     }
 
+    private suspend fun prepareArchive(
+        archive: File,
+        pkg: PackageRecord,
+        emit: suspend (String) -> Unit
+    ): File {
+        if (!dpkgDeb.canExecute()) {
+            error("HG2Gui dpkg-deb is unavailable at ${dpkgDeb.absolutePath}")
+        }
+
+        val safeStem = "${pkg.name}_${pkg.version}_${pkg.architecture}".replace(Regex("[^A-Za-z0-9._-]"), "_")
+        val workDir = File(cacheDir, "prepare-$safeStem")
+        val patched = File(cacheDir, "$safeStem.hg2.deb")
+        workDir.deleteRecursively()
+        patched.delete()
+        workDir.mkdirs()
+
+        runTool(listOf(dpkgDeb.absolutePath, "-R", archive.absolutePath, workDir.absolutePath), "dpkg-deb extract")
+
+        var rewritten = 0
+        workDir.walkTopDown().filter { it.isFile }.forEach { file ->
+            if (rewriteTextPrefix(file)) rewritten++
+        }
+        emit("Rewrote $rewritten file${if (rewritten == 1) "" else "s"} for ${pkg.name}.")
+
+        runTool(listOf(dpkgDeb.absolutePath, "-b", workDir.absolutePath, patched.absolutePath), "dpkg-deb build")
+        if (!patched.isFile || patched.length() == 0L) error("Failed to rebuild ${pkg.name}")
+        workDir.deleteRecursively()
+        return patched
+    }
+
+    private fun rewriteTextPrefix(file: File): Boolean {
+        val bytes = runCatching { file.readBytes() }.getOrNull() ?: return false
+        if (bytes.any { it == 0.toByte() }) return false
+        val text = runCatching { bytes.toString(Charsets.UTF_8) }.getOrNull() ?: return false
+        if (!text.contains(OLD_PREFIX)) return false
+        return runCatching {
+            file.writeText(text.replace(OLD_PREFIX, prefix.absolutePath))
+            true
+        }.getOrDefault(false)
+    }
+
+    private fun runTool(command: List<String>, label: String) {
+        val process = ProcessBuilder(command)
+            .directory(prefix)
+            .redirectErrorStream(true)
+            .apply { applyPackageEnvironment(environment()) }
+            .start()
+        val output = process.inputStream.bufferedReader().use { it.readText() }
+        val code = process.waitFor()
+        if (code != 0) {
+            val detail = output.trim().takeLast(4000)
+            error("$label exited with code $code${if (detail.isBlank()) "" else ":\n$detail"}")
+        }
+    }
+
     private suspend fun updateIndex(emit: suspend (String) -> Unit) {
         val url = "$REPO/dists/stable/main/binary-aarch64/Packages.gz"
         emit("Downloading HG2Gui package index…")
@@ -168,7 +234,9 @@ class Hg2PackageManager(
         client.newCall(request).execute().use { response ->
             if (!response.isSuccessful) error("Package index download failed: HTTP ${response.code}")
             val tmp = File(stateDir, "Packages.tmp")
-            GZIPInputStream(response.body.byteStream()).bufferedReader().use { reader -> tmp.writer().use { writer -> reader.copyTo(writer) } }
+            GZIPInputStream(response.body.byteStream()).bufferedReader().use { reader ->
+                tmp.writer().use { writer -> reader.copyTo(writer) }
+            }
             if (!tmp.renameTo(packagesFile)) {
                 tmp.copyTo(packagesFile, overwrite = true)
                 tmp.delete()
@@ -190,6 +258,7 @@ class Hg2PackageManager(
         val requestedSet = requested.toSet()
         val visiting = HashSet<String>()
         val planned = LinkedHashMap<String, PackageRecord>()
+
         fun visit(name: String) {
             if (name in planned) return
             if (name in installed && !(forceRequested && name in requestedSet)) return
@@ -204,6 +273,7 @@ class Hg2PackageManager(
             visiting.remove(name)
             planned[name] = pkg
         }
+
         requested.forEach(::visit)
         return planned.values.toList()
     }
@@ -214,48 +284,50 @@ class Hg2PackageManager(
         val process = ProcessBuilder(dpkgLauncher.absolutePath, "--compare-versions", installed, "lt", available)
             .directory(prefix)
             .redirectErrorStream(true)
-            .apply {
-                environment()["PREFIX"] = prefix.absolutePath
-                environment()["HOME"] = DistroManager.homeDir(context).absolutePath
-                environment()["PATH"] = "${prefix.absolutePath}/bin:/system/bin"
-                environment()["LD_LIBRARY_PATH"] = "${prefix.absolutePath}/lib"
-                environment()["TMPDIR"] = "${prefix.absolutePath}/tmp"
-            }
+            .apply { applyPackageEnvironment(environment()) }
             .start()
         process.inputStream.close()
         return process.waitFor() == 0
     }
 
     private suspend fun runDpkg(args: List<String>, emit: suspend (String) -> Unit) {
-        val command = listOf(dpkgLauncher.absolutePath) + args
-        val process = ProcessBuilder(command)
+        val process = ProcessBuilder(listOf(dpkgLauncher.absolutePath) + args)
             .directory(prefix)
             .redirectErrorStream(true)
-            .apply {
-                environment()["PREFIX"] = prefix.absolutePath
-                environment()["HOME"] = DistroManager.homeDir(context).absolutePath
-                environment()["PATH"] = "${prefix.absolutePath}/bin:/system/bin"
-                environment()["LD_LIBRARY_PATH"] = "${prefix.absolutePath}/lib"
-                environment()["TMPDIR"] = "${prefix.absolutePath}/tmp"
-            }
+            .apply { applyPackageEnvironment(environment()) }
             .start()
+
+        val tail = ArrayDeque<String>(DPKG_ERROR_TAIL_LINES)
         process.inputStream.bufferedReader().use { reader ->
             while (true) {
                 val line = reader.readLine() ?: break
+                if (tail.size == DPKG_ERROR_TAIL_LINES) tail.removeFirst()
+                tail.addLast(line)
                 emit(line)
             }
         }
         val code = process.waitFor()
-        if (code != 0) error("dpkg exited with code $code")
+        if (code != 0) {
+            val detail = tail.joinToString("\n").trim()
+            error("dpkg exited with code $code${if (detail.isBlank()) "" else ":\n$detail"}")
+        }
+    }
+
+    private fun applyPackageEnvironment(env: MutableMap<String, String>) {
+        env["PREFIX"] = prefix.absolutePath
+        env["HOME"] = DistroManager.homeDir(context).absolutePath
+        env["PATH"] = "${prefix.absolutePath}/bin:/system/bin"
+        env["LD_LIBRARY_PATH"] = "${prefix.absolutePath}/lib"
+        env["TMPDIR"] = "${prefix.absolutePath}/tmp"
+        env["DPKG_ROOT"] = prefix.absolutePath
+        env["DPKG_ADMINDIR"] = File(prefix, "var/lib/dpkg").absolutePath
     }
 
     private fun repairMaintainerScripts() {
         val infoDir = File(prefix, "var/lib/dpkg/info")
         if (!infoDir.isDirectory) return
         infoDir.listFiles().orEmpty().forEach { file ->
-            if (!file.isFile) return@forEach
-            val text = runCatching { file.readText() }.getOrNull() ?: return@forEach
-            if (OLD_PREFIX in text) runCatching { file.writeText(text.replace(OLD_PREFIX, prefix.absolutePath)) }
+            if (file.isFile) rewriteTextPrefix(file)
         }
     }
 
@@ -324,6 +396,7 @@ class Hg2PackageManager(
     companion object {
         private const val REPO = "https://packages.termux.dev/apt/termux-main"
         private const val OLD_PREFIX = "/data/data/com.termux/files/usr"
+        private const val DPKG_ERROR_TAIL_LINES = 40
         private const val USAGE = "HG2Gui package manager\nusage: pkg <install|update|upgrade|remove|purge|search|show|list-installed|clean> …"
     }
 }
