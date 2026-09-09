@@ -1,12 +1,14 @@
 package com.hereliesaz.hg2gui.terminal
 
 import android.content.Context
+import android.util.Base64
 import java.io.File
 
 /** Filesystem isolation and best-effort runtime observability for package-owned commands. */
 object PackageIsolation {
     private const val TELEMETRY_PREFIX = "__HG2GUI_TELEMETRY__/"
     private const val AUDIT_RELATIVE = ".hg2gui/audit/latest.log"
+    private const val SUMMARY_RELATIVE = ".hg2gui/audit/summary.tsv"
 
     data class FileStamp(val size: Long, val modified: Long, val directory: Boolean)
 
@@ -19,11 +21,16 @@ object PackageIsolation {
         val changedCount: Int get() = created.size + modified.size + deleted.size
     }
 
+    data class SavedAudit(val timestampMillis: Long, val audit: Audit)
+
     fun root(context: Context, pkg: PackageLifecycleStore.InstalledPackage): File =
         File(context.filesDir, "package-isolation/${safeKey(pkg.key)}/root")
 
     fun marker(context: Context, pkg: PackageLifecycleStore.InstalledPackage): File =
         File(root(context, pkg), ".hg2gui-seeded")
+
+    private fun summaryFile(context: Context, pkg: PackageLifecycleStore.InstalledPackage): File =
+        File(root(context, pkg), SUMMARY_RELATIVE)
 
     fun engine(context: Context): File? {
         val nativeDir = File(context.applicationInfo.nativeLibraryDir)
@@ -165,7 +172,7 @@ object PackageIsolation {
             root.walkTopDown().forEach { file ->
                 if (file == root) return@forEach
                 val relative = file.relativeTo(root).path
-                if (relative == AUDIT_RELATIVE || relative == "$AUDIT_RELATIVE.seen") return@forEach
+                if (relative == AUDIT_RELATIVE || relative == "$AUDIT_RELATIVE.seen" || relative == SUMMARY_RELATIVE) return@forEach
                 result[relative] = FileStamp(
                     size = if (file.isFile) file.length() else 0L,
                     modified = file.lastModified(),
@@ -197,6 +204,53 @@ object PackageIsolation {
         return Audit(created, modified, deleted, telemetry)
     }
 
+    fun saveLatestAudit(context: Context, pkg: PackageLifecycleStore.InstalledPackage, audit: Audit) {
+        val file = summaryFile(context, pkg)
+        runCatching {
+            file.parentFile?.mkdirs()
+            file.bufferedWriter().use { out ->
+                out.appendLine("timestamp\t${System.currentTimeMillis()}")
+                fun write(kind: String, values: List<String>) {
+                    values.forEach { value ->
+                        out.append(kind).append('\t').appendLine(encode(value))
+                    }
+                }
+                write("created", audit.created)
+                write("modified", audit.modified)
+                write("deleted", audit.deleted)
+                write("telemetry", audit.telemetry)
+            }
+        }
+    }
+
+    fun latestAudit(context: Context, pkg: PackageLifecycleStore.InstalledPackage): SavedAudit? {
+        val file = summaryFile(context, pkg)
+        if (!file.isFile) return null
+        return runCatching {
+            var timestamp = 0L
+            val created = mutableListOf<String>()
+            val modified = mutableListOf<String>()
+            val deleted = mutableListOf<String>()
+            val telemetry = mutableListOf<String>()
+            file.useLines { lines ->
+                lines.forEach { line ->
+                    val split = line.indexOf('\t')
+                    if (split <= 0) return@forEach
+                    val kind = line.substring(0, split)
+                    val value = line.substring(split + 1)
+                    when (kind) {
+                        "timestamp" -> timestamp = value.toLongOrNull() ?: 0L
+                        "created" -> created += decode(value)
+                        "modified" -> modified += decode(value)
+                        "deleted" -> deleted += decode(value)
+                        "telemetry" -> telemetry += decode(value)
+                    }
+                }
+            }
+            SavedAudit(timestamp, Audit(created, modified, deleted, telemetry))
+        }.getOrNull()
+    }
+
     fun wipe(context: Context, pkg: PackageLifecycleStore.InstalledPackage): Boolean {
         val base = root(context, pkg).parentFile ?: return true
         return !base.exists() || base.deleteRecursively()
@@ -219,6 +273,8 @@ object PackageIsolation {
         return lines.joinToString("\n")
     }
 
+    private fun encode(value: String): String = Base64.encodeToString(value.toByteArray(Charsets.UTF_8), Base64.NO_WRAP)
+    private fun decode(value: String): String = String(Base64.decode(value, Base64.DEFAULT), Charsets.UTF_8)
     private fun safeKey(value: String): String = value.replace(Regex("[^A-Za-z0-9._-]"), "_")
     private fun q(value: String): String = "'${value.replace("'", "'\\''")}'"
 }
