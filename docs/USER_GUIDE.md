@@ -2,7 +2,7 @@
 
 ## Getting started
 
-HG2Gui is a terminal application for Android. It does not replace the launcher or home screen. Open it like any other app.
+HG2Gui is a touch-first terminal application for Android.
 
 Its main difference from a traditional terminal is the input model: **if HG2Gui can discover the valid choices, you tap them instead of typing them.** The keyboard is for genuinely open-ended values.
 
