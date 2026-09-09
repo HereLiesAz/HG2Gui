@@ -11,7 +11,6 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import androidx.core.app.NotificationCompat
-import com.hereliesaz.hg2gui.TerminalActivity
 import com.hereliesaz.hg2gui.terminal.TerminalEngine
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -104,12 +103,13 @@ class Hg2ApiReceiver : BroadcastReceiver() {
         val authority = request.getStringExtra(EXTRA_AUTHORITY).orEmpty().lowercase()
         val command = request.getStringExtra(EXTRA_COMMAND).orEmpty()
         if (authority !in setOf("adb", "root")) return reply(context, request, false, error = "unknown authority")
-        context.startActivity(Intent(context, TerminalActivity::class.java).apply {
+        if (command.isBlank()) return reply(context, request, false, error = "missing command")
+        context.startActivity(Intent(context, Hg2ApiAuthorityActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            putExtra(EXTRA_API_AUTHORITY, authority)
-            putExtra(EXTRA_API_COMMAND, command)
+            putExtra(EXTRA_AUTHORITY, authority)
+            putExtra(EXTRA_COMMAND, command)
+            callback(request)?.let { putExtra(EXTRA_REPLY, it) }
         })
-        reply(context, request, true, data = "foreground approval requested")
     }
 
     private fun notify(context: Context, request: Intent) {
@@ -126,7 +126,9 @@ class Hg2ApiReceiver : BroadcastReceiver() {
     private fun launchDialog(context: Context, request: Intent) {
         context.startActivity(Intent(context, Hg2ApiDialogActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            putExtras(request)
+            putExtra(EXTRA_TITLE, request.getStringExtra(EXTRA_TITLE))
+            putExtra(EXTRA_TEXT, request.getStringExtra(EXTRA_TEXT))
+            callback(request)?.let { putExtra(EXTRA_REPLY, it) }
         })
     }
 
@@ -207,8 +209,6 @@ class Hg2ApiReceiver : BroadcastReceiver() {
         const val EXTRA_SUCCESS = "success"
         const val EXTRA_DATA = "data"
         const val EXTRA_ERROR = "error"
-        const val EXTRA_API_AUTHORITY = "hg2api.authority"
-        const val EXTRA_API_COMMAND = "hg2api.command"
         const val EXTRA_PICK_DIRECTORY = "pick_directory"
         private val SAFE_WORD = Regex("[A-Za-z0-9_.+-]+")
         private val SAFE_PACKAGE = Regex("[A-Za-z0-9@._+:/=-]+")
