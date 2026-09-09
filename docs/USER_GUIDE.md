@@ -1,182 +1,232 @@
 # User Guide
 
-## Getting Started
-HG2Gui is a terminal app. Open it like any other app — it does not take over your home screen.
-It gives you a real command line that you can drive without typing.
+## Getting started
 
-## Interface
-From the top:
+HG2Gui is a terminal application for Android. It does not replace the launcher or home screen. Open it like any other app.
 
--   **Session tabs:** `main` and any you add with `+`. Each session keeps its own scrollback,
-    history and working directory.
--   **Working directory:** the user and path the next command will run in.
--   **Command line:** the command you are assembling, as pills, and the **Run** capsule.
--   **Modifier keys:** `ctrl` `alt` `esc` `tab` `↑` `↓` — the keys a terminal needs that a
-    phone keyboard does not have.
--   **Command tree:** the suggestion tree. This is the input method.
+Its main difference from a traditional terminal is the input model: **if HG2Gui can discover the valid choices, you tap them instead of typing them.** The keyboard is for genuinely open-ended values.
 
-## Building a command by tapping
-1.  Tap a category — a shell category (`Admin`, `Utilities`, `Network`, `Shells`, …, discovered
-    from what's actually installed), `System`, `Apps & nav` or `Features`. The stack slides away
-    and that pill drops to the bottom of the screen; it is now the host.
-2.  Its commands cascade upward from it. Tap one.
-3.  Its arguments cascade upward in turn. Tap one.
-4.  If that was the last parameter the command needs, it **runs immediately** — no separate
-    confirmation. Otherwise press **Run** whenever you're ready; you don't have to pick every
-    pill a command offers.
+On first use, HG2Gui installs its pinned Termux-derived runtime into app-private storage. Bootstrap/package progress appears in the output card.
 
-Tap the host pill at the bottom to go back a level. A `file…` pill anywhere in the tree opens the
-graphical Select File/Folder browser — no typing a path. The pill itself becomes the screen: it
-drops into the trail at the bottom, then runs the full edge of the display — right along the
-bottom to the corner, up the right side, across the top, down the left — closing the loop back
-over where it started. The instant it starts down that last edge, the frame it's traced fills
-with its own colour and the browser fades in underneath, showing the working directory's
-contents. Tap a folder to go inside it, tap a file to pick it, or tap **SELECT THIS FOLDER** if
-the command wants a directory rather than a file.
+## The terminal screen
 
-## When a command needs more from you
-Some commands stop mid-run to ask something. A yes/no question gets a dedicated **Answer**
-stack — tap `YES` or `NO`, same as picking any other pill. Anything else falls back to the
-input field: its hint shows the question, and **Run** becomes **Send**.
+The terminal contains:
 
-## Suggestions
-Below the command tree, a **Suggest** pill appears when there's something to offer: the rest of
-a command you've typed before (tap to complete it), a shorter alias for the command you just
-ran (`gs` for `git status`, and friends), or a correction after a command isn't found. These are
-implemented natively, not by a shell plugin — tap one the same way you'd tap any other pill.
+- **session tabs** — each session keeps its own shell state, history, working directory, and output;
+- **working directory** — where the next normal shell command will run;
+- **command input** — the command assembled from pills and/or typed text;
+- **RUN** — the explicit execution action;
+- **terminal modifier keys** — controls such as Ctrl, Alt, Esc, Tab, and history arrows;
+- **command tree** — live shell commands plus HG2Gui features;
+- **output/result cards** — command records; the active result auto-scrolls as new output arrives.
 
-## Typing instead
-The keyboard is not forced open. Tap the command line to type; suggestions still filter as you
-go, so you can type `git` and tap `commit` rather than spelling it out.
+## Building a command by touch
 
-## Basic Commands
-The eleven built-in commands are `wifi`, `bluetooth`, `airplane`, `flash`, `volume`, `brightness`,
-`call`, `contacts`, `vfs`, `calc` and `edit` — see [Commands](COMMANDS.md) for what each does.
-Everything else — `apps`, `alias`, `clear`, listing packages, and so on — is a real shell
-binary now, run in the Termux environment below, not a reimplementation of one.
+1. Tap a root/category.
+2. Tap a command.
+3. Tap any subcommand/options that apply.
+4. Supply any remaining operand using the appropriate UI.
+5. Press **RUN**.
 
-## Advanced Usage
--   **Shell:** a real Termux environment, not Android's own limited toybox shell — genuine
-    `bash`, `apt`/`pkg`, and coreutils. It installs itself automatically the first time you open
-    the app (watch the buffer for progress); `pkg install <package>` afterward adds pills for
-    whatever it installs.
--   **Root:** on a rooted device, `su` runs privileged commands.
--   **History:** the `↑` and `↓` modifier keys walk the current session's history.
--   **Editor:** `edit <file>` opens the in-terminal editor — `ShellSession` has no pty, so a
-    real terminal editor would render garbled if run through it. It also registers as a text
-    file handler, so other apps can open files in it.
--   **Files:** tap the **FILES** pill and it grows into the whole screen — the pill's own colour
-    runs out around the edge, closes into a frame, and a vertical wipe reveals the file explorer
-    already inside it, browsing a sandboxed filesystem rooted at the app's private storage (the
-    `vfs` command's backing store) — separate from the real Termux filesystem the shell operates
-    on. A folder is a capsule: tap one to expand it while its siblings squish into thin coloured
-    rods beside it, its own contents nested inside it exactly the same way — open one of *those*
-    and it repeats at any depth, never flattening into a plain list until a level actually has
-    nothing open in it. A yellow **…** chip drops in next to **Close** whenever there's a level
-    open, to step back up one. From there: search across the whole sandbox, sort by name or newest, filter by kind
-    (folders/files/images), recency (today/this week), and whether dotfiles show at all, tap
-    **Select** to multi-select for a batch Move, Copy, Share or Delete, rename anything in place,
-    and a folder that's mostly photos renders itself as a thumbnail grid automatically — no
-    manual list/grid toggle. **Storage** breaks down what's using space by type, and names the
-    largest files.
--   **The Guide:** the command picker (reached the same way as the Files screen) has its own
-    **THE GUIDE** pill in the top corner, opening a chaptered glossary of real commands paired
-    with invented, Hitchhiker's-Guide-style definitions — reading material, not another way to
-    run something.
--   **SSH:** the `ssh` pill (under the Network shell category) opens your saved connections plus
-    a **new…** pill that asks for host, user, port and an optional key file one step at a time,
-    then hands you the assembled command to run. Host-key confirmation and password/passphrase
-    prompts work exactly like any other command's interactive prompts — a tap for yes/no, a
-    masked field for a password.
--   **MCP server:** Settings → **MCP SERVER** starts a loopback-only server (reachable via
-    `adb forward`, never over the network) that an external AI agent can pair with using a
-    pairing token shown on that screen, to read/write this app's sandboxed files. Running real
-    shell commands through it is a separate switch, off by default, that asks for a biometric
-    confirmation the first time you turn it on — the one setting here that lets a paired agent do
-    more than touch its own sandbox.
--   **osint-lookup:** installed automatically alongside the bootstrap, under Shell → Other (it
-    isn't part of any package, so it doesn't get a curated category). `osint-lookup <domain>`
-    runs whois, DNS records (A/AAAA/MX/TXT/NS) and a certificate-transparency search (crt.sh) for
-    a domain you name — your own, or one you have a legitimate reason to look up. All three are
-    passive lookups against publicly published data; it never scans, brute-forces or contacts the
-    target's own infrastructure, and it isn't a tool for looking up arbitrary third parties.
-    Missing tools (`whois`/`dig`/`curl`/`jq`) print a `pkg install` hint instead of failing
-    silently.
--   **Blocks:** tap any entry in the buffer to reveal **COPY**, **RE-RUN** and **SHARE** — copy
-    grabs the output (or the command itself, if there's no output yet), re-run drops the command
-    back onto the input line for you to review and press Run (it never runs again on its own),
-    and share hands the same text to the system share sheet.
--   **ASCII art rendering:** output that looks like ASCII or box-drawing art (three or more lines,
-    heavy on symbols rather than letters — `cowsay`, `figlet`, `jp2a`, `chafa`, and the like)
-    is traced into one smooth flat vector shape (the same contour-tracing idea a Potrace-style
-    vectorizer uses) instead of literal monospace glyphs, so it reads as a constructed picture
-    rather than a wall of text. The heuristic is conservative — real prose or a table always falls
-    back to plain text. Tap the entry, then **PLAIN TEXT** to see the raw output (and copy/share
-    it) any time.
--   **Typeset output:** output that's a block of `label: value` lines (`ifconfig`, `stat`,
-    `dpkg -s`, and similar — three or more lines, every one of them that shape) is set as a
-    two-column grid instead of raw monospace text — labels dimmed and uppercase, values
-    right-aligned. Tap the entry, then **PLAIN TEXT** to see exactly what the command printed any
-    time — a reading can be wrong.
--   **Workflows:** the **Workflows** pill (alongside the shell categories) holds saved command
-    templates. Picking one asks for any `{placeholder}` values the template uses, then drops the
-    assembled command onto the input line, same as everything else here — nothing runs until you
-    press Run. A **new…** pill saves one: give it a name, then a template like
-    `git commit -m "{message}"`.
--   **AI:** the **AI** pill opens a chat screen — type a request in plain English and it suggests
-    a shell command (or a short plain-text answer if the request isn't command-shaped), via the
-    Anthropic API. A suggested command shows a **USE ▸** pill that drops it onto the input line
-    for review, exactly like everything else — the chat never runs a command by itself. Needs an
-    API key first: Settings → **AI SETTINGS ›**. The key is stored unencrypted on this device,
-    same as the MCP pairing token and other local settings. A command reply may also show a
-    **what each part does** panel — a short explanation per flag, when the command has enough of
-    them to be worth breaking down.
--   **Context:** the **Context** pill sets which OS's commands the tree offers alongside the real
-    Shell categories — pick `ubuntu`, `macos`, or `windows` and a reference root appears with that
-    OS's package manager, service manager, and a few overlapping basics (`git`, `ls`, `ssh`).
-    Meant for working over an active `ssh` connection into a host of that kind, where the local
-    Termux `PATH` doesn't tell you what's actually there. Pick **local** to turn it off again.
-    Picking a pill just assembles the command onto the input line, same as everywhere else —
-    nothing runs by itself, and most of these commands (`apt`, `brew`, `winget`, and friends)
-    aren't real local binaries, so this is reference, not live discovery like Shell.
--   **Store:** the **Store** pill opens a browser for [azphalt.store](https://azphalt.store), the
-    package registry for `.azp` extensions — the same idea as `pkg`/`apt`, but general-purpose:
-    assets, sandboxed code, packs, companion apps, MCP-server headers, and AI-skill bundles all
-    ship as `.azp` packages. Search, filter by kind (skill / mcp / code / pack / asset / app /
-    script), and
-    tap **INSTALL** to download and unpack one. Most kinds are download-only, kept on-device for
-    use elsewhere. A **skill** package folds its bundled `SKILL.md` into the AI chat's system
-    prompt. A **script** package can resolve declared Termux dependencies and install an executable
-    wrapper for its digest-verified entry file. Every install rejects unlisted payloads and requires
-    each extracted payload to match its declared SHA-256 digest before it checks the
-    package's Ed25519 signature (on Android 13+; older devices can't check it and the package is
-    marked unverified rather than silently trusted) against azphalt.store's own published signing
-    keys — an installed row shows **✓ TRUSTED SIGNER** when the signer is one the registry itself
-    vouches for, **SIGNED · UNKNOWN SIGNER** when the signature checks out but the signer isn't
-    registry-published, **SIGNED · UNVERIFIED (OS)** on pre-13 devices, or **UNSIGNED** for a
-    package with no `signature.json` at all, or **UNCHECKED · REINSTALL TO VERIFY** for one
-    installed before this app version could check at all. A signature that fails to verify — or a
-    `signature.json` too corrupt to even parse — is rejected outright, the package is not
-    installed. A valid signature only proves the package wasn't tampered with after signing, not
-    who wrote it; only a **TRUSTED** signer is registry-vouched-for. As of this writing the live
-    registry's discovery document doesn't publish any `signingKeys` yet, so every signed package
-    currently tops out at **SIGNED · UNKNOWN SIGNER** in practice — TRUSTED becomes reachable the
-    day the registry starts publishing keys, with no app update needed.
--   **net-inventory / harden-check / sysinfo:** three more scripts installed alongside
-    `osint-lookup`, all local, no arguments needed. `net-inventory` lists this device's own
-    network interfaces, routes and DNS config. `harden-check` audits this install's own SSH key
-    permissions, lists what's actually listening locally, and flags any world-writable file under
-    `$HOME`. `sysinfo` reports installed packages, `PATH`, and disk usage. Nothing here touches
-    another host — every check is against files, sockets or config that already belong to this
-    device.
+**Normal command-tree leaves do not auto-run.** A leaf may still need a positional value that was not discoverable from its help output, so selecting it means “compose this command,” not “execute now.”
 
-## Related Resources
-The shell is genuine Termux underneath, so third-party Termux material works here too:
+### What happens when another value is needed
 
--   [termux-scripts](https://github.com/schnatterer/termux-scripts) — shell scripts for backing
-    up and restoring Android apps over local, SSH, or cloud storage, with incremental encrypted
-    transfers.
--   [termux.holehan.org](https://termux.holehan.org/) — an APT repository adding extra packages
-    (Hugo, sift) installable with `pkg install` once added as a source.
--   [termux-commands-free](https://github.com/Mortarelplait/termux-commands-free) — a free
-    reference collection of 200+ Termux commands and tutorials, organized by category.
+HG2Gui chooses the input surface by value type:
+
+- **package name** → package/catalog pills;
+- **installed package** → installed-package pills;
+- **file or directory** → graphical file/folder picker;
+- **finite known choice** → pills;
+- **yes/no prompt from a running command** → confirmation dialog;
+- **URL, host, search pattern, arbitrary text, etc.** → text field.
+
+When text really is required, HG2Gui focuses the input box and tells you what kind of value it expects, for example **TYPE URL**, **TYPE HOST OR ADDRESS**, or **TYPE ARGUMENT** when no more specific type can be inferred.
+
+## Interactive commands
+
+A command that is already running may stop and ask a question. That is different from composing a new command:
+
+- yes/no → modal **YES / NO** confirmation;
+- numbered/bracketed choices → tappable choices;
+- password/passphrase → masked input;
+- other open input → text field and **Send**.
+
+Package installs handled by HG2Gui do not expose apt's normal `Do you want to continue? [Y/n]` prompt.
+
+## Installing packages
+
+Use the package-manager pills rather than memorizing package names.
+
+For `pkg`/`apt`/`apt-get`, the **install** branch reads HG2Gui's downloaded APT package index and presents packages by category. If the index has not been downloaded yet, run/update the package index first.
+
+Mutating top-level `apt`/`apt-get` commands are routed through HG2Gui's Android-safe package transaction layer. This is deliberate: upstream apt can download correctly but otherwise hands the transaction to dpkg using assumptions inherited from the Termux app's own package path and Android environment.
+
+HG2Gui's package layer relocates package payloads into HG2Gui's prefix, repairs relevant control metadata, runs maintainer scripts through bundled Bash instead of direct-executing them from writable app data, and keeps dpkg's database/install root under HG2Gui.
+
+Downloads are reused/resumed where possible instead of starting over every time.
+
+## Managing installed packages
+
+Open:
+
+**Packages → package manager → installed package**
+
+HG2Gui currently discovers installed packages from:
+
+- **Termux / pkg**
+- **Python / pip**
+- **Node / npm**
+- **Ruby / gem**
+
+A package can expose these actions depending on its manager and metadata:
+
+### Run
+
+Shows executable commands HG2Gui can attribute to the package. Selecting an executable composes it on the command line; press **RUN** after supplying any needed arguments.
+
+### Disable / Enable
+
+**Disable** does not uninstall the package. It remains visible and installed, but HG2Gui blocks its owned commands from running. Use **Enable** to make them runnable again.
+
+### Update
+
+Uses the package's owning manager to update/reinstall it appropriately.
+
+### Reset
+
+Keeps the package installed while clearing runtime state HG2Gui can safely attribute to it.
+
+For normal packages this includes conventional package-scoped cache/config/data/state/log locations and paths HG2Gui positively observed being created during use. HG2Gui deliberately does not guess that every arbitrary user file with a similar name belongs to a package.
+
+For isolated packages, Reset removes the entire private runtime. The next run reseeds it cleanly from the installed version.
+
+Reset asks for confirmation.
+
+### Remove / Purge
+
+Uses the owning manager's removal operation. **Purge** appears where the manager has meaningful purge semantics. Destructive actions ask for confirmation.
+
+## Isolating a package
+
+Open:
+
+**Packages → manager → package → Isolate**
+
+Isolation is HG2Gui-owned. It is not dependent on whether `apt`, `pip`, `npm`, or `gem` has a sandbox feature.
+
+When an isolated package runs:
+
+- HG2Gui creates/seeds a private filesystem root for it;
+- the package sees a private copy of the HG2Gui runtime and a private HOME/XDG state tree;
+- the real HG2Gui prefix/home are not bind-mounted into the guest;
+- common privilege tools (`adb`, `su`, `tsu`, `magisk`, `proot`) are removed from the private prefix;
+- common host `su` paths are masked where present;
+- after the run, HG2Gui reports which paths inside the private root were created, modified, or deleted.
+
+If the package is marked isolated but no executable PRoot isolation engine is available, **the command fails closed**. HG2Gui will not quietly run it outside the sandbox.
+
+Use **Release isolation** to return the package to normal execution.
+
+### What isolation currently observes
+
+The audit is a private-filesystem before/after comparison. It gives strong visibility into filesystem changes in the sandbox, but it is **not yet a full syscall/network/process trace**.
+
+## Execution authority
+
+Open:
+
+**Packages → Authority**
+
+Authority is separate from packages and separate from isolation.
+
+### App
+
+Normal default execution. Commands run with HG2Gui's Android application UID and permissions.
+
+### ADB shell
+
+When an executable ADB client is available, HG2Gui exposes:
+
+- **Devices**
+- **Pair**
+- **Connect**
+- **Disconnect**
+- **Shell**
+
+If no ADB client is available, install `android-tools` through the package UI.
+
+For same-device access, Android Wireless Debugging still controls pairing and connection. HG2Gui does not bypass Android's ADB authorization model.
+
+Running an ADB-shell command asks for explicit confirmation first.
+
+### Root
+
+If HG2Gui detects an executable `su` provider, Root exposes:
+
+- **Test root** — requests root and runs `id`;
+- **Root command** — executes a chosen command through `su -c`.
+
+HG2Gui asks for confirmation before the elevated request. The device's root manager still decides whether root is actually granted.
+
+### No inherited privilege
+
+A package does not gain ADB/root just because HG2Gui can use those backends. In particular, isolated packages have privilege tools stripped/masked from their private runtime.
+
+Headless/MCP command execution cannot invoke ADB-shell or root authority through `hg2auth`.
+
+## Files and path selection
+
+When HG2Gui recognizes that a command needs a file or directory, it opens the graphical picker instead of telling you to type a path.
+
+The broader **Files** surface provides graphical browsing and file operations over HG2Gui's managed storage/device-storage modes. This is separate from package isolation: the Files/VFS sandbox is a user-facing filesystem feature; package isolation is a per-package private execution root.
+
+## SSH
+
+The `ssh` command has a dedicated branch with saved presets and a **new…** flow. Host, user, port, and key choices are assembled into the command for review. Key paths use the graphical picker. Host-key yes/no questions and password/passphrase prompts use the same generic interactive prompt UI as any other command.
+
+## Workflows
+
+**Workflows** stores command templates such as:
+
+```text
+git commit -m "{message}"
+```
+
+Running a workflow collects placeholder values and puts the completed command on the input line. It does not execute until you press **RUN**.
+
+## AI
+
+The **AI** surface can turn a natural-language request into a suggested shell command. A suggestion is inserted into the command line for review; it does not execute automatically.
+
+AI authority does not bypass package isolation, package disabling, or the explicit ADB/root authority rules enforced by `TerminalEngine`.
+
+## Context
+
+**Context** adds a static reference command tree for selected remote OS families (for example Ubuntu, macOS, Windows) while you work over SSH. This is reference composition, not live discovery of the remote machine.
+
+## Store
+
+The **Store** browses azphalt.store `.azp` packages. `.azp` packages are separate from the Termux/dpkg/pip/npm/gem package lifecycle described above. Store packages have their own extraction, digest, and signature/trust rules.
+
+## MCP server
+
+HG2Gui can expose an explicit-start, loopback-only MCP server. Shell execution has its own gate, but MCP/headless callers still cannot use `hg2auth` to obtain ADB-shell or root authority.
+
+## Output cards
+
+The newest output in the active command record stays in view as stdout/stderr arrives. Tap completed records for the actions offered by that surface, such as copying or reusing output/commands.
+
+## Built-in Android commands
+
+HG2Gui retains a small explicit set of Android-facing built-ins for capabilities that are not represented honestly by ordinary Termux binaries, including device controls/settings bridges, calls/contacts, VFS, calculator, and editor entry.
+
+See [COMMANDS.md](COMMANDS.md) for the current command/control reference.
+
+## Compatibility expectations
+
+HG2Gui uses a real Termux-derived userspace, but it runs under a different Android application ID and security context. Many Termux packages work after HG2Gui's relocation/maintainer-script compatibility transformations; successful real-device examples include `python-pip`, `nsnake`, and `curl`.
+
+Do not interpret that as “every Termux package must work unchanged.” Native executables, services, hardcoded paths, unusual interpreters, symlinks, dependency metadata, triggers, alternatives, and linker assumptions can expose additional compatibility work.
+
+When a package fails, the goal is to fix the **class of incompatibility**, not add a one-off package-name exception unless the package truly has unique semantics.
