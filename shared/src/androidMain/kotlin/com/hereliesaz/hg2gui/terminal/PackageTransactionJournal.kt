@@ -131,6 +131,7 @@ class PackageTransactionJournal private constructor(
 
             try {
                 File(transaction, "package-name").writeText(packageName)
+                File(transaction, "created-at").writeText(System.currentTimeMillis().toString())
                 if (status.isFile) {
                     Files.copy(status.toPath(), File(transaction, "status").toPath(), StandardCopyOption.COPY_ATTRIBUTES)
                 }
@@ -151,7 +152,8 @@ class PackageTransactionJournal private constructor(
 
         /**
          * A successful transaction deletes its journal. Any journal surviving process death is
-         * therefore incomplete and is rolled back before another package mutation begins.
+         * therefore incomplete. Newer snapshots must be replayed first so the full dpkg status
+         * store walks backward through the transaction to its original pre-plan state.
          */
         fun recoverAbandoned(context: Context): List<String> {
             val prefix = DistroManager.prefixDir(context)
@@ -161,6 +163,7 @@ class PackageTransactionJournal private constructor(
             return File(context.cacheDir, "hg2-package-transactions")
                 .listFiles().orEmpty()
                 .filter(File::isDirectory)
+                .sortedByDescending(::transactionCreatedAt)
                 .map { transaction ->
                     val packageName = runCatching { File(transaction, "package-name").readText().trim() }.getOrDefault("")
                     if (packageName.isBlank()) {
@@ -175,6 +178,10 @@ class PackageTransactionJournal private constructor(
                     )
                 }
         }
+
+        private fun transactionCreatedAt(transaction: File): Long =
+            runCatching { File(transaction, "created-at").readText().trim().toLong() }
+                .getOrElse { transaction.lastModified() }
 
         private fun snapshotPayload(prefix: File, listFile: File, payloadRoot: File): List<Entry> {
             val entries = mutableListOf<Entry>()
