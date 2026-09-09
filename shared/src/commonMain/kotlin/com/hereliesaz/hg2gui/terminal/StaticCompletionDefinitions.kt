@@ -52,5 +52,5 @@ object StaticCompletionDefinitions {
         .replace("\\ ", "\u0000")
         .split(Regex("\\s+"))
         .map { it.replace('\u0000', ' ').trim() }
-        .filter { it.isNotBlank() && '$' !in it && '`' !in it && "$(" !in it && "${" !in it }
+        .filter { it.isNotBlank() && '$' !in it && '`' !in it && "$(" !in it && "\${" !in it }
 }
