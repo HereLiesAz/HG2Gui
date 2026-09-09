@@ -136,9 +136,14 @@ val buildDpkgLauncher = registerNativeLauncherTask(
     "dpkg_launcher.c",
     "libhg2gui_dpkg.so"
 )
+val buildMaintscriptLauncher = registerNativeLauncherTask(
+    "buildMaintscriptLauncher",
+    "maintscript_launcher.c",
+    "libhg2gui_maintscript.so"
+)
 
 tasks.matching { it.name == "preBuild" }.configureEach {
-    dependsOn(buildAptKeyLauncher, buildDpkgLauncher)
+    dependsOn(buildAptKeyLauncher, buildDpkgLauncher, buildMaintscriptLauncher)
 }
 
 androidComponents {
