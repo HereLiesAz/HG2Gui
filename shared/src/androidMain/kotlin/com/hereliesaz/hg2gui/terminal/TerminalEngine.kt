@@ -45,6 +45,7 @@ class TerminalEngine(
         }
 
         val verb = trimmed.substringBefore(' ')
+        val aptPackageCommand = translateAptPackageCommand(trimmed)
 
         when {
             verb == "bootstrap" -> launch(Dispatchers.IO) {
@@ -69,9 +70,10 @@ class TerminalEngine(
                 }
             }
 
-            verb == "pkg" || verb == "hg2pkg" -> launch(Dispatchers.IO) {
+            verb == "pkg" || verb == "hg2pkg" || aptPackageCommand != null -> launch(Dispatchers.IO) {
+                val packageLine = aptPackageCommand ?: trimmed
                 try {
-                    packages.run(trimmed).collect { trySend(it) }
+                    packages.run(packageLine).collect { trySend(it) }
                     onExit(0)
                 } catch (e: Exception) {
                     trySend("HG2Gui package error: ${e.message ?: e.javaClass.simpleName}")
@@ -108,9 +110,11 @@ class TerminalEngine(
     suspend fun runToCompletion(line: String): Pair<String, Int> = withContext(Dispatchers.IO) {
         val trimmed = line.trim()
         val verb = trimmed.substringBefore(' ')
-        val hg2Flow = when (verb) {
-            "download", "hg2download" -> downloader.run(trimmed)
-            "pkg", "hg2pkg" -> packages.run(trimmed)
+        val aptPackageCommand = translateAptPackageCommand(trimmed)
+        val hg2Flow = when {
+            verb == "download" || verb == "hg2download" -> downloader.run(trimmed)
+            verb == "pkg" || verb == "hg2pkg" -> packages.run(trimmed)
+            aptPackageCommand != null -> packages.run(aptPackageCommand)
             else -> null
         }
         if (hg2Flow != null) {
@@ -147,7 +151,46 @@ class TerminalEngine(
         shell.close()
     }
 
+    private fun translateAptPackageCommand(line: String): String? {
+        val words = shellWords(line)
+        if (words.isEmpty() || words.first() !in setOf("apt", "apt-get")) return null
+
+        val operationIndex = words.indexOfFirst { it in APT_MUTATING_OPERATIONS }
+        if (operationIndex < 0) return null
+
+        val operation = words[operationIndex]
+        val translatedOperation = when (operation) {
+            "install" -> "install"
+            "remove" -> "remove"
+            "purge" -> "purge"
+            "update" -> "update"
+            "upgrade", "dist-upgrade", "full-upgrade" -> "upgrade"
+            else -> return null
+        }
+
+        val packages = words.drop(operationIndex + 1).filterNot { it.startsWith("-") }
+        return when (translatedOperation) {
+            "update", "upgrade" -> "pkg $translatedOperation"
+            else -> if (packages.isEmpty()) null else "pkg $translatedOperation ${packages.joinToString(" ")}"
+        }
+    }
+
+    private fun shellWords(line: String): List<String> = Regex("""(?:[^\s\"']+|\"[^\"]*\"|'[^']*')+""")
+        .findAll(line)
+        .map { it.value.trim().removeSurrounding("\"").removeSurrounding("'") }
+        .toList()
+
     companion object {
+        private val APT_MUTATING_OPERATIONS = setOf(
+            "install",
+            "remove",
+            "purge",
+            "update",
+            "upgrade",
+            "dist-upgrade",
+            "full-upgrade"
+        )
+
         @Volatile
         private var instance: OkHttpClient? = null
 
