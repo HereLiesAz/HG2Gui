@@ -4,17 +4,18 @@ import android.content.Context
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.LinkOption
+import java.nio.file.Path
 import java.nio.file.StandardCopyOption
+import java.util.Comparator
 
 /**
  * Per-package rollback snapshot for dpkg mutations.
  *
- * The journal snapshots dpkg's status paragraph store, package-specific info files and the payload
- * paths recorded in <package>.list before HG2Gui mutates them. On failure it removes the failed
- * package's newly-recorded payload, restores the previous payload/symlinks, then restores dpkg
- * metadata. Maintainer scripts can deliberately touch arbitrary external state; those side effects
- * cannot be made transactional without syscall-level interception and are therefore not claimed as
- * part of this rollback boundary.
+ * The journal snapshots dpkg's status paragraph store, package-specific info files, package-owned
+ * payload paths, and dpkg's shared trigger/alternatives/diversion state before HG2Gui mutates a
+ * package. On failure all of that state is restored. Maintainer scripts can still deliberately
+ * touch arbitrary files outside package/dpkg-managed state; those side effects require syscall
+ * interception and are deliberately outside this rollback boundary.
  */
 class PackageTransactionJournal private constructor(
     private val prefix: File,
@@ -22,7 +23,8 @@ class PackageTransactionJournal private constructor(
     private val transactionDir: File,
     private val statusFile: File,
     private val dpkgInfoDir: File,
-    private val oldEntries: List<Entry>
+    private val oldEntries: List<Entry>,
+    private val mechanismEntries: List<Entry>
 ) {
     private data class Entry(val type: Char, val relative: String, val linkTarget: String? = null)
 
@@ -39,6 +41,7 @@ class PackageTransactionJournal private constructor(
         removeCurrentPayload()
         restorePayload()
         restoreDpkgInfo()
+        restoreMechanismState()
         restoreStatus()
         finished = true
         transactionDir.deleteRecursively()
@@ -61,27 +64,7 @@ class PackageTransactionJournal private constructor(
     }
 
     private fun restorePayload() {
-        val payloadRoot = File(transactionDir, "payload")
-        oldEntries.filter { it.type == 'D' }.sortedBy { it.relative.length }.forEach { entry ->
-            File(prefix, entry.relative).mkdirs()
-        }
-        oldEntries.filter { it.type == 'F' }.forEach { entry ->
-            val source = File(payloadRoot, entry.relative)
-            val destination = File(prefix, entry.relative)
-            destination.parentFile?.mkdirs()
-            Files.copy(
-                source.toPath(),
-                destination.toPath(),
-                StandardCopyOption.REPLACE_EXISTING,
-                StandardCopyOption.COPY_ATTRIBUTES
-            )
-        }
-        oldEntries.filter { it.type == 'L' }.forEach { entry ->
-            val destination = File(prefix, entry.relative).toPath()
-            destination.parent?.let(Files::createDirectories)
-            Files.deleteIfExists(destination)
-            Files.createSymbolicLink(destination, java.nio.file.Paths.get(entry.linkTarget.orEmpty()))
-        }
+        restoreEntries(oldEntries, File(transactionDir, "payload"))
     }
 
     private fun restoreDpkgInfo() {
@@ -99,6 +82,34 @@ class PackageTransactionJournal private constructor(
                 StandardCopyOption.REPLACE_EXISTING,
                 StandardCopyOption.COPY_ATTRIBUTES
             )
+        }
+    }
+
+    private fun restoreMechanismState() {
+        MANAGED_DPKG_STATE.forEach { relative -> deleteNoFollow(File(prefix, relative).toPath()) }
+        restoreEntries(mechanismEntries, File(transactionDir, "mechanisms"))
+    }
+
+    private fun restoreEntries(entries: List<Entry>, backupRoot: File) {
+        entries.filter { it.type == 'D' }.sortedBy { it.relative.length }.forEach { entry ->
+            File(prefix, entry.relative).mkdirs()
+        }
+        entries.filter { it.type == 'F' }.forEach { entry ->
+            val source = File(backupRoot, entry.relative)
+            val destination = File(prefix, entry.relative)
+            destination.parentFile?.mkdirs()
+            Files.copy(
+                source.toPath(),
+                destination.toPath(),
+                StandardCopyOption.REPLACE_EXISTING,
+                StandardCopyOption.COPY_ATTRIBUTES
+            )
+        }
+        entries.filter { it.type == 'L' }.forEach { entry ->
+            val destination = File(prefix, entry.relative).toPath()
+            destination.parent?.let(Files::createDirectories)
+            Files.deleteIfExists(destination)
+            Files.createSymbolicLink(destination, java.nio.file.Paths.get(entry.linkTarget.orEmpty()))
         }
     }
 
@@ -124,9 +135,11 @@ class PackageTransactionJournal private constructor(
             val safe = packageName.replace(Regex("[^A-Za-z0-9._+-]"), "_")
             val transaction = File(context.cacheDir, "hg2-package-transactions/$safe-${System.nanoTime()}")
             val payload = File(transaction, "payload")
+            val mechanisms = File(transaction, "mechanisms")
             val infoBackup = File(transaction, "info")
             transaction.mkdirs()
             payload.mkdirs()
+            mechanisms.mkdirs()
             infoBackup.mkdirs()
 
             try {
@@ -142,8 +155,18 @@ class PackageTransactionJournal private constructor(
                     }
 
                 val entries = snapshotPayload(prefix, File(infoDir, "$packageName.list"), payload)
+                val mechanismEntries = snapshotMechanismState(prefix, mechanisms)
                 writeManifest(File(transaction, "manifest"), entries)
-                return PackageTransactionJournal(prefix, packageName, transaction, status, infoDir, entries)
+                writeManifest(File(transaction, "mechanisms.manifest"), mechanismEntries)
+                return PackageTransactionJournal(
+                    prefix,
+                    packageName,
+                    transaction,
+                    status,
+                    infoDir,
+                    entries,
+                    mechanismEntries
+                )
             } catch (t: Throwable) {
                 transaction.deleteRecursively()
                 throw IllegalStateException("Could not create rollback snapshot for $packageName: ${t.message}", t)
@@ -153,7 +176,7 @@ class PackageTransactionJournal private constructor(
         /**
          * A successful transaction deletes its journal. Any journal surviving process death is
          * therefore incomplete. Newer snapshots must be replayed first so the full dpkg status
-         * store walks backward through the transaction to its original pre-plan state.
+         * and shared mechanism state walk backward to the original pre-plan state.
          */
         fun recoverAbandoned(context: Context): List<String> {
             val prefix = DistroManager.prefixDir(context)
@@ -171,7 +194,16 @@ class PackageTransactionJournal private constructor(
                         return@map "Discarded unreadable package transaction ${transaction.name}."
                     }
                     val entries = readManifest(File(transaction, "manifest"))
-                    val journal = PackageTransactionJournal(prefix, packageName, transaction, status, infoDir, entries)
+                    val mechanismEntries = readManifest(File(transaction, "mechanisms.manifest"))
+                    val journal = PackageTransactionJournal(
+                        prefix,
+                        packageName,
+                        transaction,
+                        status,
+                        infoDir,
+                        entries,
+                        mechanismEntries
+                    )
                     journal.rollback().fold(
                         onSuccess = { "Recovered interrupted package transaction for $packageName." },
                         onFailure = { "Could not recover interrupted package transaction for $packageName: ${it.message}" }
@@ -186,28 +218,51 @@ class PackageTransactionJournal private constructor(
         private fun snapshotPayload(prefix: File, listFile: File, payloadRoot: File): List<Entry> {
             val entries = mutableListOf<Entry>()
             readPackagePaths(listFile, prefix).forEach { source ->
-                val relative = prefix.toPath().normalize().relativize(source.toPath().normalize()).toString()
-                when {
-                    Files.isSymbolicLink(source.toPath()) -> {
-                        val target = Files.readSymbolicLink(source.toPath()).toString()
-                        entries += Entry('L', relative, target)
-                    }
-                    source.isDirectory -> entries += Entry('D', relative)
-                    source.isFile -> {
-                        val destination = File(payloadRoot, relative)
-                        destination.parentFile?.mkdirs()
-                        Files.copy(
-                            source.toPath(),
-                            destination.toPath(),
-                            StandardCopyOption.REPLACE_EXISTING,
-                            StandardCopyOption.COPY_ATTRIBUTES,
-                            LinkOption.NOFOLLOW_LINKS
-                        )
-                        entries += Entry('F', relative)
+                snapshotPath(prefix, source.toPath(), payloadRoot, entries)
+            }
+            return entries
+        }
+
+        private fun snapshotMechanismState(prefix: File, backupRoot: File): List<Entry> {
+            val entries = mutableListOf<Entry>()
+            MANAGED_DPKG_STATE.forEach { relative ->
+                val root = File(prefix, relative).toPath()
+                if (!Files.exists(root, LinkOption.NOFOLLOW_LINKS)) return@forEach
+                if (!Files.isDirectory(root, LinkOption.NOFOLLOW_LINKS) || Files.isSymbolicLink(root)) {
+                    snapshotPath(prefix, root, backupRoot, entries)
+                } else {
+                    Files.walk(root).use { stream ->
+                        stream.forEach { path -> snapshotPath(prefix, path, backupRoot, entries) }
                     }
                 }
             }
-            return entries
+            return entries.distinctBy { it.type to it.relative }
+        }
+
+        private fun snapshotPath(prefix: File, path: Path, backupRoot: File, entries: MutableList<Entry>) {
+            val prefixPath = prefix.toPath().toAbsolutePath().normalize()
+            val normalized = path.toAbsolutePath().normalize()
+            if (!normalized.startsWith(prefixPath)) return
+            val relative = prefixPath.relativize(normalized).toString()
+            if (relative.isBlank()) return
+            when {
+                Files.isSymbolicLink(path) -> {
+                    entries += Entry('L', relative, Files.readSymbolicLink(path).toString())
+                }
+                Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS) -> entries += Entry('D', relative)
+                Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS) -> {
+                    val destination = File(backupRoot, relative)
+                    destination.parentFile?.mkdirs()
+                    Files.copy(
+                        path,
+                        destination.toPath(),
+                        StandardCopyOption.REPLACE_EXISTING,
+                        StandardCopyOption.COPY_ATTRIBUTES,
+                        LinkOption.NOFOLLOW_LINKS
+                    )
+                    entries += Entry('F', relative)
+                }
+            }
         }
 
         private fun readPackagePaths(listFile: File, prefix: File): List<File> {
@@ -225,6 +280,17 @@ class PackageTransactionJournal private constructor(
                 val normalized = mapped.toPath().toAbsolutePath().normalize()
                 if (normalized == prefixPath || normalized.startsWith(prefixPath)) normalized.toFile() else null
             }.distinctBy { it.path }
+        }
+
+        private fun deleteNoFollow(path: Path) {
+            if (!Files.exists(path, LinkOption.NOFOLLOW_LINKS)) return
+            if (Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS) && !Files.isSymbolicLink(path)) {
+                Files.walk(path).use { stream ->
+                    stream.sorted(Comparator.reverseOrder()).forEach(Files::deleteIfExists)
+                }
+            } else {
+                Files.deleteIfExists(path)
+            }
         }
 
         private fun writeManifest(file: File, entries: List<Entry>) {
@@ -248,6 +314,13 @@ class PackageTransactionJournal private constructor(
             }
         }
 
+        private val MANAGED_DPKG_STATE = listOf(
+            "var/lib/dpkg/diversions",
+            "var/lib/dpkg/diversions-old",
+            "var/lib/dpkg/alternatives",
+            "etc/alternatives",
+            "var/lib/dpkg/triggers"
+        )
         private const val OLD_PREFIX = "/data/data/com.termux/files/usr"
     }
 }
