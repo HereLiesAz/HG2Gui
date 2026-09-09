@@ -71,16 +71,15 @@ class PackageTransactionJournal private constructor(
         dpkgInfoDir.mkdirs()
         dpkgInfoDir.listFiles().orEmpty()
             .filter { it.name == packageName || it.name.startsWith("$packageName.") }
-            .forEach { file ->
-                if (file.isDirectory) file.deleteRecursively() else Files.deleteIfExists(file.toPath())
-            }
+            .forEach { file -> deleteNoFollow(file.toPath()) }
         val backup = File(transactionDir, "info")
         backup.listFiles().orEmpty().forEach { file ->
             Files.copy(
                 file.toPath(),
                 File(dpkgInfoDir, file.name).toPath(),
                 StandardCopyOption.REPLACE_EXISTING,
-                StandardCopyOption.COPY_ATTRIBUTES
+                StandardCopyOption.COPY_ATTRIBUTES,
+                LinkOption.NOFOLLOW_LINKS
             )
         }
     }
@@ -149,9 +148,17 @@ class PackageTransactionJournal private constructor(
                     Files.copy(status.toPath(), File(transaction, "status").toPath(), StandardCopyOption.COPY_ATTRIBUTES)
                 }
                 infoDir.listFiles().orEmpty()
-                    .filter { it.isFile && (it.name == packageName || it.name.startsWith("$packageName.")) }
+                    .filter {
+                        (it.name == packageName || it.name.startsWith("$packageName.")) &&
+                            (Files.isRegularFile(it.toPath(), LinkOption.NOFOLLOW_LINKS) || Files.isSymbolicLink(it.toPath()))
+                    }
                     .forEach { file ->
-                        Files.copy(file.toPath(), File(infoBackup, file.name).toPath(), StandardCopyOption.COPY_ATTRIBUTES)
+                        Files.copy(
+                            file.toPath(),
+                            File(infoBackup, file.name).toPath(),
+                            StandardCopyOption.COPY_ATTRIBUTES,
+                            LinkOption.NOFOLLOW_LINKS
+                        )
                     }
 
                 val entries = snapshotPayload(prefix, File(infoDir, "$packageName.list"), payload)
@@ -286,7 +293,7 @@ class PackageTransactionJournal private constructor(
             if (!Files.exists(path, LinkOption.NOFOLLOW_LINKS)) return
             if (Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS) && !Files.isSymbolicLink(path)) {
                 Files.walk(path).use { stream ->
-                    stream.sorted(Comparator.reverseOrder()).forEach(Files::deleteIfExists)
+                    stream.sorted(Comparator.reverseOrder()).forEach { entry -> Files.deleteIfExists(entry) }
                 }
             } else {
                 Files.deleteIfExists(path)
