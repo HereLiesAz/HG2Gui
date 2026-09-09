@@ -84,8 +84,9 @@ object TuiSemanticParser {
     private val progressPercent = Regex("""\b(\d{1,3})%\b""")
     private val tableSeparator = Regex("""^\s*[+┌├└│|].*(?:[-─]{2,}|[+┬┼┴]).*$""")
     private val resultPrefix = Regex("""^\s*(?:[-*•]|\d+[.)])\s+\S""")
+    private val paneSeparator = Regex("""\s[│|]\s""")
 
-    fun parse(rows: List<TuiRow>, alternateScreen: Boolean): TuiSnapshot {
+    fun parse(rows: List<TuiRow>, alternateScreen: Boolean, mouseAware: Boolean = false): TuiSnapshot {
         val visible = rows.map { it.copy(text = it.text.trimEnd()) }.filter { it.text.isNotBlank() }
         val menuRuns = menuRuns(visible)
         val runIndents = menuRuns.map { run -> run.minOf(::leadingIndent) }
@@ -124,7 +125,7 @@ object TuiSemanticParser {
             regions = regions,
             tabs = tabs,
             alternateScreen = alternateScreen,
-            mouseAware = visible.any { Regex("""(?i)\b(click|mouse|drag|scroll)\b""").containsMatchIn(it.text) }
+            mouseAware = mouseAware
         )
     }
 
@@ -219,6 +220,11 @@ object TuiSemanticParser {
             } else {
                 i++
             }
+        }
+
+        val paneRows = rows.filter { paneSeparator.containsMatchIn(it.text) }
+        if (paneRows.size >= 2) {
+            result += TuiRegion(TuiRegionKind.PANE, paneRows.first().index, paneRows.last().index, paneRows.map { it.text })
         }
 
         val resultRows = rows.filter { resultPrefix.containsMatchIn(it.text) }
