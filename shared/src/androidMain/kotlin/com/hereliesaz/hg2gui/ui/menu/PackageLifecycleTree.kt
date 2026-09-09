@@ -16,16 +16,8 @@ object PackageLifecycleTree {
     private fun managerNodes(context: Context): List<MenuNode> {
         val packages = PackageLifecycleStore.installed(context)
         if (packages.isEmpty()) {
-            return listOf(
-                MenuNode(
-                    id = "packages/none",
-                    label = "No installed packages",
-                    cap = "…",
-                    emitsToken = false
-                )
-            )
+            return listOf(MenuNode("packages/none", "No installed packages", "…", emitsToken = false))
         }
-
         return packages.groupBy { it.manager to it.managerLabel }
             .entries
             .sortedBy { it.key.second.lowercase() }
@@ -50,17 +42,12 @@ object PackageLifecycleTree {
                         label = "Run",
                         cap = pkg.binaries.size.toString(),
                         children = pkg.binaries.map { binary ->
-                            MenuNode(
-                                id = "packages/${pkg.key}/run/$binary",
-                                label = binary,
-                                value = binary
-                            )
+                            MenuNode("packages/${pkg.key}/run/$binary", binary, value = binary)
                         },
                         emitsToken = false
                     )
                 )
             }
-
             add(
                 MenuNode(
                     id = "packages/${pkg.key}/${if (pkg.disabled) "enable" else "disable"}",
@@ -71,26 +58,22 @@ object PackageLifecycleTree {
             )
             add(
                 MenuNode(
-                    id = "packages/${pkg.key}/update",
-                    label = "Update",
-                    value = "hg2package update ${pkg.manager} ${shellQuote(pkg.name)}"
+                    id = "packages/${pkg.key}/${if (pkg.isolated) "release" else "isolate"}",
+                    label = if (pkg.isolated) "Release isolation" else "Isolate",
+                    cap = if (pkg.isolated) "sandboxed" else "private",
+                    value = "hg2package ${if (pkg.isolated) "release" else "isolate"} ${pkg.manager} ${shellQuote(pkg.name)}"
                 )
             )
+            add(MenuNode("packages/${pkg.key}/update", "Update", value = "hg2package update ${pkg.manager} ${shellQuote(pkg.name)}"))
             add(
                 MenuNode(
                     id = "packages/${pkg.key}/reset",
                     label = "Reset",
-                    cap = "wipe",
+                    cap = if (pkg.isolated) "reseed" else "wipe",
                     value = "hg2package reset ${pkg.manager} ${shellQuote(pkg.name)}"
                 )
             )
-            add(
-                MenuNode(
-                    id = "packages/${pkg.key}/info",
-                    label = "Info",
-                    value = "hg2package info ${pkg.manager} ${shellQuote(pkg.name)}"
-                )
-            )
+            add(MenuNode("packages/${pkg.key}/info", "Info", value = "hg2package info ${pkg.manager} ${shellQuote(pkg.name)}"))
             add(
                 MenuNode(
                     id = "packages/${pkg.key}/remove",
@@ -111,7 +94,12 @@ object PackageLifecycleTree {
             }
         }
 
-        val state = if (pkg.disabled) "disabled" else pkg.version.ifBlank { "installed" }
+        val state = when {
+            pkg.disabled && pkg.isolated -> "disabled · isolated"
+            pkg.disabled -> "disabled"
+            pkg.isolated -> "isolated"
+            else -> pkg.version.ifBlank { "installed" }
+        }
         return MenuNode(
             id = "packages/${pkg.key}",
             label = pkg.name,
