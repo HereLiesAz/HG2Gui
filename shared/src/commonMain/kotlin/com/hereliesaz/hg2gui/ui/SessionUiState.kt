@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.hereliesaz.hg2gui.managers.TerminalHistoryEntry
 import com.hereliesaz.hg2gui.terminal.ShellAliases
+import com.hereliesaz.hg2gui.terminal.ShellPresentation
 import kotlinx.coroutines.CompletableDeferred
 
 /**
@@ -22,6 +23,7 @@ class SessionUiState(val id: String, name: String, cwd: String) {
     var inputText by mutableStateOf("")
     var composedPrefix by mutableStateOf("")
     var running by mutableStateOf(false)
+    var shellPresentation by mutableStateOf(ShellPresentation(cwd = cwd))
 
     /** A carriage-return style progress/status frame currently being rewritten by the child. */
     var transientStatus by mutableStateOf<String?>(null)
