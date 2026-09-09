@@ -41,6 +41,7 @@ object PackageLifecycleStore {
         return buildList {
             addAll(dpkgPackages(prefix, prefs))
             addAll(pipPackages(prefix, prefs))
+            addAll(pipxPackages(context, prefs))
             addAll(npmPackages(prefix, prefs))
             addAll(gemPackages(prefix, prefs))
         }.distinctBy { it.key.lowercase() }
@@ -137,6 +138,7 @@ object PackageLifecycleStore {
     fun updateCommand(pkg: InstalledPackage): String = when (pkg.manager) {
         "pkg" -> "pkg install ${quote(pkg.name)}"
         "pip" -> "python -m pip install --upgrade ${quote(pkg.name)}"
+        "pipx" -> "pipx upgrade ${quote(pkg.name)}"
         "npm" -> "npm update -g ${quote(pkg.name)}"
         "gem" -> "gem update ${quote(pkg.name)}"
         else -> error("Unsupported package manager '${pkg.manager}'")
@@ -145,6 +147,7 @@ object PackageLifecycleStore {
     fun removeCommand(pkg: InstalledPackage, purge: Boolean = false): String = when (pkg.manager) {
         "pkg" -> "pkg ${if (purge) "purge" else "remove"} ${quote(pkg.name)}"
         "pip" -> "python -m pip uninstall -y ${quote(pkg.name)}"
+        "pipx" -> "pipx uninstall ${quote(pkg.name)}"
         "npm" -> "npm uninstall -g ${quote(pkg.name)}"
         "gem" -> "gem uninstall ${quote(pkg.name)} -a -x"
         else -> error("Unsupported package manager '${pkg.manager}'")
@@ -153,6 +156,7 @@ object PackageLifecycleStore {
     fun infoCommand(pkg: InstalledPackage): String = when (pkg.manager) {
         "pkg" -> "pkg show ${quote(pkg.name)}"
         "pip" -> "python -m pip show ${quote(pkg.name)}"
+        "pipx" -> "pipx list --output json"
         "npm" -> "npm list -g ${quote(pkg.name)} --depth=0"
         "gem" -> "gem info ${quote(pkg.name)}"
         else -> error("Unsupported package manager '${pkg.manager}'")
@@ -186,6 +190,33 @@ object PackageLifecycleStore {
                 }
             }
         return result
+    }
+
+    /**
+     * pipx owns one virtual environment per application package and records its authoritative
+     * package/version/app inventory in pipx_metadata.json. Reading that metadata keeps lifecycle
+     * discovery side-effect free; HG2Gui never needs to execute `pipx list` just to draw the menu.
+     */
+    private fun pipxPackages(context: Context, prefs: android.content.SharedPreferences): List<InstalledPackage> {
+        val home = DistroManager.homeDir(context)
+        val roots = listOf(
+            File(home, ".local/share/pipx/venvs"),
+            File(home, ".local/pipx/venvs")
+        ).filter(File::isDirectory)
+        return roots.flatMap { root ->
+            root.listFiles().orEmpty().mapNotNull { venv ->
+                val metadata = File(venv, "pipx_metadata.json")
+                if (!venv.isDirectory || !metadata.isFile) return@mapNotNull null
+                val json = runCatching { metadata.readText() }.getOrNull() ?: return@mapNotNull null
+                val name = PIPX_PACKAGE.find(json)?.groupValues?.getOrNull(1)
+                    ?.takeIf(String::isNotBlank)
+                    ?: venv.name
+                val version = PIPX_VERSION.find(json)?.groupValues?.getOrNull(1).orEmpty()
+                val appsBody = PIPX_APPS.find(json)?.groupValues?.getOrNull(1).orEmpty()
+                val apps = QUOTED.findAll(appsBody).map { it.groupValues[1] }.distinct().toList()
+                packageRecord(prefs, "pipx", "Python apps / pipx", name, version, apps)
+            }
+        }.distinctBy { it.name.lowercase() }
     }
 
     private fun npmPackages(prefix: File, prefs: android.content.SharedPreferences): List<InstalledPackage> {
@@ -326,6 +357,9 @@ object PackageLifecycleStore {
     private val JSON_BIN_OBJECT = Regex("\\\"bin\\\"\\s*:\\s*\\{([^}]*)}", RegexOption.DOT_MATCHES_ALL)
     private val JSON_BIN_STRING = Regex("\\\"bin\\\"\\s*:\\s*\\\"[^\\\"]+\\\"")
     private val JSON_KEY = Regex("\\\"([^\\\"]+)\\\"\\s*:")
+    private val PIPX_PACKAGE = Regex("\\\"package\\\"\\s*:\\s*\\\"([^\\\"]+)\\\"")
+    private val PIPX_VERSION = Regex("\\\"package_version\\\"\\s*:\\s*\\\"([^\\\"]*)\\\"")
+    private val PIPX_APPS = Regex("\\\"apps\\\"\\s*:\\s*\\[([^]]*)]", RegexOption.DOT_MATCHES_ALL)
     private val GEM_NAME = Regex("\\.name\\s*=\\s*[\\\"']([^\\\"']+)[\\\"']")
     private val GEM_VERSION = Regex("\\.version\\s*=\\s*[\\\"']([^\\\"']+)[\\\"']")
     private val GEM_EXECUTABLES = Regex("\\.executables\\s*=\\s*\\[([^]]*)]", RegexOption.DOT_MATCHES_ALL)
