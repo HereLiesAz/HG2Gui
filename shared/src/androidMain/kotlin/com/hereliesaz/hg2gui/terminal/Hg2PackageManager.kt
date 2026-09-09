@@ -195,11 +195,12 @@ class Hg2PackageManager(
             emit("Relocated $relocated top-level payload item${if (relocated == 1) "" else "s"} for ${pkg.name}.")
         }
 
+        val metadataRewritten = rewriteRelocatedControlMetadata(workDir)
         var rewritten = 0
         workDir.walkTopDown().filter { it.isFile }.forEach { file ->
-            if (rewriteTextPrefix(file)) rewritten++
+            if (!isRelocatedPathMetadata(workDir, file) && rewriteTextPrefix(file)) rewritten++
         }
-        emit("Rewrote $rewritten file${if (rewritten == 1) "" else "s"} for ${pkg.name}.")
+        emit("Rewrote ${rewritten + metadataRewritten} file${if (rewritten + metadataRewritten == 1) "" else "s"} for ${pkg.name}.")
 
         runTool(listOf(dpkgDeb.absolutePath, "-b", workDir.absolutePath, patched.absolutePath), "dpkg-deb build")
         if (!patched.isFile || patched.length() == 0L) error("Failed to rebuild ${pkg.name}")
@@ -229,6 +230,41 @@ class Hg2PackageManager(
             current = parent
         }
         return children.size
+    }
+
+    private fun rewriteRelocatedControlMetadata(workDir: File): Int {
+        val debianDir = File(workDir, "DEBIAN")
+        var rewritten = 0
+
+        val conffiles = File(debianDir, "conffiles")
+        if (conffiles.isFile) {
+            val text = conffiles.readText()
+            val updated = text.replace(OLD_PREFIX, "")
+            if (updated != text) {
+                conffiles.writeText(updated)
+                rewritten++
+            }
+        }
+
+        val md5sums = File(debianDir, "md5sums")
+        if (md5sums.isFile) {
+            val text = md5sums.readText()
+            val oldRelativePrefix = OLD_PREFIX.trimStart('/') + "/"
+            val updated = text
+                .replace(oldRelativePrefix, "")
+                .replace(OLD_PREFIX, "")
+            if (updated != text) {
+                md5sums.writeText(updated)
+                rewritten++
+            }
+        }
+
+        return rewritten
+    }
+
+    private fun isRelocatedPathMetadata(workDir: File, file: File): Boolean {
+        val debianDir = File(workDir, "DEBIAN")
+        return file.parentFile == debianDir && file.name in setOf("conffiles", "md5sums")
     }
 
     private fun rewriteTextPrefix(file: File): Boolean {
