@@ -37,7 +37,8 @@ actual class ShellSession private constructor(
     private val command: Array<String>,
     private val extraEnv: Map<String, String>,
     val backendDescription: String = "the bare system shell ($DEFAULT_SHELL) - no fallback reached",
-    private val usePty: Boolean = false
+    private val usePty: Boolean = false,
+    private val shellFamily: ShellFamily = ShellFamily.SH
 ) {
     companion object {
         private const val SENTINEL = "__HG2GUI_EOC_a7f3__"
@@ -86,17 +87,39 @@ actual class ShellSession private constructor(
             val bootstrap = bootstrapBashEnv(context, home)
             if (bootstrap != null) {
                 val (bootstrapHome, env) = bootstrap
-                val bash = File(env.getValue("HG2GUI_BASH"))
-                val session = ShellSession(
-                    bootstrapHome,
-                    arrayOf(bash.absolutePath, "-l"),
-                    env,
-                    "bash (Termux bootstrap via nativeLibraryDir)",
-                    usePty
-                )
-                if (session.survivedStartup()) return session
-                session.close()
-                reasons += "the exec-exempt Termux bash started but exited immediately"
+                val selected = ShellPreference.selected(context)
+                val selectedExecutable = ShellPreference.executable(context, selected)
+                val family = ShellCommandProtocol.family(selected)
+                if (selectedExecutable != null) {
+                    val selectedSession = ShellSession(
+                        bootstrapHome,
+                        ShellCommandProtocol.loginArgs(family, selectedExecutable.absolutePath),
+                        env,
+                        "$selected (Termux bootstrap)",
+                        usePty,
+                        family
+                    )
+                    if (selectedSession.survivedStartup()) return selectedSession
+                    selectedSession.close()
+                    reasons += "selected shell '$selected' started but exited immediately"
+                } else {
+                    reasons += "selected shell '$selected' is unavailable"
+                }
+
+                if (selected != ShellPreference.BASH) {
+                    val bash = File(env.getValue("HG2GUI_BASH"))
+                    val bashSession = ShellSession(
+                        bootstrapHome,
+                        arrayOf(bash.absolutePath, "-l"),
+                        env,
+                        "bash (fallback after unavailable $selected)",
+                        usePty,
+                        ShellFamily.BASH
+                    )
+                    if (bashSession.survivedStartup()) return bashSession
+                    bashSession.close()
+                    reasons += "the exec-exempt Termux bash fallback started but exited immediately"
+                }
             } else if (DistroManager.isInstalled(context)) {
                 reasons += "the APK-installed exec-exempt Termux bash is unavailable"
             } else {
@@ -110,7 +133,8 @@ actual class ShellSession private constructor(
                 arrayOf(DEFAULT_SHELL),
                 fallbackEnv,
                 "the bare system shell ($DEFAULT_SHELL), without apt/pkg/coreutils - ${reasons.joinToString("; ")}",
-                usePty
+                usePty,
+                ShellFamily.SH
             )
         }
 
@@ -257,14 +281,7 @@ actual class ShellSession private constructor(
             val emulator = TerminalEmulator(DummyTerminalOutput(), 120, 24, 10, 10, 1000, null)
             val stderrEmulator = TerminalEmulator(DummyTerminalOutput(), 120, 24, 10, 10, 1000, null)
 
-            sin.write("{\n")
-            sin.write(command)
-            sin.write("\n__hg2gui_status=$?\n")
-            sin.write(
-                "printf '%s%s%d:%s\\n' \"$SENTINEL_HEAD\" \"$SENTINEL_TAIL\" " +
-                    "\"\$__hg2gui_status\" \"\$PWD\"\n"
-            )
-            sin.write("}\n")
+            sin.write(ShellCommandProtocol.frame(shellFamily, command, SENTINEL_HEAD, SENTINEL_TAIL))
             sin.flush()
 
             val pending = StringBuilder()
