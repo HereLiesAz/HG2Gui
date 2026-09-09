@@ -60,6 +60,7 @@ data class TuiRow(
 object TuiSemanticParser {
     private val menuPrefix = Regex("""^\s*(?:[>›»▶►•●○◉✓✔*+-]|\[[ xX✓✔]\]|\([ xX*]\))\s+(.+?)\s*$""")
     private val numberedMenu = Regex("""^\s*(?:\d+[.)]|[A-Za-z][.)])\s+(.+?)\s*$""")
+    private val plainIndentedItem = Regex("""^\s{2,}\S.+$""")
     private val promptSuffix = Regex("""(?i)(?:[:>]\s*|\?\s*|\[[yYnN/]+]\s*)$""")
     private val passwordWords = Regex("""(?i)\b(password|passphrase|token|secret|api\s*key)\b""")
     private val confirmWords = Regex("""(?i)\b(confirm|continue|proceed|overwrite|delete|remove|install|allow|accept)\b""")
@@ -72,7 +73,11 @@ object TuiSemanticParser {
         val menuRuns = mutableListOf<List<TuiRow>>()
         var current = mutableListOf<TuiRow>()
         for (row in visible) {
-            if (looksLikeMenuItem(row)) {
+            val explicit = looksLikeExplicitMenuItem(row)
+            val continuation = current.isNotEmpty() &&
+                row.index == current.last().index + 1 &&
+                plainIndentedItem.matches(row.text)
+            if (explicit || continuation) {
                 if (current.isNotEmpty() && row.index != current.last().index + 1) {
                     if (current.size >= 2) menuRuns += current.toList()
                     current = mutableListOf()
@@ -88,7 +93,7 @@ object TuiSemanticParser {
         val layers = menuRuns.map { run ->
             val firstRow = run.first().index
             val heading = visible
-                .lastOrNull { it.index < firstRow && firstRow - it.index <= 2 && !looksLikeMenuItem(it) }
+                .lastOrNull { it.index < firstRow && firstRow - it.index <= 2 && !looksLikeExplicitMenuItem(it) }
                 ?.text
                 ?.trim()
                 ?.takeIf { it.isNotEmpty() }
@@ -126,7 +131,7 @@ object TuiSemanticParser {
         )
     }
 
-    private fun looksLikeMenuItem(row: TuiRow): Boolean =
+    private fun looksLikeExplicitMenuItem(row: TuiRow): Boolean =
         row.highlighted || menuPrefix.matches(row.text) || numberedMenu.matches(row.text)
 
     private fun menuLabel(text: String): String =
