@@ -29,6 +29,13 @@ class FullScreenCommandsTest {
     }
 
     @Test
+    fun interactiveShells_areRoutedToPty() {
+        assertEquals("bash", fullScreenCommandOf("bash"))
+        assertEquals("zsh", fullScreenCommandOf("zsh"))
+        assertEquals("fish", fullScreenCommandOf("fish"))
+    }
+
+    @Test
     fun modernInteractiveAiClis_areRoutedToPty() {
         assertEquals("claude", fullScreenCommandOf("claude"))
         assertEquals("gemini", fullScreenCommandOf("gemini"))
