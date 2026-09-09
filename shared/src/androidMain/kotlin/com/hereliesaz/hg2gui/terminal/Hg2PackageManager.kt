@@ -9,6 +9,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
 import java.nio.file.Files
+import java.nio.file.Paths
 import java.util.ArrayDeque
 import java.util.Locale
 import java.util.zip.GZIPInputStream
@@ -281,7 +282,7 @@ class Hg2PackageManager(
 
         val metadataRewritten = rewriteRelocatedControlMetadata(workDir)
         var rewritten = 0
-        workDir.walkTopDown().filter { it.isFile }.forEach { file ->
+        workDir.walkTopDown().filter { it.isFile && !Files.isSymbolicLink(it.toPath()) }.forEach { file ->
             if (!isRelocatedPathMetadata(workDir, file) && rewriteTextPrefix(file)) rewritten++
         }
 
@@ -464,7 +465,7 @@ class Hg2PackageManager(
                     val replacement = target.replaceFirst(OLD_PREFIX, prefix.absolutePath)
                     runCatching {
                         Files.delete(path)
-                        Files.createSymbolicLink(path, java.nio.file.Path.of(replacement))
+                        Files.createSymbolicLink(path, Paths.get(replacement))
                         rewritten++
                     }.getOrElse { error("Could not rewrite relocated symlink $path → $target: ${it.message}") }
                 }
@@ -507,6 +508,7 @@ class Hg2PackageManager(
     }
 
     private fun rewriteTextPrefix(file: File): Boolean {
+        if (Files.isSymbolicLink(file.toPath())) return false
         val bytes = runCatching { file.readBytes() }.getOrNull() ?: return false
         if (bytes.any { it == 0.toByte() }) return false
         val text = runCatching { bytes.toString(Charsets.UTF_8) }.getOrNull() ?: return false
@@ -626,6 +628,8 @@ class Hg2PackageManager(
             return null
         }
 
+        lateinit var visitPackage: (PackageRecord) -> Unit
+
         fun visitRelation(alternatives: List<Relation>, owner: String, kind: String) {
             if (alternatives.any(::installedSatisfies) || alternatives.any(::plannedSatisfies)) return
             val candidate = alternatives.firstNotNullOfOrNull(::candidateFor)
@@ -636,9 +640,12 @@ class Hg2PackageManager(
             }
         }
 
-        fun visitPackage(pkg: PackageRecord) {
+        visitPackage = fun(pkg: PackageRecord) {
             if (pkg.name in planned) return
-            if (pkg.name in installed && !(forceRequested && (pkg.name in requestedSet || requested.any { it in pkg.provides.map(Relation::name) }))) return
+            val forcedRequested = forceRequested && (
+                pkg.name in requestedSet || requested.any { requestedName -> pkg.provides.any { it.name == requestedName } }
+            )
+            if (pkg.name in installed && !forcedRequested) return
             if (!visiting.add(pkg.name)) return
             installedConflict(pkg)?.let { error("Cannot install ${pkg.name}: $it. HG2Gui will not auto-remove conflicting packages.") }
             plannedConflict(pkg)?.let { error("Cannot install ${pkg.name}: $it") }
