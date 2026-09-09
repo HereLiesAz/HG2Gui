@@ -23,6 +23,8 @@ class Hg2PackageManager(
     private val packagesFile = File(stateDir, "Packages")
     private val dpkgLauncher = File(context.applicationInfo.nativeLibraryDir, "libhg2gui_dpkg.so")
     private val dpkgDeb = File(prefix, "bin/dpkg-deb")
+    private val bash = File(prefix, "bin/bash")
+    private val dpkgInfoDir = File(prefix, "var/lib/dpkg/info")
 
     data class PackageRecord(
         val name: String,
@@ -36,6 +38,12 @@ class Hg2PackageManager(
     )
 
     private data class Installed(val name: String, val version: String)
+
+    private data class PreparedPackage(
+        val pkg: PackageRecord,
+        val archive: File,
+        val scriptsDir: File
+    )
 
     fun handles(line: String): Boolean = words(line).firstOrNull() in setOf("pkg", "hg2pkg")
 
@@ -61,14 +69,11 @@ class Hg2PackageManager(
     }.flowOn(Dispatchers.IO)
 
     private suspend fun clean(emit: suspend (String) -> Unit) {
-        val files = cacheDir.listFiles().orEmpty()
-        val removable = files.filter {
+        val removable = cacheDir.listFiles().orEmpty().filter {
             it.isFile && (it.extension == "deb" || it.name.endsWith(".part")) ||
-                it.isDirectory && it.name.startsWith("prepare-")
+                it.isDirectory && (it.name.startsWith("prepare-") || it.name.startsWith("scripts-") || it.name.startsWith("installed-scripts-"))
         }
-        removable.forEach {
-            if (it.isDirectory) it.deleteRecursively() else it.delete()
-        }
+        removable.forEach { if (it.isDirectory) it.deleteRecursively() else it.delete() }
         emit("Removed ${removable.size} cached package item${if (removable.size == 1) "" else "s"}.")
     }
 
@@ -129,8 +134,23 @@ class Hg2PackageManager(
         val missing = names.filterNot { it in installed }
         if (missing.isNotEmpty()) emit("Not installed: ${missing.joinToString(" ")}")
         if (present.isEmpty()) return
+
+        if (!bash.canExecute()) error("HG2Gui Bash is unavailable at ${bash.absolutePath}")
         emit("${if (purge) "Purging" else "Removing"}: ${present.joinToString(" ")}")
-        runDpkg(listOf(if (purge) "--purge" else "--remove") + present, emit)
+
+        for (name in present) {
+            val oldScripts = stageInstalledScripts(name)
+            try {
+                runMaintainerScript(File(oldScripts, "prerm"), name, installed.getValue(name).version, listOf("remove"), emit)
+                runDpkg(listOf("--remove", name), emit)
+                runMaintainerScript(File(oldScripts, "postrm"), name, installed.getValue(name).version, listOf("remove"), emit)
+                if (purge) runDpkg(listOf("--purge", name), emit)
+                oldScripts.deleteRecursively()
+            } catch (t: Throwable) {
+                restoreInstalledScripts(name, oldScripts)
+                throw t
+            }
+        }
         emit("Done: ${present.joinToString(" ")}")
     }
 
@@ -144,11 +164,14 @@ class Hg2PackageManager(
             return
         }
 
+        if (!dpkgLauncher.canExecute()) error("HG2Gui dpkg launcher is unavailable in ${context.applicationInfo.nativeLibraryDir}")
+        if (!bash.canExecute()) error("HG2Gui Bash is unavailable at ${bash.absolutePath}")
+
         val total = plan.sumOf { it.size.coerceAtLeast(0L) }
         emit("HG2Gui resolved ${plan.size} package${if (plan.size == 1) "" else "s"} (${formatBytes(total)}).")
         emit(plan.joinToString("\n") { "  ${it.name} ${it.version}" })
 
-        val archives = ArrayList<File>(plan.size)
+        val prepared = ArrayList<PreparedPackage>(plan.size)
         var overallDone = 0L
         for (pkg in plan) {
             emit("Downloading ${pkg.name} ${pkg.version}…")
@@ -160,33 +183,65 @@ class Hg2PackageManager(
                 emit("$percent% [${pkg.name} ${formatBytes(packageDone)}/${formatBytes(pkg.size)}]")
             }
             emit("Preparing ${pkg.name} for HG2Gui prefix…")
-            archives += prepareArchive(result.file, pkg, emit)
+            prepared += prepareArchive(result.file, pkg, emit)
             overallDone += pkg.size.coerceAtLeast(0L)
         }
 
-        if (!dpkgLauncher.canExecute()) error("HG2Gui dpkg launcher is unavailable in ${context.applicationInfo.nativeLibraryDir}")
-        emit("Installing ${archives.size} verified package archive${if (archives.size == 1) "" else "s"}…")
-        runDpkg(listOf("--unpack") + archives.map { it.absolutePath }, emit)
-        repairMaintainerScripts()
-        runDpkg(listOf("--configure", "-a"), emit)
+        emit("Installing ${prepared.size} verified package archive${if (prepared.size == 1) "" else "s"}…")
+        for (item in prepared) {
+            installPreparedPackage(item, installed[item.pkg.name], emit)
+        }
         emit("Installed: ${requested.joinToString(" ")}")
+    }
+
+    private suspend fun installPreparedPackage(
+        prepared: PreparedPackage,
+        old: Installed?,
+        emit: suspend (String) -> Unit
+    ) {
+        val pkg = prepared.pkg
+        val oldScripts = stageInstalledScripts(pkg.name)
+        try {
+            if (old != null) {
+                runMaintainerScript(File(oldScripts, "prerm"), pkg.name, old.version, listOf("upgrade", pkg.version), emit)
+                runMaintainerScript(File(prepared.scriptsDir, "preinst"), pkg.name, pkg.version, listOf("upgrade", old.version), emit)
+            } else {
+                runMaintainerScript(File(prepared.scriptsDir, "preinst"), pkg.name, pkg.version, listOf("install"), emit)
+            }
+
+            runDpkg(listOf("--unpack", prepared.archive.absolutePath), emit)
+
+            if (old != null) {
+                runMaintainerScript(File(oldScripts, "postrm"), pkg.name, old.version, listOf("upgrade", pkg.version), emit)
+            }
+
+            val postinstArgs = if (old != null) listOf("configure", old.version) else listOf("configure")
+            runMaintainerScript(File(prepared.scriptsDir, "postinst"), pkg.name, pkg.version, postinstArgs, emit)
+            runDpkg(listOf("--configure", pkg.name), emit)
+            installStoredScripts(pkg.name, prepared.scriptsDir)
+            oldScripts.deleteRecursively()
+        } catch (t: Throwable) {
+            restoreInstalledScripts(pkg.name, oldScripts)
+            throw t
+        }
     }
 
     private suspend fun prepareArchive(
         archive: File,
         pkg: PackageRecord,
         emit: suspend (String) -> Unit
-    ): File {
-        if (!dpkgDeb.canExecute()) {
-            error("HG2Gui dpkg-deb is unavailable at ${dpkgDeb.absolutePath}")
-        }
+    ): PreparedPackage {
+        if (!dpkgDeb.canExecute()) error("HG2Gui dpkg-deb is unavailable at ${dpkgDeb.absolutePath}")
 
         val safeStem = "${pkg.name}_${pkg.version}_${pkg.architecture}".replace(Regex("[^A-Za-z0-9._-]"), "_")
         val workDir = File(cacheDir, "prepare-$safeStem")
         val patched = File(cacheDir, "$safeStem.hg2.deb")
+        val scriptsDir = File(cacheDir, "scripts-$safeStem")
         workDir.deleteRecursively()
+        scriptsDir.deleteRecursively()
         patched.delete()
         workDir.mkdirs()
+        scriptsDir.mkdirs()
 
         runTool(listOf(dpkgDeb.absolutePath, "-R", archive.absolutePath, workDir.absolutePath), "dpkg-deb extract")
 
@@ -200,12 +255,98 @@ class Hg2PackageManager(
         workDir.walkTopDown().filter { it.isFile }.forEach { file ->
             if (!isRelocatedPathMetadata(workDir, file) && rewriteTextPrefix(file)) rewritten++
         }
-        emit("Rewrote ${rewritten + metadataRewritten} file${if (rewritten + metadataRewritten == 1) "" else "s"} for ${pkg.name}.")
+
+        val extractedScripts = extractMaintainerScripts(workDir, scriptsDir)
+        emit("Rewrote ${rewritten + metadataRewritten} file${if (rewritten + metadataRewritten == 1) "" else "s"} and externalized $extractedScripts maintainer script${if (extractedScripts == 1) "" else "s"} for ${pkg.name}.")
 
         runTool(listOf(dpkgDeb.absolutePath, "-b", workDir.absolutePath, patched.absolutePath), "dpkg-deb build")
         if (!patched.isFile || patched.length() == 0L) error("Failed to rebuild ${pkg.name}")
         workDir.deleteRecursively()
-        return patched
+        return PreparedPackage(pkg, patched, scriptsDir)
+    }
+
+    private fun extractMaintainerScripts(workDir: File, scriptsDir: File): Int {
+        val debianDir = File(workDir, "DEBIAN")
+        var count = 0
+        for (name in MAINTAINER_SCRIPTS) {
+            val source = File(debianDir, name)
+            if (!source.isFile) continue
+            source.copyTo(File(scriptsDir, name), overwrite = true)
+            source.delete()
+            count++
+        }
+        return count
+    }
+
+    private fun stageInstalledScripts(packageName: String): File {
+        val safeName = packageName.replace(Regex("[^A-Za-z0-9._+-]"), "_")
+        val dir = File(cacheDir, "installed-scripts-$safeName-${System.nanoTime()}")
+        dir.mkdirs()
+        for (name in MAINTAINER_SCRIPTS) {
+            val source = File(dpkgInfoDir, "$packageName.$name")
+            if (!source.isFile) continue
+            source.copyTo(File(dir, name), overwrite = true)
+            source.delete()
+        }
+        return dir
+    }
+
+    private fun restoreInstalledScripts(packageName: String, scriptsDir: File) {
+        if (!scriptsDir.isDirectory) return
+        dpkgInfoDir.mkdirs()
+        for (name in MAINTAINER_SCRIPTS) {
+            val source = File(scriptsDir, name)
+            if (source.isFile) source.copyTo(File(dpkgInfoDir, "$packageName.$name"), overwrite = true)
+        }
+    }
+
+    private fun installStoredScripts(packageName: String, scriptsDir: File) {
+        dpkgInfoDir.mkdirs()
+        for (name in MAINTAINER_SCRIPTS) {
+            val destination = File(dpkgInfoDir, "$packageName.$name")
+            destination.delete()
+            val source = File(scriptsDir, name)
+            if (source.isFile) source.copyTo(destination, overwrite = true)
+        }
+        scriptsDir.deleteRecursively()
+    }
+
+    private suspend fun runMaintainerScript(
+        script: File,
+        packageName: String,
+        packageVersion: String,
+        args: List<String>,
+        emit: suspend (String) -> Unit
+    ) {
+        if (!script.isFile) return
+        rewriteTextPrefix(script)
+        val process = ProcessBuilder(listOf(bash.absolutePath, script.absolutePath) + args)
+            .directory(prefix)
+            .redirectErrorStream(true)
+            .apply {
+                applyPackageEnvironment(environment())
+                environment()["DPKG_MAINTSCRIPT_NAME"] = script.name.substringAfterLast('.')
+                environment()["DPKG_MAINTSCRIPT_PACKAGE"] = packageName
+                environment()["DPKG_MAINTSCRIPT_PACKAGE_REFCOUNT"] = "1"
+                environment()["DPKG_MAINTSCRIPT_ARCH"] = "aarch64"
+                environment()["DPKG_MAINTSCRIPT_VERSION"] = packageVersion
+            }
+            .start()
+
+        val tail = ArrayDeque<String>(DPKG_ERROR_TAIL_LINES)
+        process.inputStream.bufferedReader().use { reader ->
+            while (true) {
+                val line = reader.readLine() ?: break
+                if (tail.size == DPKG_ERROR_TAIL_LINES) tail.removeFirst()
+                tail.addLast(line)
+                emit(line)
+            }
+        }
+        val code = process.waitFor()
+        if (code != 0) {
+            val detail = tail.joinToString("\n").trim()
+            error("${packageName}.${script.name} exited with code $code${if (detail.isBlank()) "" else ":\n$detail"}")
+        }
     }
 
     private fun relocateTermuxPayload(workDir: File): Int {
@@ -215,12 +356,8 @@ class Hg2PackageManager(
         val children = sourceRoot.listFiles().orEmpty()
         for (child in children) {
             val destination = File(workDir, child.name)
-            if (destination.exists()) {
-                error("Cannot relocate package payload: ${destination.absolutePath} already exists")
-            }
-            if (!child.renameTo(destination)) {
-                error("Cannot relocate package payload item ${child.absolutePath} to ${destination.absolutePath}")
-            }
+            if (destination.exists()) error("Cannot relocate package payload: ${destination.absolutePath} already exists")
+            if (!child.renameTo(destination)) error("Cannot relocate package payload item ${child.absolutePath} to ${destination.absolutePath}")
         }
 
         var current: File? = sourceRoot
@@ -250,9 +387,7 @@ class Hg2PackageManager(
         if (md5sums.isFile) {
             val text = md5sums.readText()
             val oldRelativePrefix = OLD_PREFIX.trimStart('/') + "/"
-            val updated = text
-                .replace(oldRelativePrefix, "")
-                .replace(OLD_PREFIX, "")
+            val updated = text.replace(oldRelativePrefix, "").replace(OLD_PREFIX, "")
             if (updated != text) {
                 md5sums.writeText(updated)
                 rewritten++
@@ -388,14 +523,6 @@ class Hg2PackageManager(
         env["DPKG_ADMINDIR"] = File(prefix, "var/lib/dpkg").absolutePath
     }
 
-    private fun repairMaintainerScripts() {
-        val infoDir = File(prefix, "var/lib/dpkg/info")
-        if (!infoDir.isDirectory) return
-        infoDir.listFiles().orEmpty().forEach { file ->
-            if (file.isFile) rewriteTextPrefix(file)
-        }
-    }
-
     private fun readInstalled(): Map<String, Installed> {
         val status = File(prefix, "var/lib/dpkg/status")
         if (!status.isFile) return emptyMap()
@@ -462,6 +589,7 @@ class Hg2PackageManager(
         private const val REPO = "https://packages.termux.dev/apt/termux-main"
         private const val OLD_PREFIX = "/data/data/com.termux/files/usr"
         private const val DPKG_ERROR_TAIL_LINES = 40
+        private val MAINTAINER_SCRIPTS = listOf("preinst", "postinst", "prerm", "postrm")
         private const val USAGE = "HG2Gui package manager\nusage: pkg <install|update|upgrade|remove|purge|search|show|list-installed|clean> …"
     }
 }
