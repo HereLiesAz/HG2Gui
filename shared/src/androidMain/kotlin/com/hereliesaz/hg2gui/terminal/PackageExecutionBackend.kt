@@ -56,17 +56,26 @@ object PackageExecutionBackend {
     fun compatibilityCommand(context: Context, original: String, workingDirectory: String): String {
         val proot = PackageIsolation.engine(context)
             ?: error("PRoot compatibility backend is unavailable")
-        val prefix = DistroManager.prefixDir(context).absolutePath
-        val home = DistroManager.homeDir(context).absolutePath
-        val cwd = File(workingDirectory).takeIf { it.isDirectory }?.absolutePath ?: home
+        val prefix = DistroManager.prefixDir(context)
+        val home = DistroManager.homeDir(context)
+        val cwd = File(workingDirectory).takeIf { it.isDirectory }?.absolutePath ?: home.absolutePath
         val bash = File(prefix, "bin/bash").absolutePath
+        val environment = linkedMapOf(
+            "PATH" to "${prefix.absolutePath}/bin:/system/bin",
+            "LD_LIBRARY_PATH" to "${prefix.absolutePath}/lib",
+            "TMPDIR" to "${prefix.absolutePath}/tmp",
+            "LANG" to "en_US.UTF-8",
+            "TERM" to "xterm-256color",
+            "TERMINFO" to "${prefix.absolutePath}/share/terminfo"
+        )
+        Hg2ExecEnvironment.apply(context, environment, home)
 
         return buildString {
             append(q(proot.absolutePath))
             append(" -r /")
             append(" -w ").append(q(cwd))
             append(" /system/bin/env")
-            TermuxRuntimeEnvironment.values(context).forEach { (key, value) ->
+            environment.forEach { (key, value) ->
                 append(' ').append(key).append('=').append(q(value))
             }
             append(' ').append(q(bash)).append(" -lc ").append(q(original))
