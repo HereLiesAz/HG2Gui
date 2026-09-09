@@ -24,6 +24,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -73,6 +75,83 @@ private fun SessionUiState.pendingSegment(): String = buildString {
     }
 }.trim()
 
+private fun expectedInputKind(tokens: List<String>): String? {
+    if (tokens.isEmpty()) return null
+    val flattened = tokens.flatMap { it.trim().split(Regex("\\s+")).filter(String::isNotBlank) }
+    if (flattened.isEmpty()) return null
+    val verb = flattened.first().substringAfterLast('/').lowercase()
+    val tail = flattened.drop(1)
+    val last = flattened.last().lowercase()
+
+    fun labelFrom(text: String): String? {
+        val t = text.lowercase()
+        return when {
+            "url" in t || "uri" in t -> "URL"
+            "file" in t || "output" in t || "config" in t || "cert" in t || "key" in t -> "FILE PATH"
+            "directory" in t || "dir" in t || "path" in t -> "PATH"
+            "hostname" in t || "host" in t || "server" in t -> "HOST OR ADDRESS"
+            "port" in t -> "PORT"
+            "username" in t || "user" in t -> "USERNAME"
+            "package" in t -> "PACKAGE NAME"
+            "pattern" in t || "regex" in t || "regexp" in t -> "SEARCH PATTERN"
+            "query" in t || "search" in t -> "SEARCH TERM"
+            "repository" in t || "repo" in t -> "REPOSITORY"
+            "branch" in t -> "BRANCH"
+            "message" in t -> "MESSAGE"
+            "name" in t -> "NAME"
+            else -> null
+        }
+    }
+
+    val explicitMetavariable = flattened.asReversed().firstNotNullOfOrNull { token ->
+        Regex("[<\\[]?([A-Z][A-Z0-9_-]{1,})[>\\]]?").find(token)?.groupValues?.getOrNull(1)?.let(::labelFrom)
+    }
+    if (explicitMetavariable != null) return explicitMetavariable
+
+    if (last.startsWith("-")) {
+        labelFrom(last)?.let { return it }
+    }
+
+    when (verb) {
+        "curl", "wget" -> {
+            val hasTarget = tail.any { it.contains("://") || (!it.startsWith("-") && '.' in it) }
+            if (!hasTarget) return "URL"
+        }
+        "ssh", "sftp", "telnet", "ping", "traceroute", "tracepath", "dig", "nslookup", "whois", "nmap", "nc", "netcat" -> {
+            val operands = tail.filterNot { it.startsWith("-") }
+            if (operands.isEmpty()) return "HOST OR ADDRESS"
+        }
+        "grep", "egrep", "fgrep", "rg", "ripgrep" -> {
+            val operands = tail.filterNot { it.startsWith("-") }
+            if (operands.isEmpty()) return "SEARCH PATTERN"
+        }
+        "cd", "cat", "less", "more", "head", "tail", "touch", "mkdir", "rmdir", "rm", "stat", "readlink", "realpath" -> {
+            val operands = tail.filterNot { it.startsWith("-") }
+            if (operands.isEmpty()) return "FILE OR PATH"
+        }
+        "cp", "mv" -> {
+            val operands = tail.filterNot { it.startsWith("-") }
+            if (operands.size < 2) return "SOURCE AND DESTINATION"
+        }
+        "apt", "apt-get", "pkg", "hg2pkg" -> {
+            val operation = tail.firstOrNull()?.lowercase()
+            if (operation in setOf("install", "in", "remove", "rm", "uninstall", "purge", "show", "info") && tail.size < 2) {
+                return "PACKAGE NAME"
+            }
+            if (operation == "search" && tail.size < 2) return "SEARCH TERM"
+        }
+        "git" -> {
+            when (tail.firstOrNull()?.lowercase()) {
+                "clone" -> if (tail.size < 2) return "REPOSITORY URL"
+                "checkout", "switch" -> if (tail.size < 2) return "BRANCH"
+                "add" -> if (tail.size < 2) return "FILE OR PATH"
+            }
+        }
+    }
+
+    return if (last.startsWith("-")) "ARGUMENT" else null
+}
+
 @Composable
 fun TerminalScreen(
     tree: List<MenuNode>,
@@ -105,11 +184,17 @@ fun TerminalScreen(
     val active = sessions.first { it.id == activeSessionId }
     val scope = rememberCoroutineScope()
     val listState = remember(active.id) { LazyListState() }
+    val inputFocusRequester = remember(active.id) { FocusRequester() }
     var selectedEntryId by remember(active.id) { mutableStateOf<Long?>(null) }
     var selectedShowRaw by remember(active.id) { mutableStateOf(false) }
+    var requestedInputKind by remember(active.id) { mutableStateOf<String?>(null) }
 
     LaunchedEffect(selectedEntryId) {
         selectedShowRaw = false
+    }
+
+    LaunchedEffect(requestedInputKind) {
+        if (requestedInputKind != null) inputFocusRequester.requestFocus()
     }
 
     val newestEntry = active.buffer.lastOrNull()
@@ -132,11 +217,13 @@ fun TerminalScreen(
             val answer = session.pendingSegment()
             session.tokens = emptyList()
             session.inputText = ""
+            requestedInputKind = null
             session.answerPrompt(answer)
         } else {
             val fullLine = (session.composedPrefix + session.pendingSegment()).trim()
 
             if (fullLine.isNotEmpty() && !session.running) {
+                requestedInputKind = null
                 session.running = true
                 session.transientStatus = null
                 if (session.commandHistory.isEmpty() || session.commandHistory.last() != fullLine) {
@@ -202,6 +289,7 @@ fun TerminalScreen(
                     onClick = {
                         active.tokens = emptyList()
                         active.inputText = ""
+                        requestedInputKind = null
                         active.answerPrompt("y")
                     }
                 ) {
@@ -213,6 +301,7 @@ fun TerminalScreen(
                     onClick = {
                         active.tokens = emptyList()
                         active.inputText = ""
+                        requestedInputKind = null
                         active.answerPrompt("n")
                     }
                 ) {
@@ -291,6 +380,7 @@ fun TerminalScreen(
                         onCopy = onCopy,
                         onShare = onShare,
                         onRerun = { command ->
+                            requestedInputKind = null
                             active.tokens = emptyList()
                             active.inputText = command
                         },
@@ -334,13 +424,21 @@ fun TerminalScreen(
             onRun = { picked, isTerminal ->
                 val chainOperator = chainOperatorFromPick(picked)
                 if (chainOperator != null) {
+                    requestedInputKind = null
                     active.composedPrefix = chainSegment(active.composedPrefix, active.pendingSegment(), chainOperator)
                     active.tokens = emptyList()
                     active.inputText = ""
                 } else {
                     active.tokens = picked
                     if (picked.isNotEmpty()) active.inputText = ""
-                    if (isTerminal) executeCommand()
+                    if (isTerminal && pendingPrompt != null) {
+                        requestedInputKind = null
+                        executeCommand()
+                    } else if (isTerminal) {
+                        requestedInputKind = expectedInputKind(picked)
+                    } else {
+                        requestedInputKind = null
+                    }
                 }
             },
             onWizard = onWizard,
@@ -348,14 +446,19 @@ fun TerminalScreen(
         )
 
         val maskInput = pendingPrompt != null && ShellAliases.looksLikePassword(pendingPrompt)
+        val visibleInputRequest = requestedInputKind?.takeIf { pendingPrompt == null && active.inputText.isBlank() }
 
         CommandLine(
             composedPrefix = active.composedPrefix,
             tokens = active.tokens,
             inputText = active.inputText,
-            onInputTextChange = { active.inputText = it },
+            onInputTextChange = {
+                active.inputText = it
+                if (it.isNotBlank()) requestedInputKind = null
+            },
             hint = when {
                 pendingPrompt != null -> pendingPrompt.substringAfterLast('\n').ifBlank { "Waiting for input…" }
+                visibleInputRequest != null -> "Type ${visibleInputRequest.lowercase()} below, then press run"
                 active.transientStatus != null -> active.transientStatus!!
                 active.running -> "Running…"
                 active.tokens.isNotEmpty() || active.inputText.isNotBlank() -> "Ready — press run"
@@ -365,6 +468,8 @@ fun TerminalScreen(
             runLabel = if (pendingPrompt != null) "SEND" else "RUN",
             enabled = pendingPrompt != null || (!active.running && (active.tokens.isNotEmpty() || active.inputText.isNotBlank())),
             masked = maskInput,
+            inputRequest = visibleInputRequest,
+            inputFocusRequester = inputFocusRequester,
             onRun = executeCommand
         )
 
@@ -372,6 +477,7 @@ fun TerminalScreen(
             onKeyClick = { key ->
                 when (key) {
                     "↑" -> {
+                        requestedInputKind = null
                         if (active.commandHistory.isNotEmpty()) {
                             val nextIdx = if (active.historyIndex == -1) active.commandHistory.size - 1 else (active.historyIndex - 1).coerceAtLeast(0)
                             active.historyIndex = nextIdx
@@ -380,6 +486,7 @@ fun TerminalScreen(
                         }
                     }
                     "↓" -> {
+                        requestedInputKind = null
                         if (active.historyIndex >= 0) {
                             val nextIdx = active.historyIndex + 1
                             if (nextIdx < active.commandHistory.size) {
@@ -393,6 +500,7 @@ fun TerminalScreen(
                         }
                     }
                     "esc" -> {
+                        requestedInputKind = null
                         active.tokens = emptyList()
                         active.inputText = ""
                     }
@@ -792,7 +900,9 @@ private fun CommandLine(
     enabled: Boolean,
     onRun: () -> Unit,
     runLabel: String = "RUN",
-    masked: Boolean = false
+    masked: Boolean = false,
+    inputRequest: String? = null,
+    inputFocusRequester: FocusRequester
 ) {
     Column(Modifier.padding(horizontal = 20.dp).padding(top = 16.dp)) {
         Text(
@@ -802,6 +912,18 @@ private fun CommandLine(
                 fontSize = 9.sp
             )
         )
+        if (inputRequest != null) {
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "TYPE ${inputRequest.uppercase()} ↓",
+                style = MaterialTheme.typography.titleMedium.copy(
+                    color = Azphalt.currentGround.onPage,
+                    fontWeight = FontWeight.Black,
+                    fontSize = 11.sp,
+                    letterSpacing = 0.08.em
+                )
+            )
+        }
         Spacer(Modifier.height(9.dp))
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
             Row(
@@ -809,7 +931,7 @@ private fun CommandLine(
                     .weight(1f)
                     .heightIn(min = 32.dp)
                     .clip(RoundedCornerShape(percent = 50))
-                    .background(Azphalt.Ink)
+                    .background(if (inputRequest != null) Azphalt.Ink.copy(alpha = .96f) else Azphalt.Ink)
                     .padding(start = 14.dp, end = 10.dp, top = 6.dp, bottom = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -838,7 +960,7 @@ private fun CommandLine(
                 BasicTextField(
                     value = inputText,
                     onValueChange = onInputTextChange,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f).focusRequester(inputFocusRequester),
                     textStyle = MaterialTheme.typography.bodyMedium.copy(
                         color = Azphalt.Yellow,
                         fontSize = 12.sp,
