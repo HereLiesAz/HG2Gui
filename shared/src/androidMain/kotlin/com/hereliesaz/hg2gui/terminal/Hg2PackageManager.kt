@@ -6,7 +6,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.flowOn
 import okhttp3.OkHttpClient
-import okhttp3.Request
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Paths
@@ -27,6 +26,8 @@ class Hg2PackageManager(
     private val dpkgDeb = File(prefix, "bin/dpkg-deb")
     private val bash = File(prefix, "bin/bash")
     private val dpkgInfoDir = File(prefix, "var/lib/dpkg/info")
+    private val repository = TermuxRepositoryClient(context, client)
+    private var activeMirror: String? = null
 
     data class Relation(
         val name: String,
@@ -212,8 +213,13 @@ class Hg2PackageManager(
         for (pkg in plan) {
             emit("Downloading ${pkg.name} ${pkg.version}…")
             val output = File(cacheDir, "${pkg.name}_${pkg.version}_${pkg.architecture}.deb".replace('/', '_'))
-            val url = if (pkg.filename.startsWith("http://") || pkg.filename.startsWith("https://")) pkg.filename else "$REPO/${pkg.filename.trimStart('/')}"
-            val result = downloader.download(url, output, pkg.sha256) { packageDone, _ ->
+            val result = repository.downloadVerifiedPackage(
+                downloader = downloader,
+                filename = pkg.filename,
+                target = output,
+                expectedSha256 = pkg.sha256,
+                preferredMirror = activeMirror
+            ) { packageDone, _ ->
                 val combined = overallDone + packageDone
                 val percent = if (total > 0L) ((combined * 100L) / total).coerceIn(0L, 100L) else 0L
                 emit("$percent% [${pkg.name} ${formatBytes(packageDone)}/${formatBytes(pkg.size)}]")
@@ -458,11 +464,6 @@ class Hg2PackageManager(
         }
     }
 
-    /**
-     * Maintainer scripts are not all Bash scripts. HG2Gui executes POSIX-shell-family shebangs
-     * through its known-good bundled Bash, which is compatible with sh/dash syntax. Unknown
-     * interpreters are rejected explicitly rather than silently feeding Python/Perl/etc. to Bash.
-     */
     private fun maintainerInterpreter(script: File): File {
         val shebang = runCatching { script.bufferedReader().use { it.readLine().orEmpty() } }.getOrDefault("")
         if (!shebang.startsWith("#!")) return bash
@@ -579,20 +580,18 @@ class Hg2PackageManager(
 
     private suspend fun updateIndex(emit: suspend (String) -> Unit) {
         val architecture = packageArchitecture()
-        val url = "$REPO/dists/stable/main/binary-$architecture/Packages.gz"
-        emit("Downloading HG2Gui package index for $architecture…")
-        val request = Request.Builder().url(url).header("Cache-Control", "no-cache").build()
-        client.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) error("Package index download failed: HTTP ${response.code}")
-            val tmp = File(stateDir, "Packages.tmp")
-            GZIPInputStream(response.body.byteStream()).bufferedReader().use { reader ->
-                tmp.writer().use { writer -> reader.copyTo(writer) }
-            }
-            if (!tmp.renameTo(packagesFile)) {
-                tmp.copyTo(packagesFile, overwrite = true)
-                tmp.delete()
-            }
+        emit("Authenticating Termux package index for $architecture…")
+        val authenticated = repository.fetchAuthenticatedIndex(architecture, stateDir)
+        val tmp = File(stateDir, "Packages.tmp")
+        GZIPInputStream(authenticated.packagesGz.inputStream()).bufferedReader().use { reader ->
+            tmp.writer().use { writer -> reader.copyTo(writer) }
         }
+        if (!tmp.renameTo(packagesFile)) {
+            tmp.copyTo(packagesFile, overwrite = true)
+            tmp.delete()
+        }
+        activeMirror = authenticated.mirror
+        emit("Authenticated repository: ${authenticated.mirror}")
         emit("HG2Gui package index ready: ${parsePackages(packagesFile.readText()).size} packages.")
     }
 
@@ -873,7 +872,6 @@ class Hg2PackageManager(
     }
 
     companion object {
-        private const val REPO = "https://packages.termux.dev/apt/termux-main"
         private const val OLD_PREFIX = "/data/data/com.termux/files/usr"
         private const val DPKG_ERROR_TAIL_LINES = 40
         private val MAINTAINER_SCRIPTS = listOf("preinst", "postinst", "prerm", "postrm")
