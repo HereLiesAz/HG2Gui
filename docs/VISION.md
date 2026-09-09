@@ -30,7 +30,6 @@ The important shift is from “make common commands tappable” to “model comm
 
 ### Real Android terminal runtime
 
-- [x] App is a normal Android terminal, not a launcher.
 - [x] Pinned Termux-derived bootstrap under HG2Gui's private application prefix.
 - [x] Android-safe delivery of critical native bootstrap executables through the APK native-library path.
 - [x] Persistent shell sessions with per-session state/history/working directory.
@@ -153,6 +152,41 @@ Future:
 - [ ] optional “ask every time / allow once / deny” capability policies without granting ambient shell access;
 - [ ] root-aware features only where root actually adds a truthful capability, never as a silent fallback.
 
+## External API
+
+HG2Gui should expose an Android integration API comparable in spirit to Termux:API, but aligned with HG2Gui's own security model and typed interaction system.
+
+The API should let other Android apps request operations such as command execution, package inventory/lifecycle actions, file selection, device capability access, and structured result retrieval without bypassing HG2Gui's authority rules.
+
+Future:
+
+- [ ] define stable Intent/Binder contracts for external callers;
+- [ ] expose discoverable capabilities rather than a single unrestricted shell endpoint;
+- [ ] support explicit execution authority selection with user confirmation where required;
+- [ ] return typed/structured results where HG2Gui already understands the domain;
+- [ ] allow package/file/choice selection surfaces to be invoked by external apps;
+- [ ] apply per-caller permissions, revocable grants, and audit history;
+- [ ] keep root/ADB/isolation boundaries identical whether a request originated inside HG2Gui or through the API.
+
+## Adaptive terminal UI wrappers
+
+Interactive terminal programs should not be limited to a raw character grid when HG2Gui can infer their structure.
+
+The long-term goal is an **Adaptive TUI Wrapper** layer for programs such as AI coding CLIs, Python `curses`/Rich/Textual applications, `htop`, `lazygit`, and other alternate-screen terminal interfaces.
+
+This is intentionally a different surface from the command pill stack. It should behave more like Files: the running program becomes a full HG2Gui-native screen whose controls, lists, panes, prompts, status regions, and actions are derived dynamically from the terminal state.
+
+Future:
+
+- [ ] detect alternate-screen/full-screen terminal applications from PTY/emulator state;
+- [ ] expose the terminal emulator's cells, cursor, attributes, and screen-update events to a semantic parser;
+- [ ] recognize common structures such as lists, tabs, buttons/actions, prompts, input fields, menus, progress/status regions, diffs, and scrollable panes;
+- [ ] map recognized structures into Compose/Azphalt-native controls while preserving a raw-terminal fallback;
+- [ ] send user actions back as the exact key/mouse/input sequences the underlying program expects;
+- [ ] create adapter profiles for major toolkits/protocols when generic inference is insufficient;
+- [ ] support program-supplied metadata through the external API so cooperative applications can describe their interface directly instead of being reverse-engineered;
+- [ ] preserve the program as the source of truth: the wrapper presents and controls the existing process rather than reimplementing its business logic.
+
 ## Connectivity
 
 - [x] SSH saved presets and graphical host/user/port/key collection.
@@ -189,7 +223,7 @@ The large Guide manuscript and animation production files under `docs/` are crea
 Future:
 
 - [ ] continue Guide animation production using the established canonical packets/style rules;
-- [ ] connect Guide entries more deeply to discovered commands/package metadata without turning the Guide into a second command launcher;
+- [ ] connect Guide entries more deeply to discovered commands/package metadata without turning the Guide into a second execution surface;
 - [ ] surface runtime/package/isolation concepts as Guide entries once the behavior is stable enough to deserve a joke.
 
 ## Long-term product principle
