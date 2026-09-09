@@ -20,10 +20,18 @@ class Hg2Downloader(
     private val appContext = context.applicationContext
     private val downloadsDir = File(appContext.filesDir, "downloads").apply { mkdirs() }
 
+    enum class Disposition {
+        REUSED,
+        RESUMED,
+        DOWNLOADED
+    }
+
     data class Result(
         val file: File,
         val bytes: Long,
-        val sha256: String
+        val sha256: String,
+        val disposition: Disposition,
+        val resumedFrom: Long = 0L
     )
 
     fun handles(line: String): Boolean = line.trim().substringBefore(' ') in setOf("download", "hg2download")
@@ -41,7 +49,11 @@ class Hg2Downloader(
             val percent = if (total > 0L) ((done * 100L) / total).coerceIn(0L, 100L) else 0L
             send("$percent% [${target.name} ${formatBytes(done)}/${if (total > 0L) formatBytes(total) else "?"}]")
         }
-        send("Downloaded ${result.file.name} (${formatBytes(result.bytes)})")
+        when (result.disposition) {
+            Disposition.REUSED -> send("Already downloaded: ${result.file.name} (${formatBytes(result.bytes)})")
+            Disposition.RESUMED -> send("Resumed ${result.file.name} from ${formatBytes(result.resumedFrom)}; complete at ${formatBytes(result.bytes)}")
+            Disposition.DOWNLOADED -> send("Downloaded ${result.file.name} (${formatBytes(result.bytes)})")
+        }
         send("Saved to ${result.file.absolutePath}")
         send("SHA-256 ${result.sha256}")
     }.flowOn(Dispatchers.IO)
@@ -53,8 +65,29 @@ class Hg2Downloader(
         progress: suspend (done: Long, total: Long) -> Unit = { _, _ -> }
     ): Result {
         target.parentFile?.mkdirs()
+        val expected = expectedSha256?.takeIf { it.isNotBlank() }
         val part = File(target.parentFile, target.name + ".part")
+
+        if (target.isFile) {
+            val existingSha = sha256(target)
+            val usable = if (expected != null) {
+                existingSha.equals(expected, ignoreCase = true)
+            } else {
+                remoteLength(url)?.let { it == target.length() } ?: false
+            }
+            if (usable) {
+                return Result(
+                    file = target,
+                    bytes = target.length(),
+                    sha256 = existingSha,
+                    disposition = Disposition.REUSED
+                )
+            }
+            target.delete()
+        }
+
         var existing = if (part.isFile) part.length() else 0L
+        val resumedFrom = existing
 
         fun execute(rangeStart: Long): okhttp3.Response {
             val builder = Request.Builder().url(url)
@@ -62,8 +95,46 @@ class Hg2Downloader(
             return client.newCall(builder.build()).execute()
         }
 
+        if (existing > 0L) {
+            val knownRemoteLength = remoteLength(url)
+            if (knownRemoteLength != null && knownRemoteLength == existing) {
+                val partSha = sha256(part)
+                if (expected == null || partSha.equals(expected, ignoreCase = true)) {
+                    promote(part, target)
+                    return Result(
+                        file = target,
+                        bytes = target.length(),
+                        sha256 = partSha,
+                        disposition = Disposition.RESUMED,
+                        resumedFrom = existing
+                    )
+                }
+                part.delete()
+                existing = 0L
+            } else if (knownRemoteLength != null && existing > knownRemoteLength) {
+                part.delete()
+                existing = 0L
+            }
+        }
+
         var response = execute(existing)
-        if (existing > 0L && response.code != 206) {
+        if (existing > 0L && response.code == 416) {
+            response.close()
+            val partSha = sha256(part)
+            if (expected != null && partSha.equals(expected, ignoreCase = true)) {
+                promote(part, target)
+                return Result(
+                    file = target,
+                    bytes = target.length(),
+                    sha256 = partSha,
+                    disposition = Disposition.RESUMED,
+                    resumedFrom = existing
+                )
+            }
+            part.delete()
+            existing = 0L
+            response = execute(0L)
+        } else if (existing > 0L && response.code != 206) {
             response.close()
             part.delete()
             existing = 0L
@@ -86,6 +157,7 @@ class Hg2Downloader(
                         if (n > 0) digest.update(buffer, 0, n)
                     }
                 }
+                progress(existing, total)
             }
 
             var done = existing
@@ -105,17 +177,50 @@ class Hg2Downloader(
             }
 
             val sha = digest.digest().joinToString("") { "%02x".format(Locale.US, it.toInt() and 0xff) }
-            if (!expectedSha256.isNullOrBlank() && !sha.equals(expectedSha256, ignoreCase = true)) {
+            if (expected != null && !sha.equals(expected, ignoreCase = true)) {
                 part.delete()
                 error("SHA-256 mismatch for ${target.name}")
             }
 
-            if (target.exists() && !target.delete()) error("Cannot replace ${target.absolutePath}")
-            if (!part.renameTo(target)) {
-                part.copyTo(target, overwrite = true)
-                part.delete()
+            promote(part, target)
+            return Result(
+                file = target,
+                bytes = done,
+                sha256 = sha,
+                disposition = if (resumedFrom > 0L) Disposition.RESUMED else Disposition.DOWNLOADED,
+                resumedFrom = resumedFrom
+            )
+        }
+    }
+
+    private fun remoteLength(url: String): Long? {
+        val request = Request.Builder().url(url).head().build()
+        return runCatching {
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) null
+                else response.header("Content-Length")?.toLongOrNull()?.takeIf { it >= 0L }
             }
-            return Result(target, done, sha)
+        }.getOrNull()
+    }
+
+    private fun sha256(file: File): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+        file.inputStream().use { input ->
+            val buffer = ByteArray(BUFFER_SIZE)
+            while (true) {
+                val n = input.read(buffer)
+                if (n < 0) break
+                if (n > 0) digest.update(buffer, 0, n)
+            }
+        }
+        return digest.digest().joinToString("") { "%02x".format(Locale.US, it.toInt() and 0xff) }
+    }
+
+    private fun promote(part: File, target: File) {
+        if (target.exists() && !target.delete()) error("Cannot replace ${target.absolutePath}")
+        if (!part.renameTo(target)) {
+            part.copyTo(target, overwrite = true)
+            part.delete()
         }
     }
 
