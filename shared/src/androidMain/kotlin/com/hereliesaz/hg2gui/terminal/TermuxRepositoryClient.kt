@@ -10,9 +10,10 @@ import java.security.MessageDigest
  * Authenticated Termux repository access with mirror failover.
  *
  * Every candidate mirror must provide an InRelease whose OpenPGP signature verifies against the
- * Termux main-repository key already shipped in the pinned bootstrap. The Packages.gz digest is
- * then matched against the SHA-256 entry inside that signed release before HG2Gui accepts the
- * package index. Mirrors provide availability only; the Termux signing key remains the trust root.
+ * official APT repository keys already shipped in the pinned Termux bootstrap. The Packages.gz
+ * digest is then matched against the SHA-256 entry inside that signed release before HG2Gui accepts
+ * the package index. Mirrors provide availability only; the pinned Termux keyring remains the trust
+ * root.
  */
 class TermuxRepositoryClient(
     private val context: Context,
@@ -26,7 +27,7 @@ class TermuxRepositoryClient(
 
     private val prefix = DistroManager.prefixDir(context)
     private val gpgv = File(prefix, "bin/gpgv")
-    private val keyring = File(prefix, "etc/apt/trusted.gpg.d/termux-pacman.gpg")
+    private val keyringDir = File(prefix, "share/termux-keyring")
     private val repositoryState = File(prefix, "var/lib/hg2pkg")
     private val cachedPackages = File(repositoryState, "Packages")
     private val authenticatedMarker = File(repositoryState, "Packages.authenticated")
@@ -39,7 +40,9 @@ class TermuxRepositoryClient(
 
     fun fetchAuthenticatedIndex(architecture: String, workDir: File): IndexResult {
         require(gpgv.canExecute()) { "HG2Gui gpgv is unavailable at ${gpgv.absolutePath}" }
-        require(keyring.isFile) { "Termux repository keyring is unavailable at ${keyring.absolutePath}" }
+        require(repositoryKeyrings().isNotEmpty()) {
+            "Termux APT repository keyrings are unavailable at ${keyringDir.absolutePath}"
+        }
         workDir.mkdirs()
 
         // A refresh invalidates the old cache before network work begins. If the process dies at
@@ -124,12 +127,19 @@ class TermuxRepositoryClient(
     }
 
     private fun verifyInRelease(inRelease: File) {
-        val process = ProcessBuilder(
-            gpgv.absolutePath,
-            "--keyring",
-            keyring.absolutePath,
-            inRelease.absolutePath
-        ).directory(prefix).redirectErrorStream(true).apply {
+        val keyrings = repositoryKeyrings()
+        require(keyrings.isNotEmpty()) {
+            "Termux APT repository keyrings are unavailable at ${keyringDir.absolutePath}"
+        }
+        val command = buildList {
+            add(gpgv.absolutePath)
+            keyrings.forEach { keyring ->
+                add("--keyring")
+                add(keyring.absolutePath)
+            }
+            add(inRelease.absolutePath)
+        }
+        val process = ProcessBuilder(command).directory(prefix).redirectErrorStream(true).apply {
             environment()["PREFIX"] = prefix.absolutePath
             environment()["HOME"] = DistroManager.homeDir(context).absolutePath
             environment()["PATH"] = "${prefix.absolutePath}/bin:/system/bin"
@@ -137,8 +147,21 @@ class TermuxRepositoryClient(
         }.start()
         val output = process.inputStream.bufferedReader().use { it.readText() }.trim()
         val code = process.waitFor()
-        if (code != 0) error("InRelease signature verification failed: ${output.takeLast(2000)}")
+        if (code != 0) {
+            val names = keyrings.joinToString(", ") { it.name }
+            error("InRelease signature verification failed using [$names]: ${output.takeLast(2000)}")
+        }
     }
+
+    private fun repositoryKeyrings(): List<File> =
+        keyringDir.listFiles()
+            .orEmpty()
+            .asSequence()
+            .filter { it.isFile && it.extension == "gpg" }
+            // Upstream Termux deliberately excludes this pacman-only key from APT trust.
+            .filterNot { it.name == PACMAN_KEYRING }
+            .sortedBy { it.name }
+            .toList()
 
     private fun clearSignedPayload(text: String): String {
         val normalized = text.replace("\r\n", "\n")
@@ -184,6 +207,7 @@ class TermuxRepositoryClient(
 
     companion object {
         private val SHA256 = Regex("[0-9a-fA-F]{64}")
+        private const val PACMAN_KEYRING = "termux-pacman.gpg"
 
         // Primary/CDN plus mirrors listed by Termux's mirror rotation. All are still required to
         // pass the same signed InRelease verification before HG2Gui accepts their metadata.
