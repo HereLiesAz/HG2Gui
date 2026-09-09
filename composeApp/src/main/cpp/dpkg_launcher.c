@@ -46,7 +46,16 @@ int main(int argc, char **argv) {
         return 127;
     }
 
-    char **next = calloc((size_t)argc + 3, sizeof(char *));
+    /*
+     * HG2Gui installs into its own app-private prefix while running as the app UID.
+     * With --instdir, stock dpkg normally chroots into that directory before invoking
+     * maintainer scripts. Android app processes cannot perform that chroot. Force the
+     * documented chrootless mode instead; dpkg will expose DPKG_ROOT to maintainer
+     * scripts and execute them in the current process namespace.
+     */
+    const char *script_chrootless = "--force-script-chrootless";
+
+    char **next = calloc((size_t)argc + 4, sizeof(char *));
     if (!next) {
         fprintf(stderr, "hg2gui-dpkg: out of memory\n");
         return 127;
@@ -55,8 +64,9 @@ int main(int argc, char **argv) {
     next[0] = target;
     next[1] = admindir;
     next[2] = instdir;
-    for (int i = 1; i < argc; ++i) next[i + 2] = argv[i];
-    next[argc + 2] = NULL;
+    next[3] = (char *)script_chrootless;
+    for (int i = 1; i < argc; ++i) next[i + 3] = argv[i];
+    next[argc + 3] = NULL;
 
     execv(target, next);
     fprintf(stderr, "hg2gui-dpkg: execv(%s) failed: %s\n", target, strerror(errno));
