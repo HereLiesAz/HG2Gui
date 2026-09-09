@@ -97,7 +97,7 @@ class FullScreenPtySession private constructor(
         if (family !in setOf(ShellFamily.BASH, ShellFamily.ZSH, ShellFamily.FISH, ShellFamily.SH)) return
         val emulator = changedSession.emulator ?: return
         if (emulator.isAlternateBufferActive()) return
-        val transcript = emulator.screen.getTranscriptText().trimEnd()
+        val transcript = emulator.screen.transcriptTextWithoutJoinedLines.trimEnd()
         val lastLine = transcript.substringAfterLast('\n').trimEnd()
         if (lastLine.isBlank()) return
         shellPresentation = ShellPromptParser.parse(
