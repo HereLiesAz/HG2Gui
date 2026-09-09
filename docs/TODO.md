@@ -11,7 +11,7 @@ This is the active implementation roadmap. Keep it current with feature commits.
   - [x] Add safe live Bash/Zsh/Fish completion adapters without executing the partially composed command.
   - [x] Add installed-package, Git branch, and known SSH host semantic completion providers.
   - [x] Feed semantic completion candidates into HG2Gui-native selection surfaces.
-  - [ ] Replace free-form typing with selectable values whenever a provider can enumerate valid choices.
+  - [x] Replace free-form typing with selectable values whenever a provider can enumerate valid choices.
   - [ ] Add service and richer command-specific completion providers.
   - [ ] Consume native Bash/Zsh completion definitions beyond the conservative command/file fallback where it can be done safely.
 
