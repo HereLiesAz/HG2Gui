@@ -3,6 +3,10 @@ package com.hereliesaz.hg2gui.terminal
 /**
  * A shell-agnostic completion candidate. Shell/framework-specific completion systems are adapters
  * that produce these; HG2Gui surfaces only consume this model.
+ *
+ * [enumerationComplete] is deliberately explicit. A provider may know useful candidates without
+ * knowing every valid value (for example hosts from known_hosts); only a complete enumeration may
+ * replace open text input with a native choice-only surface.
  */
 data class CompletionCandidate(
     val value: String,
@@ -12,7 +16,8 @@ data class CompletionCandidate(
     val source: CompletionSource = CompletionSource.OTHER,
     val insertText: String = value,
     val priority: Int = 0,
-    val appendSpace: Boolean = true
+    val appendSpace: Boolean = true,
+    val enumerationComplete: Boolean = false
 )
 
 enum class CompletionKind {
@@ -107,6 +112,7 @@ object CompletionNormalizer {
                 old == null -> candidate
                 candidate.priority > old.priority -> candidate
                 candidate.priority < old.priority -> old
+                old.enumerationComplete.not() && candidate.enumerationComplete -> candidate
                 old.description == null && candidate.description != null -> candidate
                 else -> old
             }
