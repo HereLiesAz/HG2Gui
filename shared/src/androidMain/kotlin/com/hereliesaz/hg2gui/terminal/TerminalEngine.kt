@@ -22,7 +22,8 @@ class TerminalEngine(
     private var shell = ShellSession.forAndroid(home, context)
     private var pendingBackendNotice: String? = shell.fallbackNoticeOrNull()
     private val client = sharedHttpClient(context)
-    private val packages by lazy { Hg2PackageManager(context.applicationContext, client) }
+    private val downloader by lazy { Hg2Downloader(context.applicationContext, client) }
+    private val packages by lazy { Hg2PackageManager(context.applicationContext, client, downloader) }
 
     private fun ShellSession.fallbackNoticeOrNull(): String? =
         backendDescription.takeIf { it.startsWith("the bare system shell") }
@@ -54,6 +55,18 @@ class TerminalEngine(
                 old.close()
                 onExit(null)
                 close()
+            }
+
+            downloader.handles(trimmed) -> launch(Dispatchers.IO) {
+                try {
+                    downloader.run(trimmed).collect { trySend(it) }
+                    onExit(0)
+                } catch (e: Exception) {
+                    trySend("HG2Gui download error: ${e.message ?: e.javaClass.simpleName}")
+                    onExit(-1)
+                } finally {
+                    close()
+                }
             }
 
             packages.handles(trimmed) -> launch(Dispatchers.IO) {
@@ -94,17 +107,22 @@ class TerminalEngine(
     /** Headless one-shot execution used by installers and MCP callers. */
     suspend fun runToCompletion(line: String): Pair<String, Int> = withContext(Dispatchers.IO) {
         val trimmed = line.trim()
-        if (packages.handles(trimmed)) {
+        val hg2Flow = when {
+            downloader.handles(trimmed) -> downloader.run(trimmed)
+            packages.handles(trimmed) -> packages.run(trimmed)
+            else -> null
+        }
+        if (hg2Flow != null) {
             val transcript = StringBuilder()
             return@withContext try {
-                packages.run(trimmed).collect { output ->
+                hg2Flow.collect { output ->
                     if (transcript.isNotEmpty()) transcript.append('\n')
                     transcript.append(output)
                 }
                 transcript.toString() to 0
             } catch (e: Exception) {
                 if (transcript.isNotEmpty()) transcript.append('\n')
-                transcript.append("HG2Gui package error: ${e.message ?: e.javaClass.simpleName}")
+                transcript.append("HG2Gui error: ${e.message ?: e.javaClass.simpleName}")
                 transcript.toString() to -1
             }
         }
