@@ -15,8 +15,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -110,6 +112,19 @@ fun TerminalScreen(
         selectedShowRaw = false
     }
 
+    val newestEntry = active.buffer.lastOrNull()
+    LaunchedEffect(
+        active.buffer.size,
+        newestEntry?.id,
+        newestEntry?.output,
+        newestEntry?.stderr,
+        newestEntry?.styledOutput
+    ) {
+        if (active.buffer.isNotEmpty()) {
+            listState.animateScrollToItem(active.buffer.lastIndex)
+        }
+    }
+
     val executeCommand = {
         val session = active
         val pendingPrompt = session.pendingPrompt
@@ -166,13 +181,45 @@ fun TerminalScreen(
                         }
                         session.running = false
                     }
-
-                    if (session.buffer.isNotEmpty()) {
-                        listState.animateScrollToItem(session.buffer.size - 1)
-                    }
                 }
             }
         }
+    }
+
+    val yesNoPrompt = active.pendingPrompt?.takeIf { ShellAliases.looksLikeYesNo(it) }
+    if (yesNoPrompt != null) {
+        AlertDialog(
+            onDismissRequest = {},
+            title = { Text("Confirm") },
+            text = {
+                Text(
+                    yesNoPrompt.substringAfterLast('\n').ifBlank { yesNoPrompt },
+                    style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace)
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        active.tokens = emptyList()
+                        active.inputText = ""
+                        active.answerPrompt("y")
+                    }
+                ) {
+                    Text("YES")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        active.tokens = emptyList()
+                        active.inputText = ""
+                        active.answerPrompt("n")
+                    }
+                ) {
+                    Text("NO")
+                }
+            }
+        )
     }
 
     Column(
@@ -257,7 +304,7 @@ fun TerminalScreen(
 
         val pendingPrompt = active.pendingPrompt
         val answerNode = when {
-            pendingPrompt == null -> null
+            pendingPrompt == null || ShellAliases.looksLikeYesNo(pendingPrompt) -> null
             else -> ShellAliases.numberedMenuChoices(pendingPrompt)?.let { choices ->
                 MenuNode(
                     id = "answer",
@@ -267,25 +314,13 @@ fun TerminalScreen(
                         MenuNode(id = "answer-$number", label = "$number) $label", value = number)
                     }
                 )
-            } ?: if (ShellAliases.looksLikeYesNo(pendingPrompt)) {
+            } ?: ShellAliases.bracketedChoices(pendingPrompt)?.let { choices ->
                 MenuNode(
                     id = "answer",
                     label = "Answer",
                     emitsToken = false,
-                    children = listOf(
-                        MenuNode(id = "answer-yes", label = "YES", value = "y"),
-                        MenuNode(id = "answer-no", label = "NO", value = "n")
-                    )
+                    children = choices.map { choice -> MenuNode(id = "answer-$choice", label = choice, value = choice) }
                 )
-            } else {
-                ShellAliases.bracketedChoices(pendingPrompt)?.let { choices ->
-                    MenuNode(
-                        id = "answer",
-                        label = "Answer",
-                        emitsToken = false,
-                        children = choices.map { choice -> MenuNode(id = "answer-$choice", label = choice, value = choice) }
-                    )
-                }
             }
         }
 
