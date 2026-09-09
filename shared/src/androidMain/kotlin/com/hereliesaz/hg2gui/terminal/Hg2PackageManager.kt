@@ -157,6 +157,7 @@ class Hg2PackageManager(
 
     private suspend fun remove(names: List<String>, purge: Boolean, emit: suspend (String) -> Unit) {
         recoverInterruptedTransactions(emit)
+        MaintainerScriptStore.migrateInstalled(context)
         val installed = readInstalled()
         val present = names.filter { it in installed }
         val missing = names.filterNot { it in installed }
@@ -174,15 +175,16 @@ class Hg2PackageManager(
                 try {
                     runMaintainerScript(File(oldScripts, "prerm"), name, installed.getValue(name).version, listOf("remove"), emit)
                     assertDpkgHasNoMaintainerScripts(name)
-                    runDpkg(listOf("--remove", name), emit)
+                    runDpkg(listOf("--no-triggers", "--remove", name), emit)
                     runMaintainerScript(File(oldScripts, "postrm"), name, installed.getValue(name).version, listOf("remove"), emit)
-                    if (purge) runDpkg(listOf("--purge", name), emit)
+                    if (purge) runDpkg(listOf("--no-triggers", "--purge", name), emit)
                     oldScripts.deleteRecursively()
                 } catch (t: Throwable) {
                     restoreInstalledScripts(name, oldScripts)
                     throw t
                 }
             }
+            runPendingTriggers(emit)
             transaction.commit()
         } catch (t: Throwable) {
             throw rollbackFailure("package removal", transaction, t, emit)
@@ -192,6 +194,7 @@ class Hg2PackageManager(
 
     private suspend fun install(requested: List<String>, forceRequested: Boolean, emit: suspend (String) -> Unit) {
         recoverInterruptedTransactions(emit)
+        MaintainerScriptStore.migrateInstalled(context)
         ensureIndex(emit)
         val available = parsePackages(packagesFile.readText()).associateBy { it.name }
         val installed = readInstalled()
@@ -236,6 +239,7 @@ class Hg2PackageManager(
                 transaction.begin(item.pkg.name)
                 installPreparedPackage(item, installed[item.pkg.name], emit)
             }
+            runPendingTriggers(emit)
             transaction.commit()
         } catch (t: Throwable) {
             throw rollbackFailure("package installation", transaction, t, emit)
@@ -287,7 +291,7 @@ class Hg2PackageManager(
             }
 
             assertDpkgHasNoMaintainerScripts(pkg.name)
-            runDpkg(listOf("--unpack", prepared.archive.absolutePath), emit)
+            runDpkg(listOf("--no-triggers", "--unpack", prepared.archive.absolutePath), emit)
 
             if (old != null) {
                 runMaintainerScript(File(oldScripts, "postrm"), pkg.name, old.version, listOf("upgrade", pkg.version), emit)
@@ -296,7 +300,7 @@ class Hg2PackageManager(
             val postinstArgs = if (old != null) listOf("configure", old.version) else listOf("configure")
             runMaintainerScript(File(prepared.scriptsDir, "postinst"), pkg.name, pkg.version, postinstArgs, emit)
             assertDpkgHasNoMaintainerScripts(pkg.name)
-            runDpkg(listOf("--configure", pkg.name), emit)
+            runDpkg(listOf("--no-triggers", "--configure", pkg.name), emit)
             installStoredScripts(pkg.name, prepared.scriptsDir)
             oldScripts.deleteRecursively()
         } catch (t: Throwable) {
@@ -337,6 +341,7 @@ class Hg2PackageManager(
         }
 
         val extractedScripts = extractMaintainerScripts(workDir, scriptsDir)
+        validateMaintainerScripts(scriptsDir)
         assertArchiveControlHasNoMaintainerScripts(workDir, pkg.name)
         val rewriteTotal = rewritten + metadataRewritten + symlinksRewritten
         emit("Rewrote $rewriteTotal file/path reference${if (rewriteTotal == 1) "" else "s"} and externalized $extractedScripts maintainer script${if (extractedScripts == 1) "" else "s"} for ${pkg.name}.")
@@ -345,6 +350,13 @@ class Hg2PackageManager(
         if (!patched.isFile || patched.length() == 0L) error("Failed to rebuild ${pkg.name}")
         workDir.deleteRecursively()
         return PreparedPackage(pkg, patched, scriptsDir)
+    }
+
+    private fun validateMaintainerScripts(scriptsDir: File) {
+        MAINTAINER_SCRIPTS.forEach { name ->
+            val script = File(scriptsDir, name)
+            if (script.isFile) maintainerInterpreter(script)
+        }
     }
 
     private fun extractMaintainerScripts(workDir: File, scriptsDir: File): Int {
@@ -362,35 +374,17 @@ class Hg2PackageManager(
     private fun stageInstalledScripts(packageName: String): File {
         val safeName = packageName.replace(Regex("[^A-Za-z0-9._+-]"), "_")
         val dir = File(cacheDir, "installed-scripts-$safeName-${System.nanoTime()}")
-        dir.mkdirs()
-        for (name in MAINTAINER_SCRIPTS) {
-            val source = File(dpkgInfoDir, "$packageName.$name")
-            if (!source.isFile) continue
-            moveFileVerified(source, File(dir, name), "stage $packageName.$name")
-        }
+        MaintainerScriptStore.stage(context, packageName, dir)
         assertDpkgHasNoMaintainerScripts(packageName)
         return dir
     }
 
     private fun restoreInstalledScripts(packageName: String, scriptsDir: File) {
-        if (!scriptsDir.isDirectory) return
-        dpkgInfoDir.mkdirs()
-        for (name in MAINTAINER_SCRIPTS) {
-            val source = File(scriptsDir, name)
-            if (source.isFile) source.copyTo(File(dpkgInfoDir, "$packageName.$name"), overwrite = true)
-        }
+        MaintainerScriptStore.restore(context, packageName, scriptsDir)
     }
 
     private fun installStoredScripts(packageName: String, scriptsDir: File) {
-        dpkgInfoDir.mkdirs()
-        for (name in MAINTAINER_SCRIPTS) {
-            val destination = File(dpkgInfoDir, "$packageName.$name")
-            if (destination.exists() && !destination.delete()) {
-                error("Cannot replace stored maintainer script ${destination.absolutePath}")
-            }
-            val source = File(scriptsDir, name)
-            if (source.isFile) source.copyTo(destination, overwrite = true)
-        }
+        MaintainerScriptStore.restore(context, packageName, scriptsDir)
         scriptsDir.deleteRecursively()
     }
 
@@ -419,9 +413,9 @@ class Hg2PackageManager(
     }
 
     private fun assertDpkgHasNoMaintainerScripts(packageName: String) {
-        val remaining = MAINTAINER_SCRIPTS.map { File(dpkgInfoDir, "$packageName.$it") }.filter { it.exists() }
+        val remaining = MAINTAINER_SCRIPTS.filter { MaintainerScriptStore.hasEntry(context, packageName, it) }
         if (remaining.isNotEmpty()) {
-            error("Failed to stage installed maintainer scripts for $packageName: ${remaining.joinToString { it.name }}")
+            error("Failed to stage installed maintainer scripts for $packageName: ${remaining.joinToString()}")
         }
     }
 
@@ -738,6 +732,10 @@ class Hg2PackageManager(
             .start()
         process.inputStream.close()
         return process.waitFor() == 0
+    }
+
+    private suspend fun runPendingTriggers(emit: suspend (String) -> Unit) {
+        runDpkg(listOf("--triggers-only", "--pending"), emit)
     }
 
     private suspend fun runDpkg(args: List<String>, emit: suspend (String) -> Unit) {
