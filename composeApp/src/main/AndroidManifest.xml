@@ -17,6 +17,7 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK"  />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <!--
       Requested at runtime, as-needed, by call.java / cntcts.java / ContactManager.kt /
       flash.java respectively - but a runtime request for a permission the manifest never
@@ -67,39 +68,17 @@
     -->
 
     <!-- features -->
-    <uses-feature
-        android:name="android.hardware.camera"
-        android:required="false" />
-    <uses-feature
-        android:name="android.hardware.camera.flash"
-        android:required="false" />
-    <uses-feature
-        android:name="android.hardware.camera.autofocus"
-        android:required="false" />
-    <uses-feature
-        android:name="android.hardware.telephony"
-        android:required="false" />
-    <uses-feature
-        android:name="android.hardware.wifi"
-        android:required="false" />
-    <uses-feature
-        android:name="android.hardware.touchscreen"
-        android:required="false" />
-    <uses-feature
-        android:name="android.hardware.bluetooth"
-        android:required="false" />
-    <uses-feature
-        android:name="android.hardware.location.gps"
-        android:required="false" />
-    <uses-feature
-        android:name="android.hardware.location"
-        android:required="false" />
-    <uses-feature
-        android:name="android.hardware.location.network"
-        android:required="false" />
-    <uses-feature
-        android:name="android.hardware.audio.output"
-        android:required="false" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.flash" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+    <uses-feature android:name="android.hardware.telephony" android:required="false" />
+    <uses-feature android:name="android.hardware.wifi" android:required="false" />
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+    <uses-feature android:name="android.hardware.bluetooth" android:required="false" />
+    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
+    <uses-feature android:name="android.hardware.location" android:required="false" />
+    <uses-feature android:name="android.hardware.location.network" android:required="false" />
+    <uses-feature android:name="android.hardware.audio.output" android:required="false" />
 
     <application
         android:allowBackup="true"
@@ -120,18 +99,15 @@
                 android:resource="@xml/provider_paths"/>
         </provider>
 
+        <receiver
+            android:name=".update.UpdateActionReceiver"
+            android:exported="false" />
+        <receiver
+            android:name=".update.UpdateInstallReceiver"
+            android:exported="false" />
+
         <!--
           The terminal. One entry, normal lifecycle, present in recents.
-
-          Changed from the launcher declaration this replaces:
-            - dropped clearTaskOnLaunch, excludeFromRecents, stateNotNeeded, resumeWhilePausing
-              and taskAffinity="" — all launcher-lifecycle tricks. A terminal belongs in
-              recents and keeps its state.
-            - no category.HOME is added here. This manifest never declared one, so the app was
-              already only a home-screen candidate by way of the flags above, not by filter.
-            - launchMode singleTask -> singleTop
-            - windowSoftInputMode stateAlwaysVisible -> stateUnchanged: the suggestion tree is
-              the input method, so the keyboard opens only when asked for.
         -->
         <activity
             android:name=".TerminalActivity"
@@ -146,7 +122,7 @@
             </intent-filter>
         </activity>
 
-<activity
+        <activity
             android:name=".EditorActivity"
             android:excludeFromRecents="true"
             android:label="@string/editor_label"
@@ -185,12 +161,6 @@
             </intent-filter>
         </activity>
 
-        <!--
-          Loopback-only MCP server: binds 127.0.0.1, never LAN-exposed, gated by a pairing token
-          shown in McpServerScreen. Started/stopped explicitly by the user from Settings, never
-          on its own - a foreground service so the socket survives backgrounding while it runs,
-          with the ongoing notification Android requires for that.
-        -->
         <service
             android:name=".mcp.McpServerService"
             android:exported="false"
