@@ -4,245 +4,238 @@
 
 Build the terminal Douglas Adams accidentally described: a pocket Guide that makes a hostile body of technical knowledge feel browsable, obvious, and slightly ridiculous.
 
-For HG2Gui that means a real Android command environment that can be driven primarily by touch. The menu is not decoration around a CLI; **the menu is the input method**.
+For HG2Gui that means a real Android command environment that can project command-line software into the interaction surface that best fits the task. Sometimes that is a composed command. Sometimes it is the Guide, Files, a structured shell prompt, an Adaptive TUI Wrapper, a picker, an audit screen, or raw terminal input.
 
-The governing interaction rule is now:
+The governing interaction principle is:
 
-> If HG2Gui can discover or enumerate the valid values, the user selects them. Typing is for genuinely open-ended information.
+> Understand enough structure to offer meaningful native controls without taking authority away from the real program underneath.
 
-That applies to commands, flags, packages, installed software, files, finite prompt choices, authority levels, and eventually richer runtime objects.
+Typing remains available for open-ended information. Discoverable values can become direct selections. Raw terminal behavior remains available whenever HG2Gui cannot safely infer more.
 
 ## What is already established
 
-### Touch-first command composition
+### Command composition and completion
 
 - [x] Real shell commands discovered from the installed runtime.
-- [x] Command families and help-derived flags exposed as pills.
-- [x] Normal leaves compose rather than auto-run; **RUN** is explicit.
-- [x] Free-form input focuses the field and says what kind of value is expected.
-- [x] File/directory operands use the graphical picker.
+- [x] Help-derived flags and structured operands exposed through native controls.
+- [x] Normal composed commands require explicit **RUN**.
+- [x] File/directory operands can use the graphical picker.
 - [x] Package names use repository/package-manager inventories where available.
-- [x] Yes/no prompts use an actual confirmation dialog.
-- [x] Other finite interactive choices remain graphical.
-- [x] Live command output auto-scrolls to the newest result.
+- [x] Yes/no and finite interactive choices use native controls.
+- [x] Completion Bridge normalizes Bash, Zsh, Fish, filesystem, package, Git, SSH, service, and supported command-specific candidates.
+- [x] Completion selection replaces only the active partial token rather than executing the command.
 
-The important shift is from “make common commands tappable” to “model command input by its actual type.”
+### The Guide as command entry
 
-### Real Android terminal runtime
+- [x] Guide entries are backed by real command tokens.
+- [x] A command shown while reading can be tapped and handed to the terminal composition flow.
+- [x] Reading and command composition can interleave without leaving the Guide.
+- [x] Tapping a Guide command does not auto-run it.
 
-- [x] Pinned Termux-derived bootstrap under HG2Gui's private application prefix.
-- [x] Android-safe delivery of critical native bootstrap executables through the APK native-library path.
-- [x] Persistent shell sessions with per-session state/history/working directory.
-- [x] Graphical Files/VFS, editor, Guide, SSH presets, workflows, AI suggestions, Store, and MCP surfaces.
+Future Guide work:
 
-### Package compatibility instead of package exceptions
+- [ ] make unambiguous examples/subcommands inside prose tappable too;
+- [ ] connect entries more deeply to live package/help/completion metadata;
+- [ ] add stable package/isolation/authority concepts to the Guide once their behavior is mature enough to deserve canonical treatment.
 
-The package project has moved from “can we make this one install?” to “what assumptions does a Termux package make that are false under another Android application ID?”
+### Shell Adapter
 
-Completed layers include:
+- [x] Bash, Zsh, and Fish can be selected as persistent shells when installed.
+- [x] Prompt state can project cwd, Git branch/dirty state, last exit status, and user/host where meaningful.
+- [x] Oh My Zsh, Powerlevel10k, Starship, Pure, and similar systems are treated as presentation layers on the actual shell.
+- [x] Structured Git branch projection can open a native branch chooser.
 
-- [x] mutating top-level apt/apt-get operations routed through HG2Gui's package transaction layer;
-- [x] resumable/reusable package downloads;
-- [x] relocation of Termux package payload paths into HG2Gui's prefix;
-- [x] metadata-aware repair of `conffiles` and `md5sums`;
-- [x] HG2Gui-owned dpkg database/install root;
-- [x] maintainer-script execution without chroot;
-- [x] maintainer scripts staged outside dpkg's direct-exec path and run through bundled Bash;
-- [x] verified staging so failed deletes/moves do not masquerade as dpkg errors;
-- [x] real-device package installs/execution crossing the complete transaction path.
+Future shell work:
 
-The intended direction remains broad compatibility. A package-name special case is the last resort, not the architecture.
+- [ ] richer shell-native completion ingestion where it can be done without sourcing untrusted scripts;
+- [ ] more structured prompt segments when they can be identified reliably;
+- [ ] cooperative shell metadata protocols so themes can expose semantics directly instead of requiring inference.
 
-## Package management as a user interface
+### Adaptive TUI Wrapper
 
-A package manager knows far more than “install this string.” It knows what exists, what is installed, what version is present, and often what executable commands a package provides. HG2Gui should continuously turn that knowledge into UI.
+- [x] Alternate-screen/full-screen terminal state is detectable from the live emulator.
+- [x] Toolkit-neutral semantic snapshots can model layered/modal menus, checkboxes/radios, tabs, lists, tables, selectable results, prompts, confirmations, progress/status regions, multiple panes, and mouse-aware state.
+- [x] Selection can be inferred from terminal attributes/cursor/markers beyond inverse-video alone.
+- [x] Recognized interfaces can render as native HG2Gui controls.
+- [x] **RAW** remains available for unmodeled or low-confidence interaction.
+- [x] Generated navigation is verified against subsequent terminal state instead of blindly sending a fixed key count.
+
+Future TUI work:
+
+- [ ] richer mouse/gesture projection for applications that expose stable regions;
+- [ ] adapter profiles for toolkits/protocols when generic inference is insufficient;
+- [ ] cooperative metadata through the external API so applications can describe their own structure directly;
+- [ ] richer diff/editor/log/result projections where terminal semantics are strong enough to justify them.
+
+The underlying process must remain the source of truth. HG2Gui presents and controls it; it does not reimplement its business logic.
+
+## Package compatibility and execution
+
+The package project has moved from one-off install repair to a general Android compatibility layer.
+
+Implemented layers include:
+
+- [x] mutating apt/apt-get routing through HG2Gui transactions;
+- [x] resumable/reusable downloads;
+- [x] repository mirror failover and architecture selection;
+- [x] signed `InRelease` verification plus authenticated index/package SHA-256 verification;
+- [x] relocation of Termux package payloads into HG2Gui's prefix;
+- [x] control metadata and relocated-symlink repair;
+- [x] dependency planning including Pre-Depends, alternatives, Provides, Conflicts/Breaks/Replaces, and version-aware relations;
+- [x] chrootless dpkg with HG2Gui-owned database/install root;
+- [x] interpreter-aware maintainer-script execution through Android-safe native entry points;
+- [x] triggers, alternatives, diversions, explicit `postrm purge`, and rollback/recovery;
+- [x] package execution backend selection between `DIRECT_LINKER`, `PROOT_COMPAT`, and `PROOT_ISOLATED`.
+
+Future compatibility work should remain evidence-driven:
+
+- [ ] expand native/PRoot compatibility classification only when a concrete Android runtime case demonstrates the need;
+- [ ] dependency closure/explanation views such as “why is this installed?” and “what requires this?”;
+- [ ] additional package-manager adapters only when the manager exposes stable inventory/action semantics.
+
+Arbitrary command failure must never become a silent “retry under PRoot” policy.
+
+## Package lifecycle
+
+Implemented manager inventories:
+
+- [x] dpkg/pkg;
+- [x] pip;
+- [x] pipx;
+- [x] npm;
+- [x] RubyGems.
+
+Implemented HG2Gui-owned lifecycle controls:
+
+- [x] Disable / Enable;
+- [x] Reset;
+- [x] Isolate / Release isolation.
+
+Package managers own installation mechanics. HG2Gui owns how installed software is allowed to execute and how its runtime state is represented.
+
+Future lifecycle work:
+
+- [ ] dependency closure and impact views;
+- [ ] pre-reset impact previews;
+- [ ] optional snapshots/restore points where storage cost is justified;
+- [ ] stronger provenance tracking for non-isolated package writes.
+
+## Isolation and observability
+
+Isolation is one of HG2Gui's defining opportunities.
 
 Implemented:
 
-- [x] installed Termux/dpkg inventory;
-- [x] Python/pip inventory;
-- [x] Node/npm inventory;
-- [x] RubyGems inventory;
-- [x] manager → installed package → action hierarchy;
-- [x] package-owned executable choices under **Run**;
-- [x] manager-specific Update/Info/Remove/Purge operations;
-- [x] HG2Gui-owned Disable/Enable, Reset, and Isolate/Release isolation.
+- [x] package-level isolation state;
+- [x] private PRoot-backed root and private HOME/XDG state;
+- [x] fail-closed execution when isolation cannot be established;
+- [x] common ADB/root tools stripped or masked inside the guest;
+- [x] version-aware reseeding;
+- [x] before/after private-root filesystem audit;
+- [x] best-effort same-UID `/proc` observation of process descendants;
+- [x] observed open files and read/write modes;
+- [x] observed TCP/TCP6/UDP/UDP6 endpoints;
+- [x] ADB/root-like privilege-tool attempts;
+- [x] native Settings → Isolation Audit view for latest observed package activity.
 
-Next direction:
-
-- [ ] more package-manager adapters where they add real installed-package knowledge;
-- [ ] richer dependency/version/conflict metadata;
-- [ ] package update-state comparison before execution;
-- [ ] dependency closure views (“why is this installed?” / “what requires this?”);
-- [ ] transaction recovery/rollback and interrupted-install recovery;
-- [ ] mirror/signature/repository trust improvements;
-- [ ] alternatives/diversions/triggers/service-aware package semantics where real packages require them.
-
-## Lifecycle operations nobody else has to provide
-
-Package managers own installation. HG2Gui can own **how installed software is allowed to live**.
-
-### Disable
-
-- [x] Keep a package installed and visible while preventing HG2Gui from running its owned commands.
-
-Future:
-
-- [ ] make disabled-state effects visible everywhere a package executable is surfaced;
-- [ ] package-level policy presets (for example “installed but never runnable without confirmation”).
-
-### Reset
-
-- [x] Normal packages: clear conservative package-scoped cache/config/data/state/log locations plus paths HG2Gui positively observed being created.
-- [x] Isolated packages: discard the entire private runtime and reseed on next run.
-
-Future:
-
-- [ ] stronger provenance tracking for non-isolated package writes;
-- [ ] a pre-reset impact view listing files/folders/size before confirmation;
-- [ ] snapshots/restore points when the storage cost is justified.
-
-### Isolate
-
-This is one of HG2Gui's defining opportunities.
-
-Current implementation:
-
-- [x] package-level **Isolate / Release isolation** state;
-- [x] PRoot-backed private filesystem root;
-- [x] private HOME/XDG state;
-- [x] fail closed when the isolation engine is unavailable;
-- [x] strip/mask common ADB/root tools inside the guest;
-- [x] filesystem before/after audit for created/modified/deleted paths;
-- [x] version-aware reseeding after package updates.
-
-The intended destination is stronger than “a different HOME.” An isolated package should be able to run with everything it legitimately needs while HG2Gui can explain what it tried to do and prevent it from modifying anything outside the allowed environment.
+The current sampler is not kernel audit and must not be described as exhaustive syscall interception.
 
 Future isolation work:
 
-- [ ] reduce private-root seeding from a whole-prefix copy to a dependency closure/overlay strategy;
+- [ ] reduce whole-prefix seeding toward dependency-closure/overlay strategies;
 - [ ] explicit read/write bind policy per package;
-- [ ] network policy and visibility;
-- [ ] process/child-process audit;
-- [ ] syscall-level observation where Android/runtime constraints make it practical;
-- [ ] per-run capability requests: package asks, HG2Gui explains, user grants or denies;
-- [ ] human-readable audit summaries rather than raw path diffs alone;
-- [ ] exportable/reproducible sandbox definitions.
+- [ ] enforceable network policy in addition to network visibility;
+- [ ] per-run capability brokerage: package asks, HG2Gui explains, human grants or denies;
+- [ ] exportable/reproducible sandbox definitions;
+- [ ] deeper observation only where Android/runtime constraints permit truthful guarantees.
 
 ## Execution authority
 
-HG2Gui now treats privilege as an explicit backend rather than an environmental accident.
-
 Implemented authority levels:
 
-- [x] **App** — ordinary HG2Gui Android application authority, default.
-- [x] **Isolated package** — private package runtime without ambient elevated tools.
-- [x] **ADB shell** — explicit ADB client operations, Wireless Debugging pair/connect, and confirmed shell commands.
-- [x] **Root** — explicit `su` detection, confirmed test/root-shell operations.
-- [x] headless callers cannot elevate through the authority surface.
+- [x] App authority;
+- [x] isolated package authority boundary;
+- [x] ADB shell authority with pair/connect/disconnect/shell support;
+- [x] Root authority through an explicit `su` provider;
+- [x] foreground approval for elevated requests;
+- [x] no headless elevation.
 
-This separation matters more than the individual commands. A package should never receive ADB/root merely because the host application happens to possess it.
+Future authority work:
 
-Future:
+- [ ] capability-oriented Android-device operations built on ADB (`pm`, `am`, `cmd`, `settings`, `dumpsys`, `logcat`, etc.) without turning them into one giant hand-written pseudo-shell;
+- [ ] persistent but revocable ADB pairing/status UI;
+- [ ] per-package “allow once / ask every time / deny” capability policies;
+- [ ] root-aware features only where root adds a truthful capability.
 
-- [ ] richer Android-device operation pills built on ADB shell (`pm`, `am`, `cmd`, `settings`, `dumpsys`, `logcat`, etc.) generated from capability-aware adapters rather than giant hand-written command lists;
-- [ ] persistent but revocable ADB pairing state/status UI;
-- [ ] elevation previews that show the exact command and authority boundary;
-- [ ] per-package capability brokerage from isolation to host authority;
-- [ ] optional “ask every time / allow once / deny” capability policies without granting ambient shell access;
-- [ ] root-aware features only where root actually adds a truthful capability, never as a silent fallback.
+A package must never receive ADB/root merely because HG2Gui itself can obtain it.
 
-## External API
-
-HG2Gui should expose an Android integration API comparable in spirit to Termux:API, but aligned with HG2Gui's own security model and typed interaction system.
-
-The API should let other Android apps request operations such as command execution, package inventory/lifecycle actions, file selection, device capability access, and structured result retrieval without bypassing HG2Gui's authority rules.
-
-Future:
-
-- [ ] define stable Intent/Binder contracts for external callers;
-- [ ] expose discoverable capabilities rather than a single unrestricted shell endpoint;
-- [ ] support explicit execution authority selection with user confirmation where required;
-- [ ] return typed/structured results where HG2Gui already understands the domain;
-- [ ] allow package/file/choice selection surfaces to be invoked by external apps;
-- [ ] apply per-caller permissions, revocable grants, and audit history;
-- [ ] keep root/ADB/isolation boundaries identical whether a request originated inside HG2Gui or through the API.
-
-## Adaptive terminal UI wrappers
-
-Interactive terminal programs should not be limited to a raw character grid when HG2Gui can infer their structure.
-
-The long-term goal is an **Adaptive TUI Wrapper** layer for programs such as AI coding CLIs, Python `curses`/Rich/Textual applications, `htop`, `lazygit`, and other alternate-screen terminal interfaces.
-
-This is intentionally a different surface from the command pill stack. It should behave more like Files: the running program becomes a full HG2Gui-native screen whose controls, lists, panes, prompts, status regions, and actions are derived dynamically from the terminal state.
-
-Future:
-
-- [ ] detect alternate-screen/full-screen terminal applications from PTY/emulator state;
-- [ ] expose the terminal emulator's cells, cursor, attributes, and screen-update events to a semantic parser;
-- [ ] recognize common structures such as lists, tabs, buttons/actions, prompts, input fields, menus, progress/status regions, diffs, and scrollable panes;
-- [ ] map recognized structures into Compose/Azphalt-native controls while preserving a raw-terminal fallback;
-- [ ] send user actions back as the exact key/mouse/input sequences the underlying program expects;
-- [ ] create adapter profiles for major toolkits/protocols when generic inference is insufficient;
-- [ ] support program-supplied metadata through the external API so cooperative applications can describe their interface directly instead of being reverse-engineered;
-- [ ] preserve the program as the source of truth: the wrapper presents and controls the existing process rather than reimplementing its business logic.
-
-## Connectivity
-
-- [x] SSH saved presets and graphical host/user/port/key collection.
-- [x] remote OS context reference trees.
-- [x] ADB client authority model for Android device interaction.
-- [x] loopback MCP server.
-
-Future:
-
-- [ ] live remote command/help discovery over an active SSH connection;
-- [ ] remote package-manager adapters using the selected connection/context;
-- [ ] remote filesystem picks that remain visually distinct from local paths.
-
-## AI
-
-- [x] natural-language command suggestion surface;
-- [x] suggestions are composed for review, not auto-run;
-- [x] optional explanation of command parts.
-
-Future AI should understand HG2Gui's structured model rather than bypass it:
-
-- [ ] return typed command intentions (package/file/host/choice/free text), not just strings;
-- [ ] populate pill paths directly from suggestions;
-- [ ] explain package/isolation/authority consequences before execution;
-- [ ] consume isolation audit results to explain what a package actually changed;
-- [ ] never receive an implicit permission to elevate merely because it proposed the command.
-
-## The Guide
-
-The Guide is both explanation and command entry: real commands are explained with Douglas-Adams-style literalism, animation, and visual metaphor, and the command heading in an entry can be tapped to hand that command into HG2Gui's normal input flow for review.
-
-Reading and composing are intentionally allowed to interleave. The user should not have to leave the Guide, remember a command, and reconstruct it elsewhere just because they discovered it while reading.
-
-The large Guide manuscript and animation production files under `docs/` are creative source material. Runtime behavior belongs in the software documentation; Guide canon belongs in the Guide.
+## External Android API
 
 Implemented:
 
-- [x] Guide entries are backed by real command names/tokens;
-- [x] the command heading in an entry is tappable;
-- [x] tapping a Guide command composes it through the same terminal-selection callback used by the command browser;
-- [x] selecting a Guide command does not auto-execute it.
+- [x] signature-protected Android transport;
+- [x] typed command execution request;
+- [x] package operations;
+- [x] file/folder picker with returned result;
+- [x] notifications and foreground dialogs;
+- [x] clipboard get/set;
+- [x] device information;
+- [x] share/open actions;
+- [x] lifecycle operations;
+- [x] foreground-approved ADB/root requests.
+
+The API is capability-oriented rather than defining the entire integration model as “send an arbitrary command string.”
+
+Future API work:
+
+- [ ] versioned capability discovery/schema;
+- [ ] richer typed result objects where HG2Gui already understands the domain;
+- [ ] caller-visible audit history;
+- [ ] cooperative TUI/shell metadata channels;
+- [ ] revocable per-caller grants if HG2Gui ever supports trusted callers beyond same-signature applications.
+
+## Native surfaces
+
+HG2Gui should keep choosing the right surface for the object:
+
+- Files for files;
+- Guide for learning and command discovery;
+- terminal composition for ordinary command assembly;
+- Adaptive TUI Wrapper for structured screen-oriented programs;
+- Shell Adapter for prompts/themes/completion state;
+- package views for installed software;
+- isolation audit for observed sandbox activity;
+- foreground approval UI for elevated authority.
+
+The terminal remains central, but it is not the required visual container for every feature.
+
+## Connectivity and AI
+
+Implemented:
+
+- [x] SSH presets and native host/user/port/key collection;
+- [x] known SSH hosts feeding completion;
+- [x] remote OS reference contexts;
+- [x] ADB authority model;
+- [x] loopback MCP server;
+- [x] natural-language command suggestions returned for review.
 
 Future:
 
-- [ ] continue Guide animation production using the established canonical packets/style rules;
-- [ ] connect Guide entries more deeply to discovered command/package/help metadata;
-- [ ] let examples and subcommands inside Guide prose become structured command-entry affordances where unambiguous;
-- [ ] surface runtime/package/isolation concepts as Guide entries once the behavior is stable enough to deserve a joke.
+- [ ] live remote command/help/package discovery over SSH;
+- [ ] remote package-manager adapters tied to the active connection;
+- [ ] remote filesystem surfaces visually distinct from local paths;
+- [ ] AI output expressed as typed command intentions rather than only strings;
+- [ ] AI explanations of package/isolation/authority consequences before execution;
+- [ ] AI interpretation of isolation audit results without granting AI ambient elevation.
 
 ## Long-term product principle
 
-A normal terminal gives every program whatever authority the shell already has and expects the human to understand strings.
+A conventional terminal expects the human to interpret strings and gives child programs whatever authority the shell already has.
 
-HG2Gui should invert both assumptions:
+HG2Gui should improve both sides:
 
-1. **understand the values well enough that the human can pick them;**
-2. **understand the authority well enough that software receives only what the human intended.**
+1. understand enough structure to make command-line software directly manipulable on a touch device;
+2. understand enough authority to keep privilege explicit, visible, and intentionally granted.
 
-The destination is not merely “Termux with buttons.” It is a terminal that knows what its choices mean.
+The destination is a runtime that can dynamically generate useful Android interfaces for command-line software while preserving the real program underneath.
