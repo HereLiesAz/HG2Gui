@@ -12,6 +12,7 @@ import java.util.concurrent.TimeUnit
 object ShellCompletionBridge {
     private const val TIMEOUT_MS = 1_500L
     private const val MAX_OUTPUT_CHARS = 64_000
+    private const val MAX_DEFINITION_CHARS = 256_000
     private const val MAX_CANDIDATES = 200
 
     fun complete(context: Context, request: CompletionRequest): List<CompletionCandidate> {
@@ -21,10 +22,11 @@ object ShellCompletionBridge {
             ShellCompletionProvider.BASH_COMPLETION -> completeBash(context, request)
             ShellCompletionProvider.NONE -> completeFilesystem(request)
         }
+        val staticDefinitionCandidates = completeStaticDefinitions(context, request)
         val semanticCandidates = SemanticCompletionProviders.complete(context, request)
         return CompletionNormalizer.filterFor(
             request,
-            CompletionNormalizer.merge(semanticCandidates + shellCandidates)
+            CompletionNormalizer.merge(semanticCandidates + staticDefinitionCandidates + shellCandidates)
         ).take(MAX_CANDIDATES)
     }
 
@@ -64,6 +66,52 @@ object ShellCompletionBridge {
             cwd = request.cwd
         ) ?: return emptyList()
         return CompletionNormalizer.parseZsh(output).map { it.copy(kind = CompletionKind.COMMAND) }
+    }
+
+    /**
+     * Reads only declarative completion files as text. It never sources them. Bash/Zsh completion
+     * functions can execute arbitrary shell code, so dynamic definitions are intentionally left to
+     * the conservative fallback rather than being run as a side effect of opening HG2Gui UI.
+     */
+    private fun completeStaticDefinitions(context: Context, request: CompletionRequest): List<CompletionCandidate> {
+        val command = request.beforeCursor.trimStart().substringBefore(' ').substringAfterLast('/')
+        if (command.isBlank()) return emptyList()
+        val prefix = DistroManager.prefixDir(context)
+        val home = DistroManager.homeDir(context)
+
+        val files = when (request.provider) {
+            ShellCompletionProvider.BASH_COMPLETION -> listOf(
+                File(prefix, "share/bash-completion/completions/$command"),
+                File(prefix, "etc/bash_completion.d/$command"),
+                File(home, ".local/share/bash-completion/completions/$command")
+            )
+            ShellCompletionProvider.ZSH_COMPLETION -> listOf(
+                File(prefix, "share/zsh/site-functions/_$command"),
+                File(home, ".zfunc/_$command"),
+                File(home, ".local/share/zsh/site-functions/_$command")
+            )
+            else -> emptyList()
+        }
+
+        return files.asSequence()
+            .filter(File::isFile)
+            .mapNotNull(::readDefinition)
+            .flatMap { text ->
+                when (request.provider) {
+                    ShellCompletionProvider.BASH_COMPLETION -> StaticCompletionDefinitions.parseBash(text, request.tokenPrefix)
+                    ShellCompletionProvider.ZSH_COMPLETION -> StaticCompletionDefinitions.parseZsh(text, request.tokenPrefix)
+                    else -> emptyList()
+                }.asSequence()
+            }
+            .take(MAX_CANDIDATES)
+            .toList()
+    }
+
+    private fun readDefinition(file: File): String? = try {
+        if (file.length() > MAX_DEFINITION_CHARS) return null
+        file.readText().take(MAX_DEFINITION_CHARS)
+    } catch (_: Exception) {
+        null
     }
 
     private fun completeFilesystem(request: CompletionRequest): List<CompletionCandidate> {
