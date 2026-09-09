@@ -21,6 +21,24 @@ object SemanticCompletionProviders {
         addAll(serviceCandidates(context, request))
     }.take(MAX_CANDIDATES)
 
+    /** Safe read-only branch inventory reused by the native structured-prompt branch chooser. */
+    fun gitBranches(context: Context, cwd: String?): List<String> {
+        val git = executable(context, "git") ?: return emptyList()
+        val output = runProbe(
+            executable = git,
+            args = listOf("for-each-ref", "--format=%(refname:short)", "refs/heads", "refs/remotes"),
+            cwd = cwd
+        ) ?: return emptyList()
+        return output.lineSequence()
+            .map(String::trim)
+            .filter(String::isNotBlank)
+            .filterNot { it.endsWith("/HEAD") }
+            .distinct()
+            .sorted()
+            .take(MAX_CANDIDATES)
+            .toList()
+    }
+
     private fun packageCandidates(context: Context, request: CompletionRequest): List<CompletionCandidate> {
         val words = request.beforeCursor.trimStart().split(Regex("\\s+")).filter(String::isNotBlank)
         val verb = words.firstOrNull()?.substringAfterLast('/')?.lowercase() ?: return emptyList()
@@ -54,21 +72,9 @@ object SemanticCompletionProviders {
         if (words.firstOrNull()?.substringAfterLast('/') != "git") return emptyList()
         if (words.getOrNull(1) !in setOf("checkout", "switch", "branch", "merge", "rebase")) return emptyList()
 
-        val git = executable(context, "git") ?: return emptyList()
-        val output = runProbe(
-            executable = git,
-            args = listOf("for-each-ref", "--format=%(refname:short)", "refs/heads", "refs/remotes"),
-            cwd = request.cwd
-        ) ?: return emptyList()
-
-        return output.lineSequence()
-            .map(String::trim)
-            .filter(String::isNotBlank)
-            .filterNot { it.endsWith("/HEAD") }
+        return gitBranches(context, request.cwd)
+            .asSequence()
             .filter { it.startsWith(request.tokenPrefix, ignoreCase = true) }
-            .distinct()
-            .sorted()
-            .take(MAX_CANDIDATES)
             .map { branch ->
                 CompletionCandidate(
                     value = branch,
@@ -169,8 +175,6 @@ object SemanticCompletionProviders {
                     kind = CompletionKind.SERVICE,
                     source = CompletionSource.COMMAND_PROTOCOL,
                     priority = 40,
-                    // sv-enable/sv-disable specifically operate on the configured service names.
-                    // Plain sv also accepts explicit service paths, so its inventory is advisory.
                     enumerationComplete = verb == "sv-enable" || verb == "sv-disable"
                 )
             }
