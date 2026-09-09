@@ -50,7 +50,11 @@ import androidx.compose.ui.unit.sp
 import com.hereliesaz.hg2gui.managers.StyledSpan
 import com.hereliesaz.hg2gui.managers.TerminalHistoryEntry
 import com.hereliesaz.hg2gui.terminal.ChainOperator
+import com.hereliesaz.hg2gui.terminal.CompletionCandidate
+import com.hereliesaz.hg2gui.terminal.CompletionRequest
+import com.hereliesaz.hg2gui.terminal.PlatformCompletionBridge
 import com.hereliesaz.hg2gui.terminal.ShellAliases
+import com.hereliesaz.hg2gui.terminal.applyCompletion
 import com.hereliesaz.hg2gui.terminal.chainSegment
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
 import com.hereliesaz.hg2gui.ui.menu.onPage
@@ -74,6 +78,20 @@ private fun SessionUiState.pendingSegment(): String = buildString {
         append(inputText.trim())
     }
 }.trim()
+
+private fun SessionUiState.completionLine(): String = buildString {
+    append(composedPrefix)
+    if (tokens.isNotEmpty()) {
+        if (isNotEmpty() && !last().isWhitespace()) append(' ')
+        append(tokens.joinToString(" "))
+    }
+    if (inputText.isNotEmpty()) {
+        if (isNotEmpty() && !last().isWhitespace()) append(' ')
+        append(inputText)
+    } else if (tokens.isNotEmpty() && (isEmpty() || !last().isWhitespace())) {
+        append(' ')
+    }
+}
 
 private fun expectedInputKind(tokens: List<String>): String? {
     if (tokens.isEmpty()) return null
@@ -197,6 +215,40 @@ fun TerminalScreen(
         if (requestedInputKind != null) inputFocusRequester.requestFocus()
     }
 
+    LaunchedEffect(
+        active.id,
+        active.composedPrefix,
+        active.tokens,
+        active.inputText,
+        active.cwd,
+        active.running,
+        active.pendingPrompt,
+        active.shellPresentation
+    ) {
+        if (active.running || active.pendingPrompt != null) {
+            active.clearCompletions()
+            return@LaunchedEffect
+        }
+        val line = active.completionLine()
+        if (line.isBlank()) {
+            active.clearCompletions()
+            return@LaunchedEffect
+        }
+        delay(120)
+        val presentation = active.shellPresentation
+        val requestKey = "${active.cwd}\u0000${presentation.shell}\u0000$line"
+        val candidates = PlatformCompletionBridge.complete(
+            CompletionRequest(
+                line = line,
+                cursor = line.length,
+                cwd = active.cwd,
+                shell = presentation.shell,
+                provider = presentation.completionProvider
+            )
+        )
+        active.updateCompletions(requestKey, candidates)
+    }
+
     val newestEntry = active.buffer.lastOrNull()
     LaunchedEffect(
         active.buffer.size,
@@ -226,6 +278,7 @@ fun TerminalScreen(
                 requestedInputKind = null
                 session.running = true
                 session.transientStatus = null
+                session.clearCompletions()
                 if (session.commandHistory.isEmpty() || session.commandHistory.last() != fullLine) {
                     session.commandHistory = (session.commandHistory + fullLine).takeLast(MAX_BUFFER_ENTRIES)
                 }
@@ -414,30 +467,41 @@ fun TerminalScreen(
             }
         }
 
+        val completionNode = completionNodeFor(active)
         val suggestionNode = suggestionNodeFor(active, knownCommands)
         val chainNode = chainNodeFor(active)
-        val effectiveTree = tree + listOfNotNull(suggestionNode, chainNode, answerNode)
+        val effectiveTree = tree + listOfNotNull(completionNode, suggestionNode, chainNode, answerNode)
 
         PillMenu(
             roots = effectiveTree,
             modifier = Modifier.weight(if (active.buffer.isEmpty()) 1f else 0.6f).padding(horizontal = 20.dp, vertical = 12.dp),
             onRun = { picked, isTerminal ->
+                val completion = completionCandidateFromPick(picked, active)
                 val chainOperator = chainOperatorFromPick(picked)
-                if (chainOperator != null) {
-                    requestedInputKind = null
-                    active.composedPrefix = chainSegment(active.composedPrefix, active.pendingSegment(), chainOperator)
-                    active.tokens = emptyList()
-                    active.inputText = ""
-                } else {
-                    active.tokens = picked
-                    if (picked.isNotEmpty()) active.inputText = ""
-                    if (isTerminal && pendingPrompt != null) {
+                when {
+                    completion != null -> {
                         requestedInputKind = null
-                        executeCommand()
-                    } else if (isTerminal) {
-                        requestedInputKind = expectedInputKind(picked)
-                    } else {
+                        val insertion = applyCompletion(active.inputText, candidate = completion)
+                        active.inputText = insertion.line
+                        active.clearCompletions()
+                    }
+                    chainOperator != null -> {
                         requestedInputKind = null
+                        active.composedPrefix = chainSegment(active.composedPrefix, active.pendingSegment(), chainOperator)
+                        active.tokens = emptyList()
+                        active.inputText = ""
+                    }
+                    else -> {
+                        active.tokens = picked
+                        if (picked.isNotEmpty()) active.inputText = ""
+                        if (isTerminal && pendingPrompt != null) {
+                            requestedInputKind = null
+                            executeCommand()
+                        } else if (isTerminal) {
+                            requestedInputKind = expectedInputKind(picked)
+                        } else {
+                            requestedInputKind = null
+                        }
                     }
                 }
             },
@@ -503,9 +567,16 @@ fun TerminalScreen(
                         requestedInputKind = null
                         active.tokens = emptyList()
                         active.inputText = ""
+                        active.clearCompletions()
                     }
                     "tab" -> {
-                        if (active.inputText.isNotEmpty() && !active.inputText.endsWith(" ")) active.inputText += " "
+                        val first = active.completionCandidates.firstOrNull()
+                        if (first != null) {
+                            active.inputText = applyCompletion(active.inputText, candidate = first).line
+                            active.clearCompletions()
+                        } else if (active.inputText.isNotEmpty() && !active.inputText.endsWith(" ")) {
+                            active.inputText += " "
+                        }
                     }
                 }
             }
@@ -993,6 +1064,31 @@ private fun CommandLine(
             }
         }
     }
+}
+
+private const val COMPLETION_VALUE_PREFIX = "\u0000completion:"
+
+private fun completionCandidateFromPick(picked: List<String>, session: SessionUiState): CompletionCandidate? {
+    val encoded = picked.singleOrNull()?.takeIf { it.startsWith(COMPLETION_VALUE_PREFIX) } ?: return null
+    val index = encoded.removePrefix(COMPLETION_VALUE_PREFIX).toIntOrNull() ?: return null
+    return session.completionCandidates.getOrNull(index)
+}
+
+private fun completionNodeFor(session: SessionUiState): MenuNode? {
+    if (session.running || session.pendingPrompt != null || session.completionCandidates.isEmpty()) return null
+    return MenuNode(
+        id = "complete",
+        label = "Complete",
+        emitsToken = false,
+        children = session.completionCandidates.take(50).mapIndexed { index, candidate ->
+            MenuNode(
+                id = "complete-$index",
+                label = candidate.label,
+                cap = candidate.kind.name.lowercase(),
+                value = COMPLETION_VALUE_PREFIX + index
+            )
+        }
+    )
 }
 
 private fun suggestionNodeFor(session: SessionUiState, knownCommands: List<String>): MenuNode? {
