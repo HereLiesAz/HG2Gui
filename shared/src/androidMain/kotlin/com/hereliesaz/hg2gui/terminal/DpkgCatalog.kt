@@ -30,9 +30,46 @@ object DpkgCatalog {
                         if (name.isNotBlank()) result.getOrPut(pkg) { mutableListOf() }.add(name)
                     }
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 // This package's own listing is unreadable - skip it, keep the rest.
             }
+        }
+        return result
+    }
+
+    /** Installed package versions from dpkg's status database, limited to `Status: ... installed`. */
+    fun installedVersions(prefixDir: File): Map<String, String> {
+        val status = File(prefixDir, "var/lib/dpkg/status")
+        if (!status.isFile) return emptyMap()
+
+        val result = linkedMapOf<String, String>()
+        var name: String? = null
+        var version: String? = null
+        var installed = false
+
+        fun commit() {
+            val packageName = name
+            if (installed && !packageName.isNullOrBlank()) result[packageName] = version.orEmpty()
+            name = null
+            version = null
+            installed = false
+        }
+
+        try {
+            status.forEachLine { line ->
+                if (line.isBlank()) {
+                    commit()
+                } else {
+                    when {
+                        line.startsWith("Package:") -> name = line.substringAfter(':').trim()
+                        line.startsWith("Version:") -> version = line.substringAfter(':').trim()
+                        line.startsWith("Status:") -> installed = line.substringAfter(':').trim().endsWith(" installed")
+                    }
+                }
+            }
+            commit()
+        } catch (_: Exception) {
+            return emptyMap()
         }
         return result
     }
