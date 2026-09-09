@@ -213,7 +213,7 @@ In addition to live shell categories, the command tree contains non-shell roots 
 - **AI** — natural-language command suggestions that are inserted for review, never auto-executed;
 - **Store** — azphalt.store `.azp` browser/install surface;
 - **Context** — static remote-OS reference command trees for local/Ubuntu/macOS/Windows contexts;
-- Android device/app/features roots backed by built-ins.
+- Android device/communication/features roots backed by built-ins.
 
 ## Android built-ins
 
@@ -228,7 +228,7 @@ In addition to live shell categories, the command tree contains non-shell roots 
 - `volume` — inspect/set stream levels and ringer profile.
 - `brightness` — set a percentage or automatic mode; modify-system-settings permission may be required.
 
-### Apps & navigation
+### Communication
 
 - `call <name or number>` — place a call, resolving contacts where possible.
 - `contacts <ls|add|about|edit|rm> ...` — contact operations.
