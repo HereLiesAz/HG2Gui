@@ -44,6 +44,7 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hereliesaz.hg2gui.terminal.FullScreenPtySession
+import com.hereliesaz.hg2gui.terminal.TuiTerminalAdapter
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
 import com.termux.terminal.KeyHandler
 import com.termux.terminal.TerminalEmulator
@@ -73,19 +74,31 @@ private val EXTRA_KEYS = listOf(
 )
 
 /**
- * S1's full-screen surface: renders a [FullScreenPtySession]'s live screen buffer and forwards
- * raw input to it, instead of the app's normal flattened one-shot transcript. See
- * FullScreenPtySession's own doc comment for what it wraps and why.
- *
- * Known MVP limitations, honestly: the cell renderer treats each `Char` in a row's backing array
- * as one column (no wide/CJK character or combining-mark support), re-measures every styled run
- * on every redraw rather than caching glyph layout, and hardware-keyboard modifier combinations
- * beyond what [KeyHandler] already recognizes (shift/ctrl/alt on the arrow/function/nav keys) are
- * not specially handled. Good enough to make vim/htop/less/tmux usable at all, which today they
- * are not.
+ * Full-screen PTY surface. When the live alternate-screen buffer can be modeled confidently as
+ * a structured terminal UI, the same entry point dynamically projects it through
+ * [AdaptiveTuiWrapperScreen]. Otherwise it renders the raw terminal grid exactly as before.
  */
 @Composable
-fun FullScreenTerminalScreen(holder: FullScreenPtySession, onExit: () -> Unit) {
+fun FullScreenTerminalScreen(
+    holder: FullScreenPtySession,
+    onExit: () -> Unit,
+    forceRaw: Boolean = false
+) {
+    var rawOverride by remember(holder) { mutableStateOf(forceRaw) }
+    if (!rawOverride) {
+        @Suppress("UNUSED_VARIABLE")
+        val generation = holder.generation
+        val semantic = TuiTerminalAdapter.snapshot(holder)
+        if (semantic?.isWrappable == true) {
+            AdaptiveTuiWrapperScreen(
+                holder = holder,
+                onRawTerminal = { rawOverride = true },
+                onExit = onExit
+            )
+            return
+        }
+    }
+
     val measurer = rememberTextMeasurer()
     val focusRequester = remember { FocusRequester() }
     var ctrlArmed by remember { mutableStateOf(false) }
@@ -158,8 +171,7 @@ private fun TerminalTopBar(
     }
 }
 
-@Suppress("LongParameterList") // A live pty grid's own layout state - every param is genuinely
-// distinct state the canvas/input pair below both need, not incidental plumbing.
+@Suppress("LongParameterList")
 @Composable
 private fun TerminalGrid(
     holder: FullScreenPtySession,
@@ -187,9 +199,6 @@ private fun TerminalGrid(
                 if (newColumns != columns || newRows != rows) onGridSized(newColumns, newRows)
             }
     ) {
-        // A read of holder.generation here (not inside the DrawScope lambda below) is what makes
-        // this recompose - and therefore redraw - every time the pty produces output; see
-        // FullScreenPtySession's own doc comment on the field.
         @Suppress("UNUSED_VARIABLE")
         val generation = holder.generation
         Canvas(Modifier.fillMaxSize()) {
@@ -259,10 +268,6 @@ private fun sendCodePoint(holder: FullScreenPtySession, codePoint: Int, ctrl: Bo
     holder.sendCodePoint(codePoint)
 }
 
-/** Consumes the event (returning true) only for keys [KeyHandler] recognizes as navigation/
- *  control - arrows, Home/End, PgUp/PgDn, Esc, Tab, Enter, Backspace, function keys. Plain
- *  character keys fall through unconsumed so they reach the (invisible) text field's own
- *  IME-driven input path instead. */
 private fun handleSpecialKey(holder: FullScreenPtySession, event: KeyEvent, cursorApp: Boolean, keypadApp: Boolean): Boolean {
     val native = event.nativeKeyEvent
     val code = if (native.action == NativeKeyEvent.ACTION_DOWN) specialKeyCode(native, cursorApp, keypadApp) else null
@@ -281,8 +286,6 @@ private fun specialKeyCode(native: NativeKeyEvent, cursorApp: Boolean, keypadApp
 
 private class GridMetrics(val columns: Int, val rows: Int, val cellWidth: Float, val cellHeight: Float)
 
-/** Everything a single draw pass needs, bundled so the row/run/cursor helpers below don't each
- *  need their own long parameter list for values that never change within one frame. */
 private class RenderContext(
     val metrics: GridMetrics,
     val screenRows: Int,
