@@ -6,15 +6,20 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import com.hereliesaz.hg2gui.terminal.ShellPreference
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
 import com.hereliesaz.hg2gui.ui.menu.onPage
 import com.hereliesaz.hg2gui.ui.menu.pageBrush
@@ -38,6 +43,10 @@ fun SettingsScreen(
     onOpenHistory: () -> Unit,
     onBack: () -> Unit
 ) {
+    val context = LocalContext.current
+    val availableShells = remember { ShellPreference.available(context) }
+    var selectedShell by remember { mutableStateOf(ShellPreference.selected(context)) }
+
     Column(
         Modifier
             .fillMaxSize()
@@ -97,8 +106,7 @@ fun SettingsScreen(
             title = "Real pseudoterminal",
             description = "Experimental. Runs commands over the app's own native pty bridge " +
                 "instead of a plain pipe, so full-screen tools (vim, top, less, an interactive " +
-                "REPL) can actually draw a screen instead of breaking. Unverified on real " +
-                "hardware — off is the safe, always-worked default. Takes effect for a new tab " +
+                "REPL) can actually draw a screen instead of breaking. Takes effect for a new tab " +
                 "or the next app launch, not the one you're in."
         ) {
             SegmentedToggle(
@@ -107,6 +115,36 @@ fun SettingsScreen(
                 rightSelected = usePty,
                 onSelectRight = onUsePtyChange
             )
+        }
+
+        SettingRow(
+            title = "Default shell",
+            description = "The interactive shell used for new HG2Gui sessions. Only installed shells are shown. " +
+                "Changing it does not replace the shell in an already-running tab."
+        ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                availableShells.forEach { shell ->
+                    val selected = selectedShell == shell
+                    Box(
+                        Modifier
+                            .clip(RoundedCornerShape(percent = 50))
+                            .background(if (selected) Azphalt.Ink else Azphalt.Ink.copy(alpha = .14f))
+                            .clickable {
+                                ShellPreference.setSelected(context, shell)
+                                selectedShell = shell
+                            }
+                            .padding(horizontal = 16.dp, vertical = 9.dp)
+                    ) {
+                        Text(
+                            shell.uppercase(),
+                            color = if (selected) Azphalt.Yellow else Azphalt.Ink.copy(alpha = .55f),
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 0.09.em
+                        )
+                    }
+                }
+            }
         }
 
         SettingRow(
@@ -195,8 +233,6 @@ private fun SettingRow(title: String, description: String, control: @Composable 
             fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em
         )
         Text(
-            // .55f, the style guide's own "text-muted" token - not .6f, which no other caption
-            // in the app uses for this role.
             description, color = Azphalt.Ink.copy(alpha = .55f),
             fontSize = 11.sp, lineHeight = 15.sp,
             modifier = Modifier.padding(top = 4.dp, bottom = 10.dp)
@@ -264,17 +300,10 @@ private fun Stepper(
 
 @Composable
 private fun StepperButton(symbol: String, enabled: Boolean, onClick: () -> Unit) {
-    // UI-7: the visible circle is a deliberately compact 34dp - well under the 48dp minimum
-    // touch target. Rather than growing the circle itself, the clickable region is a separate,
-    // invisible 48dp box it's centered inside, the same pattern GuideReaderScreen's own Chip
-    // helper uses for the identical problem.
     Box(
         Modifier
             .size(34.dp)
             .clip(RoundedCornerShape(percent = 50))
-            // A capsule is never tinted, faded, or given alpha (style guide "03 -
-            // Transparency") - idle uses the same ink-14% wash every other disabled capsule in
-            // the app does, not a faded copy of its own hue.
             .background(if (enabled) Azphalt.hues[6] else Azphalt.Ink.copy(alpha = .14f))
             .clickable(enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center
