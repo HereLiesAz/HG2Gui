@@ -238,7 +238,12 @@ class Hg2PackageManager(
                 environment()["TMPDIR"] = "${prefix.absolutePath}/tmp"
             }
             .start()
-        process.inputStream.bufferedReader().useLines { lines -> lines.forEach { kotlinx.coroutines.runBlocking { emit(it) } } }
+        process.inputStream.bufferedReader().use { reader ->
+            while (true) {
+                val line = reader.readLine() ?: break
+                emit(line)
+            }
+        }
         val code = process.waitFor()
         if (code != 0) error("dpkg exited with code $code")
     }
