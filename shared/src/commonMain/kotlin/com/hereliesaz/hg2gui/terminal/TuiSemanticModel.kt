@@ -13,12 +13,18 @@ data class TuiSnapshot(
 ) {
     val isWrappable: Boolean
         get() = alternateScreen && (layers.any { it.items.size >= 2 } || prompt != null)
+
+    /** The topmost selectable layer owns navigation; lower layers remain visible context. */
+    val activeLayerIndex: Int?
+        get() = layers.indexOfLast { it.activeIndex != null }.takeIf { it >= 0 }
 }
 
 data class TuiLayer(
     val heading: String?,
     val items: List<TuiMenuItem>,
-    val activeIndex: Int?
+    val activeIndex: Int?,
+    val depth: Int = 0,
+    val modal: Boolean = false
 )
 
 data class TuiMenuItem(
@@ -53,9 +59,9 @@ data class TuiRow(
 )
 
 /**
- * First-pass semantic parser for the layered-menu TUIs commonly produced by curses, Rich,
- * Textual, Ink and similar toolkits. It deliberately favors conservative recognition: an
- * uncertain screen stays on the raw terminal fallback rather than inventing controls.
+ * Semantic parser for the layered-menu TUIs commonly produced by curses, Rich, Textual, Ink and
+ * similar toolkits. It deliberately favors conservative recognition: an uncertain screen stays on
+ * the raw terminal fallback rather than inventing controls.
  */
 object TuiSemanticParser {
     private val menuPrefix = Regex("""^\s*(?:[>›»▶►•●○◉✓✔*+-]|\[[ xX✓✔]\]|\([ xX*]\))\s+(.+?)\s*$""")
@@ -64,6 +70,7 @@ object TuiSemanticParser {
     private val promptSuffix = Regex("""(?i)(?:[:>]\s*|\?\s*|\[[yYnN/]+]\s*)$""")
     private val passwordWords = Regex("""(?i)\b(password|passphrase|token|secret|api\s*key)\b""")
     private val confirmWords = Regex("""(?i)\b(confirm|continue|proceed|overwrite|delete|remove|install|allow|accept)\b""")
+    private val modalWords = Regex("""(?i)\b(dialog|confirm|confirmation|warning|error|choose|select|options?)\b""")
 
     fun parse(rows: List<TuiRow>, alternateScreen: Boolean): TuiSnapshot {
         val visible = rows
@@ -90,7 +97,10 @@ object TuiSemanticParser {
         }
         if (current.size >= 2) menuRuns += current.toList()
 
-        val layers = menuRuns.map { run ->
+        val runIndents = menuRuns.map { run -> run.minOf(::leadingIndent) }
+        val indentLevels = runIndents.distinct().sorted()
+
+        val layers = menuRuns.mapIndexed { runIndex, run ->
             val firstRow = run.first().index
             val heading = visible
                 .lastOrNull { it.index < firstRow && firstRow - it.index <= 2 && !looksLikeExplicitMenuItem(it) }
@@ -104,10 +114,13 @@ object TuiSemanticParser {
                     selected = row.highlighted || row.cursorColumn != null
                 )
             }
+            val depth = indentLevels.indexOf(runIndents[runIndex]).coerceAtLeast(0)
             TuiLayer(
                 heading = heading,
                 items = items,
-                activeIndex = items.indexOfFirst { it.selected }.takeIf { it >= 0 }
+                activeIndex = items.indexOfFirst { it.selected }.takeIf { it >= 0 },
+                depth = depth,
+                modal = depth > 0 || (heading != null && modalWords.containsMatchIn(heading))
             )
         }
 
@@ -130,6 +143,8 @@ object TuiSemanticParser {
             alternateScreen = alternateScreen
         )
     }
+
+    private fun leadingIndent(row: TuiRow): Int = row.text.takeWhile(Char::isWhitespace).length
 
     private fun looksLikeExplicitMenuItem(row: TuiRow): Boolean =
         row.highlighted || menuPrefix.matches(row.text) || numberedMenu.matches(row.text)
