@@ -150,7 +150,7 @@ object PackageIsolation {
             for child in \$(cat "/proc/\$p/task/\$p/children" 2>/dev/null); do hg2_scan_pid "\$child"; done
           fi
         }
-        ${q(original)} &
+        ( eval ${q(original)} ) &
         main=\$!
         hg2_log "root-process:\$main"
         while kill -0 "\$main" 2>/dev/null; do hg2_scan_pid "\$main"; sleep 0.05; done
