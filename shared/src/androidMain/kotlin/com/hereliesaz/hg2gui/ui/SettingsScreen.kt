@@ -1,5 +1,6 @@
 package com.hereliesaz.hg2gui.ui
 
+import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -21,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import com.hereliesaz.hg2gui.IsolationAuditActivity
 import com.hereliesaz.hg2gui.terminal.ShellPreference
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
 import com.hereliesaz.hg2gui.ui.menu.onPage
@@ -183,6 +185,26 @@ fun SettingsScreen(
             ) {
                 Text(
                     "SEARCH HISTORY ›", color = Azphalt.Yellow,
+                    fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em
+                )
+            }
+        }
+
+        SettingRow(
+            title = "Isolation audit",
+            description = "Inspect the latest observed process, file, network, and authority activity from packages running inside HG2Gui isolation."
+        ) {
+            Box(
+                Modifier
+                    .clip(RoundedCornerShape(percent = 50))
+                    .background(Azphalt.Ink)
+                    .clickable {
+                        context.startActivity(Intent(context, IsolationAuditActivity::class.java))
+                    }
+                    .padding(horizontal = 16.dp, vertical = 9.dp)
+            ) {
+                Text(
+                    "VIEW ISOLATION AUDIT ›", color = Azphalt.Yellow,
                     fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em
                 )
             }
