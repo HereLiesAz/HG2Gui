@@ -40,7 +40,13 @@ int main(int argc, char **argv) {
         return 127;
     }
 
-    char **next = calloc((size_t)argc + 2, sizeof(char *));
+    char instdir[PATH_MAX];
+    if (snprintf(instdir, sizeof(instdir), "--instdir=%s", prefix) >= (int)sizeof(instdir)) {
+        fprintf(stderr, "hg2gui-dpkg: instdir path is too long\n");
+        return 127;
+    }
+
+    char **next = calloc((size_t)argc + 3, sizeof(char *));
     if (!next) {
         fprintf(stderr, "hg2gui-dpkg: out of memory\n");
         return 127;
@@ -48,8 +54,9 @@ int main(int argc, char **argv) {
 
     next[0] = target;
     next[1] = admindir;
-    for (int i = 1; i < argc; ++i) next[i + 1] = argv[i];
-    next[argc + 1] = NULL;
+    next[2] = instdir;
+    for (int i = 1; i < argc; ++i) next[i + 2] = argv[i];
+    next[argc + 2] = NULL;
 
     execv(target, next);
     fprintf(stderr, "hg2gui-dpkg: execv(%s) failed: %s\n", target, strerror(errno));
