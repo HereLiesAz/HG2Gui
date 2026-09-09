@@ -18,6 +18,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.hereliesaz.hg2gui.R
 import com.hereliesaz.hg2gui.terminal.Hg2Downloader
+import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONArray
@@ -103,8 +104,10 @@ object AppUpdateChecker {
                 ensureNotificationChannel(appContext)
                 val target = File(appContext.cacheDir, "updates/hg2gui-${update.versionName}.apk")
                 val downloader = Hg2Downloader(appContext, client)
-                val result = downloader.download(update.downloadUrl, target, update.sha256) { done, total ->
-                    if (canNotify(appContext)) showDownloadProgress(appContext, update, done, total)
+                val result = runBlocking {
+                    downloader.download(update.downloadUrl, target, update.sha256) { done, total ->
+                        if (canNotify(appContext)) showDownloadProgress(appContext, update, done, total)
+                    }
                 }
                 verifyDownloadedApk(appContext, result.file, update)
                 if (canNotify(appContext)) {
