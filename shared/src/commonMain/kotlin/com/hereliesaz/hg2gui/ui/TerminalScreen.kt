@@ -52,6 +52,7 @@ import com.hereliesaz.hg2gui.managers.TerminalHistoryEntry
 import com.hereliesaz.hg2gui.terminal.ChainOperator
 import com.hereliesaz.hg2gui.terminal.CompletionCandidate
 import com.hereliesaz.hg2gui.terminal.CompletionRequest
+import com.hereliesaz.hg2gui.terminal.CompletionSelectionPolicy
 import com.hereliesaz.hg2gui.terminal.PlatformCompletionBridge
 import com.hereliesaz.hg2gui.terminal.ShellAliases
 import com.hereliesaz.hg2gui.terminal.applyCompletion
@@ -510,7 +511,11 @@ fun TerminalScreen(
         )
 
         val maskInput = pendingPrompt != null && ShellAliases.looksLikePassword(pendingPrompt)
-        val visibleInputRequest = requestedInputKind?.takeIf { pendingPrompt == null && active.inputText.isBlank() }
+        val choiceRequired = requestedInputKind != null &&
+            CompletionSelectionPolicy.shouldReplaceFreeForm(active.inputText, active.completionCandidates)
+        val visibleInputRequest = requestedInputKind?.takeIf {
+            pendingPrompt == null && active.inputText.isBlank() && !choiceRequired
+        }
 
         CommandLine(
             composedPrefix = active.composedPrefix,
@@ -522,6 +527,7 @@ fun TerminalScreen(
             },
             hint = when {
                 pendingPrompt != null -> pendingPrompt.substringAfterLast('\n').ifBlank { "Waiting for input…" }
+                choiceRequired -> "Choose ${requestedInputKind!!.lowercase()} above"
                 visibleInputRequest != null -> "Type ${visibleInputRequest.lowercase()} below, then press run"
                 active.transientStatus != null -> active.transientStatus!!
                 active.running -> "Running…"
@@ -530,9 +536,11 @@ fun TerminalScreen(
                 else -> "Pick a command"
             },
             runLabel = if (pendingPrompt != null) "SEND" else "RUN",
-            enabled = pendingPrompt != null || (!active.running && (active.tokens.isNotEmpty() || active.inputText.isNotBlank())),
+            enabled = pendingPrompt != null ||
+                (!active.running && !choiceRequired && (active.tokens.isNotEmpty() || active.inputText.isNotBlank())),
             masked = maskInput,
             inputRequest = visibleInputRequest,
+            inputSuppressed = choiceRequired,
             inputFocusRequester = inputFocusRequester,
             onRun = executeCommand
         )
@@ -973,6 +981,7 @@ private fun CommandLine(
     runLabel: String = "RUN",
     masked: Boolean = false,
     inputRequest: String? = null,
+    inputSuppressed: Boolean = false,
     inputFocusRequester: FocusRequester
 ) {
     Column(Modifier.padding(horizontal = 20.dp).padding(top = 16.dp)) {
@@ -1002,7 +1011,7 @@ private fun CommandLine(
                     .weight(1f)
                     .heightIn(min = 32.dp)
                     .clip(RoundedCornerShape(percent = 50))
-                    .background(if (inputRequest != null) Azphalt.Ink.copy(alpha = .96f) else Azphalt.Ink)
+                    .background(if (inputRequest != null || inputSuppressed) Azphalt.Ink.copy(alpha = .96f) else Azphalt.Ink)
                     .padding(start = 14.dp, end = 10.dp, top = 6.dp, bottom = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -1028,21 +1037,34 @@ private fun CommandLine(
                         )
                     }
                 }
-                BasicTextField(
-                    value = inputText,
-                    onValueChange = onInputTextChange,
-                    modifier = Modifier.weight(1f).focusRequester(inputFocusRequester),
-                    textStyle = MaterialTheme.typography.bodyMedium.copy(
-                        color = Azphalt.Yellow,
-                        fontSize = 12.sp,
-                        fontFamily = FontFamily.Monospace
-                    ),
-                    cursorBrush = SolidColor(Azphalt.Yellow),
-                    singleLine = true,
-                    visualTransformation = if (masked) PasswordVisualTransformation() else VisualTransformation.None,
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
-                    keyboardActions = KeyboardActions(onGo = { onRun() })
-                )
+                if (inputSuppressed) {
+                    Text(
+                        "CHOOSE ABOVE",
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = Azphalt.Yellow.copy(alpha = .7f),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = FontFamily.Monospace
+                        )
+                    )
+                } else {
+                    BasicTextField(
+                        value = inputText,
+                        onValueChange = onInputTextChange,
+                        modifier = Modifier.weight(1f).focusRequester(inputFocusRequester),
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(
+                            color = Azphalt.Yellow,
+                            fontSize = 12.sp,
+                            fontFamily = FontFamily.Monospace
+                        ),
+                        cursorBrush = SolidColor(Azphalt.Yellow),
+                        singleLine = true,
+                        visualTransformation = if (masked) PasswordVisualTransformation() else VisualTransformation.None,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
+                        keyboardActions = KeyboardActions(onGo = { onRun() })
+                    )
+                }
             }
             Row(
                 Modifier
