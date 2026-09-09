@@ -2,7 +2,7 @@
 
 **Current repository version:** `0.7.218` with `versionBuild=489` in `version.properties` at the time of this documentation pass. CI may advance the build counter independently.
 
-HG2Gui is an Android terminal application, not a launcher. The product is built around one principle: **the shell remains real, while HG2Gui supplies the touch interface and the Android-specific policy/compatibility layers that the shell cannot safely provide by itself.**
+HG2Gui is an Android terminal application built around one principle: **the shell remains real, while HG2Gui supplies the touch interface and the Android-specific policy/compatibility layers that the shell cannot safely provide by itself.**
 
 The application is Kotlin/Compose. `:composeApp` is the thin Android entry point; most UI and execution logic lives in `:shared`. The shared module currently targets Android.
 
@@ -85,9 +85,9 @@ The preparation pipeline currently handles:
 
 The original downloaded SHA is verified before archive transformation where an expected digest is available. The transformed archive is deliberately not byte-identical to the repository package.
 
-### 3.4 dpkg launcher
+### 3.4 dpkg native entry
 
-The bundled dpkg launcher supplies:
+The bundled dpkg native entry supplies:
 
 - `--admindir=$PREFIX/var/lib/dpkg`
 - `--instdir=$PREFIX`
@@ -302,14 +302,14 @@ The MCP server remains loopback-only and explicit-start. Its own shell execution
 
 ## 9. Module boundaries
 
-- `:composeApp` — Android application, activities/services, resources, product flavor/signing/build packaging, generated native launchers.
+- `:composeApp` — Android application, activities/services, resources, product flavor/signing/build packaging, generated native entry binaries.
 - `:shared` — UI, terminal engine, package manager, lifecycle/isolation/authority, managers and integrations.
 - `:terminal-emulator` — vendored terminal/PTY support.
 - `:termux-shared` — vendored Termux-compatible Android utilities.
 
 ## 10. Current invariants
 
-1. HG2Gui is a terminal application, not a launcher.
+1. The shell remains real; HG2Gui owns touch interaction and Android policy/compatibility boundaries.
 2. Normal command-tree leaves compose; explicit **RUN** executes.
 3. Enumerable inputs should be selected, not typed.
 4. File/directory operands use the graphical picker when recognized.
