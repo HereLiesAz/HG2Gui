@@ -41,7 +41,7 @@ int main(int argc, char **argv) {
     if (snprintf(
             script,
             sizeof(script),
-            "%s/var/lib/hg2pkg/maintainer-scripts/%s",
+            "%s/var/lib/dpkg/info/%s.hg2body",
             prefix,
             identity
         ) >= (int)sizeof(script)) {
