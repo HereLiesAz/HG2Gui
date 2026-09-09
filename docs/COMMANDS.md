@@ -1,80 +1,56 @@
-# Command Reference
+# Command and Capability Reference
 
-HG2Gui has three kinds of command surface:
+HG2Gui exposes several different interaction layers over the same runtime. Not everything is represented as a command, and not every command must be entered through the pill stack.
 
-1. **real runtime binaries** discovered from the Termux-derived prefix;
-2. **HG2Gui control verbs** implemented by `TerminalEngine` for bootstrap, downloading, package lifecycle, and execution authority;
-3. **Android built-ins** implemented by `Builtins.kt`.
+Current entry/control surfaces include:
 
-Normal command-tree leaves compose a command and stop. Press **RUN** to execute. Interactive prompt answers are the exception because they answer a command that is already running.
+- real runtime commands;
+- terminal command composition;
+- semantic completion;
+- tappable Guide commands;
+- shell prompt/status projection;
+- Adaptive TUI Wrapper controls;
+- package/lifecycle UI;
+- Files/pickers and other native screens;
+- signature-protected external Android API capabilities.
+
+Ordinary composed commands require explicit **RUN**. Interactive controls that answer an already-running process naturally send their response to that process.
 
 ## Real shell commands
 
-The shell command set is not fixed. `CommandTree` discovers binaries from HG2Gui's runtime `bin/`, associates dpkg-owned binaries with their package via `DpkgCatalog`, and groups them into human-facing categories such as Package management, Network, Shells, Development, Text & files, and System.
+The shell command set is discovered from the installed HG2Gui runtime rather than hardcoded.
 
-Hyphenated families such as `apt-get`, `apt-key`, and `apt-mark` can nest under a common host. `HelpCatalog` probes a real command's `--help` output in the background and adds discoverable options to the pill tree.
+`CommandTree` can expose discovered commands/options when that representation is useful. `CompletionBridge` can separately expose semantic candidates from shell/file/package/Git/SSH/service providers.
 
-A real binary can still require a positional operand after all known option pills have been selected. HG2Gui therefore does not auto-run terminal leaves. If the remaining value is open-ended, the input field is focused and names the expected value where HG2Gui can infer it. If it is a path, the graphical file picker is used instead.
-
-## Bootstrap
+## Bootstrap and downloads
 
 ### `bootstrap`
 
-Installs/repairs HG2Gui's pinned Termux-derived userspace. The application also bootstraps automatically when the required runtime is absent.
+Installs or repairs HG2Gui's pinned Termux-derived userspace.
 
-The bootstrap is not simply an unpacked Termux directory: HG2Gui maps critical native executables through APK-native `.so` files and repairs paths/configuration for its own application ID.
+### `download ...` / `hg2download ...`
 
-## Downloader
+HG2Gui downloader entry points with resume/reuse support where possible.
 
-### `download ...`
-### `hg2download ...`
+These are execution-control verbs handled by `TerminalEngine` before ordinary shell dispatch.
 
-HG2Gui downloader entry points. The downloader reuses valid completed targets and resumes `.part` downloads when possible.
+## Package transactions
 
-These are control verbs handled before the normal shell.
+### `pkg ...` / `hg2pkg ...`
 
-## Package commands
+HG2Gui package-manager entry points.
 
-### `pkg ...`
-### `hg2pkg ...`
+Top-level mutating `apt`/`apt-get` operations are translated into this transaction layer so Android compatibility handling cannot be bypassed by upstream apt invoking dpkg directly.
 
-HG2Gui package-manager entry points. Package mutations run through `Hg2PackageManager`, which adapts Termux packages for HG2Gui's prefix and Android execution constraints.
-
-Top-level mutating `apt` / `apt-get` commands are translated into this layer by `TerminalEngine` so upstream apt cannot bypass HG2Gui's transaction rules.
-
-Translated operations include:
-
-- `install`
-- `remove`
-- `purge`
-- `update`
-- `upgrade`
-- `dist-upgrade`
-- `full-upgrade`
-
-The package UI supplies package names from the APT catalog rather than requiring free-form typing when the index is available.
-
-### Android package-transaction behavior
-
-The HG2 package layer currently:
-
-- relocates Termux's hardcoded archive payload prefix into HG2Gui's package root;
-- repairs control metadata such as `conffiles` and `md5sums`;
-- forces dpkg's database and installation root under HG2Gui's `$PREFIX`;
-- disables maintainer-script chrooting;
-- externalizes `preinst`, `postinst`, `prerm`, and `postrm` from dpkg's direct-exec path;
-- runs those scripts through bundled Bash;
-- verifies that staged scripts are actually absent before allowing dpkg to proceed.
-
-This is a general compatibility layer, not a list of package-name exceptions.
+Supported transaction work includes repository verification, download reuse/resume, relocation, metadata repair, dependency planning, maintainer-script handling, triggers, alternatives/diversions, rollback/recovery, and native execution compatibility.
 
 ## Installed-package lifecycle
 
 ### `hg2package <action> <manager> <package>`
 
-Internal/user-visible control surface backing **Packages → manager → installed package**.
+Internal control surface backing installed-package lifecycle actions.
 
-Supported actions:
+Current actions include:
 
 - `info`
 - `update`
@@ -86,159 +62,172 @@ Supported actions:
 - `remove`
 - `purge`
 
-The UI normally supplies manager and package names through pills.
+The owning manager currently comes from adapters for:
 
-### `disable`
+- `pkg` / dpkg
+- `pip`
+- `pipx`
+- `npm`
+- `gem`
 
-Keeps the package installed and visible but blocks commands HG2Gui knows are owned by it. A blocked command exits with code 126 until the package is enabled again.
+### Disable / Enable
 
-### `enable`
+Disable keeps the package installed while HG2Gui blocks owned commands. Enable removes that HG2Gui policy flag.
 
-Removes HG2Gui's disabled flag. It does not reinstall the package because the package was never removed.
+### Isolate / Release
 
-### `isolate`
+Isolation selects the private-root backend. An isolated package never silently falls back to an unsandboxed backend when the isolation engine is unavailable.
 
-Marks the package for private-root execution. On the next run, HG2Gui seeds a PRoot-backed private runtime if necessary. Isolated package commands do not silently fall back to the normal shell when the isolation engine is unavailable.
+### Reset
 
-### `release`
+Reset keeps the installed payload while clearing package runtime state HG2Gui can safely attribute. For an isolated package this removes the private root so the next run reseeds it.
 
-Turns off isolation. Releasing isolation is an explicit interactive lifecycle operation.
+### Update / Remove / Purge
 
-### `reset`
+These actions delegate through the owning manager where meaningful. Destructive lifecycle actions require confirmation in interactive use.
 
-Keeps the package installed but clears package runtime state HG2Gui can safely attribute to it. For normal packages this includes conventional package-scoped XDG/cache/log/tmp locations plus newly-created paths HG2Gui positively observed. For isolated packages it discards the private runtime so the next run starts from a fresh seed.
+## Package execution backends
 
-Reset requires confirmation.
+Package-owned commands are classified before execution:
 
-### `update`
+- `DIRECT_LINKER` — normal Android-compatible HG2Gui Termux execution;
+- `PROOT_COMPAT` — compatibility execution for specifically classified ELF/runtime cases;
+- `PROOT_ISOLATED` — private-root execution for isolated packages.
 
-Uses the owning manager's update/install mechanism. If an isolated package version changes, its old private runtime is treated as stale and reseeded on next isolated run.
-
-### `remove` / `purge`
-
-Use the owning package manager. `purge` is exposed where the manager has meaningful purge semantics. Destructive removal actions require confirmation.
-
-## Package-manager inventories
-
-The **Packages** tree currently discovers installed packages from:
-
-- **Termux / pkg** — dpkg status and `.list` ownership metadata;
-- **Python / pip** — `.dist-info` metadata and console scripts;
-- **Node / npm** — global `node_modules` package metadata and declared bins;
-- **Ruby / gem** — gem specifications and executables.
-
-Each package row may expose:
-
-```text
-Run
-Disable / Enable
-Isolate / Release isolation
-Update
-Reset
-Info
-Remove
-Purge (where supported)
-```
-
-`Run` itself contains the package's discovered executable names.
+A command does not move to PRoot merely because it failed.
 
 ## Execution authority
 
 ### `hg2auth status`
 
-Reports which explicit authority backends HG2Gui can currently use:
+Reports currently available execution-authority backends.
 
-- App — always the default;
-- Isolated package — available when a PRoot engine is executable;
-- ADB shell — available when an executable ADB client is present;
-- Root — available when an executable `su` provider is detected.
+### ADB
 
-This status query is allowed headlessly. Elevated execution is not.
+- `hg2auth adb devices`
+- `hg2auth adb pair <host:port> <pairing-code>`
+- `hg2auth adb connect <host:port>`
+- `hg2auth adb disconnect [host:port]`
+- `hg2auth adb shell <command...>`
 
-### `hg2auth adb devices`
+ADB shell execution requires foreground confirmation. Android pairing/connect authorization still applies.
 
-Runs `adb devices -l` through the detected client.
+### Root
 
-### `hg2auth adb pair <host:port> <pairing-code>`
+- `hg2auth root test`
+- `hg2auth root shell <command...>`
 
-Pairs the ADB client with an Android Wireless Debugging endpoint. The code and endpoint come from Android's Wireless Debugging UI.
-
-### `hg2auth adb connect <host:port>`
-
-Connects the client to a paired/debugging endpoint.
-
-### `hg2auth adb disconnect [host:port]`
-
-Disconnects one endpoint or the client's active ADB connections according to ADB semantics.
-
-### `hg2auth adb shell <command...>`
-
-Runs a command through ADB shell. HG2Gui asks for explicit interactive confirmation before executing it.
-
-Possessing the ADB client is not authorization by itself; Android's pairing/connect rules still apply.
-
-### `hg2auth root test`
-
-After confirmation, requests the detected `su` provider to run `id`. The device's root manager still decides whether the request is granted.
-
-### `hg2auth root shell <command...>`
-
-After confirmation, runs the command through `su -c`.
+Root execution requires foreground confirmation and remains subject to the device's `su` provider/root manager.
 
 ### Authority invariant
 
-Ordinary shell commands and isolated package commands do **not** inherit ADB or root merely because HG2Gui can access those backends. Headless `runToCompletion` callers cannot execute elevated `hg2auth` actions.
+Normal commands, isolated packages, and headless callers do not inherit ADB/root authority.
 
 ## Interactive prompts
 
-When a command is already running and asks for input:
+When a process is already running:
 
-- yes/no → modal confirmation dialog;
-- numbered or bracketed finite choices → graphical choices;
-- password/passphrase → masked input;
-- other open-ended prompt → focused text field and **Send**.
+- yes/no can become a confirmation dialog;
+- finite numbered/bracketed choices can become native selections;
+- passwords/passphrases use masked input;
+- open-ended prompts use text input.
 
-Package-manager mutations owned by HG2Gui do not expose upstream apt's `Do you want to continue? [Y/n]` prompt.
+## Shell Adapter
 
-## SSH
+Bash, Zsh, and Fish sessions can expose structured presentation state without changing the underlying shell.
 
-The discovered `ssh` command gets a dedicated UI branch with saved presets and a **new…** flow. Host/user/port/key data is assembled into the command line for review. Key paths use the graphical picker. Host-key confirmation and password/passphrase requests use the same generic prompt mechanisms as other commands.
+Recognized presentation layers include Oh My Zsh, Powerlevel10k, Starship, Pure, and custom prompts.
 
-## Synthesized root surfaces
+Structured state can include:
 
-In addition to live shell categories, the command tree contains non-shell roots including:
+- cwd;
+- Git branch/dirty state;
+- last exit status;
+- user/host where meaningful.
 
-- **Packages** — installed package managers, package lifecycle, and execution authority;
-- **Workflows** — stored command templates with placeholders;
-- **AI** — natural-language command suggestions that are inserted for review, never auto-executed;
-- **Store** — azphalt.store `.azp` browser/install surface;
-- **Context** — static remote-OS reference command trees for local/Ubuntu/macOS/Windows contexts;
-- Android device/communication/features roots backed by built-ins.
+The raw prompt remains available.
 
-## Android built-ins
+## Completion Bridge
 
-`Builtins.kt` remains the explicit fixed dispatch table for Android-facing capabilities that do not have an honest ordinary runtime-binary equivalent.
+Semantic completion sources currently include:
 
-### Device
+- Bash/Zsh/Fish adapters;
+- filesystem entries;
+- installed package names;
+- Git branches;
+- SSH hosts;
+- services;
+- supported command-specific protocols;
+- declarative subsets of shell completion definitions that can be consumed without sourcing arbitrary scripts.
 
-- `wifi` — show/open Wi-Fi controls as allowed by the Android version.
-- `bluetooth` — request/open Bluetooth controls according to platform restrictions.
-- `airplane` — open airplane-mode settings.
-- `flash` — toggle flashlight; camera permission may be required.
-- `volume` — inspect/set stream levels and ringer profile.
-- `brightness` — set a percentage or automatic mode; modify-system-settings permission may be required.
+Selecting a completion replaces the active partial token and does not execute the command.
 
-### Communication
+## Adaptive TUI Wrapper
 
-- `call <name or number>` — place a call, resolving contacts where possible.
-- `contacts <ls|add|about|edit|rm> ...` — contact operations.
+Alternate-screen/full-screen terminal applications can be projected into native controls when HG2Gui has enough semantic confidence.
 
-### Features
+The wrapper currently models:
 
-- `vfs <ls|cd|pwd|mkdir|touch|cat|rm|mv|cp|mount> ...` — HG2Gui-managed filesystem operations.
-- `calc <expression>` — calculator.
-- `edit <file>` — open HG2Gui's text editor. File operands should be selected through the graphical picker when using the touch UI.
+- layered/modal menus;
+- checkbox/radio controls;
+- tabs;
+- scrolling lists;
+- tables/selectable results;
+- text/password prompts;
+- confirmations;
+- progress/status regions;
+- multiple panes;
+- terminal mouse-awareness.
 
-## Creative Guide commands
+Generated navigation is reconciled with subsequent screen state. **RAW** returns to the literal terminal UI at any time.
 
-`docs/GUIDE.md`, the Hitchhiker's Guide manuscripts, and animation packets describe Guide entries and visual/story material. A phrase such as “a user runs `pwd`” in those documents is narrative language, not a statement that selecting a UI leaf auto-executes today.
+## Guide commands
+
+A real command encountered while reading the Guide can be tapped and inserted into the active terminal composition flow.
+
+The Guide remains open so reading and command composition can interleave. Guide command taps do not auto-execute.
+
+## Files and path picking
+
+File/directory operands can invoke the graphical picker. Files is also a dedicated native browsing surface rather than merely a command category.
+
+## Isolation Audit
+
+**Settings → Isolation audit** opens the native audit screen for isolated packages. It reports latest observed process/file/network/authority telemetry and current sandbox state.
+
+The observation layer is best-effort same-UID `/proc` sampling plus private-root before/after filesystem metadata. It is not complete kernel syscall tracing.
+
+## External Android API
+
+Trusted same-signature applications can use the signature-protected permission:
+
+`com.hereliesaz.hg2gui.permission.API`
+
+Typed API actions include:
+
+- command execution;
+- package operations;
+- file/folder picker with returned result;
+- notifications;
+- foreground dialogs;
+- clipboard get/set;
+- device information;
+- share/open actions;
+- lifecycle operations;
+- foreground-approved ADB/root authority requests.
+
+The API is capability-oriented and does not make background integration synonymous with elevation.
+
+## Android-facing built-ins
+
+`Builtins.kt` currently contains explicit bridges for Android-facing capabilities including Wi-Fi/Bluetooth/settings controls, flashlight, volume, brightness, calls/contacts, VFS, calculator, and editor entry.
+
+These are current implementation entry points, not a requirement that future Android capabilities must always become shell verbs. Dedicated native/API capability surfaces are equally valid where they better fit the task.
+
+## SSH, Workflows, AI, Store, MCP
+
+- **SSH** — presets and completion-assisted host/key composition.
+- **Workflows** — command templates assembled for review.
+- **AI** — suggested commands returned to the user for review.
+- **Store** — `.azp` packages, separate from shell package-manager lifecycle.
+- **MCP** — explicit-start loopback service; headless shell execution still cannot elevate through ADB/root.
