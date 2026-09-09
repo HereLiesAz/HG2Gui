@@ -11,6 +11,7 @@ private val FULLSCREEN_BASE_COMMANDS = setOf(
     "tmux", "screen",
     "less", "more", "man",
     "python3", "python", "node", "irb", "ghci",
+    "bash", "zsh", "fish",
     "ssh",
     "watch", "mc",
     // Modern interactive CLIs frequently render layered menus, prompts and alternate-screen
