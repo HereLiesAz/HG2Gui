@@ -177,7 +177,10 @@ class Hg2PackageManager(
                     assertDpkgHasNoMaintainerScripts(name)
                     runDpkg(listOf("--no-triggers", "--remove", name), emit)
                     runMaintainerScript(File(oldScripts, "postrm"), name, installed.getValue(name).version, listOf("remove"), emit)
-                    if (purge) runDpkg(listOf("--no-triggers", "--purge", name), emit)
+                    if (purge) {
+                        runDpkg(listOf("--no-triggers", "--purge", name), emit)
+                        runMaintainerScript(File(oldScripts, "postrm"), name, installed.getValue(name).version, listOf("purge"), emit)
+                    }
                     oldScripts.deleteRecursively()
                 } catch (t: Throwable) {
                     restoreInstalledScripts(name, oldScripts)
@@ -762,8 +765,7 @@ class Hg2PackageManager(
     }
 
     private fun applyPackageEnvironment(env: MutableMap<String, String>) {
-        env["PREFIX"] = prefix.absolutePath
-        env["HOME"] = DistroManager.homeDir(context).absolutePath
+        Hg2ExecEnvironment.apply(context, env)
         env["PATH"] = "${prefix.absolutePath}/bin:/system/bin"
         env["LD_LIBRARY_PATH"] = "${prefix.absolutePath}/lib"
         env["TMPDIR"] = "${prefix.absolutePath}/tmp"
