@@ -4,6 +4,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.hereliesaz.hg2gui.managers.TerminalHistoryEntry
+import com.hereliesaz.hg2gui.terminal.CompletionCandidate
 import com.hereliesaz.hg2gui.terminal.ShellAliases
 import com.hereliesaz.hg2gui.terminal.ShellPresentation
 import kotlinx.coroutines.CompletableDeferred
@@ -24,6 +25,26 @@ class SessionUiState(val id: String, name: String, cwd: String) {
     var composedPrefix by mutableStateOf("")
     var running by mutableStateOf(false)
     var shellPresentation by mutableStateOf(ShellPresentation(cwd = cwd))
+
+    /**
+     * Candidates supplied by the Completion Bridge for the current composed command. They are
+     * semantic values, not pre-rendered UI, so pills, dialogs, pickers and future surfaces can all
+     * consume the same result.
+     */
+    var completionCandidates by mutableStateOf(listOf<CompletionCandidate>())
+        private set
+    var completionRequestKey by mutableStateOf<String?>(null)
+        private set
+
+    fun updateCompletions(requestKey: String, candidates: List<CompletionCandidate>) {
+        completionRequestKey = requestKey
+        completionCandidates = candidates
+    }
+
+    fun clearCompletions() {
+        completionRequestKey = null
+        completionCandidates = emptyList()
+    }
 
     /** A carriage-return style progress/status frame currently being rewritten by the child. */
     var transientStatus by mutableStateOf<String?>(null)
