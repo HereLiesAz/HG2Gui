@@ -8,21 +8,13 @@ import kotlinx.coroutines.flow.flowOn
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
-import java.io.FileOutputStream
-import java.security.MessageDigest
 import java.util.Locale
 import java.util.zip.GZIPInputStream
 
-/**
- * HG2Gui-owned package path for the Termux repository.
- *
- * HG2Gui owns repository metadata, dependency resolution, downloads, integrity checks and the
- * install transaction. The bundled dpkg binary is retained only as the .deb unpack/configure
- * primitive because it already understands Debian archive semantics and Termux maintainer data.
- */
 class Hg2PackageManager(
     private val context: Context,
-    private val client: OkHttpClient
+    private val client: OkHttpClient,
+    private val downloader: Hg2Downloader
 ) {
     private val prefix = DistroManager.prefixDir(context)
     private val cacheDir = File(context.cacheDir, "hg2-packages").apply { mkdirs() }
@@ -37,49 +29,81 @@ class Hg2PackageManager(
         val filename: String,
         val sha256: String,
         val size: Long,
-        val depends: List<List<String>>
+        val depends: List<List<String>>,
+        val description: String
     )
 
     private data class Installed(val name: String, val version: String)
 
-    fun handles(line: String): Boolean {
-        val words = words(line)
-        if (words.isEmpty()) return false
-        return words.first() in setOf("pkg", "hg2pkg")
-    }
+    fun handles(line: String): Boolean = words(line).firstOrNull() in setOf("pkg", "hg2pkg")
 
     fun run(line: String): Flow<String> = flow {
         val args = words(line).drop(1)
         when (args.firstOrNull()) {
-            "install", "in" -> {
-                val requested = args.drop(1).filterNot { it.startsWith("-") }
-                if (requested.isEmpty()) {
-                    emit("usage: pkg install <package> [package…]")
-                    return@flow
-                }
-                install(requested) { emit(it) }
-            }
+            "install", "in" -> install(requirePackages(args, "install")) { emit(it) }
             "update", "up" -> updateIndex { emit(it) }
-            "search" -> {
-                val query = args.drop(1).joinToString(" ").trim()
-                if (query.isEmpty()) {
-                    emit("usage: pkg search <query>")
-                    return@flow
-                }
-                ensureIndex { emit(it) }
-                val records = parsePackages(packagesFile.readText())
-                    .filter { it.name.contains(query, ignoreCase = true) }
-                    .take(50)
-                emit(if (records.isEmpty()) "No packages matching '$query'." else records.joinToString("\n") { "${it.name} ${it.version}" })
+            "remove", "rm", "uninstall" -> remove(requirePackages(args, "remove"), purge = false) { emit(it) }
+            "purge" -> remove(requirePackages(args, "purge"), purge = true) { emit(it) }
+            "clean" -> {
+                val count = cacheDir.listFiles().orEmpty().count { it.isFile && (it.extension == "deb" || it.name.endsWith(".part")) }
+                cacheDir.listFiles().orEmpty().forEach { if (it.isFile && (it.extension == "deb" || it.name.endsWith(".part"))) it.delete() }
+                emit("Removed $count cached package file${if (count == 1) "" else "s"}.")
             }
+            "search" -> search(args.drop(1).joinToString(" ")) { emit(it) }
+            "show", "info" -> show(requirePackages(args, "show")) { emit(it) }
             "list-installed" -> {
                 val installed = readInstalled().values.sortedBy { it.name }
                 emit(if (installed.isEmpty()) "No installed packages recorded by dpkg." else installed.joinToString("\n") { "${it.name} ${it.version}" })
             }
-            null -> emit("HG2Gui package manager\nusage: pkg <install|update|search|list-installed> …")
-            else -> emit("HG2Gui package manager: unsupported pkg operation '${args.first()}'. Use apt/dpkg directly for compatibility operations.")
+            null -> emit(USAGE)
+            else -> emit("HG2Gui package manager: unsupported operation '${args.first()}'.\n$USAGE")
         }
     }.flowOn(Dispatchers.IO)
+
+    private fun requirePackages(args: List<String>, operation: String): List<String> {
+        val packages = args.drop(1).filterNot { it.startsWith("-") }
+        if (packages.isEmpty()) error("usage: pkg $operation <package> [package…]")
+        return packages
+    }
+
+    private suspend fun search(query: String, emit: suspend (String) -> Unit) {
+        if (query.isBlank()) error("usage: pkg search <query>")
+        ensureIndex(emit)
+        val records = parsePackages(packagesFile.readText())
+            .filter { it.name.contains(query, ignoreCase = true) || it.description.contains(query, ignoreCase = true) }
+            .take(50)
+        emit(if (records.isEmpty()) "No packages matching '$query'." else records.joinToString("\n") { "${it.name} ${it.version} — ${it.description.lineSequence().firstOrNull().orEmpty()}" })
+    }
+
+    private suspend fun show(names: List<String>, emit: suspend (String) -> Unit) {
+        ensureIndex(emit)
+        val available = parsePackages(packagesFile.readText()).associateBy { it.name }
+        val installed = readInstalled()
+        names.forEachIndexed { index, name ->
+            val pkg = available[name] ?: error("Package '$name' was not found in the Termux repository")
+            if (index > 0) emit("")
+            emit(buildString {
+                appendLine("Package: ${pkg.name}")
+                appendLine("Version: ${pkg.version}")
+                appendLine("Architecture: ${pkg.architecture}")
+                appendLine("Installed: ${installed[name]?.version ?: "no"}")
+                appendLine("Download size: ${formatBytes(pkg.size)}")
+                if (pkg.depends.isNotEmpty()) appendLine("Depends: ${pkg.depends.joinToString(", ") { it.joinToString(" | ") }}")
+                append("Description: ${pkg.description}")
+            })
+        }
+    }
+
+    private suspend fun remove(names: List<String>, purge: Boolean, emit: suspend (String) -> Unit) {
+        val installed = readInstalled()
+        val present = names.filter { it in installed }
+        val missing = names.filterNot { it in installed }
+        if (missing.isNotEmpty()) emit("Not installed: ${missing.joinToString(" ")}")
+        if (present.isEmpty()) return
+        emit("${if (purge) "Purging" else "Removing"}: ${present.joinToString(" ")}")
+        runDpkg(listOf(if (purge) "--purge" else "--remove") + present, emit)
+        emit("Done: ${present.joinToString(" ")}")
+    }
 
     private suspend fun install(requested: List<String>, emit: suspend (String) -> Unit) {
         ensureIndex(emit)
@@ -99,17 +123,18 @@ class Hg2PackageManager(
         var overallDone = 0L
         for (pkg in plan) {
             emit("Downloading ${pkg.name} ${pkg.version}…")
-            val archive = downloadPackage(pkg) { packageDone ->
+            val output = File(cacheDir, "${pkg.name}_${pkg.version}_${pkg.architecture}.deb".replace('/', '_'))
+            val url = if (pkg.filename.startsWith("http://") || pkg.filename.startsWith("https://")) pkg.filename else "$REPO/${pkg.filename.trimStart('/')}"
+            val result = downloader.download(url, output, pkg.sha256) { packageDone, _ ->
                 val combined = overallDone + packageDone
-                val percent = if (total > 0) ((combined * 100) / total).coerceIn(0, 100) else 0
+                val percent = if (total > 0L) ((combined * 100L) / total).coerceIn(0L, 100L) else 0L
                 emit("$percent% [${pkg.name} ${formatBytes(packageDone)}/${formatBytes(pkg.size)}]")
             }
-            archives += archive
+            archives += result.file
             overallDone += pkg.size.coerceAtLeast(0L)
         }
 
         if (!dpkgLauncher.canExecute()) error("HG2Gui dpkg launcher is unavailable in ${context.applicationInfo.nativeLibraryDir}")
-
         emit("Installing ${archives.size} verified package archive${if (archives.size == 1) "" else "s"}…")
         runDpkg(listOf("--unpack") + archives.map { it.absolutePath }, emit)
         repairMaintainerScripts()
@@ -123,37 +148,29 @@ class Hg2PackageManager(
         val request = Request.Builder().url(url).header("Cache-Control", "no-cache").build()
         client.newCall(request).execute().use { response ->
             if (!response.isSuccessful) error("Package index download failed: HTTP ${response.code}")
-            val body = response.body ?: error("Package index response was empty")
             val tmp = File(stateDir, "Packages.tmp")
-            GZIPInputStream(body.byteStream()).bufferedReader().use { reader -> tmp.writer().use { writer -> reader.copyTo(writer) } }
+            GZIPInputStream(response.body.byteStream()).bufferedReader().use { reader -> tmp.writer().use { writer -> reader.copyTo(writer) } }
             if (!tmp.renameTo(packagesFile)) {
                 tmp.copyTo(packagesFile, overwrite = true)
                 tmp.delete()
             }
         }
-        val count = parsePackages(packagesFile.readText()).size
-        emit("HG2Gui package index ready: $count packages.")
+        emit("HG2Gui package index ready: ${parsePackages(packagesFile.readText()).size} packages.")
     }
 
     private suspend fun ensureIndex(emit: suspend (String) -> Unit) {
         if (!packagesFile.isFile || packagesFile.length() == 0L) updateIndex(emit)
     }
 
-    private fun resolve(
-        requested: List<String>,
-        available: Map<String, PackageRecord>,
-        installed: Map<String, Installed>
-    ): List<PackageRecord> {
+    private fun resolve(requested: List<String>, available: Map<String, PackageRecord>, installed: Map<String, Installed>): List<PackageRecord> {
         val visiting = HashSet<String>()
         val planned = LinkedHashMap<String, PackageRecord>()
-
         fun visit(name: String) {
             if (name in planned || name in installed) return
             if (!visiting.add(name)) return
             val pkg = available[name] ?: error("Package '$name' was not found in the Termux repository")
             for (alternatives in pkg.depends) {
-                val satisfied = alternatives.any { it in installed || it in planned }
-                if (satisfied) continue
+                if (alternatives.any { it in installed || it in planned }) continue
                 val choice = alternatives.firstOrNull { it in available }
                     ?: error("${pkg.name} depends on unavailable alternative: ${alternatives.joinToString(" | ")}")
                 visit(choice)
@@ -161,54 +178,12 @@ class Hg2PackageManager(
             visiting.remove(name)
             planned[name] = pkg
         }
-
         requested.forEach(::visit)
         return planned.values.toList()
     }
 
-    private fun downloadPackage(pkg: PackageRecord, progress: suspend (Long) -> Unit): File {
-        val output = File(cacheDir, "${pkg.name}_${pkg.version}_${pkg.architecture}.deb".replace('/', '_'))
-        if (output.isFile && pkg.sha256.isNotBlank() && sha256(output).equals(pkg.sha256, ignoreCase = true)) return output
-
-        val url = if (pkg.filename.startsWith("http://") || pkg.filename.startsWith("https://")) pkg.filename else "$REPO/${pkg.filename.trimStart('/')}"
-        val request = Request.Builder().url(url).build()
-        client.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) error("Download failed for ${pkg.name}: HTTP ${response.code}")
-            val body = response.body ?: error("Download response was empty for ${pkg.name}")
-            val tmp = File(cacheDir, output.name + ".part")
-            val digest = MessageDigest.getInstance("SHA-256")
-            var done = 0L
-            body.byteStream().use { input ->
-                FileOutputStream(tmp).use { out ->
-                    val buffer = ByteArray(128 * 1024)
-                    while (true) {
-                        val n = input.read(buffer)
-                        if (n < 0) break
-                        if (n == 0) continue
-                        out.write(buffer, 0, n)
-                        digest.update(buffer, 0, n)
-                        done += n
-                        kotlinx.coroutines.runBlocking { progress(done) }
-                    }
-                }
-            }
-            val actual = digest.digest().joinToString("") { "%02x".format(Locale.US, it.toInt() and 0xff) }
-            if (pkg.sha256.isNotBlank() && !actual.equals(pkg.sha256, ignoreCase = true)) {
-                tmp.delete()
-                error("SHA-256 mismatch for ${pkg.name}")
-            }
-            if (!tmp.renameTo(output)) {
-                tmp.copyTo(output, overwrite = true)
-                tmp.delete()
-            }
-        }
-        return output
-    }
-
     private suspend fun runDpkg(args: List<String>, emit: suspend (String) -> Unit) {
-        val command = ArrayList<String>(args.size + 1)
-        command += dpkgLauncher.absolutePath
-        command += args
+        val command = listOf(dpkgLauncher.absolutePath) + args
         val process = ProcessBuilder(command)
             .directory(prefix)
             .redirectErrorStream(true)
@@ -231,8 +206,7 @@ class Hg2PackageManager(
         infoDir.listFiles().orEmpty().forEach { file ->
             if (!file.isFile) return@forEach
             val text = runCatching { file.readText() }.getOrNull() ?: return@forEach
-            if (OLD_PREFIX !in text) return@forEach
-            runCatching { file.writeText(text.replace(OLD_PREFIX, prefix.absolutePath)) }
+            if (OLD_PREFIX in text) runCatching { file.writeText(text.replace(OLD_PREFIX, prefix.absolutePath)) }
         }
     }
 
@@ -255,7 +229,7 @@ class Hg2PackageManager(
         var current: String? = null
         for (line in paragraph.lineSequence()) {
             if (line.startsWith(' ') && current != null) {
-                fields[current] = fields.getValue(current) + " " + line.trim()
+                fields[current] = fields.getValue(current) + "\n" + line.trim()
                 continue
             }
             val i = line.indexOf(':')
@@ -272,17 +246,17 @@ class Hg2PackageManager(
             filename = filename,
             sha256 = fields["SHA256"].orEmpty(),
             size = fields["Size"]?.toLongOrNull() ?: 0L,
-            depends = parseDepends(fields["Depends"].orEmpty())
+            depends = parseDepends(fields["Depends"].orEmpty()),
+            description = fields["Description"].orEmpty()
         )
     }
 
     private fun parseDepends(raw: String): List<List<String>> {
         if (raw.isBlank()) return emptyList()
         return raw.split(',').mapNotNull { clause ->
-            val alternatives = clause.split('|').mapNotNull { alt ->
+            clause.split('|').mapNotNull { alt ->
                 alt.trim().substringBefore(' ').substringBefore(':').takeIf { it.isNotBlank() }
-            }
-            alternatives.takeIf { it.isNotEmpty() }
+            }.takeIf { it.isNotEmpty() }
         }
     }
 
@@ -290,19 +264,6 @@ class Hg2PackageManager(
         .findAll(line)
         .map { it.value.trim().removeSurrounding("\"").removeSurrounding("'") }
         .toList()
-
-    private fun sha256(file: File): String {
-        val digest = MessageDigest.getInstance("SHA-256")
-        file.inputStream().use { input ->
-            val buffer = ByteArray(128 * 1024)
-            while (true) {
-                val n = input.read(buffer)
-                if (n < 0) break
-                if (n > 0) digest.update(buffer, 0, n)
-            }
-        }
-        return digest.digest().joinToString("") { "%02x".format(Locale.US, it.toInt() and 0xff) }
-    }
 
     private fun formatBytes(bytes: Long): String = when {
         bytes >= 1024L * 1024 * 1024 -> "%.1f GiB".format(Locale.US, bytes / (1024.0 * 1024 * 1024))
@@ -314,5 +275,6 @@ class Hg2PackageManager(
     companion object {
         private const val REPO = "https://packages.termux.dev/apt/termux-main"
         private const val OLD_PREFIX = "/data/data/com.termux/files/usr"
+        private const val USAGE = "HG2Gui package manager\nusage: pkg <install|update|remove|purge|search|show|list-installed|clean> …"
     }
 }
