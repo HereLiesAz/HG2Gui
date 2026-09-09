@@ -20,20 +20,12 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 
-/**
- * Typed, same-signature external API. Callers request named capabilities rather than gaining a
- * generic in-process shell. Capabilities that require user authority are handed to TerminalActivity
- * and never silently elevated by this receiver.
- */
+/** Typed, same-signature external capability API. */
 class Hg2ApiReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val pending = goAsync()
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
-            try {
-                dispatch(context.applicationContext, intent)
-            } finally {
-                pending.finish()
-            }
+            try { dispatch(context.applicationContext, intent) } finally { pending.finish() }
         }
     }
 
@@ -41,13 +33,15 @@ class Hg2ApiReceiver : BroadcastReceiver() {
         when (request.action) {
             ACTION_EXECUTE -> execute(context, request)
             ACTION_PACKAGE -> packageAction(context, request)
-            ACTION_CLIPBOARD_GET -> reply(context, request, true, data = clipboard(context).primaryClip?.getItemAt(0)?.coerceToText(context)?.toString().orEmpty())
+            ACTION_CLIPBOARD_GET -> reply(context, request, true, data = clipboard(context)?.primaryClip?.getItemAt(0)?.coerceToText(context)?.toString().orEmpty())
             ACTION_CLIPBOARD_SET -> {
-                clipboard(context).setPrimaryClip(ClipData.newPlainText("HG2Gui API", request.getStringExtra(EXTRA_TEXT).orEmpty()))
+                val service = clipboard(context) ?: return reply(context, request, false, error = "clipboard unavailable")
+                service.setPrimaryClip(ClipData.newPlainText("HG2Gui API", request.getStringExtra(EXTRA_TEXT).orEmpty()))
                 reply(context, request, true)
             }
             ACTION_DEVICE_INFO -> reply(context, request, true, data = deviceInfo())
             ACTION_NOTIFY -> notify(context, request)
+            ACTION_DIALOG -> launchDialog(context, request)
             ACTION_SHARE -> share(context, request)
             ACTION_OPEN -> open(context, request)
             ACTION_PICK_FILE -> launchPicker(context, request, directory = false)
@@ -61,6 +55,7 @@ class Hg2ApiReceiver : BroadcastReceiver() {
     private suspend fun execute(context: Context, request: Intent) {
         val command = request.getStringExtra(EXTRA_COMMAND)?.trim().orEmpty()
         if (command.isEmpty()) return reply(context, request, false, error = "missing command")
+        if (command.startsWith("hg2auth ")) return reply(context, request, false, error = "authority commands require foreground approval")
         val engine = TerminalEngine(context)
         val output = StringBuilder()
         var exitCode: Int? = null
@@ -81,6 +76,9 @@ class Hg2ApiReceiver : BroadcastReceiver() {
         val operation = request.getStringExtra(EXTRA_OPERATION)?.trim().orEmpty()
         val name = request.getStringExtra(EXTRA_PACKAGE)?.trim().orEmpty()
         if (manager.isEmpty() || operation.isEmpty()) return reply(context, request, false, error = "missing manager/operation")
+        if (!SAFE_WORD.matches(operation) || (name.isNotEmpty() && !SAFE_PACKAGE.matches(name))) {
+            return reply(context, request, false, error = "invalid package operation/name")
+        }
         val command = when (manager.lowercase()) {
             "pkg", "apt" -> listOf("pkg", operation, name)
             "pip" -> listOf("python", "-m", "pip", operation, name)
@@ -98,40 +96,44 @@ class Hg2ApiReceiver : BroadcastReceiver() {
         if (operation !in setOf("info", "disable", "enable", "isolate")) {
             return reply(context, request, false, error = "destructive lifecycle actions require foreground user interaction")
         }
+        if (!SAFE_WORD.matches(manager) || !SAFE_PACKAGE.matches(name)) return reply(context, request, false, error = "invalid manager/package")
         execute(context, Intent(request).putExtra(EXTRA_COMMAND, "hg2package $operation $manager $name").setAction(ACTION_EXECUTE))
     }
 
     private fun authority(context: Context, request: Intent) {
-        val authority = request.getStringExtra(EXTRA_AUTHORITY).orEmpty()
+        val authority = request.getStringExtra(EXTRA_AUTHORITY).orEmpty().lowercase()
         val command = request.getStringExtra(EXTRA_COMMAND).orEmpty()
-        val launch = Intent(context, TerminalActivity::class.java).apply {
+        if (authority !in setOf("adb", "root")) return reply(context, request, false, error = "unknown authority")
+        context.startActivity(Intent(context, TerminalActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             putExtra(EXTRA_API_AUTHORITY, authority)
             putExtra(EXTRA_API_COMMAND, command)
-        }
-        context.startActivity(launch)
+        })
         reply(context, request, true, data = "foreground approval requested")
     }
 
     private fun notify(context: Context, request: Intent) {
-        val manager = context.getSystemService(NotificationManager::class.java)
+        val manager = context.getSystemService(NotificationManager::class.java) ?: return reply(context, request, false, error = "notifications unavailable")
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) manager.createNotificationChannel(NotificationChannel(CHANNEL, "HG2Gui API", NotificationManager.IMPORTANCE_DEFAULT))
-        manager.notify(
-            request.getIntExtra(EXTRA_ID, 1),
-            NotificationCompat.Builder(context, CHANNEL)
-                .setSmallIcon(android.R.drawable.ic_dialog_info)
-                .setContentTitle(request.getStringExtra(EXTRA_TITLE) ?: "HG2Gui")
-                .setContentText(request.getStringExtra(EXTRA_TEXT).orEmpty())
-                .build()
-        )
+        manager.notify(request.getIntExtra(EXTRA_ID, 1), NotificationCompat.Builder(context, CHANNEL)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle(request.getStringExtra(EXTRA_TITLE) ?: "HG2Gui")
+            .setContentText(request.getStringExtra(EXTRA_TEXT).orEmpty())
+            .build())
         reply(context, request, true)
+    }
+
+    private fun launchDialog(context: Context, request: Intent) {
+        context.startActivity(Intent(context, Hg2ApiDialogActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            putExtras(request)
+        })
     }
 
     private fun share(context: Context, request: Intent) {
         val intent = Intent(Intent.ACTION_SEND).apply {
             type = request.getStringExtra(EXTRA_MIME) ?: "text/plain"
             putExtra(Intent.EXTRA_TEXT, request.getStringExtra(EXTRA_TEXT).orEmpty())
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         context.startActivity(Intent.createChooser(intent, request.getStringExtra(EXTRA_TITLE) ?: "Share").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         reply(context, request, true)
@@ -139,37 +141,41 @@ class Hg2ApiReceiver : BroadcastReceiver() {
 
     private fun open(context: Context, request: Intent) {
         val uri = request.getStringExtra(EXTRA_URI)?.let(Uri::parse) ?: return reply(context, request, false, error = "missing uri")
-        context.startActivity(Intent(Intent.ACTION_VIEW, uri).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) })
-        reply(context, request, true)
+        runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+            .onSuccess { reply(context, request, true) }
+            .onFailure { reply(context, request, false, error = it.message ?: "no app can open uri") }
     }
 
     private fun launchPicker(context: Context, request: Intent, directory: Boolean) {
-        val picker = if (directory) Intent(Intent.ACTION_OPEN_DOCUMENT_TREE) else Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-            addCategory(Intent.CATEGORY_OPENABLE)
-            type = request.getStringExtra(EXTRA_MIME) ?: "*/*"
-        }
-        context.startActivity(picker.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-        reply(context, request, true, data = "picker launched")
+        context.startActivity(Intent(context, Hg2ApiPickerActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            putExtra(EXTRA_PICK_DIRECTORY, directory)
+            putExtra(EXTRA_MIME, request.getStringExtra(EXTRA_MIME))
+            callback(request)?.let { putExtra(EXTRA_REPLY, it) }
+        })
     }
 
     private fun deviceInfo(): String = JSONObject()
-        .put("manufacturer", Build.MANUFACTURER)
-        .put("model", Build.MODEL)
-        .put("device", Build.DEVICE)
-        .put("sdk", Build.VERSION.SDK_INT)
-        .put("release", Build.VERSION.RELEASE)
-        .put("abis", Build.SUPPORTED_ABIS.joinToString(","))
-        .toString()
+        .put("manufacturer", Build.MANUFACTURER).put("model", Build.MODEL).put("device", Build.DEVICE)
+        .put("sdk", Build.VERSION.SDK_INT).put("release", Build.VERSION.RELEASE)
+        .put("abis", Build.SUPPORTED_ABIS.joinToString(",")).toString()
 
-    private fun clipboard(context: Context) = context.getSystemService(ClipboardManager::class.java)
+    private fun clipboard(context: Context): ClipboardManager? = context.getSystemService(ClipboardManager::class.java)
+
+    @Suppress("DEPRECATION")
+    private fun callback(request: Intent): PendingIntent? =
+        if (Build.VERSION.SDK_INT >= 33) request.getParcelableExtra(EXTRA_REPLY, PendingIntent::class.java)
+        else request.getParcelableExtra(EXTRA_REPLY) as? PendingIntent
 
     private fun reply(context: Context, request: Intent, success: Boolean, data: String? = null, error: String? = null) {
-        val callback = if (Build.VERSION.SDK_INT >= 33) request.getParcelableExtra(EXTRA_REPLY, PendingIntent::class.java) else @Suppress("DEPRECATION") (request.getParcelableExtra(EXTRA_REPLY) as? PendingIntent)
-        callback?.send(context, if (success) 0 else 1, Intent().apply {
-            putExtra(EXTRA_SUCCESS, success)
-            data?.let { putExtra(EXTRA_DATA, it) }
-            error?.let { putExtra(EXTRA_ERROR, it) }
-        })
+        val callback = callback(request) ?: return
+        runCatching {
+            callback.send(context, if (success) 0 else 1, Intent().apply {
+                putExtra(EXTRA_SUCCESS, success)
+                data?.let { putExtra(EXTRA_DATA, it) }
+                error?.let { putExtra(EXTRA_ERROR, it) }
+            })
+        }
     }
 
     companion object {
@@ -179,6 +185,7 @@ class Hg2ApiReceiver : BroadcastReceiver() {
         const val ACTION_PICK_FILE = "com.hereliesaz.hg2gui.api.PICK_FILE"
         const val ACTION_PICK_DIRECTORY = "com.hereliesaz.hg2gui.api.PICK_DIRECTORY"
         const val ACTION_NOTIFY = "com.hereliesaz.hg2gui.api.NOTIFY"
+        const val ACTION_DIALOG = "com.hereliesaz.hg2gui.api.DIALOG"
         const val ACTION_CLIPBOARD_GET = "com.hereliesaz.hg2gui.api.CLIPBOARD_GET"
         const val ACTION_CLIPBOARD_SET = "com.hereliesaz.hg2gui.api.CLIPBOARD_SET"
         const val ACTION_DEVICE_INFO = "com.hereliesaz.hg2gui.api.DEVICE_INFO"
@@ -202,6 +209,9 @@ class Hg2ApiReceiver : BroadcastReceiver() {
         const val EXTRA_ERROR = "error"
         const val EXTRA_API_AUTHORITY = "hg2api.authority"
         const val EXTRA_API_COMMAND = "hg2api.command"
+        const val EXTRA_PICK_DIRECTORY = "pick_directory"
+        private val SAFE_WORD = Regex("[A-Za-z0-9_.+-]+")
+        private val SAFE_PACKAGE = Regex("[A-Za-z0-9@._+:/=-]+")
         private const val CHANNEL = "hg2gui-api"
         private const val MAX_OUTPUT = 128_000
     }
