@@ -19,17 +19,17 @@ internal object ShellCommandProtocol {
         ShellFamily.FISH -> buildString {
             append("begin\n")
             append(command).append('\n')
-            append("set -l __hg2gui_status $status\n")
+            append("set -l __hg2gui_status \$status\n")
             append("printf '%s%s%d:%s\\n' '").append(sentinelHead).append("' '")
-                .append(sentinelTail).append("' $__hg2gui_status $PWD\n")
+                .append(sentinelTail).append("' \$__hg2gui_status \$PWD\n")
             append("end\n")
         }
         else -> buildString {
             append("{\n")
             append(command).append('\n')
-            append("__hg2gui_status=$?\n")
+            append("__hg2gui_status=\$?\n")
             append("printf '%s%s%d:%s\\n' '").append(sentinelHead).append("' '")
-                .append(sentinelTail).append("' \"$__hg2gui_status\" \"$PWD\"\n")
+                .append(sentinelTail).append("' \"\$__hg2gui_status\" \"\$PWD\"\n")
             append("}\n")
         }
     }
