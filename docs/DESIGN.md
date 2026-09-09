@@ -1,180 +1,94 @@
 # Design
 
-The visual system is **Azphalt**: a warm printed yellow page, ink text, fourteen capsule hues,
-one typeface (Jost), and a single primitive — the capsule. No borders. No shadows. No blur. No
-icons. No emoji. The two canonical radii are 999px for anything pressable and 26px for a record
-tile - the rest of the codebase isn't yet reconciled to just those two: several screens still
-carry their own ad hoc radii (mostly 12-18dp, chosen per element rather than from a shared scale),
-a gap this document doesn't paper over.
+The visual system is **Azphalt**: printed page-like grounds, ink-forward typography, Jost, a fixed hue family, and rounded capsule/record geometry. Capsules are a major interaction primitive, especially for command composition, but they are not the only permissible visual element and they do not define every screen.
 
-This document specifies the one place HG2Gui departs from base Azphalt: the **pill menu**,
-where the capsule stops being a row in a list and becomes a key.
+Purpose-built surfaces may use the visual language appropriate to their job: file browsing, terminal emulation, Guide reading, Adaptive TUI projection, package/audit inspection, dialogs, status/progress, and Android system affordances do not need to pretend they are all the same object.
 
-Implemented in `ui/menu/PillMenu.kt`. Values below are the source of truth for that file.
+Current implementation source of truth lives in `ui/menu/PillMenu.kt`, the relevant screen composables, and shared Azphalt tokens.
 
-## 1. Anchoring — pills run off the left edge
+## 1. Pill menu anchoring
 
-A pill is anchored by its **right end** and extends past the left edge of the screen — 62dp of
-overhang, clipped by the frame. It never starts flush left. Lengths vary so a stack reads as a
-stack, and the right end never passes **two thirds** of the screen width.
+A pill is anchored by its right end and extends past the left edge of the screen. Lengths vary so a stack reads as a stack, and the right end stays within the designed frame fraction.
 
-## 2. Reading order — the label rides the right end
+Labels and end-caps sit together at the right end. Command pills use the established uppercase, high-weight Azphalt type treatment.
 
-Label and end-cap sit together at the right end, in that order. The long left run of colour is
-empty. Type is 800 uppercase at +0.09em, as everywhere else in Azphalt; only the alignment
-changes. A pill with no end-cap still right-aligns its label.
+## 2. Selecting a host
 
-## 3. Selecting a host
+Selecting a host moves the current stack away, parks the host toward the left side of the frame, and drops it to the bottom as the anchor for the next layer.
 
-Tapping a host sends the entire stack further left: every unselected pill leaves the screen,
-and the host stops with its **right end parked at 36.3%** of the frame — whatever its length —
-so its label and end-cap stay legible, with the rest of the pill bled off the left edge like
-everywhere else in this menu. (`HOST_WIDTH × HOST_RIGHT_EDGE` in `PillMenu.kt` - `HOST_RIGHT_EDGE`
-names a factor in that product, not the resting position itself.) It then **drops to the bottom
-of the screen**, `rowsBelow × pitch`, and stays pinned there.
+Children cascade upward from that host. Each deeper selection becomes the next anchor; siblings leave and the new children arrive. The current trail records the selected path.
 
-## 4. Children cascade upward
+The stack is scrollable when its content exceeds the available height. Scroll settling uses the slot/reel behavior implemented by `rememberSlotFlingBehavior`; scrolling alone does not execute an item.
 
-Children cascade **upward** from the host, starting at 30% — just inside the host's right end —
-and 34% wide at most: the same row-to-row width cycling rule 01 gives the root stack (§6) applies
-here too, so a band isn't every pill at one identical width but cycles down in 2% steps every
-five rows (`childWidthFraction` in `PillMenu.kt`), the same "so the stack reads as a stack"
-reasoning. Row 0 is reserved for the host and its own trail of picks, so the first child fans out
-from row 1, one pitch above the host - not sharing its row.
+## 3. Trail
 
-Arguments repeat this exact choreography, one level at a time, however deep the tree goes.
-Tapping a pill with its own children makes it the new anchor: its siblings **leave**, the same
-motion the root stack uses when a host is chosen, while its children cascade in next to it —
-the first sitting on *its* row, just as the first child always sits on its own anchor's row. A
-band's height never grows with depth: each level is its own fresh cascade, not more pills piled
-onto the one before it. Tapping the anchor again undoes the drill — its siblings **enter** back,
-the same motion the root stack uses to re-enter.
+Selected children become content-sized trail crumbs beside the host. Earlier crumbs overlap later crumbs to preserve the shingled/fanned visual language.
 
-The children are their own scroll region; the host does not move. A category (or the root stack
-itself) can hold more pills than one screen's height at the stack's own row pitch - drag up or
-down to reach the rest (`rememberStackScroll` in `PillMenu.kt`).
+Tapping a crumb returns composition to that point and reopens the corresponding layer.
 
-Scrolling coasts and settles on a row boundary rather than stopping wherever the drag let go of
-it, the deceleration a slot-machine reel or a wheel-of-fortune wheel has: no extra pull while
-it's still moving fast, more the slower it gets, so a hard flick spins several rows past before
-the same tick lands it on one and a gentle release snaps almost immediately
-(`rememberSlotFlingBehavior`). Row 0 - the fixed spot where a host's own trail of picks lives -
-goes ink, the same "primed" look a pill gets from anywhere else in the menu, whenever a pill
-scrolls to rest there: a purely cosmetic marker of what's nearest the front of the stack. It
-never fires anything by itself - every pill is tappable wherever it sits in the band, and
-scrolling one to row 0 doesn't substitute for that tap. This only ever kicks in after an actual
-drag or fling - whichever pill happens to start out at row 0 before any input never goes ink on
-its own, so nothing reads as pre-selected the instant a stack first appears.
+## 4. Motion
 
-Scrolling is bounded to the stack's own content on both ends: a drag or a fling stops dead the
-instant the closest-to-breadcrumb pill would cross row 0 in one direction, or the far pill would
-in the other - never past either, never leaving blank space above the top or below the bottom
-(`rememberStackScroll`'s `rowMin`/`rowMax`-derived `coerceIn`). Short of those two limits it
-behaves the same as ever - a settled fling stays on whatever row it lands on.
+Current menu timing constants are implemented in `PillMenu.kt`. The important motion rules are:
 
-## 4a. The trail
+- stack transitions are structural rather than fade-based;
+- child cascades remain sequential;
+- host and child motion share one visual language;
+- scroll settling is physically distinct from entry/exit choreography;
+- animation state is keyed by stable node id rather than list index.
 
-A picked child doesn't just cascade its own children in — it also drops out of the band and
-settles beside the host as a **trail crumb**, the record of what's been picked so far. The trail
-starts at 32.8% of the frame — just *before* the host's right end (36.3%), not clear of it - the
-same shingled overlap every crumb-to-crumb seam already gets (`TRAIL_LEFT_OF_FULL` in
-`PillMenu.kt`, itself `HOST_WIDTH × HOST_RIGHT_EDGE` minus one crumb-overlap's worth), so the
-host-to-first-crumb joint fans the same way as the rest of the chain instead of being the one
-seam in it with a plain gap. Runs left to right in pick order. Unlike every other pill (sized as
-a fraction of the screen), a crumb is sized by its own content, with a 56dp floor so a short
-label like `ls` doesn't shrink-wrap smaller than
-everything around it. Each crumb overlaps the one after it by 14dp - a fanned, shingled read
-(the same overlap/bleed language the rest of the menu already uses) rather than a plain row of
-gapped pills; the earlier crumb draws on top, so it's the later one that visibly tucks under.
-Tapping a crumb pops the trail back to just before it and re-opens that pill's own band — each
-level is its own fresh cascade, never more pills piled onto the one before it.
+Where a screen grows from a source control, HG2Gui may use a source-anchored reveal rather than an unrelated cut. Files/path-picking currently use the wrap/perimeter reveal implementations.
 
-## 5. Motion
+## 5. Dedicated surfaces
 
-| | |
-| --- | --- |
-| Slide the stack away | 140ms, linear |
-| Host drop | 140ms, linear |
-| Child turn (swing) | 173ms, linear |
-| Lift | final 10% of the turn |
-| Cascade | strictly sequential — 173ms per step |
-| Host rests at | 36.3% of the frame |
-| Child pill | 30% in, 34% wide at most, cycling down in 2% steps every five rows |
-| Trail starts at | 32.8% of the frame |
-| Trail crumb | content-sized, 56dp floor, 14dp overlap |
-| Overhang | 62dp past the left edge |
-| Row pitch | 20dp |
-| Pick grows to | 1.15× before settling back to 1× |
+A native surface should fit the object being manipulated.
 
-Every motion in the menu is **linear** — there is no easing curve anywhere on the entry/exit
-choreography above; an eased pill reads as a bug at this speed. The exception is scroll settle
-(`rememberSlotFlingBehavior`), a critically-damped spring rather than a linear tween — see §4's
-scroll-settle paragraph.
+Examples:
 
-A child begins **exactly behind the pill before it** — the first one row above the host, since
-row 0 belongs to the host's own trail — so it is invisible at rest. It turns a full **360°**
-hinged on one end:
-`TransformOrigin(0f, .5f)` for the first, `TransformOrigin(1f, .5f)` for the next, alternating
-up the chain. It holds its predecessor's row for 90% of the arc and lifts exactly one row in
-the final 10%, so the lift and the turn finish on the same frame.
+- **Files** may use rows, grids, media previews, storage summaries, selection controls, and file-specific affordances.
+- **Guide** prioritizes readable prose while making real commands directly tappable for command composition.
+- **Adaptive TUI Wrapper** renders menus, tabs, lists, tables, prompts, progress, and panes derived from the running terminal application.
+- **Isolation Audit** groups observed process/file/network/authority activity rather than forcing it into command pills.
+- **Shell presentation** may expose cwd, Git state, exit status, and other prompt semantics as interactive status elements.
+- **Settings** is a vertically scrollable settings surface whose controls can extend beyond one viewport.
 
-Strictly sequential: a pill does not begin until the one before it has landed. Waiting children
-are parked on the host's row underneath it — they do not exist on screen until their turn.
+Visual elements, including symbols or icons, are chosen according to clarity and the surface's needs. Their use is not prohibited by a global doctrine.
 
-**Every change of stack is animated.** A pill never appears or vanishes on the spot; dismissing
-a host plays the exact same arrival as opening the app — one column, one clock, no per-pill
-stagger, because returning to a stack and arriving at it are the same event.
+## 6. Command composition
 
-Nothing fades. A pill is always fully opaque, even mid-turn. There are no hover or press states
-— state is structural: a pill is a hue, or ink (open), or a 14% wash (idle). On an ink ground
-that inverts: the open pill is yellow with an ink end-cap, so it never disappears into the page.
+The pill stack is specifically optimized for command/option/value composition where hierarchical selection is useful.
 
-Animation state is remembered against a node's **id**, never its index — a contextual root can
-appear or vanish between frames, and a keyed-by-position pill would inherit a stranger's motion.
+It is not the universal input surface. HG2Gui also accepts:
 
-## 5a. The pill becomes the page
+- semantic completions;
+- Guide command taps;
+- typed open-ended operands;
+- file/folder picker results;
+- Adaptive TUI controls;
+- shell prompt/status interactions;
+- dedicated native feature screens.
 
-Opening the Files screen doesn't cut to a new screen — the **FILES** pill itself grows into it.
-Simplified from the source spec's own multi-stage "stretch, snap, fly, run the perimeter, flood"
-sequence into two continuous beats (`PillWrapReveal.kt`):
+Ordinary composed commands still require explicit **RUN**.
 
-| | |
-| --- | --- |
-| Wrap | 640ms, `cubic-bezier(0,.9,.1,1)` — the pill's own rect interpolates out to the full screen, closing a hue-coloured frame around it |
-| Flood | 420ms, same easing — a bottom-to-top wipe reveals the file explorer already inside the closed frame |
-| Header drop | 360ms — the top bar (close/parent/count chips) drops in from above the top edge |
-| Footer pop | 360ms, same clock — the bottom action bar rises in from below the bottom edge |
+## 7. Scale and density
 
-The frame's border stays visible for as long as the screen is open, tying its hue back to
-whichever pill opened it. Closing plays the same two beats in reverse. Whenever there's a level
-open above the root, a yellow **…** chip drops in with the rest of the header — tap it to close
-the deepest open level, same as tapping its own capsule again.
+Runtime discovery means command/value collections can range from a handful of items to hundreds. Large collections must remain scrollable or otherwise browsable rather than assuming one screen of content.
 
-The Select File/Folder pill runs the fuller, un-simplified version of the same source sequence
-(`PillPerimeterReveal.kt`) instead: from the pill's own trail crumb, one edge grows at a time -
-bottom, right, top, left, 260ms apiece - closing the loop back over its own start, with the flood
-wipe (this time top-to-bottom) starting the instant that last edge does. It gets the closer read
-because it opens from an arbitrary crumb position rather than a fixed root pill, so a single
-rect-interpolation (as `PillWrapReveal` does) would visibly cut a corner instead of tracing one.
+Text size follows the screen's density needs while preserving usable touch targets. The global Settings text-scale control scales the terminal UI and can make Settings itself taller than the viewport; Settings therefore scrolls vertically.
 
-## 6. Scale
+## 8. Color and geometry
 
-The menu's size isn't fixed — the shell categories are discovered live from what's actually
-installed, so a band can hold anywhere from a handful of built-ins to hundreds of real
-binaries. It is drawn small throughout regardless: a pill is 17dp tall with a 6sp label, stacked
-20dp apart. This is the most aggressive type gets in Azphalt - the pill, not the
-type, is the tap target, and it spans most of the screen - but not the only place below 9px:
-a handful of dense screens (session tabs, the azp store, the file browser) drop to 8sp, and one
-spot in the file browser to 7sp, without that same "the tap target is something else" reasoning
-behind it. A category large enough to strain the
-fan-out animation is capped per category rather than rendered (or hung on) unbounded, with a
-trailing "+N more" pill marking what was left out.
+Azphalt retains its rotating grounds, ink, accent yellow, and fixed hue/cap palette as implemented in `PillMenu.kt`.
 
-Session tabs, command-line tokens and modifier keys sit at 8sp, uppercase, +0.09em.
+Capsules use fully rounded geometry; record surfaces use larger rounded cards. Individual screens may introduce additional geometry when the represented object requires it rather than forcing all UI into capsule form.
 
-## 7. Unchanged from Azphalt
+Color communicates structure and continuity, not security or semantic authority by itself. Execution authority, isolation, disabled state, and destructive actions must remain explicit in text/state and cannot rely on hue alone.
 
-Hue by hash, fourteen hues in assignment order (the original ten sit on the default ground; four
-more - gray, sage, tan, brown - extend the set for the rarer grounds and category recolors), the
-darker mate on the end-cap. Ink for the open pill, yellow for its label and cap. Record tile at
-26dp radius, 9% ink. No borders, no shadows, no blur, no icons, no hover states.
+## 9. Accessibility and fallback
+
+Native projections must never trap the user inside an incorrect interpretation.
+
+- Adaptive TUI surfaces retain **RAW** terminal fallback.
+- Open-ended values remain typeable.
+- Scrollable screens must actually scroll when content exceeds the viewport.
+- Interactive controls must keep meaningful text/semantics even when visual treatment changes.
+- Elevated authority requires explicit foreground confirmation independent of styling.
