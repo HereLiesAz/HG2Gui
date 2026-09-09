@@ -190,6 +190,11 @@ class Hg2PackageManager(
 
         runTool(listOf(dpkgDeb.absolutePath, "-R", archive.absolutePath, workDir.absolutePath), "dpkg-deb extract")
 
+        val relocated = relocateTermuxPayload(workDir)
+        if (relocated > 0) {
+            emit("Relocated $relocated top-level payload item${if (relocated == 1) "" else "s"} for ${pkg.name}.")
+        }
+
         var rewritten = 0
         workDir.walkTopDown().filter { it.isFile }.forEach { file ->
             if (rewriteTextPrefix(file)) rewritten++
@@ -200,6 +205,30 @@ class Hg2PackageManager(
         if (!patched.isFile || patched.length() == 0L) error("Failed to rebuild ${pkg.name}")
         workDir.deleteRecursively()
         return patched
+    }
+
+    private fun relocateTermuxPayload(workDir: File): Int {
+        val sourceRoot = File(workDir, OLD_PREFIX.trimStart('/'))
+        if (!sourceRoot.isDirectory) return 0
+
+        val children = sourceRoot.listFiles().orEmpty()
+        for (child in children) {
+            val destination = File(workDir, child.name)
+            if (destination.exists()) {
+                error("Cannot relocate package payload: ${destination.absolutePath} already exists")
+            }
+            if (!child.renameTo(destination)) {
+                error("Cannot relocate package payload item ${child.absolutePath} to ${destination.absolutePath}")
+            }
+        }
+
+        var current: File? = sourceRoot
+        while (current != null && current != workDir) {
+            val parent = current.parentFile
+            if (current.listFiles().isNullOrEmpty()) current.delete()
+            current = parent
+        }
+        return children.size
     }
 
     private fun rewriteTextPrefix(file: File): Boolean {
