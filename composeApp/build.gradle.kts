@@ -126,6 +126,46 @@ fun registerNativeLauncherTask(taskName: String, sourceName: String, outputName:
     }
 }
 
+fun registerNativeSharedLibraryTask(taskName: String, sourceName: String, outputName: String) = tasks.register(taskName) {
+    val source = layout.projectDirectory.file("src/main/cpp/$sourceName")
+    val output = layout.buildDirectory.file("generated/nativeLaunchers/jniLibs/arm64-v8a/$outputName")
+    inputs.file(source)
+    outputs.file(output)
+
+    doLast {
+        val sdkRoot = System.getenv("ANDROID_SDK_ROOT")
+            ?: System.getenv("ANDROID_HOME")
+            ?: error("ANDROID_SDK_ROOT/ANDROID_HOME is not set")
+        val ndkVersion = "29.0.14206865"
+        val hostTag = when {
+            System.getProperty("os.name").startsWith("Windows", ignoreCase = true) -> "windows-x86_64"
+            System.getProperty("os.name").startsWith("Mac", ignoreCase = true) ->
+                if (System.getProperty("os.arch") == "aarch64") "darwin-arm64" else "darwin-x86_64"
+            else -> "linux-x86_64"
+        }
+        val suffix = if (hostTag.startsWith("windows")) ".cmd" else ""
+        val clang = file("$sdkRoot/ndk/$ndkVersion/toolchains/llvm/prebuilt/$hostTag/bin/aarch64-linux-android24-clang$suffix")
+        check(clang.isFile) { "Android NDK clang not found: $clang" }
+
+        val outFile = output.get().asFile
+        outFile.parentFile.mkdirs()
+
+        val process = ProcessBuilder(
+            clang.absolutePath,
+            source.asFile.absolutePath,
+            "-O2",
+            "-fPIC",
+            "-shared",
+            "-Wl,-soname,$outputName",
+            "-o",
+            outFile.absolutePath
+        )
+            .inheritIO()
+            .start()
+        check(process.waitFor() == 0) { "Failed to compile $sourceName" }
+    }
+}
+
 val buildAptKeyLauncher = registerNativeLauncherTask(
     "buildAptKeyLauncher",
     "apt_key_launcher.c",
@@ -141,9 +181,14 @@ val buildMaintscriptLauncher = registerNativeLauncherTask(
     "maintscript_launcher.c",
     "libhg2gui_maintscript.so"
 )
+val buildHg2ExecPreload = registerNativeSharedLibraryTask(
+    "buildHg2ExecPreload",
+    "hg2exec_preload.c",
+    "libhg2gui_exec_preload.so"
+)
 
 tasks.matching { it.name == "preBuild" }.configureEach {
-    dependsOn(buildAptKeyLauncher, buildDpkgLauncher, buildMaintscriptLauncher)
+    dependsOn(buildAptKeyLauncher, buildDpkgLauncher, buildMaintscriptLauncher, buildHg2ExecPreload)
 }
 
 androidComponents {
