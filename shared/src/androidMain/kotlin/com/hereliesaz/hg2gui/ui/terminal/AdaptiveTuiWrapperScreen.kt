@@ -41,6 +41,11 @@ fun AdaptiveTuiWrapperScreen(
         return
     }
 
+    fun handle(result: TuiInteractionController.Result) {
+        interactionError = result.reason
+        if (!result.success) onRawTerminal()
+    }
+
     Column(
         Modifier.fillMaxSize().background(Azphalt.currentGround.page).padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
@@ -52,27 +57,22 @@ fun AdaptiveTuiWrapperScreen(
             Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            if (snapshot.tabs.isNotEmpty()) TabStrip(holder, snapshot.tabs)
+            if (snapshot.tabs.isNotEmpty()) {
+                TabStrip(snapshot.tabs) { target -> scope.launch { handle(TuiInteractionController.activateTab(holder, target)) } }
+            }
             snapshot.regions.forEach { RegionCard(it) }
             snapshot.layers.forEachIndexed { index, layer ->
                 MenuLayer(
-                    holder = holder,
                     layer = layer,
                     layerIndex = index,
                     inputOwner = snapshot.activeLayerIndex == index,
-                    onChoose = { target ->
-                        scope.launch {
-                            val result = TuiInteractionController.choose(holder, index, target)
-                            interactionError = result.reason
-                            if (!result.success) onRawTerminal()
-                        }
-                    }
+                    onChoose = { target -> scope.launch { handle(TuiInteractionController.activate(holder, index, target)) } }
                 )
             }
             snapshot.prompt?.let { prompt -> PromptCard(holder, prompt) }
             if (snapshot.mouseAware) {
                 Text(
-                    "This interface advertises mouse input. Native taps are mapped where semantics are known; RAW remains available for unmodeled gestures.",
+                    "Mouse-aware terminal UI detected. Native taps are mapped where semantic state is observable; RAW remains available for unmodeled gestures.",
                     color = Azphalt.currentGround.onPage.copy(alpha = .45f), fontSize = 9.sp
                 )
             }
@@ -100,8 +100,7 @@ private fun HeaderAction(label: String, onClick: () -> Unit) {
 }
 
 @Composable
-private fun TabStrip(holder: FullScreenPtySession, tabs: List<TuiTab>) {
-    val current = tabs.indexOfFirst { it.active }.takeIf { it >= 0 } ?: 0
+private fun TabStrip(tabs: List<TuiTab>, onPick: (Int) -> Unit) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         tabs.forEachIndexed { index, tab ->
             Text(
@@ -109,7 +108,7 @@ private fun TabStrip(holder: FullScreenPtySession, tabs: List<TuiTab>) {
                 color = if (tab.active) Azphalt.Yellow else Azphalt.currentGround.onPage,
                 fontWeight = if (tab.active) FontWeight.Black else FontWeight.SemiBold,
                 modifier = Modifier.background(Azphalt.Ink.copy(alpha = if (tab.active) 1f else .08f), RoundedCornerShape(999.dp))
-                    .clickable { TuiInteractionController.activateTab(holder, current, index) }
+                    .clickable(enabled = !tab.active) { onPick(index) }
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 fontSize = 11.sp
             )
@@ -122,12 +121,14 @@ private fun RegionCard(region: TuiRegion) {
     Column(Modifier.fillMaxWidth().background(Azphalt.Ink.copy(alpha = .07f), RoundedCornerShape(20.dp)).padding(12.dp)) {
         Text(region.kind.name, color = Azphalt.currentGround.onPage.copy(alpha = .5f), fontWeight = FontWeight.Black, fontSize = 9.sp)
         region.lines.forEach { Text(it, color = Azphalt.currentGround.onPage, fontSize = 11.sp) }
-        region.progress?.let { LinearProgressIndicator(progress = { it }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) }
+        region.progress?.let { progress ->
+            LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
+        }
     }
 }
 
 @Composable
-private fun MenuLayer(holder: FullScreenPtySession, layer: TuiLayer, layerIndex: Int, inputOwner: Boolean, onChoose: (Int) -> Unit) {
+private fun MenuLayer(layer: TuiLayer, layerIndex: Int, inputOwner: Boolean, onChoose: (Int) -> Unit) {
     Column(
         Modifier.fillMaxWidth().padding(start = (layer.depth * 12).dp)
             .background(Azphalt.Ink.copy(alpha = if (layer.modal) .14f else .07f), RoundedCornerShape(if (layer.modal) 20.dp else 24.dp))
