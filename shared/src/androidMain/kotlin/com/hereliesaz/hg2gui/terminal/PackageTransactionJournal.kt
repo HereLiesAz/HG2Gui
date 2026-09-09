@@ -130,6 +130,7 @@ class PackageTransactionJournal private constructor(
             infoBackup.mkdirs()
 
             try {
+                File(transaction, "package-name").writeText(packageName)
                 if (status.isFile) {
                     Files.copy(status.toPath(), File(transaction, "status").toPath(), StandardCopyOption.COPY_ATTRIBUTES)
                 }
@@ -148,14 +149,37 @@ class PackageTransactionJournal private constructor(
             }
         }
 
-        /** Clear abandoned completed/failed journals left by process death; called only after recovery inspection. */
-        fun abandoned(context: Context): List<File> =
-            File(context.cacheDir, "hg2-package-transactions").listFiles().orEmpty().filter(File::isDirectory)
+        /**
+         * A successful transaction deletes its journal. Any journal surviving process death is
+         * therefore incomplete and is rolled back before another package mutation begins.
+         */
+        fun recoverAbandoned(context: Context): List<String> {
+            val prefix = DistroManager.prefixDir(context)
+            val dpkgDir = File(prefix, "var/lib/dpkg")
+            val infoDir = File(dpkgDir, "info")
+            val status = File(dpkgDir, "status")
+            return File(context.cacheDir, "hg2-package-transactions")
+                .listFiles().orEmpty()
+                .filter(File::isDirectory)
+                .map { transaction ->
+                    val packageName = runCatching { File(transaction, "package-name").readText().trim() }.getOrDefault("")
+                    if (packageName.isBlank()) {
+                        transaction.deleteRecursively()
+                        return@map "Discarded unreadable package transaction ${transaction.name}."
+                    }
+                    val entries = readManifest(File(transaction, "manifest"))
+                    val journal = PackageTransactionJournal(prefix, packageName, transaction, status, infoDir, entries)
+                    journal.rollback().fold(
+                        onSuccess = { "Recovered interrupted package transaction for $packageName." },
+                        onFailure = { "Could not recover interrupted package transaction for $packageName: ${it.message}" }
+                    )
+                }
+        }
 
         private fun snapshotPayload(prefix: File, listFile: File, payloadRoot: File): List<Entry> {
             val entries = mutableListOf<Entry>()
             readPackagePaths(listFile, prefix).forEach { source ->
-                val relative = source.relativeTo(prefix).path
+                val relative = prefix.toPath().normalize().relativize(source.toPath().normalize()).toString()
                 when {
                     Files.isSymbolicLink(source.toPath()) -> {
                         val target = Files.readSymbolicLink(source.toPath()).toString()
@@ -181,7 +205,7 @@ class PackageTransactionJournal private constructor(
 
         private fun readPackagePaths(listFile: File, prefix: File): List<File> {
             if (!listFile.isFile) return emptyList()
-            val canonicalPrefix = prefix.canonicalFile
+            val prefixPath = prefix.toPath().toAbsolutePath().normalize()
             return listFile.readLines().mapNotNull { raw ->
                 val text = raw.trim()
                 if (text.isBlank()) return@mapNotNull null
@@ -191,8 +215,8 @@ class PackageTransactionJournal private constructor(
                     text.startsWith('/') -> File(text)
                     else -> File(prefix, text)
                 }
-                val normalized = runCatching { mapped.canonicalFile }.getOrNull() ?: return@mapNotNull null
-                if (normalized == canonicalPrefix || normalized.path.startsWith(canonicalPrefix.path + File.separator)) normalized else null
+                val normalized = mapped.toPath().toAbsolutePath().normalize()
+                if (normalized == prefixPath || normalized.startsWith(prefixPath)) normalized.toFile() else null
             }.distinctBy { it.path }
         }
 
@@ -204,6 +228,16 @@ class PackageTransactionJournal private constructor(
                     entry.linkTarget?.let { writer.append('\t').append(it.replace("\t", "")) }
                     writer.appendLine()
                 }
+            }
+        }
+
+        private fun readManifest(file: File): List<Entry> {
+            if (!file.isFile) return emptyList()
+            return file.readLines().mapNotNull { line ->
+                val parts = line.split('\t', limit = 3)
+                val type = parts.getOrNull(0)?.singleOrNull() ?: return@mapNotNull null
+                val relative = parts.getOrNull(1)?.takeIf(String::isNotBlank) ?: return@mapNotNull null
+                Entry(type, relative, parts.getOrNull(2))
             }
         }
 
