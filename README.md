@@ -1,33 +1,34 @@
 # HG2Gui — The Hitchhiker's Terminal to the Galaxy
 
-**HG2Gui** is a touch-first Android terminal inspired by the visual language of *The Hitchhiker's Guide to the Galaxy*. The command tree is the primary input method: commands, flags, package names, choices, and other enumerable values become animated pills; typing is reserved for genuinely open-ended input.
+**HG2Gui** is a touch-first Android command-line environment inspired by the visual language of *The Hitchhiker's Guide to the Galaxy*. It keeps a real Termux-derived runtime underneath while projecting command-line software into the Android interaction surface that best fits the task: command composition, Guide entries, Files, structured shell state, adaptive TUI wrappers, prompts, package management, and dedicated native views.
 
-Underneath the interface is a real Termux-derived runtime in HG2Gui's own app-private prefix, plus Android-specific compatibility layers for package installation, package lifecycle management, isolation, and explicit device/root authority.
+Typing remains available whenever the value is genuinely open-ended. When HG2Gui can discover valid values, it can expose those values directly instead.
 
 ## What it does
 
-- **Touch-first command composition.** Selecting a normal leaf composes the command; it does not auto-run. **RUN** is the explicit execution step. If more free-form input is required, the input field is focused and tells the user what kind of value is expected.
-- **Structured inputs stay structured.** Package names come from package/catalog pills. File and directory operands open the graphical file picker. Yes/no prompts use a real confirmation dialog. Numbered and bracketed choices remain tappable. Text entry is the fallback, not the default.
-- **Live output follows itself.** The active result card auto-scrolls as stdout/stderr arrives so the newest output stays visible.
-- **Real Termux-derived runtime.** HG2Gui bootstraps a pinned Termux userspace into its own private `$PREFIX`, with bundled native executables exposed through Android-safe native-library delivery where required.
-- **Android-safe package transactions.** Top-level mutating `apt`/`apt-get` operations are routed through HG2Gui's package manager instead of letting upstream apt drive an Android-incompatible dpkg transaction. Package archives are relocated from Termux's hardcoded prefix, metadata is repaired, maintainer scripts are externalized and run through bundled Bash, and dpkg is forced to HG2Gui's own database/install root without chrooting.
-- **Resumable/reusable downloads.** Completed package downloads are reused when valid; partial downloads resume when the server supports ranges.
-- **Browsable installation.** `apt`/`apt-get`/`pkg` install choices are populated from the downloaded APT package index so users can pick package names instead of typing them blind.
-- **Installed-package management.** **Packages** groups installed software by package manager. HG2Gui currently discovers Termux/dpkg packages plus Python `pip`, Node `npm`, and RubyGems installations from their on-disk metadata.
-- **Package actions.** Installed packages expose the actions that make sense for them: **Run**, **Update**, **Info**, **Remove**, and (for dpkg packages) **Purge**, plus HG2Gui-owned **Enable/Disable**, **Reset**, and **Isolate/Release isolation**.
-- **Disable without uninstalling.** A disabled package stays installed and visible, but HG2Gui blocks commands owned by it until it is enabled again.
-- **Reset runtime state.** Reset keeps the installed package payload while clearing package-scoped cache/config/data/state/log locations and paths HG2Gui positively observed the package creating. For isolated packages, Reset discards the private runtime so it is reseeded cleanly on next run.
-- **Package isolation.** An isolated package runs inside a private PRoot-backed filesystem seeded from the HG2Gui runtime. The real HG2Gui prefix/home are not bind-mounted into the guest. Each run snapshots the private root and reports created, modified, and deleted paths afterward. `adb`, `su`, `tsu`, `magisk`, and `proot` are removed from the guest prefix, and common host `su` paths are masked.
-- **Explicit execution authority.** **Packages → Authority** separates normal app execution from elevated backends. ADB and root are never ambient capabilities of normal or isolated package runs.
-- **ADB shell.** When an executable ADB client is available (normally via `android-tools`), HG2Gui exposes devices, pair, connect, disconnect, and shell operations. ADB-shell commands require explicit confirmation.
-- **Root.** When an executable `su` provider is present, HG2Gui exposes root testing and root-shell execution. Every root operation that executes with elevation requires explicit confirmation from the visible interactive UI.
-- **No headless elevation.** `runToCompletion` callers (including MCP/headless integrations) can query authority status but cannot invoke ADB-shell or root authority.
-- **Live command discovery.** Real binaries are discovered from the HG2Gui prefix and associated with their owning dpkg package when possible. Help text is probed in the background to turn discoverable flags into pills.
-- **Sessions, Files, Guide, SSH, Workflows, AI, Store, and MCP.** The rest of the product remains integrated around the same rule: assemble or choose explicitly, then execute deliberately.
+- **Touch-first command composition.** Commands, flags, package names, branches, hosts, services, and other discoverable values can be assembled through native controls. Normal command composition does not auto-run; **RUN** is explicit.
+- **The Guide is an input surface.** Commands shown while reading Guide entries are tappable and can be composed into the active terminal session for review. Reading and command composition can interleave without leaving the Guide.
+- **Completion Bridge.** Bash, Zsh, Fish, filesystem, installed-package, Git branch, SSH host, service, and supported command-specific completion sources normalize into one semantic completion model and feed native selection controls.
+- **Shell Adapter.** Bash, Zsh, and Fish sessions expose structured prompt state such as cwd, git branch/dirty state, exit status, and user/host where meaningful. Oh My Zsh, Powerlevel10k, Starship, Pure, and similar systems remain presentation layers on the shell that actually owns the session.
+- **Adaptive TUI Wrapper.** Alternate-screen terminal interfaces can be recognized from live terminal state and projected into native menus, modal layers, checkbox/radio choices, tabs, lists, tables, prompts, confirmation controls, progress/status regions, and multiple panes. The child program remains authoritative, and **RAW** remains available whenever HG2Gui cannot safely model the interaction.
+- **Semantic TUI interaction.** Generated navigation is verified against screen evolution instead of blindly sending a fixed number of keys. When state cannot be reconciled, HG2Gui falls back to the raw terminal.
+- **Real PTY support.** Full-screen and interactive terminal applications run through the vendored Termux terminal emulator/PTY path when PTY mode is enabled.
+- **Live output follows itself.** Active result records auto-scroll as output arrives.
+- **Real Termux-derived runtime.** HG2Gui bootstraps a pinned Termux userspace into its own private `$PREFIX`, with Android-safe native executable delivery where required.
+- **Persistent shell selection.** New sessions can use installed Bash, Zsh, or Fish as their configured shell.
+- **Android-safe package transactions.** Mutating package operations run through HG2Gui's transaction layer, including relocation, metadata repair, dependency planning, verified repository/index/package downloads, maintainer-script handling, triggers, alternatives/diversions, rollback, and Android-safe native execution support.
+- **Unified package execution backends.** Package-owned binaries are classified for direct linker execution, PRoot compatibility execution where required by a concrete ELF/runtime case, or private-root isolated execution. Isolation never silently falls back outside its boundary.
+- **Installed-package management.** **Packages** inventories Termux/dpkg, Python `pip`, Python `pipx`, Node `npm`, and RubyGems installations from manager-owned metadata.
+- **Package lifecycle.** Installed packages can expose **Run**, **Update**, **Info**, **Remove**, **Purge** where meaningful, plus HG2Gui-owned **Enable/Disable**, **Reset**, and **Isolate/Release isolation**.
+- **Package isolation.** Isolated packages run inside a private PRoot-backed root with private HOME/XDG state. HG2Gui removes/masks common privilege tools and observes private-root changes plus best-effort process, open-file, socket, and privilege-tool activity.
+- **Native isolation audit.** Settings includes an Isolation Audit view for inspecting the latest observed activity from isolated packages.
+- **Explicit execution authority.** ADB shell and root are separate foreground-approved authorities. They are never ambient capabilities of normal commands, isolated packages, or headless execution.
+- **Capability-oriented Android API.** Signature-protected external integrations can request typed HG2Gui capabilities including command execution, package operations, pickers with returned results, notifications/dialogs, clipboard, device information, share/open actions, lifecycle operations, and foreground-approved authority requests.
+- **Files and dedicated native surfaces.** File browsing, picking, package/audit management, settings, and other object-oriented tasks are free to use purpose-built native screens rather than being forced into the terminal composer.
 
 ## Package lifecycle
 
-The package manager remains responsible for installation/update/removal. HG2Gui adds lifecycle state above it:
+The owning package manager remains responsible for its native installation/update/removal semantics. HG2Gui adds lifecycle and execution policy above it:
 
 ```text
 Packages
@@ -46,80 +47,92 @@ Packages
   │       ├─ Remove
   │       └─ Purge
   ├─ Python / pip
+  ├─ Python apps / pipx
   ├─ Node / npm
   └─ Ruby / gem
 ```
 
-Not every package exposes a runnable binary, and not every manager supports the same native lifecycle operations. HG2Gui's own **Disable**, **Reset**, and **Isolate** semantics remain consistent across managers.
+Not every package exposes a runnable binary, and not every manager supports the same native lifecycle operations. HG2Gui-owned Disable, Reset, and Isolate semantics remain independent of manager feature sets.
 
 ## Command routing
 
-`TerminalEngine` is the execution seam. In broad order it handles:
+`TerminalEngine` is the execution-policy seam. In broad order it handles:
 
-1. `bootstrap`
-2. HG2Gui downloader commands (`download` / `hg2download`)
-3. explicit authority (`hg2auth`)
-4. package lifecycle (`hg2package`)
-5. disabled-package blocking
-6. HG2Gui package operations (`pkg` / `hg2pkg`) and translated mutating `apt`/`apt-get`
-7. Android built-ins
-8. isolated package execution when the command belongs to an isolated package
-9. the normal persistent shell
+1. bootstrap/download controls;
+2. explicit execution authority;
+3. package lifecycle controls;
+4. disabled-package blocking;
+5. HG2Gui package transactions and translated mutating apt operations;
+6. Android-facing built-ins;
+7. package-owned backend selection (`DIRECT_LINKER`, `PROOT_COMPAT`, `PROOT_ISOLATED`);
+8. the configured persistent shell for everything else.
 
-This ordering is intentional. Package safety and explicit authority are policy layers in front of the ordinary shell, not aliases implemented inside it.
+Policy and compatibility decisions happen before ordinary shell execution; they are not aliases inside the user's shell.
 
 ## Package compatibility
 
-HG2Gui does **not** assume a Termux `.deb` can simply be unpacked and executed unchanged under another Android application ID. The package layer currently handles several structural incompatibilities:
+HG2Gui does **not** assume a Termux `.deb` can simply be unpacked and executed unchanged under another Android application ID. The package/runtime layer includes support for:
 
-- Termux's hardcoded `/data/data/com.termux/files/usr` archive layout is relocated into HG2Gui's prefix.
-- text references to the old prefix are rewritten where appropriate;
-- `DEBIAN/conffiles` and `DEBIAN/md5sums` are rewritten according to Debian metadata semantics rather than as ordinary text files;
-- dpkg uses HG2Gui's `var/lib/dpkg` and install root;
-- maintainer scripts are staged out of dpkg's direct-exec path, verified absent, and invoked through bundled Bash;
-- dpkg maintainer-script chrooting is disabled;
-- package output is channel-safe and streamed to the UI.
+- relocation of Termux's hardcoded prefix;
+- control metadata and relocated symlink repair;
+- dependency planning with Pre-Depends, alternatives, Provides, Conflicts/Breaks/Replaces, and version-aware relations;
+- dpkg database/install-root control and chrootless operation;
+- interpreter-aware maintainer-script execution through Android-safe native entry points;
+- dpkg triggers, alternatives, diversions, and explicit `postrm purge` handling;
+- whole-plan transaction recovery/rollback;
+- mirror failover, architecture selection, signed `InRelease` verification, authenticated index SHA-256 verification, and verified package downloads;
+- ELF inspection and narrowly-scoped PRoot compatibility for binaries that need it.
 
-This has been runtime-tested with real packages including `python-pip`, `nsnake`, and `curl`, but it is not a claim that every Termux package is automatically compatible. Native binaries can still expose Android/application-ID/linker assumptions package by package.
+Compatibility work is driven by observed runtime cases. Arbitrary command failure is not treated as a reason to silently retry under PRoot.
 
-## Input rules
+## Input surfaces
 
-HG2Gui follows one general rule: **if valid values can be discovered or enumerated, the user picks them.**
+HG2Gui does not require every interaction to look like the same control. Current command-entry and interaction surfaces include:
 
-- package → package/catalog pills
-- installed package → package lifecycle pills
-- package executable → **Run** pills
-- file/directory → graphical picker
-- yes/no → confirmation dialog
-- finite choice set → pills
-- URL/host/search text/message/other open value → focused text field with a specific cue
+- terminal command composition;
+- semantic completion selections;
+- tappable commands inside the Guide;
+- graphical file/folder picking;
+- structured prompt dialogs/inputs;
+- Adaptive TUI Wrapper projections;
+- raw PTY terminal interaction;
+- shell prompt/status projections;
+- package, settings, audit, history, environment, AI, Store, Files, SSH, workflow, and MCP screens.
 
-Normal command-tree selections compose the command and stop. The user presses **RUN** to execute it. Interactive prompt answers are the exception because they answer a command that is already running.
+When a composed ordinary command is ready, **RUN** remains the explicit execution step. Interactive controls that answer an already-running process naturally send their response to that process.
+
+## External API
+
+The Android API receiver is protected by the signature permission:
+
+`com.hereliesaz.hg2gui.permission.API`
+
+It exposes typed actions instead of making an untrusted broadcast string synonymous with terminal execution. ADB/root requests are routed through a foreground approval activity; headless callers do not inherit elevation.
 
 ## Project structure
 
-- `:composeApp` — Android application entry point, activities/services, resources, build/signing/packaging.
-- `:shared` — Compose UI, terminal routing, package management, lifecycle/isolation/authority, managers, integrations.
-- `:terminal-emulator` — vendored terminal/PTY support.
+- `:composeApp` — Android application entry points, activities/services, API transport, resources, build/signing/packaging.
+- `:shared` — Compose UI, terminal routing, shell/TUI/completion adapters, package management, lifecycle/isolation/authority, managers and integrations.
+- `:terminal-emulator` — vendored terminal emulator and PTY support.
 - `:termux-shared` — vendored Termux-compatible Android support library.
 
-Key Android-side files:
+Key runtime files include:
 
-- `terminal/TerminalEngine.kt` — dispatch and policy boundary.
-- `terminal/ShellSession.kt` — persistent shell transport and prompt handling.
-- `terminal/DistroManager.kt` / `BootstrapManifest.kt` — pinned bootstrap and Android-safe native executable mapping.
-- `terminal/Hg2PackageManager.kt` — package transactions.
-- `terminal/Hg2Downloader.kt` — resumable/reusable downloads.
-- `terminal/DpkgCatalog.kt` / `AptCatalog.kt` — installed ownership/version data and repository catalog.
-- `terminal/PackageLifecycleStore.kt` — manager inventory plus Enable/Disable/Reset/Isolate state.
-- `terminal/PackageIsolation.kt` — private-root isolation and filesystem audit.
-- `terminal/ExecutionAuthority.kt` — ADB/root availability and command construction.
-- `ui/menu/CommandTree.kt` — live command tree.
-- `ui/menu/PackageLifecycleTree.kt` — installed-package and authority UI.
+- `terminal/TerminalEngine.kt` — dispatch and execution-policy boundary.
+- `terminal/ShellSession.kt` — persistent shell transport.
+- `terminal/ShellPresentation.kt` / `ShellAdapterRegistry.kt` — structured shell presentation.
+- `terminal/CompletionBridge.kt` and completion providers — normalized semantic completion.
+- `terminal/TuiSemanticModel.kt`, `TuiTerminalAdapter.kt`, `TuiInteractionController.kt` — Adaptive TUI semantics and verified interaction.
+- `terminal/Hg2PackageManager.kt` — package transaction engine.
+- `terminal/PackageExecutionBackend.kt` — direct/compatibility/isolation backend selection.
+- `terminal/PackageLifecycleStore.kt` — installed-manager inventory and lifecycle state.
+- `terminal/PackageIsolation.kt` — private-root isolation and runtime observation.
+- `terminal/ExecutionAuthority.kt` — ADB/root authority backends.
+- `api/Hg2ApiReceiver.kt` and API activities — signature-protected external capabilities.
 
 ## Build
 
-Current toolchain is defined by the repository, notably `gradle/libs.versions.toml` and `composeApp/build.gradle.kts`:
+Authoritative toolchain values live in Gradle/version files. At this documentation pass the repository uses:
 
 - JDK 21
 - AGP 9.3.2
@@ -133,6 +146,8 @@ Current toolchain is defined by the repository, notably `gradle/libs.versions.to
 ./gradlew assembleDebug
 ```
 
+CI success proves compilation/tests/static gates represented in the workflow. Android runtime compatibility still requires real-device confirmation for cases that depend on Android linker, ICU, package execution, permissions, ADB, root, or PRoot behavior.
+
 ## Documentation
 
 - [Vision](docs/VISION.md)
@@ -142,5 +157,6 @@ Current toolchain is defined by the repository, notably `gradle/libs.versions.to
 - [Design](docs/DESIGN.md)
 - [User guide](docs/USER_GUIDE.md)
 - [Contributing](docs/CONTRIBUTING.md)
+- [Active TODO](docs/TODO.md)
 
-The large Guide manuscript, animation packets, style-lock prompts, images, videos, and HTML motion/design studies under `docs/` are creative/reference source material. They are intentionally not treated as a live description of the runtime architecture; the Markdown files linked above are the authoritative software documentation.
+The Guide manuscript and visual/motion source material under `docs/` are product source material in their own domains; runtime/API behavior is defined by the live software documentation and code.
