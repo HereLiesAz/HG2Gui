@@ -72,7 +72,12 @@ fun AdaptiveTuiWrapperScreen(
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             snapshot.layers.forEachIndexed { index, layer ->
-                MenuLayer(holder, layer, index)
+                MenuLayer(
+                    holder = holder,
+                    layer = layer,
+                    layerIndex = index,
+                    inputOwner = snapshot.activeLayerIndex == index
+                )
             }
             snapshot.prompt?.let { prompt ->
                 var value by remember(prompt.row) { mutableStateOf("") }
@@ -170,38 +175,62 @@ private fun HeaderAction(label: String, onClick: () -> Unit) {
 }
 
 @Composable
-private fun MenuLayer(holder: FullScreenPtySession, layer: TuiLayer, layerIndex: Int) {
+private fun MenuLayer(
+    holder: FullScreenPtySession,
+    layer: TuiLayer,
+    layerIndex: Int,
+    inputOwner: Boolean
+) {
     Column(
         Modifier
             .fillMaxWidth()
-            .background(Azphalt.Ink.copy(alpha = 0.07f), RoundedCornerShape(24.dp))
+            .padding(start = (layer.depth * 12).dp)
+            .background(
+                Azphalt.Ink.copy(alpha = if (layer.modal) 0.14f else 0.07f),
+                RoundedCornerShape(if (layer.modal) 20.dp else 24.dp)
+            )
             .padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(7.dp)
     ) {
-        Text(
-            layer.heading ?: "MENU ${layerIndex + 1}",
-            color = Azphalt.currentGround.onPage.copy(alpha = 0.62f),
-            fontWeight = FontWeight.ExtraBold,
-            fontSize = 10.sp
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                layer.heading ?: "MENU ${layerIndex + 1}",
+                modifier = Modifier.weight(1f),
+                color = Azphalt.currentGround.onPage.copy(alpha = if (inputOwner) 0.72f else 0.48f),
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 10.sp
+            )
+            if (layer.modal) {
+                Text(
+                    "MODAL",
+                    color = Azphalt.Yellow.copy(alpha = if (inputOwner) 1f else 0.55f),
+                    fontWeight = FontWeight.Black,
+                    fontSize = 8.sp
+                )
+            }
+        }
         layer.items.forEachIndexed { index, item ->
             val active = layer.activeIndex == index
             Box(
                 Modifier
                     .fillMaxWidth()
                     .background(
-                        if (active) Azphalt.Ink else Azphalt.Ink.copy(alpha = 0.08f),
+                        if (active && inputOwner) Azphalt.Ink else Azphalt.Ink.copy(alpha = 0.08f),
                         RoundedCornerShape(18.dp)
                     )
-                    .clickable(enabled = item.enabled && layer.activeIndex != null) {
+                    .clickable(enabled = item.enabled && layer.activeIndex != null && inputOwner) {
                         chooseMenuItem(holder, layer, index)
                     }
                     .padding(horizontal = 14.dp, vertical = 12.dp)
             ) {
                 Text(
                     item.label,
-                    color = if (active) Azphalt.Yellow else Azphalt.currentGround.onPage,
-                    fontWeight = if (active) FontWeight.Black else FontWeight.SemiBold,
+                    color = when {
+                        active && inputOwner -> Azphalt.Yellow
+                        inputOwner -> Azphalt.currentGround.onPage
+                        else -> Azphalt.currentGround.onPage.copy(alpha = 0.48f)
+                    },
+                    fontWeight = if (active && inputOwner) FontWeight.Black else FontWeight.SemiBold,
                     fontSize = 14.sp
                 )
             }
@@ -212,6 +241,12 @@ private fun MenuLayer(holder: FullScreenPtySession, layer: TuiLayer, layerIndex:
                 "Selection state not exposed by this screen; use RAW for this layer.",
                 color = Azphalt.currentGround.onPage.copy(alpha = 0.5f),
                 fontSize = 10.sp
+            )
+        } else if (!inputOwner) {
+            Text(
+                "Underlying layer — input is owned by the active layer above.",
+                color = Azphalt.currentGround.onPage.copy(alpha = 0.42f),
+                fontSize = 9.sp
             )
         }
     }
