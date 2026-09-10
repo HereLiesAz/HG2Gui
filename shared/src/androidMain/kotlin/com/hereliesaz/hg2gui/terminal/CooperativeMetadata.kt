@@ -30,7 +30,7 @@ object CooperativeMetadata {
         require(payload.toByteArray(Charsets.UTF_8).size <= MAX_PAYLOAD_BYTES) { "metadata payload exceeds 128 KiB" }
         require(ttlMillis in 1_000L..300_000L) { "metadata ttl must be between 1s and 5m" }
         prune()
-        if (channel !in entries && entries.size >= MAX_ENTRIES) {
+        if (!entries.containsKey(channel) && entries.size >= MAX_ENTRIES) {
             val oldest = entries.values.minByOrNull { it.updatedAtMillis }
             oldest?.let { entries.remove(it.channel, it) }
         }
