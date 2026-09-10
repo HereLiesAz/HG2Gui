@@ -24,6 +24,12 @@ object PackageIsolation {
 
     data class SavedAudit(val timestampMillis: Long, val audit: Audit)
 
+    data class Snapshot internal constructor(
+        internal val packageKey: String,
+        internal val summaryFile: File,
+        internal val files: Map<String, FileStamp>
+    )
+
     fun root(context: Context, pkg: PackageLifecycleStore.InstalledPackage): File =
         File(context.filesDir, "package-isolation/${safeKey(pkg.key)}/root")
 
@@ -173,9 +179,10 @@ object PackageIsolation {
         "exit \"\$code\""
     ).joinToString("\n")
 
-    fun snapshot(context: Context, pkg: PackageLifecycleStore.InstalledPackage): Map<String, FileStamp> {
+    fun snapshot(context: Context, pkg: PackageLifecycleStore.InstalledPackage): Snapshot {
         val root = root(context, pkg)
-        if (!root.isDirectory) return emptyMap()
+        val summary = summaryFile(context, pkg)
+        if (!root.isDirectory) return Snapshot(pkg.key, summary, emptyMap())
         val result = LinkedHashMap<String, FileStamp>()
         try {
             root.walkTopDown().forEach { file ->
@@ -197,24 +204,31 @@ object PackageIsolation {
                 }
             }
         } catch (_: Exception) {
-            return result
+            return Snapshot(pkg.key, summary, result)
         }
-        return result
+        return Snapshot(pkg.key, summary, result)
     }
 
-    fun audit(before: Map<String, FileStamp>, after: Map<String, FileStamp>): Audit {
-        val telemetry = after.keys.filter { it.startsWith(TELEMETRY_PREFIX) }
+    /** Computes the before/after diff and persists it as the package's latest completed-run audit. */
+    fun audit(before: Snapshot, after: Snapshot): Audit {
+        require(before.packageKey == after.packageKey) { "Cannot compare isolation snapshots from different packages" }
+        val telemetry = after.files.keys.filter { it.startsWith(TELEMETRY_PREFIX) }
             .map { it.substringAfter('/', "") }.sorted()
-        val beforeFiles = before.filterKeys { !it.startsWith(TELEMETRY_PREFIX) }
-        val afterFiles = after.filterKeys { !it.startsWith(TELEMETRY_PREFIX) }
+        val beforeFiles = before.files.filterKeys { !it.startsWith(TELEMETRY_PREFIX) }
+        val afterFiles = after.files.filterKeys { !it.startsWith(TELEMETRY_PREFIX) }
         val created = (afterFiles.keys - beforeFiles.keys).sorted()
         val deleted = (beforeFiles.keys - afterFiles.keys).sorted()
         val modified = (beforeFiles.keys intersect afterFiles.keys).filter { beforeFiles[it] != afterFiles[it] }.sorted()
-        return Audit(created, modified, deleted, telemetry)
+        return Audit(created, modified, deleted, telemetry).also { saved ->
+            saveLatestAudit(after.summaryFile, saved)
+        }
     }
 
     fun saveLatestAudit(context: Context, pkg: PackageLifecycleStore.InstalledPackage, audit: Audit) {
-        val file = summaryFile(context, pkg)
+        saveLatestAudit(summaryFile(context, pkg), audit)
+    }
+
+    private fun saveLatestAudit(file: File, audit: Audit) {
         runCatching {
             file.parentFile?.mkdirs()
             file.bufferedWriter().use { out ->
