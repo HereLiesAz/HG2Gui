@@ -11,6 +11,20 @@
 
 extern char **environ;
 
+/* Cached at library load time so every exec intercept doesn't hit getenv() twice.
+ * Duplicated into owned storage: the loaded ELF may call setenv/putenv/unsetenv before
+ * another exec, which can invalidate raw getenv() pointers from the parent environment. */
+static char *g_prefix;
+static char *g_home;
+
+__attribute__((constructor))
+static void hg2exec_init(void) {
+    const char *p = getenv("PREFIX");
+    const char *h = getenv("HOME");
+    g_prefix = p ? strdup(p) : NULL;
+    g_home   = h ? strdup(h) : NULL;
+}
+
 static int starts_with_path(const char *path, const char *root) {
     if (!path || !root || !*root) return 0;
     size_t n = strlen(root);
@@ -19,9 +33,7 @@ static int starts_with_path(const char *path, const char *root) {
 }
 
 static int hg2gui_owned_path(const char *path) {
-    const char *prefix = getenv("PREFIX");
-    const char *home = getenv("HOME");
-    return starts_with_path(path, prefix) || starts_with_path(path, home);
+    return starts_with_path(path, g_prefix) || starts_with_path(path, g_home);
 }
 
 static int is_elf(const char *path) {
@@ -49,7 +61,8 @@ static int hg2_execve(const char *pathname, char *const argv[], char *const envp
     if (realpath(pathname, resolved) != NULL) candidate = resolved;
 
     if (!hg2gui_owned_path(candidate) || !is_elf(candidate)) {
-        return raw_execve(pathname, argv, envp ? envp : environ);
+        /* Pass envp through as-is; NULL means caller explicitly cleared the environment. */
+        return raw_execve(pathname, argv, envp);
     }
 
 #if defined(__aarch64__) || defined(__x86_64__)
@@ -67,12 +80,18 @@ static int hg2_execve(const char *pathname, char *const argv[], char *const envp
         return -1;
     }
 
+    /* argv layout: [linker, candidate, argv[1], argv[2], ..., NULL]
+     * The linker passes next[1..] to the loaded ELF as its argv, so the ELF sees
+     * argv[0]=candidate (its own path) and argv[1..]=the original arguments.
+     * argv[0] (the caller's program name) is intentionally not forwarded — the
+     * linker sets the ELF's argv[0] to the candidate path, which is the normal
+     * exec convention; adding argv[0] again would insert a spurious extra argument. */
     next[0] = (char *)linker;
     next[1] = (char *)candidate;
     for (size_t i = 1; i < argc; ++i) next[i + 1] = argv[i];
     next[argc + 1] = NULL;
 
-    int result = raw_execve(linker, next, envp ? envp : environ);
+    int result = raw_execve(linker, next, envp);
     int saved_errno = errno;
     free(next);
     errno = saved_errno;
@@ -236,6 +255,12 @@ int fexecve(int fd, char *const argv[], char *const envp[]) {
         ssize_t length = readlink(proc_path, resolved, sizeof(resolved) - 1);
         if (length > 0) {
             resolved[length] = '\0';
+            /* Only redirect app-owned ELF binaries through hg2_execve (which routes them via
+             * the system linker). Non-ELF files (shell scripts, etc.) must stay on the
+             * fd-based execveat path below to preserve the TOCTOU safety that fexecve provides:
+             * using a pathname for a script would race against rename/unlink between readlink
+             * and exec. ELF files in app-owned dirs are already trusted — any replacement is
+             * by code with the same privilege — so the path-based linker route is acceptable. */
             if (hg2gui_owned_path(resolved) && is_elf(resolved)) {
                 return hg2_execve(resolved, argv, envp);
             }
@@ -243,7 +268,7 @@ int fexecve(int fd, char *const argv[], char *const envp[]) {
     }
 
 #if defined(__NR_execveat) && defined(AT_EMPTY_PATH)
-    return (int)syscall(__NR_execveat, fd, "", argv, envp ? envp : environ, AT_EMPTY_PATH);
+    return (int)syscall(__NR_execveat, fd, "", argv, envp, AT_EMPTY_PATH);
 #else
     errno = ENOSYS;
     return -1;

@@ -71,9 +71,14 @@ runs:
             echo "::error::$ARTIFACT contains no signature block — the bundle is unsigned."
             exit 1
           fi
-          if ! jarsigner -verify -strict "$ARTIFACT" > "$RUNNER_TEMP/verify.txt" 2>&1; then
-            echo "::warning::jarsigner reported warnings for $ARTIFACT:"
+          jarsigner -verify -strict "$ARTIFACT" > "$RUNNER_TEMP/verify.txt" 2>&1 || true
+          # -strict exits non-zero (exit 4) for self-signed or untimstamped certs even when the
+          # signature itself is intact ("jar verified" in output). Fail only when the JAR is
+          # genuinely not verified — exit 1 — not on certificate-chain warnings.
+          if ! grep -q "jar verified" "$RUNNER_TEMP/verify.txt"; then
+            echo "::error::jarsigner verification failed for $ARTIFACT:"
             cat "$RUNNER_TEMP/verify.txt"
+            exit 1
           fi
           unzip -p "$ARTIFACT" "$block" | keytool -printcert > "$RUNNER_TEMP/cert.txt"
           grep -E '^(Owner|Valid from)|SHA256:' "$RUNNER_TEMP/cert.txt" || true

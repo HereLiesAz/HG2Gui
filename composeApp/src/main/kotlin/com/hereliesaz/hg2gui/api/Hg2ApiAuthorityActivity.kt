@@ -46,7 +46,12 @@ class Hg2ApiAuthorityActivity : Activity() {
                 val line = if (authority == "root") "hg2auth root shell $command" else "hg2auth adb shell $command"
                 engine.run(
                     line,
-                    onNeedInput = { prompt -> if (prompt.contains("Run", ignoreCase = true) || prompt.contains("authority", ignoreCase = true)) "y" else "" },
+                    onNeedInput = { prompt ->
+                        // Match only the exact confirmation prompts TerminalEngine emits for hg2auth —
+                        // a broad keyword match fires on arbitrary sub-program output like "Run npm?".
+                        if (prompt.trimEnd().endsWith("[y/N]", ignoreCase = true) ||
+                            prompt.trimEnd().endsWith("[Y/n]", ignoreCase = true)) "y" else ""
+                    },
                     onExit = { exitCode = it }
                 ).collect { chunk -> if (output.length < MAX_OUTPUT) output.append(chunk.take(MAX_OUTPUT - output.length)) }
                 complete(

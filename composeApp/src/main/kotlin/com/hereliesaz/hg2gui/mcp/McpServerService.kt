@@ -96,6 +96,7 @@ class McpServerService : Service() {
 
         /** Must be called once (TerminalActivity.onCreate) before any UI reads [shellExecEnabled]
          *  or McpTools is constructed, so the persisted value is loaded before first use. */
+        @Synchronized
         fun ensureInitialized(context: Context) {
             if (shellExecFlow == null) {
                 shellExecFlow = MutableStateFlow(readShellExecPref(context))
@@ -133,13 +134,13 @@ class McpServerService : Service() {
     }
 
     private val scope = CoroutineScope(Dispatchers.IO + Job())
-    private var serverSocket: ServerSocket? = null
+    @Volatile private var serverSocket: ServerSocket? = null
     // MCP-4: stopServer() only ever closed the listening socket, never the one client actually
     // connected at the time - its in-flight readLine() could still resolve and dispatch one more
     // tool call after the user had already tapped off.
-    private var currentClient: Socket? = null
-    private var engine: TerminalEngine? = null
-    private var tools: McpTools? = null
+    @Volatile private var currentClient: Socket? = null
+    @Volatile private var engine: TerminalEngine? = null
+    @Volatile private var tools: McpTools? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -164,7 +165,7 @@ class McpServerService : Service() {
     // (a double-tap on the UI toggle) can land before that coroutine has had a chance to set it,
     // sail past the isRunning check below, and build a second TerminalEngine that immediately
     // loses the port race. This flag closes that window without waiting on the coroutine at all.
-    private var starting = false
+    @Volatile private var starting = false
 
     private fun startServer() {
         if (isRunning.value || starting) return

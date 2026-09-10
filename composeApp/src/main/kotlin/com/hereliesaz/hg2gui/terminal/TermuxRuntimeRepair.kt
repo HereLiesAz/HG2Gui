@@ -15,6 +15,7 @@ object TermuxRuntimeRepair {
     private const val ROOT_REPO = "https://packages.termux.dev/apt/termux-root"
     private const val X11_REPO = "https://packages.termux.dev/apt/termux-x11"
     private const val NEEDS_APT_UPDATE = ".hg2gui-needs-update"
+    private val SAFE_SCRIPT_NAME = Regex("[A-Za-z0-9_.+-]+")
 
     fun repair(context: Context) {
         val prefix = DistroManager.prefixDir(context)
@@ -37,8 +38,20 @@ object TermuxRuntimeRepair {
         val bytes = runCatching { file.readBytes() }.getOrNull() ?: return
         if (bytes.size < 2 || bytes[0] != '#'.code.toByte() || bytes[1] != '!'.code.toByte()) return
         val text = String(bytes, Charsets.UTF_8)
-        if (TERMUX_PREFIX in text) runCatching { file.writeText(text.replace(TERMUX_PREFIX, prefix.absolutePath)) }
+        if (TERMUX_PREFIX in text) {
+            val replaced = text.replace(TERMUX_PREFIX, prefix.absolutePath)
+            runCatching { atomicWrite(file, replaced) }
+        }
         runCatching { file.setExecutable(true) }
+    }
+
+    private fun atomicWrite(target: File, content: String) {
+        val tmp = File(target.parentFile, ".${target.name}.tmp")
+        tmp.writeText(content)
+        if (!tmp.renameTo(target)) {
+            tmp.copyTo(target, overwrite = true)
+            tmp.delete()
+        }
     }
 
     private fun repairMainRepoKey(prefix: File) {
@@ -56,7 +69,7 @@ object TermuxRuntimeRepair {
         val source = File(aptDir, "sources.list")
         val desiredSource = "deb $MAIN_REPO stable main\n"
         val sourceChanged = !source.exists() || source.readText() != desiredSource
-        source.writeText(desiredSource)
+        atomicWrite(source, desiredSource)
 
         val termuxDir = File(prefix, "etc/termux").apply { mkdirs() }
         val mirrorDir = File(termuxDir, "mirrors/hg2gui").apply { mkdirs() }
@@ -135,6 +148,9 @@ object TermuxRuntimeRepair {
         val scripts = File(prefix, "bin").listFiles().orEmpty()
             .filter { it.isFile && !Files.isSymbolicLink(it.toPath()) && !isElf(it) }
             .map { it.name }
+            // Restrict to names safe to embed as shell function identifiers — anything else
+            // (e.g. a filename containing ' ' or '$') would inject shell syntax into the wrapper.
+            .filter { SAFE_SCRIPT_NAME.matches(it) }
             .sorted()
         val dpkgLauncher = File(nativeLibraryDir, DPKG_LAUNCHER).absolutePath
         File(home, WRAPPERS).writeText(buildString {

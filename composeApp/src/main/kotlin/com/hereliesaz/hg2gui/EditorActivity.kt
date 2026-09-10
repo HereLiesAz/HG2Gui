@@ -14,6 +14,7 @@ import androidx.compose.runtime.setValue
 import com.hereliesaz.hg2gui.ui.ConfirmDialog
 import com.hereliesaz.hg2gui.ui.HG2GuiTheme
 import com.hereliesaz.hg2gui.ui.editor.EditorScreen
+import android.net.Uri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -53,20 +54,33 @@ class EditorActivity : ComponentActivity() {
         // VIEW/EDIT surface at all.
         val internalPath = pendingInternalPath
         pendingInternalPath = null
-        val path = internalPath ?: intent.data?.path
-        if (path == null) {
+
+        // For content:// URIs, Uri.getPath() returns the encoded URI path, not a filesystem path.
+        // Only file:// URIs resolve to a real filesystem path via getPath(). Content URIs are read
+        // via contentResolver.openInputStream — we keep the Uri and don't convert to a File path.
+        val externalUri: Uri? = if (internalPath == null) intent.data else null
+        val isContentUri = externalUri?.scheme.equals("content", ignoreCase = true)
+        val path: String? = when {
+            internalPath != null -> internalPath
+            isContentUri -> null  // resolved below via contentResolver
+            else -> externalUri?.path
+        }
+
+        if (path == null && !isContentUri) {
             finish()
             return
         }
-        val file = File(path)
+        val file = path?.let { File(it) }
 
-        if (internalPath == null) {
+        if (internalPath == null && file != null) {
             val dataRoot = File(applicationInfo.dataDir ?: filesDir.parentFile?.path.orEmpty())
             if (file.isWithin(dataRoot)) {
                 finish()
                 return
             }
         }
+
+        val displayName = file?.name ?: externalUri?.lastPathSegment ?: "file"
 
         setContent {
             var content by remember { mutableStateOf<String?>(null) }
@@ -81,10 +95,17 @@ class EditorActivity : ComponentActivity() {
             }
             BackHandler(enabled = dirty) { confirmDiscard = true }
             val scope = rememberCoroutineScope()
+            val resolver = contentResolver
 
-            LaunchedEffect(path) {
+            LaunchedEffect(path, externalUri) {
                 val (loaded, loadError) = withContext(Dispatchers.IO) {
                     try {
+                        val bytes: ByteArray = when {
+                            file != null -> file.readBytes()
+                            externalUri != null -> resolver.openInputStream(externalUri)?.use { it.readBytes() }
+                                ?: error("Cannot open content URI")
+                            else -> error("No file or URI")
+                        }
                         // SYS-3: read/write both defaulted to UTF-8 with no check at all, despite
                         // the manifest wiring this same Activity to .db files by extension - a
                         // binary file opened this way gets its bytes silently replaced with UTF-8
@@ -92,10 +113,10 @@ class EditorActivity : ComponentActivity() {
                         // back to disk, permanently. Sniffing for a NUL byte in the lead bytes is
                         // the same heuristic `file`/`grep -I`/git use to call something binary;
                         // real UTF-8 text never legitimately contains one.
-                        if (file.looksBinary()) {
+                        if (bytes.take(8000).any { it == 0.toByte() }) {
                             null to "This looks like a binary file - can't edit it here."
                         } else {
-                            file.readText() to null
+                            bytes.toString(Charsets.UTF_8) to null
                         }
                     } catch (e: OutOfMemoryError) {
                         null to "This file is too big to edit here - try a real editor for it."
@@ -109,7 +130,7 @@ class EditorActivity : ComponentActivity() {
 
             HG2GuiTheme {
                 EditorScreen(
-                    fileName = file.name,
+                    fileName = displayName,
                     content = content,
                     error = error,
                     dirty = dirty,
@@ -118,10 +139,17 @@ class EditorActivity : ComponentActivity() {
                         val current = content ?: return@EditorScreen
                         scope.launch(Dispatchers.IO) {
                             try {
-                                file.writeText(current)
-                                dirty = false
+                                file?.writeText(current)
+                                    ?: run {
+                                        // content:// URIs from external apps are read-only in this context
+                                        withContext(Dispatchers.Main) { error = "Cannot save back to external URI" }
+                                        return@launch
+                                    }
+                                // State writes must happen on the main thread to satisfy Compose's
+                                // snapshot isolation; @Volatile alone is not sufficient here.
+                                withContext(Dispatchers.Main) { dirty = false }
                             } catch (e: Exception) {
-                                error = e.message ?: "Could not save this file."
+                                withContext(Dispatchers.Main) { error = e.message ?: "Could not save this file." }
                             }
                         }
                     },
@@ -131,7 +159,7 @@ class EditorActivity : ComponentActivity() {
                 if (confirmDiscard) {
                     ConfirmDialog(
                         title = "DISCARD CHANGES?",
-                        message = "${file.name} has unsaved edits - leaving now throws them away.",
+                        message = "$displayName has unsaved edits - leaving now throws them away.",
                         confirmLabel = "DISCARD",
                         onConfirm = { finish() },
                         onDismiss = { confirmDiscard = false }
@@ -160,10 +188,3 @@ private fun File.isWithin(dir: File): Boolean {
     return target == root || target.path.startsWith(root.path + File.separator)
 }
 
-/** A NUL byte anywhere in the first 8000 bytes marks a file as binary - the same lead-bytes
- *  heuristic `file`/`grep -I`/git use, since real UTF-8 text never legitimately contains one. */
-private fun File.looksBinary(): Boolean {
-    val probe = ByteArray(8000)
-    val read = inputStream().use { it.read(probe) }
-    return probe.copyOf(read.coerceAtLeast(0)).any { it == 0.toByte() }
-}

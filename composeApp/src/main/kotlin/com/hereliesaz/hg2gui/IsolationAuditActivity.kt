@@ -40,6 +40,8 @@ import com.hereliesaz.hg2gui.terminal.PackageLifecycleStore
 import com.hereliesaz.hg2gui.ui.HG2GuiTheme
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
 import com.hereliesaz.hg2gui.ui.menu.pageBrush
+import java.io.File
+import java.nio.file.Files
 import java.text.DateFormat
 import java.util.Date
 import kotlinx.coroutines.Dispatchers
@@ -80,7 +82,10 @@ private fun IsolationAuditScreen(onBack: () -> Unit) {
                 .map { pkg ->
                     val root = PackageIsolation.root(context, pkg)
                     val files = runCatching {
-                        root.walkTopDown().filter { it.isFile }.toList()
+                        root.walkTopDown()
+                            .onEnter { !Files.isSymbolicLink(it.toPath()) }
+                            .filter(File::isFile)
+                            .toList()
                     }.getOrDefault(emptyList())
                     IsolationAuditEntry(
                         packageName = pkg.name,

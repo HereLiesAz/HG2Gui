@@ -81,14 +81,13 @@ tasks.register("printVersionEnv") {
             val patch = (props.getProperty("versionPatch")?.toInt() ?: 0) + 1
             val build = (props.getProperty("versionBuild")?.toInt() ?: 0) + 1
             val versionName = "$major.$minor.$patch.$build"
-            // Mirrors composeApp/build.gradle.kts's own `resolvedVersionCode` exactly (same
-            // `legacyVersionCode = 205` floor, same +1) - this is a separate Gradle script with
-            // no shared code between the two, so nothing enforces they stay in lockstep short of
-            // this comment. release-play.yml's "Confirm the built versionCode clears Play" step
+            // Mirrors composeApp/build.gradle.kts's own `resolvedVersionCode` exactly — both read
+            // legacyVersionCode from version.properties, so they stay in lockstep automatically.
+            // release-play.yml's "Confirm the built versionCode clears Play" step
             // (and the Play API upload's expected-version-code) both read this VERSION_CODE - a
             // build actually invokes `bundleRelease` with no `-PversionBuild` override, so it too
             // resolves versionCode from version.properties, not this script's own $build.
-            val legacyVersionCode = 205
+            val legacyVersionCode = props.getProperty("legacyVersionCode", "205").toInt()
             val versionCode = maxOf(build, legacyVersionCode + 1)
 
             val githubEnv = System.getenv("GITHUB_ENV")
@@ -146,6 +145,8 @@ tasks.register("incrementAndPushVersion") {
                 // numbers the stale commit already has, `git commit` errors with "nothing to
                 // commit" since the working tree already matches HEAD. `reset --hard` discards
                 // that stale commit outright so every attempt starts from origin's real tip.
+                // No stash guard: this task is CI-only; the working tree is always clean here.
+                // The reset discards any stale local commit from a prior failed push attempt.
                 git("reset", "--hard", "origin/$branch")
                 
                 val props = Properties()

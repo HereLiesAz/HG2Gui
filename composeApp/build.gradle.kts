@@ -13,7 +13,7 @@ val versionProps = Properties().apply {
     if (versionPropsFile.exists()) versionPropsFile.inputStream().use { load(it) }
 }
 
-val legacyVersionCode = 205
+val legacyVersionCode = versionProps.getProperty("legacyVersionCode", "205").toInt()
 val buildNumberFromProp = project.findProperty("versionBuild")?.toString()?.toIntOrNull()
 val buildNumber = buildNumberFromProp ?: ((versionProps.getProperty("versionBuild", "0").toIntOrNull() ?: 0) + 1)
 val resolvedVersionCode = maxOf(buildNumber, legacyVersionCode + 1)

@@ -69,6 +69,9 @@ object AppUpdateChecker {
                     val build = versionName.substringAfterLast('.').toLongOrNull() ?: continue
                     val url = asset.optString("browser_download_url")
                     if (url.isBlank()) continue
+                    // GitHub's asset API omits the digest field for older releases; when absent,
+                    // sha256 is null and verifyDownloadedApk skips the hash check (APK signature
+                    // verification still runs and is the primary integrity gate).
                     val digest = asset.optString("digest")
                         .takeIf { it.startsWith("sha256:", ignoreCase = true) }
                         ?.substringAfter(':')
@@ -140,7 +143,9 @@ object AppUpdateChecker {
             val installed = context.packageManager.getPackageInfo(context.packageName, PackageManager.GET_SIGNING_CERTIFICATES)
             val installedSigners = installed.signingInfo?.apkContentsSigners?.map { it.toCharsString() }?.toSet().orEmpty()
             val archiveSigners = archive.signingInfo?.apkContentsSigners?.map { it.toCharsString() }?.toSet().orEmpty()
-            if (installedSigners.isNotEmpty() && archiveSigners.isNotEmpty() && installedSigners != archiveSigners) {
+            // An unsigned archive (empty archiveSigners) must also be rejected — the previous
+            // guard only caught mismatched signers, letting an unsigned APK through.
+            if (archiveSigners.isEmpty() || (installedSigners.isNotEmpty() && archiveSigners != installedSigners)) {
                 error("Update APK signature does not match the installed app")
             }
         }
@@ -206,7 +211,7 @@ object AppUpdateChecker {
         ensureNotificationChannel(context)
         val pending = PendingIntent.getBroadcast(
             context,
-            update.versionCode.toInt(),
+            (update.versionCode and 0x7FFFFFFF).toInt(),
             UpdateActionReceiver.intentFor(context, update),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )

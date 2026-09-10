@@ -91,6 +91,8 @@ import com.hereliesaz.hg2gui.ui.files.DeviceStorageState
 import com.hereliesaz.hg2gui.ui.files.FilesScreen
 import com.hereliesaz.hg2gui.ui.files.PathPickerScreen
 import com.hereliesaz.hg2gui.ui.files.StorageCategoryStat
+import com.hereliesaz.hg2gui.terminal.TermuxRuntimeRepair
+import com.hereliesaz.hg2gui.update.AppUpdateChecker
 import com.hereliesaz.hg2gui.ui.files.StorageStats
 import com.hereliesaz.hg2gui.ui.files.TrashActions
 import com.hereliesaz.hg2gui.ui.files.VfsEntry
@@ -179,14 +181,20 @@ class TerminalActivity : FragmentActivity() {
      *  sign a shell is exposed to a paired agent - can actually show. The manifest declares it,
      *  but only requesting it here, at the moment the server would start, makes that declaration
      *  do anything; starting the service without ever asking is how it ends up running with no
-     *  visible indicator at all on a device where the permission was never granted. */
+     *  visible indicator at all on a device where the permission was never granted.
+     *
+     *  The service is only started once permission is confirmed (either already granted or just
+     *  granted in onRequestPermissionsResult) — starting it first and then requesting the permission
+     *  means the service runs with no visible indicator if the user hasn't answered yet. */
     private fun startMcpServer() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
         ) {
+            // Permission request is async: the actual service start happens in onRequestPermissionsResult.
             ActivityCompat.requestPermissions(
                 this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), PermissionCodes.MCP_NOTIFICATION_REQUEST_PERMISSION
             )
+            return
         }
         ContextCompat.startForegroundService(this, Intent(this, McpServerService::class.java))
     }
@@ -317,7 +325,8 @@ class TerminalActivity : FragmentActivity() {
                 val remaining = sessions.filterNot { it.ui.id == closing.ui.id }
                 sessions = remaining
                 if (activeSessionId == closing.ui.id) {
-                    activeSessionId = remaining.first().ui.id
+                    // remaining can be empty when the last session is closed; guard against crash.
+                    activeSessionId = remaining.firstOrNull()?.ui?.id ?: closing.ui.id
                 }
                 closing.engine.destroy()
             }
@@ -564,6 +573,11 @@ class TerminalActivity : FragmentActivity() {
                 // menu's own resolveChildren runs (see HelpCatalog's own doc comment), never
                 // this frame - there's nothing here worth blocking startup on.
                 launch(Dispatchers.IO) { CommandTree.warmHelpCache(this@TerminalActivity) }
+                // Repair prefix scripts and check for app updates in the background. These were
+                // previously wired in GenericFileProvider.onCreate() which runs on the main thread
+                // and is an ANR vector; this async path is the correct home for both.
+                launch(Dispatchers.IO) { TermuxRuntimeRepair.repair(this@TerminalActivity) }
+                launch(Dispatchers.IO) { AppUpdateChecker.checkAndNotify(this@TerminalActivity) }
             }
 
             LaunchedEffect(fullscreen) {
@@ -1252,6 +1266,11 @@ class TerminalActivity : FragmentActivity() {
             // ContactManager's own refresh is what's listening for this - it's the one builtin
             // whose permission grant needs to kick off work with no further user input.
             LocalBroadcastManager.getInstance(this).sendBroadcast(Intent(ContactManager.ACTION_REFRESH))
+        }
+        if (requestCode == PermissionCodes.MCP_NOTIFICATION_REQUEST_PERMISSION && granted) {
+            // Permission was requested asynchronously by startMcpServer(); start the service now
+            // that the user has granted it so the foreground notification is actually visible.
+            ContextCompat.startForegroundService(this, Intent(this, McpServerService::class.java))
         }
         // Every other builtin's permission request (COMMAND_REQUEST_PERMISSION) is answered by
         // just running the same pill or command again - the system permission dialog itself is

@@ -26,6 +26,9 @@ int main(int argc, char **argv) {
     char **child_argv = calloc((size_t)argc + 2, sizeof(char *));
     if (bash == NULL || script == NULL || child_argv == NULL) {
         fprintf(stderr, "hg2gui apt-key launcher: out of memory\n");
+        free(bash);
+        free(script);
+        free(child_argv);
         return 126;
     }
 
