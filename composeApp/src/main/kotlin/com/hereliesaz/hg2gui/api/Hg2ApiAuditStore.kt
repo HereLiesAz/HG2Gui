@@ -23,7 +23,7 @@ internal object Hg2ApiAuditStore {
             val file = file(context)
             file.parentFile?.mkdirs()
             val retained = if (file.isFile) {
-                file.readLines().asSequence().filter(String::isNotBlank).takeLast(MAX_ENTRIES - 1).toList()
+                file.readLines().filter(String::isNotBlank).takeLast(MAX_ENTRIES - 1)
             } else {
                 emptyList()
             }
@@ -52,10 +52,9 @@ internal object Hg2ApiAuditStore {
         val file = file(context)
         if (!file.isFile) return result.toString()
         runCatching {
-            file.useLines { lines ->
-                lines.filter(String::isNotBlank).takeLast(MAX_ENTRIES).forEach { line ->
-                    runCatching { JSONObject(line) }.getOrNull()?.let(result::put)
-                }
+            val retained = file.readLines().filter(String::isNotBlank).takeLast(MAX_ENTRIES)
+            retained.forEach { line ->
+                runCatching { JSONObject(line) }.getOrNull()?.let(result::put)
             }
         }
         return result.toString()
