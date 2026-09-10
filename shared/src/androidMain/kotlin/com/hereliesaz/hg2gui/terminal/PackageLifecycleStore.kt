@@ -110,7 +110,7 @@ object PackageLifecycleStore {
         val observed = buildSet {
             created.forEach { add("created\t${File(snapshot.directory, it).absolutePath}") }
             modified.forEach { add("modified\t${File(snapshot.directory, it).absolutePath}") }
-        }.takeLast(MAX_PROVENANCE_ROWS).toSet()
+        }.toList().takeLast(MAX_PROVENANCE_ROWS).toSet()
 
         prefs.edit {
             if (resettableCreated.isNotEmpty()) {
@@ -133,11 +133,11 @@ object PackageLifecycleStore {
     fun previewReset(context: Context, pkg: InstalledPackage): ResetPreview {
         if (pkg.isolated) {
             val root = PackageIsolation.root(context, pkg).parentFile
-            val paths = root?.takeIf(File::exists)?.let { listOf(it.absolutePath) }.orEmpty()
-            return ResetPreview(paths, root?.takeIf(File::exists)?.let(::sizeOf) ?: 0L, isolated = true)
+            val paths = root?.takeIf { it.exists() }?.let { listOf(it.absolutePath) }.orEmpty()
+            return ResetPreview(paths, root?.takeIf { it.exists() }?.let(::sizeOf) ?: 0L, isolated = true)
         }
-        val candidates = resetCandidates(context, pkg).filter(File::exists).sortedBy { it.absolutePath }
-        return ResetPreview(candidates.map(File::getAbsolutePath), candidates.sumOf(::sizeOf), isolated = false)
+        val candidates = resetCandidates(context, pkg).filter { it.exists() }.sortedBy { it.absolutePath }
+        return ResetPreview(candidates.map { it.absolutePath }, candidates.sumOf { sizeOf(it) }, isolated = false)
     }
 
     fun reset(context: Context, pkg: InstalledPackage): ResetResult {
@@ -270,14 +270,14 @@ object PackageLifecycleStore {
         val roots = listOf(
             File(home, ".local/share/pipx/venvs"),
             File(home, ".local/pipx/venvs")
-        ).filter(File::isDirectory)
+        ).filter { it.isDirectory }
         return roots.flatMap { root ->
             root.listFiles().orEmpty().mapNotNull { venv ->
                 val metadata = File(venv, "pipx_metadata.json")
                 if (!venv.isDirectory || !metadata.isFile) return@mapNotNull null
                 val json = runCatching { metadata.readText() }.getOrNull() ?: return@mapNotNull null
                 val name = PIPX_PACKAGE.find(json)?.groupValues?.getOrNull(1)
-                    ?.takeIf(String::isNotBlank)
+                    ?.takeIf { it.isNotBlank() }
                     ?: venv.name
                 val version = PIPX_VERSION.find(json)?.groupValues?.getOrNull(1).orEmpty()
                 val appsBody = PIPX_APPS.find(json)?.groupValues?.getOrNull(1).orEmpty()
