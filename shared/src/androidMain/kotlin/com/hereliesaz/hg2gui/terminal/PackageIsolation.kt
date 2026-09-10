@@ -1,14 +1,17 @@
 package com.hereliesaz.hg2gui.terminal
 
 import android.content.Context
+import android.util.AtomicFile
 import android.util.Base64
 import java.io.File
+import java.nio.file.Files
 
 /** Filesystem isolation and best-effort runtime observability for package-owned commands. */
 object PackageIsolation {
     private const val TELEMETRY_PREFIX = "__HG2GUI_TELEMETRY__/"
     private const val AUDIT_RELATIVE = ".hg2gui/audit/latest.log"
-    private const val SUMMARY_RELATIVE = ".hg2gui/audit/summary.tsv"
+    private const val LEGACY_SUMMARY_RELATIVE = ".hg2gui/audit/summary.tsv"
+    private const val SUMMARY_RELATIVE = "audit/summary.tsv"
     private const val MAX_TELEMETRY_ROWS = 500
 
     data class FileStamp(val size: Long, val modified: Long, val directory: Boolean)
@@ -24,20 +27,24 @@ object PackageIsolation {
 
     data class SavedAudit(val timestampMillis: Long, val audit: Audit)
 
-    data class Snapshot internal constructor(
+    class Snapshot internal constructor(
         internal val packageKey: String,
         internal val summaryFile: File,
-        internal val files: Map<String, FileStamp>
+        internal val files: Map<String, FileStamp>,
+        internal val telemetry: List<String>
     )
 
+    private fun packageBase(context: Context, pkg: PackageLifecycleStore.InstalledPackage): File =
+        File(context.filesDir, "package-isolation/${safeKey(pkg.key)}")
+
     fun root(context: Context, pkg: PackageLifecycleStore.InstalledPackage): File =
-        File(context.filesDir, "package-isolation/${safeKey(pkg.key)}/root")
+        File(packageBase(context, pkg), "root")
 
     fun marker(context: Context, pkg: PackageLifecycleStore.InstalledPackage): File =
         File(root(context, pkg), ".hg2gui-seeded")
 
     private fun summaryFile(context: Context, pkg: PackageLifecycleStore.InstalledPackage): File =
-        File(root(context, pkg), SUMMARY_RELATIVE)
+        File(packageBase(context, pkg), SUMMARY_RELATIVE)
 
     fun engine(context: Context): File? {
         val nativeDir = File(context.applicationInfo.nativeLibraryDir)
@@ -118,10 +125,9 @@ object PackageIsolation {
     }
 
     /**
-     * Wraps the child with a same-UID /proc sampler. This does not pretend to be kernel audit or
-     * syscall tracing: very short-lived opens can escape a sample. It does, however, report real
-     * observed process descendants, their live file descriptors/open modes, socket endpoints and
-     * privilege-tool attempts without granting the child any extra authority.
+     * Wraps the child with a same-UID /proc sampler. This is not kernel audit or syscall tracing:
+     * very short-lived opens can escape a sample. Every observation is normalized to one physical
+     * log row before the hard row limit is enforced.
      */
     private fun monitorScript(original: String, audit: String): String = listOf(
         "audit=${q(audit)}",
@@ -131,12 +137,14 @@ object PackageIsolation {
         "count=0",
         "truncated=0",
         "hg2_log() {",
-        "  grep -Fqx -- \"\$1\" \"\$audit\" 2>/dev/null && return",
+        "  local safe",
+        "  safe=\"\$(printf '%s' \"\$1\" | tr '\\r\\n' '  ')\"",
+        "  grep -Fqx -- \"\$safe\" \"\$audit\" 2>/dev/null && return",
         "  if [ \"\$count\" -ge \"\$((limit - 1))\" ]; then",
         "    if [ \"\$truncated\" -eq 0 ]; then printf 'telemetry-limit:%s\\n' \"\$limit\" >> \"\$audit\"; truncated=1; fi",
         "    return",
         "  fi",
-        "  printf '%s\\n' \"\$1\" >> \"\$audit\"",
+        "  printf '%s\\n' \"\$safe\" >> \"\$audit\"",
         "  count=\$((count + 1))",
         "}",
         "hg2_scan_pid() {",
@@ -182,44 +190,33 @@ object PackageIsolation {
     fun snapshot(context: Context, pkg: PackageLifecycleStore.InstalledPackage): Snapshot {
         val root = root(context, pkg)
         val summary = summaryFile(context, pkg)
-        if (!root.isDirectory) return Snapshot(pkg.key, summary, emptyMap())
+        if (!root.isDirectory) return Snapshot(pkg.key, summary, emptyMap(), emptyList())
         val result = LinkedHashMap<String, FileStamp>()
         try {
             root.walkTopDown().forEach { file ->
                 if (file == root) return@forEach
                 val relative = file.relativeTo(root).path
-                if (relative == AUDIT_RELATIVE || relative == "$AUDIT_RELATIVE.seen" || relative == SUMMARY_RELATIVE) return@forEach
+                if (relative == AUDIT_RELATIVE || relative == LEGACY_SUMMARY_RELATIVE) return@forEach
                 result[relative] = FileStamp(
                     size = if (file.isFile) file.length() else 0L,
                     modified = file.lastModified(),
                     directory = file.isDirectory
                 )
             }
-            val audit = File(root, AUDIT_RELATIVE)
-            if (audit.isFile) {
-                audit.useLines { lines ->
-                    lines.filter(String::isNotBlank).take(MAX_TELEMETRY_ROWS).forEachIndexed { index, line ->
-                        result[TELEMETRY_PREFIX + index.toString().padStart(4, '0') + "/" + line] = FileStamp(0, 0, false)
-                    }
-                }
-            }
         } catch (_: Exception) {
-            return Snapshot(pkg.key, summary, result)
+            // Keep the partial snapshot; an incomplete audit is preferable to losing the run.
         }
-        return Snapshot(pkg.key, summary, result)
+        val telemetry = readGuestTelemetry(root)
+        return Snapshot(pkg.key, summary, result, telemetry)
     }
 
-    /** Computes the before/after diff and persists it as the package's latest completed-run audit. */
+    /** Computes the before/after diff and atomically persists the package's completed-run audit. */
     fun audit(before: Snapshot, after: Snapshot): Audit {
         require(before.packageKey == after.packageKey) { "Cannot compare isolation snapshots from different packages" }
-        val telemetry = after.files.keys.filter { it.startsWith(TELEMETRY_PREFIX) }
-            .map { it.substringAfter('/', "") }.sorted()
-        val beforeFiles = before.files.filterKeys { !it.startsWith(TELEMETRY_PREFIX) }
-        val afterFiles = after.files.filterKeys { !it.startsWith(TELEMETRY_PREFIX) }
-        val created = (afterFiles.keys - beforeFiles.keys).sorted()
-        val deleted = (beforeFiles.keys - afterFiles.keys).sorted()
-        val modified = (beforeFiles.keys intersect afterFiles.keys).filter { beforeFiles[it] != afterFiles[it] }.sorted()
-        return Audit(created, modified, deleted, telemetry).also { saved ->
+        val created = (after.files.keys - before.files.keys).sorted()
+        val deleted = (before.files.keys - after.files.keys).sorted()
+        val modified = (before.files.keys intersect after.files.keys).filter { before.files[it] != after.files[it] }.sorted()
+        return Audit(created, modified, deleted, after.telemetry).also { saved ->
             saveLatestAudit(after.summaryFile, saved)
         }
     }
@@ -229,20 +226,30 @@ object PackageIsolation {
     }
 
     private fun saveLatestAudit(file: File, audit: Audit) {
-        runCatching {
-            file.parentFile?.mkdirs()
-            file.bufferedWriter().use { out ->
-                out.appendLine("timestamp\t${System.currentTimeMillis()}")
-                fun write(kind: String, values: List<String>) {
-                    values.forEach { value ->
-                        out.append(kind).append('\t').appendLine(encode(value))
-                    }
-                }
-                write("created", audit.created)
-                write("modified", audit.modified)
-                write("deleted", audit.deleted)
-                write("telemetry", audit.telemetry)
+        val serialized = buildString {
+            append("timestamp\t").append(System.currentTimeMillis()).append('\n')
+            fun write(kind: String, values: List<String>) {
+                values.forEach { value -> append(kind).append('\t').append(encode(value)).append('\n') }
             }
+            write("created", audit.created)
+            write("modified", audit.modified)
+            write("deleted", audit.deleted)
+            write("telemetry", audit.telemetry)
+        }.toByteArray(Charsets.UTF_8)
+
+        try {
+            file.parentFile?.mkdirs()
+            val atomic = AtomicFile(file)
+            val stream = atomic.startWrite()
+            try {
+                stream.write(serialized)
+                atomic.finishWrite(stream)
+            } catch (error: Exception) {
+                atomic.failWrite(stream)
+                throw error
+            }
+        } catch (_: Exception) {
+            // Audit persistence is observability only; it must never change command exit behavior.
         }
     }
 
@@ -275,7 +282,7 @@ object PackageIsolation {
     }
 
     fun wipe(context: Context, pkg: PackageLifecycleStore.InstalledPackage): Boolean {
-        val base = root(context, pkg).parentFile ?: return true
+        val base = packageBase(context, pkg)
         return !base.exists() || base.deleteRecursively()
     }
 
@@ -294,6 +301,20 @@ object PackageIsolation {
         val shown = lines.size - 1
         if (shown < total) lines += "… ${total - shown} more audit observations"
         return lines.joinToString("\n")
+    }
+
+    private fun readGuestTelemetry(root: File): List<String> {
+        val audit = File(root, AUDIT_RELATIVE)
+        if (!audit.isFile) return emptyList()
+        return try {
+            if (Files.isSymbolicLink(audit.toPath())) return emptyList()
+            val rootPath = root.canonicalFile.toPath()
+            val auditPath = audit.canonicalFile.toPath()
+            if (!auditPath.startsWith(rootPath)) return emptyList()
+            audit.useLines { lines -> lines.filter(String::isNotBlank).take(MAX_TELEMETRY_ROWS).toList() }
+        } catch (_: Exception) {
+            emptyList()
+        }
     }
 
     private fun encode(value: String): String = Base64.encodeToString(value.toByteArray(Charsets.UTF_8), Base64.NO_WRAP)
