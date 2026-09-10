@@ -181,7 +181,7 @@ class TerminalEngine(
 
         if (verb == "hg2package") {
             val action = shellWords(trimmed).getOrNull(1)
-            if (action in setOf("reset", "remove", "purge", "release")) {
+            if (action in setOf("reset", "restore", "snapshot-delete", "remove", "purge", "release")) {
                 return@withContext "HG2Gui package $action requires interactive confirmation." to 2
             }
             val transcript = StringBuilder()
@@ -481,7 +481,7 @@ class TerminalEngine(
     ): Int {
         val words = shellWords(line)
         val action = words.getOrNull(1)
-            ?: error("usage: hg2package <info|update|disable|enable|isolate|release|reset|remove|purge> <manager> <package>")
+            ?: error("usage: hg2package <info|update|disable|enable|isolate|release|reset|snapshot|restore|snapshot-delete|remove|purge> <manager> <package> [restore-point]")
         val manager = words.getOrNull(2) ?: error("Package manager is required")
         val name = words.getOrNull(3) ?: error("Package name is required")
         val pkg = PackageLifecycleStore.find(context, manager, name)
@@ -520,6 +520,38 @@ class TerminalEngine(
                         emit("Isolation released: ${pkg.name}")
                         0
                     }
+                }
+            }
+            "snapshot" -> {
+                val point = PackageRestorePoints.create(context, pkg)
+                emit("Restore point ${point.id}: ${point.pathCount} path${if (point.pathCount == 1) "" else "s"}, ${formatBytes(point.bytes)}.")
+                0
+            }
+            "restore" -> {
+                val id = words.getOrNull(4) ?: error("Restore-point id is required")
+                val answer = onNeedInput("Restore ${pkg.name} from $id? Current managed runtime state will be replaced. [y/N]")
+                if (!answer.isYes()) {
+                    emit("Restore cancelled: ${pkg.name}")
+                    0
+                } else {
+                    val result = PackageRestorePoints.restore(context, pkg, id)
+                    emit("Restored ${pkg.name}: ${result.restoredPaths} path${if (result.restoredPaths == 1) "" else "s"} (${formatBytes(result.restoredBytes)}).")
+                    if (result.failed.isNotEmpty()) emit("Could not restore:\n${result.failed.joinToString("\n")}")
+                    if (result.failed.isEmpty()) 0 else 1
+                }
+            }
+            "snapshot-delete" -> {
+                val id = words.getOrNull(4) ?: error("Restore-point id is required")
+                val answer = onNeedInput("Delete restore point $id for ${pkg.name}? [y/N]")
+                if (!answer.isYes()) {
+                    emit("Restore-point deletion cancelled: ${pkg.name}")
+                    0
+                } else if (PackageRestorePoints.delete(context, pkg, id)) {
+                    emit("Deleted restore point $id for ${pkg.name}.")
+                    0
+                } else {
+                    emit("Could not delete restore point $id for ${pkg.name}.")
+                    1
                 }
             }
             "reset" -> {
