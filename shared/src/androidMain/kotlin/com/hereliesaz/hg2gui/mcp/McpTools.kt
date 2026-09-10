@@ -187,7 +187,10 @@ class McpTools(
             // an empty answer is the closest equivalent this API can express; most confirmation
             // prompts will reject it, and the idle-gap timeout reclaims control either way rather
             // than hanging forever.
-            val output = shellEngine.run(command, onNeedInput = { "" }).toList().joinToString("\n")
+            // flush() emits emulator.transcriptText() — the entire cumulative transcript each
+            // time, not a delta — so each emission supersedes the previous one; lastOrNull()
+            // gives the final complete output, while joinToString would duplicate every prior line.
+            val output = shellEngine.run(command, onNeedInput = { "" }).toList().lastOrNull().orEmpty()
             ToolCallResult.Success(textContent(output))
         }
     )

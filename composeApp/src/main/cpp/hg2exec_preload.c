@@ -11,14 +11,18 @@
 
 extern char **environ;
 
-/* Cached at library load time so every exec intercept doesn't hit getenv() twice. */
-static const char *g_prefix;
-static const char *g_home;
+/* Cached at library load time so every exec intercept doesn't hit getenv() twice.
+ * Duplicated into owned storage: the loaded ELF may call setenv/putenv/unsetenv before
+ * another exec, which can invalidate raw getenv() pointers from the parent environment. */
+static char *g_prefix;
+static char *g_home;
 
 __attribute__((constructor))
 static void hg2exec_init(void) {
-    g_prefix = getenv("PREFIX");
-    g_home   = getenv("HOME");
+    const char *p = getenv("PREFIX");
+    const char *h = getenv("HOME");
+    g_prefix = p ? strdup(p) : NULL;
+    g_home   = h ? strdup(h) : NULL;
 }
 
 static int starts_with_path(const char *path, const char *root) {
@@ -70,18 +74,22 @@ static int hg2_execve(const char *pathname, char *const argv[], char *const envp
     size_t argc = 0;
     if (argv) while (argv[argc]) argc++;
 
-    char **next = calloc(argc + 3, sizeof(char *));
+    char **next = calloc(argc + 2, sizeof(char *));
     if (!next) {
         errno = ENOMEM;
         return -1;
     }
 
-    /* argv layout: [linker, candidate, argv[0] (original program name), argv[1..argc-1], NULL]
-     * argv[0] was previously dropped; the dynamic linker uses it as the program identity. */
+    /* argv layout: [linker, candidate, argv[1], argv[2], ..., NULL]
+     * The linker passes next[1..] to the loaded ELF as its argv, so the ELF sees
+     * argv[0]=candidate (its own path) and argv[1..]=the original arguments.
+     * argv[0] (the caller's program name) is intentionally not forwarded — the
+     * linker sets the ELF's argv[0] to the candidate path, which is the normal
+     * exec convention; adding argv[0] again would insert a spurious extra argument. */
     next[0] = (char *)linker;
     next[1] = (char *)candidate;
-    for (size_t i = 0; i < argc; ++i) next[i + 2] = argv[i];
-    next[argc + 2] = NULL;
+    for (size_t i = 1; i < argc; ++i) next[i + 1] = argv[i];
+    next[argc + 1] = NULL;
 
     int result = raw_execve(linker, next, envp);
     int saved_errno = errno;
@@ -247,9 +255,13 @@ int fexecve(int fd, char *const argv[], char *const envp[]) {
         ssize_t length = readlink(proc_path, resolved, sizeof(resolved) - 1);
         if (length > 0) {
             resolved[length] = '\0';
-            /* Delegate to hg2_execve which performs its own ownership and ELF checks, avoiding
-             * a TOCTOU window between a pre-check here and the re-check inside hg2_execve. */
-            if (hg2gui_owned_path(resolved)) {
+            /* Only redirect app-owned ELF binaries through hg2_execve (which routes them via
+             * the system linker). Non-ELF files (shell scripts, etc.) must stay on the
+             * fd-based execveat path below to preserve the TOCTOU safety that fexecve provides:
+             * using a pathname for a script would race against rename/unlink between readlink
+             * and exec. ELF files in app-owned dirs are already trusted — any replacement is
+             * by code with the same privilege — so the path-based linker route is acceptable. */
+            if (hg2gui_owned_path(resolved) && is_elf(resolved)) {
                 return hg2_execve(resolved, argv, envp);
             }
         }

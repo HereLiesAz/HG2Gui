@@ -75,9 +75,9 @@ private fun IsolationAuditScreen(onBack: () -> Unit) {
                     val root = PackageIsolation.root(context, pkg)
                     val auditFile = File(root, ".hg2gui/audit/latest.log")
                     val telemetry = runCatching {
-                        if (auditFile.isFile) auditFile.bufferedReader().lineSequence()
-                            .filter(String::isNotBlank).take(500).toList()
-                        else emptyList()
+                        if (auditFile.isFile) auditFile.useLines { lines ->
+                            lines.filter(String::isNotBlank).take(500).toList()
+                        } else emptyList()
                     }.getOrDefault(emptyList())
                     val files = runCatching {
                         root.walkTopDown()

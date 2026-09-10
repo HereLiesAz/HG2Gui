@@ -91,6 +91,8 @@ import com.hereliesaz.hg2gui.ui.files.DeviceStorageState
 import com.hereliesaz.hg2gui.ui.files.FilesScreen
 import com.hereliesaz.hg2gui.ui.files.PathPickerScreen
 import com.hereliesaz.hg2gui.ui.files.StorageCategoryStat
+import com.hereliesaz.hg2gui.terminal.TermuxRuntimeRepair
+import com.hereliesaz.hg2gui.update.AppUpdateChecker
 import com.hereliesaz.hg2gui.ui.files.StorageStats
 import com.hereliesaz.hg2gui.ui.files.TrashActions
 import com.hereliesaz.hg2gui.ui.files.VfsEntry
@@ -571,6 +573,11 @@ class TerminalActivity : FragmentActivity() {
                 // menu's own resolveChildren runs (see HelpCatalog's own doc comment), never
                 // this frame - there's nothing here worth blocking startup on.
                 launch(Dispatchers.IO) { CommandTree.warmHelpCache(this@TerminalActivity) }
+                // Repair prefix scripts and check for app updates in the background. These were
+                // previously wired in GenericFileProvider.onCreate() which runs on the main thread
+                // and is an ANR vector; this async path is the correct home for both.
+                launch(Dispatchers.IO) { TermuxRuntimeRepair.repair(this@TerminalActivity) }
+                launch(Dispatchers.IO) { AppUpdateChecker.checkAndNotify(this@TerminalActivity) }
             }
 
             LaunchedEffect(fullscreen) {
