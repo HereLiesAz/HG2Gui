@@ -1,6 +1,7 @@
 package com.hereliesaz.hg2gui.ui.menu
 
 import android.content.Context
+import com.hereliesaz.hg2gui.terminal.AdbEndpointStore
 import com.hereliesaz.hg2gui.terminal.ExecutionAuthority
 
 /** Explicit device-authority choices. Nothing here is inherited by ordinary/package commands. */
@@ -16,20 +17,31 @@ object AuthorityTree {
     private fun children(context: Context): List<MenuNode> {
         val availability = ExecutionAuthority.availability(context)
         val adbChildren = if (availability.adbAvailable) {
-            listOf(
-                MenuNode("authority/adb/devices", "Devices", value = "hg2auth adb devices"),
-                MenuNode("authority/adb/pair", "Pair…", cap = "host:port + code", value = "hg2auth adb pair"),
-                MenuNode("authority/adb/connect", "Connect…", cap = "host:port", value = "hg2auth adb connect"),
-                MenuNode("authority/adb/disconnect", "Disconnect", value = "hg2auth adb disconnect"),
-                MenuNode(
-                    id = "authority/adb/device",
-                    label = "Device capabilities",
-                    cap = "explicit",
-                    children = adbCapabilityNodes(),
-                    emitsToken = false
-                ),
-                MenuNode("authority/adb/shell", "Raw shell command…", cap = "elevated", value = "hg2auth adb shell")
-            )
+            buildList {
+                add(MenuNode("authority/adb/devices", "Devices", value = "hg2auth adb devices"))
+                add(MenuNode("authority/adb/pair", "Pair…", cap = "host:port + code", value = "hg2auth adb pair"))
+                add(MenuNode("authority/adb/connect", "Connect…", cap = "host:port", value = "hg2auth adb connect"))
+                add(
+                    MenuNode(
+                        id = "authority/adb/saved",
+                        label = "Saved endpoints",
+                        cap = AdbEndpointStore.list(context).size.toString(),
+                        emitsToken = false,
+                        resolveChildren = { savedEndpointNodes(context) }
+                    )
+                )
+                add(MenuNode("authority/adb/disconnect", "Disconnect", value = "hg2auth adb disconnect"))
+                add(
+                    MenuNode(
+                        id = "authority/adb/device",
+                        label = "Device capabilities",
+                        cap = "explicit",
+                        children = adbCapabilityNodes(),
+                        emitsToken = false
+                    )
+                )
+                add(MenuNode("authority/adb/shell", "Raw shell command…", cap = "elevated", value = "hg2auth adb shell"))
+            }
         } else {
             listOf(
                 MenuNode(
@@ -98,6 +110,40 @@ object AuthorityTree {
                 children = rootChildren,
                 emitsToken = false
             )
+        )
+    }
+
+    private fun savedEndpointNodes(context: Context): List<MenuNode> {
+        val endpoints = AdbEndpointStore.list(context)
+        if (endpoints.isEmpty()) {
+            return listOf(MenuNode("authority/adb/saved/none", "No saved endpoints", "0", emitsToken = false))
+        }
+        return endpoints.map { endpoint ->
+            val id = endpoint.replace(Regex("[^A-Za-z0-9._-]"), "_")
+            MenuNode(
+                id = "authority/adb/saved/$id",
+                label = endpoint,
+                cap = "remembered",
+                children = listOf(
+                    MenuNode(
+                        id = "authority/adb/saved/$id/connect",
+                        label = "Reconnect",
+                        value = "hg2auth adb connect '$endpoint'"
+                    ),
+                    MenuNode(
+                        id = "authority/adb/saved/$id/forget",
+                        label = "Forget",
+                        cap = "revoke",
+                        value = "hg2auth adb forget '$endpoint'"
+                    )
+                ),
+                emitsToken = false
+            )
+        } + MenuNode(
+            id = "authority/adb/saved/forget-all",
+            label = "Forget all endpoints",
+            cap = "revoke",
+            value = "hg2auth adb forget-all"
         )
     }
 
