@@ -72,8 +72,9 @@ runs:
             exit 1
           fi
           if ! jarsigner -verify -strict "$ARTIFACT" > "$RUNNER_TEMP/verify.txt" 2>&1; then
-            echo "::warning::jarsigner reported warnings for $ARTIFACT:"
+            echo "::error::jarsigner verification failed for $ARTIFACT:"
             cat "$RUNNER_TEMP/verify.txt"
+            exit 1
           fi
           unzip -p "$ARTIFACT" "$block" | keytool -printcert > "$RUNNER_TEMP/cert.txt"
           grep -E '^(Owner|Valid from)|SHA256:' "$RUNNER_TEMP/cert.txt" || true

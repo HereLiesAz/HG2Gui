@@ -176,7 +176,7 @@ class Hg2Downloader(
                 }
             }
 
-            val sha = digest.digest().joinToString("") { "%02x".format(Locale.US, it.toInt() and 0xff) }
+            val sha = digest.digest().joinToString("") { java.lang.String.format(Locale.US, "%02x", it.toInt() and 0xff) }
             if (expected != null && !sha.equals(expected, ignoreCase = true)) {
                 part.delete()
                 error("SHA-256 mismatch for ${target.name}")
@@ -213,7 +213,7 @@ class Hg2Downloader(
                 if (n > 0) digest.update(buffer, 0, n)
             }
         }
-        return digest.digest().joinToString("") { "%02x".format(Locale.US, it.toInt() and 0xff) }
+        return digest.digest().joinToString("") { java.lang.String.format(Locale.US, "%02x", it.toInt() and 0xff) }
     }
 
     private fun promote(part: File, target: File) {

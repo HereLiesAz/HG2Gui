@@ -10,7 +10,19 @@ import android.os.Bundle
 class Hg2ApiPickerActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        if (savedInstanceState != null) return
+        if (savedInstanceState != null) {
+            // Activity was recreated (e.g. rotation) after the picker was already launched.
+            // Fire an error to the caller so they're not left waiting on a PendingIntent that
+            // will never arrive, then exit cleanly.
+            callback()?.let { runCatching {
+                it.send(this, 1, android.content.Intent().apply {
+                    putExtra(Hg2ApiReceiver.EXTRA_SUCCESS, false)
+                    putExtra(Hg2ApiReceiver.EXTRA_ERROR, "picker interrupted by system")
+                })
+            } }
+            finish()
+            return
+        }
         val directory = intent.getBooleanExtra(Hg2ApiReceiver.EXTRA_PICK_DIRECTORY, false)
         val picker = if (directory) Intent(Intent.ACTION_OPEN_DOCUMENT_TREE) else Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
             addCategory(Intent.CATEGORY_OPENABLE)
@@ -19,14 +31,24 @@ class Hg2ApiPickerActivity : Activity() {
         startActivityForResult(picker, REQUEST_PICK)
     }
 
-    @Deprecated("Activity result bridge is intentionally local and self-contained")
+    @Suppress("DEPRECATION")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode != REQUEST_PICK) return
         val uri = data?.data
         if (uri != null) {
             val flags = data.flags and (Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
-            runCatching { contentResolver.takePersistableUriPermission(uri, flags) }
+            val granted = runCatching { contentResolver.takePersistableUriPermission(uri, flags); true }.getOrDefault(false)
+            if (!granted) {
+                callback()?.let { runCatching {
+                    it.send(this, 1, android.content.Intent().apply {
+                        putExtra(Hg2ApiReceiver.EXTRA_SUCCESS, false)
+                        putExtra(Hg2ApiReceiver.EXTRA_ERROR, "failed to persist URI permission")
+                    })
+                } }
+                finish()
+                return
+            }
         }
         val success = resultCode == RESULT_OK && uri != null
         callback()?.let { callback ->

@@ -36,6 +36,7 @@ import com.hereliesaz.hg2gui.ui.menu.Azphalt
 import com.hereliesaz.hg2gui.ui.menu.onPage
 import com.hereliesaz.hg2gui.ui.menu.pageBrush
 import java.io.File
+import java.nio.file.Files
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -74,9 +75,16 @@ private fun IsolationAuditScreen(onBack: () -> Unit) {
                     val root = PackageIsolation.root(context, pkg)
                     val auditFile = File(root, ".hg2gui/audit/latest.log")
                     val telemetry = runCatching {
-                        if (auditFile.isFile) auditFile.readLines().filter(String::isNotBlank).take(500) else emptyList()
+                        if (auditFile.isFile) auditFile.bufferedReader().lineSequence()
+                            .filter(String::isNotBlank).take(500).toList()
+                        else emptyList()
                     }.getOrDefault(emptyList())
-                    val files = runCatching { root.walkTopDown().filter(File::isFile).toList() }.getOrDefault(emptyList())
+                    val files = runCatching {
+                        root.walkTopDown()
+                            .onEnter { !Files.isSymbolicLink(it.toPath()) }
+                            .filter(File::isFile)
+                            .toList()
+                    }.getOrDefault(emptyList())
                     IsolationAuditEntry(
                         packageName = pkg.name,
                         managerLabel = pkg.managerLabel,

@@ -113,18 +113,15 @@ jobs:
       - name: Build with Gradle
         id: gradle-build
         env:
-          KEYSTORE_PATH: ${{ steps.keystore.outputs.keystore-path }}
-          KEYSTORE_STORE_TYPE: ${{ steps.keystore.outputs.store-type }}
+          # Signing secrets passed as environment variables — not as -P command-line args —
+          # so they're not visible in /proc/pid/cmdline or runner audit logs.
+          KEYSTORE_FILE: ${{ steps.keystore.outputs.keystore-path }}
+          KEYSTORE_TYPE: ${{ steps.keystore.outputs.store-type }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          ./gradlew ${{ inputs.gradle_task }} ${{ inputs.extra_gradle_args }} -PversionBuild=$VERSION_BUILD -PversionName=$VERSION_NAME --build-cache \
-            -Pandroid.injected.signing.store.file=$KEYSTORE_PATH \
-            -Pandroid.injected.signing.store.type=$KEYSTORE_STORE_TYPE \
-            -Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD \
-            -Pandroid.injected.signing.key.alias=$KEY_ALIAS \
-            -Pandroid.injected.signing.key.password=$KEY_PASSWORD
+          ./gradlew ${{ inputs.gradle_task }} ${{ inputs.extra_gradle_args }} -PversionBuild=$VERSION_BUILD -PversionName=$VERSION_NAME --build-cache
 
       # Only master/main ever gets an auto-bump commit - a feature branch that also bumped its
       # own copy of version.properties independently is exactly what produced a real merge

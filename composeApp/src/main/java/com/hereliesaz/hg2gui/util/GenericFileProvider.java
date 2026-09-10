@@ -2,19 +2,9 @@ package com.hereliesaz.hg2gui.util;
 
 import androidx.core.content.FileProvider;
 
-import com.hereliesaz.hg2gui.terminal.TermuxRuntimeRepair;
-import com.hereliesaz.hg2gui.update.AppUpdateChecker;
-
 public class GenericFileProvider extends FileProvider {
     public static final String PROVIDER_NAME = "com.hereliesaz.hg2gui" + ".FILE_PROVIDER";
-
-    @Override
-    public boolean onCreate() {
-        boolean created = super.onCreate();
-        if (getContext() != null) {
-            TermuxRuntimeRepair.INSTANCE.repair(getContext());
-            AppUpdateChecker.INSTANCE.checkAndNotify(getContext());
-        }
-        return created;
-    }
+    // Repair and update-check calls removed: ContentProvider.onCreate() runs on the main thread
+    // before Application.onCreate(), so any blocking I/O here causes ANR on cold start.
+    // Both operations are triggered from appropriate async entry points elsewhere.
 }

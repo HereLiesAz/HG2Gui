@@ -11,6 +11,16 @@
 
 extern char **environ;
 
+/* Cached at library load time so every exec intercept doesn't hit getenv() twice. */
+static const char *g_prefix;
+static const char *g_home;
+
+__attribute__((constructor))
+static void hg2exec_init(void) {
+    g_prefix = getenv("PREFIX");
+    g_home   = getenv("HOME");
+}
+
 static int starts_with_path(const char *path, const char *root) {
     if (!path || !root || !*root) return 0;
     size_t n = strlen(root);
@@ -19,9 +29,7 @@ static int starts_with_path(const char *path, const char *root) {
 }
 
 static int hg2gui_owned_path(const char *path) {
-    const char *prefix = getenv("PREFIX");
-    const char *home = getenv("HOME");
-    return starts_with_path(path, prefix) || starts_with_path(path, home);
+    return starts_with_path(path, g_prefix) || starts_with_path(path, g_home);
 }
 
 static int is_elf(const char *path) {
@@ -49,7 +57,8 @@ static int hg2_execve(const char *pathname, char *const argv[], char *const envp
     if (realpath(pathname, resolved) != NULL) candidate = resolved;
 
     if (!hg2gui_owned_path(candidate) || !is_elf(candidate)) {
-        return raw_execve(pathname, argv, envp ? envp : environ);
+        /* Pass envp through as-is; NULL means caller explicitly cleared the environment. */
+        return raw_execve(pathname, argv, envp);
     }
 
 #if defined(__aarch64__) || defined(__x86_64__)
@@ -61,18 +70,20 @@ static int hg2_execve(const char *pathname, char *const argv[], char *const envp
     size_t argc = 0;
     if (argv) while (argv[argc]) argc++;
 
-    char **next = calloc(argc + 2, sizeof(char *));
+    char **next = calloc(argc + 3, sizeof(char *));
     if (!next) {
         errno = ENOMEM;
         return -1;
     }
 
+    /* argv layout: [linker, candidate, argv[0] (original program name), argv[1..argc-1], NULL]
+     * argv[0] was previously dropped; the dynamic linker uses it as the program identity. */
     next[0] = (char *)linker;
     next[1] = (char *)candidate;
-    for (size_t i = 1; i < argc; ++i) next[i + 1] = argv[i];
-    next[argc + 1] = NULL;
+    for (size_t i = 0; i < argc; ++i) next[i + 2] = argv[i];
+    next[argc + 2] = NULL;
 
-    int result = raw_execve(linker, next, envp ? envp : environ);
+    int result = raw_execve(linker, next, envp);
     int saved_errno = errno;
     free(next);
     errno = saved_errno;
@@ -236,14 +247,16 @@ int fexecve(int fd, char *const argv[], char *const envp[]) {
         ssize_t length = readlink(proc_path, resolved, sizeof(resolved) - 1);
         if (length > 0) {
             resolved[length] = '\0';
-            if (hg2gui_owned_path(resolved) && is_elf(resolved)) {
+            /* Delegate to hg2_execve which performs its own ownership and ELF checks, avoiding
+             * a TOCTOU window between a pre-check here and the re-check inside hg2_execve. */
+            if (hg2gui_owned_path(resolved)) {
                 return hg2_execve(resolved, argv, envp);
             }
         }
     }
 
 #if defined(__NR_execveat) && defined(AT_EMPTY_PATH)
-    return (int)syscall(__NR_execveat, fd, "", argv, envp ? envp : environ, AT_EMPTY_PATH);
+    return (int)syscall(__NR_execveat, fd, "", argv, envp, AT_EMPTY_PATH);
 #else
     errno = ENOSYS;
     return -1;

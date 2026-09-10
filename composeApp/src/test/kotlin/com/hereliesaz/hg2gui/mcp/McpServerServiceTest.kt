@@ -10,6 +10,12 @@ import org.junit.Test
 
 class McpServerServiceTest {
 
+    // Timing-independence of constantTimeEquals is guaranteed by MessageDigest.isEqual's
+    // specification (JDK 6u17+: constant-time byte comparison), not by these tests, which only
+    // verify the boolean return value. Any naive a == b implementation passes all three cases.
+    // The implementation in McpServerService.kt must use MessageDigest.isEqual to satisfy the
+    // property — keep the `internal` visibility so it stays testable without Android runtime.
+
     @Test
     fun constantTimeEquals_equalStrings() {
         assertEquals(true, constantTimeEquals("same-token", "same-token"))
@@ -23,6 +29,17 @@ class McpServerServiceTest {
     @Test
     fun constantTimeEquals_differentLengths() {
         assertEquals(false, constantTimeEquals("short", "a-much-longer-token"))
+    }
+
+    @Test
+    fun constantTimeEquals_emptyStrings() {
+        assertEquals(true, constantTimeEquals("", ""))
+    }
+
+    @Test
+    fun constantTimeEquals_oneEmpty() {
+        assertEquals(false, constantTimeEquals("", "token"))
+        assertEquals(false, constantTimeEquals("token", ""))
     }
 
     @Test

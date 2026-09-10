@@ -187,7 +187,7 @@ class McpTools(
             // an empty answer is the closest equivalent this API can express; most confirmation
             // prompts will reject it, and the idle-gap timeout reclaims control either way rather
             // than hanging forever.
-            val output = shellEngine.run(command, onNeedInput = { "" }).toList().lastOrNull().orEmpty()
+            val output = shellEngine.run(command, onNeedInput = { "" }).toList().joinToString("\n")
             ToolCallResult.Success(textContent(output))
         }
     )
