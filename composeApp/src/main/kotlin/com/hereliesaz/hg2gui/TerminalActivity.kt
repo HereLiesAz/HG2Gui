@@ -324,7 +324,7 @@ class TerminalActivity : FragmentActivity() {
                 sessions = remaining
                 if (activeSessionId == closing.ui.id) {
                     // remaining can be empty when the last session is closed; guard against crash.
-                    activeSessionId = remaining.firstOrNull()?.ui.id ?: closing.ui.id
+                    activeSessionId = remaining.firstOrNull()?.ui?.id ?: closing.ui.id
                 }
                 closing.engine.destroy()
             }
