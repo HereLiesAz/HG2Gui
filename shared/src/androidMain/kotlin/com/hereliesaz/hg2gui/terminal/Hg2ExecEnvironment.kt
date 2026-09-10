@@ -5,10 +5,23 @@ import java.io.File
 
 /** Shared Termux execution environment for HG2Gui's target-SDK-37 process. */
 object Hg2ExecEnvironment {
-    private const val PRELOAD_LIBRARY = "libhg2gui_exec_preload.so"
+    private const val HG2GUI_PRELOAD_LIBRARY = "libhg2gui_exec_preload.so"
+    private const val TERMUX_PRELOAD_PATH = "lib/libtermux-exec-ld-preload.so"
 
-    fun preloadLibrary(context: Context): File =
-        File(context.applicationInfo.nativeLibraryDir, PRELOAD_LIBRARY)
+    /**
+     * Prefer the upstream Termux exec interceptor bundled with the bootstrap. It owns the complete
+     * exec-family and system-linker workaround semantics needed by target-SDK-29+ apps. The small
+     * HG2Gui shim remains an APK-local fallback for a damaged/legacy bootstrap.
+     */
+    fun preloadLibrary(context: Context): File {
+        val nativeDir = File(context.applicationInfo.nativeLibraryDir)
+        val bundledTermuxName = BootstrapManifest.ENTRIES
+            .firstOrNull { (path, _) -> path == TERMUX_PRELOAD_PATH }
+            ?.second
+        val bundledTermux = bundledTermuxName?.let { File(nativeDir, it) }
+        if (bundledTermux?.isFile == true) return bundledTermux
+        return File(nativeDir, HG2GUI_PRELOAD_LIBRARY)
+    }
 
     fun apply(
         context: Context,
@@ -18,15 +31,20 @@ object Hg2ExecEnvironment {
         val prefix = DistroManager.prefixDir(context)
         val preload = preloadLibrary(context)
         require(preload.isFile) {
-            "HG2Gui exec preload is unavailable at ${preload.absolutePath}"
+            "Termux exec preload is unavailable at ${preload.absolutePath}"
         }
 
+        val dataDir = context.applicationInfo.dataDir
         env["HOME"] = home.absolutePath
         env["PREFIX"] = prefix.absolutePath
         env["TERMUX__PREFIX"] = prefix.absolutePath
         env["TERMUX__ROOTFS"] = context.filesDir.absolutePath
         env["TERMUX__HOME"] = home.absolutePath
         env["TERMUX_APP__PACKAGE_NAME"] = context.packageName
+        env["TERMUX_APP__DATA_DIR"] = dataDir
+        env["TERMUX_APP__LEGACY_DATA_DIR"] = "/data/data/${context.packageName}"
+        env["TERMUX_EXEC__EXECVE_CALL__INTERCEPT"] = "enable"
+        env["TERMUX_EXEC__SYSTEM_LINKER_EXEC__MODE"] = "force"
         env["LD_PRELOAD"] = preload.absolutePath
     }
 }
