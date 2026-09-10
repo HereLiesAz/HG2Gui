@@ -15,7 +15,6 @@ import com.hereliesaz.hg2gui.ui.BackStepState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -39,16 +38,11 @@ fun CommandGuideScreen(
     fullscreen: Boolean,
     onCommandSelected: (List<String>) -> Unit,
     onBack: () -> Unit,
-    // UI-2: reports whether there's an internal level (right now, only "the reader is open") for
-    // system back/the edge gesture to step up through before onBack closes this whole screen. When
-    // readingGuide is true, GuideReaderScreen (which owns its own index/entry drill-down) takes
-    // over reporting to the very same instance - see its own doc comment for how the two levels
-    // combine into one step-at-a-time back stack without either screen knowing about the other's
-    // state directly.
     backStep: BackStepState,
     modifier: Modifier = Modifier
 ) {
     var readingGuide by remember { mutableStateOf(false) }
+    val runtimeIndex = remember(tree) { GuideRuntimeIndex.fromTree(tree) }
 
     if (readingGuide) {
         GuideReaderScreen(
@@ -56,13 +50,12 @@ fun CommandGuideScreen(
             onBack = { readingGuide = false },
             onCommandSelected = { command -> onCommandSelected(listOf(command)) },
             backStep = backStep,
+            runtimeIndex = runtimeIndex,
             modifier = modifier
         )
         return
     }
 
-    // Nothing left to step back through at this level - GuideReaderScreen (above) owns backStep
-    // entirely while it's showing instead, since this branch never composes at the same time.
     SideEffect {
         backStep.canStepBack = false
         backStep.stepBack = {}
@@ -79,11 +72,6 @@ fun CommandGuideScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // UI-7: the visible pill (padding(vertical = 7.dp) around 9sp type) renders well
-            // under the 48dp minimum touch target. Rather than growing the pill itself - which
-            // would blow up its compact look next to its sibling - the clickable region is a
-            // separate, invisible 48dp-tall Box the small pill is centered inside, the same
-            // pattern GuideReaderScreen's own Chip helper uses for the identical shape.
             Box(
                 Modifier.defaultMinSize(minHeight = 48.dp).clickable(onClick = onBack),
                 contentAlignment = Alignment.Center
