@@ -107,6 +107,43 @@ class TuiSemanticModelTest {
     }
 
     @Test
+    fun diffLogAndEditorRegions_areProjectedConservatively() {
+        val diff = TuiSemanticParser.parse(
+            rows = listOf(
+                TuiRow(0, "diff --git a/a.txt b/a.txt"),
+                TuiRow(1, "--- a/a.txt"),
+                TuiRow(2, "+++ b/a.txt"),
+                TuiRow(3, "@@ -1 +1 @@"),
+                TuiRow(4, "-old"),
+                TuiRow(5, "+new")
+            ),
+            alternateScreen = true
+        )
+        assertTrue(diff.regions.any { it.kind == TuiRegionKind.DIFF })
+
+        val log = TuiSemanticParser.parse(
+            rows = listOf(
+                TuiRow(0, "2026-09-09 23:00:00 INFO boot complete"),
+                TuiRow(1, "2026-09-09 23:00:01 WARN cache cold"),
+                TuiRow(2, "2026-09-09 23:00:02 ERROR nope")
+            ),
+            alternateScreen = true
+        )
+        assertTrue(log.regions.any { it.kind == TuiRegionKind.LOG })
+
+        val editor = TuiSemanticParser.parse(
+            rows = listOf(
+                TuiRow(0, "1 │ fun main() {"),
+                TuiRow(1, "2 │     println(\"hi\")"),
+                TuiRow(2, "3 │ }"),
+                TuiRow(4, "-- INSERT --")
+            ),
+            alternateScreen = true
+        )
+        assertTrue(editor.regions.any { it.kind == TuiRegionKind.EDITOR })
+    }
+
+    @Test
     fun passwordPrompt_isTypedAndWrappable() {
         val snapshot = TuiSemanticParser.parse(
             rows = listOf(
