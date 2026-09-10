@@ -25,7 +25,23 @@ object ExecutionAuthority {
     fun adbCommand(context: Context, args: List<String>): String {
         val adb = findAdb(context)
             ?: error("ADB client is not installed. Install the android-tools package first.")
-        return (listOf(q(adb.absolutePath)) + args.map(::q)).joinToString(" ")
+        val base = (listOf(q(adb.absolutePath)) + args.map(::q)).joinToString(" ")
+        return when (args.firstOrNull()) {
+            "connect" -> {
+                val endpoint = args.getOrNull(1) ?: return base
+                "$base && { ${AdbEndpointStore.rememberCommand(context, endpoint)}; }"
+            }
+            "disconnect" -> {
+                val endpoint = args.getOrNull(1)
+                val cleanup = if (endpoint == null) {
+                    AdbEndpointStore.clearCommand(context)
+                } else {
+                    AdbEndpointStore.forgetCommand(context, endpoint)
+                }
+                "$base; hg2_adb_code=\$?; if [ \"\$hg2_adb_code\" -eq 0 ]; then $cleanup; fi; exit \"\$hg2_adb_code\""
+            }
+            else -> base
+        }
     }
 
     fun adbShellCommand(context: Context, command: String): String =
@@ -38,13 +54,14 @@ object ExecutionAuthority {
 
     fun summary(context: Context): String {
         val availability = availability(context)
+        val savedAdb = AdbEndpointStore.list(context)
         return buildString {
             appendLine("Execution authority")
             appendLine("App: available (default)")
             appendLine("Isolated package: available for packages when PRoot is available")
             appendLine(
                 if (availability.adbAvailable) {
-                    "ADB shell: client available at ${availability.adbClient!!.absolutePath}"
+                    "ADB shell: client available at ${availability.adbClient!!.absolutePath}; ${savedAdb.size} remembered endpoint${if (savedAdb.size == 1) "" else "s"}"
                 } else {
                     "ADB shell: client unavailable — install android-tools, then pair/connect to Wireless Debugging"
                 }

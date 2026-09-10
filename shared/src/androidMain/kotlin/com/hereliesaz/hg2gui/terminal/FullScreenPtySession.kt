@@ -100,12 +100,13 @@ class FullScreenPtySession private constructor(
         val transcript = emulator.screen.transcriptTextWithoutJoinedLines.trimEnd()
         val lastLine = transcript.substringAfterLast('\n').trimEnd()
         if (lastLine.isBlank()) return
-        shellPresentation = ShellPromptParser.parse(
+        val inferred = ShellPromptParser.parse(
             rawPrompt = lastLine,
             shell = family,
             framework = shellPresentation.framework,
             fallbackCwd = shellPresentation.cwd
         ).copy(completionProvider = shellPresentation.completionProvider)
+        shellPresentation = CooperativeShellPresentation.forFamily(family, inferred) ?: inferred
     }
 
     companion object {
@@ -146,7 +147,7 @@ class FullScreenPtySession private constructor(
                 "sh" -> ShellFamily.SH
                 else -> ShellFamily.UNKNOWN
             }
-            val presentation = if (explicitShell == ShellFamily.UNKNOWN) {
+            val basePresentation = if (explicitShell == ShellFamily.UNKNOWN) {
                 ShellPresentation(cwd = cwd)
             } else {
                 detected.copy(shell = explicitShell, cwd = cwd, completionProvider = when (explicitShell) {
@@ -155,6 +156,11 @@ class FullScreenPtySession private constructor(
                     ShellFamily.FISH -> ShellCompletionProvider.FISH_COMPLETION
                     else -> ShellCompletionProvider.NONE
                 })
+            }
+            val presentation = if (explicitShell == ShellFamily.UNKNOWN) {
+                basePresentation
+            } else {
+                CooperativeShellPresentation.forFamily(explicitShell, basePresentation) ?: basePresentation
             }
             val holder = FullScreenPtySession(termuxSession, commandLine, presentation)
             termuxSession.updateTerminalSessionClient(holder)

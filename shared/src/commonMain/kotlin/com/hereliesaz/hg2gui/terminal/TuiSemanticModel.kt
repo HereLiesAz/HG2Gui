@@ -8,7 +8,8 @@ data class TuiSnapshot(
     val regions: List<TuiRegion> = emptyList(),
     val tabs: List<TuiTab> = emptyList(),
     val alternateScreen: Boolean,
-    val mouseAware: Boolean = false
+    val mouseAware: Boolean = false,
+    val profile: TuiAdapterProfile = TuiAdapterProfile.GENERIC
 ) {
     val isWrappable: Boolean
         get() = alternateScreen && (
@@ -18,6 +19,8 @@ data class TuiSnapshot(
     val activeLayerIndex: Int?
         get() = layers.indexOfLast { it.activeIndex != null }.takeIf { it >= 0 }
 }
+
+enum class TuiAdapterProfile { GENERIC, RICH, TEXTUAL, INK, RATATUI, COOPERATIVE }
 
 data class TuiLayer(
     val heading: String?,
@@ -57,7 +60,7 @@ data class TuiRegion(
     val progress: Float? = null
 )
 
-enum class TuiRegionKind { TABLE, RESULTS, PROGRESS, STATUS, PANE }
+enum class TuiRegionKind { TABLE, RESULTS, PROGRESS, STATUS, PANE, DIFF, LOG, EDITOR }
 
 /** Neutral terminal row supplied by the emulator adapter. */
 data class TuiRow(
@@ -85,6 +88,10 @@ object TuiSemanticParser {
     private val tableSeparator = Regex("""^\s*[+┌├└│|].*(?:[-─]{2,}|[+┬┼┴]).*$""")
     private val resultPrefix = Regex("""^\s*(?:[-*•]|\d+[.)])\s+\S""")
     private val paneSeparator = Regex("""\s[│|]\s""")
+    private val diffLine = Regex("""^\s*(?:diff --git|index\s|---\s|\+\+\+\s|@@\s|[+-][^+-]|\\ No newline)""")
+    private val logLine = Regex("""(?i)^\s*(?:(?:\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2})|(?:\d{2}:\d{2}:\d{2})|(?:[A-Z]/[A-Za-z0-9_.-]+)).*\b(?:trace|debug|info|warn|warning|error|fatal)\b""")
+    private val editorLine = Regex("""^\s*\d+\s+(?:[│|]\s*)?\S.*$""")
+    private val editorStatus = Regex("""(?i)(?:--\s*(?:insert|normal|visual|replace)\s*--|\bLn\s+\d+|\bline\s+\d+\s*,\s*col)""")
 
     fun parse(rows: List<TuiRow>, alternateScreen: Boolean, mouseAware: Boolean = false): TuiSnapshot {
         val visible = rows.map { it.copy(text = it.text.trimEnd()) }.filter { it.text.isNotBlank() }
@@ -125,7 +132,8 @@ object TuiSemanticParser {
             regions = regions,
             tabs = tabs,
             alternateScreen = alternateScreen,
-            mouseAware = mouseAware
+            mouseAware = mouseAware,
+            profile = TuiAdapterProfile.GENERIC
         )
     }
 
@@ -205,22 +213,11 @@ object TuiSemanticParser {
             }
         }
 
-        var i = 0
-        while (i < rows.size) {
-            val row = rows[i]
-            if (tableSeparator.matches(row.text) || row.text.count { it == '│' || it == '|' } >= 2) {
-                val group = mutableListOf<TuiRow>()
-                var j = i
-                while (j < rows.size && rows[j].index <= row.index + 12 &&
-                    (tableSeparator.matches(rows[j].text) || rows[j].text.count { it == '│' || it == '|' } >= 2)) {
-                    group += rows[j]; j++
-                }
-                if (group.size >= 2) result += TuiRegion(TuiRegionKind.TABLE, group.first().index, group.last().index, group.map { it.text })
-                i = j
-            } else {
-                i++
+        contiguousGroups(rows) { row -> tableSeparator.matches(row.text) || row.text.count { it == '│' || it == '|' } >= 2 }
+            .filter { it.size >= 2 }
+            .forEach { group ->
+                result += TuiRegion(TuiRegionKind.TABLE, group.first().index, group.last().index, group.map { it.text })
             }
-        }
 
         val paneRows = rows.filter { paneSeparator.containsMatchIn(it.text) }
         if (paneRows.size >= 2) {
@@ -231,7 +228,47 @@ object TuiSemanticParser {
         if (resultRows.size >= 2) {
             result += TuiRegion(TuiRegionKind.RESULTS, resultRows.first().index, resultRows.last().index, resultRows.map { it.text.trim() })
         }
+
+        contiguousGroups(rows) { diffLine.containsMatchIn(it.text) }
+            .filter { group -> group.size >= 2 && group.any { it.text.trimStart().startsWith("@@") || it.text.trimStart().startsWith("diff --git") || it.text.trimStart().startsWith("+++") } }
+            .forEach { group ->
+                result += TuiRegion(TuiRegionKind.DIFF, group.first().index, group.last().index, group.map { it.text })
+            }
+
+        contiguousGroups(rows) { logLine.containsMatchIn(it.text) }
+            .filter { it.size >= 2 }
+            .forEach { group ->
+                result += TuiRegion(TuiRegionKind.LOG, group.first().index, group.last().index, group.map { it.text })
+            }
+
+        if (rows.any { editorStatus.containsMatchIn(it.text) }) {
+            contiguousGroups(rows) { editorLine.matches(it.text) }
+                .filter { it.size >= 3 }
+                .forEach { group ->
+                    result += TuiRegion(TuiRegionKind.EDITOR, group.first().index, group.last().index, group.map { it.text })
+                }
+        }
+
         return result.distinctBy { Triple(it.kind, it.startRow, it.endRow) }
+    }
+
+    private fun contiguousGroups(rows: List<TuiRow>, predicate: (TuiRow) -> Boolean): List<List<TuiRow>> {
+        val groups = mutableListOf<List<TuiRow>>()
+        var current = mutableListOf<TuiRow>()
+        rows.forEach { row ->
+            if (predicate(row)) {
+                if (current.isNotEmpty() && row.index != current.last().index + 1) {
+                    groups += current.toList()
+                    current = mutableListOf()
+                }
+                current += row
+            } else if (current.isNotEmpty()) {
+                groups += current.toList()
+                current = mutableListOf()
+            }
+        }
+        if (current.isNotEmpty()) groups += current.toList()
+        return groups
     }
 
     private fun looksScrollable(run: List<TuiRow>, visible: List<TuiRow>): Boolean {

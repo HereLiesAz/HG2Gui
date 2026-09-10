@@ -10,6 +10,9 @@ object PackageLifecycleStore {
     private const val DISABLED_PREFIX = "disabled:"
     private const val ISOLATED_PREFIX = "isolated:"
     private const val TRACKED_PREFIX = "tracked:"
+    private const val OBSERVED_PREFIX = "observed:"
+    private const val MAX_PROVENANCE_FILES = 10_000
+    private const val MAX_PROVENANCE_ROWS = 1_000
 
     data class InstalledPackage(
         val manager: String,
@@ -29,10 +32,23 @@ object PackageLifecycleStore {
         val failed: List<String>
     )
 
-    data class RunSnapshot(
+    data class ResetPreview(
+        val paths: List<String>,
+        val bytes: Long,
+        val isolated: Boolean
+    )
+
+    data class ProvenanceEntry(
+        val path: String,
+        val change: String
+    )
+
+    internal data class RunFileStamp(val size: Long, val modified: Long, val directory: Boolean)
+
+    data class RunSnapshot internal constructor(
         val packageKey: String,
         val directory: File,
-        val children: Set<String>
+        internal val entries: Map<String, RunFileStamp>
     )
 
     fun installed(context: Context): List<InstalledPackage> {
@@ -72,26 +88,56 @@ object PackageLifecycleStore {
         if (pkg.isolated || cwd.isBlank()) return null
         val dir = File(cwd)
         if (!dir.isDirectory) return null
-        val children = try {
-            dir.listFiles().orEmpty().map { it.name }.toSet()
-        } catch (_: SecurityException) {
-            return null
-        }
-        return RunSnapshot(pkg.key, dir, children)
+        return RunSnapshot(pkg.key, dir, runSnapshot(dir))
     }
 
     fun finishRun(context: Context, snapshot: RunSnapshot?) {
         if (snapshot == null || !snapshot.directory.isDirectory) return
-        val now = try {
-            snapshot.directory.listFiles().orEmpty()
-        } catch (_: SecurityException) {
-            return
+        val now = runSnapshot(snapshot.directory)
+        val created = now.keys.filter { it !in snapshot.entries }
+        val modified = now.keys.filter { path ->
+            val before = snapshot.entries[path]
+            before != null && before != now[path]
         }
-        val created = now.filter { it.name !in snapshot.children }.mapNotNull { safeCanonicalPath(it) }.toSet()
-        if (created.isEmpty()) return
+        if (created.isEmpty() && modified.isEmpty()) return
+
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        val key = trackedKey(snapshot.packageKey)
-        prefs.edit { putStringSet(key, prefs.getStringSet(key, emptySet()).orEmpty() + created) }
+        val resettableCreated = created.map { File(snapshot.directory, it) }
+            .mapNotNull(::safeCanonicalPath)
+            .toSet()
+        val trackedKey = trackedKey(snapshot.packageKey)
+        val observedKey = observedKey(snapshot.packageKey)
+        val observed = buildSet {
+            created.forEach { add("created\t${File(snapshot.directory, it).absolutePath}") }
+            modified.forEach { add("modified\t${File(snapshot.directory, it).absolutePath}") }
+        }.toList().takeLast(MAX_PROVENANCE_ROWS).toSet()
+
+        prefs.edit {
+            if (resettableCreated.isNotEmpty()) {
+                putStringSet(trackedKey, prefs.getStringSet(trackedKey, emptySet()).orEmpty() + resettableCreated)
+            }
+            val existing = prefs.getStringSet(observedKey, emptySet()).orEmpty().toList()
+            putStringSet(observedKey, (existing + observed).takeLast(MAX_PROVENANCE_ROWS).toSet())
+        }
+    }
+
+    fun provenance(context: Context, pkg: InstalledPackage): List<ProvenanceEntry> {
+        val rows = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .getStringSet(observedKey(pkg.key), emptySet()).orEmpty()
+        return rows.mapNotNull { row ->
+            val split = row.indexOf('\t')
+            if (split <= 0) null else ProvenanceEntry(row.substring(0, split), row.substring(split + 1))
+        }.sortedWith(compareBy<ProvenanceEntry> { it.change }.thenBy { it.path })
+    }
+
+    fun previewReset(context: Context, pkg: InstalledPackage): ResetPreview {
+        if (pkg.isolated) {
+            val root = PackageIsolation.root(context, pkg).parentFile
+            val paths = root?.takeIf { it.exists() }?.let { listOf(it.absolutePath) }.orEmpty()
+            return ResetPreview(paths, root?.takeIf { it.exists() }?.let(::sizeOf) ?: 0L, isolated = true)
+        }
+        val candidates = resetCandidates(context, pkg).filter { it.exists() }.sortedBy { it.absolutePath }
+        return ResetPreview(candidates.map { it.absolutePath }, candidates.sumOf { sizeOf(it) }, isolated = false)
     }
 
     fun reset(context: Context, pkg: InstalledPackage): ResetResult {
@@ -106,14 +152,8 @@ object PackageLifecycleStore {
             )
         }
 
-        val candidates = linkedSetOf<File>()
-        candidates += conventionalStatePaths(context, pkg)
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        prefs.getStringSet(trackedKey(pkg.key), emptySet()).orEmpty().forEach { path ->
-            val file = File(path)
-            if (isResettablePath(context, file)) candidates += file
-        }
-
+        val candidates = resetCandidates(context, pkg)
         var deletedPaths = 0
         var deletedBytes = 0L
         val failed = mutableListOf<String>()
@@ -162,6 +202,34 @@ object PackageLifecycleStore {
         else -> error("Unsupported package manager '${pkg.manager}'")
     }
 
+    private fun resetCandidates(context: Context, pkg: InstalledPackage): Set<File> {
+        val candidates = linkedSetOf<File>()
+        candidates += conventionalStatePaths(context, pkg)
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        prefs.getStringSet(trackedKey(pkg.key), emptySet()).orEmpty().forEach { path ->
+            val file = File(path)
+            if (isResettablePath(context, file)) candidates += file
+        }
+        return candidates
+    }
+
+    private fun runSnapshot(root: File): Map<String, RunFileStamp> {
+        val result = linkedMapOf<String, RunFileStamp>()
+        try {
+            root.walkTopDown().drop(1).take(MAX_PROVENANCE_FILES).forEach { file ->
+                val relative = runCatching { file.relativeTo(root).path }.getOrNull() ?: return@forEach
+                result[relative] = RunFileStamp(
+                    size = if (file.isFile) file.length() else 0L,
+                    modified = file.lastModified(),
+                    directory = file.isDirectory
+                )
+            }
+        } catch (_: SecurityException) {
+            return result
+        }
+        return result
+    }
+
     private fun dpkgPackages(prefix: File, prefs: android.content.SharedPreferences): List<InstalledPackage> {
         val binaries = DpkgCatalog.binariesByPackage(prefix)
         return DpkgCatalog.installedVersions(prefix).map { (name, version) ->
@@ -202,14 +270,14 @@ object PackageLifecycleStore {
         val roots = listOf(
             File(home, ".local/share/pipx/venvs"),
             File(home, ".local/pipx/venvs")
-        ).filter(File::isDirectory)
+        ).filter { it.isDirectory }
         return roots.flatMap { root ->
             root.listFiles().orEmpty().mapNotNull { venv ->
                 val metadata = File(venv, "pipx_metadata.json")
                 if (!venv.isDirectory || !metadata.isFile) return@mapNotNull null
                 val json = runCatching { metadata.readText() }.getOrNull() ?: return@mapNotNull null
                 val name = PIPX_PACKAGE.find(json)?.groupValues?.getOrNull(1)
-                    ?.takeIf(String::isNotBlank)
+                    ?.takeIf { it.isNotBlank() }
                     ?: venv.name
                 val version = PIPX_VERSION.find(json)?.groupValues?.getOrNull(1).orEmpty()
                 val appsBody = PIPX_APPS.find(json)?.groupValues?.getOrNull(1).orEmpty()
@@ -350,6 +418,7 @@ object PackageLifecycleStore {
     private fun disabledKey(manager: String, name: String) = "$DISABLED_PREFIX$manager:$name"
     private fun isolatedKey(manager: String, name: String) = "$ISOLATED_PREFIX$manager:$name"
     private fun trackedKey(packageKey: String) = "$TRACKED_PREFIX$packageKey"
+    private fun observedKey(packageKey: String) = "$OBSERVED_PREFIX$packageKey"
     private fun quote(value: String): String = "'${value.replace("'", "'\\''")}'"
 
     private val JSON_NAME = Regex("\\\"name\\\"\\s*:\\s*\\\"([^\\\"]+)\\\"")

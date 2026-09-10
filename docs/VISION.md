@@ -24,6 +24,7 @@ Typing remains available for open-ended information. Discoverable values can bec
 - [x] Yes/no and finite interactive choices use native controls.
 - [x] Completion Bridge normalizes Bash, Zsh, Fish, filesystem, package, Git, SSH, service, and supported command-specific candidates.
 - [x] Completion selection replaces only the active partial token rather than executing the command.
+- [x] Declarative shell completion files can be parsed as inert metadata when their format is understood; HG2Gui does not source arbitrary completion scripts merely to discover candidates.
 
 ### The Guide as command entry
 
@@ -31,12 +32,9 @@ Typing remains available for open-ended information. Discoverable values can bec
 - [x] A command shown while reading can be tapped and handed to the terminal composition flow.
 - [x] Reading and command composition can interleave without leaving the Guide.
 - [x] Tapping a Guide command does not auto-run it.
-
-Future Guide work:
-
-- [ ] make unambiguous examples/subcommands inside prose tappable too;
-- [ ] connect entries more deeply to live package/help/completion metadata;
-- [ ] add stable package/isolation/authority concepts to the Guide once their behavior is mature enough to deserve canonical treatment.
+- [x] Unambiguous command references inside prose can be tapped too.
+- [x] Guide entries are linked to the live command tree for availability, caps, and discoverable options.
+- [x] Package lifecycle, isolation, and execution authority have canonical Guide entries.
 
 ### Shell Adapter
 
@@ -44,12 +42,7 @@ Future Guide work:
 - [x] Prompt state can project cwd, Git branch/dirty state, last exit status, and user/host where meaningful.
 - [x] Oh My Zsh, Powerlevel10k, Starship, Pure, and similar systems are treated as presentation layers on the actual shell.
 - [x] Structured Git branch projection can open a native branch chooser.
-
-Future shell work:
-
-- [ ] richer shell-native completion ingestion where it can be done without sourcing untrusted scripts;
-- [ ] more structured prompt segments when they can be identified reliably;
-- [ ] cooperative shell metadata protocols so themes can expose semantics directly instead of requiring inference.
+- [x] Cooperative shell metadata channels can supply fresh prompt semantics directly while the real PTY remains authoritative.
 
 ### Adaptive TUI Wrapper
 
@@ -59,13 +52,10 @@ Future shell work:
 - [x] Recognized interfaces can render as native HG2Gui controls.
 - [x] **RAW** remains available for unmodeled or low-confidence interaction.
 - [x] Generated navigation is verified against subsequent terminal state instead of blindly sending a fixed key count.
-
-Future TUI work:
-
-- [ ] richer mouse/gesture projection for applications that expose stable regions;
-- [ ] adapter profiles for toolkits/protocols when generic inference is insufficient;
-- [ ] cooperative metadata through the external API so applications can describe their own structure directly;
-- [ ] richer diff/editor/log/result projections where terminal semantics are strong enough to justify them.
+- [x] Mouse-aware applications can receive terminal-emulator mouse events for stable projected regions.
+- [x] Cooperative metadata can describe adapter/profile semantics when generic inference is insufficient.
+- [x] Cooperative TUI metadata is available through the protected external API.
+- [x] Diff, editor, log, result, pane, table, progress, and related semantic regions can receive richer native projection where confidence is sufficient.
 
 The underlying process must remain the source of truth. HG2Gui presents and controls it; it does not reimplement its business logic.
 
@@ -85,13 +75,13 @@ Implemented layers include:
 - [x] chrootless dpkg with HG2Gui-owned database/install root;
 - [x] interpreter-aware maintainer-script execution through Android-safe native entry points;
 - [x] triggers, alternatives, diversions, explicit `postrm purge`, and rollback/recovery;
-- [x] package execution backend selection between `DIRECT_LINKER`, `PROOT_COMPAT`, and `PROOT_ISOLATED`.
+- [x] package execution backend selection between `DIRECT_LINKER`, `PROOT_COMPAT`, and `PROOT_ISOLATED`;
+- [x] installed dependency closure and reverse-dependency explanation/impact views for dpkg packages.
 
-Future compatibility work should remain evidence-driven:
+Evidence-driven boundaries remain intentional:
 
-- [ ] expand native/PRoot compatibility classification only when a concrete Android runtime case demonstrates the need;
-- [ ] dependency closure/explanation views such as “why is this installed?” and “what requires this?”;
-- [ ] additional package-manager adapters only when the manager exposes stable inventory/action semantics.
+- expand native/PRoot compatibility classification only when a concrete Android runtime case demonstrates the need;
+- add another package-manager adapter only when the manager exposes stable inventory/action semantics.
 
 Arbitrary command failure must never become a silent “retry under PRoot” policy.
 
@@ -109,16 +99,13 @@ Implemented HG2Gui-owned lifecycle controls:
 
 - [x] Disable / Enable;
 - [x] Reset;
-- [x] Isolate / Release isolation.
+- [x] Isolate / Release isolation;
+- [x] dependency closure and removal-impact views;
+- [x] pre-reset exact path/byte previews;
+- [x] bounded optional restore points with restore/delete controls;
+- [x] stronger created/modified provenance tracking for non-isolated package writes.
 
 Package managers own installation mechanics. HG2Gui owns how installed software is allowed to execute and how its runtime state is represented.
-
-Future lifecycle work:
-
-- [ ] dependency closure and impact views;
-- [ ] pre-reset impact previews;
-- [ ] optional snapshots/restore points where storage cost is justified;
-- [ ] stronger provenance tracking for non-isolated package writes.
 
 ## Isolation and observability
 
@@ -131,41 +118,39 @@ Implemented:
 - [x] fail-closed execution when isolation cannot be established;
 - [x] common ADB/root tools stripped or masked inside the guest;
 - [x] version-aware reseeding;
+- [x] dpkg target/dependency-closure seed planning from package ownership metadata, with a safe whole-prefix fallback if selective planning is unavailable or exceeds its bound;
+- [x] explicit host-read/host-write capability policy, with no ambient writable host bind exposed to isolated packages;
+- [x] per-package ASK / ALLOW ONCE / DENY capability policy;
+- [x] explicit interactive capability-request brokerage; one-shot grants live only in memory and are consumed once, while headless requests fail closed;
+- [x] a network launch gate that refuses to start an isolated package without a one-run network grant;
+- [x] versioned machine-readable/exportable sandbox definitions;
 - [x] before/after private-root filesystem audit;
 - [x] best-effort same-UID `/proc` observation of process descendants;
 - [x] observed open files and read/write modes;
 - [x] observed TCP/TCP6/UDP/UDP6 endpoints;
 - [x] ADB/root-like privilege-tool attempts;
-- [x] native Settings → Isolation Audit view for latest observed package activity.
+- [x] native Settings → Isolation Audit view for latest observed package activity;
+- [x] opt-in redacted AI interpretation of isolation-audit results without giving AI ambient execution authority.
 
 The current sampler is not kernel audit and must not be described as exhaustive syscall interception.
 
-Future isolation work:
-
-- [ ] reduce whole-prefix seeding toward dependency-closure/overlay strategies;
-- [ ] explicit read/write bind policy per package;
-- [ ] enforceable network policy in addition to network visibility;
-- [ ] per-run capability brokerage: package asks, HG2Gui explains, human grants or denies;
-- [ ] exportable/reproducible sandbox definitions;
-- [ ] deeper observation only where Android/runtime constraints permit truthful guarantees.
+The current network guarantee is also precise: unprivileged PRoot does not provide a separate Android network namespace. HG2Gui therefore enforces policy by refusing an isolated launch unless the human grants networking for that run. Once granted, networking is ordinary Android networking; this is not fake “offline confinement.” True per-process offline networking remains evidence-gated on an enforceable Android/runtime primitive.
 
 ## Execution authority
 
-Implemented authority levels:
+Implemented authority levels and controls:
 
 - [x] App authority;
 - [x] isolated package authority boundary;
 - [x] ADB shell authority with pair/connect/disconnect/shell support;
 - [x] Root authority through an explicit `su` provider;
 - [x] foreground approval for elevated requests;
-- [x] no headless elevation.
+- [x] no headless elevation;
+- [x] capability-oriented Android-device operations built on ADB (`pm`, `am`, `cmd`, `settings`, `dumpsys`, `logcat`, etc.);
+- [x] remembered successful ADB endpoints with reconnect and disconnect/revoke controls; pairing codes are deliberately never persisted;
+- [x] per-package “allow once / ask every time / deny” capability policies.
 
-Future authority work:
-
-- [ ] capability-oriented Android-device operations built on ADB (`pm`, `am`, `cmd`, `settings`, `dumpsys`, `logcat`, etc.) without turning them into one giant hand-written pseudo-shell;
-- [ ] persistent but revocable ADB pairing/status UI;
-- [ ] per-package “allow once / ask every time / deny” capability policies;
-- [ ] root-aware features only where root adds a truthful capability.
+Root-specific feature expansion remains evidence-driven: root should be used only when it creates a concrete, truthful capability rather than merely a larger shell.
 
 A package must never receive ADB/root merely because HG2Gui itself can obtain it.
 
@@ -182,17 +167,13 @@ Implemented:
 - [x] device information;
 - [x] share/open actions;
 - [x] lifecycle operations;
-- [x] foreground-approved ADB/root requests.
+- [x] foreground-approved ADB/root requests;
+- [x] versioned capability discovery/schema;
+- [x] richer typed result envelopes where HG2Gui understands the result domain;
+- [x] caller-visible bounded audit history;
+- [x] cooperative TUI/shell metadata publish/read/list/clear channels.
 
-The API is capability-oriented rather than defining the entire integration model as “send an arbitrary command string.”
-
-Future API work:
-
-- [ ] versioned capability discovery/schema;
-- [ ] richer typed result objects where HG2Gui already understands the domain;
-- [ ] caller-visible audit history;
-- [ ] cooperative TUI/shell metadata channels;
-- [ ] revocable per-caller grants if HG2Gui ever supports trusted callers beyond same-signature applications.
+The API is capability-oriented rather than defining the entire integration model as “send an arbitrary command string.” Because the current trust boundary is same-signature applications, a separate per-caller grants system would add ceremony without increasing isolation. Revocable per-caller grants become relevant only if a broader caller trust model is introduced later.
 
 ## Native surfaces
 
@@ -216,18 +197,30 @@ Implemented:
 - [x] SSH presets and native host/user/port/key collection;
 - [x] known SSH hosts feeding completion;
 - [x] remote OS reference contexts;
+- [x] target-scoped live remote command/help/package discovery over SSH with bounded cached metadata;
+- [x] remote package-manager identification/inventory tied to the selected SSH preset;
+- [x] remote filesystem surfaces explicitly labeled as remote rather than being mixed with local paths;
 - [x] ADB authority model;
 - [x] loopback MCP server;
-- [x] natural-language command suggestions returned for review.
+- [x] natural-language command suggestions returned for review;
+- [x] AI command suggestions parsed into typed command intentions rather than remaining string-only;
+- [x] local explanations of package/isolation/authority consequences before a suggested command is handed to USE;
+- [x] opt-in redacted AI interpretation of isolation audits without granting the AI ambient elevation.
 
-Future:
+Remote package mutation remains ordinary visible SSH command execution rather than a hidden second package engine. That keeps target identity and user review explicit while live manager identity/package inventory supply the native browsing context.
 
-- [ ] live remote command/help/package discovery over SSH;
-- [ ] remote package-manager adapters tied to the active connection;
-- [ ] remote filesystem surfaces visually distinct from local paths;
-- [ ] AI output expressed as typed command intentions rather than only strings;
-- [ ] AI explanations of package/isolation/authority consequences before execution;
-- [ ] AI interpretation of isolation audit results without granting AI ambient elevation.
+## What remains deliberately evidence-gated
+
+The roadmap is no longer a list of speculative implementation promises. Remaining work should be opened only by evidence from a supported runtime:
+
+- new native/PRoot compatibility classifications for demonstrated Android failures;
+- new package-manager adapters with stable inventory/action contracts;
+- true process-level offline network confinement if Android/runtime primitives can enforce it;
+- deeper isolation observation only where stronger guarantees than sampled `/proc` observation are possible;
+- root-specific functionality only where root provides a concrete feature;
+- broader-trust per-caller API grants only if callers beyond same-signature applications are ever supported.
+
+Physical-device verification remains tracked separately in `TODO.md`; a green JVM/Android build is not evidence that Android linker, ICU, PRoot, ADB, SSH, or device UI behavior has been exercised on hardware.
 
 ## Long-term product principle
 

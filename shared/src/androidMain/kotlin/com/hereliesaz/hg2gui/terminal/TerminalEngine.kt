@@ -46,7 +46,7 @@ class TerminalEngine(
 
         val verb = trimmed.substringBefore(' ')
         val aptPackageCommand = translateAptPackageCommand(trimmed)
-        val packageOwner = if (verb in setOf("hg2package", "hg2auth")) null else PackageLifecycleStore.ownerOfBinary(context, verb)
+        val packageOwner = if (verb in setOf("hg2package", "hg2auth", "remote")) null else PackageLifecycleStore.ownerOfBinary(context, verb)
 
         when {
             verb == "bootstrap" -> launch(Dispatchers.IO) {
@@ -69,6 +69,13 @@ class TerminalEngine(
                 } finally {
                     close()
                 }
+            }
+
+            verb == "remote" -> launch(Dispatchers.IO) {
+                val output = RemoteDiscovery.run(context, shellWords(trimmed).drop(1))
+                trySend(output)
+                onExit(if (output.startsWith("Remote discovery failed") || output.startsWith("No SSH preset") || output.startsWith("SSH client is unavailable")) 1 else 0)
+                close()
             }
 
             verb == "hg2auth" -> launch(Dispatchers.IO) {
@@ -171,6 +178,11 @@ class TerminalEngine(
         val verb = trimmed.substringBefore(' ')
         val aptPackageCommand = translateAptPackageCommand(trimmed)
 
+        if (verb == "remote") {
+            val output = RemoteDiscovery.run(context, shellWords(trimmed).drop(1))
+            return@withContext output to if (output.startsWith("Remote discovery failed") || output.startsWith("No SSH preset") || output.startsWith("SSH client is unavailable")) 1 else 0
+        }
+
         if (verb == "hg2auth") {
             return@withContext if (shellWords(trimmed).getOrNull(1) == "status") {
                 ExecutionAuthority.summary(context) to 0
@@ -181,7 +193,7 @@ class TerminalEngine(
 
         if (verb == "hg2package") {
             val action = shellWords(trimmed).getOrNull(1)
-            if (action in setOf("reset", "remove", "purge", "release")) {
+            if (action in setOf("reset", "restore", "snapshot-delete", "remove", "purge", "release", "capability", "capability-request")) {
                 return@withContext "HG2Gui package $action requires interactive confirmation." to 2
             }
             val transcript = StringBuilder()
@@ -481,7 +493,7 @@ class TerminalEngine(
     ): Int {
         val words = shellWords(line)
         val action = words.getOrNull(1)
-            ?: error("usage: hg2package <info|update|disable|enable|isolate|release|reset|remove|purge> <manager> <package>")
+            ?: error("usage: hg2package <info|update|disable|enable|isolate|release|reset|snapshot|restore|snapshot-delete|capability|capability-request|remove|purge> <manager> <package> [args]")
         val manager = words.getOrNull(2) ?: error("Package manager is required")
         val name = words.getOrNull(3) ?: error("Package name is required")
         val pkg = PackageLifecycleStore.find(context, manager, name)
@@ -520,6 +532,40 @@ class TerminalEngine(
                         emit("Isolation released: ${pkg.name}")
                         0
                     }
+                }
+            }
+            "capability" -> configureCapability(pkg, words.drop(4), emit, onNeedInput)
+            "capability-request" -> brokerCapability(pkg, words.drop(4), emit, onNeedInput)
+            "snapshot" -> {
+                val point = PackageRestorePoints.create(context, pkg)
+                emit("Restore point ${point.id}: ${point.pathCount} path${if (point.pathCount == 1) "" else "s"}, ${formatBytes(point.bytes)}.")
+                0
+            }
+            "restore" -> {
+                val id = words.getOrNull(4) ?: error("Restore-point id is required")
+                val answer = onNeedInput("Restore ${pkg.name} from $id? Current managed runtime state will be replaced. [y/N]")
+                if (!answer.isYes()) {
+                    emit("Restore cancelled: ${pkg.name}")
+                    0
+                } else {
+                    val result = PackageRestorePoints.restore(context, pkg, id)
+                    emit("Restored ${pkg.name}: ${result.restoredPaths} path${if (result.restoredPaths == 1) "" else "s"} (${formatBytes(result.restoredBytes)}).")
+                    if (result.failed.isNotEmpty()) emit("Could not restore:\n${result.failed.joinToString("\n")}")
+                    if (result.failed.isEmpty()) 0 else 1
+                }
+            }
+            "snapshot-delete" -> {
+                val id = words.getOrNull(4) ?: error("Restore-point id is required")
+                val answer = onNeedInput("Delete restore point $id for ${pkg.name}? [y/N]")
+                if (!answer.isYes()) {
+                    emit("Restore-point deletion cancelled: ${pkg.name}")
+                    0
+                } else if (PackageRestorePoints.delete(context, pkg, id)) {
+                    emit("Deleted restore point $id for ${pkg.name}.")
+                    0
+                } else {
+                    emit("Could not delete restore point $id for ${pkg.name}.")
+                    1
                 }
             }
             "reset" -> {
@@ -575,6 +621,70 @@ class TerminalEngine(
             else -> error("Unknown package lifecycle action '$action'")
         }
     }
+
+    private suspend fun configureCapability(
+        pkg: PackageLifecycleStore.InstalledPackage,
+        args: List<String>,
+        emit: suspend (String) -> Unit,
+        onNeedInput: suspend (String) -> String
+    ): Int {
+        if (args.isEmpty()) {
+            PackageCapabilityPolicy.summary(context, pkg.key).forEach { (capability, mode) ->
+                emit("${capability.wireName}: ${mode.name.lowercase().replace('_', '-')}")
+            }
+            return 0
+        }
+        val capability = capability(args[0])
+        if (args.size == 1) {
+            emit("${capability.wireName}: ${PackageCapabilityPolicy.mode(context, pkg.key, capability).name.lowercase().replace('_', '-')}")
+            return 0
+        }
+        val mode = when (args[1].lowercase()) {
+            "ask", "ask-every-time" -> PackageCapabilityPolicy.Mode.ASK
+            "deny" -> PackageCapabilityPolicy.Mode.DENY
+            "allow-once", "once" -> PackageCapabilityPolicy.Mode.ALLOW_ONCE
+            else -> error("Capability mode must be ask, deny, or allow-once")
+        }
+        val answer = onNeedInput("Set ${pkg.name} ${capability.wireName} policy to ${mode.name.lowercase().replace('_', '-')}? [y/N]")
+        if (!answer.isYes()) {
+            emit("Capability policy unchanged: ${pkg.name} ${capability.wireName}.")
+            return 0
+        }
+        PackageCapabilityPolicy.set(context, pkg.key, capability, mode)
+        emit("${pkg.name} ${capability.wireName}: ${mode.name.lowercase().replace('_', '-')}.")
+        return 0
+    }
+
+    private suspend fun brokerCapability(
+        pkg: PackageLifecycleStore.InstalledPackage,
+        args: List<String>,
+        emit: suspend (String) -> Unit,
+        onNeedInput: suspend (String) -> String
+    ): Int {
+        val capability = capability(args.firstOrNull() ?: error("Capability name is required"))
+        var decision = PackageCapabilityPolicy.decide(context, pkg.key, capability)
+        if (!decision.allowed && decision.mode == PackageCapabilityPolicy.Mode.ASK) {
+            val answer = onNeedInput(
+                "${pkg.name} requests ${capability.wireName}. Allow this request once? [y/N]"
+            )
+            if (answer.isYes()) {
+                PackageCapabilityPolicy.set(context, pkg.key, capability, PackageCapabilityPolicy.Mode.ALLOW_ONCE)
+                decision = PackageCapabilityPolicy.decide(context, pkg.key, capability)
+            }
+        }
+        emit(
+            if (decision.allowed) {
+                "Capability granted once: ${pkg.name} → ${capability.wireName}. No ambient authority was inherited."
+            } else {
+                "Capability denied: ${pkg.name} → ${capability.wireName} (${decision.reason})."
+            }
+        )
+        return if (decision.allowed) 0 else 1
+    }
+
+    private fun capability(raw: String): PackageCapabilityPolicy.Capability =
+        PackageCapabilityPolicy.Capability.entries.firstOrNull { it.wireName == raw.lowercase() }
+            ?: error("Unknown capability '$raw'. Use: ${PackageCapabilityPolicy.Capability.entries.joinToString { it.wireName }}")
 
     private suspend fun runManagerCommand(
         command: String,
