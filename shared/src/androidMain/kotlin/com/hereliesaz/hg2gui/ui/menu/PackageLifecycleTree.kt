@@ -53,6 +53,15 @@ object PackageLifecycleTree {
             addDependencyViews(context, pkg)
             add(
                 MenuNode(
+                    id = "packages/${pkg.key}/provenance",
+                    label = "Observed writes",
+                    cap = "history",
+                    emitsToken = false,
+                    resolveChildren = { provenanceRows(context, pkg) }
+                )
+            )
+            add(
+                MenuNode(
                     id = "packages/${pkg.key}/${if (pkg.disabled) "enable" else "disable"}",
                     label = if (pkg.disabled) "Enable" else "Disable",
                     cap = if (pkg.disabled) "on" else "off",
@@ -68,6 +77,15 @@ object PackageLifecycleTree {
                 )
             )
             add(MenuNode("packages/${pkg.key}/update", "Update", value = "hg2package update ${pkg.manager} ${shellQuote(pkg.name)}"))
+            add(
+                MenuNode(
+                    id = "packages/${pkg.key}/reset-preview",
+                    label = "Reset impact",
+                    cap = "preview",
+                    emitsToken = false,
+                    resolveChildren = { resetPreviewRows(context, pkg) }
+                )
+            )
             add(
                 MenuNode(
                     id = "packages/${pkg.key}/reset",
@@ -117,25 +135,81 @@ object PackageLifecycleTree {
         pkg: PackageLifecycleStore.InstalledPackage
     ) {
         if (pkg.manager != "pkg") return
-        val view = DpkgCatalog.dependencyView(DistroManager.prefixDir(context), pkg.name)
         add(
             MenuNode(
                 id = "packages/${pkg.key}/dependencies",
                 label = "Dependencies",
-                cap = view.dependencyClosure.size.toString(),
-                children = dependencyRows(pkg, view.directDependencies, view.dependencyClosure),
-                emitsToken = false
+                cap = "closure",
+                emitsToken = false,
+                resolveChildren = {
+                    val view = DpkgCatalog.dependencyView(DistroManager.prefixDir(context), pkg.name)
+                    dependencyRows(pkg, view.directDependencies, view.dependencyClosure)
+                }
             )
         )
         add(
             MenuNode(
                 id = "packages/${pkg.key}/impact",
                 label = "Removal impact",
-                cap = view.dependentClosure.size.toString(),
-                children = impactRows(pkg, view.directDependents, view.dependentClosure),
-                emitsToken = false
+                cap = "closure",
+                emitsToken = false,
+                resolveChildren = {
+                    val view = DpkgCatalog.dependencyView(DistroManager.prefixDir(context), pkg.name)
+                    impactRows(pkg, view.directDependents, view.dependentClosure)
+                }
             )
         )
+    }
+
+    private fun resetPreviewRows(
+        context: Context,
+        pkg: PackageLifecycleStore.InstalledPackage
+    ): List<MenuNode> {
+        val preview = PackageLifecycleStore.previewReset(context, pkg)
+        if (preview.paths.isEmpty()) {
+            return listOf(MenuNode("packages/${pkg.key}/reset-preview/none", "Nothing to reset", "0 B", emitsToken = false))
+        }
+        return buildList {
+            add(
+                MenuNode(
+                    id = "packages/${pkg.key}/reset-preview/summary",
+                    label = if (preview.isolated) "Sandbox root" else "Candidate paths",
+                    cap = "${preview.paths.size} · ${formatBytes(preview.bytes)}",
+                    emitsToken = false
+                )
+            )
+            preview.paths.forEachIndexed { index, path ->
+                add(MenuNode("packages/${pkg.key}/reset-preview/$index", path, emitsToken = false))
+            }
+        }
+    }
+
+    private fun provenanceRows(
+        context: Context,
+        pkg: PackageLifecycleStore.InstalledPackage
+    ): List<MenuNode> {
+        if (pkg.isolated) {
+            return listOf(
+                MenuNode(
+                    "packages/${pkg.key}/provenance/isolation",
+                    "See Isolation Audit",
+                    "sandbox",
+                    emitsToken = false
+                )
+            )
+        }
+        val entries = PackageLifecycleStore.provenance(context, pkg)
+        if (entries.isEmpty()) {
+            return listOf(MenuNode("packages/${pkg.key}/provenance/none", "No observed writes yet", "0", emitsToken = false))
+        }
+        return entries.mapIndexed { index, entry ->
+            MenuNode(
+                id = "packages/${pkg.key}/provenance/$index",
+                label = entry.path,
+                cap = entry.change,
+                emitsToken = false
+            )
+        }
     }
 
     private fun dependencyRows(
@@ -195,6 +269,13 @@ object PackageLifecycleTree {
                 )
             )
         }
+    }
+
+    private fun formatBytes(bytes: Long): String = when {
+        bytes < 1024L -> "$bytes B"
+        bytes < 1024L * 1024L -> "%.1f KiB".format(bytes / 1024.0)
+        bytes < 1024L * 1024L * 1024L -> "%.1f MiB".format(bytes / (1024.0 * 1024.0))
+        else -> "%.1f GiB".format(bytes / (1024.0 * 1024.0 * 1024.0))
     }
 
     private fun shellQuote(value: String): String = "'${value.replace("'", "'\\''")}'"
