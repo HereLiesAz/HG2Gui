@@ -3,6 +3,7 @@ package com.hereliesaz.hg2gui.ui.menu
 import android.content.Context
 import com.hereliesaz.hg2gui.terminal.AdbEndpointStore
 import com.hereliesaz.hg2gui.terminal.ExecutionAuthority
+import com.hereliesaz.hg2gui.terminal.PackageLifecycleStore
 
 /** Explicit device-authority choices. Nothing here is inherited by ordinary/package commands. */
 object AuthorityTree {
@@ -97,6 +98,13 @@ object AuthorityTree {
                 emitsToken = false
             ),
             MenuNode(
+                id = "authority/packages",
+                label = "Package policies",
+                cap = "ask · once · deny",
+                emitsToken = false,
+                resolveChildren = { packagePolicyNodes(context) }
+            ),
+            MenuNode(
                 id = "authority/adb",
                 label = "ADB shell",
                 cap = if (availability.adbAvailable) "available" else "setup",
@@ -111,6 +119,14 @@ object AuthorityTree {
                 emitsToken = false
             )
         )
+    }
+
+    private fun packagePolicyNodes(context: Context): List<MenuNode> {
+        val packages = PackageLifecycleStore.installed(context)
+        if (packages.isEmpty()) {
+            return listOf(MenuNode("authority/packages/none", "No installed packages", "0", emitsToken = false))
+        }
+        return packages.sortedBy { it.name.lowercase() }.map { pkg -> PackageCapabilityNodes.root(context, pkg) }
     }
 
     private fun savedEndpointNodes(context: Context): List<MenuNode> {
