@@ -30,7 +30,7 @@ object AuthorityTree {
                         resolveChildren = { savedEndpointNodes(context) }
                     )
                 )
-                add(MenuNode("authority/adb/disconnect", "Disconnect", value = "hg2auth adb disconnect"))
+                add(MenuNode("authority/adb/disconnect", "Disconnect all", cap = "revoke", value = "hg2auth adb disconnect"))
                 add(
                     MenuNode(
                         id = "authority/adb/device",
@@ -131,20 +131,15 @@ object AuthorityTree {
                         value = "hg2auth adb connect '$endpoint'"
                     ),
                     MenuNode(
-                        id = "authority/adb/saved/$id/forget",
-                        label = "Forget",
+                        id = "authority/adb/saved/$id/disconnect",
+                        label = "Disconnect & forget",
                         cap = "revoke",
-                        value = "hg2auth adb forget '$endpoint'"
+                        value = "hg2auth adb disconnect '$endpoint'"
                     )
                 ),
                 emitsToken = false
             )
-        } + MenuNode(
-            id = "authority/adb/saved/forget-all",
-            label = "Forget all endpoints",
-            cap = "revoke",
-            value = "hg2auth adb forget-all"
-        )
+        }
     }
 
     private fun adbCapabilityNodes(): List<MenuNode> = listOf(
