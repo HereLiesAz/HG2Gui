@@ -57,6 +57,8 @@
 
         <receiver android:name=".api.Hg2ApiReceiver" android:exported="true" android:permission="com.hereliesaz.hg2gui.permission.API">
             <intent-filter>
+                <action android:name="com.hereliesaz.hg2gui.api.CAPABILITIES" />
+                <action android:name="com.hereliesaz.hg2gui.api.AUDIT_HISTORY" />
                 <action android:name="com.hereliesaz.hg2gui.api.EXECUTE" />
                 <action android:name="com.hereliesaz.hg2gui.api.PACKAGE" />
                 <action android:name="com.hereliesaz.hg2gui.api.PICK_FILE" />
