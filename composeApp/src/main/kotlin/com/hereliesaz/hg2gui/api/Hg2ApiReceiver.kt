@@ -11,6 +11,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import androidx.core.app.NotificationCompat
+import com.hereliesaz.hg2gui.terminal.CooperativeMetadata
 import com.hereliesaz.hg2gui.terminal.TerminalEngine
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -33,6 +34,10 @@ class Hg2ApiReceiver : BroadcastReceiver() {
         when (request.action) {
             ACTION_CAPABILITIES -> reply(context, request, true, data = capabilitySchema())
             ACTION_AUDIT_HISTORY -> reply(context, request, true, data = Hg2ApiAuditStore.history(context))
+            ACTION_METADATA_PUBLISH -> metadataPublish(context, request)
+            ACTION_METADATA_READ -> metadataRead(context, request)
+            ACTION_METADATA_LIST -> metadataList(context, request)
+            ACTION_METADATA_CLEAR -> metadataClear(context, request)
             ACTION_EXECUTE -> execute(context, request)
             ACTION_PACKAGE -> packageAction(context, request)
             ACTION_CLIPBOARD_GET -> reply(context, request, true, data = clipboard(context)?.primaryClip?.getItemAt(0)?.coerceToText(context)?.toString().orEmpty())
@@ -52,6 +57,36 @@ class Hg2ApiReceiver : BroadcastReceiver() {
             ACTION_AUTHORITY -> authority(context, request)
             else -> reply(context, request, false, error = "unknown capability")
         }
+    }
+
+    private fun metadataPublish(context: Context, request: Intent) {
+        val channel = request.getStringExtra(EXTRA_CHANNEL)?.trim().orEmpty()
+        val payload = request.getStringExtra(EXTRA_PAYLOAD)
+            ?: return reply(context, request, false, error = "missing payload")
+        if (channel.isEmpty()) return reply(context, request, false, error = "missing channel")
+        val ttlMillis = if (request.hasExtra(EXTRA_TTL_MILLIS)) request.getLongExtra(EXTRA_TTL_MILLIS, DEFAULT_METADATA_TTL) else DEFAULT_METADATA_TTL
+        runCatching { CooperativeMetadata.publish(channel, payload, ttlMillis) }
+            .onSuccess { reply(context, request, true, data = CooperativeMetadata.asJson(it)) }
+            .onFailure { reply(context, request, false, error = it.message ?: "metadata publish failed") }
+    }
+
+    private fun metadataRead(context: Context, request: Intent) {
+        val channel = request.getStringExtra(EXTRA_CHANNEL)?.trim().orEmpty()
+        if (channel.isEmpty()) return reply(context, request, false, error = "missing channel")
+        val entry = CooperativeMetadata.read(channel)
+            ?: return reply(context, request, false, error = "metadata channel not found or expired")
+        reply(context, request, true, data = CooperativeMetadata.asJson(entry))
+    }
+
+    private fun metadataList(context: Context, request: Intent) {
+        val prefix = request.getStringExtra(EXTRA_PREFIX)?.trim()?.takeIf(String::isNotEmpty)
+        reply(context, request, true, data = CooperativeMetadata.listJson(prefix))
+    }
+
+    private fun metadataClear(context: Context, request: Intent) {
+        val channel = request.getStringExtra(EXTRA_CHANNEL)?.trim().orEmpty()
+        if (channel.isEmpty()) return reply(context, request, false, error = "missing channel")
+        reply(context, request, true, data = JSONObject().put("cleared", CooperativeMetadata.clear(channel)).toString())
     }
 
     private suspend fun execute(context: Context, request: Intent) {
@@ -95,7 +130,7 @@ class Hg2ApiReceiver : BroadcastReceiver() {
         val operation = request.getStringExtra(EXTRA_OPERATION)?.trim().orEmpty()
         val manager = request.getStringExtra(EXTRA_MANAGER)?.trim().orEmpty()
         val name = request.getStringExtra(EXTRA_PACKAGE)?.trim().orEmpty()
-        if (operation !in setOf("info", "disable", "enable", "isolate")) {
+        if (operation !in setOf("info", "disable", "enable", "isolate", "snapshot")) {
             return reply(context, request, false, error = "destructive lifecycle actions require foreground user interaction")
         }
         if (!SAFE_WORD.matches(manager) || !SAFE_PACKAGE.matches(name)) return reply(context, request, false, error = "invalid manager/package")
@@ -180,6 +215,10 @@ class Hg2ApiReceiver : BroadcastReceiver() {
         return JSONObject()
             .put("apiVersion", API_VERSION)
             .put("permission", PERMISSION)
+            .put("metadataChannels", JSONObject()
+                .put("tui/<command>", "TuiSnapshot JSON")
+                .put("shell/<family>", "ShellPresentation JSON")
+                .put("guide/<command>", "live command metadata JSON"))
             .put("resultEnvelope", JSONObject()
                 .put("success", EXTRA_SUCCESS)
                 .put("data", EXTRA_DATA)
@@ -189,6 +228,10 @@ class Hg2ApiReceiver : BroadcastReceiver() {
             .put("capabilities", JSONArray(listOf(
                 capability(ACTION_CAPABILITIES),
                 capability(ACTION_AUDIT_HISTORY),
+                capability(ACTION_METADATA_PUBLISH, required = listOf(EXTRA_CHANNEL, EXTRA_PAYLOAD), optional = listOf(EXTRA_TTL_MILLIS)),
+                capability(ACTION_METADATA_READ, required = listOf(EXTRA_CHANNEL)),
+                capability(ACTION_METADATA_LIST, optional = listOf(EXTRA_PREFIX)),
+                capability(ACTION_METADATA_CLEAR, required = listOf(EXTRA_CHANNEL)),
                 capability(ACTION_EXECUTE, required = listOf(EXTRA_COMMAND)),
                 capability(ACTION_PACKAGE, required = listOf(EXTRA_MANAGER, EXTRA_OPERATION), optional = listOf(EXTRA_PACKAGE)),
                 capability(ACTION_PICK_FILE, optional = listOf(EXTRA_MIME), foregroundApproval = true),
@@ -209,6 +252,9 @@ class Hg2ApiReceiver : BroadcastReceiver() {
     private fun resultType(action: String?): String = when (action) {
         ACTION_CAPABILITIES -> "capability-schema"
         ACTION_AUDIT_HISTORY -> "api-audit-history"
+        ACTION_METADATA_PUBLISH, ACTION_METADATA_READ -> "metadata-entry"
+        ACTION_METADATA_LIST -> "metadata-list"
+        ACTION_METADATA_CLEAR -> "metadata-clear"
         ACTION_EXECUTE, ACTION_PACKAGE, ACTION_LIFECYCLE -> "command-result"
         ACTION_DEVICE_INFO -> "device-info"
         ACTION_CLIPBOARD_GET -> "text"
@@ -249,6 +295,10 @@ class Hg2ApiReceiver : BroadcastReceiver() {
         const val PERMISSION = "com.hereliesaz.hg2gui.permission.API"
         const val ACTION_CAPABILITIES = "com.hereliesaz.hg2gui.api.CAPABILITIES"
         const val ACTION_AUDIT_HISTORY = "com.hereliesaz.hg2gui.api.AUDIT_HISTORY"
+        const val ACTION_METADATA_PUBLISH = "com.hereliesaz.hg2gui.api.METADATA_PUBLISH"
+        const val ACTION_METADATA_READ = "com.hereliesaz.hg2gui.api.METADATA_READ"
+        const val ACTION_METADATA_LIST = "com.hereliesaz.hg2gui.api.METADATA_LIST"
+        const val ACTION_METADATA_CLEAR = "com.hereliesaz.hg2gui.api.METADATA_CLEAR"
         const val ACTION_EXECUTE = "com.hereliesaz.hg2gui.api.EXECUTE"
         const val ACTION_PACKAGE = "com.hereliesaz.hg2gui.api.PACKAGE"
         const val ACTION_PICK_FILE = "com.hereliesaz.hg2gui.api.PICK_FILE"
@@ -272,6 +322,10 @@ class Hg2ApiReceiver : BroadcastReceiver() {
         const val EXTRA_URI = "uri"
         const val EXTRA_ID = "id"
         const val EXTRA_AUTHORITY = "authority"
+        const val EXTRA_CHANNEL = "channel"
+        const val EXTRA_PAYLOAD = "payload"
+        const val EXTRA_TTL_MILLIS = "ttl_millis"
+        const val EXTRA_PREFIX = "prefix"
         const val EXTRA_REPLY = "reply"
         const val EXTRA_SUCCESS = "success"
         const val EXTRA_DATA = "data"
@@ -283,5 +337,6 @@ class Hg2ApiReceiver : BroadcastReceiver() {
         private val SAFE_PACKAGE = Regex("[A-Za-z0-9@._+:/=-]+")
         private const val CHANNEL = "hg2gui-api"
         private const val MAX_OUTPUT = 128_000
+        private const val DEFAULT_METADATA_TTL = 30_000L
     }
 }
