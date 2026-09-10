@@ -6,13 +6,18 @@ import org.json.JSONObject
 
 /** Machine-readable description of the isolation boundary HG2Gui actually applies. */
 object PackageIsolationDefinition {
-    const val SCHEMA_VERSION = 1
+    const val SCHEMA_VERSION = 2
 
     fun json(context: Context, pkg: PackageLifecycleStore.InstalledPackage): String {
         val dependencyClosure = if (pkg.manager == "pkg") {
             DpkgCatalog.dependencyView(DistroManager.prefixDir(context), pkg.name).dependencyClosure
         } else {
             emptyList()
+        }
+        val policies = JSONObject().apply {
+            PackageCapabilityPolicy.summary(context, pkg.key).forEach { (capability, mode) ->
+                put(capability.wireName, mode.name.lowercase().replace('_', '-'))
+            }
         }
         return JSONObject()
             .put("schemaVersion", SCHEMA_VERSION)
@@ -36,7 +41,10 @@ object PackageIsolationDefinition {
             .put("authority", JSONObject()
                 .put("ambientAdb", false)
                 .put("ambientRoot", false)
-                .put("maskedTools", JSONArray(listOf("adb", "su", "tsu", "magisk", "proot"))))
+                .put("maskedTools", JSONArray(listOf("adb", "su", "tsu", "magisk", "proot")))
+                .put("capabilityPolicies", policies)
+                .put("allowOncePersistent", false)
+                .put("askFailsClosedWithoutForegroundHuman", true))
             .put("observation", JSONObject()
                 .put("filesystemDiff", true)
                 .put("procSampler", true)
@@ -44,7 +52,8 @@ object PackageIsolationDefinition {
                 .put("syscallComplete", false))
             .put("network", JSONObject()
                 .put("policy", "visible-not-blocked")
-                .put("enforced", false))
+                .put("enforced", false)
+                .put("reason", "unprivileged PRoot does not provide a separate Android network namespace"))
             .toString(2)
     }
 }
