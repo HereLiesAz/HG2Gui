@@ -9,6 +9,8 @@ object TuiTerminalAdapter {
 
     fun snapshot(holder: FullScreenPtySession): TuiSnapshot? {
         val emulator = holder.session.emulator ?: return null
+        val cooperative = CooperativeTuiSnapshot.forCommand(holder.commandLine)
+        if (cooperative != null && emulator.isAlternateBufferActive()) return cooperative
         return snapshot(emulator)
     }
 
