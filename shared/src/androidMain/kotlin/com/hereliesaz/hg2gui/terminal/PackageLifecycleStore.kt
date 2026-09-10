@@ -43,7 +43,7 @@ object PackageLifecycleStore {
         val change: String
     )
 
-    private data class RunFileStamp(val size: Long, val modified: Long, val directory: Boolean)
+    internal data class RunFileStamp(val size: Long, val modified: Long, val directory: Boolean)
 
     data class RunSnapshot internal constructor(
         val packageKey: String,
