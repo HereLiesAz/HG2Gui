@@ -41,7 +41,8 @@ object RemoteDiscovery {
                 remoteHelp(context, preset, command)
             }
             "packages" -> remotePackages(context, preset)
-            "status" -> cached(context, presetName)?.let(::summary) ?: "No cached discovery for '$presetName'. Run: remote discover '$presetName'"
+            "status" -> cached(context, presetName)?.let(::summary)
+                ?: "No cached discovery for '$presetName'. Run: remote discover '$presetName'"
             else -> usage()
         }
     }
@@ -58,15 +59,16 @@ object RemoteDiscovery {
     private fun discover(context: Context, preset: SshPreset): String {
         val marker = "__HG2GUI__"
         val script = """
-            printf '$marker OS\\t'; (uname -s 2>/dev/null || printf unknown)
-            printf '$marker SHELL\\t%s\\n' "${'$'}{SHELL:-unknown}"
-            printf '$marker PM\\t'; if command -v apt >/dev/null 2>&1; then printf apt; elif command -v dnf >/dev/null 2>&1; then printf dnf; elif command -v yum >/dev/null 2>&1; then printf yum; elif command -v pacman >/dev/null 2>&1; then printf pacman; elif command -v apk >/dev/null 2>&1; then printf apk; elif command -v brew >/dev/null 2>&1; then printf brew; else printf none; fi; printf '\\n'
-            oldifs="${'$'}IFS"; IFS=:; for d in ${'$'}PATH; do [ -d "${'$'}d" ] || continue; for f in "${'$'}d"/*; do [ -f "${'$'}f" ] && [ -x "${'$'}f" ] && printf '$marker CMD\\t%s\\n' "${'$'}{f##*/}"; done; done; IFS="${'$'}oldifs"
-            if command -v dpkg-query >/dev/null 2>&1; then dpkg-query -W -f='${'$'}{binary:Package}\\n' 2>/dev/null | sed 's/^/$marker PKG\\t/';
-            elif command -v rpm >/dev/null 2>&1; then rpm -qa --qf '%{NAME}\\n' 2>/dev/null | sed 's/^/$marker PKG\\t/';
-            elif command -v pacman >/dev/null 2>&1; then pacman -Qq 2>/dev/null | sed 's/^/$marker PKG\\t/';
-            elif command -v apk >/dev/null 2>&1; then apk info 2>/dev/null | sed 's/^/$marker PKG\\t/';
-            elif command -v brew >/dev/null 2>&1; then brew list --formula 2>/dev/null | sed 's/^/$marker PKG\\t/'; fi
+            printf '$marker OS\t'; (uname -s 2>/dev/null || printf unknown)
+            printf '$marker SHELL\t%s\n' "${'$'}{SHELL:-unknown}"
+            printf '$marker PM\t'; if command -v apt >/dev/null 2>&1; then printf apt; elif command -v dnf >/dev/null 2>&1; then printf dnf; elif command -v yum >/dev/null 2>&1; then printf yum; elif command -v pacman >/dev/null 2>&1; then printf pacman; elif command -v apk >/dev/null 2>&1; then printf apk; elif command -v brew >/dev/null 2>&1; then printf brew; else printf none; fi; printf '\n'
+            oldifs="${'$'}IFS"; IFS=:; for d in ${'$'}PATH; do [ -d "${'$'}d" ] || continue; for f in "${'$'}d"/*; do [ -f "${'$'}f" ] && [ -x "${'$'}f" ] && printf '$marker CMD\t%s\n' "${'$'}{f##*/}"; done; done; IFS="${'$'}oldifs"
+            if command -v dpkg-query >/dev/null 2>&1; then dpkg-query -W -f='${'$'}{binary:Package}\n' 2>/dev/null;
+            elif command -v rpm >/dev/null 2>&1; then rpm -qa --qf '%{NAME}\n' 2>/dev/null;
+            elif command -v pacman >/dev/null 2>&1; then pacman -Qq 2>/dev/null;
+            elif command -v apk >/dev/null 2>&1; then apk info 2>/dev/null;
+            elif command -v brew >/dev/null 2>&1; then brew list --formula 2>/dev/null; fi |
+            while IFS= read -r pkg; do [ -n "${'$'}pkg" ] && printf '$marker PKG\t%s\n' "${'$'}pkg"; done
         """.trimIndent()
         val result = execute(context, preset, script)
         if (result.exitCode != 0) return "Remote discovery failed (${result.exitCode}):\n${result.output.take(4_000)}"
