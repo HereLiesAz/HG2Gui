@@ -11,26 +11,37 @@ data class GuideRuntimeInfo(
 /** Read-only index over the same materialized command tree shown by the terminal composer. */
 class GuideRuntimeIndex private constructor(private val nodes: List<MenuNode>) {
     fun info(command: String): GuideRuntimeInfo {
-        val parts = command.trim().split(Regex("\\s+")).filter(String::isNotBlank)
-        if (parts.isEmpty()) return GuideRuntimeInfo(false)
-        val first = parts.first()
-        val roots = nodes.filter { node -> node.label == first || node.value?.trim()?.substringBefore(' ') == first }
-        val root = roots.maxByOrNull { it.children.size } ?: return GuideRuntimeInfo(false)
-        val remainder = parts.drop(1).joinToString(" ")
-        val target = if (remainder.isBlank()) root else {
-            flatten(root.children).firstOrNull { child ->
-                child.label == remainder || child.value?.trim() == command || child.value?.trim() == remainder
-            } ?: root
+        val normalized = command.trim().replace(Regex("\\s+"), " ")
+        if (normalized.isEmpty()) return GuideRuntimeInfo(false)
+        val first = normalized.substringBefore(' ')
+
+        val exact = nodes.firstOrNull { node ->
+            node.value?.trim()?.replace(Regex("\\s+"), " ") == normalized || node.label == normalized
         }
-        val hints = (if (target.children.isNotEmpty()) target.children else root.children)
-            .asSequence()
+        val root = exact ?: nodes
+            .filter { node -> node.label == first || node.value?.trim()?.substringBefore(' ') == first }
+            .maxByOrNull { it.children.size }
+            ?: return GuideRuntimeInfo(false)
+
+        val hintSource = when {
+            exact?.children?.isNotEmpty() == true -> exact.children
+            else -> nodes.filter { node ->
+                val value = node.value?.trim().orEmpty()
+                value.startsWith("$normalized ") ||
+                    (normalized == first && value.startsWith("$first "))
+            }
+        }
+        val hints = hintSource.asSequence()
             .filter { it.emitsToken }
             .map { it.value?.trim().orEmpty().ifBlank { it.label } }
+            .map { value ->
+                if (value.startsWith("$first ")) value.removePrefix("$first ") else value
+            }
             .filter(String::isNotBlank)
             .distinct()
             .take(8)
             .toList()
-        return GuideRuntimeInfo(true, target.cap ?: root.cap, hints)
+        return GuideRuntimeInfo(true, exact?.cap ?: root.cap, hints)
     }
 
     companion object {
