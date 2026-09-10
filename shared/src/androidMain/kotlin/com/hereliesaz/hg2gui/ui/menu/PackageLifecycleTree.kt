@@ -4,6 +4,9 @@ import android.content.Context
 import com.hereliesaz.hg2gui.terminal.DistroManager
 import com.hereliesaz.hg2gui.terminal.DpkgCatalog
 import com.hereliesaz.hg2gui.terminal.PackageLifecycleStore
+import com.hereliesaz.hg2gui.terminal.PackageRestorePoints
+import java.text.DateFormat
+import java.util.Date
 
 /** Installed-package management generated from the package managers' real on-disk inventories. */
 object PackageLifecycleTree {
@@ -84,6 +87,15 @@ object PackageLifecycleTree {
                     cap = "preview",
                     emitsToken = false,
                     resolveChildren = { resetPreviewRows(context, pkg) }
+                )
+            )
+            add(
+                MenuNode(
+                    id = "packages/${pkg.key}/restore-points",
+                    label = "Restore points",
+                    cap = "max 3",
+                    emitsToken = false,
+                    resolveChildren = { restorePointRows(context, pkg) }
                 )
             )
             add(
@@ -184,6 +196,44 @@ object PackageLifecycleTree {
         }
     }
 
+    private fun restorePointRows(
+        context: Context,
+        pkg: PackageLifecycleStore.InstalledPackage
+    ): List<MenuNode> = buildList {
+        add(
+            MenuNode(
+                id = "packages/${pkg.key}/restore-points/create",
+                label = "Create restore point",
+                cap = "snapshot",
+                value = "hg2package snapshot ${pkg.manager} ${shellQuote(pkg.name)}"
+            )
+        )
+        PackageRestorePoints.list(context, pkg).forEach { point ->
+            add(
+                MenuNode(
+                    id = "packages/${pkg.key}/restore-points/${point.id}",
+                    label = formatTimestamp(point.timestampMillis),
+                    cap = "${point.pathCount} · ${formatBytes(point.bytes)}",
+                    children = listOf(
+                        MenuNode(
+                            id = "packages/${pkg.key}/restore-points/${point.id}/restore",
+                            label = "Restore",
+                            cap = point.packageVersion.ifBlank { "snapshot" },
+                            value = "hg2package restore ${pkg.manager} ${shellQuote(pkg.name)} ${point.id}"
+                        ),
+                        MenuNode(
+                            id = "packages/${pkg.key}/restore-points/${point.id}/delete",
+                            label = "Delete restore point",
+                            cap = "delete",
+                            value = "hg2package snapshot-delete ${pkg.manager} ${shellQuote(pkg.name)} ${point.id}"
+                        )
+                    ),
+                    emitsToken = false
+                )
+            )
+        }
+    }
+
     private fun provenanceRows(
         context: Context,
         pkg: PackageLifecycleStore.InstalledPackage
@@ -270,6 +320,9 @@ object PackageLifecycleTree {
             )
         }
     }
+
+    private fun formatTimestamp(timestampMillis: Long): String =
+        DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(timestampMillis))
 
     private fun formatBytes(bytes: Long): String = when {
         bytes < 1024L -> "$bytes B"
