@@ -3,6 +3,7 @@ package com.hereliesaz.hg2gui.ui.menu
 import android.content.Context
 import com.hereliesaz.hg2gui.terminal.DistroManager
 import com.hereliesaz.hg2gui.terminal.DpkgCatalog
+import com.hereliesaz.hg2gui.terminal.PackageIsolationDefinition
 import com.hereliesaz.hg2gui.terminal.PackageLifecycleStore
 import com.hereliesaz.hg2gui.terminal.PackageRestorePoints
 import java.text.DateFormat
@@ -79,6 +80,17 @@ object PackageLifecycleTree {
                     value = "hg2package ${if (pkg.isolated) "release" else "isolate"} ${pkg.manager} ${shellQuote(pkg.name)}"
                 )
             )
+            if (pkg.isolated) {
+                val definition = PackageIsolationDefinition.json(context, pkg)
+                add(
+                    MenuNode(
+                        id = "packages/${pkg.key}/sandbox-definition",
+                        label = "Sandbox definition",
+                        cap = "JSON",
+                        value = "printf '%s\\n' ${shellQuote(definition)}"
+                    )
+                )
+            }
             add(MenuNode("packages/${pkg.key}/update", "Update", value = "hg2package update ${pkg.manager} ${shellQuote(pkg.name)}"))
             add(
                 MenuNode(
