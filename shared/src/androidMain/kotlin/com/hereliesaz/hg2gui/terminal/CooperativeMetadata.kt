@@ -139,7 +139,8 @@ object CooperativeTuiSnapshot {
             regions = regions,
             tabs = tabs,
             alternateScreen = root.optBoolean("alternateScreen", true),
-            mouseAware = root.optBoolean("mouseAware", false)
+            mouseAware = root.optBoolean("mouseAware", false),
+            profile = enumValue(root.optString("profile"), TuiAdapterProfile.COOPERATIVE)
         )
     }
 
