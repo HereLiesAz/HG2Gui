@@ -1,23 +1,138 @@
 package com.hereliesaz.hg2gui.ui.menu
 
 import android.content.Context
+import com.hereliesaz.hg2gui.managers.SshPresets
 import com.hereliesaz.hg2gui.terminal.DistroManager
 import com.hereliesaz.hg2gui.terminal.DpkgCatalog
 import com.hereliesaz.hg2gui.terminal.PackageIsolationDefinition
 import com.hereliesaz.hg2gui.terminal.PackageLifecycleStore
 import com.hereliesaz.hg2gui.terminal.PackageRestorePoints
+import com.hereliesaz.hg2gui.terminal.RemoteDiscovery
 import java.text.DateFormat
 import java.util.Date
 
-/** Installed-package management generated from the package managers' real on-disk inventories. */
+/** Installed-package management generated from local managers plus explicitly selected SSH presets. */
 object PackageLifecycleTree {
     fun root(context: Context): MenuNode = MenuNode(
         id = "packages",
         label = "Packages",
         cap = "manage",
         emitsToken = false,
-        resolveChildren = { listOf(AuthorityTree.root(context)) + managerNodes(context) }
+        resolveChildren = { listOf(AuthorityTree.root(context), remoteRoot(context)) + managerNodes(context) }
     )
+
+    private fun remoteRoot(context: Context): MenuNode {
+        val presets = SshPresets.list(context)
+        return MenuNode(
+            id = "packages/remote",
+            label = "Remote",
+            cap = presets.size.toString(),
+            emitsToken = false,
+            resolveChildren = {
+                if (presets.isEmpty()) {
+                    listOf(MenuNode("packages/remote/none", "No SSH presets", "0", emitsToken = false))
+                } else {
+                    presets.map { preset ->
+                        val cached = RemoteDiscovery.cached(context, preset.name)
+                        val state = cached?.let { "${it.os} · ${it.packageManager ?: "shell"}" } ?: "not discovered"
+                        MenuNode(
+                            id = "packages/remote/${safeId(preset.name)}",
+                            label = preset.name,
+                            cap = state,
+                            emitsToken = false,
+                            children = buildList {
+                                add(MenuNode(
+                                    id = "packages/remote/${safeId(preset.name)}/discover",
+                                    label = "Discover live metadata",
+                                    cap = "SSH",
+                                    value = "remote discover ${shellQuote(preset.name)}"
+                                ))
+                                add(MenuNode(
+                                    id = "packages/remote/${safeId(preset.name)}/status",
+                                    label = "Discovery status",
+                                    value = "remote status ${shellQuote(preset.name)}"
+                                ))
+                                add(MenuNode(
+                                    id = "packages/remote/${safeId(preset.name)}/packages-live",
+                                    label = "Refresh package inventory",
+                                    cap = cached?.packageManager ?: "detect",
+                                    value = "remote packages ${shellQuote(preset.name)}"
+                                ))
+                                if (cached != null) {
+                                    add(
+                                        MenuNode(
+                                            id = "packages/remote/${safeId(preset.name)}/commands",
+                                            label = "Commands",
+                                            cap = cached.commands.size.toString(),
+                                            emitsToken = false,
+                                            children = cached.commands.take(MAX_REMOTE_ROWS).map { command ->
+                                                MenuNode(
+                                                    id = "packages/remote/${safeId(preset.name)}/commands/${safeId(command)}",
+                                                    label = command,
+                                                    cap = "remote",
+                                                    children = listOf(
+                                                        MenuNode(
+                                                            id = "packages/remote/${safeId(preset.name)}/commands/${safeId(command)}/run",
+                                                            label = "Run over SSH",
+                                                            value = RemoteDiscovery.remoteCommand(preset, command)
+                                                        ),
+                                                        MenuNode(
+                                                            id = "packages/remote/${safeId(preset.name)}/commands/${safeId(command)}/help",
+                                                            label = "Live help",
+                                                            value = "remote help ${shellQuote(preset.name)} ${shellQuote(command)}"
+                                                        )
+                                                    ),
+                                                    emitsToken = false
+                                                )
+                                            }
+                                        )
+                                    )
+                                    add(
+                                        MenuNode(
+                                            id = "packages/remote/${safeId(preset.name)}/installed",
+                                            label = "Installed packages",
+                                            cap = cached.packages.size.toString(),
+                                            emitsToken = false,
+                                            children = cached.packages.take(MAX_REMOTE_ROWS).mapIndexed { index, name ->
+                                                MenuNode(
+                                                    id = "packages/remote/${safeId(preset.name)}/installed/$index",
+                                                    label = name,
+                                                    cap = cached.packageManager,
+                                                    emitsToken = false
+                                                )
+                                            }
+                                        )
+                                    )
+                                    add(
+                                        MenuNode(
+                                            id = "packages/remote/${safeId(preset.name)}/files",
+                                            label = "Remote filesystem",
+                                            cap = "SSH · remote",
+                                            children = listOf(
+                                                MenuNode(
+                                                    id = "packages/remote/${safeId(preset.name)}/files/home",
+                                                    label = "List remote home",
+                                                    cap = "remote path",
+                                                    value = RemoteDiscovery.remoteCommand(preset, "pwd; printf '\\n'; ls -la ~")
+                                                ),
+                                                MenuNode(
+                                                    id = "packages/remote/${safeId(preset.name)}/files/root",
+                                                    label = "List remote root",
+                                                    cap = "remote path",
+                                                    value = RemoteDiscovery.remoteCommand(preset, "ls -la /")
+                                                )
+                                            ),
+                                            emitsToken = false
+                                        )
+                                    )
+                                }
+                            }
+                        )
+                    }
+                }
+            }
+        )
+    }
 
     private fun managerNodes(context: Context): List<MenuNode> {
         val packages = PackageLifecycleStore.installed(context)
@@ -343,5 +458,7 @@ object PackageLifecycleTree {
         else -> "%.1f GiB".format(bytes / (1024.0 * 1024.0 * 1024.0))
     }
 
+    private fun safeId(value: String): String = value.replace(Regex("[^A-Za-z0-9._-]"), "_")
     private fun shellQuote(value: String): String = "'${value.replace("'", "'\\''")}'"
+    private const val MAX_REMOTE_ROWS = 300
 }
