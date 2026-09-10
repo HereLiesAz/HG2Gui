@@ -59,6 +59,10 @@
             <intent-filter>
                 <action android:name="com.hereliesaz.hg2gui.api.CAPABILITIES" />
                 <action android:name="com.hereliesaz.hg2gui.api.AUDIT_HISTORY" />
+                <action android:name="com.hereliesaz.hg2gui.api.METADATA_PUBLISH" />
+                <action android:name="com.hereliesaz.hg2gui.api.METADATA_READ" />
+                <action android:name="com.hereliesaz.hg2gui.api.METADATA_LIST" />
+                <action android:name="com.hereliesaz.hg2gui.api.METADATA_CLEAR" />
                 <action android:name="com.hereliesaz.hg2gui.api.EXECUTE" />
                 <action android:name="com.hereliesaz.hg2gui.api.PACKAGE" />
                 <action android:name="com.hereliesaz.hg2gui.api.PICK_FILE" />
