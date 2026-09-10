@@ -60,7 +60,13 @@ fun AdaptiveTuiWrapperScreen(
             if (snapshot.tabs.isNotEmpty()) {
                 TabStrip(snapshot.tabs) { target -> scope.launch { handle(TuiInteractionController.activateTab(holder, target)) } }
             }
-            snapshot.regions.forEach { RegionCard(it) }
+            snapshot.regions.forEach { region ->
+                RegionCard(
+                    region = region,
+                    mouseAware = snapshot.mouseAware,
+                    onMouseRow = { row, column -> handle(TuiInteractionController.mouseClick(holder, row, column)) }
+                )
+            }
             snapshot.layers.forEachIndexed { index, layer ->
                 MenuLayer(
                     layer = layer,
@@ -72,7 +78,7 @@ fun AdaptiveTuiWrapperScreen(
             snapshot.prompt?.let { prompt -> PromptCard(holder, prompt) }
             if (snapshot.mouseAware) {
                 Text(
-                    "Mouse-aware terminal UI detected. Native taps are mapped where semantic state is observable; RAW remains available for unmodeled gestures.",
+                    "Mouse-aware terminal UI detected. Contiguous semantic rows can receive native taps; RAW remains available for unmodeled gestures.",
                     color = Azphalt.currentGround.onPage.copy(alpha = .45f), fontSize = 9.sp
                 )
             }
@@ -85,7 +91,12 @@ private fun WrapperHeader(holder: FullScreenPtySession, snapshot: TuiSnapshot, o
     Row(Modifier.fillMaxWidth().padding(bottom = 14.dp), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
             Text(snapshot.title ?: holder.commandLine, color = Azphalt.currentGround.onPage, fontWeight = FontWeight.Black, fontSize = 20.sp)
-            Text("LIVE TERMINAL INTERFACE", color = Azphalt.currentGround.onPage.copy(alpha = .55f), fontWeight = FontWeight.Bold, fontSize = 9.sp)
+            Text(
+                "LIVE TERMINAL INTERFACE · ${snapshot.profile.name}",
+                color = Azphalt.currentGround.onPage.copy(alpha = .55f),
+                fontWeight = FontWeight.Bold,
+                fontSize = 9.sp
+            )
         }
         HeaderAction("RAW", onRawTerminal)
         HeaderAction("INTR") { holder.sendInterrupt() }
@@ -117,10 +128,27 @@ private fun TabStrip(tabs: List<TuiTab>, onPick: (Int) -> Unit) {
 }
 
 @Composable
-private fun RegionCard(region: TuiRegion) {
+private fun RegionCard(
+    region: TuiRegion,
+    mouseAware: Boolean,
+    onMouseRow: (row: Int, column: Int) -> Unit
+) {
+    val contiguous = region.endRow - region.startRow + 1 == region.lines.size
     Column(Modifier.fillMaxWidth().background(Azphalt.Ink.copy(alpha = .07f), RoundedCornerShape(20.dp)).padding(12.dp)) {
         Text(region.kind.name, color = Azphalt.currentGround.onPage.copy(alpha = .5f), fontWeight = FontWeight.Black, fontSize = 9.sp)
-        region.lines.forEach { Text(it, color = Azphalt.currentGround.onPage, fontSize = 11.sp) }
+        region.lines.forEachIndexed { index, line ->
+            val firstContentColumn = line.indexOfFirst { !it.isWhitespace() }.coerceAtLeast(0)
+            Text(
+                line,
+                color = Azphalt.currentGround.onPage,
+                fontSize = 11.sp,
+                modifier = if (mouseAware && contiguous) {
+                    Modifier.fillMaxWidth().clickable { onMouseRow(region.startRow + index, firstContentColumn) }
+                } else {
+                    Modifier.fillMaxWidth()
+                }
+            )
+        }
         region.progress?.let { progress ->
             LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
         }
