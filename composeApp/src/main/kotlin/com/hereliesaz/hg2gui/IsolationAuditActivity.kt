@@ -25,6 +25,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,15 +33,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.fragment.app.FragmentActivity
+import com.hereliesaz.hg2gui.ai.AiClient
+import com.hereliesaz.hg2gui.managers.AiSettings
 import com.hereliesaz.hg2gui.terminal.PackageIsolation
 import com.hereliesaz.hg2gui.terminal.PackageLifecycleStore
 import com.hereliesaz.hg2gui.ui.HG2GuiTheme
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
-import com.hereliesaz.hg2gui.ui.menu.onPage
 import com.hereliesaz.hg2gui.ui.menu.pageBrush
 import java.text.DateFormat
 import java.util.Date
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class IsolationAuditActivity : FragmentActivity() {
@@ -118,9 +121,7 @@ private fun IsolationAuditScreen(onBack: () -> Unit) {
 
         when (val current = entries) {
             null -> Text("READING AUDITS…", color = Azphalt.Ink.copy(alpha = .55f), fontSize = 10.sp)
-            emptyList<IsolationAuditEntry>() -> {
-                Text("No isolated packages.", color = Azphalt.Ink.copy(alpha = .6f))
-            }
+            emptyList<IsolationAuditEntry>() -> Text("No isolated packages.", color = Azphalt.Ink.copy(alpha = .6f))
             else -> current.forEach { entry -> AuditCard(entry) }
         }
         Spacer(Modifier.height(24.dp))
@@ -130,9 +131,7 @@ private fun IsolationAuditScreen(onBack: () -> Unit) {
 @Composable
 private fun AuditAction(label: String, onClick: () -> Unit) {
     Box(
-        modifier = Modifier
-            .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
-            .clickable(onClick = onClick),
+        modifier = Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp).clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
         Text(
@@ -140,20 +139,20 @@ private fun AuditAction(label: String, onClick: () -> Unit) {
             color = Azphalt.Yellow,
             fontSize = 9.sp,
             fontWeight = FontWeight.Black,
-            modifier = Modifier
-                .background(Azphalt.Ink, RoundedCornerShape(999.dp))
-                .padding(horizontal = 14.dp, vertical = 8.dp)
+            modifier = Modifier.background(Azphalt.Ink, RoundedCornerShape(999.dp)).padding(horizontal = 14.dp, vertical = 8.dp)
         )
     }
 }
 
 @Composable
 private fun AuditCard(entry: IsolationAuditEntry) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val scope = rememberCoroutineScope()
+    var aiResult by remember(entry.savedAudit?.timestampMillis) { mutableStateOf<String?>(null) }
+    var aiBusy by remember(entry.savedAudit?.timestampMillis) { mutableStateOf(false) }
+
     Column(
-        Modifier
-            .fillMaxWidth()
-            .background(Azphalt.Ink.copy(alpha = .09f), RoundedCornerShape(22.dp))
-            .padding(14.dp),
+        Modifier.fillMaxWidth().background(Azphalt.Ink.copy(alpha = .09f), RoundedCornerShape(22.dp)).padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Text(entry.packageName, color = Azphalt.Ink, fontWeight = FontWeight.Black, fontSize = 17.sp)
@@ -166,11 +165,7 @@ private fun AuditCard(entry: IsolationAuditEntry) {
 
         val saved = entry.savedAudit
         if (saved == null) {
-            Text(
-                "No completed-run audit yet. Run this isolated package, then refresh.",
-                color = Azphalt.Ink.copy(alpha = .58f),
-                fontSize = 11.sp
-            )
+            Text("No completed-run audit yet. Run this isolated package, then refresh.", color = Azphalt.Ink.copy(alpha = .58f), fontSize = 11.sp)
         } else {
             Text(
                 "CAPTURED ${formatTimestamp(saved.timestampMillis)}",
@@ -180,6 +175,28 @@ private fun AuditCard(entry: IsolationAuditEntry) {
             )
             SandboxDiff(saved.audit)
             RuntimeTelemetry(saved.audit.telemetry)
+
+            val apiKey = AiSettings.apiKey(context)
+            if (!apiKey.isNullOrBlank()) {
+                AuditAction(if (aiBusy) "ASKING AI…" else "ASK AI · SEND SUMMARY") {
+                    if (aiBusy) return@AuditAction
+                    aiBusy = true
+                    scope.launch {
+                        aiResult = runCatching {
+                            AiClient.ask(
+                                apiKey = apiKey,
+                                cwd = PackageIsolation.root(context, PackageLifecycleStore.installed(context).first { it.name == entry.packageName && it.isolated }).absolutePath,
+                                question = auditInterpretationPrompt(entry)
+                            ).text
+                        }.getOrElse { "AI interpretation failed: ${it.message ?: it.javaClass.simpleName}" }
+                        aiBusy = false
+                    }
+                }
+            }
+            aiResult?.let { result ->
+                Text("AI INTERPRETATION", color = Azphalt.Ink.copy(alpha = .5f), fontWeight = FontWeight.Black, fontSize = 9.sp)
+                Text(result, color = Azphalt.Ink.copy(alpha = .82f), fontSize = 11.sp, lineHeight = 16.sp)
+            }
         }
     }
 }
@@ -219,19 +236,10 @@ private fun RuntimeTelemetry(telemetry: List<String>) {
         if (rows.isNotEmpty()) {
             Text(kind, color = Azphalt.Ink.copy(alpha = .48f), fontWeight = FontWeight.Black, fontSize = 9.sp)
             rows.take(MAX_ROWS_PER_SECTION).forEach { row ->
-                Text(
-                    telemetryDetail(row),
-                    color = Azphalt.Ink.copy(alpha = .82f),
-                    fontSize = 10.sp,
-                    lineHeight = 14.sp
-                )
+                Text(telemetryDetail(row), color = Azphalt.Ink.copy(alpha = .82f), fontSize = 10.sp, lineHeight = 14.sp)
             }
             if (rows.size > MAX_ROWS_PER_SECTION) {
-                Text(
-                    "… ${rows.size - MAX_ROWS_PER_SECTION} more",
-                    color = Azphalt.Ink.copy(alpha = .52f),
-                    fontSize = 9.sp
-                )
+                Text("… ${rows.size - MAX_ROWS_PER_SECTION} more", color = Azphalt.Ink.copy(alpha = .52f), fontSize = 9.sp)
             }
         }
     }
@@ -243,11 +251,25 @@ private fun AuditRows(marker: String, paths: List<String>) {
         Text("$marker $path", color = Azphalt.Ink.copy(alpha = .82f), fontSize = 10.sp, lineHeight = 14.sp)
     }
     if (paths.size > MAX_ROWS_PER_SECTION) {
-        Text(
-            "… ${paths.size - MAX_ROWS_PER_SECTION} more",
-            color = Azphalt.Ink.copy(alpha = .52f),
-            fontSize = 9.sp
-        )
+        Text("… ${paths.size - MAX_ROWS_PER_SECTION} more", color = Azphalt.Ink.copy(alpha = .52f), fontSize = 9.sp)
+    }
+}
+
+private fun auditInterpretationPrompt(entry: IsolationAuditEntry): String {
+    val audit = entry.savedAudit?.audit ?: return "No audit exists."
+    fun safeRows(rows: List<String>): List<String> = rows
+        .filterNot { SENSITIVE_WORDS.containsMatchIn(it) }
+        .take(24)
+    return buildString {
+        appendLine("Interpret this HG2Gui isolated-package audit. Give a concise risk/behavior summary. Do not propose elevated commands unless explicitly necessary, and remember the runtime sampler is best-effort rather than syscall-complete.")
+        appendLine("Package: ${entry.packageName} ${entry.version}")
+        appendLine("Sandbox: ${entry.fileCount} files, ${formatBytes(entry.bytes)}")
+        appendLine("Created ${audit.created.size}, modified ${audit.modified.size}, deleted ${audit.deleted.size}.")
+        safeRows(audit.created).forEach { appendLine("created: ${it.substringAfterLast('/')}") }
+        safeRows(audit.modified).forEach { appendLine("modified: ${it.substringAfterLast('/')}") }
+        safeRows(audit.deleted).forEach { appendLine("deleted: ${it.substringAfterLast('/')}") }
+        safeRows(audit.telemetry).forEach { appendLine("observed: $it") }
+        if (audit.telemetry.any { SENSITIVE_WORDS.containsMatchIn(it) }) appendLine("Some telemetry rows were withheld as potentially secret-bearing.")
     }
 }
 
@@ -274,4 +296,5 @@ private fun formatBytes(bytes: Long): String = when {
     else -> "%.1f GiB".format(bytes / (1024.0 * 1024.0 * 1024.0))
 }
 
+private val SENSITIVE_WORDS = Regex("(?i)(password|passwd|secret|token|api[_-]?key|authorization|bearer|credential|private[_-]?key)")
 private const val MAX_ROWS_PER_SECTION = 40
