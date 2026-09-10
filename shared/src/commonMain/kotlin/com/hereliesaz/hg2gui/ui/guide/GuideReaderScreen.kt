@@ -3,11 +3,11 @@ package com.hereliesaz.hg2gui.ui.guide
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
@@ -18,7 +18,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import com.hereliesaz.hg2gui.ui.BackStepState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,6 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import com.hereliesaz.hg2gui.ui.BackStepState
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
 import com.hereliesaz.hg2gui.ui.menu.onPage
 import com.hereliesaz.hg2gui.ui.menu.pageBrush
@@ -42,18 +42,9 @@ import kotlinx.coroutines.delay
 /*
  * The Guide: a chapter index of real commands paired with invented, Hitchhiker's-Guide-style
  * definitions. Every real command heading is also an input affordance: tapping it hands the
- * command back to the terminal's normal command-composition path for review.
- *
- * Every screen change wipes on: one axis, reading order, no fade, never loops. Text and rules
- * reveal via a left-to-right clip; pills grow their actual width instead, so a rounded end grows
- * into being rather than getting guillotined by a hard clip partway through its curve. A faint,
- * oversized echo of the entry's own word drifts in behind everything else - depth is speed, not
- * blur (GuideWash).
- *
- * An entry's header (title, hue bar) and its PREV/NEXT row stay fixed; only the body between
- * them scrolls, since entries run long enough now - multi-paragraph blurbs, an optional
- * animation-candidate scene, an optional trailing editorial note - that a screen's worth was
- * never going to hold one.
+ * command back to the terminal's normal command-composition path for review. Recognized command
+ * names in entry prose are links to that same path; live runtime facts come from the terminal's
+ * current command tree rather than a second hand-maintained inventory.
  */
 
 private val GUIDE_HUES = intArrayOf(6, 5, 4, 2, 9, 0, 7)
@@ -66,11 +57,13 @@ fun GuideReaderScreen(
     onBack: () -> Unit,
     onCommandSelected: (String) -> Unit = {},
     backStep: BackStepState,
+    runtimeIndex: GuideRuntimeIndex = GuideRuntimeIndex.Empty,
     modifier: Modifier = Modifier
 ) {
     var view by remember { mutableStateOf(GuideView.Index) }
     var entryIndex by remember { mutableStateOf(0) }
     var wipeKey by remember { mutableStateOf(0) }
+    val entries = GuideCatalog.entries
 
     SideEffect {
         backStep.canStepBack = true
@@ -90,23 +83,27 @@ fun GuideReaderScreen(
                 onBack = onBack,
                 onOpenEntry = { i -> entryIndex = i; wipeKey++; view = GuideView.Entry }
             )
-            GuideView.Entry -> GuideEntryReader(
-                entry = GuideBook.entries[entryIndex],
-                number = entryIndex + 1,
-                total = GuideBook.entries.size,
-                wipeKey = wipeKey,
-                onCommandSelected = onCommandSelected,
-                onBackToIndex = { view = GuideView.Index },
-                onPrev = {
-                    entryIndex = (entryIndex - 1 + GuideBook.entries.size) % GuideBook.entries.size
-                    wipeKey++
-                },
-                onNext = {
-                    entryIndex = (entryIndex + 1) % GuideBook.entries.size
-                    wipeKey++
-                },
-                onReplay = { wipeKey++ }
-            )
+            GuideView.Entry -> {
+                val entry = entries[entryIndex]
+                GuideEntryReader(
+                    entry = entry,
+                    runtimeInfo = runtimeIndex.info(entry.cmd),
+                    number = entryIndex + 1,
+                    total = entries.size,
+                    wipeKey = wipeKey,
+                    onCommandSelected = onCommandSelected,
+                    onBackToIndex = { view = GuideView.Index },
+                    onPrev = {
+                        entryIndex = (entryIndex - 1 + entries.size) % entries.size
+                        wipeKey++
+                    },
+                    onNext = {
+                        entryIndex = (entryIndex + 1) % entries.size
+                        wipeKey++
+                    },
+                    onReplay = { wipeKey++ }
+                )
+            }
         }
     }
 }
@@ -119,7 +116,7 @@ private fun ColumnScope.GuideIndex(onBack: () -> Unit, onOpenEntry: (Int) -> Uni
         verticalAlignment = Alignment.CenterVertically
     ) {
         Chip("‹ BACK", onClick = onBack)
-        Chip("${GuideBook.entries.size} ENTRIES", filled = false, clickable = false)
+        Chip("${GuideCatalog.entries.size} ENTRIES", filled = false, clickable = false)
     }
 
     Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 18.dp)) {
@@ -143,11 +140,11 @@ private fun ColumnScope.GuideIndex(onBack: () -> Unit, onOpenEntry: (Int) -> Uni
 
     LazyColumn(
         Modifier.weight(1f).fillMaxWidth().padding(horizontal = 20.dp),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(top = 18.dp, bottom = 40.dp),
+        contentPadding = PaddingValues(top = 18.dp, bottom = 40.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
         var globalOffset = 0
-        GuideBook.chapters.forEach { chapter ->
+        GuideCatalog.chapters.forEach { chapter ->
             val chapterStart = globalOffset
             globalOffset += chapter.entries.size
             item(key = chapter.label) {
@@ -213,6 +210,7 @@ private fun ColumnScope.GuideIndex(onBack: () -> Unit, onOpenEntry: (Int) -> Uni
 @Composable
 private fun ColumnScope.GuideEntryReader(
     entry: GuideEntry,
+    runtimeInfo: GuideRuntimeInfo,
     number: Int,
     total: Int,
     wipeKey: Int,
@@ -275,11 +273,14 @@ private fun ColumnScope.GuideEntryReader(
             val scrollState = remember(wipeKey) { ScrollState(0) }
             Column(Modifier.weight(1f).verticalScroll(scrollState)) {
                 WipeItem(seq++, wipeKey, wide = true, modifier = Modifier.padding(top = 16.dp)) {
-                    Text(
-                        entry.blurb,
+                    GuideLinkedText(
+                        text = entry.blurb,
+                        commands = GuideCatalog.commands,
                         color = Azphalt.currentGround.onPage.copy(alpha = .78f),
+                        commandColor = Azphalt.hues[hue],
                         fontSize = 15.sp,
-                        lineHeight = 21.sp
+                        lineHeight = 21.sp,
+                        onCommandSelected = onCommandSelected
                     )
                 }
 
@@ -297,6 +298,35 @@ private fun ColumnScope.GuideEntryReader(
                     Column {
                         FactRow("Chapter", entry.chapterTitle)
                         FactRow("Actually does something", "Yes")
+                        FactRow(
+                            "Live runtime",
+                            if (runtimeInfo.available) {
+                                runtimeInfo.cap?.let { "available · $it" } ?: "available"
+                            } else {
+                                "not in current command tree"
+                            }
+                        )
+                    }
+                }
+
+                if (runtimeInfo.hints.isNotEmpty()) {
+                    WipeItem(seq++, wipeKey, wide = true, modifier = Modifier.padding(top = 16.dp)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text(
+                                "LIVE OPTIONS",
+                                color = Azphalt.currentGround.onPage.copy(alpha = .55f),
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                letterSpacing = 0.18.em
+                            )
+                            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                runtimeInfo.hints.forEach { hint ->
+                                    val root = entry.cmd.substringBefore(' ')
+                                    val command = if (hint.startsWith(root)) hint else "$root $hint"
+                                    Chip(hint, onClick = { onCommandSelected(command) })
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -316,12 +346,15 @@ private fun ColumnScope.GuideEntryReader(
                                 fontWeight = FontWeight.ExtraBold,
                                 letterSpacing = 0.18.em
                             )
-                            Text(
-                                anim,
+                            GuideLinkedText(
+                                text = anim,
+                                commands = GuideCatalog.commands,
                                 color = Azphalt.currentGround.onPage.copy(alpha = .78f),
+                                commandColor = Azphalt.hues[hue],
                                 fontSize = 13.sp,
                                 lineHeight = 19.sp,
-                                modifier = Modifier.padding(top = 8.dp)
+                                modifier = Modifier.padding(top = 8.dp),
+                                onCommandSelected = onCommandSelected
                             )
                         }
                     }
@@ -329,12 +362,14 @@ private fun ColumnScope.GuideEntryReader(
 
                 entry.note?.let { note ->
                     WipeItem(seq++, wipeKey, wide = true, modifier = Modifier.padding(top = 16.dp)) {
-                        Text(
-                            note,
+                        GuideLinkedText(
+                            text = note,
+                            commands = GuideCatalog.commands,
                             color = Azphalt.currentGround.onPage.copy(alpha = .55f),
+                            commandColor = Azphalt.hues[hue],
                             fontSize = 12.sp,
                             lineHeight = 17.sp,
-                            fontWeight = FontWeight.Medium
+                            onCommandSelected = onCommandSelected
                         )
                     }
                 }
@@ -348,12 +383,15 @@ private fun ColumnScope.GuideEntryReader(
                             fontWeight = FontWeight.ExtraBold,
                             letterSpacing = 0.18.em
                         )
-                        Text(
-                            entry.chapterIntro,
+                        GuideLinkedText(
+                            text = entry.chapterIntro,
+                            commands = GuideCatalog.commands,
                             color = Azphalt.currentGround.onPage.copy(alpha = .78f),
+                            commandColor = Azphalt.hues[hue],
                             fontSize = 12.sp,
                             lineHeight = 17.sp,
-                            modifier = Modifier.padding(top = 6.dp)
+                            modifier = Modifier.padding(top = 6.dp),
+                            onCommandSelected = onCommandSelected
                         )
                     }
                 }

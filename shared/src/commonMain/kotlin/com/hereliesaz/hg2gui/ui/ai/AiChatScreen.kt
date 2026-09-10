@@ -21,35 +21,29 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import com.hereliesaz.hg2gui.ai.AiIntent
+import com.hereliesaz.hg2gui.ai.AiIntentAnalyzer
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
 import com.hereliesaz.hg2gui.ui.menu.onPage
 import com.hereliesaz.hg2gui.ui.menu.pageBrush
 import com.hereliesaz.hg2gui.ui.theme.AzphaltSurface
 
-/** [parts] is a flag-by-flag "what each part does" breakdown for a command reply - see
- *  HG2Gui_Redesign.dc.html's "Phase 4" concept. Empty when the model didn't include one. */
+/** Local typed intent is derived from [command]; the AI does not assign its own authority. */
 data class AiMessage(
     val fromUser: Boolean,
     val text: String,
     val command: String? = null,
-    val parts: List<Pair<String, String>> = emptyList()
+    val parts: List<Pair<String, String>> = emptyList(),
+    val intent: AiIntent? = command?.let(AiIntentAnalyzer::analyze)
 )
 
-/**
- * Single-turn natural-language -> command suggestion, styled like every other full-screen
- * surface (McpServerScreen, CommandGuideScreen): back pill, Eyebrow, then content. Never runs
- * anything itself - a reply with a command shows a USE pill that hands it to the terminal's
- * input line for the user to review and press Run, the same "assemble, don't auto-execute" rule
- * every wizard-produced command already follows.
- */
+/** Natural-language command suggestion. Suggested commands are always returned for review. */
 @Composable
 fun AiChatScreen(
     fullscreen: Boolean,
@@ -64,9 +58,6 @@ fun AiChatScreen(
     var input by remember { mutableStateOf("") }
     val listState = remember { LazyListState() }
 
-    // Without this, a reply that pushes the transcript past one screen left the user's own
-    // question and the AI's answer both below the fold with no scroll and no "new message"
-    // affordance - listState existed but nothing ever drove it.
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) listState.animateScrollToItem(messages.size - 1)
     }
@@ -126,9 +117,7 @@ fun AiChatScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp),
             contentPadding = PaddingValues(bottom = 8.dp)
         ) {
-            items(messages) { message ->
-                AiBubble(message, onUseCommand)
-            }
+            items(messages) { message -> AiBubble(message, onUseCommand) }
         }
 
         Row(
@@ -165,9 +154,6 @@ fun AiChatScreen(
             Row(
                 Modifier
                     .clip(RoundedCornerShape(percent = 50))
-                    // A capsule is never tinted, faded, or given alpha (style guide "03 -
-                    // Transparency") - idle uses the same ink-14% wash every other disabled
-                    // capsule in the app does, not a faded copy of its own hue.
                     .background(if (!busy && input.isNotBlank()) Azphalt.hues[6] else Azphalt.Ink.copy(alpha = .14f))
                     .clickable(enabled = !busy && input.isNotBlank()) {
                         onAsk(input.trim())
@@ -192,14 +178,31 @@ private fun AiBubble(message: AiMessage, onUseCommand: (String) -> Unit) {
     Column(
         Modifier
             .fillMaxWidth()
-            .clip(AzphaltSurface.recordTile) // a message IS a record
+            .clip(AzphaltSurface.recordTile)
             .background(Azphalt.Ink.copy(alpha = if (message.fromUser) .10f else .05f))
             .padding(12.dp)
     ) {
-        Text(
-            message.text,
-            style = MaterialTheme.typography.bodyMedium.copy(color = Azphalt.currentGround.onPage)
-        )
+        Text(message.text, style = MaterialTheme.typography.bodyMedium.copy(color = Azphalt.currentGround.onPage))
+
+        message.intent?.let { intent ->
+            Spacer(Modifier.height(9.dp))
+            Column(
+                Modifier.fillMaxWidth().clip(AzphaltSurface.note).background(Azphalt.Ink.copy(alpha = .07f)).padding(10.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    "${intent.kind.name.replace('_', ' ')} · ${intent.authority.uppercase()} AUTHORITY",
+                    color = Azphalt.currentGround.onPage.copy(alpha = .55f),
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = 0.09.em
+                )
+                intent.consequences.forEach { consequence ->
+                    Text("• $consequence", color = Azphalt.currentGround.onPage.copy(alpha = .78f), fontSize = 11.sp, lineHeight = 15.sp)
+                }
+            }
+        }
+
         if (message.command != null) {
             Spacer(Modifier.height(8.dp))
             Box(
@@ -227,8 +230,6 @@ private fun AiBubble(message: AiMessage, onUseCommand: (String) -> Unit) {
             ) {
                 Text(
                     "WHAT EACH PART DOES",
-                    // .55f, the app-wide "text-muted, eyebrows and captions" tier - the 45% tier
-                    // is for micro labels inside a pill, which this section caption isn't.
                     color = Azphalt.currentGround.onPage.copy(alpha = .55f),
                     fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.18.em
                 )
