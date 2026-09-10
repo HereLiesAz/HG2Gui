@@ -65,6 +65,7 @@ object PackageIsolation {
     }
 
     fun seedCommand(context: Context, pkg: PackageLifecycleStore.InstalledPackage): String {
+        val base = packageBase(context, pkg)
         val root = root(context, pkg)
         val hostPrefix = DistroManager.prefixDir(context)
         val hostHome = DistroManager.homeDir(context)
@@ -73,14 +74,25 @@ object PackageIsolation {
         val marker = marker(context, pkg)
         val denied = File(root, ".hg2gui/denied")
         val auditHost = File(root, AUDIT_RELATIVE)
+        val plan = runCatching { IsolationSeedPlanner.prepare(context, pkg, base) }.getOrNull()
 
         val privilegedNames = listOf("adb", "su", "tsu", "magisk", "proot")
             .joinToString(" ") { q(File(guestPrefix, "bin/$it").absolutePath) }
+        val seedCopy = if (plan?.manifest?.isFile == true) {
+            val manifest = plan.manifest
+            "hp=${q(hostPrefix.absolutePath)}; gp=${q(guestPrefix.absolutePath)}; " +
+                "while IFS= read -r src; do " +
+                "rel=\"\${src#\"\$hp\"/}\"; [ \"\$rel\" != \"\$src\" ] || continue; " +
+                "dst=\"\$gp/\$rel\"; mkdir -p \"\$(dirname \"\$dst\")\"; " +
+                "cp -a \"\$src\" \"\$dst\" || exit 1; done < ${q(manifest.absolutePath)}"
+        } else {
+            "cp -a ${q(hostPrefix.absolutePath + "/.")} ${q(guestPrefix.absolutePath + "/")}"
+        }
 
         return listOf(
             "rm -rf ${q(root.absolutePath)}",
             "mkdir -p ${q(guestPrefix.absolutePath)} ${q(guestHome.absolutePath)} ${q(denied.parentFile!!.absolutePath)} ${q(auditHost.parentFile!!.absolutePath)}",
-            "cp -a ${q(hostPrefix.absolutePath + "/.")} ${q(guestPrefix.absolutePath + "/")}",
+            seedCopy,
             "rm -f $privilegedNames",
             ": > ${q(denied.absolutePath)}",
             ": > ${q(auditHost.absolutePath)}",
@@ -90,6 +102,19 @@ object PackageIsolation {
     }
 
     fun command(context: Context, pkg: PackageLifecycleStore.InstalledPackage, original: String): String {
+        val network = PackageCapabilityPolicy.decide(
+            context,
+            pkg.key,
+            PackageCapabilityPolicy.Capability.NETWORK
+        )
+        if (!network.allowed) {
+            error(
+                "Network policy blocked ${pkg.name}'s isolated launch (${network.reason}). " +
+                    "This Android/PRoot boundary cannot run a process in a truthful offline network namespace, " +
+                    "so HG2Gui fails closed. Arm Authority → Package policies → ${pkg.name} → network → Allow once, then run again."
+            )
+        }
+
         val proot = engine(context)
             ?: error("Isolation engine is unavailable. Install the proot package before isolating packages.")
         val root = root(context, pkg)
