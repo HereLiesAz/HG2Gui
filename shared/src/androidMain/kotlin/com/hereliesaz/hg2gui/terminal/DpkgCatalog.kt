@@ -1,19 +1,29 @@
 package com.hereliesaz.hg2gui.terminal
 
 import java.io.File
+import java.util.ArrayDeque
 
 /**
- * Real dpkg package-ownership metadata already sitting in the Termux prefix - which package
- * installed a given binary. Read from var/lib/dpkg/info/<package>.list, one file per installed
- * package listing every path it put down (already on disk, no guessing which binary came from
- * which package).
- *
- * Termux's own packages carry no Debian "Section" field (verified against a real bootstrap - 0
- * of 82 base packages have one), so there is no live category metadata to read for a binary,
- * only which package owns it. `CommandTree`'s own hand-curated package→category map is what
- * actually turns this into a category.
+ * Real dpkg package-ownership and relationship metadata already sitting in the Termux prefix.
+ * Nothing here shells out or guesses: ownership comes from var/lib/dpkg/info/*.list and installed
+ * package relationships come from var/lib/dpkg/status.
  */
 object DpkgCatalog {
+
+    data class InstalledPackageMetadata(
+        val name: String,
+        val version: String,
+        val preDepends: List<List<String>>,
+        val depends: List<List<String>>,
+        val provides: Set<String>
+    )
+
+    data class DependencyView(
+        val directDependencies: List<String>,
+        val dependencyClosure: List<String>,
+        val directDependents: List<String>,
+        val dependentClosure: List<String>
+    )
 
     /** Maps each installed package's name to the binaries (bare names, under bin/) it owns. */
     fun binariesByPackage(prefixDir: File): Map<String, List<String>> {
@@ -38,39 +48,122 @@ object DpkgCatalog {
     }
 
     /** Installed package versions from dpkg's status database, limited to `Status: ... installed`. */
-    fun installedVersions(prefixDir: File): Map<String, String> {
+    fun installedVersions(prefixDir: File): Map<String, String> =
+        installedMetadata(prefixDir).mapValues { it.value.version }
+
+    /**
+     * Installed dpkg relationships, preserving dependency alternatives while normalizing away
+     * version/architecture/profile syntax. The status database describes the already-selected
+     * installed world, so topology does not need to re-solve version constraints here.
+     */
+    fun installedMetadata(prefixDir: File): Map<String, InstalledPackageMetadata> {
         val status = File(prefixDir, "var/lib/dpkg/status")
         if (!status.isFile) return emptyMap()
 
-        val result = linkedMapOf<String, String>()
-        var name: String? = null
-        var version: String? = null
-        var installed = false
-
-        fun commit() {
-            val packageName = name
-            if (installed && !packageName.isNullOrBlank()) result[packageName] = version.orEmpty()
-            name = null
-            version = null
-            installed = false
-        }
-
+        val result = linkedMapOf<String, InstalledPackageMetadata>()
         try {
-            status.forEachLine { line ->
-                if (line.isBlank()) {
-                    commit()
-                } else {
-                    when {
-                        line.startsWith("Package:") -> name = line.substringAfter(':').trim()
-                        line.startsWith("Version:") -> version = line.substringAfter(':').trim()
-                        line.startsWith("Status:") -> installed = line.substringAfter(':').trim().endsWith(" installed")
-                    }
-                }
+            status.readText().split(Regex("\\n\\s*\\n")).forEach { paragraph ->
+                val fields = parseParagraph(paragraph)
+                val name = fields["Package"]?.takeIf(String::isNotBlank) ?: return@forEach
+                if (fields["Status"]?.endsWith(" installed") != true) return@forEach
+                result[name] = InstalledPackageMetadata(
+                    name = name,
+                    version = fields["Version"].orEmpty(),
+                    preDepends = parseRelationGroups(fields["Pre-Depends"].orEmpty()),
+                    depends = parseRelationGroups(fields["Depends"].orEmpty()),
+                    provides = parseRelationList(fields["Provides"].orEmpty()).toSet()
+                )
             }
-            commit()
         } catch (_: Exception) {
             return emptyMap()
         }
         return result
+    }
+
+    /** Installed dependency closure plus reverse-removal impact for one dpkg package. */
+    fun dependencyView(prefixDir: File, packageName: String): DependencyView {
+        val installed = installedMetadata(prefixDir)
+        val target = installed[packageName] ?: return DependencyView(emptyList(), emptyList(), emptyList(), emptyList())
+
+        val providers = buildMap<String, MutableList<String>> {
+            installed.values.forEach { pkg ->
+                pkg.provides.forEach { provided -> getOrPut(provided) { mutableListOf() }.add(pkg.name) }
+            }
+        }
+
+        fun resolve(groups: List<List<String>>): List<String> = groups.mapNotNull { alternatives ->
+            alternatives.firstOrNull { it in installed }
+                ?: alternatives.firstNotNullOfOrNull { providers[it]?.firstOrNull() }
+        }.distinct()
+
+        val directByPackage = installed.mapValues { (_, pkg) -> resolve(pkg.preDepends + pkg.depends).filter { it != pkg.name } }
+        val directDependencies = directByPackage[target.name].orEmpty().sorted()
+        val dependencyClosure = closure(directDependencies) { directByPackage[it].orEmpty() }
+
+        val reverse = linkedMapOf<String, MutableList<String>>()
+        directByPackage.forEach { (owner, dependencies) ->
+            dependencies.forEach { dependency -> reverse.getOrPut(dependency) { mutableListOf() }.add(owner) }
+        }
+        val directDependents = reverse[target.name].orEmpty().distinct().sorted()
+        val dependentClosure = closure(directDependents) { reverse[it].orEmpty() }
+
+        return DependencyView(
+            directDependencies = directDependencies,
+            dependencyClosure = dependencyClosure,
+            directDependents = directDependents,
+            dependentClosure = dependentClosure
+        )
+    }
+
+    private fun closure(seed: List<String>, next: (String) -> List<String>): List<String> {
+        val seen = linkedSetOf<String>()
+        val queue = ArrayDeque<String>()
+        seed.forEach(queue::addLast)
+        while (queue.isNotEmpty()) {
+            val name = queue.removeFirst()
+            if (!seen.add(name)) continue
+            next(name).forEach { if (it !in seen) queue.addLast(it) }
+        }
+        return seen.toList().sorted()
+    }
+
+    private fun parseParagraph(paragraph: String): Map<String, String> {
+        val fields = linkedMapOf<String, String>()
+        var current: String? = null
+        paragraph.lineSequence().forEach { line ->
+            if (line.startsWith(' ') && current != null) {
+                fields[current!!] = fields.getValue(current!!) + " " + line.trim()
+            } else {
+                val separator = line.indexOf(':')
+                if (separator > 0) {
+                    current = line.substring(0, separator)
+                    fields[current!!] = line.substring(separator + 1).trim()
+                }
+            }
+        }
+        return fields
+    }
+
+    private fun parseRelationGroups(raw: String): List<List<String>> = if (raw.isBlank()) {
+        emptyList()
+    } else {
+        raw.split(',').mapNotNull { clause ->
+            clause.split('|').mapNotNull(::relationName).takeIf(List<String>::isNotEmpty)
+        }
+    }
+
+    private fun parseRelationList(raw: String): List<String> = if (raw.isBlank()) {
+        emptyList()
+    } else {
+        raw.split(',').mapNotNull(::relationName)
+    }
+
+    private fun relationName(raw: String): String? {
+        val cleaned = raw
+            .replace(Regex("\\[[^]]*]"), "")
+            .replace(Regex("<[^>]*>"), "")
+            .substringBefore('(')
+            .trim()
+        return cleaned.substringBefore(':').trim().takeIf(String::isNotBlank)
     }
 }
