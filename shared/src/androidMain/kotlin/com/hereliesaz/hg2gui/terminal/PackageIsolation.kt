@@ -9,6 +9,7 @@ object PackageIsolation {
     private const val TELEMETRY_PREFIX = "__HG2GUI_TELEMETRY__/"
     private const val AUDIT_RELATIVE = ".hg2gui/audit/latest.log"
     private const val SUMMARY_RELATIVE = ".hg2gui/audit/summary.tsv"
+    private const val MAX_TELEMETRY_ROWS = 500
 
     data class FileStamp(val size: Long, val modified: Long, val directory: Boolean)
 
@@ -120,9 +121,18 @@ object PackageIsolation {
         "audit=${q(audit)}",
         "mkdir -p \"\$(dirname \"\$audit\")\"",
         ": > \"\$audit\"",
-        "seen=\"\$audit.seen\"",
-        ": > \"\$seen\"",
-        "hg2_log() { grep -Fqx -- \"\$1\" \"\$seen\" 2>/dev/null || { printf '%s\\n' \"\$1\" >> \"\$seen\"; printf '%s\\n' \"\$1\" >> \"\$audit\"; }; }",
+        "limit=$MAX_TELEMETRY_ROWS",
+        "count=0",
+        "truncated=0",
+        "hg2_log() {",
+        "  grep -Fqx -- \"\$1\" \"\$audit\" 2>/dev/null && return",
+        "  if [ \"\$count\" -ge \"\$((limit - 1))\" ]; then",
+        "    if [ \"\$truncated\" -eq 0 ]; then printf 'telemetry-limit:%s\\n' \"\$limit\" >> \"\$audit\"; truncated=1; fi",
+        "    return",
+        "  fi",
+        "  printf '%s\\n' \"\$1\" >> \"\$audit\"",
+        "  count=\$((count + 1))",
+        "}",
         "hg2_scan_pid() {",
         "  local p=\"\$1\" child fd target flags mode inode proto row",
         "  [ -r \"/proc/\$p/cmdline\" ] || return",
@@ -160,7 +170,6 @@ object PackageIsolation {
         "hg2_scan_pid \"\$main\"",
         "wait \"\$main\"",
         "code=\$?",
-        "rm -f \"\$seen\"",
         "exit \"\$code\""
     ).joinToString("\n")
 
@@ -182,7 +191,7 @@ object PackageIsolation {
             val audit = File(root, AUDIT_RELATIVE)
             if (audit.isFile) {
                 audit.useLines { lines ->
-                    lines.filter(String::isNotBlank).take(500).forEachIndexed { index, line ->
+                    lines.filter(String::isNotBlank).take(MAX_TELEMETRY_ROWS).forEachIndexed { index, line ->
                         result[TELEMETRY_PREFIX + index.toString().padStart(4, '0') + "/" + line] = FileStamp(0, 0, false)
                     }
                 }
