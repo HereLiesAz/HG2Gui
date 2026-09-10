@@ -34,6 +34,15 @@ object Hg2ExecEnvironment {
             "Termux exec preload is unavailable at ${preload.absolutePath}"
         }
 
+        // Termux's PRoot package is compiled with Termux's own /data/data/com.termux/.../tmp path
+        // as its fallback. That directory cannot exist for HG2Gui, so every PRoot invocation must
+        // inherit an explicit writable host-side temp directory before it attempts to build its
+        // glue rootfs.
+        val prootTmp = File(context.filesDir, "tmp/proot")
+        require(prootTmp.isDirectory || prootTmp.mkdirs()) {
+            "Cannot create PRoot temp directory at ${prootTmp.absolutePath}"
+        }
+
         val dataDir = context.applicationInfo.dataDir
         env["HOME"] = home.absolutePath
         env["PREFIX"] = prefix.absolutePath
@@ -45,6 +54,7 @@ object Hg2ExecEnvironment {
         env["TERMUX_APP__LEGACY_DATA_DIR"] = "/data/data/${context.packageName}"
         env["TERMUX_EXEC__EXECVE_CALL__INTERCEPT"] = "enable"
         env["TERMUX_EXEC__SYSTEM_LINKER_EXEC__MODE"] = "force"
+        env["PROOT_TMP_DIR"] = prootTmp.absolutePath
         env["LD_PRELOAD"] = preload.absolutePath
     }
 }
