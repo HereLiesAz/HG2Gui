@@ -5,7 +5,7 @@ import java.util.ArrayDeque
 
 /**
  * Real dpkg package-ownership and relationship metadata already sitting in the Termux prefix.
- * Nothing here shells out or guesses: ownership comes from var/lib/dpkg/info/*.list and installed
+ * Nothing here shells out or guesses: ownership comes from dpkg package list files and installed
  * package relationships come from var/lib/dpkg/status.
  */
 object DpkgCatalog {
@@ -64,7 +64,7 @@ object DpkgCatalog {
         try {
             status.readText().split(Regex("\\n\\s*\\n")).forEach { paragraph ->
                 val fields = parseParagraph(paragraph)
-                val name = fields["Package"]?.takeIf(String::isNotBlank) ?: return@forEach
+                val name = fields["Package"]?.takeIf { it.isNotBlank() } ?: return@forEach
                 if (fields["Status"]?.endsWith(" installed") != true) return@forEach
                 result[name] = InstalledPackageMetadata(
                     name = name,
@@ -85,10 +85,9 @@ object DpkgCatalog {
         val installed = installedMetadata(prefixDir)
         val target = installed[packageName] ?: return DependencyView(emptyList(), emptyList(), emptyList(), emptyList())
 
-        val providers = buildMap<String, MutableList<String>> {
-            installed.values.forEach { pkg ->
-                pkg.provides.forEach { provided -> getOrPut(provided) { mutableListOf() }.add(pkg.name) }
-            }
+        val providers = linkedMapOf<String, MutableList<String>>()
+        installed.values.forEach { pkg ->
+            pkg.provides.forEach { provided -> providers.getOrPut(provided) { mutableListOf() }.add(pkg.name) }
         }
 
         fun resolve(groups: List<List<String>>): List<String> = groups.mapNotNull { alternatives ->
@@ -118,7 +117,7 @@ object DpkgCatalog {
     private fun closure(seed: List<String>, next: (String) -> List<String>): List<String> {
         val seen = linkedSetOf<String>()
         val queue = ArrayDeque<String>()
-        seed.forEach(queue::addLast)
+        seed.forEach { queue.addLast(it) }
         while (queue.isNotEmpty()) {
             val name = queue.removeFirst()
             if (!seen.add(name)) continue
@@ -131,8 +130,9 @@ object DpkgCatalog {
         val fields = linkedMapOf<String, String>()
         var current: String? = null
         paragraph.lineSequence().forEach { line ->
-            if (line.startsWith(' ') && current != null) {
-                fields[current!!] = fields.getValue(current!!) + " " + line.trim()
+            val active = current
+            if (line.startsWith(' ') && active != null) {
+                fields[active] = fields.getValue(active) + " " + line.trim()
             } else {
                 val separator = line.indexOf(':')
                 if (separator > 0) {
@@ -148,7 +148,7 @@ object DpkgCatalog {
         emptyList()
     } else {
         raw.split(',').mapNotNull { clause ->
-            clause.split('|').mapNotNull(::relationName).takeIf(List<String>::isNotEmpty)
+            clause.split('|').mapNotNull(::relationName).takeIf { it.isNotEmpty() }
         }
     }
 
@@ -164,6 +164,6 @@ object DpkgCatalog {
             .replace(Regex("<[^>]*>"), "")
             .substringBefore('(')
             .trim()
-        return cleaned.substringBefore(':').trim().takeIf(String::isNotBlank)
+        return cleaned.substringBefore(':').trim().takeIf { it.isNotBlank() }
     }
 }
