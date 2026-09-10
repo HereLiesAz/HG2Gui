@@ -46,21 +46,28 @@ object IsolationSeedPlanner {
         val packages = (listOf(pkg.name) + closure + runtimePackages.filter(metadata::containsKey)).distinct().sorted()
         val info = File(prefix, "var/lib/dpkg/info")
         val paths = linkedSetOf<String>()
+        var overflowed = false
         for (name in packages) {
             matchingLists(info, name).forEach { listFile ->
                 runCatching {
                     listFile.forEachLine { raw ->
                         val source = raw.trim()
-                        if (paths.size >= MAX_FILES) return@forEachLine
-                        if (!source.startsWith(prefix.absolutePath + "/")) return@forEachLine
+                        if (source.isBlank() || !source.startsWith(prefix.absolutePath + "/")) return@forEachLine
                         val file = File(source)
-                        if (file.exists() && !file.isDirectory) paths += file.absolutePath
+                        if (!file.exists() || file.isDirectory || source in paths) return@forEachLine
+                        if (paths.size >= MAX_FILES) {
+                            overflowed = true
+                            return@forEachLine
+                        }
+                        paths += file.absolutePath
                     }
                 }
             }
-            if (paths.size >= MAX_FILES) break
+            if (overflowed) break
         }
-        if (paths.isEmpty()) return Plan(null, packages, 0, "installed-prefix-copy")
+        if (overflowed || paths.isEmpty()) {
+            return Plan(null, packages, paths.size, "installed-prefix-copy")
+        }
 
         val manifest = File(File(packageBase, DIRECTORY), MANIFEST)
         manifest.parentFile?.mkdirs()
