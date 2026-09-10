@@ -46,7 +46,7 @@ class TerminalEngine(
 
         val verb = trimmed.substringBefore(' ')
         val aptPackageCommand = translateAptPackageCommand(trimmed)
-        val packageOwner = if (verb in setOf("hg2package", "hg2auth")) null else PackageLifecycleStore.ownerOfBinary(context, verb)
+        val packageOwner = if (verb in setOf("hg2package", "hg2auth", "remote")) null else PackageLifecycleStore.ownerOfBinary(context, verb)
 
         when {
             verb == "bootstrap" -> launch(Dispatchers.IO) {
@@ -69,6 +69,13 @@ class TerminalEngine(
                 } finally {
                     close()
                 }
+            }
+
+            verb == "remote" -> launch(Dispatchers.IO) {
+                val output = RemoteDiscovery.run(context, shellWords(trimmed).drop(1))
+                trySend(output)
+                onExit(if (output.startsWith("Remote discovery failed") || output.startsWith("No SSH preset") || output.startsWith("SSH client is unavailable")) 1 else 0)
+                close()
             }
 
             verb == "hg2auth" -> launch(Dispatchers.IO) {
@@ -170,6 +177,11 @@ class TerminalEngine(
         val trimmed = line.trim()
         val verb = trimmed.substringBefore(' ')
         val aptPackageCommand = translateAptPackageCommand(trimmed)
+
+        if (verb == "remote") {
+            val output = RemoteDiscovery.run(context, shellWords(trimmed).drop(1))
+            return@withContext output to if (output.startsWith("Remote discovery failed") || output.startsWith("No SSH preset") || output.startsWith("SSH client is unavailable")) 1 else 0
+        }
 
         if (verb == "hg2auth") {
             return@withContext if (shellWords(trimmed).getOrNull(1) == "status") {
