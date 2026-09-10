@@ -396,19 +396,44 @@ fun TerminalScreen(
 
         active.transientStatus?.takeIf { active.running }?.let { LiveStatusStrip(it) }
 
-        if (active.buffer.isNotEmpty()) {
-            Eyebrow("00 — Buffer")
-            Column(
-                Modifier
-                    .weight(0.4f)
-                    .fillMaxWidth()
-            ) {
+        val pendingPrompt = active.pendingPrompt
+        val answerNode = when {
+            pendingPrompt == null || ShellAliases.looksLikeYesNo(pendingPrompt) -> null
+            else -> ShellAliases.numberedMenuChoices(pendingPrompt)?.let { choices ->
+                MenuNode(
+                    id = "answer",
+                    label = "Answer",
+                    emitsToken = false,
+                    children = choices.map { (number, label) ->
+                        MenuNode(id = "answer-$number", label = "$number) $label", value = number)
+                    }
+                )
+            } ?: ShellAliases.bracketedChoices(pendingPrompt)?.let { choices ->
+                MenuNode(
+                    id = "answer",
+                    label = "Answer",
+                    emitsToken = false,
+                    children = choices.map { choice -> MenuNode(id = "answer-$choice", label = choice, value = choice) }
+                )
+            }
+        }
+
+        val completionNode = completionNodeFor(active)
+        val suggestionNode = suggestionNodeFor(active, knownCommands)
+        val chainNode = chainNodeFor(active)
+        val effectiveTree = tree + listOfNotNull(completionNode, suggestionNode, chainNode, answerNode)
+
+        FluidTerminalWorkspace(
+            hasBuffer = active.buffer.isNotEmpty(),
+            estimatedPillRows = effectiveTree.size,
+            modifier = Modifier.weight(1f),
+            bufferContent = {
                 LazyColumn(
                     state = listState,
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp),
+                        .padding(horizontal = 12.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     contentPadding = PaddingValues(bottom = 8.dp)
                 ) {
@@ -441,73 +466,45 @@ fun TerminalScreen(
                         onToggleRaw = { selectedShowRaw = !selectedShowRaw }
                     )
                 }
-            }
-        }
-
-        Eyebrow("01 — Command tree")
-
-        val pendingPrompt = active.pendingPrompt
-        val answerNode = when {
-            pendingPrompt == null || ShellAliases.looksLikeYesNo(pendingPrompt) -> null
-            else -> ShellAliases.numberedMenuChoices(pendingPrompt)?.let { choices ->
-                MenuNode(
-                    id = "answer",
-                    label = "Answer",
-                    emitsToken = false,
-                    children = choices.map { (number, label) ->
-                        MenuNode(id = "answer-$number", label = "$number) $label", value = number)
-                    }
-                )
-            } ?: ShellAliases.bracketedChoices(pendingPrompt)?.let { choices ->
-                MenuNode(
-                    id = "answer",
-                    label = "Answer",
-                    emitsToken = false,
-                    children = choices.map { choice -> MenuNode(id = "answer-$choice", label = choice, value = choice) }
-                )
-            }
-        }
-
-        val completionNode = completionNodeFor(active)
-        val suggestionNode = suggestionNodeFor(active, knownCommands)
-        val chainNode = chainNodeFor(active)
-        val effectiveTree = tree + listOfNotNull(completionNode, suggestionNode, chainNode, answerNode)
-
-        PillMenu(
-            roots = effectiveTree,
-            modifier = Modifier.weight(if (active.buffer.isEmpty()) 1f else 0.6f).padding(horizontal = 20.dp, vertical = 12.dp),
-            onRun = { picked, isTerminal ->
-                val completion = completionCandidateFromPick(picked, active)
-                val chainOperator = chainOperatorFromPick(picked)
-                when {
-                    completion != null -> {
-                        requestedInputKind = null
-                        val insertion = applyCompletion(active.inputText, candidate = completion)
-                        active.inputText = insertion.line
-                        active.clearCompletions()
-                    }
-                    chainOperator != null -> {
-                        requestedInputKind = null
-                        active.composedPrefix = chainSegment(active.composedPrefix, active.pendingSegment(), chainOperator)
-                        active.tokens = emptyList()
-                        active.inputText = ""
-                    }
-                    else -> {
-                        active.tokens = picked
-                        if (picked.isNotEmpty()) active.inputText = ""
-                        if (isTerminal && pendingPrompt != null) {
-                            requestedInputKind = null
-                            executeCommand()
-                        } else if (isTerminal) {
-                            requestedInputKind = expectedInputKind(picked)
-                        } else {
-                            requestedInputKind = null
-                        }
-                    }
-                }
             },
-            onWizard = onWizard,
-            onCrumbPositioned = onCrumbPositioned
+            commandTreeContent = { workspaceModifier ->
+                PillMenu(
+                    roots = effectiveTree,
+                    modifier = workspaceModifier.padding(horizontal = 20.dp, vertical = 12.dp),
+                    onRun = { picked, isTerminal ->
+                        val completion = completionCandidateFromPick(picked, active)
+                        val chainOperator = chainOperatorFromPick(picked)
+                        when {
+                            completion != null -> {
+                                requestedInputKind = null
+                                val insertion = applyCompletion(active.inputText, candidate = completion)
+                                active.inputText = insertion.line
+                                active.clearCompletions()
+                            }
+                            chainOperator != null -> {
+                                requestedInputKind = null
+                                active.composedPrefix = chainSegment(active.composedPrefix, active.pendingSegment(), chainOperator)
+                                active.tokens = emptyList()
+                                active.inputText = ""
+                            }
+                            else -> {
+                                active.tokens = picked
+                                if (picked.isNotEmpty()) active.inputText = ""
+                                if (isTerminal && pendingPrompt != null) {
+                                    requestedInputKind = null
+                                    executeCommand()
+                                } else if (isTerminal) {
+                                    requestedInputKind = expectedInputKind(picked)
+                                } else {
+                                    requestedInputKind = null
+                                }
+                            }
+                        }
+                    },
+                    onWizard = onWizard,
+                    onCrumbPositioned = onCrumbPositioned
+                )
+            }
         )
 
         val maskInput = pendingPrompt != null && ShellAliases.looksLikePassword(pendingPrompt)
