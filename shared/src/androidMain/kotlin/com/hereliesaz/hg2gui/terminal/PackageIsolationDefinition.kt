@@ -6,7 +6,7 @@ import org.json.JSONObject
 
 /** Machine-readable description of the isolation boundary HG2Gui actually applies. */
 object PackageIsolationDefinition {
-    const val SCHEMA_VERSION = 2
+    const val SCHEMA_VERSION = 3
 
     fun json(context: Context, pkg: PackageLifecycleStore.InstalledPackage): String {
         val dependencyClosure = if (pkg.manager == "pkg") {
@@ -29,7 +29,7 @@ object PackageIsolationDefinition {
                 .put("backend", "PROOT_ISOLATED")
                 .put("failClosed", true)
                 .put("root", PackageIsolation.root(context, pkg).absolutePath)
-                .put("seedStrategy", "installed-prefix-copy")
+                .put("seedStrategy", if (pkg.manager == "pkg") "dependency-closure-manifest-with-safe-full-prefix-fallback" else "installed-prefix-copy")
                 .put("dependencyClosure", JSONArray(dependencyClosure)))
             .put("state", JSONObject()
                 .put("privateHome", true)
@@ -51,9 +51,10 @@ object PackageIsolationDefinition {
                 .put("networkVisibility", "sampled")
                 .put("syscallComplete", false))
             .put("network", JSONObject()
-                .put("policy", "visible-not-blocked")
-                .put("enforced", false)
-                .put("reason", "unprivileged PRoot does not provide a separate Android network namespace"))
+                .put("policy", "one-run-launch-grant")
+                .put("launchGateEnforced", true)
+                .put("offlineConfinement", false)
+                .put("reason", "unprivileged PRoot cannot create a separate Android network namespace; without a one-run grant HG2Gui refuses to launch the isolated process"))
             .toString(2)
     }
 }
