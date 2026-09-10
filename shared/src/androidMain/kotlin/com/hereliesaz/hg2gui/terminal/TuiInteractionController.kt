@@ -2,6 +2,7 @@ package com.hereliesaz.hg2gui.terminal
 
 import android.view.KeyEvent as NativeKeyEvent
 import com.termux.terminal.KeyHandler
+import com.termux.terminal.TerminalEmulator
 import kotlinx.coroutines.delay
 import kotlin.math.abs
 
@@ -92,6 +93,17 @@ object TuiInteractionController {
         val key = if (delta >= 0) NativeKeyEvent.KEYCODE_DPAD_DOWN else NativeKeyEvent.KEYCODE_DPAD_UP
         repeat(abs(delta)) { sendKey(holder, key); delay(25) }
         sendKey(holder, NativeKeyEvent.KEYCODE_ENTER)
+        return Result(true)
+    }
+
+    /** Sends a real terminal mouse press/release only when the child has enabled mouse tracking. */
+    fun mouseClick(holder: FullScreenPtySession, row: Int, column: Int): Result {
+        val emulator = holder.session.emulator ?: return Result(false, "terminal state unavailable")
+        if (!emulator.isMouseTrackingActive()) return Result(false, "application is not accepting terminal mouse input")
+        val terminalRow = row + 1
+        val terminalColumn = column.coerceAtLeast(0) + 1
+        emulator.sendMouseEvent(TerminalEmulator.MOUSE_LEFT_BUTTON, terminalColumn, terminalRow, true)
+        emulator.sendMouseEvent(TerminalEmulator.MOUSE_LEFT_BUTTON, terminalColumn, terminalRow, false)
         return Result(true)
     }
 
