@@ -1,0 +1,11 @@
+[mcp_servers.compose-hot-reload]
+command = "./gradlew"
+args = [
+    "--no-daemon",
+    "--quiet",
+    "--console=plain",
+    ":shared:hotMcpServerDesktop",
+]
+
+[mcp_servers.compose-hot-reload.env]
+SKIKO_RENDER_API = "SOFTWARE"
