@@ -3,6 +3,10 @@ name: Clear Gradle Cache
 on:
   workflow_dispatch: # Runs manually only
 
+# Least-privilege default token; jobs needing more declare their own permissions block.
+permissions:
+  contents: read
+
 jobs:
   clear-cache:
     runs-on: ubuntu-latest
@@ -11,11 +15,11 @@ jobs:
 
     steps:
       - name: Check out code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        uses: actions/checkout@v7
 
       - name: Delete all caches
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           echo "Fetching list of cache keys..."
           cacheIds=$(gh cache list --limit 100 --json id --jq '.[].id')
