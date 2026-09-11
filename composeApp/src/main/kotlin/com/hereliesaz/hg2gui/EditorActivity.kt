@@ -14,6 +14,7 @@ import androidx.compose.runtime.setValue
 import com.hereliesaz.hg2gui.ui.ConfirmDialog
 import com.hereliesaz.hg2gui.ui.HG2GuiTheme
 import com.hereliesaz.hg2gui.ui.editor.EditorScreen
+import android.content.Intent
 import android.net.Uri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -139,12 +140,26 @@ class EditorActivity : ComponentActivity() {
                         val current = content ?: return@EditorScreen
                         scope.launch(Dispatchers.IO) {
                             try {
-                                file?.writeText(current)
-                                    ?: run {
-                                        // content:// URIs from external apps are read-only in this context
+                                when {
+                                    file != null -> file.writeText(current)
+                                    externalUri != null -> {
+                                        val writable = (intent.flags and Intent.FLAG_GRANT_WRITE_URI_PERMISSION) != 0
+                                        if (!writable) {
+                                            withContext(Dispatchers.Main) { error = "Cannot save back to external URI" }
+                                            return@launch
+                                        }
+                                        resolver.openOutputStream(externalUri, "wt")
+                                            ?.use { it.writer(Charsets.UTF_8).write(current) }
+                                            ?: run {
+                                                withContext(Dispatchers.Main) { error = "Cannot open URI for writing" }
+                                                return@launch
+                                            }
+                                    }
+                                    else -> {
                                         withContext(Dispatchers.Main) { error = "Cannot save back to external URI" }
                                         return@launch
                                     }
+                                }
                                 // State writes must happen on the main thread to satisfy Compose's
                                 // snapshot isolation; @Volatile alone is not sufficient here.
                                 withContext(Dispatchers.Main) { dirty = false }
