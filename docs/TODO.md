@@ -116,6 +116,12 @@ The sampler remains best-effort same-UID observation, not kernel audit or syscal
 - [x] Android ICU regex initialization crash
   - [x] Escape closing object/array delimiters in package metadata regexes so `PackageLifecycleStore` does not fail during static initialization on Android ICU.
 
+- [x] Terminal workspace gesture ownership
+  - [x] Buffer and command-tree hit-test regions are geometrically disjoint.
+  - [x] Short stacks use top-buffer / bottom-command regions; tall stacks switch atomically to side-by-side regions.
+  - [x] Pill gestures cannot be stolen by the buffer, and buffer gestures cannot be stolen by the pill tree.
+  - [x] Both surfaces clip children to their owned region so visual and touch geometry cannot disagree.
+
 ## Device verification still required
 
 - [ ] Confirm the latest combined package execution head on a physical Android device:
@@ -131,8 +137,9 @@ The sampler remains best-effort same-UID observation, not kernel audit or syscal
   - [ ] Settings scrolling at constrained height / large text scale;
   - [ ] Settings → Isolation Audit after an isolated run;
   - [ ] AI audit interpretation redaction/display with a configured API key.
+  - [ ] Buffer/pill gesture ownership on constrained portrait layouts and while the command stack is tall/scrolling.
 
-CI success is recorded separately from this device-only checklist; a green JVM/Android build does not prove Android ICU/linker/PRoot/ADB/SSH runtime behavior.
+CI success is recorded separately from this device-only checklist; a green JVM/Android build does not prove Android ICU/linker/PRoot/ADB/SSH/runtime gesture behavior.
 
 ## Evidence-driven future work
 
