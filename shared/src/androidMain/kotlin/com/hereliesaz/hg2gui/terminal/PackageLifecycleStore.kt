@@ -3,6 +3,7 @@ package com.hereliesaz.hg2gui.terminal
 import android.content.Context
 import androidx.core.content.edit
 import java.io.File
+import org.json.JSONObject
 
 /** HG2Gui lifecycle state layered over whatever package manager installed the package. */
 object PackageLifecycleStore {
@@ -260,28 +261,29 @@ object PackageLifecycleStore {
         return result
     }
 
-    /**
-     * pipx owns one virtual environment per application package and records its authoritative
-     * package/version/app inventory in pipx_metadata.json. Reading that metadata keeps lifecycle
-     * discovery side-effect free; HG2Gui never needs to execute `pipx list` just to draw the menu.
-     */
     private fun pipxPackages(context: Context, prefs: android.content.SharedPreferences): List<InstalledPackage> {
         val home = DistroManager.homeDir(context)
         val roots = listOf(
             File(home, ".local/share/pipx/venvs"),
             File(home, ".local/pipx/venvs")
         ).filter { it.isDirectory }
+
         return roots.flatMap { root ->
             root.listFiles().orEmpty().mapNotNull { venv ->
                 val metadata = File(venv, "pipx_metadata.json")
                 if (!venv.isDirectory || !metadata.isFile) return@mapNotNull null
-                val json = runCatching { metadata.readText() }.getOrNull() ?: return@mapNotNull null
-                val name = PIPX_PACKAGE.find(json)?.groupValues?.getOrNull(1)
-                    ?.takeIf { it.isNotBlank() }
-                    ?: venv.name
-                val version = PIPX_VERSION.find(json)?.groupValues?.getOrNull(1).orEmpty()
-                val appsBody = PIPX_APPS.find(json)?.groupValues?.getOrNull(1).orEmpty()
-                val apps = QUOTED.findAll(appsBody).map { it.groupValues[1] }.distinct().toList()
+                val rootJson = runCatching { JSONObject(metadata.readText()) }.getOrNull() ?: return@mapNotNull null
+                val main = rootJson.optJSONObject("main_package") ?: rootJson
+                val name = main.optString("package").takeIf { it.isNotBlank() } ?: venv.name
+                val version = main.optString("package_version")
+                val appsJson = main.optJSONArray("apps")
+                val apps = buildList {
+                    if (appsJson != null) {
+                        for (index in 0 until appsJson.length()) {
+                            appsJson.optString(index).takeIf { it.isNotBlank() }?.let(::add)
+                        }
+                    }
+                }.distinct()
                 packageRecord(prefs, "pipx", "Python apps / pipx", name, version, apps)
             }
         }.distinctBy { it.name.lowercase() }
@@ -294,15 +296,24 @@ object PackageLifecycleStore {
             if (child.isDirectory && child.name.startsWith("@")) child.listFiles().orEmpty().toList() else listOf(child)
         }.filter { it.isDirectory && File(it, "package.json").isFile }
             .mapNotNull { dir ->
-                val json = runCatching { File(dir, "package.json").readText() }.getOrNull() ?: return@mapNotNull null
-                val name = JSON_NAME.find(json)?.groupValues?.getOrNull(1) ?: return@mapNotNull null
+                val json = runCatching { JSONObject(File(dir, "package.json").readText()) }.getOrNull() ?: return@mapNotNull null
+                val name = json.optString("name").takeIf { it.isNotBlank() } ?: return@mapNotNull null
+                val bin = json.opt("bin")
+                val binaries = when (bin) {
+                    is JSONObject -> buildList {
+                        val keys = bin.keys()
+                        while (keys.hasNext()) add(keys.next())
+                    }.distinct().sorted()
+                    is String -> listOf(name.substringAfterLast('/'))
+                    else -> emptyList()
+                }
                 packageRecord(
                     prefs,
                     "npm",
                     "Node / npm",
                     name,
-                    JSON_VERSION.find(json)?.groupValues?.getOrNull(1).orEmpty(),
-                    parseNpmBins(json, name)
+                    json.optString("version"),
+                    binaries
                 )
             }
     }
@@ -310,22 +321,16 @@ object PackageLifecycleStore {
     private fun gemPackages(prefix: File, prefs: android.content.SharedPreferences): List<InstalledPackage> {
         val root = File(prefix, "lib/ruby/gems")
         if (!root.isDirectory) return emptyList()
-        return root.walkTopDown().filter { it.isFile && it.parentFile?.name == "specifications" && it.extension == "gemspec" }
+        return root.walkTopDown()
+            .filter { it.isFile && it.parentFile?.name == "specifications" && it.extension == "gemspec" }
             .mapNotNull { spec ->
                 val text = runCatching { spec.readText() }.getOrNull() ?: return@mapNotNull null
-                val name = GEM_NAME.find(text)?.groupValues?.getOrNull(1) ?: return@mapNotNull null
-                val executables = GEM_EXECUTABLES.find(text)?.groupValues?.getOrNull(1)
-                    ?.let { body -> QUOTED.findAll(body).map { it.groupValues[1] }.toList() }
-                    .orEmpty()
-                packageRecord(
-                    prefs,
-                    "gem",
-                    "Ruby / gem",
-                    name,
-                    GEM_VERSION.find(text)?.groupValues?.getOrNull(1).orEmpty(),
-                    executables
-                )
-            }.toList()
+                val name = gemAssignment(text, "name") ?: return@mapNotNull null
+                val version = gemAssignment(text, "version").orEmpty()
+                val executables = gemArray(text, "executables")
+                packageRecord(prefs, "gem", "Ruby / gem", name, version, executables)
+            }
+            .toList()
     }
 
     private fun packageRecord(
@@ -402,10 +407,65 @@ object PackageLifecycleStore {
         }.getOrDefault(emptyList())
     }
 
-    private fun parseNpmBins(json: String, packageName: String): List<String> {
-        val body = JSON_BIN_OBJECT.find(json)?.groupValues?.getOrNull(1)
-        if (body != null) return JSON_KEY.findAll(body).map { it.groupValues[1] }.distinct().toList()
-        return if (JSON_BIN_STRING.containsMatchIn(json)) listOf(packageName.substringAfterLast('/')) else emptyList()
+    private fun gemAssignment(text: String, field: String): String? {
+        val marker = ".$field"
+        return text.lineSequence().map(String::trim).firstNotNullOfOrNull { line ->
+            val markerIndex = line.indexOf(marker)
+            if (markerIndex < 0) return@firstNotNullOfOrNull null
+            val equalsIndex = line.indexOf('=', markerIndex + marker.length)
+            if (equalsIndex < 0) return@firstNotNullOfOrNull null
+            quotedValues(line.substring(equalsIndex + 1)).firstOrNull()
+        }
+    }
+
+    private fun gemArray(text: String, field: String): List<String> {
+        val marker = ".$field"
+        val lines = text.lines()
+        for (index in lines.indices) {
+            val line = lines[index]
+            val markerIndex = line.indexOf(marker)
+            if (markerIndex < 0) continue
+            val equalsIndex = line.indexOf('=', markerIndex + marker.length)
+            if (equalsIndex < 0) continue
+            val buffer = StringBuilder(line.substring(equalsIndex + 1))
+            var cursor = index + 1
+            while (']' !in buffer && cursor < lines.size) {
+                buffer.append(' ').append(lines[cursor])
+                cursor++
+            }
+            return quotedValues(buffer.toString()).distinct()
+        }
+        return emptyList()
+    }
+
+    private fun quotedValues(text: String): List<String> {
+        val result = mutableListOf<String>()
+        var index = 0
+        while (index < text.length) {
+            val quote = text[index]
+            if (quote != '\'' && quote != '"') {
+                index++
+                continue
+            }
+            val value = StringBuilder()
+            index++
+            var escaped = false
+            while (index < text.length) {
+                val ch = text[index++]
+                if (escaped) {
+                    value.append(ch)
+                    escaped = false
+                } else if (ch == '\\') {
+                    escaped = true
+                } else if (ch == quote) {
+                    result += value.toString()
+                    break
+                } else {
+                    value.append(ch)
+                }
+            }
+        }
+        return result
     }
 
     private fun sizeOf(file: File): Long = try {
@@ -421,17 +481,5 @@ object PackageLifecycleStore {
     private fun observedKey(packageKey: String) = "$OBSERVED_PREFIX$packageKey"
     private fun quote(value: String): String = "'${value.replace("'", "'\\''")}'"
 
-    private val JSON_NAME = Regex("\\\"name\\\"\\s*:\\s*\\\"([^\\\"]+)\\\"")
-    private val JSON_VERSION = Regex("\\\"version\\\"\\s*:\\s*\\\"([^\\\"]+)\\\"")
-    private val JSON_BIN_OBJECT = Regex("\\\"bin\\\"\\s*:\\s*\\{([^}]*)\\}", RegexOption.DOT_MATCHES_ALL)
-    private val JSON_BIN_STRING = Regex("\\\"bin\\\"\\s*:\\s*\\\"[^\\\"]+\\\"")
-    private val JSON_KEY = Regex("\\\"([^\\\"]+)\\\"\\s*:")
-    private val PIPX_PACKAGE = Regex("\\\"package\\\"\\s*:\\s*\\\"([^\\\"]+)\\\"")
-    private val PIPX_VERSION = Regex("\\\"package_version\\\"\\s*:\\s*\\\"([^\\\"]*)\\\"")
-    private val PIPX_APPS = Regex("\\\"apps\\\"\\s*:\\s*\\[([^]]*)\\]", RegexOption.DOT_MATCHES_ALL)
-    private val GEM_NAME = Regex("\\.name\\s*=\\s*[\\\"']([^\\\"']+)[\\\"']")
-    private val GEM_VERSION = Regex("\\.version\\s*=\\s*[\\\"']([^\\\"']+)[\\\"']")
-    private val GEM_EXECUTABLES = Regex("\\.executables\\s*=\\s*\\[([^]]*)\\]", RegexOption.DOT_MATCHES_ALL)
-    private val QUOTED = Regex("[\\\"']([^\\\"']+)[\\\"']")
     private val STATE_NAME_DENYLIST = setOf("sh", "env", "test", "true", "false", "yes", "no")
 }

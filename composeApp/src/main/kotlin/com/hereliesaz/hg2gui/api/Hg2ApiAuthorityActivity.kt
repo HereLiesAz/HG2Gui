@@ -47,10 +47,14 @@ class Hg2ApiAuthorityActivity : Activity() {
                 engine.run(
                     line,
                     onNeedInput = { prompt ->
-                        // Match only the exact confirmation prompts TerminalEngine emits for hg2auth —
-                        // a broad keyword match fires on arbitrary sub-program output like "Run npm?".
-                        if (prompt.trimEnd().endsWith("[y/N]", ignoreCase = true) ||
-                            prompt.trimEnd().endsWith("[Y/n]", ignoreCase = true)) "y" else ""
+                        // Match only the three specific prompts that hg2auth itself emits (see
+                        // TerminalEngine.kt). A generic [y/N]-suffix match would fire on any
+                        // nested interactive program's own confirmation, auto-accepting destructive
+                        // prompts the user never saw.
+                        val t = prompt.trimStart()
+                        if (t.startsWith("Run as root?", ignoreCase = true) ||
+                            t.startsWith("Run through ADB shell?", ignoreCase = true) ||
+                            t.startsWith("Request root access to test", ignoreCase = true)) "y" else ""
                     },
                     onExit = { exitCode = it }
                 ).collect { chunk -> if (output.length < MAX_OUTPUT) output.append(chunk.take(MAX_OUTPUT - output.length)) }

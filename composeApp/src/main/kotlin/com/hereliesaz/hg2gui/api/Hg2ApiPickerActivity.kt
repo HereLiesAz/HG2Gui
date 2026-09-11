@@ -11,16 +11,9 @@ class Hg2ApiPickerActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (savedInstanceState != null) {
-            // Activity was recreated (e.g. rotation) after the picker was already launched.
-            // Fire an error to the caller so they're not left waiting on a PendingIntent that
-            // will never arrive, then exit cleanly.
-            callback()?.let { runCatching {
-                it.send(this, 1, android.content.Intent().apply {
-                    putExtra(Hg2ApiReceiver.EXTRA_SUCCESS, false)
-                    putExtra(Hg2ApiReceiver.EXTRA_ERROR, "picker interrupted by system")
-                })
-            } }
-            finish()
+            // Activity was recreated (e.g. rotation) while the system picker was open.
+            // Android preserves the activity-result relationship across recreation, so
+            // onActivityResult will still fire when the picker returns. Nothing to do here.
             return
         }
         val directory = intent.getBooleanExtra(Hg2ApiReceiver.EXTRA_PICK_DIRECTORY, false)
