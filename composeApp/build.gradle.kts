@@ -31,7 +31,7 @@ val releaseKeystorePassword = System.getenv("KEYSTORE_PASSWORD")
 val releaseKeyAlias = System.getenv("KEY_ALIAS")
 val releaseKeyPassword = System.getenv("KEY_PASSWORD")
 val releaseRequireSigning = System.getenv("REQUIRE_SIGNING").toBoolean()
-val hasReleaseSigningEnv = !releaseKeystoreFile.isNullOrBlank() && !releaseKeystorePassword.isNullOrBlank() && !releaseKeyAlias.isNullOrBlank() && !releaseKeyPassword.isNullOrBlank()
+val hasReleaseSigningEnv = !releaseKeystoreFile.isNullOrBlank() && !releaseKeystorePassword.isNullOrBlank() && !releaseKeyAlias.isNullOrBlank() && !releaseKeyPassword.isNullOrBlank() && file(releaseKeystoreFile!!).exists()
 
 if (releaseRequireSigning && !hasReleaseSigningEnv) error("REQUIRE_SIGNING is set but one or more of KEYSTORE_FILE / KEYSTORE_PASSWORD / KEY_ALIAS / KEY_PASSWORD is missing.")
 
