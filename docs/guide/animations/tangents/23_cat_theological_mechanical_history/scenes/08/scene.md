@@ -1,0 +1,5 @@
+# Scene 08
+
+**Frame:** `cat_08.png`
+
+**Narration beat:** Physicists tested gravity. Gravity worked. The cat declined to participate.
