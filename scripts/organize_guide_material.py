@@ -341,14 +341,16 @@ def build_canonical(manifest: dict, asset_index: dict[str, list[Path]]) -> None:
 
     packet_lines = re.findall(r"- `([^`]+\.md)` —", manifest_text)
     heading_matches = list(
-        re.finditer(r"(?m)^## (\d{2}) — `([^`]+)` — ([^\n]+)\n", cut_text)
+        re.finditer(r"(?m)^## (\d{2}) — (.+?) — ([^\n]+)\n", cut_text)
     )
     cut_blocks: dict[int, dict] = {}
     for i, match in enumerate(heading_matches):
         index = int(match.group(1))
         end = heading_matches[i + 1].start() if i + 1 < len(heading_matches) else len(cut_text)
+        subject = match.group(2)
+        command_match = re.search(r"`([^`]+)`", subject)
         cut_blocks[index] = {
-            "command": match.group(2),
+            "command": command_match.group(1) if command_match else subject,
             "description": match.group(3),
             "text": cut_text[match.start():end].rstrip(),
         }
