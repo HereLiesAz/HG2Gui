@@ -1,0 +1,5085 @@
+{
+  "canonical_animations": [
+    {
+      "command": "pwd",
+      "description": "print working directory",
+      "folder": "docs/guide/animations/canonical/01_pwd",
+      "index": 1,
+      "scenes": [
+        {
+          "frames_readme": "docs/guide/animations/canonical/01_pwd/scenes/01/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 1,
+          "storyboard": {
+            "end": {
+              "expected": "01_pwd_frame_01.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "01_pwd_frame_00.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/01_pwd/scenes/01/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/01_pwd/scenes/02/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 2,
+          "storyboard": {
+            "end": {
+              "expected": "01_pwd_frame_02.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "01_pwd_frame_01.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/01_pwd/scenes/02/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/01_pwd/scenes/03/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 3,
+          "storyboard": {
+            "end": {
+              "expected": "01_pwd_frame_03.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "01_pwd_frame_02.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/01_pwd/scenes/03/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/01_pwd/scenes/04/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 4,
+          "storyboard": {
+            "end": {
+              "expected": "01_pwd_frame_04.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "01_pwd_frame_03.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/01_pwd/scenes/04/scene.md"
+        }
+      ],
+      "source_cut_sheet": "docs/HG2Gui_animation_5s_cut_sheet_v2.md",
+      "source_packet": "docs/HG2Gui_animation_5s_production_packets/01_pwd_5s_packet.md",
+      "storyboard": "docs/guide/animations/canonical/01_pwd/storyboard.md"
+    },
+    {
+      "command": "pkg install",
+      "description": "package install",
+      "folder": "docs/guide/animations/canonical/02_pkg_install",
+      "index": 2,
+      "scenes": [
+        {
+          "frames_readme": "docs/guide/animations/canonical/02_pkg_install/scenes/01/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 1,
+          "storyboard": {
+            "end": {
+              "expected": "02_pkg_install_frame_01.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "02_pkg_install_frame_00.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/02_pkg_install/scenes/01/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/02_pkg_install/scenes/02/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 2,
+          "storyboard": {
+            "end": {
+              "expected": "02_pkg_install_frame_02.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "02_pkg_install_frame_01.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/02_pkg_install/scenes/02/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/02_pkg_install/scenes/03/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 3,
+          "storyboard": {
+            "end": {
+              "expected": "02_pkg_install_frame_03.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "02_pkg_install_frame_02.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/02_pkg_install/scenes/03/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/02_pkg_install/scenes/04/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 4,
+          "storyboard": {
+            "end": {
+              "expected": "02_pkg_install_frame_04.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "02_pkg_install_frame_03.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/02_pkg_install/scenes/04/scene.md"
+        }
+      ],
+      "source_cut_sheet": "docs/HG2Gui_animation_5s_cut_sheet_v2.md",
+      "source_packet": "docs/HG2Gui_animation_5s_production_packets/02_pkg_install_5s_packet.md",
+      "storyboard": "docs/guide/animations/canonical/02_pkg_install/storyboard.md"
+    },
+    {
+      "command": "apt-get update",
+      "description": "refresh package indexes",
+      "folder": "docs/guide/animations/canonical/03_apt_get_update",
+      "index": 3,
+      "scenes": [
+        {
+          "frames_readme": "docs/guide/animations/canonical/03_apt_get_update/scenes/01/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 1,
+          "storyboard": {
+            "end": {
+              "expected": "03_apt_get_update_frame_01.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "03_apt_get_update_frame_00.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/03_apt_get_update/scenes/01/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/03_apt_get_update/scenes/02/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 2,
+          "storyboard": {
+            "end": {
+              "expected": "03_apt_get_update_frame_02.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "03_apt_get_update_frame_01.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/03_apt_get_update/scenes/02/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/03_apt_get_update/scenes/03/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 3,
+          "storyboard": {
+            "end": {
+              "expected": "03_apt_get_update_frame_03.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "03_apt_get_update_frame_02.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/03_apt_get_update/scenes/03/scene.md"
+        }
+      ],
+      "source_cut_sheet": "docs/HG2Gui_animation_5s_cut_sheet_v2.md",
+      "source_packet": "docs/HG2Gui_animation_5s_production_packets/03_apt_get_update_5s_packet.md",
+      "storyboard": "docs/guide/animations/canonical/03_apt_get_update/storyboard.md"
+    },
+    {
+      "command": "nano",
+      "description": "Nano's ANOther editor",
+      "folder": "docs/guide/animations/canonical/04_nano",
+      "index": 4,
+      "scenes": [
+        {
+          "frames_readme": "docs/guide/animations/canonical/04_nano/scenes/01/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 1,
+          "storyboard": {
+            "end": {
+              "expected": "04_nano_frame_01.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "04_nano_frame_00.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/04_nano/scenes/01/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/04_nano/scenes/02/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 2,
+          "storyboard": {
+            "end": {
+              "expected": "04_nano_frame_02.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "04_nano_frame_01.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/04_nano/scenes/02/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/04_nano/scenes/03/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 3,
+          "storyboard": {
+            "end": {
+              "expected": "04_nano_frame_03.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "04_nano_frame_02.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/04_nano/scenes/03/scene.md"
+        }
+      ],
+      "source_cut_sheet": "docs/HG2Gui_animation_5s_cut_sheet_v2.md",
+      "source_packet": "docs/HG2Gui_animation_5s_production_packets/04_nano_5s_packet.md",
+      "storyboard": "docs/guide/animations/canonical/04_nano/storyboard.md"
+    },
+    {
+      "command": "top",
+      "description": "process monitor",
+      "folder": "docs/guide/animations/canonical/05_top",
+      "index": 5,
+      "scenes": [
+        {
+          "frames_readme": "docs/guide/animations/canonical/05_top/scenes/01/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 1,
+          "storyboard": {
+            "end": {
+              "expected": "05_top_frame_01.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "05_top_frame_00.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/05_top/scenes/01/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/05_top/scenes/02/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 2,
+          "storyboard": {
+            "end": {
+              "expected": "05_top_frame_02.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "05_top_frame_01.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/05_top/scenes/02/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/05_top/scenes/03/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 3,
+          "storyboard": {
+            "end": {
+              "expected": "05_top_frame_03.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "05_top_frame_02.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/05_top/scenes/03/scene.md"
+        }
+      ],
+      "source_cut_sheet": "docs/HG2Gui_animation_5s_cut_sheet_v2.md",
+      "source_packet": "docs/HG2Gui_animation_5s_production_packets/05_top_5s_packet.md",
+      "storyboard": "docs/guide/animations/canonical/05_top/storyboard.md"
+    },
+    {
+      "command": "kill",
+      "description": "send a signal",
+      "folder": "docs/guide/animations/canonical/06_kill",
+      "index": 6,
+      "scenes": [
+        {
+          "frames_readme": "docs/guide/animations/canonical/06_kill/scenes/01/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 1,
+          "storyboard": {
+            "end": {
+              "expected": "06_kill_frame_01.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "06_kill_frame_00.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/06_kill/scenes/01/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/06_kill/scenes/02/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 2,
+          "storyboard": {
+            "end": {
+              "expected": "06_kill_frame_02.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "06_kill_frame_01.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/06_kill/scenes/02/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/06_kill/scenes/03/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 3,
+          "storyboard": {
+            "end": {
+              "expected": "06_kill_frame_03.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "06_kill_frame_02.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/06_kill/scenes/03/scene.md"
+        }
+      ],
+      "source_cut_sheet": "docs/HG2Gui_animation_5s_cut_sheet_v2.md",
+      "source_packet": "docs/HG2Gui_animation_5s_production_packets/06_kill_5s_packet.md",
+      "storyboard": "docs/guide/animations/canonical/06_kill/storyboard.md"
+    },
+    {
+      "command": "df",
+      "description": "filesystem free space",
+      "folder": "docs/guide/animations/canonical/07_df",
+      "index": 7,
+      "scenes": [
+        {
+          "frames_readme": "docs/guide/animations/canonical/07_df/scenes/01/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 1,
+          "storyboard": {
+            "end": {
+              "expected": "07_df_frame_01.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "07_df_frame_00.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/07_df/scenes/01/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/07_df/scenes/02/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 2,
+          "storyboard": {
+            "end": {
+              "expected": "07_df_frame_02.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "07_df_frame_01.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/07_df/scenes/02/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/07_df/scenes/03/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 3,
+          "storyboard": {
+            "end": {
+              "expected": "07_df_frame_03.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "07_df_frame_02.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/07_df/scenes/03/scene.md"
+        }
+      ],
+      "source_cut_sheet": "docs/HG2Gui_animation_5s_cut_sheet_v2.md",
+      "source_packet": "docs/HG2Gui_animation_5s_production_packets/07_df_5s_packet.md",
+      "storyboard": "docs/guide/animations/canonical/07_df/storyboard.md"
+    },
+    {
+      "command": "rm",
+      "description": "remove",
+      "folder": "docs/guide/animations/canonical/08_rm",
+      "index": 8,
+      "scenes": [
+        {
+          "frames_readme": "docs/guide/animations/canonical/08_rm/scenes/01/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 1,
+          "storyboard": {
+            "end": {
+              "expected": "08_rm_frame_01.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "08_rm_frame_00.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/08_rm/scenes/01/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/08_rm/scenes/02/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 2,
+          "storyboard": {
+            "end": {
+              "expected": "08_rm_frame_02.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "08_rm_frame_01.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/08_rm/scenes/02/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/08_rm/scenes/03/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 3,
+          "storyboard": {
+            "end": {
+              "expected": "08_rm_frame_03.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "08_rm_frame_02.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/08_rm/scenes/03/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/08_rm/scenes/04/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 4,
+          "storyboard": {
+            "end": {
+              "expected": "08_rm_frame_04.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "08_rm_frame_03.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/08_rm/scenes/04/scene.md"
+        }
+      ],
+      "source_cut_sheet": "docs/HG2Gui_animation_5s_cut_sheet_v2.md",
+      "source_packet": "docs/HG2Gui_animation_5s_production_packets/08_rm_5s_packet.md",
+      "storyboard": "docs/guide/animations/canonical/08_rm/storyboard.md"
+    },
+    {
+      "command": "source",
+      "description": "source",
+      "folder": "docs/guide/animations/canonical/09_source",
+      "index": 9,
+      "scenes": [
+        {
+          "frames_readme": "docs/guide/animations/canonical/09_source/scenes/01/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 1,
+          "storyboard": {
+            "end": {
+              "expected": "09_source_frame_01.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "09_source_frame_00.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/09_source/scenes/01/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/09_source/scenes/02/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 2,
+          "storyboard": {
+            "end": {
+              "expected": "09_source_frame_02.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "09_source_frame_01.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/09_source/scenes/02/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/09_source/scenes/03/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 3,
+          "storyboard": {
+            "end": {
+              "expected": "09_source_frame_03.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "09_source_frame_02.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/09_source/scenes/03/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/09_source/scenes/04/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 4,
+          "storyboard": {
+            "end": {
+              "expected": "09_source_frame_04.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "09_source_frame_03.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/09_source/scenes/04/scene.md"
+        }
+      ],
+      "source_cut_sheet": "docs/HG2Gui_animation_5s_cut_sheet_v2.md",
+      "source_packet": "docs/HG2Gui_animation_5s_production_packets/09_source_5s_packet.md",
+      "storyboard": "docs/guide/animations/canonical/09_source/storyboard.md"
+    },
+    {
+      "command": "ping",
+      "description": "ping",
+      "folder": "docs/guide/animations/canonical/10_ping",
+      "index": 10,
+      "scenes": [
+        {
+          "frames_readme": "docs/guide/animations/canonical/10_ping/scenes/01/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 1,
+          "storyboard": {
+            "end": {
+              "expected": "10_ping_frame_01.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "10_ping_frame_00.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/10_ping/scenes/01/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/10_ping/scenes/02/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 2,
+          "storyboard": {
+            "end": {
+              "expected": "10_ping_frame_02.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "10_ping_frame_01.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/10_ping/scenes/02/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/10_ping/scenes/03/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 3,
+          "storyboard": {
+            "end": {
+              "expected": "10_ping_frame_03.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "10_ping_frame_02.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/10_ping/scenes/03/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/10_ping/scenes/04/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 4,
+          "storyboard": {
+            "end": {
+              "expected": "10_ping_frame_04.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "10_ping_frame_03.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/10_ping/scenes/04/scene.md"
+        }
+      ],
+      "source_cut_sheet": "docs/HG2Gui_animation_5s_cut_sheet_v2.md",
+      "source_packet": "docs/HG2Gui_animation_5s_production_packets/10_ping_5s_packet.md",
+      "storyboard": "docs/guide/animations/canonical/10_ping/storyboard.md"
+    },
+    {
+      "command": "ssh",
+      "description": "secure shell",
+      "folder": "docs/guide/animations/canonical/11_ssh",
+      "index": 11,
+      "scenes": [
+        {
+          "frames_readme": "docs/guide/animations/canonical/11_ssh/scenes/01/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 1,
+          "storyboard": {
+            "end": {
+              "expected": "11_ssh_frame_01.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "11_ssh_frame_00.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/11_ssh/scenes/01/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/11_ssh/scenes/02/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 2,
+          "storyboard": {
+            "end": {
+              "expected": "11_ssh_frame_02.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "11_ssh_frame_01.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/11_ssh/scenes/02/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/11_ssh/scenes/03/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 3,
+          "storyboard": {
+            "end": {
+              "expected": "11_ssh_frame_03.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "11_ssh_frame_02.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/11_ssh/scenes/03/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/11_ssh/scenes/04/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 4,
+          "storyboard": {
+            "end": {
+              "expected": "11_ssh_frame_04.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "11_ssh_frame_03.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/11_ssh/scenes/04/scene.md"
+        }
+      ],
+      "source_cut_sheet": "docs/HG2Gui_animation_5s_cut_sheet_v2.md",
+      "source_packet": "docs/HG2Gui_animation_5s_production_packets/11_ssh_5s_packet.md",
+      "storyboard": "docs/guide/animations/canonical/11_ssh/storyboard.md"
+    },
+    {
+      "command": "harden-check",
+      "description": "harden check",
+      "folder": "docs/guide/animations/canonical/12_harden_check",
+      "index": 12,
+      "scenes": [
+        {
+          "frames_readme": "docs/guide/animations/canonical/12_harden_check/scenes/01/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 1,
+          "storyboard": {
+            "end": {
+              "expected": "12_harden_check_frame_01.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "12_harden_check_frame_00.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/12_harden_check/scenes/01/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/12_harden_check/scenes/02/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 2,
+          "storyboard": {
+            "end": {
+              "expected": "12_harden_check_frame_02.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "12_harden_check_frame_01.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/12_harden_check/scenes/02/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/12_harden_check/scenes/03/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 3,
+          "storyboard": {
+            "end": {
+              "expected": "12_harden_check_frame_03.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "12_harden_check_frame_02.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/12_harden_check/scenes/03/scene.md"
+        }
+      ],
+      "source_cut_sheet": "docs/HG2Gui_animation_5s_cut_sheet_v2.md",
+      "source_packet": "docs/HG2Gui_animation_5s_production_packets/12_harden_check_5s_packet.md",
+      "storyboard": "docs/guide/animations/canonical/12_harden_check/storyboard.md"
+    },
+    {
+      "command": "git commit",
+      "description": "git commit",
+      "folder": "docs/guide/animations/canonical/13_git_commit",
+      "index": 13,
+      "scenes": [
+        {
+          "frames_readme": "docs/guide/animations/canonical/13_git_commit/scenes/01/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 1,
+          "storyboard": {
+            "end": {
+              "expected": "13_git_commit_frame_01.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "13_git_commit_frame_00.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/13_git_commit/scenes/01/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/13_git_commit/scenes/02/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 2,
+          "storyboard": {
+            "end": {
+              "expected": "13_git_commit_frame_02.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "13_git_commit_frame_01.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/13_git_commit/scenes/02/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/13_git_commit/scenes/03/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 3,
+          "storyboard": {
+            "end": {
+              "expected": "13_git_commit_frame_03.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "13_git_commit_frame_02.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/13_git_commit/scenes/03/scene.md"
+        }
+      ],
+      "source_cut_sheet": "docs/HG2Gui_animation_5s_cut_sheet_v2.md",
+      "source_packet": "docs/HG2Gui_animation_5s_production_packets/13_git_commit_5s_packet.md",
+      "storyboard": "docs/guide/animations/canonical/13_git_commit/storyboard.md"
+    },
+    {
+      "command": "nmap",
+      "description": "network mapper",
+      "folder": "docs/guide/animations/canonical/14_nmap",
+      "index": 14,
+      "scenes": [
+        {
+          "frames_readme": "docs/guide/animations/canonical/14_nmap/scenes/01/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 1,
+          "storyboard": {
+            "end": {
+              "expected": "14_nmap_frame_01.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "14_nmap_frame_00.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/14_nmap/scenes/01/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/14_nmap/scenes/02/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 2,
+          "storyboard": {
+            "end": {
+              "expected": "14_nmap_frame_02.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "14_nmap_frame_01.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/14_nmap/scenes/02/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/14_nmap/scenes/03/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 3,
+          "storyboard": {
+            "end": {
+              "expected": "14_nmap_frame_03.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "14_nmap_frame_02.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/14_nmap/scenes/03/scene.md"
+        }
+      ],
+      "source_cut_sheet": "docs/HG2Gui_animation_5s_cut_sheet_v2.md",
+      "source_packet": "docs/HG2Gui_animation_5s_production_packets/14_nmap_5s_packet.md",
+      "storyboard": "docs/guide/animations/canonical/14_nmap/storyboard.md"
+    },
+    {
+      "command": "crond",
+      "description": "scheduled jobs",
+      "folder": "docs/guide/animations/canonical/15_crond",
+      "index": 15,
+      "scenes": [
+        {
+          "frames_readme": "docs/guide/animations/canonical/15_crond/scenes/01/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 1,
+          "storyboard": {
+            "end": {
+              "expected": "15_crond_frame_01.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "15_crond_frame_00.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/15_crond/scenes/01/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/15_crond/scenes/02/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 2,
+          "storyboard": {
+            "end": {
+              "expected": "15_crond_frame_02.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "15_crond_frame_01.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/15_crond/scenes/02/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/15_crond/scenes/03/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 3,
+          "storyboard": {
+            "end": {
+              "expected": "15_crond_frame_03.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "15_crond_frame_02.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/15_crond/scenes/03/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/15_crond/scenes/04/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 4,
+          "storyboard": {
+            "end": {
+              "expected": "15_crond_frame_04.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "15_crond_frame_03.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/15_crond/scenes/04/scene.md"
+        }
+      ],
+      "source_cut_sheet": "docs/HG2Gui_animation_5s_cut_sheet_v2.md",
+      "source_packet": "docs/HG2Gui_animation_5s_production_packets/15_crond_5s_packet.md",
+      "storyboard": "docs/guide/animations/canonical/15_crond/storyboard.md"
+    },
+    {
+      "command": "watch",
+      "description": "watch",
+      "folder": "docs/guide/animations/canonical/16_watch",
+      "index": 16,
+      "scenes": [
+        {
+          "frames_readme": "docs/guide/animations/canonical/16_watch/scenes/01/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 1,
+          "storyboard": {
+            "end": {
+              "expected": "16_watch_frame_01.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "16_watch_frame_00.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/16_watch/scenes/01/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/16_watch/scenes/02/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 2,
+          "storyboard": {
+            "end": {
+              "expected": "16_watch_frame_02.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "16_watch_frame_01.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/16_watch/scenes/02/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/16_watch/scenes/03/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 3,
+          "storyboard": {
+            "end": {
+              "expected": "16_watch_frame_03.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "16_watch_frame_02.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/16_watch/scenes/03/scene.md"
+        }
+      ],
+      "source_cut_sheet": "docs/HG2Gui_animation_5s_cut_sheet_v2.md",
+      "source_packet": "docs/HG2Gui_animation_5s_production_packets/16_watch_5s_packet.md",
+      "storyboard": "docs/guide/animations/canonical/16_watch/storyboard.md"
+    },
+    {
+      "command": "AI chat",
+      "description": "natural language to command",
+      "folder": "docs/guide/animations/canonical/17_ai_chat",
+      "index": 17,
+      "scenes": [
+        {
+          "frames_readme": "docs/guide/animations/canonical/17_ai_chat/scenes/01/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 1,
+          "storyboard": {
+            "end": {
+              "expected": "17_ai_chat_frame_01.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "17_ai_chat_frame_00.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/17_ai_chat/scenes/01/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/17_ai_chat/scenes/02/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 2,
+          "storyboard": {
+            "end": {
+              "expected": "17_ai_chat_frame_02.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "17_ai_chat_frame_01.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/17_ai_chat/scenes/02/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/17_ai_chat/scenes/03/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 3,
+          "storyboard": {
+            "end": {
+              "expected": "17_ai_chat_frame_03.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "17_ai_chat_frame_02.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/17_ai_chat/scenes/03/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/17_ai_chat/scenes/04/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 4,
+          "storyboard": {
+            "end": {
+              "expected": "17_ai_chat_frame_04.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "17_ai_chat_frame_03.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/17_ai_chat/scenes/04/scene.md"
+        }
+      ],
+      "source_cut_sheet": "docs/HG2Gui_animation_5s_cut_sheet_v2.md",
+      "source_packet": "docs/HG2Gui_animation_5s_production_packets/17_ai_chat_5s_packet.md",
+      "storyboard": "docs/guide/animations/canonical/17_ai_chat/storyboard.md"
+    },
+    {
+      "command": "skill",
+      "description": "installed skill package",
+      "folder": "docs/guide/animations/canonical/18_skill",
+      "index": 18,
+      "scenes": [
+        {
+          "frames_readme": "docs/guide/animations/canonical/18_skill/scenes/01/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 1,
+          "storyboard": {
+            "end": {
+              "expected": "18_skill_frame_01.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "18_skill_frame_00.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/18_skill/scenes/01/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/18_skill/scenes/02/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 2,
+          "storyboard": {
+            "end": {
+              "expected": "18_skill_frame_02.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "18_skill_frame_01.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/18_skill/scenes/02/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/18_skill/scenes/03/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 3,
+          "storyboard": {
+            "end": {
+              "expected": "18_skill_frame_03.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "18_skill_frame_02.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/18_skill/scenes/03/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/18_skill/scenes/04/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 4,
+          "storyboard": {
+            "end": {
+              "expected": "18_skill_frame_04.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "18_skill_frame_03.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/18_skill/scenes/04/scene.md"
+        }
+      ],
+      "source_cut_sheet": "docs/HG2Gui_animation_5s_cut_sheet_v2.md",
+      "source_packet": "docs/HG2Gui_animation_5s_production_packets/18_skill_5s_packet.md",
+      "storyboard": "docs/guide/animations/canonical/18_skill/storyboard.md"
+    },
+    {
+      "command": "ls -a",
+      "description": "list all",
+      "folder": "docs/guide/animations/canonical/19_ls_a",
+      "index": 19,
+      "scenes": [
+        {
+          "frames_readme": "docs/guide/animations/canonical/19_ls_a/scenes/01/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 1,
+          "storyboard": {
+            "end": {
+              "expected": "19_ls_a_frame_01.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "19_ls_a_frame_00.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/19_ls_a/scenes/01/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/19_ls_a/scenes/02/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 2,
+          "storyboard": {
+            "end": {
+              "expected": "19_ls_a_frame_02.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "19_ls_a_frame_01.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/19_ls_a/scenes/02/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/19_ls_a/scenes/03/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 3,
+          "storyboard": {
+            "end": {
+              "expected": "19_ls_a_frame_03.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "19_ls_a_frame_02.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/19_ls_a/scenes/03/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/19_ls_a/scenes/04/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 4,
+          "storyboard": {
+            "end": {
+              "expected": "19_ls_a_frame_04.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "19_ls_a_frame_03.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/19_ls_a/scenes/04/scene.md"
+        }
+      ],
+      "source_cut_sheet": "docs/HG2Gui_animation_5s_cut_sheet_v2.md",
+      "source_packet": "docs/HG2Gui_animation_5s_production_packets/19_ls_a_5s_packet.md",
+      "storyboard": "docs/guide/animations/canonical/19_ls_a/storyboard.md"
+    },
+    {
+      "command": "sudo",
+      "description": "run with another user's privileges",
+      "folder": "docs/guide/animations/canonical/20_sudo",
+      "index": 20,
+      "scenes": [
+        {
+          "frames_readme": "docs/guide/animations/canonical/20_sudo/scenes/01/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 1,
+          "storyboard": {
+            "end": {
+              "expected": "20_sudo_frame_01.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "20_sudo_frame_00.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/20_sudo/scenes/01/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/20_sudo/scenes/02/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 2,
+          "storyboard": {
+            "end": {
+              "expected": "20_sudo_frame_02.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "20_sudo_frame_01.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/20_sudo/scenes/02/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/20_sudo/scenes/03/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 3,
+          "storyboard": {
+            "end": {
+              "expected": "20_sudo_frame_03.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "20_sudo_frame_02.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/20_sudo/scenes/03/scene.md"
+        }
+      ],
+      "source_cut_sheet": "docs/HG2Gui_animation_5s_cut_sheet_v2.md",
+      "source_packet": "docs/HG2Gui_animation_5s_production_packets/20_sudo_5s_packet.md",
+      "storyboard": "docs/guide/animations/canonical/20_sudo/storyboard.md"
+    },
+    {
+      "command": "rmdir",
+      "description": "remove directory",
+      "folder": "docs/guide/animations/canonical/21_rmdir",
+      "index": 21,
+      "scenes": [
+        {
+          "frames_readme": "docs/guide/animations/canonical/21_rmdir/scenes/01/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 1,
+          "storyboard": {
+            "end": {
+              "expected": "21_rmdir_frame_01.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "21_rmdir_frame_00.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/21_rmdir/scenes/01/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/21_rmdir/scenes/02/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 2,
+          "storyboard": {
+            "end": {
+              "expected": "21_rmdir_frame_02.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "21_rmdir_frame_01.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/21_rmdir/scenes/02/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/21_rmdir/scenes/03/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 3,
+          "storyboard": {
+            "end": {
+              "expected": "21_rmdir_frame_03.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "21_rmdir_frame_02.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/21_rmdir/scenes/03/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/21_rmdir/scenes/04/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 4,
+          "storyboard": {
+            "end": {
+              "expected": "21_rmdir_frame_04.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "21_rmdir_frame_03.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/21_rmdir/scenes/04/scene.md"
+        }
+      ],
+      "source_cut_sheet": "docs/HG2Gui_animation_5s_cut_sheet_v2.md",
+      "source_packet": "docs/HG2Gui_animation_5s_production_packets/21_rmdir_5s_packet.md",
+      "storyboard": "docs/guide/animations/canonical/21_rmdir/storyboard.md"
+    },
+    {
+      "command": "find",
+      "description": "find",
+      "folder": "docs/guide/animations/canonical/22_find",
+      "index": 22,
+      "scenes": [
+        {
+          "frames_readme": "docs/guide/animations/canonical/22_find/scenes/01/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 1,
+          "storyboard": {
+            "end": {
+              "expected": "22_find_frame_01.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "22_find_frame_00.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/22_find/scenes/01/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/22_find/scenes/02/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 2,
+          "storyboard": {
+            "end": {
+              "expected": "22_find_frame_02.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "22_find_frame_01.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/22_find/scenes/02/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/22_find/scenes/03/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 3,
+          "storyboard": {
+            "end": {
+              "expected": "22_find_frame_03.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "22_find_frame_02.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/22_find/scenes/03/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/22_find/scenes/04/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 4,
+          "storyboard": {
+            "end": {
+              "expected": "22_find_frame_04.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "22_find_frame_03.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/22_find/scenes/04/scene.md"
+        }
+      ],
+      "source_cut_sheet": "docs/HG2Gui_animation_5s_cut_sheet_v2.md",
+      "source_packet": "docs/HG2Gui_animation_5s_production_packets/22_find_5s_packet.md",
+      "storyboard": "docs/guide/animations/canonical/22_find/storyboard.md"
+    },
+    {
+      "command": "cat",
+      "description": "concatenate",
+      "folder": "docs/guide/animations/canonical/23_cat",
+      "index": 23,
+      "scenes": [
+        {
+          "frames_readme": "docs/guide/animations/canonical/23_cat/scenes/01/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 1,
+          "storyboard": {
+            "end": {
+              "expected": "23_cat_frame_01.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "23_cat_frame_00.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/23_cat/scenes/01/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/23_cat/scenes/02/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 2,
+          "storyboard": {
+            "end": {
+              "expected": "23_cat_frame_02.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "23_cat_frame_01.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/23_cat/scenes/02/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/23_cat/scenes/03/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 3,
+          "storyboard": {
+            "end": {
+              "expected": "23_cat_frame_03.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "23_cat_frame_02.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/23_cat/scenes/03/scene.md"
+        }
+      ],
+      "source_cut_sheet": "docs/HG2Gui_animation_5s_cut_sheet_v2.md",
+      "source_packet": "docs/HG2Gui_animation_5s_production_packets/23_cat_5s_packet.md",
+      "storyboard": "docs/guide/animations/canonical/23_cat/storyboard.md"
+    },
+    {
+      "command": "ps",
+      "description": "process status",
+      "folder": "docs/guide/animations/canonical/24_ps",
+      "index": 24,
+      "scenes": [
+        {
+          "frames_readme": "docs/guide/animations/canonical/24_ps/scenes/01/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 1,
+          "storyboard": {
+            "end": {
+              "expected": "24_ps_frame_01.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "24_ps_frame_00.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/24_ps/scenes/01/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/24_ps/scenes/02/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 2,
+          "storyboard": {
+            "end": {
+              "expected": "24_ps_frame_02.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "24_ps_frame_01.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/24_ps/scenes/02/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/24_ps/scenes/03/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 3,
+          "storyboard": {
+            "end": {
+              "expected": "24_ps_frame_03.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "24_ps_frame_02.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/24_ps/scenes/03/scene.md"
+        }
+      ],
+      "source_cut_sheet": "docs/HG2Gui_animation_5s_cut_sheet_v2.md",
+      "source_packet": "docs/HG2Gui_animation_5s_production_packets/24_ps_5s_packet.md",
+      "storyboard": "docs/guide/animations/canonical/24_ps/storyboard.md"
+    },
+    {
+      "command": "grep",
+      "description": "pattern search",
+      "folder": "docs/guide/animations/canonical/25_grep",
+      "index": 25,
+      "scenes": [
+        {
+          "frames_readme": "docs/guide/animations/canonical/25_grep/scenes/01/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 1,
+          "storyboard": {
+            "end": {
+              "expected": "25_grep_frame_01.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "25_grep_frame_00.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/25_grep/scenes/01/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/25_grep/scenes/02/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 2,
+          "storyboard": {
+            "end": {
+              "expected": "25_grep_frame_02.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "25_grep_frame_01.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/25_grep/scenes/02/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/25_grep/scenes/03/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 3,
+          "storyboard": {
+            "end": {
+              "expected": "25_grep_frame_03.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "25_grep_frame_02.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/25_grep/scenes/03/scene.md"
+        }
+      ],
+      "source_cut_sheet": "docs/HG2Gui_animation_5s_cut_sheet_v2.md",
+      "source_packet": "docs/HG2Gui_animation_5s_production_packets/25_grep_5s_packet.md",
+      "storyboard": "docs/guide/animations/canonical/25_grep/storyboard.md"
+    },
+    {
+      "command": "ifconfig",
+      "description": "interface configuration",
+      "folder": "docs/guide/animations/canonical/26_ifconfig",
+      "index": 26,
+      "scenes": [
+        {
+          "frames_readme": "docs/guide/animations/canonical/26_ifconfig/scenes/01/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 1,
+          "storyboard": {
+            "end": {
+              "expected": "26_ifconfig_frame_01.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "26_ifconfig_frame_00.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/26_ifconfig/scenes/01/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/26_ifconfig/scenes/02/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 2,
+          "storyboard": {
+            "end": {
+              "expected": "26_ifconfig_frame_02.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "26_ifconfig_frame_01.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/26_ifconfig/scenes/02/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/26_ifconfig/scenes/03/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 3,
+          "storyboard": {
+            "end": {
+              "expected": "26_ifconfig_frame_03.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "26_ifconfig_frame_02.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/26_ifconfig/scenes/03/scene.md"
+        }
+      ],
+      "source_cut_sheet": "docs/HG2Gui_animation_5s_cut_sheet_v2.md",
+      "source_packet": "docs/HG2Gui_animation_5s_production_packets/26_ifconfig_5s_packet.md",
+      "storyboard": "docs/guide/animations/canonical/26_ifconfig/storyboard.md"
+    },
+    {
+      "command": "man",
+      "description": "manual",
+      "folder": "docs/guide/animations/canonical/27_man",
+      "index": 27,
+      "scenes": [
+        {
+          "frames_readme": "docs/guide/animations/canonical/27_man/scenes/01/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 1,
+          "storyboard": {
+            "end": {
+              "expected": "27_man_frame_01.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "27_man_frame_00.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/27_man/scenes/01/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/27_man/scenes/02/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 2,
+          "storyboard": {
+            "end": {
+              "expected": "27_man_frame_02.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "27_man_frame_01.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/27_man/scenes/02/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/27_man/scenes/03/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 3,
+          "storyboard": {
+            "end": {
+              "expected": "27_man_frame_03.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "27_man_frame_02.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/27_man/scenes/03/scene.md"
+        }
+      ],
+      "source_cut_sheet": "docs/HG2Gui_animation_5s_cut_sheet_v2.md",
+      "source_packet": "docs/HG2Gui_animation_5s_production_packets/27_man_5s_packet.md",
+      "storyboard": "docs/guide/animations/canonical/27_man/storyboard.md"
+    },
+    {
+      "command": "history",
+      "description": "shell history",
+      "folder": "docs/guide/animations/canonical/28_history",
+      "index": 28,
+      "scenes": [
+        {
+          "frames_readme": "docs/guide/animations/canonical/28_history/scenes/01/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 1,
+          "storyboard": {
+            "end": {
+              "expected": "28_history_frame_01.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "28_history_frame_00.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/28_history/scenes/01/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/28_history/scenes/02/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 2,
+          "storyboard": {
+            "end": {
+              "expected": "28_history_frame_02.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "28_history_frame_01.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/28_history/scenes/02/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/28_history/scenes/03/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 3,
+          "storyboard": {
+            "end": {
+              "expected": "28_history_frame_03.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "28_history_frame_02.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/28_history/scenes/03/scene.md"
+        }
+      ],
+      "source_cut_sheet": "docs/HG2Gui_animation_5s_cut_sheet_v2.md",
+      "source_packet": "docs/HG2Gui_animation_5s_production_packets/28_history_5s_packet.md",
+      "storyboard": "docs/guide/animations/canonical/28_history/storyboard.md"
+    },
+    {
+      "command": "touch",
+      "description": "touch",
+      "folder": "docs/guide/animations/canonical/29_touch",
+      "index": 29,
+      "scenes": [
+        {
+          "frames_readme": "docs/guide/animations/canonical/29_touch/scenes/01/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 1,
+          "storyboard": {
+            "end": {
+              "expected": "29_touch_frame_01.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "29_touch_frame_00.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/29_touch/scenes/01/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/29_touch/scenes/02/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 2,
+          "storyboard": {
+            "end": {
+              "expected": "29_touch_frame_02.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "29_touch_frame_01.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/29_touch/scenes/02/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/29_touch/scenes/03/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 3,
+          "storyboard": {
+            "end": {
+              "expected": "29_touch_frame_03.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "29_touch_frame_02.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/29_touch/scenes/03/scene.md"
+        }
+      ],
+      "source_cut_sheet": "docs/HG2Gui_animation_5s_cut_sheet_v2.md",
+      "source_packet": "docs/HG2Gui_animation_5s_production_packets/29_touch_5s_packet.md",
+      "storyboard": "docs/guide/animations/canonical/29_touch/storyboard.md"
+    },
+    {
+      "command": "yes",
+      "description": "yes",
+      "folder": "docs/guide/animations/canonical/30_yes",
+      "index": 30,
+      "scenes": [
+        {
+          "frames_readme": "docs/guide/animations/canonical/30_yes/scenes/01/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 1,
+          "storyboard": {
+            "end": {
+              "expected": "30_yes_frame_01.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "30_yes_frame_00.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/30_yes/scenes/01/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/30_yes/scenes/02/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 2,
+          "storyboard": {
+            "end": {
+              "expected": "30_yes_frame_02.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "30_yes_frame_01.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/30_yes/scenes/02/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/30_yes/scenes/03/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 3,
+          "storyboard": {
+            "end": {
+              "expected": "30_yes_frame_03.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "30_yes_frame_02.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/30_yes/scenes/03/scene.md"
+        }
+      ],
+      "source_cut_sheet": "docs/HG2Gui_animation_5s_cut_sheet_v2.md",
+      "source_packet": "docs/HG2Gui_animation_5s_production_packets/30_yes_5s_packet.md",
+      "storyboard": "docs/guide/animations/canonical/30_yes/storyboard.md"
+    },
+    {
+      "command": "false",
+      "description": "false",
+      "folder": "docs/guide/animations/canonical/31_false",
+      "index": 31,
+      "scenes": [
+        {
+          "frames_readme": "docs/guide/animations/canonical/31_false/scenes/01/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 1,
+          "storyboard": {
+            "end": {
+              "expected": "31_false_frame_01.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "31_false_frame_00.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/31_false/scenes/01/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/31_false/scenes/02/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 2,
+          "storyboard": {
+            "end": {
+              "expected": "31_false_frame_02.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "31_false_frame_01.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/31_false/scenes/02/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/31_false/scenes/03/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 3,
+          "storyboard": {
+            "end": {
+              "expected": "31_false_frame_03.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "31_false_frame_02.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/31_false/scenes/03/scene.md"
+        }
+      ],
+      "source_cut_sheet": "docs/HG2Gui_animation_5s_cut_sheet_v2.md",
+      "source_packet": "docs/HG2Gui_animation_5s_production_packets/31_false_5s_packet.md",
+      "storyboard": "docs/guide/animations/canonical/31_false/storyboard.md"
+    },
+    {
+      "command": "|",
+      "description": "pipe",
+      "folder": "docs/guide/animations/canonical/32_pipe",
+      "index": 32,
+      "scenes": [
+        {
+          "frames_readme": "docs/guide/animations/canonical/32_pipe/scenes/01/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 1,
+          "storyboard": {
+            "end": {
+              "expected": "32_pipe_frame_01.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "32_pipe_frame_00.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/32_pipe/scenes/01/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/32_pipe/scenes/02/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 2,
+          "storyboard": {
+            "end": {
+              "expected": "32_pipe_frame_02.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "32_pipe_frame_01.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/32_pipe/scenes/02/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/32_pipe/scenes/03/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 3,
+          "storyboard": {
+            "end": {
+              "expected": "32_pipe_frame_03.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "32_pipe_frame_02.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/32_pipe/scenes/03/scene.md"
+        }
+      ],
+      "source_cut_sheet": "docs/HG2Gui_animation_5s_cut_sheet_v2.md",
+      "source_packet": "docs/HG2Gui_animation_5s_production_packets/32_pipe_5s_packet.md",
+      "storyboard": "docs/guide/animations/canonical/32_pipe/storyboard.md"
+    },
+    {
+      "command": "cp",
+      "description": "copy",
+      "folder": "docs/guide/animations/canonical/33_cp",
+      "index": 33,
+      "scenes": [
+        {
+          "frames_readme": "docs/guide/animations/canonical/33_cp/scenes/01/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 1,
+          "storyboard": {
+            "end": {
+              "expected": "33_cp_frame_01.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "33_cp_frame_00.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/33_cp/scenes/01/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/33_cp/scenes/02/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 2,
+          "storyboard": {
+            "end": {
+              "expected": "33_cp_frame_02.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "33_cp_frame_01.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/33_cp/scenes/02/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/33_cp/scenes/03/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 3,
+          "storyboard": {
+            "end": {
+              "expected": "33_cp_frame_03.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "33_cp_frame_02.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/33_cp/scenes/03/scene.md"
+        }
+      ],
+      "source_cut_sheet": "docs/HG2Gui_animation_5s_cut_sheet_v2.md",
+      "source_packet": "docs/HG2Gui_animation_5s_production_packets/33_cp_5s_packet.md",
+      "storyboard": "docs/guide/animations/canonical/33_cp/storyboard.md"
+    },
+    {
+      "command": "mv",
+      "description": "move",
+      "folder": "docs/guide/animations/canonical/34_mv",
+      "index": 34,
+      "scenes": [
+        {
+          "frames_readme": "docs/guide/animations/canonical/34_mv/scenes/01/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 1,
+          "storyboard": {
+            "end": {
+              "expected": "34_mv_frame_01.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "34_mv_frame_00.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/34_mv/scenes/01/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/34_mv/scenes/02/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 2,
+          "storyboard": {
+            "end": {
+              "expected": "34_mv_frame_02.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "34_mv_frame_01.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/34_mv/scenes/02/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/34_mv/scenes/03/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 3,
+          "storyboard": {
+            "end": {
+              "expected": "34_mv_frame_03.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "34_mv_frame_02.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/34_mv/scenes/03/scene.md"
+        }
+      ],
+      "source_cut_sheet": "docs/HG2Gui_animation_5s_cut_sheet_v2.md",
+      "source_packet": "docs/HG2Gui_animation_5s_production_packets/34_mv_5s_packet.md",
+      "storyboard": "docs/guide/animations/canonical/34_mv/storyboard.md"
+    },
+    {
+      "command": "curl",
+      "description": "transfer data with URLs",
+      "folder": "docs/guide/animations/canonical/35_curl",
+      "index": 35,
+      "scenes": [
+        {
+          "frames_readme": "docs/guide/animations/canonical/35_curl/scenes/01/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 1,
+          "storyboard": {
+            "end": {
+              "expected": "35_curl_frame_01.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "35_curl_frame_00.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/35_curl/scenes/01/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/35_curl/scenes/02/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 2,
+          "storyboard": {
+            "end": {
+              "expected": "35_curl_frame_02.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "35_curl_frame_01.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/35_curl/scenes/02/scene.md"
+        },
+        {
+          "frames_readme": "docs/guide/animations/canonical/35_curl/scenes/03/frames/README.md",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 3,
+          "storyboard": {
+            "end": {
+              "expected": "35_curl_frame_03.png",
+              "local": null,
+              "role": "end",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            },
+            "start": {
+              "expected": "35_curl_frame_02.png",
+              "local": null,
+              "role": "start",
+              "semantics": "explicit_cut_sheet_boundary",
+              "sources": [],
+              "status": "missing"
+            }
+          },
+          "text": "docs/guide/animations/canonical/35_curl/scenes/03/scene.md"
+        }
+      ],
+      "source_cut_sheet": "docs/HG2Gui_animation_5s_cut_sheet_v2.md",
+      "source_packet": "docs/HG2Gui_animation_5s_production_packets/35_curl_5s_packet.md",
+      "storyboard": "docs/guide/animations/canonical/35_curl/storyboard.md"
+    }
+  ],
+  "generated_from_repository": true,
+  "legacy_animations": [
+    {
+      "folder": "docs/guide/animations/legacy/ls",
+      "name": "ls",
+      "scenes": [
+        {
+          "scene": 1,
+          "storyboard": {
+            "end": {
+              "expected": "ls_clip_01_end.png",
+              "local": "docs/guide/animations/legacy/ls/scenes/01/frames/end.png",
+              "role": "end",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/ls_clip_01_end.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "ls_clip_01_start.png",
+              "local": "docs/guide/animations/legacy/ls/scenes/01/frames/start.png",
+              "role": "start",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/ls_clip_01_start.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/legacy/ls/scenes/01/scene.md"
+        },
+        {
+          "scene": 2,
+          "storyboard": {
+            "end": {
+              "expected": "ls_clip_02_end.png",
+              "local": "docs/guide/animations/legacy/ls/scenes/02/frames/end.png",
+              "role": "end",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/ls_clip_02_end.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "ls_clip_02_start.png",
+              "local": "docs/guide/animations/legacy/ls/scenes/02/frames/start.png",
+              "role": "start",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/ls_clip_02_start.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/legacy/ls/scenes/02/scene.md"
+        },
+        {
+          "scene": 3,
+          "storyboard": {
+            "end": {
+              "expected": "ls_clip_03_end.png",
+              "local": "docs/guide/animations/legacy/ls/scenes/03/frames/end.png",
+              "role": "end",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/ls_clip_03_end.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "ls_clip_03_start.png",
+              "local": "docs/guide/animations/legacy/ls/scenes/03/frames/start.png",
+              "role": "start",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/ls_clip_03_start.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/legacy/ls/scenes/03/scene.md"
+        },
+        {
+          "scene": 4,
+          "storyboard": {
+            "end": {
+              "expected": "ls_clip_04_end.png",
+              "local": "docs/guide/animations/legacy/ls/scenes/04/frames/end.png",
+              "role": "end",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/ls_clip_04_end.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "ls_clip_04_start.png",
+              "local": "docs/guide/animations/legacy/ls/scenes/04/frames/start.png",
+              "role": "start",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/ls_clip_04_start.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/legacy/ls/scenes/04/scene.md"
+        }
+      ],
+      "storyboard": "docs/guide/animations/legacy/ls/storyboard.md"
+    },
+    {
+      "folder": "docs/guide/animations/legacy/echo",
+      "name": "echo",
+      "scenes": [
+        {
+          "scene": 1,
+          "storyboard": {
+            "end": {
+              "expected": "echo_clip_01_end.png",
+              "local": "docs/guide/animations/legacy/echo/scenes/01/frames/end.png",
+              "role": "end",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/echo_clip_01_end.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "echo_clip_01_start.png",
+              "local": "docs/guide/animations/legacy/echo/scenes/01/frames/start.png",
+              "role": "start",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/echo_clip_01_start.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/legacy/echo/scenes/01/scene.md"
+        },
+        {
+          "scene": 2,
+          "storyboard": {
+            "end": {
+              "expected": "echo_clip_02_end.png",
+              "local": "docs/guide/animations/legacy/echo/scenes/02/frames/end.png",
+              "role": "end",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/echo_clip_02_end.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "echo_clip_02_start.png",
+              "local": "docs/guide/animations/legacy/echo/scenes/02/frames/start.png",
+              "role": "start",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/echo_clip_02_start.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/legacy/echo/scenes/02/scene.md"
+        },
+        {
+          "scene": 3,
+          "storyboard": {
+            "end": {
+              "expected": "echo_clip_03_end.png",
+              "local": "docs/guide/animations/legacy/echo/scenes/03/frames/end.png",
+              "role": "end",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/echo_clip_03_end.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "echo_clip_03_start.png",
+              "local": "docs/guide/animations/legacy/echo/scenes/03/frames/start.png",
+              "role": "start",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/echo_clip_03_start.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/legacy/echo/scenes/03/scene.md"
+        },
+        {
+          "scene": 4,
+          "storyboard": {
+            "end": {
+              "expected": "echo_clip_04_end.png",
+              "local": "docs/guide/animations/legacy/echo/scenes/04/frames/end.png",
+              "role": "end",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/echo_clip_04_end.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "echo_clip_04_start.png",
+              "local": "docs/guide/animations/legacy/echo/scenes/04/frames/start.png",
+              "role": "start",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/echo_clip_04_start.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/legacy/echo/scenes/04/scene.md"
+        }
+      ],
+      "storyboard": "docs/guide/animations/legacy/echo/storyboard.md"
+    },
+    {
+      "folder": "docs/guide/animations/legacy/ls_tangent",
+      "name": "ls_tangent",
+      "scenes": [
+        {
+          "scene": 1,
+          "storyboard": {
+            "end": {
+              "expected": "ls_tangent_clip_01_end.png",
+              "local": "docs/guide/animations/legacy/ls_tangent/scenes/01/frames/end.png",
+              "role": "end",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/ls_tangent_clip_01_end.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "ls_tangent_clip_01_start.png",
+              "local": "docs/guide/animations/legacy/ls_tangent/scenes/01/frames/start.png",
+              "role": "start",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/ls_tangent_clip_01_start.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/legacy/ls_tangent/scenes/01/scene.md"
+        },
+        {
+          "scene": 2,
+          "storyboard": {
+            "end": {
+              "expected": "ls_tangent_clip_02_end.png",
+              "local": "docs/guide/animations/legacy/ls_tangent/scenes/02/frames/end.png",
+              "role": "end",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/ls_tangent_clip_02_end.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "ls_tangent_clip_02_start.png",
+              "local": "docs/guide/animations/legacy/ls_tangent/scenes/02/frames/start.png",
+              "role": "start",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/ls_tangent_clip_02_start.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/legacy/ls_tangent/scenes/02/scene.md"
+        },
+        {
+          "scene": 3,
+          "storyboard": {
+            "end": {
+              "expected": "ls_tangent_clip_03_end.png",
+              "local": "docs/guide/animations/legacy/ls_tangent/scenes/03/frames/end.png",
+              "role": "end",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/ls_tangent_clip_03_end.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "ls_tangent_clip_03_start.png",
+              "local": "docs/guide/animations/legacy/ls_tangent/scenes/03/frames/start.png",
+              "role": "start",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/ls_tangent_clip_03_start.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/legacy/ls_tangent/scenes/03/scene.md"
+        },
+        {
+          "scene": 4,
+          "storyboard": {
+            "end": {
+              "expected": "ls_tangent_clip_04_end.png",
+              "local": "docs/guide/animations/legacy/ls_tangent/scenes/04/frames/end.png",
+              "role": "end",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/ls_tangent_clip_04_end.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "ls_tangent_clip_04_start.png",
+              "local": "docs/guide/animations/legacy/ls_tangent/scenes/04/frames/start.png",
+              "role": "start",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/ls_tangent_clip_04_start.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/legacy/ls_tangent/scenes/04/scene.md"
+        },
+        {
+          "scene": 5,
+          "storyboard": {
+            "end": {
+              "expected": "ls_tangent_clip_05_end.png",
+              "local": "docs/guide/animations/legacy/ls_tangent/scenes/05/frames/end.png",
+              "role": "end",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/ls_tangent_clip_05_end.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "ls_tangent_clip_05_start.png",
+              "local": "docs/guide/animations/legacy/ls_tangent/scenes/05/frames/start.png",
+              "role": "start",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/ls_tangent_clip_05_start.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/legacy/ls_tangent/scenes/05/scene.md"
+        },
+        {
+          "scene": 6,
+          "storyboard": {
+            "end": {
+              "expected": "ls_tangent_clip_06_end.png",
+              "local": "docs/guide/animations/legacy/ls_tangent/scenes/06/frames/end.png",
+              "role": "end",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/ls_tangent_clip_06_end.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "ls_tangent_clip_06_start.png",
+              "local": "docs/guide/animations/legacy/ls_tangent/scenes/06/frames/start.png",
+              "role": "start",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/ls_tangent_clip_06_start.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/legacy/ls_tangent/scenes/06/scene.md"
+        }
+      ],
+      "storyboard": "docs/guide/animations/legacy/ls_tangent/storyboard.md"
+    }
+  ],
+  "note": "Non-destructive organization. Original source files remain in place; copies are organized under docs/guide. Missing storyboard frames are reported, never fabricated.",
+  "project_files": [
+    "docs/ChatGPT Image Aug 14, 2026, 12_00_50 AM.png",
+    "docs/ChatGPT Image Aug 14, 2026, 12_01_16 AM.png",
+    "docs/ChatGPT Image Aug 14, 2026, 12_01_40 AM.png",
+    "docs/ChatGPT Image Aug 14, 2026, 12_01_47 AM.png",
+    "docs/GUIDE.md",
+    "docs/HG2Gui_animation_5s_cut_sheet_v2.md",
+    "docs/Hitchhikers_Guide_to_Termux.md",
+    "docs/Hitchhikers_Guide_to_Termux.revised_master.editorial_pass_4.md",
+    "docs/bf8c1062-ae0c-4f76-8f39-d1295c9a851d.png",
+    "docs/command_line_protest_at_the_union_house.png",
+    "docs/directory_protesters_and_terminal_prompt.png",
+    "docs/echo_clip_01_end.png",
+    "docs/echo_clip_01_start.png",
+    "docs/echo_clip_02_end.png",
+    "docs/echo_clip_02_start.png",
+    "docs/echo_clip_03_end.png",
+    "docs/echo_clip_03_start.png",
+    "docs/echo_clip_04_end.png",
+    "docs/echo_clip_04_start.png",
+    "docs/guide-tangents.md",
+    "docs/hg2gui_banner.png",
+    "docs/hg2gui_banner.webp",
+    "docs/hg2gui_logo.png",
+    "docs/hg2gui_logo.webp",
+    "docs/imagegen.png",
+    "docs/ls_clip_01_end.png",
+    "docs/ls_clip_01_start.png",
+    "docs/ls_clip_02_end.png",
+    "docs/ls_clip_02_start.png",
+    "docs/ls_clip_03_end.png",
+    "docs/ls_clip_03_start.png",
+    "docs/ls_clip_04_end.png",
+    "docs/ls_clip_04_start.png",
+    "docs/ls_tangent_clip_01_end.png",
+    "docs/ls_tangent_clip_01_start.png",
+    "docs/ls_tangent_clip_02_end.png",
+    "docs/ls_tangent_clip_02_start.png",
+    "docs/ls_tangent_clip_03_end.png",
+    "docs/ls_tangent_clip_03_start.png",
+    "docs/ls_tangent_clip_04_end.png",
+    "docs/ls_tangent_clip_04_start.png",
+    "docs/ls_tangent_clip_05_end.png",
+    "docs/ls_tangent_clip_05_start.png",
+    "docs/ls_tangent_clip_06_end.png",
+    "docs/ls_tangent_clip_06_start.png",
+    "docs/mustard_design_system_character_sheet.png",
+    "docs/screencapture-file-C-Users-azrie-Videos-Guillotine-guillotine-export2-mp4-2026-08-09-08_29_30.png",
+    "docs/screencapture-file-C-Users-azrie-Videos-Guillotine-guillotine-export3-mp4-2026-08-09-08_30_29.png",
+    "docs/screencapture-file-C-Users-azrie-Videos-Guillotine-guillotine-export4-mp4-2026-08-09-08_25_58.png",
+    "docs/screencapture-file-C-Users-azrie-Videos-Guillotine-guillotine-export5-mp4-2026-08-09-08_22_37.png",
+    "docs/screencapture-file-C-Users-azrie-Videos-Guillotine-guillotine-export5-mp4-2026-08-09-08_22_46.png",
+    "docs/screencapture-file-C-Users-azrie-Videos-Guillotine-guillotine-export6-mp4-2026-08-09-08_23_20.png",
+    "docs/screencapture-file-C-Users-azrie-Videos-Guillotine-guillotine-export6-mp4-2026-08-09-08_24_28.png",
+    "docs/screencapture-file-C-Users-azrie-Videos-Guillotine-guillotine-export6-mp4-2026-08-09-08_24_55.png",
+    "docs/tangent-scripts.md",
+    "docs/tech_protest_workers_demand_change.png",
+    "docs/workers_rise_with_a_command_prompt.png",
+    "shared/src/commonMain/kotlin/com/hereliesaz/hg2gui/ui/guide/GuideContent.kt"
+  ],
+  "storyboard_coverage": {
+    "canonical": {
+      "ambiguous": 0,
+      "boundary_slots": 234,
+      "materialized": 0,
+      "missing": 234,
+      "not_materialized": 234,
+      "present": 0,
+      "present_duplicate_identical": 0,
+      "scenes": 117,
+      "unresolved": 0
+    },
+    "legacy": {
+      "ambiguous": 0,
+      "boundary_slots": 28,
+      "materialized": 28,
+      "missing": 0,
+      "not_materialized": 0,
+      "present": 28,
+      "present_duplicate_identical": 0,
+      "scenes": 14,
+      "unresolved": 0
+    },
+    "tangents": {
+      "ambiguous": 0,
+      "boundary_slots": 84,
+      "materialized": 80,
+      "missing": 0,
+      "not_materialized": 4,
+      "present": 80,
+      "present_duplicate_identical": 0,
+      "scenes": 42,
+      "unresolved": 4
+    }
+  },
+  "tangent_animations": [
+    {
+      "folder": "docs/guide/animations/tangents/23_cat_theological_mechanical_history",
+      "frame_prefix": "cat",
+      "scenes": [
+        {
+          "frame": "cat_01.png",
+          "narration": "The word `cat` entered computing through a disagreement over which way up a cat goes.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 1,
+          "storyboard": {
+            "end": {
+              "expected": "cat_01.png",
+              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/01/frames/end.png",
+              "role": "end",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/cat_01.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": null,
+              "local": null,
+              "role": "start",
+              "semantics": "unresolved_tangent_cut_map_first_scene_start",
+              "sources": [],
+              "status": "unresolved"
+            }
+          },
+          "text": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/01/scene.md"
+        },
+        {
+          "frame": "cat_02.png",
+          "narration": "This was not initially considered difficult. Cats corrected the record.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 2,
+          "storyboard": {
+            "end": {
+              "expected": "cat_02.png",
+              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/02/frames/end.png",
+              "role": "end",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/cat_02.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "cat_01.png",
+              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/02/frames/start.png",
+              "role": "start",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/cat_01.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/02/scene.md"
+        },
+        {
+          "frame": "cat_03.png",
+          "narration": "A cat regards whichever surface it occupies as the upper surface.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 3,
+          "storyboard": {
+            "end": {
+              "expected": "cat_03.png",
+              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/03/frames/end.png",
+              "role": "end",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/cat_03.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "cat_02.png",
+              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/03/frames/start.png",
+              "role": "start",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/cat_02.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/03/scene.md"
+        },
+        {
+          "frame": "cat_04.png",
+          "narration": "Turning the cat over merely gives the universe a new upper surface.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 4,
+          "storyboard": {
+            "end": {
+              "expected": "cat_04.png",
+              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/04/frames/end.png",
+              "role": "end",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/cat_04.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "cat_03.png",
+              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/04/frames/start.png",
+              "role": "start",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/cat_03.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/04/scene.md"
+        },
+        {
+          "frame": "cat_05.png",
+          "narration": "The Egyptians discovered this and mistook standardization for divinity.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 5,
+          "storyboard": {
+            "end": {
+              "expected": "cat_05.png",
+              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/05/frames/end.png",
+              "role": "end",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/cat_05.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "cat_04.png",
+              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/05/frames/start.png",
+              "role": "start",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/cat_04.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/05/scene.md"
+        },
+        {
+          "frame": "cat_06.png",
+          "narration": "The principle spread.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 6,
+          "storyboard": {
+            "end": {
+              "expected": "cat_06.png",
+              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/06/frames/end.png",
+              "role": "end",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/cat_06.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "cat_05.png",
+              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/06/frames/start.png",
+              "role": "start",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/cat_05.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/06/scene.md"
+        },
+        {
+          "frame": "cat_07.png",
+          "narration": "Observational research continued, mostly because the subject refused peer review.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 7,
+          "storyboard": {
+            "end": {
+              "expected": "cat_07.png",
+              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/07/frames/end.png",
+              "role": "end",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/cat_07.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "cat_06.png",
+              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/07/frames/start.png",
+              "role": "start",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/cat_06.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/07/scene.md"
+        },
+        {
+          "frame": "cat_08.png",
+          "narration": "Physicists tested gravity. Gravity worked. The cat declined to participate.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 8,
+          "storyboard": {
+            "end": {
+              "expected": "cat_08.png",
+              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/08/frames/end.png",
+              "role": "end",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/cat_08.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "cat_07.png",
+              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/08/frames/start.png",
+              "role": "start",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/cat_07.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/08/scene.md"
+        },
+        {
+          "frame": "cat_09.png",
+          "narration": "Further studies established a strong institutional preference for night.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 9,
+          "storyboard": {
+            "end": {
+              "expected": "cat_09.png",
+              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/09/frames/end.png",
+              "role": "end",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/cat_09.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "cat_08.png",
+              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/09/frames/start.png",
+              "role": "start",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/cat_08.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/09/scene.md"
+        },
+        {
+          "frame": "cat_10.png",
+          "narration": "Food selection was classified as constitutional law.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 10,
+          "storyboard": {
+            "end": {
+              "expected": "cat_10.png",
+              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/10/frames/end.png",
+              "role": "end",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/cat_10.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "cat_09.png",
+              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/10/frames/start.png",
+              "role": "start",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/cat_09.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/10/scene.md"
+        },
+        {
+          "frame": "cat_11.png",
+          "narration": "Hierarchy was accepted only when the cat occupied its highest point.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 11,
+          "storyboard": {
+            "end": {
+              "expected": "cat_11.png",
+              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/11/frames/end.png",
+              "role": "end",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/cat_11.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "cat_10.png",
+              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/11/frames/start.png",
+              "role": "start",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/cat_10.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/11/scene.md"
+        },
+        {
+          "frame": "cat_12.png",
+          "narration": "Computing shortened concatenate to `cat`; Unix writes file contents in sequence.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 12,
+          "storyboard": {
+            "end": {
+              "expected": "cat_12.png",
+              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/12/frames/end.png",
+              "role": "end",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/cat_12.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "cat_11.png",
+              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/12/frames/start.png",
+              "role": "start",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/cat_11.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/12/scene.md"
+        }
+      ],
+      "source_script": "docs/script (1).md",
+      "storyboard": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/storyboard.md"
+    },
+    {
+      "folder": "docs/guide/animations/tangents/34_mv_elevator_incident",
+      "frame_prefix": "elevator",
+      "scenes": [
+        {
+          "frame": "elevator_01.png",
+          "narration": "The computing term **move** derives from elevator law.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 1,
+          "storyboard": {
+            "end": {
+              "expected": "elevator_01.png",
+              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/01/frames/end.png",
+              "role": "end",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/elevator_01.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": null,
+              "local": null,
+              "role": "start",
+              "semantics": "unresolved_tangent_cut_map_first_scene_start",
+              "sources": [],
+              "status": "unresolved"
+            }
+          },
+          "text": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/01/scene.md"
+        },
+        {
+          "frame": "elevator_02.png",
+          "narration": "Movement meant a successful change in where passengers intended to be.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 2,
+          "storyboard": {
+            "end": {
+              "expected": "elevator_02.png",
+              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/02/frames/end.png",
+              "role": "end",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/elevator_02.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "elevator_01.png",
+              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/02/frames/start.png",
+              "role": "start",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/elevator_01.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/02/scene.md"
+        },
+        {
+          "frame": "elevator_03.png",
+          "narration": "Pressing a button established intent.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 3,
+          "storyboard": {
+            "end": {
+              "expected": "elevator_03.png",
+              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/03/frames/end.png",
+              "role": "end",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/elevator_03.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "elevator_02.png",
+              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/03/frames/start.png",
+              "role": "start",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/elevator_02.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/03/scene.md"
+        },
+        {
+          "frame": "elevator_04.png",
+          "narration": "Closing the doors established consent.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 4,
+          "storyboard": {
+            "end": {
+              "expected": "elevator_04.png",
+              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/04/frames/end.png",
+              "role": "end",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/elevator_04.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "elevator_03.png",
+              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/04/frames/start.png",
+              "role": "start",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/elevator_03.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/04/scene.md"
+        },
+        {
+          "frame": "elevator_05.png",
+          "narration": "No further evidence was required.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 5,
+          "storyboard": {
+            "end": {
+              "expected": "elevator_05.png",
+              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/05/frames/end.png",
+              "role": "end",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/elevator_05.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "elevator_04.png",
+              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/05/frames/start.png",
+              "role": "start",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/elevator_04.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/05/scene.md"
+        },
+        {
+          "frame": "elevator_06.png",
+          "narration": "Then one elevator interpreted **UP** as a continuing instruction.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 6,
+          "storyboard": {
+            "end": {
+              "expected": "elevator_06.png",
+              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/06/frames/end.png",
+              "role": "end",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/elevator_06.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "elevator_05.png",
+              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/06/frames/start.png",
+              "role": "start",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/elevator_05.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/06/scene.md"
+        },
+        {
+          "frame": "elevator_07.png",
+          "narration": "It passed the requested floor.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 7,
+          "storyboard": {
+            "end": {
+              "expected": "elevator_07.png",
+              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/07/frames/end.png",
+              "role": "end",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/elevator_07.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "elevator_06.png",
+              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/07/frames/start.png",
+              "role": "start",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/elevator_06.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/07/scene.md"
+        },
+        {
+          "frame": "elevator_08.png",
+          "narration": "Then all the other floors.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 8,
+          "storyboard": {
+            "end": {
+              "expected": "elevator_08.png",
+              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/08/frames/end.png",
+              "role": "end",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/elevator_08.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "elevator_07.png",
+              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/08/frames/start.png",
+              "role": "start",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/elevator_07.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/08/scene.md"
+        },
+        {
+          "frame": "elevator_09.png",
+          "narration": "Having exhausted the building, it continued upward.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 9,
+          "storyboard": {
+            "end": {
+              "expected": "elevator_09.png",
+              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/09/frames/end.png",
+              "role": "end",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/elevator_09.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "elevator_08.png",
+              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/09/frames/start.png",
+              "role": "start",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/elevator_08.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/09/scene.md"
+        },
+        {
+          "frame": "elevator_10.png",
+          "narration": "The city objected.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 10,
+          "storyboard": {
+            "end": {
+              "expected": "elevator_10.png",
+              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/10/frames/end.png",
+              "role": "end",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/elevator_10.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "elevator_09.png",
+              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/10/frames/start.png",
+              "role": "start",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/elevator_09.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/10/scene.md"
+        },
+        {
+          "frame": "elevator_11.png",
+          "narration": "The atmosphere objected later.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 11,
+          "storyboard": {
+            "end": {
+              "expected": "elevator_11.png",
+              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/11/frames/end.png",
+              "role": "end",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/elevator_11.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "elevator_10.png",
+              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/11/frames/start.png",
+              "role": "start",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/elevator_10.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/11/scene.md"
+        },
+        {
+          "frame": "elevator_12.png",
+          "narration": "The inquiry changed the definition. Unix kept the word `mv`.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 12,
+          "storyboard": {
+            "end": {
+              "expected": "elevator_12.png",
+              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/12/frames/end.png",
+              "role": "end",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/elevator_12.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "elevator_11.png",
+              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/12/frames/start.png",
+              "role": "start",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/elevator_11.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/12/scene.md"
+        }
+      ],
+      "source_script": "docs/script (2).md",
+      "storyboard": "docs/guide/animations/tangents/34_mv_elevator_incident/storyboard.md"
+    },
+    {
+      "folder": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies",
+      "frame_prefix": "package",
+      "scenes": [
+        {
+          "frame": "package_01.png",
+          "narration": "Package management began as the profession of delivering one thing.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 1,
+          "storyboard": {
+            "end": {
+              "expected": "package_01.png",
+              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/01/frames/end.png",
+              "role": "end",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/package_01.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": null,
+              "local": null,
+              "role": "start",
+              "semantics": "unresolved_tangent_cut_map_first_scene_start",
+              "sources": [],
+              "status": "unresolved"
+            }
+          },
+          "text": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/01/scene.md"
+        },
+        {
+          "frame": "package_02.png",
+          "narration": "Packages were granted the right to arrive with what they needed.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 2,
+          "storyboard": {
+            "end": {
+              "expected": "package_02.png",
+              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/02/frames/end.png",
+              "role": "end",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/package_02.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "package_01.png",
+              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/02/frames/start.png",
+              "role": "start",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/package_01.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/02/scene.md"
+        },
+        {
+          "frame": "package_03.png",
+          "narration": "The first package requested an additional package.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 3,
+          "storyboard": {
+            "end": {
+              "expected": "package_03.png",
+              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/03/frames/end.png",
+              "role": "end",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/package_03.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "package_02.png",
+              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/03/frames/start.png",
+              "role": "start",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/package_02.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/03/scene.md"
+        },
+        {
+          "frame": "package_04.png",
+          "narration": "Things began to arrive.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 4,
+          "storyboard": {
+            "end": {
+              "expected": "package_04.png",
+              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/04/frames/end.png",
+              "role": "end",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/package_04.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "package_03.png",
+              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/04/frames/start.png",
+              "role": "start",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/package_03.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/04/scene.md"
+        },
+        {
+          "frame": "package_05.png",
+          "narration": "Then more things.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 5,
+          "storyboard": {
+            "end": {
+              "expected": "package_05.png",
+              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/05/frames/end.png",
+              "role": "end",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/package_05.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "package_04.png",
+              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/05/frames/start.png",
+              "role": "start",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/package_04.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/05/scene.md"
+        },
+        {
+          "frame": "package_06.png",
+          "narration": "Warehouses became factories.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 6,
+          "storyboard": {
+            "end": {
+              "expected": "package_06.png",
+              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/06/frames/end.png",
+              "role": "end",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/package_06.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "package_05.png",
+              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/06/frames/start.png",
+              "role": "start",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/package_05.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/06/scene.md"
+        },
+        {
+          "frame": "package_07.png",
+          "narration": "Factories acquired supply chains, which acquired relationships.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 7,
+          "storyboard": {
+            "end": {
+              "expected": "package_07.png",
+              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/07/frames/end.png",
+              "role": "end",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/package_07.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "package_06.png",
+              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/07/frames/start.png",
+              "role": "start",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/package_06.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/07/scene.md"
+        },
+        {
+          "frame": "package_08.png",
+          "narration": "Balance was introduced as a theoretical objective.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 8,
+          "storyboard": {
+            "end": {
+              "expected": "package_08.png",
+              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/08/frames/end.png",
+              "role": "end",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/package_08.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "package_07.png",
+              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/08/frames/start.png",
+              "role": "start",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/package_07.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/08/scene.md"
+        },
+        {
+          "frame": "package_09.png",
+          "narration": "The original package remained somewhere in the resulting economy.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 9,
+          "storyboard": {
+            "end": {
+              "expected": "package_09.png",
+              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/09/frames/end.png",
+              "role": "end",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/package_09.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "package_08.png",
+              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/09/frames/start.png",
+              "role": "start",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/package_08.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/09/scene.md"
+        },
+        {
+          "frame": "package_10.png",
+          "narration": "A specialist search department was formed.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 10,
+          "storyboard": {
+            "end": {
+              "expected": "package_10.png",
+              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/10/frames/end.png",
+              "role": "end",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/package_10.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "package_09.png",
+              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/10/frames/start.png",
+              "role": "start",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/package_09.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/10/scene.md"
+        },
+        {
+          "frame": "package_11.png",
+          "narration": "Confidence fluctuated according to departmental requirements.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 11,
+          "storyboard": {
+            "end": {
+              "expected": "package_11.png",
+              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/11/frames/end.png",
+              "role": "end",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/package_11.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "package_10.png",
+              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/11/frames/start.png",
+              "role": "start",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/package_10.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/11/scene.md"
+        },
+        {
+          "frame": "package_12.png",
+          "narration": "Modern package managers automate the whole thing. `pkg install` resolves and installs dependencies.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 12,
+          "storyboard": {
+            "end": {
+              "expected": "package_12.png",
+              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/12/frames/end.png",
+              "role": "end",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/package_12.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "package_11.png",
+              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/12/frames/start.png",
+              "role": "start",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/package_11.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/12/scene.md"
+        }
+      ],
+      "source_script": "docs/script (3).md",
+      "storyboard": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/storyboard.md"
+    },
+    {
+      "folder": "docs/guide/animations/tangents/22_find_cartographical_disaster",
+      "frame_prefix": "cartography",
+      "scenes": [
+        {
+          "frame": "cartography_01.png",
+          "narration": "`find` is named after the Cartographical Disaster of Nth.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 1,
+          "storyboard": {
+            "end": {
+              "expected": "cartography_01.png",
+              "local": "docs/guide/animations/tangents/22_find_cartographical_disaster/scenes/01/frames/end.png",
+              "role": "end",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/cartography_01.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": null,
+              "local": null,
+              "role": "start",
+              "semantics": "unresolved_tangent_cut_map_first_scene_start",
+              "sources": [],
+              "status": "unresolved"
+            }
+          },
+          "text": "docs/guide/animations/tangents/22_find_cartographical_disaster/scenes/01/scene.md"
+        },
+        {
+          "frame": "cartography_02.png",
+          "narration": "Maps had to show every legitimate route. Comprehensiveness required detours.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 2,
+          "storyboard": {
+            "end": {
+              "expected": "cartography_02.png",
+              "local": "docs/guide/animations/tangents/22_find_cartographical_disaster/scenes/02/frames/end.png",
+              "role": "end",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/cartography_02.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "cartography_01.png",
+              "local": "docs/guide/animations/tangents/22_find_cartographical_disaster/scenes/02/frames/start.png",
+              "role": "start",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/cartography_01.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/tangents/22_find_cartographical_disaster/scenes/02/scene.md"
+        },
+        {
+          "frame": "cartography_03.png",
+          "narration": "Detours required signs; signs required a definition of forward.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 3,
+          "storyboard": {
+            "end": {
+              "expected": "cartography_03.png",
+              "local": "docs/guide/animations/tangents/22_find_cartographical_disaster/scenes/03/frames/end.png",
+              "role": "end",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/cartography_03.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "cartography_02.png",
+              "local": "docs/guide/animations/tangents/22_find_cartographical_disaster/scenes/03/frames/start.png",
+              "role": "start",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/cartography_02.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/tangents/22_find_cartographical_disaster/scenes/03/scene.md"
+        },
+        {
+          "frame": "cartography_04.png",
+          "narration": "Maps began including travellers who had not decided to travel.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 4,
+          "storyboard": {
+            "end": {
+              "expected": "cartography_04.png",
+              "local": "docs/guide/animations/tangents/22_find_cartographical_disaster/scenes/04/frames/end.png",
+              "role": "end",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/cartography_04.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "cartography_03.png",
+              "local": "docs/guide/animations/tangents/22_find_cartographical_disaster/scenes/04/frames/start.png",
+              "role": "start",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/cartography_03.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/tangents/22_find_cartographical_disaster/scenes/04/scene.md"
+        },
+        {
+          "frame": "cartography_05.png",
+          "narration": "Routes eventually outnumbered destinations.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 5,
+          "storyboard": {
+            "end": {
+              "expected": "cartography_05.png",
+              "local": "docs/guide/animations/tangents/22_find_cartographical_disaster/scenes/05/frames/end.png",
+              "role": "end",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/cartography_05.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "cartography_04.png",
+              "local": "docs/guide/animations/tangents/22_find_cartographical_disaster/scenes/05/frames/start.png",
+              "role": "start",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/cartography_04.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/tangents/22_find_cartographical_disaster/scenes/05/scene.md"
+        },
+        {
+          "frame": "cartography_06.png",
+          "narration": "Cartographers abolished routes. Unix `find` asks where to start and what to match.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 6,
+          "storyboard": {
+            "end": {
+              "expected": "cartography_06.png",
+              "local": "docs/guide/animations/tangents/22_find_cartographical_disaster/scenes/06/frames/end.png",
+              "role": "end",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/cartography_06.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "cartography_05.png",
+              "local": "docs/guide/animations/tangents/22_find_cartographical_disaster/scenes/06/frames/start.png",
+              "role": "start",
+              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "sources": [
+                "docs/cartography_05.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/tangents/22_find_cartographical_disaster/scenes/06/scene.md"
+        }
+      ],
+      "source_script": "docs/script.md",
+      "storyboard": "docs/guide/animations/tangents/22_find_cartographical_disaster/storyboard.md"
+    }
+  ],
+  "unassigned_reference_media": []
+}
