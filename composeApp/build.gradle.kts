@@ -73,14 +73,14 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            signingConfigs.findByName("release")?.let { signingConfig = it }
+            if (hasReleaseSigningEnv) signingConfigs.findByName("release")?.let { signingConfig = it }
         }
         getByName("debug") {
             // When the CI signing environment is present (merged-build calls assembleDebug with
             // signing_enabled=true), apply the same release key so AppUpdateChecker can verify
             // the signer matches the installed app. Without this, the debug APK uses the local
             // debug keystore and the update checker rejects it as signed by the wrong certificate.
-            signingConfigs.findByName("release")?.let { signingConfig = it }
+            if (hasReleaseSigningEnv) signingConfigs.findByName("release")?.let { signingConfig = it }
         }
     }
     flavorDimensions += "default"
