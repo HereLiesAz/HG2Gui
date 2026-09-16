@@ -23,7 +23,9 @@ Adjacent scenes may intentionally contain duplicate copies of the same boundary 
 
 Canonical START/END filenames come directly from `HG2Gui_animation_5s_cut_sheet_v2.md`. If a declared image does not actually exist in the repository, its `frames/README.md`, the animation `storyboard.md`, and `MANIFEST.json` record the absence. No replacement frame is invented.
 
-Tangent and legacy sources generally provide one ordered still per cut rather than explicit START/END pairs. Those stills are treated as cut-end boundaries and the previous still is reused as the following cut's inferred start. The first cut's start remains explicitly unresolved where no preceding still exists.
+Tangent sources provide one ordered still per cut rather than explicit START/END pairs. Those stills are treated as cut-end boundaries and the previous still is reused as the following cut's inferred start. The first tangent cut's start remains explicitly unresolved where no preceding still exists.
+
+Legacy `ls`, `echo`, and `ls_tangent` clip sets already provide explicit `_start` and `_end` files per scene; those are copied directly into each scene's `frames/` folder.
 
 ## Inventory
 
@@ -31,8 +33,8 @@ Tangent and legacy sources generally provide one ordered still per cut rather th
 - Canonical scenes: **117**
 - Tangent animations: **4**
 - Tangent scenes: **42**
-- Legacy/incomplete animation groups: **0**
-- Legacy scenes: **0**
+- Legacy/incomplete animation groups: **3**
+- Legacy scenes: **14**
 - Project-wide files copied: **58**
 - Unassigned scene/reference media retained for review: **0**
 
@@ -40,6 +42,6 @@ Tangent and legacy sources generally provide one ordered still per cut rather th
 
 - Canonical: **0 / 234** boundary slots materialized; **234** missing; **0** ambiguous; **0** unresolved.
 - Tangents: **80 / 84** boundary slots materialized; **0** missing; **0** ambiguous; **4** unresolved.
-- Legacy: **0 / 0** boundary slots materialized; **0** missing; **0** ambiguous; **0** unresolved.
+- Legacy: **28 / 28** boundary slots materialized; **0** missing; **0** ambiguous; **0** unresolved.
 
 `MANIFEST.json` records provenance, source semantics, and exact storyboard coverage.

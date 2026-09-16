@@ -3312,7 +3312,393 @@
     }
   ],
   "generated_from_repository": true,
-  "legacy_animations": [],
+  "legacy_animations": [
+    {
+      "folder": "docs/guide/animations/legacy/ls",
+      "name": "ls",
+      "scenes": [
+        {
+          "scene": 1,
+          "storyboard": {
+            "end": {
+              "expected": "ls_clip_01_end.png",
+              "local": "docs/guide/animations/legacy/ls/scenes/01/frames/end.png",
+              "role": "end",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/ls_clip_01_end.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "ls_clip_01_start.png",
+              "local": "docs/guide/animations/legacy/ls/scenes/01/frames/start.png",
+              "role": "start",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/ls_clip_01_start.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/legacy/ls/scenes/01/scene.md"
+        },
+        {
+          "scene": 2,
+          "storyboard": {
+            "end": {
+              "expected": "ls_clip_02_end.png",
+              "local": "docs/guide/animations/legacy/ls/scenes/02/frames/end.png",
+              "role": "end",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/ls_clip_02_end.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "ls_clip_02_start.png",
+              "local": "docs/guide/animations/legacy/ls/scenes/02/frames/start.png",
+              "role": "start",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/ls_clip_02_start.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/legacy/ls/scenes/02/scene.md"
+        },
+        {
+          "scene": 3,
+          "storyboard": {
+            "end": {
+              "expected": "ls_clip_03_end.png",
+              "local": "docs/guide/animations/legacy/ls/scenes/03/frames/end.png",
+              "role": "end",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/ls_clip_03_end.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "ls_clip_03_start.png",
+              "local": "docs/guide/animations/legacy/ls/scenes/03/frames/start.png",
+              "role": "start",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/ls_clip_03_start.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/legacy/ls/scenes/03/scene.md"
+        },
+        {
+          "scene": 4,
+          "storyboard": {
+            "end": {
+              "expected": "ls_clip_04_end.png",
+              "local": "docs/guide/animations/legacy/ls/scenes/04/frames/end.png",
+              "role": "end",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/ls_clip_04_end.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "ls_clip_04_start.png",
+              "local": "docs/guide/animations/legacy/ls/scenes/04/frames/start.png",
+              "role": "start",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/ls_clip_04_start.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/legacy/ls/scenes/04/scene.md"
+        }
+      ],
+      "storyboard": "docs/guide/animations/legacy/ls/storyboard.md"
+    },
+    {
+      "folder": "docs/guide/animations/legacy/echo",
+      "name": "echo",
+      "scenes": [
+        {
+          "scene": 1,
+          "storyboard": {
+            "end": {
+              "expected": "echo_clip_01_end.png",
+              "local": "docs/guide/animations/legacy/echo/scenes/01/frames/end.png",
+              "role": "end",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/echo_clip_01_end.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "echo_clip_01_start.png",
+              "local": "docs/guide/animations/legacy/echo/scenes/01/frames/start.png",
+              "role": "start",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/echo_clip_01_start.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/legacy/echo/scenes/01/scene.md"
+        },
+        {
+          "scene": 2,
+          "storyboard": {
+            "end": {
+              "expected": "echo_clip_02_end.png",
+              "local": "docs/guide/animations/legacy/echo/scenes/02/frames/end.png",
+              "role": "end",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/echo_clip_02_end.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "echo_clip_02_start.png",
+              "local": "docs/guide/animations/legacy/echo/scenes/02/frames/start.png",
+              "role": "start",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/echo_clip_02_start.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/legacy/echo/scenes/02/scene.md"
+        },
+        {
+          "scene": 3,
+          "storyboard": {
+            "end": {
+              "expected": "echo_clip_03_end.png",
+              "local": "docs/guide/animations/legacy/echo/scenes/03/frames/end.png",
+              "role": "end",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/echo_clip_03_end.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "echo_clip_03_start.png",
+              "local": "docs/guide/animations/legacy/echo/scenes/03/frames/start.png",
+              "role": "start",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/echo_clip_03_start.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/legacy/echo/scenes/03/scene.md"
+        },
+        {
+          "scene": 4,
+          "storyboard": {
+            "end": {
+              "expected": "echo_clip_04_end.png",
+              "local": "docs/guide/animations/legacy/echo/scenes/04/frames/end.png",
+              "role": "end",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/echo_clip_04_end.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "echo_clip_04_start.png",
+              "local": "docs/guide/animations/legacy/echo/scenes/04/frames/start.png",
+              "role": "start",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/echo_clip_04_start.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/legacy/echo/scenes/04/scene.md"
+        }
+      ],
+      "storyboard": "docs/guide/animations/legacy/echo/storyboard.md"
+    },
+    {
+      "folder": "docs/guide/animations/legacy/ls_tangent",
+      "name": "ls_tangent",
+      "scenes": [
+        {
+          "scene": 1,
+          "storyboard": {
+            "end": {
+              "expected": "ls_tangent_clip_01_end.png",
+              "local": "docs/guide/animations/legacy/ls_tangent/scenes/01/frames/end.png",
+              "role": "end",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/ls_tangent_clip_01_end.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "ls_tangent_clip_01_start.png",
+              "local": "docs/guide/animations/legacy/ls_tangent/scenes/01/frames/start.png",
+              "role": "start",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/ls_tangent_clip_01_start.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/legacy/ls_tangent/scenes/01/scene.md"
+        },
+        {
+          "scene": 2,
+          "storyboard": {
+            "end": {
+              "expected": "ls_tangent_clip_02_end.png",
+              "local": "docs/guide/animations/legacy/ls_tangent/scenes/02/frames/end.png",
+              "role": "end",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/ls_tangent_clip_02_end.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "ls_tangent_clip_02_start.png",
+              "local": "docs/guide/animations/legacy/ls_tangent/scenes/02/frames/start.png",
+              "role": "start",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/ls_tangent_clip_02_start.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/legacy/ls_tangent/scenes/02/scene.md"
+        },
+        {
+          "scene": 3,
+          "storyboard": {
+            "end": {
+              "expected": "ls_tangent_clip_03_end.png",
+              "local": "docs/guide/animations/legacy/ls_tangent/scenes/03/frames/end.png",
+              "role": "end",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/ls_tangent_clip_03_end.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "ls_tangent_clip_03_start.png",
+              "local": "docs/guide/animations/legacy/ls_tangent/scenes/03/frames/start.png",
+              "role": "start",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/ls_tangent_clip_03_start.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/legacy/ls_tangent/scenes/03/scene.md"
+        },
+        {
+          "scene": 4,
+          "storyboard": {
+            "end": {
+              "expected": "ls_tangent_clip_04_end.png",
+              "local": "docs/guide/animations/legacy/ls_tangent/scenes/04/frames/end.png",
+              "role": "end",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/ls_tangent_clip_04_end.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "ls_tangent_clip_04_start.png",
+              "local": "docs/guide/animations/legacy/ls_tangent/scenes/04/frames/start.png",
+              "role": "start",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/ls_tangent_clip_04_start.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/legacy/ls_tangent/scenes/04/scene.md"
+        },
+        {
+          "scene": 5,
+          "storyboard": {
+            "end": {
+              "expected": "ls_tangent_clip_05_end.png",
+              "local": "docs/guide/animations/legacy/ls_tangent/scenes/05/frames/end.png",
+              "role": "end",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/ls_tangent_clip_05_end.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "ls_tangent_clip_05_start.png",
+              "local": "docs/guide/animations/legacy/ls_tangent/scenes/05/frames/start.png",
+              "role": "start",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/ls_tangent_clip_05_start.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/legacy/ls_tangent/scenes/05/scene.md"
+        },
+        {
+          "scene": 6,
+          "storyboard": {
+            "end": {
+              "expected": "ls_tangent_clip_06_end.png",
+              "local": "docs/guide/animations/legacy/ls_tangent/scenes/06/frames/end.png",
+              "role": "end",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/ls_tangent_clip_06_end.png"
+              ],
+              "status": "present"
+            },
+            "start": {
+              "expected": "ls_tangent_clip_06_start.png",
+              "local": "docs/guide/animations/legacy/ls_tangent/scenes/06/frames/start.png",
+              "role": "start",
+              "semantics": "explicit_legacy_clip_boundary",
+              "sources": [
+                "docs/ls_tangent_clip_06_start.png"
+              ],
+              "status": "present"
+            }
+          },
+          "text": "docs/guide/animations/legacy/ls_tangent/scenes/06/scene.md"
+        }
+      ],
+      "storyboard": "docs/guide/animations/legacy/ls_tangent/storyboard.md"
+    }
+  ],
   "note": "Non-destructive organization. Original source files remain in place; copies are organized under docs/guide. Missing storyboard frames are reported, never fabricated.",
   "project_files": [
     "docs/ChatGPT Image Aug 14, 2026, 12_00_50 AM.png",
@@ -3388,13 +3774,13 @@
     },
     "legacy": {
       "ambiguous": 0,
-      "boundary_slots": 0,
-      "materialized": 0,
+      "boundary_slots": 28,
+      "materialized": 28,
       "missing": 0,
       "not_materialized": 0,
-      "present": 0,
+      "present": 28,
       "present_duplicate_identical": 0,
-      "scenes": 0,
+      "scenes": 14,
       "unresolved": 0
     },
     "tangents": {

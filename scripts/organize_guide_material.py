@@ -542,84 +542,98 @@ def build_tangents(manifest: dict, asset_index: dict[str, list[Path]]) -> None:
 
 
 def build_legacy(manifest: dict, asset_index: dict[str, list[Path]]) -> None:
-    groups: dict[str, list[tuple[int, Path]]] = {}
-    for path in sorted(DOCS.iterdir()):
-        if not path.is_file() or path.suffix.lower() not in IMAGE_EXTS:
-            continue
-        match = re.match(r"^(echo|ls|ls_tangent)_(\d{2})$", path.stem.lower())
-        if not match:
-            continue
-        groups.setdefault(match.group(1), []).append((int(match.group(2)), path))
-
     legacy = []
-    for name, frames in sorted(groups.items()):
-        frames = sorted(frames)
+    for name in ["ls", "echo", "ls_tangent"]:
+        frames = sorted(
+            path
+            for path in DOCS.glob(f"{name}_clip_*_*.png")
+            if re.search(r"_(start|end)\.png$", path.name)
+        )
+        if not frames:
+            continue
+
+        numbers = sorted(
+            {
+                int(match.group(1))
+                for frame in frames
+                if (match := re.search(r"_clip_(\d{2})_", frame.name))
+            }
+        )
         anim_dir = OUT / "animations/legacy" / name
         write(
             anim_dir / "animation.md",
             "\n".join([
                 f"# Legacy/incomplete animation — `{name}`",
                 "",
-                "Reference/storyboard images exist in the repository, but this animation is not represented by a current 5-second production packet.",
+                "Explicit per-scene start/end storyboard images exist in the repository, but this animation is not represented by a current 5-second production packet.",
                 "",
-                "The ordered still sequence is preserved here without promoting it to canonical.",
+                "The clip boundary pairs are preserved here without promoting the sequence to canonical.",
             ]),
         )
 
         storyboard_sections = [
             f"# Storyboard — legacy `{name}`",
             "",
-            "The loose numbered image sequence is interpreted as ordered cut-end stills.",
-            "Each previous still is duplicated as the next scene's inferred start frame.",
-            "The first scene's start remains unresolved because no earlier boundary is declared.",
+            "Each scene has explicit `_start` and `_end` storyboard files in the source repository.",
+            "Those files are normalized to `frames/start.png` and `frames/end.png` while their original provenance remains recorded.",
             "",
         ]
         scene_records = []
-        previous_frame: str | None = None
 
-        for number, source in frames:
+        for number in numbers:
             scene_dir = anim_dir / "scenes" / f"{number:02d}"
+            start_name = f"{name}_clip_{number:02d}_start.png"
+            end_name = f"{name}_clip_{number:02d}_end.png"
             write(
                 scene_dir / "scene.md",
-                f"# Scene {number:02d}\n\nExisting ordered storyboard frame: `{source.name}`.\n",
+                (
+                    f"# Scene {number:02d}\n\n"
+                    f"**Start frame:** `{start_name}`\n\n"
+                    f"**End frame:** `{end_name}`\n"
+                ),
             )
-            start = inferred_sequence_boundary(
-                previous_frame,
+
+            start_boundary = materialize_boundary(
+                start_name,
                 "start",
                 scene_dir,
                 asset_index,
-                "legacy_still",
+                "explicit_legacy_clip_boundary",
             )
-            end = inferred_sequence_boundary(
-                source.name,
+            end_boundary = materialize_boundary(
+                end_name,
                 "end",
                 scene_dir,
                 asset_index,
-                "legacy_still",
+                "explicit_legacy_clip_boundary",
             )
-            boundaries = [start, end]
+            boundaries = [start_boundary, end_boundary]
             write_frames_readme(
                 scene_dir,
                 boundaries,
-                "Boundary roles are inferred from the loose numbered still sequence.",
+                "Boundary roles come directly from the source `_start` / `_end` filenames.",
             )
             reference_readme(scene_dir)
 
             storyboard_sections += [
                 storyboard_scene_section(
                     number,
-                    f"## Cut {number:02d}\n\nExisting ordered storyboard frame `{source.name}`.",
+                    (
+                        f"## Cut {number:02d}\n\n"
+                        f"Explicit boundary pair: `{start_name}` → `{end_name}`."
+                    ),
                     boundaries,
                 ),
                 "",
             ]
             scene_records.append({
                 "scene": number,
-                "source_frame": rel(source),
                 "text": rel(scene_dir / "scene.md"),
-                "storyboard": {"start": start, "end": end},
+                "storyboard": {
+                    "start": start_boundary,
+                    "end": end_boundary,
+                },
             })
-            previous_frame = source.name
 
         write(anim_dir / "storyboard.md", "\n".join(storyboard_sections))
         legacy.append({
@@ -630,8 +644,6 @@ def build_legacy(manifest: dict, asset_index: dict[str, list[Path]]) -> None:
         })
 
     manifest["legacy_animations"] = legacy
-
-
 def build_project(manifest: dict) -> None:
     project = OUT / "project"
     copied: list[str] = []
@@ -762,7 +774,7 @@ Adjacent scenes may intentionally contain duplicate copies of the same boundary 
 
 Canonical START/END filenames come directly from `{CUT_SHEET.name}`. If a declared image does not actually exist in the repository, its `frames/README.md`, the animation `storyboard.md`, and `MANIFEST.json` record the absence. No replacement frame is invented.
 
-Tangent and legacy sources generally provide one ordered still per cut rather than explicit START/END pairs. Those stills are treated as cut-end boundaries and the previous still is reused as the following cut's inferred start. The first cut's start remains explicitly unresolved where no preceding still exists.
+Tangent sources provide one ordered still per cut rather than explicit START/END pairs. Those stills are treated as cut-end boundaries and the previous still is reused as the following cut's inferred start. The first tangent cut's start remains explicitly unresolved where no preceding still exists.\n\nLegacy `ls`, `echo`, and `ls_tangent` clip sets already provide explicit `_start` and `_end` files per scene; those are copied directly into each scene's `frames/` folder.
 
 ## Inventory
 
