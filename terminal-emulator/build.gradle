@@ -20,4 +20,6 @@ android {
 
 dependencies {
     implementation libs.androidx.annotation
+    testImplementation libs.junit
 }
+dependencies { testImplementation libs.junit }
