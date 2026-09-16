@@ -1,0 +1,1673 @@
+{
+  "canonical": [
+    {
+      "number": "01",
+      "slug": "pwd",
+      "title": "Animation 01 — `pwd` — print working directory",
+      "source": "docs/HG2Gui_animation_5s_production_packets/01_pwd_5s_packet.md",
+      "scenes": [
+        {
+          "scene": "01",
+          "references_found": [],
+          "references_missing": [
+            "01_pwd_frame_00.png",
+            "01_pwd_frame_01.png"
+          ]
+        },
+        {
+          "scene": "02",
+          "references_found": [],
+          "references_missing": [
+            "01_pwd_frame_01.png",
+            "01_pwd_frame_02.png"
+          ]
+        },
+        {
+          "scene": "03",
+          "references_found": [],
+          "references_missing": [
+            "01_pwd_frame_02.png",
+            "01_pwd_frame_03.png"
+          ]
+        },
+        {
+          "scene": "04",
+          "references_found": [],
+          "references_missing": [
+            "01_pwd_frame_03.png",
+            "01_pwd_frame_04.png"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "02",
+      "slug": "pkg_install",
+      "title": "Animation 02 — `pkg install` — package install",
+      "source": "docs/HG2Gui_animation_5s_production_packets/02_pkg_install_5s_packet.md",
+      "scenes": [
+        {
+          "scene": "01",
+          "references_found": [],
+          "references_missing": [
+            "02_pkg_install_frame_00.png",
+            "02_pkg_install_frame_01.png"
+          ]
+        },
+        {
+          "scene": "02",
+          "references_found": [],
+          "references_missing": [
+            "02_pkg_install_frame_01.png",
+            "02_pkg_install_frame_02.png"
+          ]
+        },
+        {
+          "scene": "03",
+          "references_found": [],
+          "references_missing": [
+            "02_pkg_install_frame_02.png",
+            "02_pkg_install_frame_03.png"
+          ]
+        },
+        {
+          "scene": "04",
+          "references_found": [],
+          "references_missing": [
+            "02_pkg_install_frame_03.png",
+            "02_pkg_install_frame_04.png"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "03",
+      "slug": "apt_get_update",
+      "title": "Animation 03 — `apt-get update` — refresh package indexes",
+      "source": "docs/HG2Gui_animation_5s_production_packets/03_apt_get_update_5s_packet.md",
+      "scenes": [
+        {
+          "scene": "01",
+          "references_found": [],
+          "references_missing": [
+            "03_apt_get_update_frame_00.png",
+            "03_apt_get_update_frame_01.png"
+          ]
+        },
+        {
+          "scene": "02",
+          "references_found": [],
+          "references_missing": [
+            "03_apt_get_update_frame_01.png",
+            "03_apt_get_update_frame_02.png"
+          ]
+        },
+        {
+          "scene": "03",
+          "references_found": [],
+          "references_missing": [
+            "03_apt_get_update_frame_02.png",
+            "03_apt_get_update_frame_03.png"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "04",
+      "slug": "nano",
+      "title": "Animation 04 — `nano` — Nano's ANOther editor",
+      "source": "docs/HG2Gui_animation_5s_production_packets/04_nano_5s_packet.md",
+      "scenes": [
+        {
+          "scene": "01",
+          "references_found": [],
+          "references_missing": [
+            "04_nano_frame_00.png",
+            "04_nano_frame_01.png"
+          ]
+        },
+        {
+          "scene": "02",
+          "references_found": [],
+          "references_missing": [
+            "04_nano_frame_01.png",
+            "04_nano_frame_02.png"
+          ]
+        },
+        {
+          "scene": "03",
+          "references_found": [],
+          "references_missing": [
+            "04_nano_frame_02.png",
+            "04_nano_frame_03.png"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "05",
+      "slug": "top",
+      "title": "Animation 05 — `top` — process monitor",
+      "source": "docs/HG2Gui_animation_5s_production_packets/05_top_5s_packet.md",
+      "scenes": [
+        {
+          "scene": "01",
+          "references_found": [],
+          "references_missing": [
+            "05_top_frame_00.png",
+            "05_top_frame_01.png"
+          ]
+        },
+        {
+          "scene": "02",
+          "references_found": [],
+          "references_missing": [
+            "05_top_frame_01.png",
+            "05_top_frame_02.png"
+          ]
+        },
+        {
+          "scene": "03",
+          "references_found": [],
+          "references_missing": [
+            "05_top_frame_02.png",
+            "05_top_frame_03.png"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "06",
+      "slug": "kill",
+      "title": "Animation 06 — `kill` — send a signal",
+      "source": "docs/HG2Gui_animation_5s_production_packets/06_kill_5s_packet.md",
+      "scenes": [
+        {
+          "scene": "01",
+          "references_found": [],
+          "references_missing": [
+            "06_kill_frame_00.png",
+            "06_kill_frame_01.png"
+          ]
+        },
+        {
+          "scene": "02",
+          "references_found": [],
+          "references_missing": [
+            "06_kill_frame_01.png",
+            "06_kill_frame_02.png"
+          ]
+        },
+        {
+          "scene": "03",
+          "references_found": [],
+          "references_missing": [
+            "06_kill_frame_02.png",
+            "06_kill_frame_03.png"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "07",
+      "slug": "df",
+      "title": "Animation 07 — `df` — filesystem free space",
+      "source": "docs/HG2Gui_animation_5s_production_packets/07_df_5s_packet.md",
+      "scenes": [
+        {
+          "scene": "01",
+          "references_found": [],
+          "references_missing": [
+            "07_df_frame_00.png",
+            "07_df_frame_01.png"
+          ]
+        },
+        {
+          "scene": "02",
+          "references_found": [],
+          "references_missing": [
+            "07_df_frame_01.png",
+            "07_df_frame_02.png"
+          ]
+        },
+        {
+          "scene": "03",
+          "references_found": [],
+          "references_missing": [
+            "07_df_frame_02.png",
+            "07_df_frame_03.png"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "08",
+      "slug": "rm",
+      "title": "Animation 08 — `rm` — remove",
+      "source": "docs/HG2Gui_animation_5s_production_packets/08_rm_5s_packet.md",
+      "scenes": [
+        {
+          "scene": "01",
+          "references_found": [],
+          "references_missing": [
+            "08_rm_frame_00.png",
+            "08_rm_frame_01.png"
+          ]
+        },
+        {
+          "scene": "02",
+          "references_found": [],
+          "references_missing": [
+            "08_rm_frame_01.png",
+            "08_rm_frame_02.png"
+          ]
+        },
+        {
+          "scene": "03",
+          "references_found": [],
+          "references_missing": [
+            "08_rm_frame_02.png",
+            "08_rm_frame_03.png"
+          ]
+        },
+        {
+          "scene": "04",
+          "references_found": [],
+          "references_missing": [
+            "08_rm_frame_03.png",
+            "08_rm_frame_04.png"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "09",
+      "slug": "source",
+      "title": "Animation 09 — `source` — source",
+      "source": "docs/HG2Gui_animation_5s_production_packets/09_source_5s_packet.md",
+      "scenes": [
+        {
+          "scene": "01",
+          "references_found": [],
+          "references_missing": [
+            "09_source_frame_00.png",
+            "09_source_frame_01.png"
+          ]
+        },
+        {
+          "scene": "02",
+          "references_found": [],
+          "references_missing": [
+            "09_source_frame_01.png",
+            "09_source_frame_02.png"
+          ]
+        },
+        {
+          "scene": "03",
+          "references_found": [],
+          "references_missing": [
+            "09_source_frame_02.png",
+            "09_source_frame_03.png"
+          ]
+        },
+        {
+          "scene": "04",
+          "references_found": [],
+          "references_missing": [
+            "09_source_frame_03.png",
+            "09_source_frame_04.png"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "10",
+      "slug": "ping",
+      "title": "Animation 10 — `ping` — ping",
+      "source": "docs/HG2Gui_animation_5s_production_packets/10_ping_5s_packet.md",
+      "scenes": [
+        {
+          "scene": "01",
+          "references_found": [],
+          "references_missing": [
+            "10_ping_frame_00.png",
+            "10_ping_frame_01.png"
+          ]
+        },
+        {
+          "scene": "02",
+          "references_found": [],
+          "references_missing": [
+            "10_ping_frame_01.png",
+            "10_ping_frame_02.png"
+          ]
+        },
+        {
+          "scene": "03",
+          "references_found": [],
+          "references_missing": [
+            "10_ping_frame_02.png",
+            "10_ping_frame_03.png"
+          ]
+        },
+        {
+          "scene": "04",
+          "references_found": [],
+          "references_missing": [
+            "10_ping_frame_03.png",
+            "10_ping_frame_04.png"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "11",
+      "slug": "ssh",
+      "title": "Animation 11 — `ssh` — secure shell",
+      "source": "docs/HG2Gui_animation_5s_production_packets/11_ssh_5s_packet.md",
+      "scenes": [
+        {
+          "scene": "01",
+          "references_found": [],
+          "references_missing": [
+            "11_ssh_frame_00.png",
+            "11_ssh_frame_01.png"
+          ]
+        },
+        {
+          "scene": "02",
+          "references_found": [],
+          "references_missing": [
+            "11_ssh_frame_01.png",
+            "11_ssh_frame_02.png"
+          ]
+        },
+        {
+          "scene": "03",
+          "references_found": [],
+          "references_missing": [
+            "11_ssh_frame_02.png",
+            "11_ssh_frame_03.png"
+          ]
+        },
+        {
+          "scene": "04",
+          "references_found": [],
+          "references_missing": [
+            "11_ssh_frame_03.png",
+            "11_ssh_frame_04.png"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "12",
+      "slug": "harden_check",
+      "title": "Animation 12 — `harden-check` — harden check",
+      "source": "docs/HG2Gui_animation_5s_production_packets/12_harden_check_5s_packet.md",
+      "scenes": [
+        {
+          "scene": "01",
+          "references_found": [],
+          "references_missing": [
+            "12_harden_check_frame_00.png",
+            "12_harden_check_frame_01.png"
+          ]
+        },
+        {
+          "scene": "02",
+          "references_found": [],
+          "references_missing": [
+            "12_harden_check_frame_01.png",
+            "12_harden_check_frame_02.png"
+          ]
+        },
+        {
+          "scene": "03",
+          "references_found": [],
+          "references_missing": [
+            "12_harden_check_frame_02.png",
+            "12_harden_check_frame_03.png"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "13",
+      "slug": "git_commit",
+      "title": "Animation 13 — `git commit` — git commit",
+      "source": "docs/HG2Gui_animation_5s_production_packets/13_git_commit_5s_packet.md",
+      "scenes": [
+        {
+          "scene": "01",
+          "references_found": [],
+          "references_missing": [
+            "13_git_commit_frame_00.png",
+            "13_git_commit_frame_01.png"
+          ]
+        },
+        {
+          "scene": "02",
+          "references_found": [],
+          "references_missing": [
+            "13_git_commit_frame_01.png",
+            "13_git_commit_frame_02.png"
+          ]
+        },
+        {
+          "scene": "03",
+          "references_found": [],
+          "references_missing": [
+            "13_git_commit_frame_02.png",
+            "13_git_commit_frame_03.png"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "14",
+      "slug": "nmap",
+      "title": "Animation 14 — `nmap` — network mapper",
+      "source": "docs/HG2Gui_animation_5s_production_packets/14_nmap_5s_packet.md",
+      "scenes": [
+        {
+          "scene": "01",
+          "references_found": [],
+          "references_missing": [
+            "14_nmap_frame_00.png",
+            "14_nmap_frame_01.png"
+          ]
+        },
+        {
+          "scene": "02",
+          "references_found": [],
+          "references_missing": [
+            "14_nmap_frame_01.png",
+            "14_nmap_frame_02.png"
+          ]
+        },
+        {
+          "scene": "03",
+          "references_found": [],
+          "references_missing": [
+            "14_nmap_frame_02.png",
+            "14_nmap_frame_03.png"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "15",
+      "slug": "crond",
+      "title": "Animation 15 — `crond` / `crontab` — scheduled jobs",
+      "source": "docs/HG2Gui_animation_5s_production_packets/15_crond_5s_packet.md",
+      "scenes": [
+        {
+          "scene": "01",
+          "references_found": [],
+          "references_missing": [
+            "15_crond_frame_00.png",
+            "15_crond_frame_01.png"
+          ]
+        },
+        {
+          "scene": "02",
+          "references_found": [],
+          "references_missing": [
+            "15_crond_frame_01.png",
+            "15_crond_frame_02.png"
+          ]
+        },
+        {
+          "scene": "03",
+          "references_found": [],
+          "references_missing": [
+            "15_crond_frame_02.png",
+            "15_crond_frame_03.png"
+          ]
+        },
+        {
+          "scene": "04",
+          "references_found": [],
+          "references_missing": [
+            "15_crond_frame_03.png",
+            "15_crond_frame_04.png"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "16",
+      "slug": "watch",
+      "title": "Animation 16 — `watch` — watch",
+      "source": "docs/HG2Gui_animation_5s_production_packets/16_watch_5s_packet.md",
+      "scenes": [
+        {
+          "scene": "01",
+          "references_found": [],
+          "references_missing": [
+            "16_watch_frame_00.png",
+            "16_watch_frame_01.png"
+          ]
+        },
+        {
+          "scene": "02",
+          "references_found": [],
+          "references_missing": [
+            "16_watch_frame_01.png",
+            "16_watch_frame_02.png"
+          ]
+        },
+        {
+          "scene": "03",
+          "references_found": [],
+          "references_missing": [
+            "16_watch_frame_02.png",
+            "16_watch_frame_03.png"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "17",
+      "slug": "ai_chat",
+      "title": "Animation 17 — `AI chat` — natural language to command",
+      "source": "docs/HG2Gui_animation_5s_production_packets/17_ai_chat_5s_packet.md",
+      "scenes": [
+        {
+          "scene": "01",
+          "references_found": [],
+          "references_missing": [
+            "17_ai_chat_frame_00.png",
+            "17_ai_chat_frame_01.png"
+          ]
+        },
+        {
+          "scene": "02",
+          "references_found": [],
+          "references_missing": [
+            "17_ai_chat_frame_01.png",
+            "17_ai_chat_frame_02.png"
+          ]
+        },
+        {
+          "scene": "03",
+          "references_found": [],
+          "references_missing": [
+            "17_ai_chat_frame_02.png",
+            "17_ai_chat_frame_03.png"
+          ]
+        },
+        {
+          "scene": "04",
+          "references_found": [],
+          "references_missing": [
+            "17_ai_chat_frame_03.png",
+            "17_ai_chat_frame_04.png"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "18",
+      "slug": "skill",
+      "title": "Animation 18 — `skill` — installed skill package",
+      "source": "docs/HG2Gui_animation_5s_production_packets/18_skill_5s_packet.md",
+      "scenes": [
+        {
+          "scene": "01",
+          "references_found": [],
+          "references_missing": [
+            "18_skill_frame_00.png",
+            "18_skill_frame_01.png"
+          ]
+        },
+        {
+          "scene": "02",
+          "references_found": [],
+          "references_missing": [
+            "18_skill_frame_01.png",
+            "18_skill_frame_02.png"
+          ]
+        },
+        {
+          "scene": "03",
+          "references_found": [],
+          "references_missing": [
+            "18_skill_frame_02.png",
+            "18_skill_frame_03.png"
+          ]
+        },
+        {
+          "scene": "04",
+          "references_found": [],
+          "references_missing": [
+            "18_skill_frame_03.png",
+            "18_skill_frame_04.png"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "19",
+      "slug": "ls_a",
+      "title": "Animation 19 — `ls -a` — list all",
+      "source": "docs/HG2Gui_animation_5s_production_packets/19_ls_a_5s_packet.md",
+      "scenes": [
+        {
+          "scene": "01",
+          "references_found": [],
+          "references_missing": [
+            "19_ls_a_frame_00.png",
+            "19_ls_a_frame_01.png"
+          ]
+        },
+        {
+          "scene": "02",
+          "references_found": [],
+          "references_missing": [
+            "19_ls_a_frame_01.png",
+            "19_ls_a_frame_02.png"
+          ]
+        },
+        {
+          "scene": "03",
+          "references_found": [],
+          "references_missing": [
+            "19_ls_a_frame_02.png",
+            "19_ls_a_frame_03.png"
+          ]
+        },
+        {
+          "scene": "04",
+          "references_found": [],
+          "references_missing": [
+            "19_ls_a_frame_03.png",
+            "19_ls_a_frame_04.png"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "20",
+      "slug": "sudo",
+      "title": "Animation 20 — `sudo` — run with another user's privileges",
+      "source": "docs/HG2Gui_animation_5s_production_packets/20_sudo_5s_packet.md",
+      "scenes": [
+        {
+          "scene": "01",
+          "references_found": [],
+          "references_missing": [
+            "20_sudo_frame_00.png",
+            "20_sudo_frame_01.png"
+          ]
+        },
+        {
+          "scene": "02",
+          "references_found": [],
+          "references_missing": [
+            "20_sudo_frame_01.png",
+            "20_sudo_frame_02.png"
+          ]
+        },
+        {
+          "scene": "03",
+          "references_found": [],
+          "references_missing": [
+            "20_sudo_frame_02.png",
+            "20_sudo_frame_03.png"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "21",
+      "slug": "rmdir",
+      "title": "Animation 21 — `rmdir` — remove directory",
+      "source": "docs/HG2Gui_animation_5s_production_packets/21_rmdir_5s_packet.md",
+      "scenes": [
+        {
+          "scene": "01",
+          "references_found": [],
+          "references_missing": [
+            "21_rmdir_frame_00.png",
+            "21_rmdir_frame_01.png"
+          ]
+        },
+        {
+          "scene": "02",
+          "references_found": [],
+          "references_missing": [
+            "21_rmdir_frame_01.png",
+            "21_rmdir_frame_02.png"
+          ]
+        },
+        {
+          "scene": "03",
+          "references_found": [],
+          "references_missing": [
+            "21_rmdir_frame_02.png",
+            "21_rmdir_frame_03.png"
+          ]
+        },
+        {
+          "scene": "04",
+          "references_found": [],
+          "references_missing": [
+            "21_rmdir_frame_03.png",
+            "21_rmdir_frame_04.png"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "22",
+      "slug": "find",
+      "title": "Animation 22 — `find` — find",
+      "source": "docs/HG2Gui_animation_5s_production_packets/22_find_5s_packet.md",
+      "scenes": [
+        {
+          "scene": "01",
+          "references_found": [],
+          "references_missing": [
+            "22_find_frame_00.png",
+            "22_find_frame_01.png"
+          ]
+        },
+        {
+          "scene": "02",
+          "references_found": [],
+          "references_missing": [
+            "22_find_frame_01.png",
+            "22_find_frame_02.png"
+          ]
+        },
+        {
+          "scene": "03",
+          "references_found": [],
+          "references_missing": [
+            "22_find_frame_02.png",
+            "22_find_frame_03.png"
+          ]
+        },
+        {
+          "scene": "04",
+          "references_found": [],
+          "references_missing": [
+            "22_find_frame_03.png",
+            "22_find_frame_04.png"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "23",
+      "slug": "cat",
+      "title": "Animation 23 — `cat` — concatenate",
+      "source": "docs/HG2Gui_animation_5s_production_packets/23_cat_5s_packet.md",
+      "scenes": [
+        {
+          "scene": "01",
+          "references_found": [],
+          "references_missing": [
+            "23_cat_frame_00.png",
+            "23_cat_frame_01.png"
+          ]
+        },
+        {
+          "scene": "02",
+          "references_found": [],
+          "references_missing": [
+            "23_cat_frame_01.png",
+            "23_cat_frame_02.png"
+          ]
+        },
+        {
+          "scene": "03",
+          "references_found": [],
+          "references_missing": [
+            "23_cat_frame_02.png",
+            "23_cat_frame_03.png"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "24",
+      "slug": "ps",
+      "title": "Animation 24 — `ps` — process status",
+      "source": "docs/HG2Gui_animation_5s_production_packets/24_ps_5s_packet.md",
+      "scenes": [
+        {
+          "scene": "01",
+          "references_found": [],
+          "references_missing": [
+            "24_ps_frame_00.png",
+            "24_ps_frame_01.png"
+          ]
+        },
+        {
+          "scene": "02",
+          "references_found": [],
+          "references_missing": [
+            "24_ps_frame_01.png",
+            "24_ps_frame_02.png"
+          ]
+        },
+        {
+          "scene": "03",
+          "references_found": [],
+          "references_missing": [
+            "24_ps_frame_02.png",
+            "24_ps_frame_03.png"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "25",
+      "slug": "grep",
+      "title": "Animation 25 — `grep` — pattern search",
+      "source": "docs/HG2Gui_animation_5s_production_packets/25_grep_5s_packet.md",
+      "scenes": [
+        {
+          "scene": "01",
+          "references_found": [],
+          "references_missing": [
+            "25_grep_frame_00.png",
+            "25_grep_frame_01.png"
+          ]
+        },
+        {
+          "scene": "02",
+          "references_found": [],
+          "references_missing": [
+            "25_grep_frame_01.png",
+            "25_grep_frame_02.png"
+          ]
+        },
+        {
+          "scene": "03",
+          "references_found": [],
+          "references_missing": [
+            "25_grep_frame_02.png",
+            "25_grep_frame_03.png"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "26",
+      "slug": "ifconfig",
+      "title": "Animation 26 — `ifconfig` — interface configuration",
+      "source": "docs/HG2Gui_animation_5s_production_packets/26_ifconfig_5s_packet.md",
+      "scenes": [
+        {
+          "scene": "01",
+          "references_found": [],
+          "references_missing": [
+            "26_ifconfig_frame_00.png",
+            "26_ifconfig_frame_01.png"
+          ]
+        },
+        {
+          "scene": "02",
+          "references_found": [],
+          "references_missing": [
+            "26_ifconfig_frame_01.png",
+            "26_ifconfig_frame_02.png"
+          ]
+        },
+        {
+          "scene": "03",
+          "references_found": [],
+          "references_missing": [
+            "26_ifconfig_frame_02.png",
+            "26_ifconfig_frame_03.png"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "27",
+      "slug": "man",
+      "title": "Animation 27 — `man` — manual",
+      "source": "docs/HG2Gui_animation_5s_production_packets/27_man_5s_packet.md",
+      "scenes": [
+        {
+          "scene": "01",
+          "references_found": [],
+          "references_missing": [
+            "27_man_frame_00.png",
+            "27_man_frame_01.png"
+          ]
+        },
+        {
+          "scene": "02",
+          "references_found": [],
+          "references_missing": [
+            "27_man_frame_01.png",
+            "27_man_frame_02.png"
+          ]
+        },
+        {
+          "scene": "03",
+          "references_found": [],
+          "references_missing": [
+            "27_man_frame_02.png",
+            "27_man_frame_03.png"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "28",
+      "slug": "history",
+      "title": "Animation 28 — `history` — shell history",
+      "source": "docs/HG2Gui_animation_5s_production_packets/28_history_5s_packet.md",
+      "scenes": [
+        {
+          "scene": "01",
+          "references_found": [],
+          "references_missing": [
+            "28_history_frame_00.png",
+            "28_history_frame_01.png"
+          ]
+        },
+        {
+          "scene": "02",
+          "references_found": [],
+          "references_missing": [
+            "28_history_frame_01.png",
+            "28_history_frame_02.png"
+          ]
+        },
+        {
+          "scene": "03",
+          "references_found": [],
+          "references_missing": [
+            "28_history_frame_02.png",
+            "28_history_frame_03.png"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "29",
+      "slug": "touch",
+      "title": "Animation 29 — `touch` — touch",
+      "source": "docs/HG2Gui_animation_5s_production_packets/29_touch_5s_packet.md",
+      "scenes": [
+        {
+          "scene": "01",
+          "references_found": [],
+          "references_missing": [
+            "29_touch_frame_00.png",
+            "29_touch_frame_01.png"
+          ]
+        },
+        {
+          "scene": "02",
+          "references_found": [],
+          "references_missing": [
+            "29_touch_frame_01.png",
+            "29_touch_frame_02.png"
+          ]
+        },
+        {
+          "scene": "03",
+          "references_found": [],
+          "references_missing": [
+            "29_touch_frame_02.png",
+            "29_touch_frame_03.png"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "30",
+      "slug": "yes",
+      "title": "Animation 30 — `yes` — yes",
+      "source": "docs/HG2Gui_animation_5s_production_packets/30_yes_5s_packet.md",
+      "scenes": [
+        {
+          "scene": "01",
+          "references_found": [],
+          "references_missing": [
+            "30_yes_frame_00.png",
+            "30_yes_frame_01.png"
+          ]
+        },
+        {
+          "scene": "02",
+          "references_found": [],
+          "references_missing": [
+            "30_yes_frame_01.png",
+            "30_yes_frame_02.png"
+          ]
+        },
+        {
+          "scene": "03",
+          "references_found": [],
+          "references_missing": [
+            "30_yes_frame_02.png",
+            "30_yes_frame_03.png"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "31",
+      "slug": "false",
+      "title": "Animation 31 — `false` — false",
+      "source": "docs/HG2Gui_animation_5s_production_packets/31_false_5s_packet.md",
+      "scenes": [
+        {
+          "scene": "01",
+          "references_found": [],
+          "references_missing": [
+            "31_false_frame_00.png",
+            "31_false_frame_01.png"
+          ]
+        },
+        {
+          "scene": "02",
+          "references_found": [],
+          "references_missing": [
+            "31_false_frame_01.png",
+            "31_false_frame_02.png"
+          ]
+        },
+        {
+          "scene": "03",
+          "references_found": [],
+          "references_missing": [
+            "31_false_frame_02.png",
+            "31_false_frame_03.png"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "32",
+      "slug": "pipe",
+      "title": "Animation 32 — `|` — pipe",
+      "source": "docs/HG2Gui_animation_5s_production_packets/32_pipe_5s_packet.md",
+      "scenes": [
+        {
+          "scene": "01",
+          "references_found": [],
+          "references_missing": [
+            "32_pipe_frame_00.png",
+            "32_pipe_frame_01.png"
+          ]
+        },
+        {
+          "scene": "02",
+          "references_found": [],
+          "references_missing": [
+            "32_pipe_frame_01.png",
+            "32_pipe_frame_02.png"
+          ]
+        },
+        {
+          "scene": "03",
+          "references_found": [],
+          "references_missing": [
+            "32_pipe_frame_02.png",
+            "32_pipe_frame_03.png"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "33",
+      "slug": "cp",
+      "title": "Animation 33 — `cp` — copy",
+      "source": "docs/HG2Gui_animation_5s_production_packets/33_cp_5s_packet.md",
+      "scenes": [
+        {
+          "scene": "01",
+          "references_found": [],
+          "references_missing": [
+            "33_cp_frame_00.png",
+            "33_cp_frame_01.png"
+          ]
+        },
+        {
+          "scene": "02",
+          "references_found": [],
+          "references_missing": [
+            "33_cp_frame_01.png",
+            "33_cp_frame_02.png"
+          ]
+        },
+        {
+          "scene": "03",
+          "references_found": [],
+          "references_missing": [
+            "33_cp_frame_02.png",
+            "33_cp_frame_03.png"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "34",
+      "slug": "mv",
+      "title": "Animation 34 — `mv` — move",
+      "source": "docs/HG2Gui_animation_5s_production_packets/34_mv_5s_packet.md",
+      "scenes": [
+        {
+          "scene": "01",
+          "references_found": [],
+          "references_missing": [
+            "34_mv_frame_00.png",
+            "34_mv_frame_01.png"
+          ]
+        },
+        {
+          "scene": "02",
+          "references_found": [],
+          "references_missing": [
+            "34_mv_frame_01.png",
+            "34_mv_frame_02.png"
+          ]
+        },
+        {
+          "scene": "03",
+          "references_found": [],
+          "references_missing": [
+            "34_mv_frame_02.png",
+            "34_mv_frame_03.png"
+          ]
+        }
+      ]
+    },
+    {
+      "number": "35",
+      "slug": "curl",
+      "title": "Animation 35 — `curl` — transfer data with URLs",
+      "source": "docs/HG2Gui_animation_5s_production_packets/35_curl_5s_packet.md",
+      "scenes": [
+        {
+          "scene": "01",
+          "references_found": [],
+          "references_missing": [
+            "35_curl_frame_00.png",
+            "35_curl_frame_01.png"
+          ]
+        },
+        {
+          "scene": "02",
+          "references_found": [],
+          "references_missing": [
+            "35_curl_frame_01.png",
+            "35_curl_frame_02.png"
+          ]
+        },
+        {
+          "scene": "03",
+          "references_found": [],
+          "references_missing": [
+            "35_curl_frame_02.png",
+            "35_curl_frame_03.png"
+          ]
+        }
+      ]
+    }
+  ],
+  "tangents": [
+    {
+      "slug": "02_pkg_install_small_empire_of_dependencies",
+      "title": "A SMALL EMPIRE OF DEPENDENCIES",
+      "source": "docs/script (3).md",
+      "scenes": [
+        {
+          "scene": "01",
+          "frame": "package_01.png",
+          "references_found": [
+            "docs/package_01.png"
+          ]
+        },
+        {
+          "scene": "02",
+          "frame": "package_02.png",
+          "references_found": [
+            "docs/package_02.png"
+          ]
+        },
+        {
+          "scene": "03",
+          "frame": "package_03.png",
+          "references_found": [
+            "docs/package_03.png"
+          ]
+        },
+        {
+          "scene": "04",
+          "frame": "package_04.png",
+          "references_found": [
+            "docs/package_04.png"
+          ]
+        },
+        {
+          "scene": "05",
+          "frame": "package_05.png",
+          "references_found": [
+            "docs/package_05.png"
+          ]
+        },
+        {
+          "scene": "06",
+          "frame": "package_06.png",
+          "references_found": [
+            "docs/package_06.png"
+          ]
+        },
+        {
+          "scene": "07",
+          "frame": "package_07.png",
+          "references_found": [
+            "docs/package_07.png"
+          ]
+        },
+        {
+          "scene": "08",
+          "frame": "package_08.png",
+          "references_found": [
+            "docs/package_08.png"
+          ]
+        },
+        {
+          "scene": "09",
+          "frame": "package_09.png",
+          "references_found": [
+            "docs/package_09.png"
+          ]
+        },
+        {
+          "scene": "10",
+          "frame": "package_10.png",
+          "references_found": [
+            "docs/package_10.png"
+          ]
+        },
+        {
+          "scene": "11",
+          "frame": "package_11.png",
+          "references_found": [
+            "docs/package_11.png"
+          ]
+        },
+        {
+          "scene": "12",
+          "frame": "package_12.png",
+          "references_found": [
+            "docs/package_12.png"
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "22_find_cartographical_disaster",
+      "title": "THE CARTOGRAPHICAL DISASTER",
+      "source": "docs/script.md",
+      "scenes": [
+        {
+          "scene": "01",
+          "frame": "cartography_01.png",
+          "references_found": [
+            "docs/cartography_01.png"
+          ]
+        },
+        {
+          "scene": "02",
+          "frame": "cartography_02.png",
+          "references_found": [
+            "docs/cartography_02.png"
+          ]
+        },
+        {
+          "scene": "03",
+          "frame": "cartography_03.png",
+          "references_found": [
+            "docs/cartography_03.png"
+          ]
+        },
+        {
+          "scene": "04",
+          "frame": "cartography_04.png",
+          "references_found": [
+            "docs/cartography_04.png"
+          ]
+        },
+        {
+          "scene": "05",
+          "frame": "cartography_05.png",
+          "references_found": [
+            "docs/cartography_05.png"
+          ]
+        },
+        {
+          "scene": "06",
+          "frame": "cartography_06.png",
+          "references_found": [
+            "docs/cartography_06.png"
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "23_cat_theological_mechanical_history",
+      "title": "CAT — A Brief Theological and Mechanical History",
+      "source": "docs/script (1).md",
+      "scenes": [
+        {
+          "scene": "01",
+          "frame": "cat_01.png",
+          "references_found": [
+            "docs/cat_01.png"
+          ]
+        },
+        {
+          "scene": "02",
+          "frame": "cat_02.png",
+          "references_found": [
+            "docs/cat_02.png"
+          ]
+        },
+        {
+          "scene": "03",
+          "frame": "cat_03.png",
+          "references_found": [
+            "docs/cat_03.png"
+          ]
+        },
+        {
+          "scene": "04",
+          "frame": "cat_04.png",
+          "references_found": [
+            "docs/cat_04.png"
+          ]
+        },
+        {
+          "scene": "05",
+          "frame": "cat_05.png",
+          "references_found": [
+            "docs/cat_05.png"
+          ]
+        },
+        {
+          "scene": "06",
+          "frame": "cat_06.png",
+          "references_found": [
+            "docs/cat_06.png"
+          ]
+        },
+        {
+          "scene": "07",
+          "frame": "cat_07.png",
+          "references_found": [
+            "docs/cat_07.png"
+          ]
+        },
+        {
+          "scene": "08",
+          "frame": "cat_08.png",
+          "references_found": [
+            "docs/cat_08.png"
+          ]
+        },
+        {
+          "scene": "09",
+          "frame": "cat_09.png",
+          "references_found": [
+            "docs/cat_09.png"
+          ]
+        },
+        {
+          "scene": "10",
+          "frame": "cat_10.png",
+          "references_found": [
+            "docs/cat_10.png"
+          ]
+        },
+        {
+          "scene": "11",
+          "frame": "cat_11.png",
+          "references_found": [
+            "docs/cat_11.png"
+          ]
+        },
+        {
+          "scene": "12",
+          "frame": "cat_12.png",
+          "references_found": [
+            "docs/cat_12.png"
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "34_mv_elevator_incident",
+      "title": "THE ELEVATOR INCIDENT",
+      "source": "docs/script (2).md",
+      "scenes": [
+        {
+          "scene": "01",
+          "frame": "elevator_01.png",
+          "references_found": [
+            "docs/elevator_01.png"
+          ]
+        },
+        {
+          "scene": "02",
+          "frame": "elevator_02.png",
+          "references_found": [
+            "docs/elevator_02.png"
+          ]
+        },
+        {
+          "scene": "03",
+          "frame": "elevator_03.png",
+          "references_found": [
+            "docs/elevator_03.png"
+          ]
+        },
+        {
+          "scene": "04",
+          "frame": "elevator_04.png",
+          "references_found": [
+            "docs/elevator_04.png"
+          ]
+        },
+        {
+          "scene": "05",
+          "frame": "elevator_05.png",
+          "references_found": [
+            "docs/elevator_05.png"
+          ]
+        },
+        {
+          "scene": "06",
+          "frame": "elevator_06.png",
+          "references_found": [
+            "docs/elevator_06.png"
+          ]
+        },
+        {
+          "scene": "07",
+          "frame": "elevator_07.png",
+          "references_found": [
+            "docs/elevator_07.png"
+          ]
+        },
+        {
+          "scene": "08",
+          "frame": "elevator_08.png",
+          "references_found": [
+            "docs/elevator_08.png"
+          ]
+        },
+        {
+          "scene": "09",
+          "frame": "elevator_09.png",
+          "references_found": [
+            "docs/elevator_09.png"
+          ]
+        },
+        {
+          "scene": "10",
+          "frame": "elevator_10.png",
+          "references_found": [
+            "docs/elevator_10.png"
+          ]
+        },
+        {
+          "scene": "11",
+          "frame": "elevator_11.png",
+          "references_found": [
+            "docs/elevator_11.png"
+          ]
+        },
+        {
+          "scene": "12",
+          "frame": "elevator_12.png",
+          "references_found": [
+            "docs/elevator_12.png"
+          ]
+        }
+      ]
+    }
+  ],
+  "legacy": [
+    {
+      "slug": "echo",
+      "scenes": [
+        {
+          "scene": "01",
+          "references_found": [
+            "docs/echo_clip_01_end.png",
+            "docs/echo_clip_01_start.png"
+          ]
+        },
+        {
+          "scene": "02",
+          "references_found": [
+            "docs/echo_clip_02_end.png",
+            "docs/echo_clip_02_start.png"
+          ]
+        },
+        {
+          "scene": "03",
+          "references_found": [
+            "docs/echo_clip_03_end.png",
+            "docs/echo_clip_03_start.png"
+          ]
+        },
+        {
+          "scene": "04",
+          "references_found": [
+            "docs/echo_clip_04_end.png",
+            "docs/echo_clip_04_start.png"
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "ls",
+      "scenes": [
+        {
+          "scene": "01",
+          "references_found": [
+            "docs/ls_clip_01_end.png",
+            "docs/ls_clip_01_start.png"
+          ]
+        },
+        {
+          "scene": "02",
+          "references_found": [
+            "docs/ls_clip_02_end.png",
+            "docs/ls_clip_02_start.png"
+          ]
+        },
+        {
+          "scene": "03",
+          "references_found": [
+            "docs/ls_clip_03_end.png",
+            "docs/ls_clip_03_start.png"
+          ]
+        },
+        {
+          "scene": "04",
+          "references_found": [
+            "docs/ls_clip_04_end.png",
+            "docs/ls_clip_04_start.png"
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "ls_tangent",
+      "scenes": [
+        {
+          "scene": "01",
+          "references_found": [
+            "docs/ls_tangent_clip_01_end.png",
+            "docs/ls_tangent_clip_01_start.png"
+          ]
+        },
+        {
+          "scene": "02",
+          "references_found": [
+            "docs/ls_tangent_clip_02_end.png",
+            "docs/ls_tangent_clip_02_start.png"
+          ]
+        },
+        {
+          "scene": "03",
+          "references_found": [
+            "docs/ls_tangent_clip_03_end.png",
+            "docs/ls_tangent_clip_03_start.png"
+          ]
+        },
+        {
+          "scene": "04",
+          "references_found": [
+            "docs/ls_tangent_clip_04_end.png",
+            "docs/ls_tangent_clip_04_start.png"
+          ]
+        },
+        {
+          "scene": "05",
+          "references_found": [
+            "docs/ls_tangent_clip_05_end.png",
+            "docs/ls_tangent_clip_05_start.png"
+          ]
+        },
+        {
+          "scene": "06",
+          "references_found": [
+            "docs/ls_tangent_clip_06_end.png",
+            "docs/ls_tangent_clip_06_start.png"
+          ]
+        }
+      ]
+    }
+  ],
+  "unassigned_references": [
+    "docs/ChatGPT Image Aug 14, 2026, 12_00_50 AM.png",
+    "docs/ChatGPT Image Aug 14, 2026, 12_01_16 AM.png",
+    "docs/ChatGPT Image Aug 14, 2026, 12_01_40 AM.png",
+    "docs/ChatGPT Image Aug 14, 2026, 12_01_47 AM.png",
+    "docs/Create_one_EXACTLY_second (1).mp4",
+    "docs/Create_one_EXACTLY_second (2).mp4",
+    "docs/Create_one_EXACTLY_second.mp4",
+    "docs/command_line_protest_at_the_union_house.png",
+    "docs/directory_protesters_and_terminal_prompt.png",
+    "docs/mustard_design_system_character_sheet.png",
+    "docs/tech_protest_workers_demand_change.png",
+    "docs/workers_rise_with_a_command_prompt.png"
+  ]
+}

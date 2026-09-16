@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/tokens/colors.css">
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/tokens/typography.css">
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/tokens/motion.css">
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/tokens/base.css">
+<link rel="stylesheet" href="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/styles.css">
+<script src="_ds/azphalt-design-system-9046bde9-40bd-4d8a-94ab-334281ea102b/_ds_bundle.js"></script>
+<style>
+  body{margin:0;background:var(--page-fold-dark);}
+  a{color:var(--link);} a:hover{color:var(--link-hover);}
+</style>
+</helmet>
+
+<div style="padding:64px;display:flex;flex-direction:column;gap:64px;font-family:var(--font-core);color:var(--ink);">
+
+  <div style="display:flex;flex-direction:column;gap:14px;max-width:760px;">
+    <div style="font:800 11px/1 var(--font-core);letter-spacing:.28em;text-transform:uppercase;color:var(--ink-72);">HG2Gui — motion</div>
+    <div style="font:900 64px/0.84 var(--font-core);letter-spacing:-.03em;text-transform:uppercase;">Text arrives in layers</div>
+    <p style="margin:0;font:var(--type-body);color:var(--ink-78);text-wrap:pretty;">A Guide entry is not a page that appears — it is assembled in front of you, flat and mechanical, in reading order. Nothing fades and nothing eases into place: pieces wipe on, slide along one axis, and stop dead. Depth is carried by speed alone, the way flat cut-outs on separate planes betray their distance when the camera moves.</p>
+    <p style="margin:0;font:var(--type-body);color:var(--ink-78);text-wrap:pretty;">The left screen plays itself. The right one is driven by your scroll — drag inside it and watch the three planes separate.</p>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:52px;align-items:flex-start;">
+
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div style="display:flex;align-items:baseline;gap:10px;">
+        <span style="font:900 22px/1 var(--font-core);letter-spacing:-.02em;text-transform:uppercase;">01 · Entry</span>
+        <span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-72);">plays once, then stops</span>
+      </div>
+      <div id="entry-frame" style="width:390px;height:844px;overflow:hidden;background:var(--page-gradient);position:relative;">
+        <div data-plane="back" style="position:absolute;top:96px;left:-30px;right:0;pointer-events:none;">
+          <div style="font:900 200px/0.8 var(--font-core);letter-spacing:-.04em;text-transform:uppercase;color:var(--ink-09);white-space:nowrap;">Session</div>
+        </div>
+        <div style="position:relative;height:100%;display:flex;flex-direction:column;">
+          <div style="padding:22px 24px 0;display:flex;align-items:center;gap:8px;">
+            <div data-seq="0" style="clip-path:inset(0 100% 0 0);border-radius:999px;box-sizing:border-box;padding:8px 14px;background:var(--ink);font:800 11px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--yellow-bright);">Guide</div>
+            <div data-seq="1" style="clip-path:inset(0 100% 0 0);border-radius:999px;box-sizing:border-box;padding:8px 14px;background:var(--ink-14);font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-55);">Entry 14 of 51</div>
+          </div>
+          <div style="padding:40px 24px 0;display:flex;flex-direction:column;gap:16px;">
+            <div data-seq="2" style="clip-path:inset(0 100% 0 0);font:900 62px/0.82 var(--font-core);letter-spacing:-.03em;text-transform:uppercase;">Sessions</div>
+            <div data-seq="3" style="clip-path:inset(0 100% 0 0);height:4px;border-radius:999px;background:var(--hue-red);width:74%;"></div>
+            <div data-seq="4" style="clip-path:inset(0 100% 0 0);font:600 21px/1.35 var(--font-core);color:var(--ink-78);text-wrap:pretty;">A room you left something running in.</div>
+          </div>
+          <div style="padding:34px 24px 0;display:flex;flex-direction:column;gap:0;">
+            <div data-seq="5" style="clip-path:inset(0 100% 0 0);height:1px;background:var(--ink-16);"></div>
+            <div data-seq="6" style="clip-path:inset(0 100% 0 0);display:flex;align-items:baseline;justify-content:space-between;padding:14px 0;"><span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-55);">Open now</span><span style="font:600 19px/1 var(--font-core);font-variant-numeric:tabular-nums;">3</span></div>
+            <div data-seq="7" style="clip-path:inset(0 100% 0 0);height:1px;background:var(--ink-16);"></div>
+            <div data-seq="8" style="clip-path:inset(0 100% 0 0);display:flex;align-items:baseline;justify-content:space-between;padding:14px 0;"><span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-55);">Still working</span><span style="font:600 19px/1 var(--font-core);font-variant-numeric:tabular-nums;">1</span></div>
+            <div data-seq="9" style="clip-path:inset(0 100% 0 0);height:1px;background:var(--ink-16);"></div>
+            <div data-seq="10" style="clip-path:inset(0 100% 0 0);display:flex;align-items:baseline;justify-content:space-between;padding:14px 0;"><span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-55);">Lost so far</span><span style="font:600 19px/1 var(--font-core);font-variant-numeric:tabular-nums;">0</span></div>
+            <div data-seq="11" style="clip-path:inset(0 100% 0 0);height:1px;background:var(--ink-16);"></div>
+          </div>
+          <div style="padding:30px 24px 0;display:flex;flex-direction:column;gap:14px;">
+            <div data-seq="12" style="clip-path:inset(0 100% 0 0);font:600 16px/1.5 var(--font-core);color:var(--ink-78);text-wrap:pretty;">Close the app and they keep going. The work does not belong to the screen, and the screen was never the point.</div>
+            <div data-seq="13" style="clip-path:inset(0 100% 0 0);font:600 16px/1.5 var(--font-core);color:var(--ink-78);text-wrap:pretty;">Come back tomorrow and the build is either finished or it is not. Either way it waited.</div>
+          </div>
+          <div style="flex:1;"></div>
+          <div style="padding:16px 24px 26px;display:flex;gap:6px;align-items:center;">
+            <div data-seq="14" style="clip-path:inset(0 100% 0 0);border-radius:999px;box-sizing:border-box;padding:13px 20px;background:var(--hue-red);font:800 12px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--white);">Open a session</div>
+            <div style="flex:1;"></div>
+            <button onClick="{{ replay }}" style="border-radius:999px;box-sizing:border-box;padding:13px 18px;background:var(--ink);font:800 10px/1 var(--font-core);letter-spacing:.14em;text-transform:uppercase;color:var(--yellow-bright);">Replay</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div style="display:flex;align-items:baseline;gap:10px;">
+        <span style="font:900 22px/1 var(--font-core);letter-spacing:-.02em;text-transform:uppercase;">02 · Parallax</span>
+        <span style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-72);">scroll inside it</span>
+      </div>
+      <div style="width:390px;height:844px;overflow:hidden;background:var(--page-gradient);position:relative;">
+        <div id="px-back" style="position:absolute;top:120px;left:-40px;right:0;pointer-events:none;will-change:transform;">
+          <div style="font:900 190px/0.8 var(--font-core);letter-spacing:-.04em;text-transform:uppercase;color:var(--ink-09);white-space:nowrap;">Search</div>
+        </div>
+        <div id="px-mid" style="position:absolute;top:520px;left:0;right:0;pointer-events:none;will-change:transform;display:flex;flex-direction:column;gap:220px;">
+          <div style="height:6px;border-radius:999px;background:var(--hue-red);width:52%;"></div>
+          <div style="height:6px;border-radius:999px;background:var(--hue-teal);width:38%;margin-left:auto;"></div>
+          <div style="height:6px;border-radius:999px;background:var(--hue-blue);width:64%;"></div>
+        </div>
+        <div id="px-scroll" style="position:relative;height:100%;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none;">
+          <div style="padding:22px 24px 0;display:flex;align-items:center;gap:8px;">
+            <div style="border-radius:999px;box-sizing:border-box;padding:8px 14px;background:var(--ink);font:800 11px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--yellow-bright);">Manual</div>
+            <div style="flex:1;"></div>
+            <div style="border-radius:999px;box-sizing:border-box;padding:8px 14px;background:var(--ink-14);font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-55);">Reference</div>
+          </div>
+          <div style="padding:56px 24px 0;display:flex;flex-direction:column;gap:14px;">
+            <div style="font:900 60px/0.84 var(--font-core);letter-spacing:-.03em;text-transform:uppercase;">ripgrep</div>
+            <span style="font:600 19px/1.4 var(--font-core);color:var(--ink-78);text-wrap:pretty;">Look through every file below here for a line that matches.</span>
+          </div>
+          <div style="padding:40px 24px 0;display:flex;flex-direction:column;gap:16px;">
+            <span data-reveal style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-55);">Options</span>
+            <div style="display:grid;grid-template-columns:76px 1fr;gap:16px 16px;align-items:baseline;">
+              <span data-reveal style="font:800 13px/1.2 var(--font-core);letter-spacing:.04em;">-i</span>
+              <span data-reveal style="font:600 15px/1.45 var(--font-core);color:var(--ink-78);text-wrap:pretty;">Ignore capital letters.</span>
+              <span data-reveal style="font:800 13px/1.2 var(--font-core);letter-spacing:.04em;">-w</span>
+              <span data-reveal style="font:600 15px/1.45 var(--font-core);color:var(--ink-78);text-wrap:pretty;">Whole words only.</span>
+              <span data-reveal style="font:800 13px/1.2 var(--font-core);letter-spacing:.04em;">--hidden</span>
+              <span data-reveal style="font:600 15px/1.45 var(--font-core);color:var(--ink-78);text-wrap:pretty;">Include files whose names start with a dot.</span>
+              <span data-reveal style="font:800 13px/1.2 var(--font-core);letter-spacing:.04em;">-C 3</span>
+              <span data-reveal style="font:600 15px/1.45 var(--font-core);color:var(--ink-78);text-wrap:pretty;">Show three lines either side of a match.</span>
+            </div>
+          </div>
+          <div style="padding:48px 24px 0;display:flex;flex-direction:column;gap:14px;">
+            <span data-reveal style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-55);">Worth knowing</span>
+            <span data-reveal style="font:600 16px/1.5 var(--font-core);color:var(--ink-78);text-wrap:pretty;">It skips anything your project already ignores. On a phone that is the difference between a search that comes back and one that does not.</span>
+          </div>
+          <div style="padding:48px 24px 0;display:flex;flex-direction:column;gap:14px;">
+            <span data-reveal style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-55);">A worked example</span>
+            <div data-reveal style="display:flex;align-items:center;gap:7px;border-radius:999px;box-sizing:border-box;padding:12px 12px 12px 20px;background:var(--ink);flex-wrap:wrap;">
+              <span style="font:900 15px/1 var(--font-core);color:var(--yellow-bright);">$</span>
+              <span style="border-radius:999px;padding:5px 9px;background:var(--yellow-bright);font:800 9px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--ink);">rg</span>
+              <span style="font:600 13px/1 var(--font-core);color:var(--white);">TransformOrigin</span>
+            </div>
+            <span data-reveal style="font:600 16px/1.5 var(--font-core);color:var(--ink-78);text-wrap:pretty;">Four matches, all of them in the menu. Two are the alternating hinge; the others are comments about it.</span>
+          </div>
+          <div style="padding:48px 24px 0;display:flex;flex-direction:column;gap:14px;">
+            <span data-reveal style="font:800 9px/1 var(--font-core);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-55);">Related</span>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <div data-reveal style="border-radius:999px;box-sizing:border-box;padding:9px 15px;background:var(--hue-violet);font:800 11px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--white);">find</div>
+              <div data-reveal style="border-radius:999px;box-sizing:border-box;padding:9px 15px;background:var(--hue-magenta);font:800 11px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--white);">sed</div>
+              <div data-reveal style="border-radius:999px;box-sizing:border-box;padding:9px 15px;background:var(--hue-orange);font:800 11px/1 var(--font-core);letter-spacing:.09em;text-transform:uppercase;color:var(--white);">files</div>
+            </div>
+          </div>
+          <div style="height:200px;"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:9px;max-width:760px;">
+    <div style="font:800 11px/1 var(--font-core);letter-spacing:.28em;text-transform:uppercase;color:var(--ink-72);">The motion rules this adds</div>
+    <p style="margin:0;font:var(--type-body);color:var(--ink-78);text-wrap:pretty;">Three planes, and depth is speed: the wash word behind moves at a fifth of the scroll, the coloured rods at half, the text at full. Nothing is blurred or dimmed to fake distance — flat things at different speeds is the whole trick. Every piece wipes on along one axis and stops dead, in reading order, one after another rather than all at once. A line of text is revealed whole; letters are never animated apart, because a word you cannot read yet is not typography. Entries play once and settle — replay is a button, never a loop.</p>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1000,&quot;height&quot;:1050}}">
+class Component extends DCLogic {
+  componentDidMount() {
+    this.reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    this.play();
+    this.bindParallax();
+  }
+
+  componentWillUnmount() {
+    if (this.scroller && this.onScroll) this.scroller.removeEventListener('scroll', this.onScroll);
+    if (this.io) this.io.disconnect();
+  }
+
+  // The entry assembles itself: each piece wipes on along one axis and stops dead.
+  play() {
+    const frame = document.getElementById('entry-frame');
+    if (!frame) return;
+    const parts = [...frame.querySelectorAll('[data-seq]')]
+      .sort((a, b) => +a.dataset.seq - +b.dataset.seq);
+
+    if (this.reduced) {
+      parts.forEach(el => { el.style.clipPath = 'inset(0)'; });
+      return;
+    }
+
+    parts.forEach((el, i) => {
+      const wide = el.offsetWidth > 200;
+      const opts = { duration: wide ? 420 : 300, delay: 120 + i * 110, easing: 'cubic-bezier(0,.9,.1,1)', fill: 'both' };
+      // A capsule or rod grows in length — masking one would cut its leading tip off.
+      // Text is wiped instead, so the glyphs never stretch.
+      if (parseFloat(getComputedStyle(el).borderTopLeftRadius) > 90) {
+        const w = el.getBoundingClientRect().width;
+        el.style.clipPath = 'none';
+        el.animate([{ width: '0px' }, { width: w + 'px' }], opts);
+      } else {
+        el.animate([
+          { clipPath: 'inset(0 100% 0 0)', transform: 'translateX(-14px)' },
+          { clipPath: 'inset(0 0 0 0)', transform: 'translateX(0)' }
+        ], opts);
+      }
+    });
+
+    // the wash word behind drifts in at a fraction of the speed — depth is speed
+    const back = frame.querySelector('[data-plane="back"]');
+    if (back) back.animate(
+      [{ transform: 'translateX(40px)' }, { transform: 'translateX(0)' }],
+      { duration: 2400, easing: 'cubic-bezier(0,.9,.1,1)', fill: 'both' }
+    );
+  }
+
+  bindParallax() {
+    const scroller = document.getElementById('px-scroll');
+    const back = document.getElementById('px-back');
+    const mid = document.getElementById('px-mid');
+    if (!scroller || !back || !mid) return;
+    this.scroller = scroller;
+
+    let ticking = false;
+    const apply = () => {
+      const y = scroller.scrollTop;
+      back.style.transform = 'translateY(' + (-y * 0.2) + 'px)';
+      mid.style.transform = 'translateY(' + (-y * 0.5) + 'px)';
+      ticking = false;
+    };
+    this.onScroll = () => {
+      if (!ticking) { ticking = true; requestAnimationFrame(apply); }
+    };
+    scroller.addEventListener('scroll', this.onScroll, { passive: true });
+    apply();
+
+    if (this.reduced) return;
+
+    // Lines wipe on as they enter the frame, in reading order, once each.
+    // The target is never clipped in CSS — a clipped box has an empty intersection
+    // rectangle, so observing it would wait forever for a visibility it can't report.
+    // The wipe lives entirely in the animation, held at its first frame by fill:both.
+    const targets = [...scroller.querySelectorAll('[data-reveal]')];
+    const wipe = (el, i) => el.animate([
+      { clipPath: 'inset(0 100% 0 0)', transform: 'translateX(-10px)' },
+      { clipPath: 'inset(0 0 0 0)', transform: 'translateX(0)' }
+    ], { duration: 360, delay: i * 90, easing: 'cubic-bezier(0,.9,.1,1)', fill: 'both' });
+
+    const held = new Map();
+    targets.forEach(el => {
+      const a = wipe(el, 0);
+      a.pause();
+      held.set(el, a);
+    });
+
+    this.io = new IntersectionObserver((entries) => {
+      entries.filter(e => e.isIntersecting).forEach((e, i) => {
+        const a = held.get(e.target);
+        if (a) { a.cancel(); held.delete(e.target); }
+        wipe(e.target, i);
+        this.io.unobserve(e.target);
+      });
+    }, { root: scroller, threshold: 0.15 });
+    targets.forEach(el => this.io.observe(el));
+  }
+
+  renderVals() {
+    return { replay: () => this.play() };
+  }
+}
+</script>
+</body>
+</html>
