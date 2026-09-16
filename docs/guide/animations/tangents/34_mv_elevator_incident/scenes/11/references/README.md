@@ -1,3 +1,5 @@
-# Scene reference inventory
+# Scene references
 
-- `docs/elevator_11.png`
+Supporting scene-specific reference material. Storyboard start/end frames live in `../frames/`.
+
+No separate scene-specific supporting references were assigned.

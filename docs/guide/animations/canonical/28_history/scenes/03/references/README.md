@@ -1,6 +1,5 @@
-# Scene reference inventory
+# Scene references
 
-## Planned / not present in repository
+Supporting scene-specific reference material. Storyboard start/end frames live in `../frames/`.
 
-- `28_history_frame_02.png`
-- `28_history_frame_03.png`
+No separate scene-specific supporting references were assigned.
