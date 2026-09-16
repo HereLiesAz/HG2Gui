@@ -1,22 +1,70 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import shutil
-from collections import defaultdict
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DOCS = ROOT / "docs"
 OUT = DOCS / "guide"
+PACKETS = DOCS / "HG2Gui_animation_5s_production_packets"
+CUT_SHEET = DOCS / "HG2Gui_animation_5s_cut_sheet_v2.md"
 
-TEXT_SUFFIXES = {".md", ".txt", ".html"}
-MEDIA_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg", ".mp4", ".mov", ".webm"}
+TANGENTS = [
+    ("23_cat_theological_mechanical_history", DOCS / "script (1).md", "cat"),
+    ("34_mv_elevator_incident", DOCS / "script (2).md", "elevator"),
+    ("02_pkg_install_small_empire_of_dependencies", DOCS / "script (3).md", "package"),
+    ("22_find_cartographical_disaster", DOCS / "script.md", "cartography"),
+]
 
+IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
+PROJECT_FILES = [
+    DOCS / "GUIDE.md",
+    DOCS / "Hitchhikers_Guide_to_Termux.md",
+    DOCS / "Hitchhikers_Guide_to_Termux.revised_master.editorial_pass_4.md",
+    DOCS / "HG2Gui_Animation_Analysis.md",
+    DOCS / "HG2Gui_Animation_Assets_Analysis.docx",
+    DOCS / "HG2Gui_Animation_Assets_Analysis.md",
+    DOCS / "HG2Gui_Animation_Assets_Report.md",
+    DOCS / "HG2Gui_Animation_Style_Analysis.md",
+    DOCS / "HG2Gui_Animation_Style_Analysis.pdf",
+    DOCS / "HG2Gui_animation_5s_cut_sheet.md",
+    DOCS / "HG2Gui_animation_5s_cut_sheet_v2.md",
+    DOCS / "HG2Gui_animation_6s_prompts.md",
+    DOCS / "HG2Gui_animation_6s_prompts_from_5s.md",
+    DOCS / "HG2Gui_animation_prompt_pack.md",
+    DOCS / "HG2Gui_motion_reference.md",
+    DOCS / "guide-tangents.md",
+    DOCS / "tangent-scripts.md",
+]
 
-def read(path: Path) -> str:
-    return path.read_text(encoding="utf-8", errors="replace")
+CODE_REFERENCES = [
+    ROOT / "shared/src/commonMain/kotlin/com/hereliesaz/hg2gui/ui/guide/GuideContent.kt",
+    ROOT / "shared/src/commonMain/kotlin/com/hereliesaz/hg2gui/ui/components/GuideSpacePill.kt",
+    ROOT / "shared/src/commonMain/kotlin/com/hereliesaz/hg2gui/ui/components/GuideScreen.kt",
+    ROOT / "shared/src/commonMain/kotlin/com/hereliesaz/hg2gui/ui/components/GuideTab.kt",
+    ROOT / "shared/src/commonMain/kotlin/com/hereliesaz/hg2gui/ui/components/guide/GuideArticleHeader.kt",
+    ROOT / "shared/src/commonMain/kotlin/com/hereliesaz/hg2gui/ui/dialogs/GuideDetailDialog.kt",
+    ROOT / "shared/src/commonMain/kotlin/com/hereliesaz/hg2gui/ui/shell/GuideEntryDialog.kt",
+    ROOT / "shared/src/commonMain/kotlin/com/hereliesaz/hg2gui/ui/shell/GuideEntryRepository.kt",
+    ROOT / "shared/src/commonMain/kotlin/com/hereliesaz/hg2gui/ui/shell/GuideEntryTypes.kt",
+    ROOT / "shared/src/commonMain/kotlin/com/hereliesaz/hg2gui/ui/shell/GuideHomeAnimation.kt",
+    ROOT / "shared/src/commonMain/kotlin/com/hereliesaz/hg2gui/ui/viewer/GuideArticleParser.kt",
+    ROOT / "shared/src/commonMain/kotlin/com/hereliesaz/hg2gui/ui/viewer/GuideEntryRenderer.kt",
+    ROOT / "shared/src/commonMain/kotlin/com/hereliesaz/hg2gui/ui/viewer/GuideViewer.kt",
+    ROOT / "shared/src/commonTest/kotlin/com/hereliesaz/hg2gui/ui/viewer/GuideArticleParserTest.kt",
+]
+
+TEXT_REFERENCE_ROOTS = [
+    DOCS / "animation_prompts",
+    DOCS / "animation_text",
+    DOCS / "animation_texts",
+    DOCS / "man_pages",
+    DOCS / "woes",
+]
 
 
 def write(path: Path, text: str) -> None:
@@ -24,368 +72,670 @@ def write(path: Path, text: str) -> None:
     path.write_text(text.rstrip() + "\n", encoding="utf-8")
 
 
-def copy_file(src: Path, dst: Path) -> None:
+def copy(src: Path, dst: Path) -> None:
     dst.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(src, dst)
 
 
-def safe_name(value: str) -> str:
-    value = value.strip().lower().replace("`", "")
-    value = re.sub(r"[^a-z0-9]+", "_", value)
-    return value.strip("_")
+def rel(path: Path) -> str:
+    return str(path.relative_to(ROOT))
 
 
-def parse_cut_blocks(text: str, heading_level: int = 2) -> dict[str, str]:
-    hashes = "#" * heading_level
-    rx = re.compile(
-        rf"(?ms)^{re.escape(hashes)} Cut (\d{{2}}) — ([^\n]+)\n(.*?)(?=^{re.escape(hashes)} Cut \d{{2}} — |\Z)"
-    )
-    blocks: dict[str, str] = {}
-    for match in rx.finditer(text):
-        cut = match.group(1)
-        blocks[cut] = f"{hashes} Cut {cut} — {match.group(2)}\n{match.group(3)}".strip() + "\n"
-    return blocks
+def slug(s: str) -> str:
+    s = s.replace("`", "").replace("|", " pipe ")
+    s = re.sub(r"[^A-Za-z0-9]+", "_", s).strip("_").lower()
+    return s or "unnamed"
 
 
-def parse_cut_sheet(text: str) -> tuple[dict[str, str], dict[str, dict[str, str]]]:
-    sections: dict[str, str] = {}
-    cuts: dict[str, dict[str, str]] = {}
-    rx = re.compile(r"(?ms)^## (\d{2}) — (.*?)(?=^## \d{2} — |\Z)")
-    for match in rx.finditer(text):
-        number = match.group(1)
-        section = f"## {number} — {match.group(2)}".strip() + "\n"
-        sections[number] = section
-        cuts[number] = parse_cut_blocks(section, heading_level=3)
-    return sections, cuts
+def parse_cut_sections(block: str) -> dict[int, str]:
+    cuts: dict[int, str] = {}
+    matches = list(re.finditer(r"(?m)^### Cut (\d{2})[^\n]*\n", block))
+    for i, match in enumerate(matches):
+        number = int(match.group(1))
+        end = matches[i + 1].start() if i + 1 < len(matches) else len(block)
+        cuts[number] = block[match.start():end].rstrip()
+    return cuts
 
 
-def parse_tangent_cut_map(text: str) -> list[tuple[str, str, str]]:
-    rows: list[tuple[str, str, str]] = []
-    rx = re.compile(r"(?m)^\|\s*(\d{2})\s*\|\s*`([^`]+)`\s*\|\s*(.*?)\s*\|\s*$")
-    for cut, frame, narration in rx.findall(text):
-        rows.append((cut, frame.strip(), narration.strip()))
-    return rows
+def parse_packet(packet_text: str) -> dict[int, str]:
+    cuts: dict[int, str] = {}
+    matches = list(re.finditer(r"(?m)^## Cut (\d{2})[^\n]*\n", packet_text))
+    for i, match in enumerate(matches):
+        number = int(match.group(1))
+        end = matches[i + 1].start() if i + 1 < len(matches) else len(packet_text)
+        cuts[number] = packet_text[match.start():end].rstrip()
+    return cuts
 
 
-def markdown_title(text: str, fallback: str) -> str:
-    match = re.search(r"(?m)^#\s+(.+?)\s*$", text)
-    return match.group(1).strip() if match else fallback
-
-
-def command_sections(command: str, sources: list[Path]) -> str:
-    escaped = re.escape(command)
-    pieces: list[str] = []
-    heading = re.compile(rf"(?ms)^###\s+`?{escaped}`?\s+—[^\n]*\n.*?(?=^###\s+|^##\s+|\Z)", re.IGNORECASE)
-    for source in sources:
-        if not source.exists():
-            continue
-        text = read(source)
-        match = heading.search(text)
-        if match:
-            pieces.append(f"## Source: `{source.relative_to(ROOT).as_posix()}`\n\n{match.group(0).strip()}")
-    return "\n\n---\n\n".join(pieces)
-
-
-def is_under(path: Path, parent: Path) -> bool:
-    try:
-        path.relative_to(parent)
-        return True
-    except ValueError:
-        return False
-
-
-def build_source_index() -> dict[str, list[Path]]:
-    index: dict[str, list[Path]] = defaultdict(list)
-    for path in DOCS.rglob("*"):
-        if path.is_file() and not is_under(path, OUT):
-            index[path.name].append(path)
-    return index
-
-
-def copy_project_material(source_index: dict[str, list[Path]]) -> list[str]:
+def copy_reference_set(src_dir: Path, dst_dir: Path) -> list[str]:
+    if not src_dir.exists():
+        return []
     copied: list[str] = []
-    texts = OUT / "project" / "texts"
-    design = OUT / "project" / "design"
-    source = OUT / "project" / "source"
-    shared_refs = OUT / "project" / "references" / "shared"
-
-    explicit_texts = {
-        "GUIDE.md",
-        "USER_GUIDE.md",
-        "guide-tangents.md",
-        "tangent-scripts.md",
-        "Hitchhikers_Guide_to_Termux.md",
-        "Hitchhikers_Guide_to_Termux.revised_master.editorial_pass_4.md",
-        "Hitchhikers_Guide_to_Termux.all_animation_sequences.md",
-        "HG2Gui_all_animation_5s_production_packets_v2.md",
-        "HG2Gui_animation_5s_cut_sheet_v2.md",
-        "HG2Gui_animation_style_lock_prompt_v2.md",
-        "HG2Gui_character_consistency_and_frames_plan.md",
-    }
-
-    for path in sorted(DOCS.iterdir()):
-        if not path.is_file():
-            continue
-        lower = path.name.lower()
-        if path.name in explicit_texts or (
-            path.suffix.lower() in TEXT_SUFFIXES
-            and ("hitchhiker" in lower or "guide" in lower or "animation" in lower or "tangent" in lower or path.name.startswith("script"))
-        ):
-            bucket = design if path.suffix.lower() == ".html" else texts
-            dst = bucket / path.name
-            copy_file(path, dst)
-            copied.append(dst.relative_to(ROOT).as_posix())
-
-    source_candidates: list[Path] = []
-    for suffix in ("*.kt", "*.java", "*.xml"):
-        for path in ROOT.rglob(suffix):
-            posix = path.as_posix().lower()
-            if any(part in posix for part in ("/.git/", "/build/", "/.gradle/", "/docs/guide/")):
-                continue
-            if "guide" in path.name.lower() or "/ui/guide/" in posix:
-                source_candidates.append(path)
-
-    for path in sorted(set(source_candidates)):
-        rel = path.relative_to(ROOT)
-        dst = source / rel
-        copy_file(path, dst)
-        copied.append(dst.relative_to(ROOT).as_posix())
-
-    shared_patterns = (
-        re.compile(r"^mustard_design_system_", re.I),
-        re.compile(r"protest", re.I),
-        re.compile(r"workers?_", re.I),
-        re.compile(r"^ChatGPT Image ", re.I),
-    )
-    for path in sorted(DOCS.iterdir()):
-        if not path.is_file() or path.suffix.lower() not in MEDIA_SUFFIXES:
-            continue
-        if any(rx.search(path.name) for rx in shared_patterns):
-            dst = shared_refs / path.name
-            copy_file(path, dst)
-            copied.append(dst.relative_to(ROOT).as_posix())
-
-    # Production-level source documents that apply across animations.
-    production = OUT / "project" / "production"
-    packet_dir = DOCS / "HG2Gui_animation_5s_production_packets"
-    for name in ("00_MANIFEST.md", "00_STYLE_LOCK.md"):
-        path = packet_dir / name
-        if path.exists():
-            dst = production / name
-            copy_file(path, dst)
-            copied.append(dst.relative_to(ROOT).as_posix())
-
+    for path in sorted(src_dir.rglob("*")):
+        if path.is_file():
+            target = dst_dir / path.relative_to(src_dir)
+            copy(path, target)
+            copied.append(rel(path))
     return copied
 
 
-def organize_canonical(source_index: dict[str, list[Path]], manifest: dict) -> None:
-    packet_dir = DOCS / "HG2Gui_animation_5s_production_packets"
-    cut_sheet_path = DOCS / "HG2Gui_animation_5s_cut_sheet_v2.md"
-    cut_sheet = read(cut_sheet_path) if cut_sheet_path.exists() else ""
-    sheet_sections, sheet_cuts = parse_cut_sheet(cut_sheet)
-    style_lock = packet_dir / "00_STYLE_LOCK.md"
-
-    for packet in sorted(packet_dir.glob("[0-9][0-9]_*_5s_packet.md")):
-        match = re.match(r"^(\d{2})_(.+)_5s_packet\.md$", packet.name)
-        if not match:
+def reference_assets() -> list[Path]:
+    assets: list[Path] = []
+    for path in sorted(DOCS.iterdir()):
+        if not path.is_file() or path.suffix.lower() not in IMAGE_EXTS:
             continue
-        number, slug = match.groups()
-        animation_dir = OUT / "animations" / "canonical" / f"{number}_{slug}"
-        text = read(packet)
-        title = markdown_title(text, packet.stem)
-        copy_file(packet, animation_dir / "animation.md")
-        if style_lock.exists():
-            copy_file(style_lock, animation_dir / "style-lock.md")
-        if number in sheet_sections:
-            write(animation_dir / "cut-sheet.md", sheet_sections[number])
-
-        packet_cuts = parse_cut_blocks(text, heading_level=2)
-        scene_records = []
-        for cut in sorted(set(packet_cuts) | set(sheet_cuts.get(number, {}))):
-            scene_dir = animation_dir / "scenes" / cut
-            parts = []
-            if cut in packet_cuts:
-                parts.append(packet_cuts[cut].strip())
-            if cut in sheet_cuts.get(number, {}):
-                parts.append("## Cut-sheet lock\n\n" + sheet_cuts[number][cut].strip())
-            write(scene_dir / "scene.md", "\n\n---\n\n".join(parts))
-
-            expected = sorted(set(re.findall(r"`([^`]+\.(?:png|jpg|jpeg|webp|svg))`", sheet_cuts.get(number, {}).get(cut, ""), re.I)))
-            found: list[str] = []
-            missing: list[str] = []
-            for filename in expected:
-                candidates = [p for p in source_index.get(filename, []) if not is_under(p, OUT)]
-                if candidates:
-                    for src in candidates:
-                        dst = scene_dir / "references" / src.name
-                        copy_file(src, dst)
-                        found.append(src.relative_to(ROOT).as_posix())
-                else:
-                    missing.append(filename)
-
-            ref_lines = ["# Scene reference inventory", ""]
-            if found:
-                ref_lines += ["## Present", ""] + [f"- `{item}`" for item in found] + [""]
-            if missing:
-                ref_lines += ["## Planned / not present in repository", ""] + [f"- `{item}`" for item in missing] + [""]
-            if not found and not missing:
-                ref_lines += ["No scene-specific reference filenames are declared in the cut sheet.", ""]
-            write(scene_dir / "references" / "README.md", "\n".join(ref_lines))
-            scene_records.append({"scene": cut, "references_found": found, "references_missing": missing})
-
-        manifest["canonical"].append(
-            {
-                "number": number,
-                "slug": slug,
-                "title": title,
-                "source": packet.relative_to(ROOT).as_posix(),
-                "scenes": scene_records,
-            }
-        )
-
-
-def organize_tangents(source_index: dict[str, list[Path]], manifest: dict) -> None:
-    specs = [
-        ("script (3).md", "02_pkg_install_small_empire_of_dependencies", "package"),
-        ("script.md", "22_find_cartographical_disaster", "cartography"),
-        ("script (1).md", "23_cat_theological_mechanical_history", "cat"),
-        ("script (2).md", "34_mv_elevator_incident", "elevator"),
-    ]
-    for source_name, slug, frame_prefix in specs:
-        src = DOCS / source_name
-        if not src.exists():
+        stem = path.stem.lower()
+        if re.match(r"^(cat|elevator|package|cartography)_\d{2}$", stem):
             continue
-        text = read(src)
-        title = markdown_title(text, slug)
-        animation_dir = OUT / "animations" / "tangents" / slug
-        copy_file(src, animation_dir / "animation.md")
-        rows = parse_tangent_cut_map(text)
-        scene_records = []
-        for cut, frame, narration in rows:
-            scene_dir = animation_dir / "scenes" / cut
-            scene_text = (
-                f"# Scene {cut}\n\n"
-                f"**Animation:** {title}\n\n"
-                f"**Frame:** `{frame}`\n\n"
-                f"## Narration beat\n\n{narration}\n"
-            )
-            write(scene_dir / "scene.md", scene_text)
-            found: list[str] = []
-            candidates = [p for p in source_index.get(frame, []) if not is_under(p, OUT)]
-            for ref in candidates:
-                dst = scene_dir / "references" / ref.name
-                copy_file(ref, dst)
-                found.append(ref.relative_to(ROOT).as_posix())
-            # Include any alternate scene-specific media using the same tangent prefix and cut number.
-            alt_rx = re.compile(rf"^{re.escape(frame_prefix)}[_-]{re.escape(cut)}(?:[_\.-].*)?", re.I)
-            for name, paths in source_index.items():
-                if not alt_rx.match(name) or name == frame:
-                    continue
-                for ref in paths:
-                    if ref.suffix.lower() in MEDIA_SUFFIXES and not is_under(ref, OUT):
-                        dst = scene_dir / "references" / ref.name
-                        copy_file(ref, dst)
-                        found.append(ref.relative_to(ROOT).as_posix())
-            write(
-                scene_dir / "references" / "README.md",
-                "# Scene reference inventory\n\n"
-                + ("\n".join(f"- `{item}`" for item in sorted(set(found))) if found else f"- Missing expected reference: `{frame}`"),
-            )
-            scene_records.append({"scene": cut, "frame": frame, "references_found": sorted(set(found))})
-        manifest["tangents"].append(
-            {
-                "slug": slug,
-                "title": title,
-                "source": src.relative_to(ROOT).as_posix(),
-                "scenes": scene_records,
-            }
-        )
+        if re.match(r"^(echo|ls|ls_tangent)_\d{2}$", stem):
+            continue
+        assets.append(path)
+    return assets
 
 
-def organize_legacy(source_index: dict[str, list[Path]], manifest: dict) -> None:
-    groups = {
-        "echo": re.compile(r"^echo_clip_(\d{2})_(start|end)\.(png|jpg|jpeg|webp)$", re.I),
-        "ls": re.compile(r"^ls_clip_(\d{2})_(start|end)\.(png|jpg|jpeg|webp)$", re.I),
-        "ls_tangent": re.compile(r"^ls_tangent_clip_(\d{2})_(start|end)\.(png|jpg|jpeg|webp)$", re.I),
+def source_asset_index() -> dict[str, list[Path]]:
+    index: dict[str, list[Path]] = {}
+    for path in sorted(DOCS.rglob("*")):
+        if not path.is_file() or path.suffix.lower() not in IMAGE_EXTS:
+            continue
+        if OUT in path.parents:
+            continue
+        index.setdefault(path.name.lower(), []).append(path)
+    return index
+
+
+def file_digest(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def resolve_asset(name: str, asset_index: dict[str, list[Path]]) -> dict:
+    candidates = asset_index.get(Path(name).name.lower(), [])
+    if not candidates:
+        return {
+            "expected": name,
+            "status": "missing",
+            "sources": [],
+            "source": None,
+        }
+
+    if len(candidates) == 1:
+        return {
+            "expected": name,
+            "status": "present",
+            "sources": [rel(candidates[0])],
+            "source": candidates[0],
+        }
+
+    digests = {file_digest(path) for path in candidates}
+    if len(digests) == 1:
+        return {
+            "expected": name,
+            "status": "present_duplicate_identical",
+            "sources": [rel(path) for path in candidates],
+            "source": candidates[0],
+        }
+
+    return {
+        "expected": name,
+        "status": "ambiguous",
+        "sources": [rel(path) for path in candidates],
+        "source": None,
     }
-    prose_sources = [
-        DOCS / "GUIDE.md",
-        DOCS / "Hitchhikers_Guide_to_Termux.md",
-        DOCS / "Hitchhikers_Guide_to_Termux.revised_master.editorial_pass_4.md",
-        DOCS / "Hitchhikers_Guide_to_Termux.all_animation_sequences.md",
-    ]
-    for slug, rx in groups.items():
-        scenes: dict[str, list[Path]] = defaultdict(list)
-        for name, paths in source_index.items():
-            match = rx.match(name)
-            if not match:
-                continue
-            for path in paths:
-                scenes[match.group(1)].append(path)
-        if not scenes:
-            continue
-
-        animation_dir = OUT / "animations" / "legacy" / slug
-        command = "ls" if slug.startswith("ls") else slug
-        prose = command_sections(command, prose_sources)
-        intro = (
-            f"# Legacy animation material — {slug}\n\n"
-            "This entry has scene reference media in the repository but is not represented by a current 5-second production packet. "
-            "The command prose found elsewhere in the Guide is collected below; scene folders preserve only the media and scene-local inventory because no authoritative per-scene script was found.\n"
-        )
-        write(animation_dir / "animation.md", intro + ("\n" + prose if prose else ""))
-        scene_records = []
-        for cut, refs in sorted(scenes.items()):
-            scene_dir = animation_dir / "scenes" / cut
-            ordered = sorted(refs, key=lambda p: p.name)
-            write(
-                scene_dir / "scene.md",
-                f"# Scene {cut}\n\n"
-                "No authoritative scene-specific text was found for this legacy sequence.\n\n"
-                "## References\n\n"
-                + "\n".join(f"- `{p.name}`" for p in ordered),
-            )
-            copied: list[str] = []
-            for ref in ordered:
-                dst = scene_dir / "references" / ref.name
-                copy_file(ref, dst)
-                copied.append(ref.relative_to(ROOT).as_posix())
-            write(
-                scene_dir / "references" / "README.md",
-                "# Scene reference inventory\n\n" + "\n".join(f"- `{item}`" for item in copied),
-            )
-            scene_records.append({"scene": cut, "references_found": copied})
-        manifest["legacy"].append({"slug": slug, "scenes": scene_records})
 
 
-def copy_unassigned_media(source_index: dict[str, list[Path]], manifest: dict) -> None:
-    assigned_names: set[str] = set()
-    for category in ("canonical", "tangents", "legacy"):
-        for animation in manifest[category]:
-            for scene in animation.get("scenes", []):
-                for item in scene.get("references_found", []):
-                    assigned_names.add(Path(item).name)
-
-    candidate_rx = re.compile(
-        r"(?:_clip_|^cartography_\d+|^cat_\d+|^elevator_\d+|^package_\d+|mustard|protest|workers?|^ChatGPT Image |\.mp4$)",
+def boundary_names(cut_text: str) -> tuple[str | None, str | None]:
+    start = re.search(
+        r"\*\*START:\*\*\s*`([^`]+\.(?:png|jpg|jpeg|webp|gif))`",
+        cut_text,
         re.I,
     )
-    target = OUT / "project" / "references" / "unassigned"
-    for name, paths in sorted(source_index.items()):
-        if name in assigned_names or not candidate_rx.search(name):
+    end = re.search(
+        r"\*\*END:\*\*\s*`([^`]+\.(?:png|jpg|jpeg|webp|gif))`",
+        cut_text,
+        re.I,
+    )
+    return (
+        start.group(1) if start else None,
+        end.group(1) if end else None,
+    )
+
+
+def cut_heading(cut_text: str) -> str:
+    match = re.search(r"(?m)^#{2,3} Cut \d{2}\s*—\s*([^\n]+)", cut_text)
+    return match.group(1).strip() if match else ""
+
+
+def cut_summary(cut_text: str) -> str:
+    cleaned = re.sub(r"(?m)^#{2,3} Cut [^\n]+\n", "", cut_text, count=1)
+    cleaned = re.sub(r"(?m)^\*\*(?:START|END):\*\*.*\n?", "", cleaned)
+    cleaned = re.sub(r"(?ms)^### Ready-to-paste generation prompt.*$", "", cleaned)
+    paragraphs = [p.strip() for p in re.split(r"\n\s*\n", cleaned) if p.strip()]
+    for paragraph in paragraphs:
+        if not paragraph.startswith("#"):
+            return re.sub(r"\s+", " ", paragraph)
+    return ""
+
+
+def materialize_boundary(
+    frame_name: str | None,
+    role: str,
+    scene_dir: Path,
+    asset_index: dict[str, list[Path]],
+    semantics: str,
+) -> dict:
+    if not frame_name:
+        return {
+            "expected": None,
+            "role": role,
+            "status": "unresolved",
+            "semantics": semantics,
+            "sources": [],
+            "local": None,
+        }
+
+    resolved = resolve_asset(frame_name, asset_index)
+    local = None
+    source = resolved.pop("source")
+    if source is not None:
+        local_path = scene_dir / "frames" / f"{role}{source.suffix.lower()}"
+        copy(source, local_path)
+        local = rel(local_path)
+
+    return {
+        **resolved,
+        "role": role,
+        "semantics": semantics,
+        "local": local,
+    }
+
+
+def write_frames_readme(scene_dir: Path, boundaries: list[dict], note: str | None = None) -> None:
+    lines = [
+        "# Storyboard frames",
+        "",
+        "Storyboard boundary assets for this scene. These are separate from supporting visual references.",
+        "",
+    ]
+    if note:
+        lines += [note, ""]
+
+    for boundary in boundaries:
+        role = boundary["role"].capitalize()
+        lines.append(f"## {role}")
+        lines.append("")
+        if boundary["expected"]:
+            lines.append(f"- Expected source filename: `{boundary['expected']}`")
+        else:
+            lines.append("- Expected source filename: not declared")
+        lines.append(f"- Status: **{boundary['status']}**")
+        lines.append(f"- Semantics: `{boundary['semantics']}`")
+        if boundary["local"]:
+            local_name = Path(boundary["local"]).name
+            lines.append(f"- Local normalized copy: `{local_name}`")
+        if boundary["sources"]:
+            lines.append("- Source candidate(s):")
+            for source in boundary["sources"]:
+                lines.append(f"  - `{source}`")
+        if boundary["status"] in {"missing", "unresolved", "ambiguous"}:
+            lines.append("- No substitute image was fabricated.")
+        lines.append("")
+
+    write(scene_dir / "frames" / "README.md", "\n".join(lines))
+
+
+def storyboard_scene_section(scene_no: int, scene_text: str, boundaries: list[dict]) -> str:
+    heading = cut_heading(scene_text)
+    summary = cut_summary(scene_text)
+    title = f"## Scene {scene_no:02d}"
+    if heading:
+        title += f" — {heading}"
+    lines = [title, ""]
+    if summary:
+        lines += [summary, ""]
+
+    for boundary in boundaries:
+        role = boundary["role"].capitalize()
+        if boundary["local"]:
+            relative_path = Path(boundary["local"])
+            scene_root_marker = Path("scenes") / f"{scene_no:02d}" / "frames" / relative_path.name
+            lines.append(
+                f"**{role}:** `{scene_root_marker.as_posix()}` "
+                f"— source `{boundary['expected']}` ({boundary['status']})"
+            )
+            lines.append("")
+            lines.append(
+                f"![Scene {scene_no:02d} {boundary['role']}]"
+                f"({scene_root_marker.as_posix()})"
+            )
+        else:
+            expected = f"`{boundary['expected']}`" if boundary["expected"] else "no declared filename"
+            lines.append(
+                f"**{role}:** **{boundary['status'].upper()}** — {expected}"
+            )
+        lines.append("")
+    return "\n".join(lines).rstrip()
+
+
+def reference_readme(scene_dir: Path, sources: list[str] | None = None) -> None:
+    lines = [
+        "# Scene references",
+        "",
+        "Supporting scene-specific reference material. Storyboard start/end frames live in `../frames/`.",
+        "",
+    ]
+    if sources:
+        lines += ["## Present", ""] + [f"- `{source}`" for source in sorted(set(sources))]
+    else:
+        lines.append("No separate scene-specific supporting references were assigned.")
+    write(scene_dir / "references" / "README.md", "\n".join(lines))
+
+
+def build_canonical(manifest: dict, asset_index: dict[str, list[Path]]) -> None:
+    manifest_text = (PACKETS / "00_MANIFEST.md").read_text(encoding="utf-8")
+    style_text = (PACKETS / "00_STYLE_LOCK.md").read_text(encoding="utf-8")
+    cut_text = CUT_SHEET.read_text(encoding="utf-8")
+
+    packet_lines = re.findall(r"- `([^`]+\.md)` —", manifest_text)
+    heading_matches = list(
+        re.finditer(r"(?m)^## (\d{2}) — `([^`]+)` — ([^\n]+)\n", cut_text)
+    )
+    cut_blocks: dict[int, dict] = {}
+    for i, match in enumerate(heading_matches):
+        index = int(match.group(1))
+        end = heading_matches[i + 1].start() if i + 1 < len(heading_matches) else len(cut_text)
+        cut_blocks[index] = {
+            "command": match.group(2),
+            "description": match.group(3),
+            "text": cut_text[match.start():end].rstrip(),
+        }
+
+    entries = []
+    for packet_name in packet_lines:
+        index = int(packet_name[:2])
+        packet_path = PACKETS / packet_name
+        packet_text = packet_path.read_text(encoding="utf-8")
+        packet_header = re.match(r"# Animation \d+ — `([^`]+)` — ([^\n]+)", packet_text)
+        command = packet_header.group(1) if packet_header else cut_blocks[index]["command"]
+        anim_dir = OUT / "animations/canonical" / f"{index:02d}_{slug(command)}"
+
+        write(anim_dir / "animation.md", packet_text)
+        write(anim_dir / "cut-sheet.md", cut_blocks[index]["text"])
+        write(anim_dir / "style-lock.md", style_text)
+
+        packet_cuts = parse_packet(packet_text)
+        cut_sheet_cuts = parse_cut_sections(cut_blocks[index]["text"])
+        scene_numbers = sorted(set(packet_cuts) | set(cut_sheet_cuts))
+        scene_records = []
+        storyboard_sections = [
+            f"# Storyboard — {index:02d} `{command}`",
+            "",
+            f"Boundary declarations come from `{rel(CUT_SHEET)}`.",
+            "Actual images are included only when a matching repository asset exists.",
+            "Adjacent scenes intentionally duplicate shared boundary frames.",
+            "",
+        ]
+
+        for number in scene_numbers:
+            scene_dir = anim_dir / "scenes" / f"{number:02d}"
+            parts = []
+            if number in packet_cuts:
+                parts.append(packet_cuts[number])
+            if number in cut_sheet_cuts:
+                parts.append("## Cut-sheet lock\n\n" + cut_sheet_cuts[number])
+            scene_text = "\n\n---\n\n".join(parts)
+            write(scene_dir / "scene.md", scene_text)
+
+            start_name, end_name = boundary_names(cut_sheet_cuts.get(number, ""))
+            start = materialize_boundary(
+                start_name,
+                "start",
+                scene_dir,
+                asset_index,
+                "explicit_cut_sheet_boundary",
+            )
+            end = materialize_boundary(
+                end_name,
+                "end",
+                scene_dir,
+                asset_index,
+                "explicit_cut_sheet_boundary",
+            )
+            boundaries = [start, end]
+            write_frames_readme(scene_dir, boundaries)
+            reference_readme(scene_dir)
+
+            storyboard_sections.append(
+                storyboard_scene_section(number, cut_sheet_cuts.get(number, scene_text), boundaries)
+            )
+            storyboard_sections.append("")
+
+            scene_records.append({
+                "scene": number,
+                "text": rel(scene_dir / "scene.md"),
+                "frames_readme": rel(scene_dir / "frames/README.md"),
+                "storyboard": {
+                    "start": start,
+                    "end": end,
+                },
+                "references_present": [],
+                "references_missing": [],
+            })
+
+        write(anim_dir / "storyboard.md", "\n".join(storyboard_sections))
+        entries.append({
+            "index": index,
+            "command": command,
+            "description": cut_blocks[index]["description"],
+            "source_packet": rel(packet_path),
+            "source_cut_sheet": rel(CUT_SHEET),
+            "folder": rel(anim_dir),
+            "storyboard": rel(anim_dir / "storyboard.md"),
+            "scenes": scene_records,
+        })
+
+    manifest["canonical_animations"] = entries
+
+
+def inferred_sequence_boundary(
+    frame_name: str | None,
+    role: str,
+    scene_dir: Path,
+    asset_index: dict[str, list[Path]],
+    kind: str,
+) -> dict:
+    semantics = (
+        f"inferred_{kind}_sequence_boundary"
+        if frame_name
+        else f"unresolved_{kind}_first_scene_start"
+    )
+    return materialize_boundary(frame_name, role, scene_dir, asset_index, semantics)
+
+
+def build_tangents(manifest: dict, asset_index: dict[str, list[Path]]) -> None:
+    entries = []
+    for folder_name, script_path, prefix in TANGENTS:
+        text = script_path.read_text(encoding="utf-8")
+        anim_dir = OUT / "animations/tangents" / folder_name
+        write(anim_dir / "animation.md", text)
+
+        cut_rows = re.findall(r"\|\s*(\d{2})\s*\|\s*`([^`]+)`\s*\|\s*(.*?)\s*\|", text)
+        scene_records = []
+        storyboard_sections = [
+            f"# Storyboard — {folder_name}",
+            "",
+            f"Source cut map: `{rel(script_path)}`.",
+            "The tangent source declares one frame per cut rather than explicit START/END pairs.",
+            "Each declared cut-map frame is treated as that cut's end boundary; the previous cut's frame is reused as the next cut's start boundary.",
+            "The first scene's start remains unresolved unless a preceding frame is actually declared elsewhere.",
+            "",
+        ]
+        previous_frame: str | None = None
+
+        for cut_no, frame_name, narration in cut_rows:
+            number = int(cut_no)
+            scene_dir = anim_dir / "scenes" / cut_no
+            scene_text = (
+                f"# Scene {cut_no}\n\n"
+                f"**Frame:** `{frame_name}`\n\n"
+                f"**Narration beat:** {narration}"
+            )
+            write(scene_dir / "scene.md", scene_text)
+
+            start = inferred_sequence_boundary(
+                previous_frame,
+                "start",
+                scene_dir,
+                asset_index,
+                "tangent_cut_map",
+            )
+            end = inferred_sequence_boundary(
+                frame_name,
+                "end",
+                scene_dir,
+                asset_index,
+                "tangent_cut_map",
+            )
+            boundaries = [start, end]
+            write_frames_readme(
+                scene_dir,
+                boundaries,
+                "Boundary roles are inferred from the ordered cut-map still sequence; the source script itself declares one frame per cut.",
+            )
+            reference_readme(scene_dir)
+
+            storyboard_sections += [
+                storyboard_scene_section(
+                    number,
+                    f"## Cut {cut_no}\n\n{narration}",
+                    boundaries,
+                ),
+                "",
+            ]
+
+            scene_records.append({
+                "scene": number,
+                "frame": frame_name,
+                "narration": narration,
+                "text": rel(scene_dir / "scene.md"),
+                "storyboard": {"start": start, "end": end},
+                "references_present": [],
+                "references_missing": [],
+            })
+            previous_frame = frame_name
+
+        write(anim_dir / "storyboard.md", "\n".join(storyboard_sections))
+        entries.append({
+            "folder": rel(anim_dir),
+            "source_script": rel(script_path),
+            "frame_prefix": prefix,
+            "storyboard": rel(anim_dir / "storyboard.md"),
+            "scenes": scene_records,
+        })
+
+    manifest["tangent_animations"] = entries
+
+
+def build_legacy(manifest: dict, asset_index: dict[str, list[Path]]) -> None:
+    groups: dict[str, list[tuple[int, Path]]] = {}
+    for path in sorted(DOCS.iterdir()):
+        if not path.is_file() or path.suffix.lower() not in IMAGE_EXTS:
             continue
-        for path in paths:
-            if path.suffix.lower() not in MEDIA_SUFFIXES or is_under(path, OUT):
-                continue
-            copy_file(path, target / path.name)
-            manifest["unassigned_references"].append(path.relative_to(ROOT).as_posix())
+        match = re.match(r"^(echo|ls|ls_tangent)_(\d{2})$", path.stem.lower())
+        if not match:
+            continue
+        groups.setdefault(match.group(1), []).append((int(match.group(2)), path))
+
+    legacy = []
+    for name, frames in sorted(groups.items()):
+        frames = sorted(frames)
+        anim_dir = OUT / "animations/legacy" / name
+        write(
+            anim_dir / "animation.md",
+            "\n".join([
+                f"# Legacy/incomplete animation — `{name}`",
+                "",
+                "Reference/storyboard images exist in the repository, but this animation is not represented by a current 5-second production packet.",
+                "",
+                "The ordered still sequence is preserved here without promoting it to canonical.",
+            ]),
+        )
+
+        storyboard_sections = [
+            f"# Storyboard — legacy `{name}`",
+            "",
+            "The loose numbered image sequence is interpreted as ordered cut-end stills.",
+            "Each previous still is duplicated as the next scene's inferred start frame.",
+            "The first scene's start remains unresolved because no earlier boundary is declared.",
+            "",
+        ]
+        scene_records = []
+        previous_frame: str | None = None
+
+        for number, source in frames:
+            scene_dir = anim_dir / "scenes" / f"{number:02d}"
+            write(
+                scene_dir / "scene.md",
+                f"# Scene {number:02d}\n\nExisting ordered storyboard frame: `{source.name}`.\n",
+            )
+            start = inferred_sequence_boundary(
+                previous_frame,
+                "start",
+                scene_dir,
+                asset_index,
+                "legacy_still",
+            )
+            end = inferred_sequence_boundary(
+                source.name,
+                "end",
+                scene_dir,
+                asset_index,
+                "legacy_still",
+            )
+            boundaries = [start, end]
+            write_frames_readme(
+                scene_dir,
+                boundaries,
+                "Boundary roles are inferred from the loose numbered still sequence.",
+            )
+            reference_readme(scene_dir)
+
+            storyboard_sections += [
+                storyboard_scene_section(
+                    number,
+                    f"## Cut {number:02d}\n\nExisting ordered storyboard frame `{source.name}`.",
+                    boundaries,
+                ),
+                "",
+            ]
+            scene_records.append({
+                "scene": number,
+                "source_frame": rel(source),
+                "text": rel(scene_dir / "scene.md"),
+                "storyboard": {"start": start, "end": end},
+            })
+            previous_frame = source.name
+
+        write(anim_dir / "storyboard.md", "\n".join(storyboard_sections))
+        legacy.append({
+            "folder": rel(anim_dir),
+            "name": name,
+            "storyboard": rel(anim_dir / "storyboard.md"),
+            "scenes": scene_records,
+        })
+
+    manifest["legacy_animations"] = legacy
 
 
-def build_readme(manifest: dict, project_files: list[str]) -> None:
-    canonical_scenes = sum(len(a["scenes"]) for a in manifest["canonical"])
-    tangent_scenes = sum(len(a["scenes"]) for a in manifest["tangents"])
-    legacy_scenes = sum(len(a["scenes"]) for a in manifest["legacy"])
-    text = f"""# HG2Gui Guide material
+def build_project(manifest: dict) -> None:
+    project = OUT / "project"
+    copied: list[str] = []
+    for src in PROJECT_FILES:
+        if src.exists():
+            copy(src, project / "source" / src.name)
+            copied.append(rel(src))
+    for src in CODE_REFERENCES:
+        if src.exists():
+            copy(src, project / "code" / src.relative_to(ROOT))
+            copied.append(rel(src))
+    for src_root in TEXT_REFERENCE_ROOTS:
+        copied.extend(copy_reference_set(src_root, project / "reference-text" / src_root.name))
+    shared = reference_assets()
+    for src in shared:
+        copy(src, project / "references/shared" / src.name)
+        copied.append(rel(src))
+    manifest["project_files"] = sorted(copied)
+
+
+def build_unassigned(manifest: dict) -> None:
+    used_names: set[str] = set()
+
+    for entry in manifest.get("tangent_animations", []):
+        for scene in entry["scenes"]:
+            for boundary in scene["storyboard"].values():
+                used_names.update(Path(source).name for source in boundary["sources"])
+
+    for entry in manifest.get("legacy_animations", []):
+        for scene in entry["scenes"]:
+            for boundary in scene["storyboard"].values():
+                used_names.update(Path(source).name for source in boundary["sources"])
+
+    unassigned: list[str] = []
+    for path in sorted(DOCS.iterdir()):
+        if not path.is_file() or path.suffix.lower() not in IMAGE_EXTS:
+            continue
+        stem = path.stem.lower()
+        if re.match(r"^(cat|elevator|package|cartography|echo|ls|ls_tangent)_\d{2}$", stem):
+            if path.name not in used_names:
+                copy(path, OUT / "project/references/unassigned" / path.name)
+                unassigned.append(rel(path))
+    manifest["unassigned_reference_media"] = unassigned
+
+
+def coverage_for(entries: list[dict]) -> dict:
+    counts = {
+        "scenes": 0,
+        "boundary_slots": 0,
+        "present": 0,
+        "present_duplicate_identical": 0,
+        "missing": 0,
+        "ambiguous": 0,
+        "unresolved": 0,
+    }
+    for entry in entries:
+        for scene in entry["scenes"]:
+            counts["scenes"] += 1
+            storyboard = scene.get("storyboard", {})
+            for role in ("start", "end"):
+                boundary = storyboard.get(role)
+                if not boundary:
+                    continue
+                counts["boundary_slots"] += 1
+                status = boundary["status"]
+                if status in counts:
+                    counts[status] += 1
+    counts["materialized"] = counts["present"] + counts["present_duplicate_identical"]
+    counts["not_materialized"] = (
+        counts["missing"] + counts["ambiguous"] + counts["unresolved"]
+    )
+    return counts
+
+
+def main() -> None:
+    if OUT.exists():
+        shutil.rmtree(OUT)
+
+    asset_index = source_asset_index()
+    manifest: dict = {
+        "generated_from_repository": True,
+        "note": (
+            "Non-destructive organization. Original source files remain in place; "
+            "copies are organized under docs/guide. Missing storyboard frames are "
+            "reported, never fabricated."
+        ),
+    }
+
+    build_canonical(manifest, asset_index)
+    build_tangents(manifest, asset_index)
+    build_legacy(manifest, asset_index)
+    build_project(manifest)
+    build_unassigned(manifest)
+
+    canonical_scene_count = sum(len(entry["scenes"]) for entry in manifest["canonical_animations"])
+    tangent_scene_count = sum(len(entry["scenes"]) for entry in manifest["tangent_animations"])
+    legacy_scene_count = sum(len(entry["scenes"]) for entry in manifest["legacy_animations"])
+
+    coverage = {
+        "canonical": coverage_for(manifest["canonical_animations"]),
+        "tangents": coverage_for(manifest["tangent_animations"]),
+        "legacy": coverage_for(manifest["legacy_animations"]),
+    }
+    manifest["storyboard_coverage"] = coverage
+
+    readme = f"""# HG2Gui Guide material
 
 This is the organized, non-destructive collection of Guide-related production material. Source files remain in their original locations so application and documentation paths do not break.
 
@@ -394,52 +744,45 @@ This is the organized, non-destructive collection of Guide-related production ma
 - `project/` — Guide-wide prose, design/motion references, shared production rules, relevant source-code copies, and unresolved references.
 - `animations/canonical/` — the 35 current technical 5-second production-packet entries.
 - `animations/tangents/` — the four scripted Guide tangents that precede canonical entries.
-- `animations/legacy/` — older/incomplete animated material that has reference media but no current production packet.
+- `animations/legacy/` — older/incomplete animated material that has numbered visual material but no current production packet.
 
-Every animation folder contains its complete animation text. Every `scenes/NN/scene.md` contains only material belonging to that scene. Scene-specific reference files are copied into that scene's `references/` folder. Shared design references remain under `project/references/shared/` rather than being multiplied hundreds of times without evidence that they belong to one particular scene.
+Every animation folder contains its complete animation text and a `storyboard.md`. Every `scenes/NN/scene.md` contains only material belonging to that scene.
+
+## Visual material
+
+The three visual classes are deliberately separate:
+
+1. `scenes/NN/frames/` — storyboard boundary frames. `start.*` and `end.*` are normalized copies of real repository assets when those assets exist.
+2. `scenes/NN/references/` — supporting visual material specific to that scene, excluding storyboard boundaries.
+3. `project/references/shared/` — Guide-wide style and design references.
+
+Adjacent scenes may intentionally contain duplicate copies of the same boundary image: one scene's end is the next scene's start. Duplication here is structural, not accidental.
+
+Canonical START/END filenames come directly from `{CUT_SHEET.name}`. If a declared image does not actually exist in the repository, its `frames/README.md`, the animation `storyboard.md`, and `MANIFEST.json` record the absence. No replacement frame is invented.
+
+Tangent and legacy sources generally provide one ordered still per cut rather than explicit START/END pairs. Those stills are treated as cut-end boundaries and the previous still is reused as the following cut's inferred start. The first cut's start remains explicitly unresolved where no preceding still exists.
 
 ## Inventory
 
-- Canonical animations: **{len(manifest['canonical'])}**
-- Canonical scenes: **{canonical_scenes}**
-- Tangent animations: **{len(manifest['tangents'])}**
-- Tangent scenes: **{tangent_scenes}**
-- Legacy/incomplete animation groups: **{len(manifest['legacy'])}**
-- Legacy scenes: **{legacy_scenes}**
-- Project-wide files copied: **{len(project_files)}**
-- Unassigned scene/reference media retained for review: **{len(manifest['unassigned_references'])}**
+- Canonical animations: **{len(manifest["canonical_animations"])}**
+- Canonical scenes: **{canonical_scene_count}**
+- Tangent animations: **{len(manifest["tangent_animations"])}**
+- Tangent scenes: **{tangent_scene_count}**
+- Legacy/incomplete animation groups: **{len(manifest["legacy_animations"])}**
+- Legacy scenes: **{legacy_scene_count}**
+- Project-wide files copied: **{len(manifest["project_files"])}**
+- Unassigned scene/reference media retained for review: **{len(manifest["unassigned_reference_media"])}**
 
-`MANIFEST.json` records provenance and reports reference frames named in the cut sheet that are planned but not actually present in the repository.
+## Storyboard boundary coverage
+
+- Canonical: **{coverage["canonical"]["materialized"]} / {coverage["canonical"]["boundary_slots"]}** boundary slots materialized; **{coverage["canonical"]["missing"]}** missing; **{coverage["canonical"]["ambiguous"]}** ambiguous; **{coverage["canonical"]["unresolved"]}** unresolved.
+- Tangents: **{coverage["tangents"]["materialized"]} / {coverage["tangents"]["boundary_slots"]}** boundary slots materialized; **{coverage["tangents"]["missing"]}** missing; **{coverage["tangents"]["ambiguous"]}** ambiguous; **{coverage["tangents"]["unresolved"]}** unresolved.
+- Legacy: **{coverage["legacy"]["materialized"]} / {coverage["legacy"]["boundary_slots"]}** boundary slots materialized; **{coverage["legacy"]["missing"]}** missing; **{coverage["legacy"]["ambiguous"]}** ambiguous; **{coverage["legacy"]["unresolved"]}** unresolved.
+
+`MANIFEST.json` records provenance, source semantics, and exact storyboard coverage.
 """
-    write(OUT / "README.md", text)
-
-
-def main() -> None:
-    if OUT.exists():
-        shutil.rmtree(OUT)
-
-    source_index = build_source_index()
-    OUT.mkdir(parents=True, exist_ok=True)
-
-    manifest = {
-        "canonical": [],
-        "tangents": [],
-        "legacy": [],
-        "unassigned_references": [],
-    }
-
-    project_files = copy_project_material(source_index)
-    organize_canonical(source_index, manifest)
-    organize_tangents(source_index, manifest)
-    organize_legacy(source_index, manifest)
-    copy_unassigned_media(source_index, manifest)
-    build_readme(manifest, project_files)
-    write(OUT / "MANIFEST.json", json.dumps(manifest, indent=2, ensure_ascii=False))
-
-    print(
-        f"organized {len(manifest['canonical'])} canonical animations, "
-        f"{len(manifest['tangents'])} tangents, and {len(manifest['legacy'])} legacy groups into {OUT.relative_to(ROOT)}"
-    )
+    write(OUT / "README.md", readme)
+    write(OUT / "MANIFEST.json", json.dumps(manifest, indent=2, sort_keys=True))
 
 
 if __name__ == "__main__":
