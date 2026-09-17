@@ -16,35 +16,66 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install Pillow
         run: python -m pip install --quiet pillow
-      - name: Inventory source images
+      - name: Inventory source images and build visual audit
         shell: bash
         run: |
           python - <<'PY'
           from pathlib import Path
-          from PIL import Image, ImageStat
-          import json
+          from PIL import Image, ImageDraw, ImageFont
+          import json, math
 
           exts={'.png','.jpg','.jpeg','.webp'}
           rows=[]
+          candidates=[]
           for p in sorted(Path('docs').rglob('*')):
               if not p.is_file() or p.suffix.lower() not in exts:
                   continue
-              # Ignore generated Guide copies; audit original source assets only.
               if p.as_posix().startswith('docs/guide/'):
                   continue
               try:
                   with Image.open(p) as im:
                       w,h=im.size
-                      rows.append({
+                      row={
                           'path':p.as_posix(),
                           'width':w,
                           'height':h,
                           'ratio':round(w/h,4),
                           'bytes':p.stat().st_size,
-                      })
+                      }
+                      rows.append(row)
+                      # Large source images are the only plausible unsplit sheets.
+                      if w >= 900 and h >= 500:
+                          candidates.append((p,w,h))
               except Exception as e:
                   rows.append({'path':p.as_posix(),'error':str(e)})
           print('STORYBOARD_IMAGE_AUDIT_BEGIN')
           print(json.dumps(rows,indent=2))
           print('STORYBOARD_IMAGE_AUDIT_END')
+
+          out=Path('/tmp/storyboard-audit')
+          out.mkdir(parents=True, exist_ok=True)
+          tile_w,tile_h=360,320
+          cols=3
+          rows_n=max(1,math.ceil(len(candidates)/cols))
+          sheet=Image.new('RGB',(cols*tile_w,rows_n*tile_h),'white')
+          draw=ImageDraw.Draw(sheet)
+          for i,(p,w,h) in enumerate(candidates):
+              with Image.open(p) as im:
+                  im=im.convert('RGB')
+                  im.thumbnail((tile_w-20,tile_h-70))
+                  x=(i%cols)*tile_w+(tile_w-im.width)//2
+                  y=(i//cols)*tile_h+10
+                  sheet.paste(im,(x,y))
+                  label=p.name
+                  if len(label)>48: label=label[:45]+'...'
+                  draw.text(((i%cols)*tile_w+8,(i//cols)*tile_h+tile_h-55),label,fill='black')
+                  draw.text(((i%cols)*tile_w+8,(i//cols)*tile_h+tile_h-35),f'{w}x{h}',fill='black')
+          sheet.save(out/'contact-sheet.jpg',quality=90)
+          (out/'inventory.json').write_text(json.dumps(rows,indent=2),encoding='utf-8')
           PY
+      - name: Upload visual audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: storyboard-visual-audit
+          path: /tmp/storyboard-audit
+          if-no-files-found: error
