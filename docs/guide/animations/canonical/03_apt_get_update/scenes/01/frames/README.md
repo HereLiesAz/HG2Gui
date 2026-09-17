@@ -12,6 +12,8 @@ Storyboard boundary assets for this scene. These are separate from supporting vi
 ## End
 
 - Expected source filename: `03_apt_get_update_frame_01.png`
-- Status: **missing**
+- Status: **present**
 - Semantics: `explicit_cut_sheet_boundary`
-- No substitute image was fabricated.
+- Local normalized copy: `end.png`
+- Source candidate(s):
+  - `docs/03_apt_get_update_frame_01.png`

@@ -5,13 +5,17 @@ Storyboard boundary assets for this scene. These are separate from supporting vi
 ## Start
 
 - Expected source filename: `02_pkg_install_frame_03.png`
-- Status: **missing**
+- Status: **present**
 - Semantics: `explicit_cut_sheet_boundary`
-- No substitute image was fabricated.
+- Local normalized copy: `start.png`
+- Source candidate(s):
+  - `docs/02_pkg_install_frame_03.png`
 
 ## End
 
 - Expected source filename: `02_pkg_install_frame_04.png`
-- Status: **missing**
+- Status: **present**
 - Semantics: `explicit_cut_sheet_boundary`
-- No substitute image was fabricated.
+- Local normalized copy: `end.png`
+- Source candidate(s):
+  - `docs/02_pkg_install_frame_04.png`

@@ -8,15 +8,21 @@ Adjacent scenes intentionally duplicate shared boundary frames.
 
 A therapy-room diagram: one small software package sits in a chair, three concerned packages around it. A counsellor displays a card reading `DEPENDENCY`. The counsellor asks with a simple caption bubble: `TOO RELIANT ON LIBFOO?` The package nods. End with counsellor turning toward a closed door.
 
-**Start:** **MISSING** — `02_pkg_install_frame_00.png`
+**Start:** `scenes/01/frames/start.png` — source `02_pkg_install_frame_00.png` (present)
 
-**End:** **MISSING** — `02_pkg_install_frame_01.png`
+![Scene 01 start](scenes/01/frames/start.png)
+
+**End:** `scenes/01/frames/end.png` — source `02_pkg_install_frame_01.png` (present)
+
+![Scene 01 end](scenes/01/frames/end.png)
 
 ## Scene 02 — 05:00–10:00
 
 Continue. Door swings open. A capsule label reads `BRING IN LIBFOO`. `libfoo` enters, immediately followed by three smaller dependencies attached in a little chain. The original package brightens slightly. End as the counsellor realizes the chain continues offscreen.
 
-**Start:** **MISSING** — `02_pkg_install_frame_01.png`
+**Start:** `scenes/02/frames/start.png` — source `02_pkg_install_frame_01.png` (present)
+
+![Scene 02 start](scenes/02/frames/start.png)
 
 **End:** **MISSING** — `02_pkg_install_frame_02.png`
 
@@ -26,12 +32,18 @@ The chain keeps arriving: three become nine, nine become a dense crowd. Packages
 
 **Start:** **MISSING** — `02_pkg_install_frame_02.png`
 
-**End:** **MISSING** — `02_pkg_install_frame_03.png`
+**End:** `scenes/03/frames/end.png` — source `02_pkg_install_frame_03.png` (present)
+
+![Scene 03 end](scenes/03/frames/end.png)
 
 ## Scene 04 — 15:00–20:00
 
 A forklift enters carrying an entire second room as cargo and docks it to the first. A terminal strip at the bottom prints `Installing dependencies...`. The original package finally smiles while everyone else is crushed into geometric order. Hold on the absurdly successful intervention.
 
-**Start:** **MISSING** — `02_pkg_install_frame_03.png`
+**Start:** `scenes/04/frames/start.png` — source `02_pkg_install_frame_03.png` (present)
 
-**End:** **MISSING** — `02_pkg_install_frame_04.png`
+![Scene 04 start](scenes/04/frames/start.png)
+
+**End:** `scenes/04/frames/end.png` — source `02_pkg_install_frame_04.png` (present)
+
+![Scene 04 end](scenes/04/frames/end.png)
