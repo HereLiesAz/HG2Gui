@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "note": "Existing source images whose content can be matched to current canonical boundary frames. The source files remain untouched; the materializer creates canonical-named copies so the Guide organizer can place them into scene start/end folders.",
+  "aliases": [
+    {
+      "canonical": "02_pkg_install_frame_00.png",
+      "source": "ChatGPT Image Aug 14, 2026, 12_01_47 AM.png",
+      "confidence": "high",
+      "reason": "Initial therapy-room setup: central package in chair, three concerned packages, counsellor, closed door."
+    },
+    {
+      "canonical": "02_pkg_install_frame_01.png",
+      "source": "ChatGPT Image Aug 14, 2026, 12_01_40 AM.png",
+      "confidence": "medium",
+      "reason": "Counsellor has turned to the door and the dependency arrival begins; this is the closest existing boundary image between the intervention setup and dependency chain."
+    },
+    {
+      "canonical": "02_pkg_install_frame_03.png",
+      "source": "ChatGPT Image Aug 14, 2026, 12_01_16 AM.png",
+      "confidence": "high",
+      "reason": "Therapy room is completely crowded with dependencies, matching the end of the crowd-expansion cut."
+    },
+    {
+      "canonical": "02_pkg_install_frame_04.png",
+      "source": "ChatGPT Image Aug 14, 2026, 12_00_50 AM.png",
+      "confidence": "high",
+      "reason": "Forklift carries an additional room beside the dependency crowd, matching the final canonical beat."
+    },
+    {
+      "canonical": "03_apt_get_update_frame_01.png",
+      "source": "bf8c1062-ae0c-4f76-8f39-d1295c9a851d.png",
+      "confidence": "high",
+      "reason": "Government clerk stamps an elderly alien's birth certificate, matching the first apt-get update cut boundary."
+    }
+  ]
+}
