@@ -1,0 +1,76 @@
+name: Finalize animation Guide organization
+
+on:
+  push:
+    branches:
+      - complete-animation-guide-organization
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  organize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: complete-animation-guide-organization
+          fetch-depth: 0
+
+      - name: Materialize known canonical boundary aliases
+        run: python scripts/materialize_animation_frame_aliases.py
+
+      - name: Rebuild organized Guide hierarchy
+        run: python scripts/organize_guide_material.py
+
+      - name: Build animation TODO
+        run: python scripts/build_animation_todo.py
+
+      - name: Finalize per-animation references and verify boundaries
+        run: python scripts/finalize_animation_guide.py
+
+      - name: Rebuild TODO after manifest enrichment
+        run: python scripts/build_animation_todo.py
+
+      - name: Verify every scene has explicit START and END records
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path('.')
+          m=json.loads(Path('docs/guide/MANIFEST.json').read_text())
+          failures=[]
+          scenes=0
+          slots=0
+          for group in ('canonical_animations','tangent_animations','legacy_animations'):
+              for animation in m.get(group,[]):
+                  for scene in animation.get('scenes',[]):
+                      scenes += 1
+                      board=scene.get('storyboard',{})
+                      scene_dir=root / scene['text'].rsplit('/',1)[0]
+                      for role in ('start','end'):
+                          slots += 1
+                          if role not in board:
+                              failures.append(f'{scene_dir}: missing {role} record')
+                      if not (scene_dir/'frames/README.md').exists():
+                          failures.append(f'{scene_dir}: missing frames/README.md')
+          if failures:
+              raise SystemExit('\n'.join(failures))
+          print(f'Verified {scenes} scenes and {slots} START/END boundary slots.')
+          PY
+
+      - name: Commit organized animation material
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/guide docs/*_frame_*.png docs/animation_frame_aliases.json scripts/finalize_animation_guide.py
+          if git diff --cached --quiet; then
+            echo "No generated changes."
+          else
+            git commit -m "docs: complete animation Guide organization [guide-organized]"
+            git push origin HEAD:complete-animation-guide-organization
+          fi
