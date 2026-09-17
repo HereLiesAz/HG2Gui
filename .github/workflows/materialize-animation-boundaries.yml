@@ -1,0 +1,62 @@
+name: Materialize animation boundaries
+
+on:
+  push:
+    branches:
+      - animation-boundary-audit
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: animation-boundary-audit
+          fetch-depth: 0
+
+      - name: Materialize known canonical frame aliases
+        run: python scripts/materialize_animation_frame_aliases.py
+
+      - name: Rebuild organized Guide animation tree
+        run: python scripts/organize_guide_material.py
+
+      - name: Build animation TODO
+        run: python scripts/build_animation_todo.py
+
+      - name: Verify every scene has start and end records
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          manifest = json.loads(Path('docs/guide/MANIFEST.json').read_text(encoding='utf-8'))
+          failures = []
+          for group in ('canonical_animations', 'tangent_animations', 'legacy_animations'):
+              for animation in manifest.get(group, []):
+                  for scene in animation.get('scenes', []):
+                      storyboard = scene.get('storyboard', {})
+                      for role in ('start', 'end'):
+                          if role not in storyboard:
+                              failures.append(f"{animation.get('folder')} scene {scene.get('scene')} missing {role} record")
+          if failures:
+              raise SystemExit('\n'.join(failures))
+          print('Every animation scene has explicit start and end boundary records.')
+          PY
+
+      - name: Commit generated boundary audit
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/guide docs/02_pkg_install_frame_00.png docs/02_pkg_install_frame_01.png docs/02_pkg_install_frame_03.png docs/02_pkg_install_frame_04.png docs/03_apt_get_update_frame_01.png
+          if git diff --cached --quiet; then
+            echo "No generated changes to commit."
+            exit 0
+          fi
+          git commit -m "docs: audit animation start/end boundaries"
+          git push origin HEAD:animation-boundary-audit
