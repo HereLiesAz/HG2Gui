@@ -25,10 +25,13 @@ jobs:
           import json, math, shutil
 
           exts={'.png','.jpg','.jpeg','.webp'}
+          skip_parts={'.git','build','.gradle','node_modules'}
           rows=[]
           candidates=[]
-          for p in sorted(Path('docs').rglob('*')):
+          for p in sorted(Path('.').rglob('*')):
               if not p.is_file() or p.suffix.lower() not in exts:
+                  continue
+              if any(part in skip_parts for part in p.parts):
                   continue
               if p.as_posix().startswith('docs/guide/'):
                   continue
@@ -54,7 +57,7 @@ jobs:
           sheet=Image.new('RGB',(cols*tile_w,rows_n*tile_h),'white')
           draw=ImageDraw.Draw(sheet)
           for i,(p,w,h) in enumerate(candidates):
-              safe=f'{i:02d}_{p.name}'
+              safe=f'{i:03d}_{p.name}'
               shutil.copy2(p, originals/safe)
               with Image.open(p) as im:
                   im=im.convert('RGB')
@@ -62,8 +65,8 @@ jobs:
                   x=(i%cols)*tile_w+(tile_w-im.width)//2
                   y=(i//cols)*tile_h+10
                   sheet.paste(im,(x,y))
-                  label=f'{i:02d} {p.name}'
-                  if len(label)>48: label=label[:45]+'...'
+                  label=f'{i:03d} {p.as_posix()}'
+                  if len(label)>52: label=label[:49]+'...'
                   draw.text(((i%cols)*tile_w+8,(i//cols)*tile_h+tile_h-55),label,fill='black')
                   draw.text(((i%cols)*tile_w+8,(i//cols)*tile_h+tile_h-35),f'{w}x{h}',fill='black')
           sheet.save(out/'contact-sheet.jpg',quality=90)
