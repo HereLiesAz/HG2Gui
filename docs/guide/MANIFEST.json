@@ -125,19 +125,23 @@
           "storyboard": {
             "end": {
               "expected": "02_pkg_install_frame_01.png",
-              "local": null,
+              "local": "docs/guide/animations/canonical/02_pkg_install/scenes/01/frames/end.png",
               "role": "end",
               "semantics": "explicit_cut_sheet_boundary",
-              "sources": [],
-              "status": "missing"
+              "sources": [
+                "docs/02_pkg_install_frame_01.png"
+              ],
+              "status": "present"
             },
             "start": {
               "expected": "02_pkg_install_frame_00.png",
-              "local": null,
+              "local": "docs/guide/animations/canonical/02_pkg_install/scenes/01/frames/start.png",
               "role": "start",
               "semantics": "explicit_cut_sheet_boundary",
-              "sources": [],
-              "status": "missing"
+              "sources": [
+                "docs/02_pkg_install_frame_00.png"
+              ],
+              "status": "present"
             }
           },
           "text": "docs/guide/animations/canonical/02_pkg_install/scenes/01/scene.md"
@@ -158,11 +162,13 @@
             },
             "start": {
               "expected": "02_pkg_install_frame_01.png",
-              "local": null,
+              "local": "docs/guide/animations/canonical/02_pkg_install/scenes/02/frames/start.png",
               "role": "start",
               "semantics": "explicit_cut_sheet_boundary",
-              "sources": [],
-              "status": "missing"
+              "sources": [
+                "docs/02_pkg_install_frame_01.png"
+              ],
+              "status": "present"
             }
           },
           "text": "docs/guide/animations/canonical/02_pkg_install/scenes/02/scene.md"
@@ -175,11 +181,13 @@
           "storyboard": {
             "end": {
               "expected": "02_pkg_install_frame_03.png",
-              "local": null,
+              "local": "docs/guide/animations/canonical/02_pkg_install/scenes/03/frames/end.png",
               "role": "end",
               "semantics": "explicit_cut_sheet_boundary",
-              "sources": [],
-              "status": "missing"
+              "sources": [
+                "docs/02_pkg_install_frame_03.png"
+              ],
+              "status": "present"
             },
             "start": {
               "expected": "02_pkg_install_frame_02.png",
@@ -200,19 +208,23 @@
           "storyboard": {
             "end": {
               "expected": "02_pkg_install_frame_04.png",
-              "local": null,
+              "local": "docs/guide/animations/canonical/02_pkg_install/scenes/04/frames/end.png",
               "role": "end",
               "semantics": "explicit_cut_sheet_boundary",
-              "sources": [],
-              "status": "missing"
+              "sources": [
+                "docs/02_pkg_install_frame_04.png"
+              ],
+              "status": "present"
             },
             "start": {
               "expected": "02_pkg_install_frame_03.png",
-              "local": null,
+              "local": "docs/guide/animations/canonical/02_pkg_install/scenes/04/frames/start.png",
               "role": "start",
               "semantics": "explicit_cut_sheet_boundary",
-              "sources": [],
-              "status": "missing"
+              "sources": [
+                "docs/02_pkg_install_frame_03.png"
+              ],
+              "status": "present"
             }
           },
           "text": "docs/guide/animations/canonical/02_pkg_install/scenes/04/scene.md"
@@ -236,11 +248,13 @@
           "storyboard": {
             "end": {
               "expected": "03_apt_get_update_frame_01.png",
-              "local": null,
+              "local": "docs/guide/animations/canonical/03_apt_get_update/scenes/01/frames/end.png",
               "role": "end",
               "semantics": "explicit_cut_sheet_boundary",
-              "sources": [],
-              "status": "missing"
+              "sources": [
+                "docs/03_apt_get_update_frame_01.png"
+              ],
+              "status": "present"
             },
             "start": {
               "expected": "03_apt_get_update_frame_00.png",
@@ -269,11 +283,13 @@
             },
             "start": {
               "expected": "03_apt_get_update_frame_01.png",
-              "local": null,
+              "local": "docs/guide/animations/canonical/03_apt_get_update/scenes/02/frames/start.png",
               "role": "start",
               "semantics": "explicit_cut_sheet_boundary",
-              "sources": [],
-              "status": "missing"
+              "sources": [
+                "docs/03_apt_get_update_frame_01.png"
+              ],
+              "status": "present"
             }
           },
           "text": "docs/guide/animations/canonical/03_apt_get_update/scenes/02/scene.md"
@@ -3701,6 +3717,11 @@
   ],
   "note": "Non-destructive organization. Original source files remain in place; copies are organized under docs/guide. Missing storyboard frames are reported, never fabricated.",
   "project_files": [
+    "docs/02_pkg_install_frame_00.png",
+    "docs/02_pkg_install_frame_01.png",
+    "docs/02_pkg_install_frame_03.png",
+    "docs/02_pkg_install_frame_04.png",
+    "docs/03_apt_get_update_frame_01.png",
     "docs/ChatGPT Image Aug 14, 2026, 12_00_50 AM.png",
     "docs/ChatGPT Image Aug 14, 2026, 12_01_16 AM.png",
     "docs/ChatGPT Image Aug 14, 2026, 12_01_40 AM.png",
@@ -3764,10 +3785,10 @@
     "canonical": {
       "ambiguous": 0,
       "boundary_slots": 234,
-      "materialized": 0,
-      "missing": 234,
-      "not_materialized": 234,
-      "present": 0,
+      "materialized": 8,
+      "missing": 226,
+      "not_materialized": 226,
+      "present": 8,
       "present_duplicate_identical": 0,
       "scenes": 117,
       "unresolved": 0

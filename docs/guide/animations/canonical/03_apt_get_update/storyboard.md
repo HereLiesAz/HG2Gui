@@ -10,13 +10,17 @@ Government-office tableau. An elderly alien sits at a desk. A clerk calmly stamp
 
 **Start:** **MISSING** — `03_apt_get_update_frame_00.png`
 
-**End:** **MISSING** — `03_apt_get_update_frame_01.png`
+**End:** `scenes/01/frames/end.png` — source `03_apt_get_update_frame_01.png` (present)
+
+![Scene 01 end](scenes/01/frames/end.png)
 
 ## Scene 02 — 05:00–10:00
 
 Cut within same palette to a stripped-down terminal diagram: `apt-get update`. A package-index card labeled `1.2` flips to `1.3`; beside it an installed-package block stays visibly `1.2`. Repeat once with another index card to make the distinction unmistakable. End with old installed block unchanged.
 
-**Start:** **MISSING** — `03_apt_get_update_frame_01.png`
+**Start:** `scenes/02/frames/start.png` — source `03_apt_get_update_frame_01.png` (present)
+
+![Scene 02 start](scenes/02/frames/start.png)
 
 **End:** **MISSING** — `03_apt_get_update_frame_02.png`
 
