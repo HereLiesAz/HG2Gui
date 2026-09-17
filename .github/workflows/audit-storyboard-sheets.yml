@@ -1,0 +1,50 @@
+name: Audit storyboard sheets
+
+on:
+  push:
+    branches:
+      - split-storyboard-sheets
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Pillow
+        run: python -m pip install --quiet pillow
+      - name: Inventory source images
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from PIL import Image, ImageStat
+          import json
+
+          exts={'.png','.jpg','.jpeg','.webp'}
+          rows=[]
+          for p in sorted(Path('docs').rglob('*')):
+              if not p.is_file() or p.suffix.lower() not in exts:
+                  continue
+              # Ignore generated Guide copies; audit original source assets only.
+              if p.as_posix().startswith('docs/guide/'):
+                  continue
+              try:
+                  with Image.open(p) as im:
+                      w,h=im.size
+                      rows.append({
+                          'path':p.as_posix(),
+                          'width':w,
+                          'height':h,
+                          'ratio':round(w/h,4),
+                          'bytes':p.stat().st_size,
+                      })
+              except Exception as e:
+                  rows.append({'path':p.as_posix(),'error':str(e)})
+          print('STORYBOARD_IMAGE_AUDIT_BEGIN')
+          print(json.dumps(rows,indent=2))
+          print('STORYBOARD_IMAGE_AUDIT_END')
+          PY
