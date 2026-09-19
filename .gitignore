@@ -16,3 +16,4 @@
 /.artifacts/
 /composeApp/playstore/release/composeApp-playstore-release.aab
 /test_write.txt
+*.txt
