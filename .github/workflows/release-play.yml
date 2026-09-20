@@ -84,8 +84,8 @@ jobs:
   build-publish:
     name: Build signed AAB${{ (inputs.publish || github.event_name == 'push') && ' + publish' || '' }}
     runs-on: ubuntu-latest
-    # contents: write so "Increment and push versionBuild" can commit and push the bumped
-    # version.properties. Everything else here only talks to Google.
+    # contents: write is used only after a successful Play publish to persist the
+    # exact version that actually shipped.
     permissions:
       contents: write
     # The effective inputs for this run. workflow_dispatch/workflow_call already populate
@@ -209,7 +209,6 @@ jobs:
       # Pick the release number locally. Do not mutate master before Play has accepted
       # the bundle: failed uploads must not create version commits or trigger follow-on CI.
       - name: Prepare release version
-        if: ${{ env.DO_PUBLISH == 'true' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -284,14 +283,8 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           REQUIRE_SIGNING: 'true'
-        # -PskipAutoIncrementVersion: version.properties was already finalized by "Increment
-        # and push version" above - without this, the root build.gradle.kts's blanket
-        # auto-bump-on-any-compile/assemble/bundle/kapt-task convenience (meant for local/
-        # debug builds that never call incrementAndPushVersion themselves) silently bumps it
-        # *again* during this task's own execution, and the next Gradle invocation in this job
-        # (`printVersionEnv`, for the versionCode-clears-Play check and the Play upload's
-        # expected-version-code) then reads that further-incremented file and disagrees with
-        # what actually got signed into the .aab.
+        # Build the exact candidate prepared above. The repository file is intentionally
+        # unchanged until Play accepts the release.
         run: ./gradlew bundleRelease -PskipAutoIncrementVersion=true -PversionBuild="$VERSION_BUILD" -PversionName="$VERSION_NAME"
 
       - name: Verify the bundle is signed by the expected key
