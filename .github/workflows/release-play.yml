@@ -43,23 +43,8 @@ on:
     branches: [master, main]
     paths-ignore:
       - 'version.properties'
-  workflow_call:
-    inputs:
-      publish:
-        type: boolean
-        default: true
-      completed_track:
-        type: string
-        default: internal
-      draft_tracks:
-        type: string
-        default: alpha # beta production
-      release_notes:
-        type: string
-        default: ''
-      version_code_mode:
-        type: string
-        default: auto
+      - '.version-state.json'
+      - '.github/workflows/**'
   workflow_dispatch:
     inputs:
       publish:
@@ -221,17 +206,75 @@ jobs:
           echo "PLAY_MAX_VERSION_CODE=$play_max" >> "$GITHUB_ENV"
           echo "Play API access OK — proceeding to build."
 
-      # The actual increment lives in the root build.gradle.kts's incrementAndPushVersion task.
-      # This step's only job is invoking it with what only CI knows (Play's current
-      # max) before bundleRelease ever runs.
-      - name: Increment and push version
+      # Pick the release number locally. Do not mutate master before Play has accepted
+      # the bundle: failed uploads must not create version commits or trigger follow-on CI.
+      - name: Prepare release version
         if: ${{ env.DO_PUBLISH == 'true' }}
+        shell: bash
         run: |
-          if [ "${{ env.VERSION_CODE_MODE }}" = "strict" ]; then
-            ./gradlew -q incrementAndPushVersion -PversionCodeMode=strict
-          else
-            ./gradlew -q incrementAndPushVersion -PversionCodeMode=auto -PplayMaxVersionCode="${PLAY_MAX_VERSION_CODE:-0}"
-          fi
+          set -euo pipefail
+          python - <<'PY'
+          import os
+          from pathlib import Path
+
+          path = Path("version.properties")
+          lines = path.read_text(encoding="utf-8").splitlines()
+          props = {}
+          for line in lines:
+              if "=" in line and not line.lstrip().startswith("#"):
+                  key, value = line.split("=", 1)
+                  props[key.strip()] = value.strip()
+
+          major = int(props.get("versionMajor", "0"))
+          minor = int(props.get("versionMinor", "0"))
+          patch = int(props.get("versionPatch", "0")) + 1
+          current_build = int(props.get("versionBuild", "0"))
+          legacy = int(props.get("legacyVersionCode", "205"))
+          play_max = int(os.environ.get("PLAY_MAX_VERSION_CODE", "0") or "0")
+          mode = os.environ.get("VERSION_CODE_MODE", "auto")
+
+          candidate = max(current_build + 1, legacy + 1)
+          if mode == "auto":
+              candidate = max(candidate, play_max + 1)
+          elif mode == "strict":
+              if candidate <= play_max:
+                  raise SystemExit(
+                      f"Strict version mode: next local versionCode {candidate} "
+                      f"does not clear Play's current maximum {play_max}."
+                  )
+          else:
+              raise SystemExit(f"Unknown VERSION_CODE_MODE: {mode}")
+
+          version_name = f"{major}.{minor}.{patch}.{candidate}"
+          replacements = {
+              "versionPatch": str(patch),
+              "versionBuild": str(candidate),
+          }
+          updated = []
+          seen = set()
+          for line in lines:
+              if "=" in line:
+                  key = line.split("=", 1)[0].strip()
+                  if key in replacements:
+                      updated.append(f"{key}={replacements[key]}")
+                      seen.add(key)
+                      continue
+              updated.append(line)
+          for key, value in replacements.items():
+              if key not in seen:
+                  updated.append(f"{key}={value}")
+
+          prepared = Path(os.environ["RUNNER_TEMP"]) / "release-version.properties"
+          prepared.write_text("\n".join(updated) + "\n", encoding="utf-8")
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env:
+              env.write(f"VERSION_MAJOR={major}\n")
+              env.write(f"VERSION_MINOR={minor}\n")
+              env.write(f"VERSION_PATCH={patch}\n")
+              env.write(f"VERSION_BUILD={candidate}\n")
+              env.write(f"VERSION_NAME={version_name}\n")
+              env.write(f"VERSION_CODE={candidate}\n")
+          print(f"Prepared {version_name}; Play max={play_max}; repository remains unchanged until publish succeeds.")
+          PY
 
       - name: Build signed release bundle
         env:
@@ -249,7 +292,7 @@ jobs:
         # (`printVersionEnv`, for the versionCode-clears-Play check and the Play upload's
         # expected-version-code) then reads that further-incremented file and disagrees with
         # what actually got signed into the .aab.
-        run: ./gradlew bundleRelease -PskipAutoIncrementVersion=true
+        run: ./gradlew bundleRelease -PskipAutoIncrementVersion=true -PversionBuild="$VERSION_BUILD" -PversionName="$VERSION_NAME"
 
       - name: Verify the bundle is signed by the expected key
         run: |
@@ -263,9 +306,6 @@ jobs:
         with:
           artifact: ${{ env.AAB_PATH }}
           expected-sha256: ${{ steps.keystore.outputs.sha256 }}
-
-      - name: Get app version
-        run: ./gradlew -q printVersionEnv
 
       # The pre-build check used the committed versionBuild; this one uses what was
       # actually built. Belt and braces, because the cost of getting it wrong is
@@ -287,7 +327,7 @@ jobs:
           name: hg2gui-release-aab-${{ env.VERSION_NAME }}
           path: |
             composeApp/build/outputs/bundle/playstoreRelease/*.aab
-            version.properties
+            ${{ runner.temp }}/release-version.properties
           if-no-files-found: error
 
       # Minted here rather than reused from the preflight: tokens last 5 minutes
@@ -312,6 +352,28 @@ jobs:
           release-name: ${{ env.VERSION_NAME }}
           release-notes: ${{ env.RELEASE_NOTES }}
 
+      - name: Persist successful Play version
+        if: ${{ env.DO_PUBLISH == 'true' && success() }}
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN || github.token }}
+          TARGET_REPOSITORY: ${{ github.repository }}
+          TARGET_REF_NAME: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          prepared="$RUNNER_TEMP/release-version.properties"
+          [[ -s "$prepared" ]] || { echo "::error::Prepared release version file is missing."; exit 1; }
+          sha="$(gh api "repos/$TARGET_REPOSITORY/contents/version.properties?ref=$TARGET_REF_NAME" --jq '.sha')"
+          content="$(base64 -w0 "$prepared")"
+          payload="$(jq -nc \
+            --arg message "chore: record Play release $VERSION_NAME [skip ci]" \
+            --arg content "$content" \
+            --arg sha "$sha" \
+            --arg branch "$TARGET_REF_NAME" \
+            '{message:$message,content:$content,sha:$sha,branch:$branch}')"
+          gh api --method PUT "repos/$TARGET_REPOSITORY/contents/version.properties" --input - <<<"$payload"
+          echo "Persisted version.properties only after Play accepted versionCode $VERSION_CODE."
+
       - name: Say what landed where
         if: ${{ env.DO_PUBLISH == 'true' }}
         run: |
@@ -324,8 +386,3 @@ jobs:
             echo "::warning::No draft tracks were set. Check the warnings above for which ones Play refused."
           fi
 
-      # No separate "commit the versionCode that shipped" step - "Increment and push
-      # versionBuild" already committed and pushed this run's number to master before
-      # bundleRelease ever ran, so the repo is already converged with what got built (and, if
-      # publish succeeded, with what shipped) by the time this job finishes. Nothing left to
-      # reconcile after the fact.
