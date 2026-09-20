@@ -88,6 +88,13 @@ on:
         options: [auto, strict]
         default: auto
 
+# Only one Play publication for a given ref may mutate version state / publish at
+# once. Keep the active publication running, keep only the newest waiting run,
+# and leave every other workflow free to use the remaining runner slots.
+concurrency:
+  group: release-play-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build-publish:
     name: Build signed AAB${{ (inputs.publish || github.event_name == 'push') && ' + publish' || '' }}
