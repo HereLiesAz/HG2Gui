@@ -22,6 +22,10 @@ name: Android CI
 on:
   push:
     branches: [ "**" ]
+    paths-ignore:
+      - '.github/workflows/**'
+      - '.version-state.json'
+      - 'version.properties'
   pull_request:
     branches: [ "main" ]
   workflow_dispatch:
@@ -161,16 +165,25 @@ jobs:
       - name: Report Failure to Jules
         if: failure() && steps.gradle-build.outcome == 'failure'
         uses: actions/github-script@v9
+        env:
+          TARGET_REPOSITORY: ${{ github.repository }}
+          TARGET_EVENT_NAME: ${{ github.event_name }}
+          TARGET_REF: ${{ github.ref }}
+          TARGET_PR_NUMBER: ${{ github.event.pull_request.number || '' }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require('fs');
             let logTail = 'Log file not found.';
             try { logTail = fs.readFileSync('build.log', 'utf8').slice(-4000); } catch (e) {}
+            const [owner, repo] = process.env.TARGET_REPOSITORY.split('/');
+            const where = process.env.TARGET_EVENT_NAME === 'pull_request'
+              ? `PR #${process.env.TARGET_PR_NUMBER}`
+              : process.env.TARGET_REF;
             await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: `Build Failure on ${context.eventName === 'pull_request' ? 'PR #' + context.issue.number : context.ref}`,
+              owner,
+              repo,
+              title: `Build Failure on ${where}`,
               body: `/jules debug this build error\n\n**Log:**\n\`\`\`\n${logTail}\n\`\`\``,
               labels: ['jules', 'bug']
             });
