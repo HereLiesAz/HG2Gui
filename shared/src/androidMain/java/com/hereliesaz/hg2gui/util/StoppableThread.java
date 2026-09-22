@@ -8,7 +8,10 @@ public class StoppableThread extends Thread {
 
     private volatile boolean stopped = false;
     public StoppableThread() {
-        Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
+        // Per-thread handler: setDefaultUncaughtExceptionHandler would replace the JVM-wide
+        // default for every thread in the process, clobbering the app's real crash handler
+        // (e.g. termux-shared's CrashHandler) on every construction of a StoppableThread.
+        setUncaughtExceptionHandler((t, e) -> {
             Utils.log(e);
             Utils.toFile(e);
             System.exit(1);
