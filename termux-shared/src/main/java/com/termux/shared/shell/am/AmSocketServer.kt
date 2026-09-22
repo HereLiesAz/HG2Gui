@@ -142,6 +142,7 @@ class AmSocketServer {
                     localSocketManager, clientSocket, 1, stdout.toString(),
                     if (stderr.isNotEmpty()) "$stderr\n\n$error" else error.toString()
                 )
+                return
             }
 
             sendResultToClient(localSocketManager, clientSocket, 0, stdout.toString(), stderr.toString())

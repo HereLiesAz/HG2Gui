@@ -70,7 +70,6 @@ kotlin {
         commonTest.dependencies {
             implementation(kotlin("test"))
             implementation(libs.junit)
-            implementation(libs.mockito.core)
         }
         
         val androidHostTest by getting {

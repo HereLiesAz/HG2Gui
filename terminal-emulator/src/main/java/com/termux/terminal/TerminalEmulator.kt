@@ -1776,8 +1776,11 @@ class TerminalEmulator(
     private fun emitCodePoint(codePointVal: Int) {
         var codePoint = codePointVal
         mLastEmittedCodePoint = codePoint
-        if (if (mUseLineDrawingUsesG0) mUseLineDrawingG0 else mUseLineDrawingG1) {
+        if ((if (mUseLineDrawingUsesG0) mUseLineDrawingG0 else mUseLineDrawingG1) && codePoint <= Char.MAX_VALUE.code) {
             // http://www.vt100.net/docs/vt102-ug/table5-15.html.
+            // Guarded to BMP code points above: codePoint.toChar() truncates to the low 16
+            // bits, which would otherwise let a supplementary-plane code point alias onto one
+            // of these single-char cases and get silently replaced with an unrelated glyph.
             when (codePoint.toChar()) {
                 '_' -> codePoint = ' '.code // Blank.
                 '`' -> codePoint = '◆'.code // Diamond.
