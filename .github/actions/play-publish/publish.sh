@@ -9,6 +9,7 @@ draft_tracks="$5"
 release_name="$6"
 release_notes="$7"
 out_file="$8"
+mapping_file="$9"
 
 # Resolve aab (glob)
 aab=""
@@ -17,6 +18,11 @@ for f in $aab_glob; do
 done
 if [ -z "$aab" ]; then
   echo "::error::AAB not found (tried glob: $aab_glob)"
+  exit 1
+fi
+
+if [ ! -s "$mapping_file" ]; then
+  echo "::error::Required mapping.txt not found or empty: $mapping_file"
   exit 1
 fi
 
@@ -93,6 +99,22 @@ if [ -z "$version_code" ]; then
   curl -sS -o /dev/null -X DELETE -H "Authorization: Bearer $token" "$api/edits/${edit_id}" || true
   exit 1
 fi
+
+# Upload the exact mapping generated with this bundle before committing the edit.
+mapping_resp="$tmp/mapping.json"
+mapping_url="$upload_base/edits/${edit_id}/apks/${version_code}/deobfuscationFiles/proguard?uploadType=media"
+http=$(curl -sS -w "%{http_code}" -o "$mapping_resp" -X POST \
+  -H "Authorization: Bearer $token" \
+  -H "Content-Type: application/octet-stream" \
+  --data-binary @"$mapping_file" \
+  "$mapping_url")
+if [ "$http" != "200" ] && [ "$http" != "201" ]; then
+  echo "::error::mapping.txt upload -> HTTP $http"
+  cat "$mapping_resp"
+  curl -sS -o /dev/null -X DELETE -H "Authorization: Bearer $token" "$api/edits/${edit_id}" || true
+  exit 1
+fi
+echo "Uploaded mapping.txt for versionCode $version_code"
 
 # Play only ever rejects a versionCode for being too low, never for differing from some other
 # script's own prediction of what it "should" be - that's already checked, against Play's real
