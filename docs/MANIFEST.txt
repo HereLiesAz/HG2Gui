@@ -1,49 +1,16 @@
-README.md
-assets/tangents/cartographical-disaster/frames/cartography_01.png
-assets/tangents/cartographical-disaster/frames/cartography_02.png
-assets/tangents/cartographical-disaster/frames/cartography_03.png
-assets/tangents/cartographical-disaster/frames/cartography_04.png
-assets/tangents/cartographical-disaster/frames/cartography_05.png
-assets/tangents/cartographical-disaster/frames/cartography_06.png
-assets/tangents/cartographical-disaster/script.md
-assets/tangents/cat/frames/cat_01.png
-assets/tangents/cat/frames/cat_02.png
-assets/tangents/cat/frames/cat_03.png
-assets/tangents/cat/frames/cat_04.png
-assets/tangents/cat/frames/cat_05.png
-assets/tangents/cat/frames/cat_06.png
-assets/tangents/cat/frames/cat_07.png
-assets/tangents/cat/frames/cat_08.png
-assets/tangents/cat/frames/cat_09.png
-assets/tangents/cat/frames/cat_10.png
-assets/tangents/cat/frames/cat_11.png
-assets/tangents/cat/frames/cat_12.png
-assets/tangents/cat/script.md
-assets/tangents/elevator-incident/frames/elevator_01.png
-assets/tangents/elevator-incident/frames/elevator_02.png
-assets/tangents/elevator-incident/frames/elevator_03.png
-assets/tangents/elevator-incident/frames/elevator_04.png
-assets/tangents/elevator-incident/frames/elevator_05.png
-assets/tangents/elevator-incident/frames/elevator_06.png
-assets/tangents/elevator-incident/frames/elevator_07.png
-assets/tangents/elevator-incident/frames/elevator_08.png
-assets/tangents/elevator-incident/frames/elevator_09.png
-assets/tangents/elevator-incident/frames/elevator_10.png
-assets/tangents/elevator-incident/frames/elevator_11.png
-assets/tangents/elevator-incident/frames/elevator_12.png
-assets/tangents/elevator-incident/script.md
-assets/tangents/package-manager-incident/frames/package_01.png
-assets/tangents/package-manager-incident/frames/package_02.png
-assets/tangents/package-manager-incident/frames/package_03.png
-assets/tangents/package-manager-incident/frames/package_04.png
-assets/tangents/package-manager-incident/frames/package_05.png
-assets/tangents/package-manager-incident/frames/package_06.png
-assets/tangents/package-manager-incident/frames/package_07.png
-assets/tangents/package-manager-incident/frames/package_08.png
-assets/tangents/package-manager-incident/frames/package_09.png
-assets/tangents/package-manager-incident/frames/package_10.png
-assets/tangents/package-manager-incident/frames/package_11.png
-assets/tangents/package-manager-incident/frames/package_12.png
-assets/tangents/package-manager-incident/script.md
-docs/animation-design-system/guide-tangents.md
-docs/animation-design-system/tangent-scripts.md
+This file described a standalone delivery bundle (flat assets/tangents/*/frames + a
+docs/animation-design-system/ doc pair) that no longer matches the repository layout: the
+tangent content was reorganized into per-tangent scene directories under
+docs/guide/animations/tangents/, and the docs moved to docs/guide-tangents.md and
+docs/tangent-scripts.md. A literal file listing here would drift out of date again the next
+time a scene is added or re-rendered, so this now points at the canonical locations instead:
+
+- docs/guide-tangents.md
+- docs/tangent-scripts.md
+- docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/
+- docs/guide/animations/tangents/22_find_cartographical_disaster/
+- docs/guide/animations/tangents/23_cat_theological_mechanical_history/
+- docs/guide/animations/tangents/34_mv_elevator_incident/
+
+See docs/README.md for what each of these contains, and docs/guide/MANIFEST.json for the full,
+programmatically-checked file-by-file manifest of the guide tree.

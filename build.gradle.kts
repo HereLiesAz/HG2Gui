@@ -178,23 +178,22 @@ tasks.register("incrementAndPushVersion") {
     }
 }
 
-// release-play.yml sets this before invoking bundleRelease: that workflow has already called
-// incrementAndPushVersion explicitly and reconciled the result against Play's own highest
-// versionCode, so version.properties is deliberately final by the time bundleRelease's
-// configuration phase reads it. Without this switch, autoIncrementVersion still ran as a hidden
-// dependency of whatever compile/assemble/bundle/kapt task happened to be in that build's task
-// graph - not just composeApp's own bundleRelease/bundlePlaystoreRelease, but any library
-// subproject's plain compile task too (e.g. :shared:compileAndroidMain), none of which are named
-// distinctly enough to exclude by a name pattern - and rewrote version.properties *again* (its
-// own execution phase, right after bundleRelease's configuration phase had already captured
-// versionCode from the file). That was invisible to the build itself, but it meant the *next*
-// Gradle invocation in the same job (`printVersionEnv`, for "Confirm the built versionCode clears
-// Play" / the Play upload's expected-version-code) read that further-incremented file and
-// reported a version one higher than what was actually signed into the .aab - confirmed on run
-// 31933127627: expected 250, Play reported the upload as 249. Debug-build-type tasks
-// (assembleDebug, the only other consumer of this project's Gradle tasks) still get the
-// auto-bump: that pipeline's own versioning is provided by an explicit -PversionBuild instead, so
-// nothing there depends on file-read timing the way release-play.yml's does.
+// A caller that has already called incrementAndPushVersion explicitly (and reconciled the
+// result against Play's own highest versionCode, or similar) can pass -PskipAutoIncrementVersion
+// so version.properties is treated as final for this invocation. Without this switch,
+// autoIncrementVersion still runs as a hidden dependency of whatever compile/assemble/bundle/kapt
+// task happens to be in the task graph - not just composeApp's own bundleRelease/
+// bundlePlaystoreRelease, but any library subproject's plain compile task too (e.g.
+// :shared:compileAndroidMain), none of which are named distinctly enough to exclude by a name
+// pattern - and would rewrite version.properties again after a release pipeline's own
+// version-reconciliation step already captured versionCode from the file. Debug-build-type tasks
+// (assembleDebug) still get the auto-bump; debug's own versioning is provided by an explicit
+// -PversionBuild instead, so nothing there depends on this switch.
+//
+// No workflow in this repository currently sets -PskipAutoIncrementVersion or calls a
+// bundleRelease-style task - this flag exists for an external/CI release pipeline that isn't
+// checked in here. If that pipeline is added to this repo, wire it to set this property; until
+// then it is a no-op switch, not evidence of a release process that runs today.
 val skipAutoIncrement = providers.gradleProperty("skipAutoIncrementVersion").isPresent
 
 subprojects {

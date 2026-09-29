@@ -8,6 +8,8 @@ import com.hereliesaz.hg2gui.terminal.CompletionCandidate
 import com.hereliesaz.hg2gui.terminal.ShellAliases
 import com.hereliesaz.hg2gui.terminal.ShellPresentation
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /**
  * One terminal session's UI state: its own scrollback, command history and in-progress
@@ -53,10 +55,17 @@ class SessionUiState(val id: String, name: String, cwd: String) {
         private set
     private var pendingAnswer: CompletableDeferred<String>? = null
 
-    suspend fun awaitPromptAnswer(prompt: String): String {
+    // Only one prompt can be pending on a session at a time; awaitPromptAnswer used to
+    // overwrite pendingAnswer/pendingPrompt unconditionally, so a second caller (e.g. an
+    // SSH/Workflow wizard) started while a real shell command was stalled on stdin would
+    // silently orphan the first caller's deferred forever. Serializing through this mutex
+    // makes a second call queue behind the first instead of clobbering it.
+    private val promptMutex = Mutex()
+
+    suspend fun awaitPromptAnswer(prompt: String): String = promptMutex.withLock {
         ShellAliases.transientStatusLine(prompt)?.let { status ->
             transientStatus = status
-            return ""
+            return@withLock ""
         }
 
         transientStatus = null
@@ -81,7 +90,7 @@ class SessionUiState(val id: String, name: String, cwd: String) {
         val answer = deferred.await()
         pendingPrompt = null
         pendingAnswer = null
-        return answer
+        answer
     }
 
     fun answerPrompt(text: String) {

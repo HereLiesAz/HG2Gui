@@ -66,9 +66,9 @@ Do not mark an on-device verification item complete solely because the JVM/compi
 Authoritative versions live in Gradle/version files. At this documentation pass:
 
 - JDK 21
-- Gradle 9.7.0
-- AGP 9.3.2
-- Kotlin 2.4.10
+- Gradle 9.7.1
+- AGP 9.4.0
+- Kotlin 2.4.20
 - Compose Multiplatform 1.12.0
 - `compileSdk` / `targetSdk` 37
 - `minSdk` 24

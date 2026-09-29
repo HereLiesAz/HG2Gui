@@ -5,7 +5,7 @@ import org.junit.Test
 
 class PackageLifecycleStoreTest {
     @Test
-    fun initialization_doesNotCompileAndroidIncompatibleRegexes() {
+    fun updateCommand_quotesPackageNameForPkgManager() {
         val pkg = PackageLifecycleStore.InstalledPackage(
             manager = "pkg",
             managerLabel = "Termux / pkg",

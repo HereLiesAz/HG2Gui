@@ -1,25 +1,24 @@
-# HG2Gui Animation Production — NEXT SESSION HANDOFF
+# HG2Gui Animation Production — Style & Format Reference
 
 ## READ THIS FIRST
 
-We are continuing production on the animation assets for my project:
+This project:
 
 HG2Gui / The Hitchhiker’s Guide to Termux
 https://github.com/HereLiesAz/HG2Gui
 
 READ ALL ATTACHED MATERIAL BEFORE GENERATING ANYTHING.
 
-We have 30+ Guide-entry animation sequences to complete. Do not redesign the project, rewrite the sequences, or invent a different production system.
-
 ### Current status
 
-Sequence 01 — `pwd` has already been worked on and its generated images are acceptable. Do not redo it unless I explicitly ask.
-
-Continue with:
-
-Sequence 02 — `pkg install`
-
-Then continue through the remaining sequences in order.
+All 35 canonical Guide-entry animation sequences are complete; see
+`docs/guide/animations/canonical/` for the finished set and
+`docs/HG2Gui_animation_5s_production_packets/00_MANIFEST.md` for the
+per-sequence cut manifest. This file is kept as the style/format reference
+for producing any *new* sequence added later — it is not an active
+session-handoff note, and nothing below the rules is a to-do list. Do not
+redesign the project, rewrite an existing sequence, or invent a different
+production system when using it for a new entry.
 
 The animation text in the canonical animation sequence file is canonical. Preserve the intended visual joke and sequence of events.
 
@@ -322,7 +321,7 @@ Follow the animation sequence, not the obvious software visualization.
 
 ---
 
-# SEQUENCE 02 — `pkg install`
+# WORKED EXAMPLE: SEQUENCE 02 — `pkg install` (already completed)
 
 The canonical sequence is:
 

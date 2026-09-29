@@ -4,29 +4,6 @@ import kotlin.math.*
 
 object CalculationEngine {
 
-    private val calculusPattern = Regex("([+\\-*/^])(\\d+\\.?\\d*)")
-
-    /**
-     * Performs sequential calculations based on a string pattern.
-     * Example: textCalculus(10.0, "+5*2") -> 30.0
-     */
-    fun textCalculus(input: Double, text: String): Double {
-        var result = input
-        calculusPattern.findAll(text).forEach { m ->
-            val operator = m.groupValues[1][0]
-            val value = m.groupValues[2].toDouble()
-
-            when (operator) {
-                '+' -> result += value
-                '-' -> result -= value
-                '*' -> result *= value
-                '/' -> result /= value
-                '^' -> result = result.pow(value)
-            }
-        }
-        return result
-    }
-
     /**
      * Evaluates a mathematical expression string.
      * Supports +, -, *, /, ^, sqrt, sin, cos, tan.

@@ -75,14 +75,41 @@ object TermuxElfAudit {
         null
     }.getOrNull()
 
+    /**
+     * Knuth-Morris-Pratt failure table: table[i] is the length of the longest proper prefix of
+     * needle[0..i] that is also a suffix of it. Used so a mismatch can fall back to a partial
+     * match instead of restarting from scratch, which a naive matcher gets wrong for needles
+     * with an internally repeated prefix (e.g. OLD_PREFIX's "/data/data/..." repeats "/data").
+     */
+    private fun kmpFailureTable(needle: ByteArray): IntArray {
+        val table = IntArray(needle.size)
+        var len = 0
+        var i = 1
+        while (i < needle.size) {
+            if (needle[i] == needle[len]) {
+                len++; table[i] = len; i++
+            } else if (len != 0) {
+                len = table[len - 1]
+            } else {
+                table[i] = 0; i++
+            }
+        }
+        return table
+    }
+
     private fun containsAscii(file: File, needle: ByteArray): Boolean = runCatching {
+        if (needle.isEmpty()) return true
+        val failure = kmpFailureTable(needle)
         file.inputStream().buffered().use { input ->
             var matched = 0
             while (true) {
                 val b = input.read(); if (b < 0) return false
-                if (b.toByte() == needle[matched]) { matched++; if (matched == needle.size) return true }
-                else matched = if (b.toByte() == needle[0]) 1 else 0
+                val byte = b.toByte()
+                while (matched > 0 && byte != needle[matched]) matched = failure[matched - 1]
+                if (byte == needle[matched]) matched++
+                if (matched == needle.size) return true
             }
-        }; false
+        }
+        @Suppress("UNREACHABLE_CODE") false
     }.getOrDefault(false)
 }

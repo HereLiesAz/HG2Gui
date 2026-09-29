@@ -8,6 +8,9 @@ inputs:
   aab:
     description: "Path to the built .aab (glob allowed)"
     required: true
+  mapping:
+    description: "Path to the R8/ProGuard mapping.txt for this bundle"
+    required: true
   token-file:
     description: "Path to a file containing a short-lived Play API token (created by play-api-token action)"
     required: true
@@ -51,6 +54,7 @@ runs:
       env:
         PACKAGE_NAME: ${{ inputs.package-name }}
         AAB: ${{ inputs.aab }}
+        MAPPING: ${{ inputs.mapping }}
         TOKEN_FILE: ${{ inputs.token-file }}
         COMPLETED_TRACK: ${{ inputs.completed-track }}
         DRAFT_TRACKS: ${{ inputs.draft-tracks }}
@@ -60,7 +64,7 @@ runs:
         set -euo pipefail
         out="$RUNNER_TEMP/play-publish-out.json"
         # Run the publisher script; it writes JSON to $out on success.
-        ./.github/actions/play-publish/publish.sh "$PACKAGE_NAME" "$AAB" "$TOKEN_FILE" "$COMPLETED_TRACK" "$DRAFT_TRACKS" "$RELEASE_NAME" "$RELEASE_NOTES" "$out"
+        ./.github/actions/play-publish/publish.sh "$PACKAGE_NAME" "$AAB" "$TOKEN_FILE" "$COMPLETED_TRACK" "$DRAFT_TRACKS" "$RELEASE_NAME" "$RELEASE_NOTES" "$out" "$MAPPING"
         jq -r '.versionCode // ""' "$out" | awk '{print "version-code="$0}' >> "$GITHUB_OUTPUT"
         jq -r '.rolledOut // ""' "$out" | awk '{print "rolled-out="$0}' >> "$GITHUB_OUTPUT"
         jq -r '.drafted // [] | join(" ")' "$out" | awk '{print "drafted="$0}' >> "$GITHUB_OUTPUT"

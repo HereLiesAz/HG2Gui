@@ -24,9 +24,19 @@ class ShellSessionTest {
         shell?.close()
     }
 
+    // The desktop target's ShellSession is a preview-only stub whose isAlive is hard-coded
+    // false (see shared/src/desktopMain/.../ShellSession.kt) - it never starts a real shell.
+    // A silent `shell ?: return` there made every test in this file report a pass while
+    // asserting nothing. Throwing AssumptionViolatedException instead makes JUnit report
+    // these as skipped, not passed, on any target with no live shell.
+    private fun requireShell(): ShellSession =
+        shell ?: throw org.junit.AssumptionViolatedException(
+            "no live ShellSession on this target - desktop's ShellSession never starts a real shell"
+        )
+
     @Test
     fun capturesSingleLineOutput() {
-        val s = shell ?: return
+        val s = requireShell()
         val r = s.exec("echo hello")
         assertEquals("hello", r.output)
         assertEquals(0, r.exitCode)
@@ -34,7 +44,7 @@ class ShellSessionTest {
 
     @Test
     fun capturesMultiLineOutput() {
-        val s = shell ?: return
+        val s = requireShell()
         val r = s.exec("printf 'a\\nb\\nc\\n'")
         assertEquals("a\nb\nc", r.output)
         assertEquals(0, r.exitCode)
@@ -42,7 +52,7 @@ class ShellSessionTest {
 
     @Test
     fun reportsSpecificNonZeroExitStatus() {
-        val s = shell ?: return
+        val s = requireShell()
         val r = s.exec("(exit 3)")
         assertEquals(3, r.exitCode)
         assertTrue(s.isAlive, "a subshell exit must not end the session")
@@ -50,7 +60,7 @@ class ShellSessionTest {
 
     @Test
     fun failedCommandStillReturnsAndKeepsShellAlive() {
-        val s = shell ?: return
+        val s = requireShell()
         val r = s.exec("false")
         assertEquals(1, r.exitCode)
         assertTrue(s.isAlive, "shell must survive a failing command")
@@ -58,7 +68,7 @@ class ShellSessionTest {
 
     @Test
     fun workingDirectoryPersistsAcrossCommands() {
-        val s = shell ?: return
+        val s = requireShell()
         s.exec("cd /")
         val r = s.exec("pwd")
         assertEquals("/", r.output)
@@ -68,7 +78,7 @@ class ShellSessionTest {
 
     @Test
     fun environmentPersistsAcrossCommands() {
-        val s = shell ?: return
+        val s = requireShell()
         s.exec("MARKER=42")
         val r = s.exec("echo \$MARKER")
         assertEquals("42", r.output)
@@ -82,7 +92,7 @@ class ShellSessionTest {
         // startPipe/startPty - the child is started once, in init{}, not respawned per command),
         // so a sourced script's exports/functions/aliases outlive the exec() call that sourced it,
         // exactly like a plain export or cd already do (see the two tests above).
-        val s = shell ?: return
+        val s = requireShell()
         val script = java.io.File.createTempFile("hg2gui-source-test", ".sh")
         script.writeText("export SOURCED_MARKER=from-script\nsourced_fn() { echo called; }\n")
         s.exec("source ${script.absolutePath}")
@@ -95,7 +105,7 @@ class ShellSessionTest {
 
     @Test
     fun outputContainingSentinelPrefixIsNotTruncated() {
-        val s = shell ?: return
+        val s = requireShell()
         val r = s.exec("echo '__HG2GUI_ __HG2GUI__ done'")
         assertEquals("__HG2GUI_ __HG2GUI__ done", r.output)
     }
@@ -106,7 +116,7 @@ class ShellSessionTest {
         // stderr together (redirectErrorStream(true)) at the time, so that was actually correct
         // for what the code did then. Now that the two are kept apart, stderr text belongs in
         // its own field and stdout stays untouched by a command that never wrote to it.
-        val s = shell ?: return
+        val s = requireShell()
         val r = s.exec("echo oops >&2")
         assertEquals("", r.output)
         assertEquals("oops", r.stderr)
@@ -114,7 +124,7 @@ class ShellSessionTest {
 
     @Test
     fun stdoutAndStderrDoNotLeakIntoEachOther() {
-        val s = shell ?: return
+        val s = requireShell()
         var stdoutSeen = ""
         var stderrSeen = ""
         val exitCode = s.stream(
@@ -130,7 +140,7 @@ class ShellSessionTest {
 
     @Test
     fun emptyOutputIsEmptyNotNull() {
-        val s = shell ?: return
+        val s = requireShell()
         val r = s.exec("true")
         assertEquals("", r.output)
         assertEquals(0, r.exitCode)
@@ -138,7 +148,7 @@ class ShellSessionTest {
 
     @Test
     fun consecutiveCommandsDoNotLeakOutput() {
-        val s = shell ?: return
+        val s = requireShell()
         assertEquals("first", s.exec("echo first").output)
         assertEquals("second", s.exec("echo second").output)
         assertEquals("third", s.exec("echo third").output)
@@ -146,7 +156,7 @@ class ShellSessionTest {
 
     @Test
     fun surfacesAndAnswersAPromptInsteadOfHanging() {
-        val s = shell ?: return
+        val s = requireShell()
         var promptSeen: String? = null
         var finalOutput = ""
         val exitCode = s.stream(
@@ -164,7 +174,7 @@ class ShellSessionTest {
 
     @Test
     fun decliningToAnswerTearsDownTheSessionInsteadOfDesyncingIt() {
-        val s = shell ?: return
+        val s = requireShell()
         var promptOffered = false
         s.stream(
             "printf 'Continue? [y/N] '; read ans; echo \"got:\$ans\"",
@@ -189,17 +199,23 @@ class ShellSessionTest {
         // S2: sleep runs long enough that the assertion below (which fires well under a second)
         // proves interrupt() actually cut it short rather than just happening to win a race
         // against the command finishing on its own.
-        val s = shell ?: return
+        val s = requireShell()
         var streamReturned = false
         val worker = kotlin.concurrent.thread {
             s.stream("sleep 30", onLine = {}, onNeedInput = { null })
             streamReturned = true
         }
         // Give stream() a moment to actually write the command and start reading, so interrupt()
-        // has a real child to kill rather than racing the write itself.
-        Thread.sleep(300)
-        s.interrupt()
-        worker.join(5_000)
+        // has a real child to kill rather than racing the write itself. A single fixed sleep can
+        // lose that race under a slow/loaded runner, so retry interrupt() with backoff instead of
+        // gambling on one delay: each retry is itself harmless once the child really is gone.
+        var attempt = 0
+        while (!streamReturned && attempt < 5) {
+            Thread.sleep(100L * (attempt + 1))
+            s.interrupt()
+            worker.join(1_000)
+            attempt++
+        }
 
         assertTrue(streamReturned, "interrupt() must unblock the in-flight stream() call")
         assertTrue(s.isAlive, "the session itself must survive an interrupt, not just the one command")
@@ -214,7 +230,7 @@ class ShellSessionTest {
         // (1000 rows) - a command producing more lines than that silently loses its earliest
         // ones with no signal, which matters most for an MCP caller with no live screen to
         // notice the scroll. 1200 lines comfortably exceeds the buffer without being slow.
-        val s = shell ?: return
+        val s = requireShell()
         val r = s.exec("i=1; while [ \$i -le 1200 ]; do echo line\$i; i=\$((i+1)); done")
         assertEquals(0, r.exitCode)
         assertTrue(

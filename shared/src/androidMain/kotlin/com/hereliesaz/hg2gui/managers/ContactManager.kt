@@ -62,16 +62,17 @@ class ContactManager(private val context: Context) {
 
     /**
      * Re-queries the contacts provider.
-     * Runs asynchronously.
+     * Runs asynchronously; returns the worker thread (or null if permission is missing) so a
+     * caller that needs the freshly-loaded cache can join() it instead of racing the read.
      */
-    fun refreshContacts(context: Context) {
+    fun refreshContacts(context: Context): Thread? {
         // Request permission if missing
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(context as Activity, arrayOf(Manifest.permission.READ_CONTACTS), PermissionCodes.COMMAND_SUGGESTION_REQUEST_PERMISSION)
-            return
+            return null
         }
 
-        object : StoppableThread() {
+        return object : StoppableThread() {
             override fun run() {
                 super.run()
 
@@ -174,13 +175,15 @@ class ContactManager(private val context: Context) {
                 // mutates a list once it has been published here.
                 contacts = currentContacts
             }
-        }.start()
+        }.also { it.start() }
     }
 
     fun listNames(): List<String> {
         var snapshot = contacts
-        if (snapshot == null || snapshot.isEmpty()) refreshContacts(context)
-        snapshot = contacts
+        if (snapshot == null || snapshot.isEmpty()) {
+            refreshContacts(context)?.join()
+            snapshot = contacts
+        }
 
         val names = ArrayList<String>()
         snapshot?.let {
@@ -191,16 +194,20 @@ class ContactManager(private val context: Context) {
 
     fun getContacts(): List<Contact> {
         var snapshot = contacts
-        if (snapshot == null || snapshot.isEmpty()) refreshContacts(context)
-        snapshot = contacts
+        if (snapshot == null || snapshot.isEmpty()) {
+            refreshContacts(context)?.join()
+            snapshot = contacts
+        }
 
         return ArrayList(snapshot ?: emptyList())
     }
 
     fun listNamesAndNumbers(): List<String> {
         var snapshot = contacts
-        if (snapshot == null || snapshot.isEmpty()) refreshContacts(context)
-        snapshot = contacts
+        if (snapshot == null || snapshot.isEmpty()) {
+            refreshContacts(context)?.join()
+            snapshot = contacts
+        }
 
         val c = ArrayList<String>()
         snapshot?.let {
@@ -331,7 +338,7 @@ class ContactManager(private val context: Context) {
     }
 
     fun findNumber(name: String): String? {
-        if (contacts == null) refreshContacts(context)
+        if (contacts == null) refreshContacts(context)?.join()
 
         contacts?.let {
             for (c in it) {

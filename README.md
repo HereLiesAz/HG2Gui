@@ -135,8 +135,8 @@ Key runtime files include:
 Authoritative toolchain values live in Gradle/version files. At this documentation pass the repository uses:
 
 - JDK 21
-- AGP 9.3.2
-- Kotlin 2.4.10
+- AGP 9.4.0
+- Kotlin 2.4.20
 - Compose Multiplatform 1.12.0
 - `compileSdk` / `targetSdk` 37
 - `minSdk` 24

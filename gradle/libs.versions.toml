@@ -22,7 +22,6 @@ localbroadcastmanager = "1.1.0"
 markwonVersion = "4.6.2"
 material = "1.14.0"
 material3 = "1.9.0"
-mockito = "5.23.0"
 okhttp = "5.5.0"
 htmlcleaner = "2.29"
 jsonpath = "3.0.0"
@@ -60,7 +59,6 @@ linkify = { module = "io.noties.markwon:linkify", version.ref = "markwonVersion"
 listenablefuture = { module = "com.google.guava:listenablefuture", version.ref = "listenablefuture" }
 material = { module = "com.google.android.material:material", version.ref = "material" }
 material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "material3" }
-mockito-core = { group = "org.mockito", name = "mockito-core", version.ref = "mockito" }
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 htmlcleaner = { group = "net.sourceforge.htmlcleaner", name = "htmlcleaner", version.ref = "htmlcleaner" }
 json-path = { group = "com.jayway.jsonpath", name = "json-path", version.ref = "jsonpath" }
