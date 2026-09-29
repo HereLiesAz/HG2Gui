@@ -1,7 +1,7 @@
 [versions]
 agp = "9.4.1"
 detekt = "1.23.8"
-annotation = "1.10.0"
+annotation = "1.11.0"
 appcompat = "1.6.1"
 commonsIo = "2.22.0"
 componentsResources = "1.12.0"
