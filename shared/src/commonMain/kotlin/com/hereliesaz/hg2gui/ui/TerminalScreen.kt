@@ -426,6 +426,8 @@ fun TerminalScreen(
         FluidTerminalWorkspace(
             hasBuffer = active.buffer.isNotEmpty(),
             estimatedPillRows = effectiveTree.size,
+            // A tapped (selected) output card takes the whole workspace; tap it again to restore.
+            bufferExpanded = active.buffer.any { it.id == selectedEntryId },
             modifier = Modifier.weight(1f),
             bufferContent = {
                 LazyColumn(
