@@ -426,6 +426,8 @@ fun TerminalScreen(
         FluidTerminalWorkspace(
             hasBuffer = active.buffer.isNotEmpty(),
             estimatedPillRows = effectiveTree.size,
+            // A tapped (selected) output card takes the whole workspace; tap it again to restore.
+            bufferExpanded = active.buffer.any { it.id == selectedEntryId },
             modifier = Modifier.weight(1f),
             bufferContent = {
                 LazyColumn(
@@ -761,9 +763,17 @@ private fun StatusDot(entry: TerminalHistoryEntry) {
     if (entry.isRunning) {
         Spacer(Modifier.width(8.dp))
         Box(Modifier.size(8.dp).clip(RoundedCornerShape(percent = 50)).background(Azphalt.Yellow))
-    } else if (entry.exitCode != null && entry.exitCode != 0) {
+    } else if (entry.exitCode != null) {
+        // Always state the outcome: a silent success and a silent failure must not look alike.
+        val failed = entry.exitCode != 0
+        val ink = if (failed) Azphalt.hues[6] else Azphalt.currentGround.onPage.copy(alpha = .45f)
         Spacer(Modifier.width(8.dp))
-        Box(Modifier.size(8.dp).clip(RoundedCornerShape(percent = 50)).background(Azphalt.hues[6]))
+        Box(Modifier.size(8.dp).clip(RoundedCornerShape(percent = 50)).background(ink))
+        Spacer(Modifier.width(6.dp))
+        Text(
+            if (failed) "exit ${entry.exitCode}" else "ok",
+            style = MaterialTheme.typography.labelSmall.copy(color = ink, fontFamily = FontFamily.Monospace)
+        )
     }
 }
 

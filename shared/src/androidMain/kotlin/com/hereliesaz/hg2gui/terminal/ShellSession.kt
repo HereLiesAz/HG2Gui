@@ -44,6 +44,8 @@ actual class ShellSession private constructor(
         private const val SENTINEL = "__HG2GUI_EOC_a7f3__"
         private const val SENTINEL_HEAD = "__HG2GUI_EOC_"
         private const val SENTINEL_TAIL = "a7f3__"
+        private const val START_HEAD = "__HG2GUI_SOC_"
+        private const val START_MARKER = "__HG2GUI_SOC_a7f3__"
         private const val NATIVE_BASH = "libbin_bash.so"
         private const val DEFAULT_SHELL = "/system/bin/sh"
         private const val TIMEOUT_MS = 15_000L
@@ -282,7 +284,7 @@ actual class ShellSession private constructor(
             val emulator = TerminalEmulator(DummyTerminalOutput(), 120, 24, 10, 10, 1000, null)
             val stderrEmulator = TerminalEmulator(DummyTerminalOutput(), 120, 24, 10, 10, 1000, null)
 
-            sin.write(ShellCommandProtocol.frame(shellFamily, command, SENTINEL_HEAD, SENTINEL_TAIL))
+            sin.write(ShellCommandProtocol.frame(shellFamily, command, START_HEAD, SENTINEL_HEAD, SENTINEL_TAIL))
             sin.flush()
 
             val pending = StringBuilder()
@@ -294,6 +296,9 @@ actual class ShellSession private constructor(
             var lastDataAt = System.currentTimeMillis()
             var promptOfferedForThisStall = false
             val buf = CharArray(4096)
+            // PTY mode echoes the framed input (and the shell prompt) back on the same stream as
+            // real output; nothing is real output until the start marker arrives. Pipes don't echo.
+            var started = !usePty
 
             fun drainStderr() {
                 if (serr == null) return
@@ -333,6 +338,7 @@ actual class ShellSession private constructor(
                     }
                     if (n > 0) {
                         pending.append(buf, 0, n)
+                        if (!started) started = discardBeforeStart(pending)
                         lastDataAt = System.currentTimeMillis()
                         promptOfferedForThisStall = false
                         deadline = System.currentTimeMillis() + TIMEOUT_MS
@@ -345,7 +351,7 @@ actual class ShellSession private constructor(
                     val stalledText = if (pending.length > emittedUpTo) pending.substring(emittedUpTo) else ""
                     val isTransientStatus = ShellAliases.looksLikeTransientStatus(stalledText)
 
-                    if (!promptOfferedForThisStall && marker < 0 && tailIsUnterminated &&
+                    if (started && !promptOfferedForThisStall && marker < 0 && tailIsUnterminated &&
                         !isTransientStatus && idleMs > PROMPT_IDLE_MS
                     ) {
                         promptOfferedForThisStall = true
@@ -377,6 +383,7 @@ actual class ShellSession private constructor(
                     continue
                 }
 
+                if (!started) continue
                 val marker = pending.indexOf(SENTINEL, emittedUpTo)
                 if (marker < 0) {
                     val safeEnd = (pending.length - SENTINEL.length).coerceAtLeast(emittedUpTo)
@@ -415,6 +422,24 @@ actual class ShellSession private constructor(
         }
 
         return exitCode
+    }
+
+    /** Drops everything up to and including the start marker's line; true once it has been seen. */
+    private fun discardBeforeStart(pending: StringBuilder): Boolean {
+        val at = pending.indexOf(START_MARKER)
+        if (at < 0) {
+            // Keep only a tail long enough to hold a marker split across reads.
+            val keep = START_MARKER.length
+            if (pending.length > keep) pending.delete(0, pending.length - keep)
+            return false
+        }
+        val eol = pending.indexOf("\n", at + START_MARKER.length)
+        if (eol < 0) {
+            pending.delete(0, at)
+            return false
+        }
+        pending.delete(0, eol + 1)
+        return true
     }
 
     private fun flush(
