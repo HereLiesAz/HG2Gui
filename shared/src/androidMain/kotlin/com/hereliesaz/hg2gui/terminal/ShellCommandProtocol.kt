@@ -15,9 +15,16 @@ internal object ShellCommandProtocol {
         else -> arrayOf(executable)
     }
 
-    fun frame(family: ShellFamily, command: String, sentinelHead: String, sentinelTail: String): String = when (family) {
+    /**
+     * Wraps [command] between a start marker ([startHead]+[sentinelTail]) and an end marker
+     * ([sentinelHead]+[sentinelTail]+status:pwd). Each marker is printed as two quoted halves, so
+     * a PTY's echo of the frame itself never contains a joined marker: in PTY mode everything
+     * before the joined start marker is echo/prompt noise and is discarded.
+     */
+    fun frame(family: ShellFamily, command: String, startHead: String, sentinelHead: String, sentinelTail: String): String = when (family) {
         ShellFamily.FISH -> buildString {
             append("begin\n")
+            append(startMarker(startHead, sentinelTail))
             append(command).append('\n')
             append("set -l __hg2gui_status \$status\n")
             append("printf '%s%s%d:%s\\n' '").append(sentinelHead).append("' '")
@@ -26,6 +33,7 @@ internal object ShellCommandProtocol {
         }
         else -> buildString {
             append("{\n")
+            append(startMarker(startHead, sentinelTail))
             append(command).append('\n')
             append("__hg2gui_status=\$?\n")
             append("printf '%s%s%d:%s\\n' '").append(sentinelHead).append("' '")
@@ -33,4 +41,7 @@ internal object ShellCommandProtocol {
             append("}\n")
         }
     }
+
+    private fun startMarker(startHead: String, sentinelTail: String): String =
+        "printf '%s%s\\n' '$startHead' '$sentinelTail'\n"
 }
