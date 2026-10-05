@@ -1,5 +1,7 @@
 package com.hereliesaz.hg2gui.ui
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -16,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -40,16 +43,26 @@ import com.hereliesaz.hg2gui.ui.menu.onPage
  * buffer. Conversely the buffer's LazyColumn exists only inside the buffer region and cannot steal
  * a drag that began over the pill stack. clipToBounds() also prevents either surface from drawing a
  * child into the other surface and creating a visual target whose touch target belongs elsewhere.
+ *
+ * [bufferExpanded] (a tapped output card) grows the buffer to fill the whole workspace, along the
+ * axis the two regions share: vertically in the stacked layout, horizontally in the side layout.
+ * The command region (pills and breadcrumb) is pushed offscreen by exactly the distance the buffer
+ * grows, so the two still never overlap on any animation frame.
  */
 @Composable
 internal fun FluidTerminalWorkspace(
     hasBuffer: Boolean,
     estimatedPillRows: Int,
+    bufferExpanded: Boolean = false,
     modifier: Modifier = Modifier,
     bufferContent: @Composable ColumnScope.() -> Unit,
     commandTreeContent: @Composable (Modifier) -> Unit
 ) {
-    BoxWithConstraints(modifier.fillMaxWidth()) {
+    val expansion by animateFloatAsState(
+        targetValue = if (bufferExpanded && hasBuffer) 1f else 0f,
+        animationSpec = tween(FLOW_EXPAND_MS)
+    )
+    BoxWithConstraints(modifier.fillMaxWidth().clipToBounds()) {
         val rowCount = estimatedPillRows.coerceAtLeast(1)
         val requestedCommandHeight = (
             FLOW_ANCHOR_HEIGHT +
@@ -73,12 +86,14 @@ internal fun FluidTerminalWorkspace(
             val commandWidth = (maxWidth * FLOW_COMMAND_SIDE_FRACTION)
                 .coerceAtLeast(FLOW_MIN_COMMAND_WIDTH)
                 .coerceAtMost(maxWidth - FLOW_MIN_BUFFER_WIDTH - FLOW_SEAM)
+            val push = (commandWidth + FLOW_SEAM) * expansion
             val bufferWidth = (maxWidth - commandWidth - FLOW_SEAM)
-                .coerceAtLeast(FLOW_MIN_BUFFER_WIDTH)
+                .coerceAtLeast(FLOW_MIN_BUFFER_WIDTH) + push
 
             CommandRegion(
                 modifier = Modifier
                     .align(Alignment.TopStart)
+                    .offset(x = -push)
                     .width(commandWidth)
                     .fillMaxHeight(),
                 commandTreeContent = commandTreeContent
@@ -95,8 +110,9 @@ internal fun FluidTerminalWorkspace(
             val maximumCommandHeight = (maxHeight - FLOW_MIN_BUFFER_HEIGHT - FLOW_SEAM)
                 .coerceAtLeast(FLOW_ANCHOR_HEIGHT)
             val commandHeight = requestedCommandHeight.coerceAtMost(maximumCommandHeight)
-            val bufferHeight = (maxHeight - commandHeight - FLOW_SEAM)
-                .coerceAtLeast(FLOW_MIN_BUFFER_HEIGHT)
+            val push = (commandHeight + FLOW_SEAM) * expansion
+            val bufferHeight = ((maxHeight - commandHeight - FLOW_SEAM)
+                .coerceAtLeast(FLOW_MIN_BUFFER_HEIGHT) + push)
                 .coerceAtMost(maxHeight)
 
             BufferRegion(
@@ -111,6 +127,7 @@ internal fun FluidTerminalWorkspace(
             CommandRegion(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
+                    .offset(y = push)
                     .fillMaxWidth()
                     .height(commandHeight),
                 commandTreeContent = commandTreeContent
@@ -172,3 +189,4 @@ private val FLOW_MIN_BUFFER_WIDTH = 104.dp
 private val FLOW_MIN_COMMAND_WIDTH = 180.dp
 private val FLOW_CORNER_RADIUS = 28.dp
 private const val FLOW_COMMAND_SIDE_FRACTION = .68f
+private const val FLOW_EXPAND_MS = 320
