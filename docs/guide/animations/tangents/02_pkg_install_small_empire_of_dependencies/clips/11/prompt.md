@@ -1,17 +1,22 @@
-# 02_pkg_install_small_empire_of_dependencies — clip 11: generation prompt
+# 02_pkg_install_small_empire_of_dependencies — clip 11 | image-to-video prompt
 
-**Source script:** [script.md](script.md)
+**Inputs:** [START](start.png) → END artwork absent · [Script](script.md) · [Shot descriptions](shots.md)
 
 ~~~text
-EXACTLY 5.0 seconds. ORIGINAL 1:1 square flat 2D HG2Gui Guide animation in the screen-printed cut-paper pictogram language of the 2005 Hitchhiker's Guide (do not copy film designs). One uninterrupted matte flat background color, edge to edge; limited matte palette, sparse geometry, flattened perspective, deadpan comedy, crisp linear slides/pivots/flips with slight printed-edge texture. NO app chrome, chapter tabs, banners, borders, black bars, labels or captions added by the production process. Text ONLY when narratively required as an in-scene sign or command; reproduce scripted words exactly. No subtitles, gradients, glossy surfaces, bloom, shadows, camera shake, depth of field, 3D, photorealism, anime, sci-fi HUD, dissolves or bouncy easing. Preserve established character and prop silhouettes, proportions, costume and palette exactly. One major visual action per clip. Reach exact end composition at 4.6 seconds and hold to 5.0; no fade.
+Create the specified animation as a flat, matte screen-printed cut-paper pictogram, with economically drawn figures, crisp mechanical motion, dramatic negative space and utterly deadpan staging. Use the supplied start and end images as literal visual constraints when they exist, retaining all recurring body proportions, silhouettes, clothing, prop identities, scale, palette and camera positions. No invented narrators, subtitles, extra signs, modern HUD, gradients, glossy rendering, 3D, camera shake, fades, letterboxes, borders, production labels, Guide tabs, or title card. The app supplies its own chrome. Only show in-world text specifically required by the scene.
 
-Use the unchanged background color visible in the supplied frames.
-START: Use the supplied start.png exactly; match pose, layout, proportions and colors.
-END: Use the supplied end.png exactly; match pose, layout, proportions and colors.
-If a boundary is unavailable, this is a planning prompt only; generate and approve the missing frame first, never silently substitute.
+Use the original START screenshot only as reference. Output new *clean* 1:1 square artwork, without its source-image START, END, timecode, or other embedded production text.
 
-VISUALIZE THIS DOCUMENTED NARRATION BEAT (not as subtitles):
-Confidence fluctuated according to departmental requirements.
+SEQUENCE: 02_pkg_install_small_empire_of_dependencies; CLIP 11; 5 seconds · original tangent cut map.
+START: Existing source image `package_11.png` is a labeled START screenshot. Match its underlying illustration, not the production lettering.
+END: Unapproved END boundary: show the conclusion of the documented beat without inventing unscripted events — Confidence fluctuated according to departmental requirements.
 
-For shared consecutive boundaries, use exactly the SAME approved image file, not a regenerated lookalike.
+MOTION DIRECTOR'S TIMING
+0.0–2.4s: Confidence fluctuated according to departmental requirements.
+2.4–4.6s: Confidence fluctuated according to departmental requirements.
+4.6–5.0s: Hold the exact finishing composition, no additional changes.
+
+EXACT STORY ACTION / WORDS: Confidence fluctuated according to departmental requirements.
+
+A REQUIRED BOUNDARY IS MISSING: these written shots are production requirements, not fabricated files. Final matched video generation must wait for approved boundary art.
 ~~~

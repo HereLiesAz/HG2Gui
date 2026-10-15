@@ -33,6 +33,10 @@ STYLE = (
 
 def write(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
+    # Manually curated shots, script excerpts and clip prompts take precedence.
+    # Generate only missing new packets, never overwrite existing clip production.
+    if path.exists():
+        return
     path.write_text(content.rstrip() + "\n", encoding="utf-8")
 
 
@@ -124,7 +128,7 @@ def build() -> tuple[int, int]:
                         output.unlink()
 
                 script_source = (
-                    "`docs/HG2Gui_animation_5s_cut_sheet_v2.md`" if kind == "canonical"
+                    "docs/HG2Gui_animation_5s_cut_sheet_v2.md" if kind == "canonical"
                     else "the original tangent cut map" if kind == "tangents"
                     else "no verified clip script"
                 )

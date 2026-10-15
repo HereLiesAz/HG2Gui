@@ -1,12 +1,11 @@
 # 02_pkg_install_small_empire_of_dependencies — clip 06
 
-**Duration:** 5.0 seconds (declared by cut map)  
-**Original scene:** [scene.md](../../scenes/06/scene.md)  
-**Animation script:** [animation.md](../../animation.md)
+**Duration:** 5 seconds · original tangent cut map
 
-| Boundary | Expected source | Status | Image | Provenance |
-| --- | --- | --- | --- | --- |
-| START | `package_05.png` | present | [image](start.png) | `docs/package_05.png` |
-| END | `package_06.png` | present | [image](end.png) | `docs/package_06.png` |
+- START: [start.png](start.png)
+- END: **missing** — see [end-shot specification](shots.md)
+- [Corresponding script passage](script.md)
+- [Start/end shot specifications and original asset locations](shots.md)
+- [Specific image-to-video prompt](prompt.md)
 
-[Clip script](script.md) · [Clip generation prompt](prompt.md)
+**Caution:** the source still includes a START label. Do not mistake it for an approved clean animation frame.

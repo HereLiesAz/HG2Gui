@@ -1,18 +1,18 @@
-# 34_mv_elevator_incident — production clips
+# 34_mv_elevator_incident — animation clips
 
-[Source animation](animation.md) · [Existing storyboard](storyboard.md)
+[Full animation script](animation.md) · [Storyboard](storyboard.md) · [Guide-wide clip index](../../CLIP_PRODUCTION_INDEX.md)
 
-| Clip | START | END | Script | Prompt |
+| Clip | Frames | Script excerpt | START/END shots | Animation prompt |
 | --- | --- | --- | --- | --- |
-| [01](clips/01/README.md) | **unresolved** | [image](clips/01/end.png) | [script](clips/01/script.md) | [prompt](clips/01/prompt.md) |
-| [02](clips/02/README.md) | [image](clips/02/start.png) | [image](clips/02/end.png) | [script](clips/02/script.md) | [prompt](clips/02/prompt.md) |
-| [03](clips/03/README.md) | [image](clips/03/start.png) | [image](clips/03/end.png) | [script](clips/03/script.md) | [prompt](clips/03/prompt.md) |
-| [04](clips/04/README.md) | [image](clips/04/start.png) | [image](clips/04/end.png) | [script](clips/04/script.md) | [prompt](clips/04/prompt.md) |
-| [05](clips/05/README.md) | [image](clips/05/start.png) | [image](clips/05/end.png) | [script](clips/05/script.md) | [prompt](clips/05/prompt.md) |
-| [06](clips/06/README.md) | [image](clips/06/start.png) | [image](clips/06/end.png) | [script](clips/06/script.md) | [prompt](clips/06/prompt.md) |
-| [07](clips/07/README.md) | [image](clips/07/start.png) | [image](clips/07/end.png) | [script](clips/07/script.md) | [prompt](clips/07/prompt.md) |
-| [08](clips/08/README.md) | [image](clips/08/start.png) | [image](clips/08/end.png) | [script](clips/08/script.md) | [prompt](clips/08/prompt.md) |
-| [09](clips/09/README.md) | [image](clips/09/start.png) | [image](clips/09/end.png) | [script](clips/09/script.md) | [prompt](clips/09/prompt.md) |
-| [10](clips/10/README.md) | [image](clips/10/start.png) | [image](clips/10/end.png) | [script](clips/10/script.md) | [prompt](clips/10/prompt.md) |
-| [11](clips/11/README.md) | [image](clips/11/start.png) | [image](clips/11/end.png) | [script](clips/11/script.md) | [prompt](clips/11/prompt.md) |
-| [12](clips/12/README.md) | [image](clips/12/start.png) | [image](clips/12/end.png) | [script](clips/12/script.md) | [prompt](clips/12/prompt.md) |
+| [01](clips/01/README.md) | [START](clips/01/start.png) → — | [script](clips/01/script.md) | [shots](clips/01/shots.md) | [prompt](clips/01/prompt.md) |
+| [02](clips/02/README.md) | [START](clips/02/start.png) → — | [script](clips/02/script.md) | [shots](clips/02/shots.md) | [prompt](clips/02/prompt.md) |
+| [03](clips/03/README.md) | [START](clips/03/start.png) → — | [script](clips/03/script.md) | [shots](clips/03/shots.md) | [prompt](clips/03/prompt.md) |
+| [04](clips/04/README.md) | [START](clips/04/start.png) → — | [script](clips/04/script.md) | [shots](clips/04/shots.md) | [prompt](clips/04/prompt.md) |
+| [05](clips/05/README.md) | [START](clips/05/start.png) → — | [script](clips/05/script.md) | [shots](clips/05/shots.md) | [prompt](clips/05/prompt.md) |
+| [06](clips/06/README.md) | [START](clips/06/start.png) → — | [script](clips/06/script.md) | [shots](clips/06/shots.md) | [prompt](clips/06/prompt.md) |
+| [07](clips/07/README.md) | [START](clips/07/start.png) → — | [script](clips/07/script.md) | [shots](clips/07/shots.md) | [prompt](clips/07/prompt.md) |
+| [08](clips/08/README.md) | [START](clips/08/start.png) → — | [script](clips/08/script.md) | [shots](clips/08/shots.md) | [prompt](clips/08/prompt.md) |
+| [09](clips/09/README.md) | [START](clips/09/start.png) → — | [script](clips/09/script.md) | [shots](clips/09/shots.md) | [prompt](clips/09/prompt.md) |
+| [10](clips/10/README.md) | [START](clips/10/start.png) → — | [script](clips/10/script.md) | [shots](clips/10/shots.md) | [prompt](clips/10/prompt.md) |
+| [11](clips/11/README.md) | [START](clips/11/start.png) → — | [script](clips/11/script.md) | [shots](clips/11/shots.md) | [prompt](clips/11/prompt.md) |
+| [12](clips/12/README.md) | [START](clips/12/start.png) → — | [script](clips/12/script.md) | [shots](clips/12/shots.md) | [prompt](clips/12/prompt.md) |

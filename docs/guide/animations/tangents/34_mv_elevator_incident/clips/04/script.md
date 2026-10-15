@@ -1,7 +1,11 @@
-# 34_mv_elevator_incident — clip 04: script
+# 34_mv_elevator_incident — clip 04 | script
 
-**Source:** the original tangent cut map
+**Source:** docs/script (2).md
 
-**Narration beat (verbatim cut map):**
+Narration beat, verbatim from the original tangent cut map:
+
+Closing the doors established consent.
+
+## Corresponding original script excerpt
 
 Closing the doors established consent.

@@ -1,7 +1,11 @@
-# 34_mv_elevator_incident — clip 05: script
+# 34_mv_elevator_incident — clip 05 | script
 
-**Source:** the original tangent cut map
+**Source:** docs/script (2).md
 
-**Narration beat (verbatim cut map):**
+Narration beat, verbatim from the original tangent cut map:
+
+No further evidence was required.
+
+## Corresponding original script excerpt
 
 No further evidence was required.

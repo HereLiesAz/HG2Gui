@@ -176,6 +176,7 @@ def main() -> None:
         "",
     ]
 
+    lines += ["**Tangent footage caveat:** numbered tangent sources visibly contain START labels. Their source stills are not clean production frames; all 42 END images are unverified.", ""]
     lines += render_section(canonical, "canonical")
     lines += render_section(tangents, "tangent")
     lines += render_section(legacy, "legacy")

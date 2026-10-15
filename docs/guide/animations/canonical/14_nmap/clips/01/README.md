@@ -1,12 +1,11 @@
 # nmap — clip 01
 
-**Duration:** 5.0 seconds · 00:00–05:00  
-**Original scene:** [scene.md](../../scenes/01/scene.md)  
-**Animation script:** [animation.md](../../animation.md)
+**Duration:** 5 seconds · 00:00–05:00
 
-| Boundary | Expected source | Status | Image | Provenance |
-| --- | --- | --- | --- | --- |
-| START | `14_nmap_frame_00.png` | missing | not available |  |
-| END | `14_nmap_frame_01.png` | missing | not available |  |
+- START: **missing** — see [start-shot specification](shots.md)
+- END: **missing** — see [end-shot specification](shots.md)
+- [Corresponding script passage](script.md)
+- [Start/end shot specifications and original asset locations](shots.md)
+- [Specific image-to-video prompt](prompt.md)
 
-[Clip script](script.md) · [Clip generation prompt](prompt.md)
+Canonical scene description and text come from the v2 cut sheet.

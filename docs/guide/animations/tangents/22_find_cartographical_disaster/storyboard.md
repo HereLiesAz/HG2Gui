@@ -1,76 +1,53 @@
-# Storyboard — 22_find_cartographical_disaster
+# 22_find_cartographical_disaster — source-frame storyboard
 
-Source cut map: `docs/script.md`.
-The tangent source declares one frame per cut rather than explicit START/END pairs.
-Each declared cut-map frame is treated as that cut's end boundary; the previous cut's frame is reused as the next cut's start boundary.
-The first scene's start remains unresolved unless a preceding frame is actually declared elsewhere.
+The source PNGs themselves display a `Start:` label. The cut-map still is therefore START reference art, **not the END of that or the preceding cut**.
 
-## Scene 01
+No source END shot is supplied by the tangent cut map. The stills include production text and must be cleaned/approved before final render.
+
+## Clip 01
 
 `find` is named after the Cartographical Disaster of Nth.
 
-**Start:** **UNRESOLVED** — no declared filename
+**START:** [source screenshot](scenes/01/frames/start.png) — `cartography_01.png` (labeled; needs artwork extraction)
 
-**End:** `scenes/01/frames/end.png` — source `cartography_01.png` (present)
+**END:** **UNSUPPLIED**. See [shot specification](clips/01/shots.md).
 
-![Scene 01 end](scenes/01/frames/end.png)
-
-## Scene 02
+## Clip 02
 
 Maps had to show every legitimate route. Comprehensiveness required detours.
 
-**Start:** `scenes/02/frames/start.png` — source `cartography_01.png` (present)
+**START:** [source screenshot](scenes/02/frames/start.png) — `cartography_02.png` (labeled; needs artwork extraction)
 
-![Scene 02 start](scenes/02/frames/start.png)
+**END:** **UNSUPPLIED**. See [shot specification](clips/02/shots.md).
 
-**End:** `scenes/02/frames/end.png` — source `cartography_02.png` (present)
-
-![Scene 02 end](scenes/02/frames/end.png)
-
-## Scene 03
+## Clip 03
 
 Detours required signs; signs required a definition of forward.
 
-**Start:** `scenes/03/frames/start.png` — source `cartography_02.png` (present)
+**START:** [source screenshot](scenes/03/frames/start.png) — `cartography_03.png` (labeled; needs artwork extraction)
 
-![Scene 03 start](scenes/03/frames/start.png)
+**END:** **UNSUPPLIED**. See [shot specification](clips/03/shots.md).
 
-**End:** `scenes/03/frames/end.png` — source `cartography_03.png` (present)
-
-![Scene 03 end](scenes/03/frames/end.png)
-
-## Scene 04
+## Clip 04
 
 Maps began including travellers who had not decided to travel.
 
-**Start:** `scenes/04/frames/start.png` — source `cartography_03.png` (present)
+**START:** [source screenshot](scenes/04/frames/start.png) — `cartography_04.png` (labeled; needs artwork extraction)
 
-![Scene 04 start](scenes/04/frames/start.png)
+**END:** **UNSUPPLIED**. See [shot specification](clips/04/shots.md).
 
-**End:** `scenes/04/frames/end.png` — source `cartography_04.png` (present)
-
-![Scene 04 end](scenes/04/frames/end.png)
-
-## Scene 05
+## Clip 05
 
 Routes eventually outnumbered destinations.
 
-**Start:** `scenes/05/frames/start.png` — source `cartography_04.png` (present)
+**START:** [source screenshot](scenes/05/frames/start.png) — `cartography_05.png` (labeled; needs artwork extraction)
 
-![Scene 05 start](scenes/05/frames/start.png)
+**END:** **UNSUPPLIED**. See [shot specification](clips/05/shots.md).
 
-**End:** `scenes/05/frames/end.png` — source `cartography_05.png` (present)
-
-![Scene 05 end](scenes/05/frames/end.png)
-
-## Scene 06
+## Clip 06
 
 Cartographers abolished routes. Unix `find` asks where to start and what to match.
 
-**Start:** `scenes/06/frames/start.png` — source `cartography_05.png` (present)
+**START:** [source screenshot](scenes/06/frames/start.png) — `cartography_06.png` (labeled; needs artwork extraction)
 
-![Scene 06 start](scenes/06/frames/start.png)
-
-**End:** `scenes/06/frames/end.png` — source `cartography_06.png` (present)
-
-![Scene 06 end](scenes/06/frames/end.png)
+**END:** **UNSUPPLIED**. See [shot specification](clips/06/shots.md).

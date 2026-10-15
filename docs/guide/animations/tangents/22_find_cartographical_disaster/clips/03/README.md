@@ -1,12 +1,11 @@
 # 22_find_cartographical_disaster — clip 03
 
-**Duration:** 5.0 seconds (declared by cut map)  
-**Original scene:** [scene.md](../../scenes/03/scene.md)  
-**Animation script:** [animation.md](../../animation.md)
+**Duration:** 5 seconds · original tangent cut map
 
-| Boundary | Expected source | Status | Image | Provenance |
-| --- | --- | --- | --- | --- |
-| START | `cartography_02.png` | present | [image](start.png) | `docs/cartography_02.png` |
-| END | `cartography_03.png` | present | [image](end.png) | `docs/cartography_03.png` |
+- START: [start.png](start.png)
+- END: **missing** — see [end-shot specification](shots.md)
+- [Corresponding script passage](script.md)
+- [Start/end shot specifications and original asset locations](shots.md)
+- [Specific image-to-video prompt](prompt.md)
 
-[Clip script](script.md) · [Clip generation prompt](prompt.md)
+**Caution:** the source still includes a START label. Do not mistake it for an approved clean animation frame.

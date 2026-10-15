@@ -1,7 +1,17 @@
-# kill — clip 02: script
+# kill — clip 02 | script
 
-**Source:** `docs/HG2Gui_animation_5s_cut_sheet_v2.md`
+**Source:** docs/HG2Gui_animation_5s_cut_sheet_v2.md
 
-**Visual action (verbatim cut sheet):**
+Visual action, verbatim from the revised 5-second cut sheet:
 
 Camera pans a little along the sorting bench to reveal the black envelope alone under a warning lamp: `KILL — CANNOT BE REFUSED`. The clerk approaches it with exaggerated procedural caution, using tongs or a tiny cart, never emoting. End with one hand just about to touch it.
+
+## Corresponding original script excerpt
+
+Another says:
+
+`STOP — Don't move.`
+
+At the far end sits a black envelope stamped:
+
+`KILL — CANNOT BE REFUSED`
