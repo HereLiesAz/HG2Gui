@@ -4,7 +4,7 @@ Each clip folder contains its own `shots.md`, `script.md`, `prompt.md`, and avai
 
 [Style rules](../00_READ_ME_FIRST.md) · [Cut sheet](../HG2Gui_animation_5s_cut_sheet_v2.md) · [Original provenance](MANIFEST.json) · [Missing-frame checklist](ANIMATION_TODO.md)
 
-**Tangent source stills visibly say START; the previous folder layout incorrectly labeled those images END.** Here they are START references. Their END images have not been supplied.
+**Tangent stills visibly contain START production labels: these are source references, not clean boundary images. No tangent END images have been verified.**
 
 ## canonical
 

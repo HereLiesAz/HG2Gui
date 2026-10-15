@@ -60,10 +60,59 @@ def refresh_readme(path: Path, content: str, start_line: str, end_line: str) -> 
         write(path, content)
         return
     previous = path.read_text(encoding="utf-8")
-    changed = re.sub(r"(?m)^- START:.*$", lambda _: start_line, previous)
-    changed = re.sub(r"(?m)^- END:.*$", lambda _: end_line, changed)
+    changed = previous
+    # An existing missing-frame explanation may be hand-written; only touch it
+    # when image availability actually changes, not on every rebuild.
+    for role, wanted in (("start", start_line), ("end", end_line)):
+        found = re.search(rf"(?m)^- {role.upper()}:.*$", changed)
+        if not found:
+            continue
+        old_available = f"[{role}.png]" in found.group(0)
+        new_available = f"[{role}.png]" in wanted
+        if old_available != new_available:
+            changed = changed[:found.start()] + wanted + changed[found.end():]
     if changed != previous:
         write(path, changed, refresh=True)
+
+
+def refresh_shots(path: Path, boundaries: dict, available: dict[str, bool], kind: str) -> None:
+    """Keep hand-authored shot descriptions, refreshing changed frame metadata only."""
+    if not path.exists():
+        return
+    original = path.read_text(encoding="utf-8")
+    result = original
+    for role in ("start", "end"):
+        heading = re.search(
+            rf"(?ms)^## {role.upper()}(?: shot)?\n.*?(?=^## |\Z)", result
+        )
+        if not heading:
+            continue
+        section = heading.group(0)
+        had_frame = bool(re.search(
+            rf"(?m)^\*\*{role.upper()}\*\* — \[image\]", section
+        ))
+        if had_frame == available[role]:
+            continue
+        frame = boundaries[role]
+        source = ", ".join(frame.get("sources") or []) or "not supplied"
+        origin = (
+            "annotated START screenshot" if kind == "tangents" and role == "start"
+            else "original artwork" if available[role]
+            else "no image supplied"
+        )
+        target = (
+            f"**{role.upper()}** — [image]({role}.png)" if available[role]
+            else f"**{role.upper()}** — NO IMAGE"
+        )
+        section = re.sub(
+            rf"(?m)^\*\*{role.upper()}\*\* — .*?$",
+            lambda _: target, section,
+        )
+        section = re.sub(r"(?m)^- Source: .*?$", lambda _: f"- Source: {source}", section)
+        section = re.sub(r"(?m)^- Type: .*?$", lambda _: f"- Type: {origin}", section)
+        result = result[:heading.start()] + section + result[heading.end():]
+    if result != original:
+        write(path, result, refresh=True)
 
 
 def cut_map() -> dict[int, dict]:
@@ -277,6 +326,9 @@ def build() -> tuple[int, int]:
                       + shot_record("start") + "\n" + shot_record("end")
                       + "\n**Documented action:**\n\n" + (beat or "Legacy clip action not documented.") +
                       "\n")
+
+                refresh_shots(destination / "shots.md", boundaries,
+                              {role: exists(role) for role in ("start", "end")}, kind)
 
                 def listing_frame(role: str) -> str:
                     if exists(role):
