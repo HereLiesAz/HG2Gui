@@ -140,6 +140,22 @@ class AnimationDocumentationTest(unittest.TestCase):
             self.assertIn("- Source: docs/example.png", updated)
             self.assertIn("**END** — NO IMAGE", updated)
 
+
+    def test_removed_source_does_not_leave_stale_scene_frame(self) -> None:
+        organizer = load("animation_organizer_test", ROOT / "scripts/organize_guide_material.py")
+        with tempfile.TemporaryDirectory() as folder:
+            scene_dir = Path(folder) / "scenes" / "01"
+            frame_dir = scene_dir / "frames"
+            frame_dir.mkdir(parents=True)
+            old = frame_dir / "start.png"
+            old.write_bytes(b"stale generated frame")
+            boundary = organizer.materialize_boundary(
+                "missing_frame.png", "start", scene_dir, {},
+                "explicit_cut_sheet_boundary",
+            )
+            self.assertEqual(boundary["status"], "missing")
+            self.assertFalse(old.exists())
+
     def test_packet_rebuild_does_not_dirty_curated_documents(self) -> None:
         builder = load("animation_packets_test", ROOT / "scripts/build_animation_clip_packets.py")
         paths = [GUIDE / "CLIP_PRODUCTION_INDEX.md"]

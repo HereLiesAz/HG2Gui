@@ -241,6 +241,13 @@ def materialize_boundary(
     resolved = resolve_asset(frame_name, asset_index)
     local = None
     source = resolved.pop("source")
+    # Scene-frame assets are generated copies. Remove obsolete copies before
+    # rematerializing so deleting a source cannot leave a misleading old PNG.
+    frame_dir = scene_dir / "frames"
+    if frame_dir.exists():
+        for previous in frame_dir.iterdir():
+            if previous.is_file() and previous.stem == role and previous.suffix.lower() in IMAGE_EXTS:
+                previous.unlink()
     if source is not None:
         local_path = scene_dir / "frames" / f"{role}{source.suffix.lower()}"
         copy(source, local_path)
