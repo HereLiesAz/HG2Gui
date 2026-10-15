@@ -24,13 +24,17 @@ Continue. Door swings open. A capsule label reads `BRING IN LIBFOO`. `libfoo` en
 
 ![Scene 02 start](scenes/02/frames/start.png)
 
-**End:** **MISSING** — `02_pkg_install_frame_02.png`
+**End:** `scenes/02/frames/end.png` — source `02_pkg_install_frame_02.png` (present)
+
+![Scene 02 end](scenes/02/frames/end.png)
 
 ## Scene 03 — 10:00–15:00
 
 The chain keeps arriving: three become nine, nine become a dense crowd. Packages slide in linearly from every doorway and stack into the room until the walls visibly bow outward like a diagram under pressure. End with the room completely full and one final dependency knocking from outside.
 
-**Start:** **MISSING** — `02_pkg_install_frame_02.png`
+**Start:** `scenes/03/frames/start.png` — source `02_pkg_install_frame_02.png` (present)
+
+![Scene 03 start](scenes/03/frames/start.png)
 
 **End:** `scenes/03/frames/end.png` — source `02_pkg_install_frame_03.png` (present)
 

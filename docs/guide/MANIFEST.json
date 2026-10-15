@@ -460,10 +460,10 @@
   },
   "boundary_verification": {
     "animations": 42,
+    "scenes": 173,
     "boundary_slots": 346,
-    "materialized": 116,
-    "missing_or_unresolved": 230,
-    "scenes": 173
+    "materialized": 80,
+    "missing_or_unresolved": 266
   },
   "canonical_animations": [
     {
@@ -650,6 +650,11 @@
           "organized": "docs/guide/animations/canonical/02_pkg_install/references/source/02_pkg_install_frame_04.png",
           "role": "canonical boundary frame_04",
           "source": "docs/02_pkg_install_frame_04.png"
+        },
+        {
+          "organized": "docs/guide/animations/canonical/02_pkg_install/references/source/02_pkg_install_frame_02.png",
+          "source": "docs/02_pkg_install_frame_02.png",
+          "role": "canonical boundary frame_02"
         }
       ],
       "command": "pkg install",
@@ -694,11 +699,13 @@
           "storyboard": {
             "end": {
               "expected": "02_pkg_install_frame_02.png",
-              "local": null,
+              "local": "docs/guide/animations/canonical/02_pkg_install/scenes/02/frames/end.png",
               "role": "end",
               "semantics": "explicit_cut_sheet_boundary",
-              "sources": [],
-              "status": "missing"
+              "sources": [
+                "docs/02_pkg_install_frame_02.png"
+              ],
+              "status": "present"
             },
             "start": {
               "expected": "02_pkg_install_frame_01.png",
@@ -731,11 +738,13 @@
             },
             "start": {
               "expected": "02_pkg_install_frame_02.png",
-              "local": null,
+              "local": "docs/guide/animations/canonical/02_pkg_install/scenes/03/frames/start.png",
               "role": "start",
               "semantics": "explicit_cut_sheet_boundary",
-              "sources": [],
-              "status": "missing"
+              "sources": [
+                "docs/02_pkg_install_frame_02.png"
+              ],
+              "status": "present"
             }
           },
           "text": "docs/guide/animations/canonical/02_pkg_install/scenes/03/scene.md"
@@ -4413,7 +4422,7 @@
       "storyboard": "docs/guide/animations/legacy/ls_tangent/storyboard.md"
     }
   ],
-  "note": "Non-destructive organization. Original source files remain in place; copies are organized under docs/guide. Missing storyboard frames are reported, never fabricated.",
+  "note": "The source script, original images and production frames remain intact. Tangent cut-map PNGs show START labels, not established END boundaries. Annotated source screenshots are not approved final artwork.",
   "project_files": [
     "docs/02_pkg_install_frame_00.png",
     "docs/02_pkg_install_frame_01.png",
@@ -4481,37 +4490,31 @@
   ],
   "storyboard_coverage": {
     "canonical": {
-      "ambiguous": 0,
-      "boundary_slots": 234,
-      "materialized": 8,
-      "missing": 226,
-      "not_materialized": 226,
-      "present": 8,
-      "present_duplicate_identical": 0,
+      "animations": 35,
       "scenes": 117,
-      "unresolved": 0
-    },
-    "legacy": {
+      "boundary_slots": 234,
+      "materialized": 10,
+      "missing": 224,
       "ambiguous": 0,
-      "boundary_slots": 28,
-      "materialized": 28,
-      "missing": 0,
-      "not_materialized": 0,
-      "present": 28,
-      "present_duplicate_identical": 0,
-      "scenes": 14,
       "unresolved": 0
     },
     "tangents": {
-      "ambiguous": 0,
-      "boundary_slots": 84,
-      "materialized": 80,
-      "missing": 0,
-      "not_materialized": 4,
-      "present": 80,
-      "present_duplicate_identical": 0,
+      "animations": 4,
       "scenes": 42,
-      "unresolved": 4
+      "boundary_slots": 84,
+      "materialized": 42,
+      "missing": 0,
+      "ambiguous": 0,
+      "unresolved": 42
+    },
+    "legacy": {
+      "animations": 3,
+      "scenes": 14,
+      "boundary_slots": 28,
+      "materialized": 28,
+      "missing": 0,
+      "ambiguous": 0,
+      "unresolved": 0
     }
   },
   "tangent_animations": [
@@ -4589,22 +4592,22 @@
           "scene": 1,
           "storyboard": {
             "end": {
-              "expected": "cat_01.png",
-              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/01/frames/end.png",
               "role": "end",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "cat_01.png",
+              "status": "present",
+              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/01/frames/start.png",
               "sources": [
                 "docs/cat_01.png"
               ],
-              "status": "present"
-            },
-            "start": {
-              "expected": null,
-              "local": null,
-              "role": "start",
-              "semantics": "unresolved_tangent_cut_map_first_scene_start",
-              "sources": [],
-              "status": "unresolved"
+              "semantics": "source_tangent_labeled_start_screenshot"
             }
           },
           "text": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/01/scene.md"
@@ -4617,24 +4620,22 @@
           "scene": 2,
           "storyboard": {
             "end": {
-              "expected": "cat_02.png",
-              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/02/frames/end.png",
               "role": "end",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "cat_02.png",
+              "status": "present",
+              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/02/frames/start.png",
               "sources": [
                 "docs/cat_02.png"
               ],
-              "status": "present"
-            },
-            "start": {
-              "expected": "cat_01.png",
-              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/02/frames/start.png",
-              "role": "start",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
-              "sources": [
-                "docs/cat_01.png"
-              ],
-              "status": "present"
+              "semantics": "source_tangent_labeled_start_screenshot"
             }
           },
           "text": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/02/scene.md"
@@ -4647,24 +4648,22 @@
           "scene": 3,
           "storyboard": {
             "end": {
-              "expected": "cat_03.png",
-              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/03/frames/end.png",
               "role": "end",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "cat_03.png",
+              "status": "present",
+              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/03/frames/start.png",
               "sources": [
                 "docs/cat_03.png"
               ],
-              "status": "present"
-            },
-            "start": {
-              "expected": "cat_02.png",
-              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/03/frames/start.png",
-              "role": "start",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
-              "sources": [
-                "docs/cat_02.png"
-              ],
-              "status": "present"
+              "semantics": "source_tangent_labeled_start_screenshot"
             }
           },
           "text": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/03/scene.md"
@@ -4677,24 +4676,22 @@
           "scene": 4,
           "storyboard": {
             "end": {
-              "expected": "cat_04.png",
-              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/04/frames/end.png",
               "role": "end",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "cat_04.png",
+              "status": "present",
+              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/04/frames/start.png",
               "sources": [
                 "docs/cat_04.png"
               ],
-              "status": "present"
-            },
-            "start": {
-              "expected": "cat_03.png",
-              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/04/frames/start.png",
-              "role": "start",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
-              "sources": [
-                "docs/cat_03.png"
-              ],
-              "status": "present"
+              "semantics": "source_tangent_labeled_start_screenshot"
             }
           },
           "text": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/04/scene.md"
@@ -4707,24 +4704,22 @@
           "scene": 5,
           "storyboard": {
             "end": {
-              "expected": "cat_05.png",
-              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/05/frames/end.png",
               "role": "end",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "cat_05.png",
+              "status": "present",
+              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/05/frames/start.png",
               "sources": [
                 "docs/cat_05.png"
               ],
-              "status": "present"
-            },
-            "start": {
-              "expected": "cat_04.png",
-              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/05/frames/start.png",
-              "role": "start",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
-              "sources": [
-                "docs/cat_04.png"
-              ],
-              "status": "present"
+              "semantics": "source_tangent_labeled_start_screenshot"
             }
           },
           "text": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/05/scene.md"
@@ -4737,24 +4732,22 @@
           "scene": 6,
           "storyboard": {
             "end": {
-              "expected": "cat_06.png",
-              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/06/frames/end.png",
               "role": "end",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "cat_06.png",
+              "status": "present",
+              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/06/frames/start.png",
               "sources": [
                 "docs/cat_06.png"
               ],
-              "status": "present"
-            },
-            "start": {
-              "expected": "cat_05.png",
-              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/06/frames/start.png",
-              "role": "start",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
-              "sources": [
-                "docs/cat_05.png"
-              ],
-              "status": "present"
+              "semantics": "source_tangent_labeled_start_screenshot"
             }
           },
           "text": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/06/scene.md"
@@ -4767,24 +4760,22 @@
           "scene": 7,
           "storyboard": {
             "end": {
-              "expected": "cat_07.png",
-              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/07/frames/end.png",
               "role": "end",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "cat_07.png",
+              "status": "present",
+              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/07/frames/start.png",
               "sources": [
                 "docs/cat_07.png"
               ],
-              "status": "present"
-            },
-            "start": {
-              "expected": "cat_06.png",
-              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/07/frames/start.png",
-              "role": "start",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
-              "sources": [
-                "docs/cat_06.png"
-              ],
-              "status": "present"
+              "semantics": "source_tangent_labeled_start_screenshot"
             }
           },
           "text": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/07/scene.md"
@@ -4797,24 +4788,22 @@
           "scene": 8,
           "storyboard": {
             "end": {
-              "expected": "cat_08.png",
-              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/08/frames/end.png",
               "role": "end",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "cat_08.png",
+              "status": "present",
+              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/08/frames/start.png",
               "sources": [
                 "docs/cat_08.png"
               ],
-              "status": "present"
-            },
-            "start": {
-              "expected": "cat_07.png",
-              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/08/frames/start.png",
-              "role": "start",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
-              "sources": [
-                "docs/cat_07.png"
-              ],
-              "status": "present"
+              "semantics": "source_tangent_labeled_start_screenshot"
             }
           },
           "text": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/08/scene.md"
@@ -4827,24 +4816,22 @@
           "scene": 9,
           "storyboard": {
             "end": {
-              "expected": "cat_09.png",
-              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/09/frames/end.png",
               "role": "end",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "cat_09.png",
+              "status": "present",
+              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/09/frames/start.png",
               "sources": [
                 "docs/cat_09.png"
               ],
-              "status": "present"
-            },
-            "start": {
-              "expected": "cat_08.png",
-              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/09/frames/start.png",
-              "role": "start",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
-              "sources": [
-                "docs/cat_08.png"
-              ],
-              "status": "present"
+              "semantics": "source_tangent_labeled_start_screenshot"
             }
           },
           "text": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/09/scene.md"
@@ -4857,24 +4844,22 @@
           "scene": 10,
           "storyboard": {
             "end": {
-              "expected": "cat_10.png",
-              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/10/frames/end.png",
               "role": "end",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "cat_10.png",
+              "status": "present",
+              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/10/frames/start.png",
               "sources": [
                 "docs/cat_10.png"
               ],
-              "status": "present"
-            },
-            "start": {
-              "expected": "cat_09.png",
-              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/10/frames/start.png",
-              "role": "start",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
-              "sources": [
-                "docs/cat_09.png"
-              ],
-              "status": "present"
+              "semantics": "source_tangent_labeled_start_screenshot"
             }
           },
           "text": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/10/scene.md"
@@ -4887,24 +4872,22 @@
           "scene": 11,
           "storyboard": {
             "end": {
-              "expected": "cat_11.png",
-              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/11/frames/end.png",
               "role": "end",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "cat_11.png",
+              "status": "present",
+              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/11/frames/start.png",
               "sources": [
                 "docs/cat_11.png"
               ],
-              "status": "present"
-            },
-            "start": {
-              "expected": "cat_10.png",
-              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/11/frames/start.png",
-              "role": "start",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
-              "sources": [
-                "docs/cat_10.png"
-              ],
-              "status": "present"
+              "semantics": "source_tangent_labeled_start_screenshot"
             }
           },
           "text": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/11/scene.md"
@@ -4917,24 +4900,22 @@
           "scene": 12,
           "storyboard": {
             "end": {
-              "expected": "cat_12.png",
-              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/12/frames/end.png",
               "role": "end",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "cat_12.png",
+              "status": "present",
+              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/12/frames/start.png",
               "sources": [
                 "docs/cat_12.png"
               ],
-              "status": "present"
-            },
-            "start": {
-              "expected": "cat_11.png",
-              "local": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/12/frames/start.png",
-              "role": "start",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
-              "sources": [
-                "docs/cat_11.png"
-              ],
-              "status": "present"
+              "semantics": "source_tangent_labeled_start_screenshot"
             }
           },
           "text": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/12/scene.md"
@@ -5017,22 +4998,22 @@
           "scene": 1,
           "storyboard": {
             "end": {
-              "expected": "elevator_01.png",
-              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/01/frames/end.png",
               "role": "end",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "elevator_01.png",
+              "status": "present",
+              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/01/frames/start.png",
               "sources": [
                 "docs/elevator_01.png"
               ],
-              "status": "present"
-            },
-            "start": {
-              "expected": null,
-              "local": null,
-              "role": "start",
-              "semantics": "unresolved_tangent_cut_map_first_scene_start",
-              "sources": [],
-              "status": "unresolved"
+              "semantics": "source_tangent_labeled_start_screenshot"
             }
           },
           "text": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/01/scene.md"
@@ -5045,24 +5026,22 @@
           "scene": 2,
           "storyboard": {
             "end": {
-              "expected": "elevator_02.png",
-              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/02/frames/end.png",
               "role": "end",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "elevator_02.png",
+              "status": "present",
+              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/02/frames/start.png",
               "sources": [
                 "docs/elevator_02.png"
               ],
-              "status": "present"
-            },
-            "start": {
-              "expected": "elevator_01.png",
-              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/02/frames/start.png",
-              "role": "start",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
-              "sources": [
-                "docs/elevator_01.png"
-              ],
-              "status": "present"
+              "semantics": "source_tangent_labeled_start_screenshot"
             }
           },
           "text": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/02/scene.md"
@@ -5075,24 +5054,22 @@
           "scene": 3,
           "storyboard": {
             "end": {
-              "expected": "elevator_03.png",
-              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/03/frames/end.png",
               "role": "end",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "elevator_03.png",
+              "status": "present",
+              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/03/frames/start.png",
               "sources": [
                 "docs/elevator_03.png"
               ],
-              "status": "present"
-            },
-            "start": {
-              "expected": "elevator_02.png",
-              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/03/frames/start.png",
-              "role": "start",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
-              "sources": [
-                "docs/elevator_02.png"
-              ],
-              "status": "present"
+              "semantics": "source_tangent_labeled_start_screenshot"
             }
           },
           "text": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/03/scene.md"
@@ -5105,24 +5082,22 @@
           "scene": 4,
           "storyboard": {
             "end": {
-              "expected": "elevator_04.png",
-              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/04/frames/end.png",
               "role": "end",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "elevator_04.png",
+              "status": "present",
+              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/04/frames/start.png",
               "sources": [
                 "docs/elevator_04.png"
               ],
-              "status": "present"
-            },
-            "start": {
-              "expected": "elevator_03.png",
-              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/04/frames/start.png",
-              "role": "start",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
-              "sources": [
-                "docs/elevator_03.png"
-              ],
-              "status": "present"
+              "semantics": "source_tangent_labeled_start_screenshot"
             }
           },
           "text": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/04/scene.md"
@@ -5135,24 +5110,22 @@
           "scene": 5,
           "storyboard": {
             "end": {
-              "expected": "elevator_05.png",
-              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/05/frames/end.png",
               "role": "end",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "elevator_05.png",
+              "status": "present",
+              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/05/frames/start.png",
               "sources": [
                 "docs/elevator_05.png"
               ],
-              "status": "present"
-            },
-            "start": {
-              "expected": "elevator_04.png",
-              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/05/frames/start.png",
-              "role": "start",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
-              "sources": [
-                "docs/elevator_04.png"
-              ],
-              "status": "present"
+              "semantics": "source_tangent_labeled_start_screenshot"
             }
           },
           "text": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/05/scene.md"
@@ -5165,24 +5138,22 @@
           "scene": 6,
           "storyboard": {
             "end": {
-              "expected": "elevator_06.png",
-              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/06/frames/end.png",
               "role": "end",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "elevator_06.png",
+              "status": "present",
+              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/06/frames/start.png",
               "sources": [
                 "docs/elevator_06.png"
               ],
-              "status": "present"
-            },
-            "start": {
-              "expected": "elevator_05.png",
-              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/06/frames/start.png",
-              "role": "start",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
-              "sources": [
-                "docs/elevator_05.png"
-              ],
-              "status": "present"
+              "semantics": "source_tangent_labeled_start_screenshot"
             }
           },
           "text": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/06/scene.md"
@@ -5195,24 +5166,22 @@
           "scene": 7,
           "storyboard": {
             "end": {
-              "expected": "elevator_07.png",
-              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/07/frames/end.png",
               "role": "end",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "elevator_07.png",
+              "status": "present",
+              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/07/frames/start.png",
               "sources": [
                 "docs/elevator_07.png"
               ],
-              "status": "present"
-            },
-            "start": {
-              "expected": "elevator_06.png",
-              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/07/frames/start.png",
-              "role": "start",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
-              "sources": [
-                "docs/elevator_06.png"
-              ],
-              "status": "present"
+              "semantics": "source_tangent_labeled_start_screenshot"
             }
           },
           "text": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/07/scene.md"
@@ -5225,24 +5194,22 @@
           "scene": 8,
           "storyboard": {
             "end": {
-              "expected": "elevator_08.png",
-              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/08/frames/end.png",
               "role": "end",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "elevator_08.png",
+              "status": "present",
+              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/08/frames/start.png",
               "sources": [
                 "docs/elevator_08.png"
               ],
-              "status": "present"
-            },
-            "start": {
-              "expected": "elevator_07.png",
-              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/08/frames/start.png",
-              "role": "start",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
-              "sources": [
-                "docs/elevator_07.png"
-              ],
-              "status": "present"
+              "semantics": "source_tangent_labeled_start_screenshot"
             }
           },
           "text": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/08/scene.md"
@@ -5255,24 +5222,22 @@
           "scene": 9,
           "storyboard": {
             "end": {
-              "expected": "elevator_09.png",
-              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/09/frames/end.png",
               "role": "end",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "elevator_09.png",
+              "status": "present",
+              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/09/frames/start.png",
               "sources": [
                 "docs/elevator_09.png"
               ],
-              "status": "present"
-            },
-            "start": {
-              "expected": "elevator_08.png",
-              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/09/frames/start.png",
-              "role": "start",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
-              "sources": [
-                "docs/elevator_08.png"
-              ],
-              "status": "present"
+              "semantics": "source_tangent_labeled_start_screenshot"
             }
           },
           "text": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/09/scene.md"
@@ -5285,24 +5250,22 @@
           "scene": 10,
           "storyboard": {
             "end": {
-              "expected": "elevator_10.png",
-              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/10/frames/end.png",
               "role": "end",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "elevator_10.png",
+              "status": "present",
+              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/10/frames/start.png",
               "sources": [
                 "docs/elevator_10.png"
               ],
-              "status": "present"
-            },
-            "start": {
-              "expected": "elevator_09.png",
-              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/10/frames/start.png",
-              "role": "start",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
-              "sources": [
-                "docs/elevator_09.png"
-              ],
-              "status": "present"
+              "semantics": "source_tangent_labeled_start_screenshot"
             }
           },
           "text": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/10/scene.md"
@@ -5315,24 +5278,22 @@
           "scene": 11,
           "storyboard": {
             "end": {
-              "expected": "elevator_11.png",
-              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/11/frames/end.png",
               "role": "end",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "elevator_11.png",
+              "status": "present",
+              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/11/frames/start.png",
               "sources": [
                 "docs/elevator_11.png"
               ],
-              "status": "present"
-            },
-            "start": {
-              "expected": "elevator_10.png",
-              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/11/frames/start.png",
-              "role": "start",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
-              "sources": [
-                "docs/elevator_10.png"
-              ],
-              "status": "present"
+              "semantics": "source_tangent_labeled_start_screenshot"
             }
           },
           "text": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/11/scene.md"
@@ -5345,24 +5306,22 @@
           "scene": 12,
           "storyboard": {
             "end": {
-              "expected": "elevator_12.png",
-              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/12/frames/end.png",
               "role": "end",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "elevator_12.png",
+              "status": "present",
+              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/12/frames/start.png",
               "sources": [
                 "docs/elevator_12.png"
               ],
-              "status": "present"
-            },
-            "start": {
-              "expected": "elevator_11.png",
-              "local": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/12/frames/start.png",
-              "role": "start",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
-              "sources": [
-                "docs/elevator_11.png"
-              ],
-              "status": "present"
+              "semantics": "source_tangent_labeled_start_screenshot"
             }
           },
           "text": "docs/guide/animations/tangents/34_mv_elevator_incident/scenes/12/scene.md"
@@ -5445,22 +5404,22 @@
           "scene": 1,
           "storyboard": {
             "end": {
-              "expected": "package_01.png",
-              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/01/frames/end.png",
               "role": "end",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "package_01.png",
+              "status": "present",
+              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/01/frames/start.png",
               "sources": [
                 "docs/package_01.png"
               ],
-              "status": "present"
-            },
-            "start": {
-              "expected": null,
-              "local": null,
-              "role": "start",
-              "semantics": "unresolved_tangent_cut_map_first_scene_start",
-              "sources": [],
-              "status": "unresolved"
+              "semantics": "source_tangent_labeled_start_screenshot"
             }
           },
           "text": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/01/scene.md"
@@ -5473,24 +5432,22 @@
           "scene": 2,
           "storyboard": {
             "end": {
-              "expected": "package_02.png",
-              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/02/frames/end.png",
               "role": "end",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "package_02.png",
+              "status": "present",
+              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/02/frames/start.png",
               "sources": [
                 "docs/package_02.png"
               ],
-              "status": "present"
-            },
-            "start": {
-              "expected": "package_01.png",
-              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/02/frames/start.png",
-              "role": "start",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
-              "sources": [
-                "docs/package_01.png"
-              ],
-              "status": "present"
+              "semantics": "source_tangent_labeled_start_screenshot"
             }
           },
           "text": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/02/scene.md"
@@ -5503,24 +5460,22 @@
           "scene": 3,
           "storyboard": {
             "end": {
-              "expected": "package_03.png",
-              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/03/frames/end.png",
               "role": "end",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "package_03.png",
+              "status": "present",
+              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/03/frames/start.png",
               "sources": [
                 "docs/package_03.png"
               ],
-              "status": "present"
-            },
-            "start": {
-              "expected": "package_02.png",
-              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/03/frames/start.png",
-              "role": "start",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
-              "sources": [
-                "docs/package_02.png"
-              ],
-              "status": "present"
+              "semantics": "source_tangent_labeled_start_screenshot"
             }
           },
           "text": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/03/scene.md"
@@ -5533,24 +5488,22 @@
           "scene": 4,
           "storyboard": {
             "end": {
-              "expected": "package_04.png",
-              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/04/frames/end.png",
               "role": "end",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "package_04.png",
+              "status": "present",
+              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/04/frames/start.png",
               "sources": [
                 "docs/package_04.png"
               ],
-              "status": "present"
-            },
-            "start": {
-              "expected": "package_03.png",
-              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/04/frames/start.png",
-              "role": "start",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
-              "sources": [
-                "docs/package_03.png"
-              ],
-              "status": "present"
+              "semantics": "source_tangent_labeled_start_screenshot"
             }
           },
           "text": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/04/scene.md"
@@ -5563,24 +5516,22 @@
           "scene": 5,
           "storyboard": {
             "end": {
-              "expected": "package_05.png",
-              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/05/frames/end.png",
               "role": "end",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "package_05.png",
+              "status": "present",
+              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/05/frames/start.png",
               "sources": [
                 "docs/package_05.png"
               ],
-              "status": "present"
-            },
-            "start": {
-              "expected": "package_04.png",
-              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/05/frames/start.png",
-              "role": "start",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
-              "sources": [
-                "docs/package_04.png"
-              ],
-              "status": "present"
+              "semantics": "source_tangent_labeled_start_screenshot"
             }
           },
           "text": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/05/scene.md"
@@ -5593,24 +5544,22 @@
           "scene": 6,
           "storyboard": {
             "end": {
-              "expected": "package_06.png",
-              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/06/frames/end.png",
               "role": "end",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "package_06.png",
+              "status": "present",
+              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/06/frames/start.png",
               "sources": [
                 "docs/package_06.png"
               ],
-              "status": "present"
-            },
-            "start": {
-              "expected": "package_05.png",
-              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/06/frames/start.png",
-              "role": "start",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
-              "sources": [
-                "docs/package_05.png"
-              ],
-              "status": "present"
+              "semantics": "source_tangent_labeled_start_screenshot"
             }
           },
           "text": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/06/scene.md"
@@ -5623,24 +5572,22 @@
           "scene": 7,
           "storyboard": {
             "end": {
-              "expected": "package_07.png",
-              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/07/frames/end.png",
               "role": "end",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "package_07.png",
+              "status": "present",
+              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/07/frames/start.png",
               "sources": [
                 "docs/package_07.png"
               ],
-              "status": "present"
-            },
-            "start": {
-              "expected": "package_06.png",
-              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/07/frames/start.png",
-              "role": "start",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
-              "sources": [
-                "docs/package_06.png"
-              ],
-              "status": "present"
+              "semantics": "source_tangent_labeled_start_screenshot"
             }
           },
           "text": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/07/scene.md"
@@ -5653,24 +5600,22 @@
           "scene": 8,
           "storyboard": {
             "end": {
-              "expected": "package_08.png",
-              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/08/frames/end.png",
               "role": "end",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "package_08.png",
+              "status": "present",
+              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/08/frames/start.png",
               "sources": [
                 "docs/package_08.png"
               ],
-              "status": "present"
-            },
-            "start": {
-              "expected": "package_07.png",
-              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/08/frames/start.png",
-              "role": "start",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
-              "sources": [
-                "docs/package_07.png"
-              ],
-              "status": "present"
+              "semantics": "source_tangent_labeled_start_screenshot"
             }
           },
           "text": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/08/scene.md"
@@ -5683,24 +5628,22 @@
           "scene": 9,
           "storyboard": {
             "end": {
-              "expected": "package_09.png",
-              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/09/frames/end.png",
               "role": "end",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "package_09.png",
+              "status": "present",
+              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/09/frames/start.png",
               "sources": [
                 "docs/package_09.png"
               ],
-              "status": "present"
-            },
-            "start": {
-              "expected": "package_08.png",
-              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/09/frames/start.png",
-              "role": "start",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
-              "sources": [
-                "docs/package_08.png"
-              ],
-              "status": "present"
+              "semantics": "source_tangent_labeled_start_screenshot"
             }
           },
           "text": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/09/scene.md"
@@ -5713,24 +5656,22 @@
           "scene": 10,
           "storyboard": {
             "end": {
-              "expected": "package_10.png",
-              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/10/frames/end.png",
               "role": "end",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "package_10.png",
+              "status": "present",
+              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/10/frames/start.png",
               "sources": [
                 "docs/package_10.png"
               ],
-              "status": "present"
-            },
-            "start": {
-              "expected": "package_09.png",
-              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/10/frames/start.png",
-              "role": "start",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
-              "sources": [
-                "docs/package_09.png"
-              ],
-              "status": "present"
+              "semantics": "source_tangent_labeled_start_screenshot"
             }
           },
           "text": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/10/scene.md"
@@ -5743,24 +5684,22 @@
           "scene": 11,
           "storyboard": {
             "end": {
-              "expected": "package_11.png",
-              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/11/frames/end.png",
               "role": "end",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "package_11.png",
+              "status": "present",
+              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/11/frames/start.png",
               "sources": [
                 "docs/package_11.png"
               ],
-              "status": "present"
-            },
-            "start": {
-              "expected": "package_10.png",
-              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/11/frames/start.png",
-              "role": "start",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
-              "sources": [
-                "docs/package_10.png"
-              ],
-              "status": "present"
+              "semantics": "source_tangent_labeled_start_screenshot"
             }
           },
           "text": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/11/scene.md"
@@ -5773,24 +5712,22 @@
           "scene": 12,
           "storyboard": {
             "end": {
-              "expected": "package_12.png",
-              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/12/frames/end.png",
               "role": "end",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "package_12.png",
+              "status": "present",
+              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/12/frames/start.png",
               "sources": [
                 "docs/package_12.png"
               ],
-              "status": "present"
-            },
-            "start": {
-              "expected": "package_11.png",
-              "local": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/12/frames/start.png",
-              "role": "start",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
-              "sources": [
-                "docs/package_11.png"
-              ],
-              "status": "present"
+              "semantics": "source_tangent_labeled_start_screenshot"
             }
           },
           "text": "docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/scenes/12/scene.md"
@@ -5843,22 +5780,22 @@
           "scene": 1,
           "storyboard": {
             "end": {
-              "expected": "cartography_01.png",
-              "local": "docs/guide/animations/tangents/22_find_cartographical_disaster/scenes/01/frames/end.png",
               "role": "end",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "cartography_01.png",
+              "status": "present",
+              "local": "docs/guide/animations/tangents/22_find_cartographical_disaster/scenes/01/frames/start.png",
               "sources": [
                 "docs/cartography_01.png"
               ],
-              "status": "present"
-            },
-            "start": {
-              "expected": null,
-              "local": null,
-              "role": "start",
-              "semantics": "unresolved_tangent_cut_map_first_scene_start",
-              "sources": [],
-              "status": "unresolved"
+              "semantics": "source_tangent_labeled_start_screenshot"
             }
           },
           "text": "docs/guide/animations/tangents/22_find_cartographical_disaster/scenes/01/scene.md"
@@ -5871,24 +5808,22 @@
           "scene": 2,
           "storyboard": {
             "end": {
-              "expected": "cartography_02.png",
-              "local": "docs/guide/animations/tangents/22_find_cartographical_disaster/scenes/02/frames/end.png",
               "role": "end",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "cartography_02.png",
+              "status": "present",
+              "local": "docs/guide/animations/tangents/22_find_cartographical_disaster/scenes/02/frames/start.png",
               "sources": [
                 "docs/cartography_02.png"
               ],
-              "status": "present"
-            },
-            "start": {
-              "expected": "cartography_01.png",
-              "local": "docs/guide/animations/tangents/22_find_cartographical_disaster/scenes/02/frames/start.png",
-              "role": "start",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
-              "sources": [
-                "docs/cartography_01.png"
-              ],
-              "status": "present"
+              "semantics": "source_tangent_labeled_start_screenshot"
             }
           },
           "text": "docs/guide/animations/tangents/22_find_cartographical_disaster/scenes/02/scene.md"
@@ -5901,24 +5836,22 @@
           "scene": 3,
           "storyboard": {
             "end": {
-              "expected": "cartography_03.png",
-              "local": "docs/guide/animations/tangents/22_find_cartographical_disaster/scenes/03/frames/end.png",
               "role": "end",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "cartography_03.png",
+              "status": "present",
+              "local": "docs/guide/animations/tangents/22_find_cartographical_disaster/scenes/03/frames/start.png",
               "sources": [
                 "docs/cartography_03.png"
               ],
-              "status": "present"
-            },
-            "start": {
-              "expected": "cartography_02.png",
-              "local": "docs/guide/animations/tangents/22_find_cartographical_disaster/scenes/03/frames/start.png",
-              "role": "start",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
-              "sources": [
-                "docs/cartography_02.png"
-              ],
-              "status": "present"
+              "semantics": "source_tangent_labeled_start_screenshot"
             }
           },
           "text": "docs/guide/animations/tangents/22_find_cartographical_disaster/scenes/03/scene.md"
@@ -5931,24 +5864,22 @@
           "scene": 4,
           "storyboard": {
             "end": {
-              "expected": "cartography_04.png",
-              "local": "docs/guide/animations/tangents/22_find_cartographical_disaster/scenes/04/frames/end.png",
               "role": "end",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "cartography_04.png",
+              "status": "present",
+              "local": "docs/guide/animations/tangents/22_find_cartographical_disaster/scenes/04/frames/start.png",
               "sources": [
                 "docs/cartography_04.png"
               ],
-              "status": "present"
-            },
-            "start": {
-              "expected": "cartography_03.png",
-              "local": "docs/guide/animations/tangents/22_find_cartographical_disaster/scenes/04/frames/start.png",
-              "role": "start",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
-              "sources": [
-                "docs/cartography_03.png"
-              ],
-              "status": "present"
+              "semantics": "source_tangent_labeled_start_screenshot"
             }
           },
           "text": "docs/guide/animations/tangents/22_find_cartographical_disaster/scenes/04/scene.md"
@@ -5961,24 +5892,22 @@
           "scene": 5,
           "storyboard": {
             "end": {
-              "expected": "cartography_05.png",
-              "local": "docs/guide/animations/tangents/22_find_cartographical_disaster/scenes/05/frames/end.png",
               "role": "end",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "cartography_05.png",
+              "status": "present",
+              "local": "docs/guide/animations/tangents/22_find_cartographical_disaster/scenes/05/frames/start.png",
               "sources": [
                 "docs/cartography_05.png"
               ],
-              "status": "present"
-            },
-            "start": {
-              "expected": "cartography_04.png",
-              "local": "docs/guide/animations/tangents/22_find_cartographical_disaster/scenes/05/frames/start.png",
-              "role": "start",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
-              "sources": [
-                "docs/cartography_04.png"
-              ],
-              "status": "present"
+              "semantics": "source_tangent_labeled_start_screenshot"
             }
           },
           "text": "docs/guide/animations/tangents/22_find_cartographical_disaster/scenes/05/scene.md"
@@ -5991,24 +5920,22 @@
           "scene": 6,
           "storyboard": {
             "end": {
-              "expected": "cartography_06.png",
-              "local": "docs/guide/animations/tangents/22_find_cartographical_disaster/scenes/06/frames/end.png",
               "role": "end",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "cartography_06.png",
+              "status": "present",
+              "local": "docs/guide/animations/tangents/22_find_cartographical_disaster/scenes/06/frames/start.png",
               "sources": [
                 "docs/cartography_06.png"
               ],
-              "status": "present"
-            },
-            "start": {
-              "expected": "cartography_05.png",
-              "local": "docs/guide/animations/tangents/22_find_cartographical_disaster/scenes/06/frames/start.png",
-              "role": "start",
-              "semantics": "inferred_tangent_cut_map_sequence_boundary",
-              "sources": [
-                "docs/cartography_05.png"
-              ],
-              "status": "present"
+              "semantics": "source_tangent_labeled_start_screenshot"
             }
           },
           "text": "docs/guide/animations/tangents/22_find_cartographical_disaster/scenes/06/scene.md"

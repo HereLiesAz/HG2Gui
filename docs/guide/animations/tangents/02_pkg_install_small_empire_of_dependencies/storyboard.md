@@ -1,148 +1,101 @@
-# Storyboard — 02_pkg_install_small_empire_of_dependencies
+# 02_pkg_install_small_empire_of_dependencies — source-frame storyboard
 
-Source cut map: `docs/script (3).md`.
-The tangent source declares one frame per cut rather than explicit START/END pairs.
-Each declared cut-map frame is treated as that cut's end boundary; the previous cut's frame is reused as the next cut's start boundary.
-The first scene's start remains unresolved unless a preceding frame is actually declared elsewhere.
+The source PNGs themselves display a `Start:` label. The cut-map still is therefore START reference art, **not the END of that or the preceding cut**.
 
-## Scene 01
+No source END shot is supplied by the tangent cut map. The stills include production text and must be cleaned/approved before final render.
+
+## Clip 01
 
 Package management began as the profession of delivering one thing.
 
-**Start:** **UNRESOLVED** — no declared filename
+**START:** [source screenshot](scenes/01/frames/start.png) — `package_01.png` (labeled; needs artwork extraction)
 
-**End:** `scenes/01/frames/end.png` — source `package_01.png` (present)
+**END:** **UNSUPPLIED**. See [shot specification](clips/01/shots.md).
 
-![Scene 01 end](scenes/01/frames/end.png)
-
-## Scene 02
+## Clip 02
 
 Packages were granted the right to arrive with what they needed.
 
-**Start:** `scenes/02/frames/start.png` — source `package_01.png` (present)
+**START:** [source screenshot](scenes/02/frames/start.png) — `package_02.png` (labeled; needs artwork extraction)
 
-![Scene 02 start](scenes/02/frames/start.png)
+**END:** **UNSUPPLIED**. See [shot specification](clips/02/shots.md).
 
-**End:** `scenes/02/frames/end.png` — source `package_02.png` (present)
-
-![Scene 02 end](scenes/02/frames/end.png)
-
-## Scene 03
+## Clip 03
 
 The first package requested an additional package.
 
-**Start:** `scenes/03/frames/start.png` — source `package_02.png` (present)
+**START:** [source screenshot](scenes/03/frames/start.png) — `package_03.png` (labeled; needs artwork extraction)
 
-![Scene 03 start](scenes/03/frames/start.png)
+**END:** **UNSUPPLIED**. See [shot specification](clips/03/shots.md).
 
-**End:** `scenes/03/frames/end.png` — source `package_03.png` (present)
-
-![Scene 03 end](scenes/03/frames/end.png)
-
-## Scene 04
+## Clip 04
 
 Things began to arrive.
 
-**Start:** `scenes/04/frames/start.png` — source `package_03.png` (present)
+**START:** [source screenshot](scenes/04/frames/start.png) — `package_04.png` (labeled; needs artwork extraction)
 
-![Scene 04 start](scenes/04/frames/start.png)
+**END:** **UNSUPPLIED**. See [shot specification](clips/04/shots.md).
 
-**End:** `scenes/04/frames/end.png` — source `package_04.png` (present)
-
-![Scene 04 end](scenes/04/frames/end.png)
-
-## Scene 05
+## Clip 05
 
 Then more things.
 
-**Start:** `scenes/05/frames/start.png` — source `package_04.png` (present)
+**START:** [source screenshot](scenes/05/frames/start.png) — `package_05.png` (labeled; needs artwork extraction)
 
-![Scene 05 start](scenes/05/frames/start.png)
+**END:** **UNSUPPLIED**. See [shot specification](clips/05/shots.md).
 
-**End:** `scenes/05/frames/end.png` — source `package_05.png` (present)
-
-![Scene 05 end](scenes/05/frames/end.png)
-
-## Scene 06
+## Clip 06
 
 Warehouses became factories.
 
-**Start:** `scenes/06/frames/start.png` — source `package_05.png` (present)
+**START:** [source screenshot](scenes/06/frames/start.png) — `package_06.png` (labeled; needs artwork extraction)
 
-![Scene 06 start](scenes/06/frames/start.png)
+**END:** **UNSUPPLIED**. See [shot specification](clips/06/shots.md).
 
-**End:** `scenes/06/frames/end.png` — source `package_06.png` (present)
-
-![Scene 06 end](scenes/06/frames/end.png)
-
-## Scene 07
+## Clip 07
 
 Factories acquired supply chains, which acquired relationships.
 
-**Start:** `scenes/07/frames/start.png` — source `package_06.png` (present)
+**START:** [source screenshot](scenes/07/frames/start.png) — `package_07.png` (labeled; needs artwork extraction)
 
-![Scene 07 start](scenes/07/frames/start.png)
+**END:** **UNSUPPLIED**. See [shot specification](clips/07/shots.md).
 
-**End:** `scenes/07/frames/end.png` — source `package_07.png` (present)
-
-![Scene 07 end](scenes/07/frames/end.png)
-
-## Scene 08
+## Clip 08
 
 Balance was introduced as a theoretical objective.
 
-**Start:** `scenes/08/frames/start.png` — source `package_07.png` (present)
+**START:** [source screenshot](scenes/08/frames/start.png) — `package_08.png` (labeled; needs artwork extraction)
 
-![Scene 08 start](scenes/08/frames/start.png)
+**END:** **UNSUPPLIED**. See [shot specification](clips/08/shots.md).
 
-**End:** `scenes/08/frames/end.png` — source `package_08.png` (present)
-
-![Scene 08 end](scenes/08/frames/end.png)
-
-## Scene 09
+## Clip 09
 
 The original package remained somewhere in the resulting economy.
 
-**Start:** `scenes/09/frames/start.png` — source `package_08.png` (present)
+**START:** [source screenshot](scenes/09/frames/start.png) — `package_09.png` (labeled; needs artwork extraction)
 
-![Scene 09 start](scenes/09/frames/start.png)
+**END:** **UNSUPPLIED**. See [shot specification](clips/09/shots.md).
 
-**End:** `scenes/09/frames/end.png` — source `package_09.png` (present)
-
-![Scene 09 end](scenes/09/frames/end.png)
-
-## Scene 10
+## Clip 10
 
 A specialist search department was formed.
 
-**Start:** `scenes/10/frames/start.png` — source `package_09.png` (present)
+**START:** [source screenshot](scenes/10/frames/start.png) — `package_10.png` (labeled; needs artwork extraction)
 
-![Scene 10 start](scenes/10/frames/start.png)
+**END:** **UNSUPPLIED**. See [shot specification](clips/10/shots.md).
 
-**End:** `scenes/10/frames/end.png` — source `package_10.png` (present)
-
-![Scene 10 end](scenes/10/frames/end.png)
-
-## Scene 11
+## Clip 11
 
 Confidence fluctuated according to departmental requirements.
 
-**Start:** `scenes/11/frames/start.png` — source `package_10.png` (present)
+**START:** [source screenshot](scenes/11/frames/start.png) — `package_11.png` (labeled; needs artwork extraction)
 
-![Scene 11 start](scenes/11/frames/start.png)
+**END:** **UNSUPPLIED**. See [shot specification](clips/11/shots.md).
 
-**End:** `scenes/11/frames/end.png` — source `package_11.png` (present)
-
-![Scene 11 end](scenes/11/frames/end.png)
-
-## Scene 12
+## Clip 12
 
 Modern package managers automate the whole thing. `pkg install` resolves and installs dependencies.
 
-**Start:** `scenes/12/frames/start.png` — source `package_11.png` (present)
+**START:** [source screenshot](scenes/12/frames/start.png) — `package_12.png` (labeled; needs artwork extraction)
 
-![Scene 12 start](scenes/12/frames/start.png)
-
-**End:** `scenes/12/frames/end.png` — source `package_12.png` (present)
-
-![Scene 12 end](scenes/12/frames/end.png)
+**END:** **UNSUPPLIED**. See [shot specification](clips/12/shots.md).

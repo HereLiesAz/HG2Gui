@@ -467,68 +467,49 @@ def build_tangents(manifest: dict, asset_index: dict[str, list[Path]]) -> None:
 
         cut_rows = re.findall(r"\|\s*(\d{2})\s*\|\s*`([^`]+)`\s*\|\s*(.*?)\s*\|", text)
         scene_records = []
+        scene_records = []
         storyboard_sections = [
-            f"# Storyboard — {folder_name}",
-            "",
+            f"# Storyboard — {folder_name}", "",
             f"Source cut map: `{rel(script_path)}`.",
-            "The tangent source declares one frame per cut rather than explicit START/END pairs.",
-            "Each declared cut-map frame is treated as that cut's end boundary; the previous cut's frame is reused as the next cut's start boundary.",
-            "The first scene's start remains unresolved unless a preceding frame is actually declared elsewhere.",
-            "",
+            "The numbered screenshot for each cut is visibly labeled START, not END.",
+            "END images are not supplied. Never reuse another clip's START as an END.", "",
         ]
-        previous_frame: str | None = None
-
         for cut_no, frame_name, narration in cut_rows:
             number = int(cut_no)
             scene_dir = anim_dir / "scenes" / cut_no
-            scene_text = (
-                f"# Scene {cut_no}\n\n"
-                f"**Frame:** `{frame_name}`\n\n"
-                f"**Narration beat:** {narration}"
+            write(scene_dir / "scene.md",
+                  f"# Scene {cut_no}\n\n**START source screenshot:** `{frame_name}` "
+                  "(production labels embedded; needs cleaning)\n\n"
+                  "**END image:** not provided\n\n"
+                  f"**Narration beat:** {narration}")
+            start = materialize_boundary(
+                frame_name, "start", scene_dir, asset_index,
+                "source_tangent_labeled_start_screenshot"
             )
-            write(scene_dir / "scene.md", scene_text)
-
-            start = inferred_sequence_boundary(
-                previous_frame,
-                "start",
-                scene_dir,
-                asset_index,
-                "tangent_cut_map",
-            )
-            end = inferred_sequence_boundary(
-                frame_name,
-                "end",
-                scene_dir,
-                asset_index,
-                "tangent_cut_map",
-            )
+            end = {
+                "role": "end", "expected": None, "status": "unresolved",
+                "local": None, "sources": [],
+                "semantics": "source_tangent_end_not_supplied"
+            }
+            old_end = scene_dir / "frames/end.png"
+            if old_end.exists():
+                old_end.unlink()
             boundaries = [start, end]
             write_frames_readme(
-                scene_dir,
-                boundaries,
-                "Boundary roles are inferred from the ordered cut-map still sequence; the source script itself declares one frame per cut.",
+                scene_dir, boundaries,
+                "Source PNG is a labeled START screenshot; clean END image is unavailable."
             )
             reference_readme(scene_dir)
-
-            storyboard_sections += [
-                storyboard_scene_section(
-                    number,
-                    f"## Cut {cut_no}\n\n{narration}",
-                    boundaries,
-                ),
-                "",
-            ]
-
+            storyboard_sections.append(
+                storyboard_scene_section(number, f"## Cut {cut_no}\n\n{narration}", boundaries)
+            )
+            storyboard_sections.append("")
             scene_records.append({
-                "scene": number,
-                "frame": frame_name,
-                "narration": narration,
+                "scene": number, "frame": frame_name, "narration": narration,
                 "text": rel(scene_dir / "scene.md"),
                 "storyboard": {"start": start, "end": end},
-                "references_present": [],
-                "references_missing": [],
+                "references_present": [], "references_missing": [],
             })
-            previous_frame = frame_name
 
         write(anim_dir / "storyboard.md", "\n".join(storyboard_sections))
         entries.append({
@@ -720,8 +701,9 @@ def coverage_for(entries: list[dict]) -> dict:
 
 
 def main() -> None:
-    if OUT.exists():
-        shutil.rmtree(OUT)
+    # Preserve hand-authored clip scripts and visual directions while refreshing
+    # the source-organized scene inventory. Never wipe docs/guide wholesale.
+    OUT.mkdir(parents=True, exist_ok=True)
 
     asset_index = source_asset_index()
     manifest: dict = {
@@ -761,13 +743,15 @@ This is the organized, non-destructive collection of Guide-related production ma
 - `animations/tangents/` — the four scripted Guide tangents that precede canonical entries.
 - `animations/legacy/` — older/incomplete animated material that has numbered visual material but no current production packet.
 
-Each animation preserves its existing source material and storyboard, with a [production clip index](CLIP_PRODUCTION_INDEX.md). Each `clips/NN/` contains a verified START/END pair when available, its cut-specific script beat, and an image-to-video prompt. Historical `scenes/NN/` source records are retained.
+Each animation preserves its existing source material and storyboard, with a [production clip index](CLIP_PRODUCTION_INDEX.md). Each `clips/NN/` contains a verified START/END pair when available, its source-matched script passage, separate START/END shot descriptions, and an individualized image-to-video prompt. Historical `scenes/NN/` source records are retained.
 
 ## Clip production
 
 [Browse all animation clip packets](CLIP_PRODUCTION_INDEX.md). Use each animation's `CLIPS.md` index to find a clip's `README.md`, `script.md`, `prompt.md`, and actual start/end images. Missing frames and legacy narration remain explicitly unresolved, not invented. Run `scripts/organize_guide_material.py` to rebuild these packets together with the original scene material.
 
 ## Visual material
+
+Original labeled tangent screenshots are preserved. Missing clean frames are documented in `ANIMATION_TODO.md`; they are not invented.
 
 The three visual classes are deliberately separate:
 
@@ -779,7 +763,7 @@ Adjacent scenes may intentionally contain duplicate copies of the same boundary 
 
 Canonical START/END filenames come directly from `{CUT_SHEET.name}`. If a declared image does not actually exist in the repository, its `frames/README.md`, the animation `storyboard.md`, and `MANIFEST.json` record the absence. No replacement frame is invented.
 
-Tangent sources provide one ordered still per cut rather than explicit START/END pairs. Those stills are treated as cut-end boundaries and the previous still is reused as the following cut's inferred start. The first tangent cut's start remains explicitly unresolved where no preceding still exists.\n\nLegacy `ls`, `echo`, and `ls_tangent` clip sets already provide explicit `_start` and `_end` files per scene; those are copied directly into each scene's `frames/` folder.
+Tangent cut-map PNGs visibly include a `Start:` overlay. Each is stored as that cut's labeled START source screenshot, not as its END or the next clip's START. All 42 tangent END images remain unverified; the annotated sources need clean artwork extraction.\n\nLegacy `ls`, `echo`, and `ls_tangent` clip sets already provide explicit `_start` and `_end` files per scene; those are copied directly into each scene's `frames/` folder.
 
 ## Inventory
 

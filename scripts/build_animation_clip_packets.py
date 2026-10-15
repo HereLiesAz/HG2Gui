@@ -33,6 +33,10 @@ STYLE = (
 
 def write(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
+    # Manually curated shots, script excerpts and clip prompts take precedence.
+    # Generate only missing new packets, never overwrite existing clip production.
+    if path.exists():
+        return
     path.write_text(content.rstrip() + "\n", encoding="utf-8")
 
 

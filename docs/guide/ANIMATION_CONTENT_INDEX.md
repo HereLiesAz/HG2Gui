@@ -5,11 +5,13 @@ Original source files remain where they were so existing repository links do not
 
 ## Boundary audit
 
+The tangent source files are annotated START reference screenshots, not END frames. No clean tangent END images were present in the source collection.
+
 - Animations: **42**
 - Clips / scenes: **173**
 - START/END boundary slots: **346**
-- Boundary slots backed by real organized image files: **116**
-- Missing or unresolved boundary slots: **230**
+- Boundary slots backed by real organized image files: **80**
+- Missing or unresolved boundary slots: **266**
 - Detailed actionable list: [`ANIMATION_TODO.md`](ANIMATION_TODO.md)
 
 [Per-animation, per-clip production packets](CLIP_PRODUCTION_INDEX.md) include exact cut script beats, new prompts, and real start/end frames when present.

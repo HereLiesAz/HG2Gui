@@ -1,23 +1,13 @@
-# Storyboard frames
+# Clip 04 boundary provenance
 
-Storyboard boundary assets for this scene. These are separate from supporting visual references.
+## START
 
-Boundary roles are inferred from the ordered cut-map still sequence; the source script itself declares one frame per cut.
+- Source still: `cartography_04.png` (`docs/cartography_04.png`)
+- Local source copy: [start.png](start.png)
+- Status: **source image present; embedded production labels require cleanup**
+- This file is visibly marked `Start:` in the original screenshot.
 
-## Start
+## END
 
-- Expected source filename: `cartography_03.png`
-- Status: **present**
-- Semantics: `inferred_tangent_cut_map_sequence_boundary`
-- Local normalized copy: `start.png`
-- Source candidate(s):
-  - `docs/cartography_03.png`
-
-## End
-
-- Expected source filename: `cartography_04.png`
-- Status: **present**
-- Semantics: `inferred_tangent_cut_map_sequence_boundary`
-- Local normalized copy: `end.png`
-- Source candidate(s):
-  - `docs/cartography_04.png`
+- **Unresolved:** the source cut map provides no END still for this clip.
+- Do not mistake the next numbered source START still for this clip's ending.
