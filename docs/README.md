@@ -1,4 +1,8 @@
-# HG2Gui Tangent Pack
+# HG2Gui documentation and animation production
+
+[**Animation production index**](guide/CLIP_PRODUCTION_INDEX.md) · [Guide overview](guide/README.md) · [Frame audit](guide/ANIMATION_TODO.md) · [Current 1:1 style lock](HG2Gui_animation_style_lock_prompt_v2.md)
+
+## Tangent Pack
 
 Repo-ready assets for the canonical Guide tangent system.
 

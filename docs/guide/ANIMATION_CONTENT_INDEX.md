@@ -12,6 +12,8 @@ Original source files remain where they were so existing repository links do not
 - Missing or unresolved boundary slots: **230**
 - Detailed actionable list: [`ANIMATION_TODO.md`](ANIMATION_TODO.md)
 
+[Per-animation, per-clip production packets](CLIP_PRODUCTION_INDEX.md) include exact cut script beats, new prompts, and real start/end frames when present.
+
 ## Organization
 
 Each animation directory contains its complete animation text, storyboard/cut information, scene folders, and animation-specific references when available.

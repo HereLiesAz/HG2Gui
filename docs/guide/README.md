@@ -9,7 +9,11 @@ This is the organized, non-destructive collection of Guide-related production ma
 - `animations/tangents/` — the four scripted Guide tangents that precede canonical entries.
 - `animations/legacy/` — older/incomplete animated material that has numbered visual material but no current production packet.
 
-Every animation folder contains its complete animation text and a `storyboard.md`. Every `scenes/NN/scene.md` contains only material belonging to that scene.
+Each animation contains its complete script, storyboard, and a [production clip index](CLIP_PRODUCTION_INDEX.md). Each `clips/NN/` contains a verified START/END pair when available, its cut-specific script beat, and an image-to-video prompt. Historical `scenes/NN/` source records are retained.
+
+## Clip production
+
+[Browse all animation clip packets](CLIP_PRODUCTION_INDEX.md). Use each animation's `CLIPS.md` index to find a clip's `README.md`, `script.md`, `prompt.md`, and actual start/end images. Missing frames and legacy narration remain explicitly unresolved, not invented. Run `scripts/organize_guide_material.py` to rebuild these packets together with the original scene material.
 
 ## Visual material
 
