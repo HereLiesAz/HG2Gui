@@ -156,6 +156,29 @@ class AnimationDocumentationTest(unittest.TestCase):
             self.assertEqual(boundary["status"], "missing")
             self.assertFalse(old.exists())
 
+
+    def test_new_shot_fallback_can_be_refreshed(self) -> None:
+        builder = load("animation_fallback_test", ROOT / "scripts/build_animation_clip_packets.py")
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "shots.md"
+            boundary = {"expected": "future.png", "sources": ["docs/future.png"]}
+            content = "# Clip\n\n" + builder.format_shot_record(
+                "start", boundary, False, "canonical"
+            ) + "\n" + builder.format_shot_record(
+                "end", {"expected": None, "sources": []}, False, "canonical"
+            )
+            path.write_text(content, encoding="utf-8")
+            builder.refresh_shots(
+                path,
+                {"start": boundary, "end": {"sources": []}},
+                {"start": True, "end": False},
+                "canonical",
+            )
+            updated = path.read_text(encoding="utf-8")
+            self.assertIn("**START** — [image](start.png)", updated)
+            self.assertIn("- Source: docs/future.png", updated)
+            self.assertIn("**END** — NO IMAGE", updated)
+
     def test_packet_rebuild_does_not_dirty_curated_documents(self) -> None:
         builder = load("animation_packets_test", ROOT / "scripts/build_animation_clip_packets.py")
         paths = [GUIDE / "CLIP_PRODUCTION_INDEX.md"]

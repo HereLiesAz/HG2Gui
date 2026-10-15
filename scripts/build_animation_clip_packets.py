@@ -75,6 +75,25 @@ def refresh_readme(path: Path, content: str, start_line: str, end_line: str) -> 
         write(path, changed, refresh=True)
 
 
+def format_shot_record(role: str, boundary: dict, available: bool, kind: str) -> str:
+    """Use the same metadata structure that refresh_shots updates later."""
+    origin = ", ".join(boundary.get("sources") or []) or "not supplied"
+    provenance = (
+        "annotated START screenshot" if kind == "tangents" and role == "start"
+        else "original artwork" if available
+        else "no image supplied"
+    )
+    image = f"[image]({role}.png)" if available else "NO IMAGE"
+    expected = boundary.get("expected") or "not declared"
+    return (
+        f"## {role.upper()} shot\n\n"
+        f"**{role.upper()}** — {image}\n\n"
+        f"- Declared filename: `{expected}`\n"
+        f"- Source: {origin}\n"
+        f"- Type: {provenance}\n"
+    )
+
+
 def refresh_shots(path: Path, boundaries: dict, available: dict[str, bool], kind: str) -> None:
     """Keep hand-authored shot descriptions, refreshing changed frame metadata only."""
     if not path.exists():
@@ -308,24 +327,14 @@ def build() -> tuple[int, int]:
                 )
                 refresh_readme(destination / "README.md", readme, start_line, end_line)
 
-                # A source-aligned shot record is required even for a newly introduced cut.
-                # Preserve existing author-reviewed descriptions instead of replacing them.
-                def shot_record(role: str) -> str:
-                    b = boundaries[role]
-                    origin = ", ".join(b.get("sources") or []) or "not supplied"
-                    return (
-                        f"## {role.upper()}\n\n"
-                        f"- Source filename: `{expected(role)}`\n"
-                        f"- Status: {status(role)}\n"
-                        f"- Source location: {origin}\n"
-                        + (f"- [Image]({role}.png)\n" if exists(role) else
-                           "- No verified image available.\n")
-                    )
+                # Preserve author-reviewed shot prose. New shot files use refreshable
+                # START/END metadata so later source additions do not go stale.
                 write(destination / "shots.md",
                       f"# {name} — clip {number}: START and END shot details\n\n"
-                      + shot_record("start") + "\n" + shot_record("end")
-                      + "\n**Documented action:**\n\n" + (beat or "Legacy clip action not documented.") +
-                      "\n")
+                      + format_shot_record("start", boundaries["start"], exists("start"), kind)
+                      + "\n" + format_shot_record("end", boundaries["end"], exists("end"), kind)
+                      + "\n**Documented action:**\n\n"
+                      + (beat or "Legacy clip action not documented.") + "\n")
 
                 refresh_shots(destination / "shots.md", boundaries,
                               {role: exists(role) for role in ("start", "end")}, kind)
