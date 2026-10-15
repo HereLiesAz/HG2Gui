@@ -39,12 +39,12 @@ Legacy `ls`, `echo`, and `ls_tangent` clip sets already provide explicit `_start
 - Tangent scenes: **42**
 - Legacy/incomplete animation groups: **3**
 - Legacy scenes: **14**
-- Project-wide files copied: **63**
+- Project-wide files copied: **64**
 - Unassigned scene/reference media retained for review: **0**
 
 ## Storyboard boundary coverage
 
-- Canonical: **8 / 234** boundary slots materialized; **226** missing; **0** ambiguous; **0** unresolved.
+- Canonical: **10 / 234** boundary slots materialized; **224** missing; **0** ambiguous; **0** unresolved.
 - Tangents: **80 / 84** boundary slots materialized; **0** missing; **0** ambiguous; **4** unresolved.
 - Legacy: **28 / 28** boundary slots materialized; **0** missing; **0** ambiguous; **0** unresolved.
 

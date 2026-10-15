@@ -8,12 +8,12 @@ A checked animation means every start/end boundary used by every clip is backed 
 
 | Group | Animations | Clips / scenes | Boundary slots | Materialized | Missing / unresolved |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Canonical | 35 | 117 | 234 | 8 | 226 |
+| Canonical | 35 | 117 | 234 | 10 | 224 |
 | Tangents | 4 | 42 | 84 | 80 | 4 |
 | Legacy | 3 | 14 | 28 | 28 | 0 |
-| **Total** | **42** | **173** | **346** | **116** | **230** |
+| **Total** | **42** | **173** | **346** | **118** | **228** |
 
-Canonical production uses **152 unique boundary image filenames** across the canonical clips because adjacent clips share boundaries. **5/152 unique canonical frames are currently present.**
+Canonical production uses **152 unique boundary image filenames** across the canonical clips because adjacent clips share boundaries. **6/152 unique canonical frames are currently present.**
 
 ## Boundary rules
 
@@ -44,20 +44,18 @@ Unique canonical boundary frames: **0/5 present**. Adjacent clips intentionally 
 - [ ] `01_pwd_frame_03.png`
 - [ ] `01_pwd_frame_04.png`
 
-### [ ] 02 — `pkg install`
+### [x] 02 — `pkg install`
 
-Unique canonical boundary frames: **4/5 present**. Adjacent clips intentionally share the same boundary image.
+Unique canonical boundary frames: **5/5 present**. Adjacent clips intentionally share the same boundary image.
 
 | Clip / scene | Start frame | End frame |
 | ---: | --- | --- |
 | 01 | ✅ `02_pkg_install_frame_00.png` | ✅ `02_pkg_install_frame_01.png` |
-| 02 | ✅ `02_pkg_install_frame_01.png` | ⬜ `02_pkg_install_frame_02.png` — missing |
-| 03 | ⬜ `02_pkg_install_frame_02.png` — missing | ✅ `02_pkg_install_frame_03.png` |
+| 02 | ✅ `02_pkg_install_frame_01.png` | ✅ `02_pkg_install_frame_02.png` |
+| 03 | ✅ `02_pkg_install_frame_02.png` | ✅ `02_pkg_install_frame_03.png` |
 | 04 | ✅ `02_pkg_install_frame_03.png` | ✅ `02_pkg_install_frame_04.png` |
 
-**TODO — missing boundaries**
-
-- [ ] `02_pkg_install_frame_02.png`
+All start/end boundaries for this animation are materialized.
 
 ### [ ] 03 — `apt-get update`
 

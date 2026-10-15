@@ -79,7 +79,7 @@ def copy(src: Path, dst: Path) -> None:
 
 
 def rel(path: Path) -> str:
-    return str(path.relative_to(ROOT))
+    return path.relative_to(ROOT).as_posix()
 
 
 def slug(s: str) -> str:

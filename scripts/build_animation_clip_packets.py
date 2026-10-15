@@ -124,7 +124,7 @@ def build() -> tuple[int, int]:
                         output.unlink()
 
                 script_source = (
-                    "docs/HG2Gui_animation_5s_cut_sheet_v2.md" if kind == "canonical"
+                    "`docs/HG2Gui_animation_5s_cut_sheet_v2.md`" if kind == "canonical"
                     else "the original tangent cut map" if kind == "tangents"
                     else "no verified clip script"
                 )
