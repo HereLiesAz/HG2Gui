@@ -11,12 +11,12 @@ SEQUENCE: echo; CLIP 04; Original runtime undocumented.
 START: The woman stands left with hands on hips; cream reflected wave arcs return from the right.
 END: She lifts the megaphone while multiple progressively smaller, translucent copies of her appear to the right.
 
-MOTION DIRECTOR'S TIMING
-0.0–2.4s: Compress the returning echoes into repeating silhouettes of the same woman, each more distant and less distinct.
-2.4–4.6s: Compress the returning echoes into repeating silhouettes of the same woman, each more distant and less distinct.
-4.6–5.0s: Hold the exact finishing composition, no additional changes.
+MOTION DIRECTOR'S RELATIVE ACTION PHASES (runtime not yet established)
+Opening: Compress the returning echoes into repeating silhouettes of the same woman, each more distant and less distinct.
+Transformation: Compress the returning echoes into repeating silhouettes of the same woman, each more distant and less distinct.
+Final image: Hold the exact finishing composition, no additional changes.
 
 THE EXACT VISIBLE TRANSITION: Compress the returning echoes into repeating silhouettes of the same woman, each more distant and less distinct.
 
-Both boundary images exist; their exact silhouettes and compositions take precedence over wording.
+Both verified legacy boundary images exist. Match their compositions at start and finish; approve a runtime before timing the action.
 ~~~

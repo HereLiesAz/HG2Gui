@@ -11,12 +11,12 @@ SEQUENCE: echo; CLIP 02; Original runtime undocumented.
 START: The red mechanical horn on the left begins projecting small dark-blue sound arcs.
 END: Successively larger arcs extend across the olive field to a tiny far-right mark.
 
-MOTION DIRECTOR'S TIMING
-0.0–2.4s: Propagate the wavefront in stepped arcs from left to right, preserving the horn and its little stand.
-2.4–4.6s: Propagate the wavefront in stepped arcs from left to right, preserving the horn and its little stand.
-4.6–5.0s: Hold the exact finishing composition, no additional changes.
+MOTION DIRECTOR'S RELATIVE ACTION PHASES (runtime not yet established)
+Opening: Propagate the wavefront in stepped arcs from left to right, preserving the horn and its little stand.
+Transformation: Propagate the wavefront in stepped arcs from left to right, preserving the horn and its little stand.
+Final image: Hold the exact finishing composition, no additional changes.
 
 THE EXACT VISIBLE TRANSITION: Propagate the wavefront in stepped arcs from left to right, preserving the horn and its little stand.
 
-Both boundary images exist; their exact silhouettes and compositions take precedence over wording.
+Both verified legacy boundary images exist. Match their compositions at start and finish; approve a runtime before timing the action.
 ~~~

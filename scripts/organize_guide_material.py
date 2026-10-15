@@ -241,6 +241,13 @@ def materialize_boundary(
     resolved = resolve_asset(frame_name, asset_index)
     local = None
     source = resolved.pop("source")
+    # Scene-frame assets are generated copies. Remove obsolete copies before
+    # rematerializing so deleting a source cannot leave a misleading old PNG.
+    frame_dir = scene_dir / "frames"
+    if frame_dir.exists():
+        for previous in frame_dir.iterdir():
+            if previous.is_file() and previous.stem == role and previous.suffix.lower() in IMAGE_EXTS:
+                previous.unlink()
     if source is not None:
         local_path = scene_dir / "frames" / f"{role}{source.suffix.lower()}"
         copy(source, local_path)
@@ -451,7 +458,6 @@ def build_tangents(manifest: dict, asset_index: dict[str, list[Path]]) -> None:
         write(anim_dir / "animation.md", text)
 
         cut_rows = re.findall(r"\|\s*(\d{2})\s*\|\s*`([^`]+)`\s*\|\s*(.*?)\s*\|", text)
-        scene_records = []
         scene_records = []
         storyboard_sections = [
             f"# Storyboard — {folder_name}", "",
@@ -771,6 +777,8 @@ Tangent cut-map PNGs visibly include a `Start:` overlay. Each is stored as that 
 """
     write(OUT / "README.md", readme)
     write(OUT / "MANIFEST.json", json.dumps(manifest, indent=2, sort_keys=True))
+    # Rebuild the checklist before any generated links reference it.
+    runpy.run_path(str(ROOT / "scripts/build_animation_todo.py"), run_name="__main__")
     runpy.run_path(str(ROOT / "scripts/build_animation_clip_packets.py"), run_name="__main__")
 
 

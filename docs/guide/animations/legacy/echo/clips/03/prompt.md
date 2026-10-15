@@ -11,12 +11,12 @@ SEQUENCE: echo; CLIP 03; Original runtime undocumented.
 START: Blue outgoing sound arcs stretch toward a dashed white curved boundary at right.
 END: Cream dashed reflected arcs stream back toward the source through the advancing blue arcs.
 
-MOTION DIRECTOR'S TIMING
-0.0–2.4s: Bounce the approaching blue wave off the implied right boundary; convert it into pale dashed left-moving reflected pulses.
-2.4–4.6s: Bounce the approaching blue wave off the implied right boundary; convert it into pale dashed left-moving reflected pulses.
-4.6–5.0s: Hold the exact finishing composition, no additional changes.
+MOTION DIRECTOR'S RELATIVE ACTION PHASES (runtime not yet established)
+Opening: Bounce the approaching blue wave off the implied right boundary; convert it into pale dashed left-moving reflected pulses.
+Transformation: Bounce the approaching blue wave off the implied right boundary; convert it into pale dashed left-moving reflected pulses.
+Final image: Hold the exact finishing composition, no additional changes.
 
 THE EXACT VISIBLE TRANSITION: Bounce the approaching blue wave off the implied right boundary; convert it into pale dashed left-moving reflected pulses.
 
-Both boundary images exist; their exact silhouettes and compositions take precedence over wording.
+Both verified legacy boundary images exist. Match their compositions at start and finish; approve a runtime before timing the action.
 ~~~

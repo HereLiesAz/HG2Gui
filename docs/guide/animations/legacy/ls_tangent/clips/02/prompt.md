@@ -11,12 +11,12 @@ SEQUENCE: ls_tangent; CLIP 02; Original runtime undocumented.
 START: Green official supervises a round green table, red worker, cream worker and potted plant.
 END: The cream-clad worker raises one arm in formal objection.
 
-MOTION DIRECTOR'S TIMING
-0.0–2.4s: Raise only the cream worker's hand; others stay in their restrained deliberative positions.
-2.4–4.6s: Raise only the cream worker's hand; others stay in their restrained deliberative positions.
-4.6–5.0s: Hold the exact finishing composition, no additional changes.
+MOTION DIRECTOR'S RELATIVE ACTION PHASES (runtime not yet established)
+Opening: Raise only the cream worker's hand; others stay in their restrained deliberative positions.
+Transformation: Raise only the cream worker's hand; others stay in their restrained deliberative positions.
+Final image: Hold the exact finishing composition, no additional changes.
 
 THE EXACT VISIBLE TRANSITION: Raise only the cream worker's hand; others stay in their restrained deliberative positions.
 
-Both boundary images exist; their exact silhouettes and compositions take precedence over wording.
+Both verified legacy boundary images exist. Match their compositions at start and finish; approve a runtime before timing the action.
 ~~~

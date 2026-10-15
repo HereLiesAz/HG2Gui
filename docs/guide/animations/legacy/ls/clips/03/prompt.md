@@ -11,12 +11,12 @@ SEQUENCE: ls; CLIP 03; Original runtime undocumented.
 START: The inspector marks a clipboard close-up; colored folders stand at right.
 END: His pen lifts as folders reorder from disarray into a strict grouped arrangement.
 
-MOTION DIRECTOR'S TIMING
-0.0–2.4s: Animate the brief pen mark and mechanical realignment of folders; preserve their colors and positions at both boundaries.
-2.4–4.6s: Animate the brief pen mark and mechanical realignment of folders; preserve their colors and positions at both boundaries.
-4.6–5.0s: Hold the exact finishing composition, no additional changes.
+MOTION DIRECTOR'S RELATIVE ACTION PHASES (runtime not yet established)
+Opening: Animate the brief pen mark and mechanical realignment of folders; preserve their colors and positions at both boundaries.
+Transformation: Animate the brief pen mark and mechanical realignment of folders; preserve their colors and positions at both boundaries.
+Final image: Hold the exact finishing composition, no additional changes.
 
 THE EXACT VISIBLE TRANSITION: Animate the brief pen mark and mechanical realignment of folders; preserve their colors and positions at both boundaries.
 
-Both boundary images exist; their exact silhouettes and compositions take precedence over wording.
+Both verified legacy boundary images exist. Match their compositions at start and finish; approve a runtime before timing the action.
 ~~~

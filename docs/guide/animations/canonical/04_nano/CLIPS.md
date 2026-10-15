@@ -1,6 +1,6 @@
 # nano — animation clips
 
-[Full animation script](animation.md) · [Storyboard](storyboard.md) · [Guide-wide clip index](../../CLIP_PRODUCTION_INDEX.md)
+[Full animation script](animation.md) · [Storyboard](storyboard.md) · [Guide-wide clip index](../../../CLIP_PRODUCTION_INDEX.md)
 
 | Clip | Frames | Script excerpt | START/END shots | Animation prompt |
 | --- | --- | --- | --- | --- |

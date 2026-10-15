@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import runpy
 import shutil
 from pathlib import Path
 
@@ -250,6 +251,7 @@ def main() -> None:
     }
     manifest["boundary_verification"] = verification
     MANIFEST.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    runpy.run_path(str(ROOT / "scripts/build_animation_todo.py"), run_name="__main__")
 
     combined: dict[str, list[dict]] = {}
     combined.update(canonical)

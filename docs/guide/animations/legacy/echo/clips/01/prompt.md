@@ -11,12 +11,12 @@ SEQUENCE: echo; CLIP 01; Original runtime undocumented.
 START: A dark-uniform woman at left speaks through a red horn; a large cream speech balloon fills the right.
 END: She stands hands-on-hips while the red horn rests separately on a small navy pedestal at right.
 
-MOTION DIRECTOR'S TIMING
-0.0–2.4s: Separate the horn from her hand, place it on the pedestal and let the bubble dissipate.
-2.4–4.6s: Keep the plain olive field.
-4.6–5.0s: Hold the exact finishing composition, no additional changes.
+MOTION DIRECTOR'S RELATIVE ACTION PHASES (runtime not yet established)
+Opening: Separate the horn from her hand, place it on the pedestal and let the bubble dissipate.
+Transformation: Keep the plain olive field.
+Final image: Hold the exact finishing composition, no additional changes.
 
 THE EXACT VISIBLE TRANSITION: Separate the horn from her hand, place it on the pedestal and let the bubble dissipate. Keep the plain olive field.
 
-Both boundary images exist; their exact silhouettes and compositions take precedence over wording.
+Both verified legacy boundary images exist. Match their compositions at start and finish; approve a runtime before timing the action.
 ~~~
