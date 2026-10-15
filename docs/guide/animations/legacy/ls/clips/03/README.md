@@ -1,14 +1,11 @@
 # ls — clip 03
 
-**Duration:** unspecified in source (not assumed)  
-**Original scene:** [scene.md](../../scenes/03/scene.md)  
-**Animation script:** [animation.md](../../animation.md)
+**Duration:** Original runtime undocumented
 
-| Boundary | Expected source | Status | Image | Provenance |
-| --- | --- | --- | --- | --- |
-| START | `ls_clip_03_start.png` | present | [image](start.png) | `docs/ls_clip_03_start.png` |
-| END | `ls_clip_03_end.png` | present | [image](end.png) | `docs/ls_clip_03_end.png` |
+- START: [start.png](start.png)
+- END: [end.png](end.png)
+- [Corresponding script passage](script.md)
+- [Start/end shot specifications and original asset locations](shots.md)
+- [Specific image-to-video prompt](prompt.md)
 
-[Clip script](script.md) · [Clip generation prompt](prompt.md)
-
-No current five-second production packet or per-clip narration exists for this legacy pair; the images are verified but the story beat is not.
+**Caution:** no verified original narration for this legacy pair; script.md describes only the image evidence.

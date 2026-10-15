@@ -1,12 +1,12 @@
-# Guide animation clip production index
+# Animation production — by sequence and clip
 
-Production-ready packets by animation and clip. Each clip folder contains its script excerpt, video-generation prompt, verified START/END shots when present, and source attribution. Original animation, scene, and storyboard source files remain unchanged.
+Each clip folder contains independently usable [START/END shots](shots.md), its assigned [script passage](script.md), and a genuinely clip-specific [animation prompt](prompt.md). Existing source assets are copied into the owning clip. Never treat missing images or inferred dialogue as finished work.
 
-[Style lock](../HG2Gui_animation_style_lock_prompt_v2.md) · [Missing-frame checklist](ANIMATION_TODO.md) · [Full provenance](MANIFEST.json)
+[Style rules](../00_READ_ME_FIRST.md) · [Cut sheet](../HG2Gui_animation_5s_cut_sheet_v2.md) · [Original provenance](MANIFEST.json)
 
-**Missing images and unverified legacy narration are not fabricated.**
+**Tangent source stills visibly say START; the previous folder layout incorrectly labeled those images END.** Here they are START references. Their END images have not been supplied.
 
-## Canonical (35)
+## canonical
 
 - [pwd](animations/canonical/01_pwd/CLIPS.md) — 4 clips
 - [pkg install](animations/canonical/02_pkg_install/CLIPS.md) — 4 clips
@@ -44,14 +44,14 @@ Production-ready packets by animation and clip. Each clip folder contains its sc
 - [mv](animations/canonical/34_mv/CLIPS.md) — 3 clips
 - [curl](animations/canonical/35_curl/CLIPS.md) — 3 clips
 
-## Tangents (4)
+## tangents
 
 - [23_cat_theological_mechanical_history](animations/tangents/23_cat_theological_mechanical_history/CLIPS.md) — 12 clips
 - [34_mv_elevator_incident](animations/tangents/34_mv_elevator_incident/CLIPS.md) — 12 clips
 - [02_pkg_install_small_empire_of_dependencies](animations/tangents/02_pkg_install_small_empire_of_dependencies/CLIPS.md) — 12 clips
 - [22_find_cartographical_disaster](animations/tangents/22_find_cartographical_disaster/CLIPS.md) — 6 clips
 
-## Legacy (3)
+## legacy
 
 - [ls](animations/legacy/ls/CLIPS.md) — 4 clips
 - [echo](animations/legacy/echo/CLIPS.md) — 4 clips

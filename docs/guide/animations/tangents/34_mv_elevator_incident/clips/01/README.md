@@ -1,14 +1,11 @@
 # 34_mv_elevator_incident — clip 01
 
-**Duration:** 5.0 seconds (declared by cut map)  
-**Original scene:** [scene.md](../../scenes/01/scene.md)  
-**Animation script:** [animation.md](../../animation.md)
+**Duration:** 5 seconds · original tangent cut map
 
-| Boundary | Expected source | Status | Image | Provenance |
-| --- | --- | --- | --- | --- |
-| START | `not declared` | unresolved | not available |  |
-| END | `elevator_01.png` | present | [image](end.png) | `docs/elevator_01.png` |
+- START: [start.png](start.png)
+- END: **missing** — see [end-shot specification](shots.md)
+- [Corresponding script passage](script.md)
+- [Start/end shot specifications and original asset locations](shots.md)
+- [Specific image-to-video prompt](prompt.md)
 
-[Clip script](script.md) · [Clip generation prompt](prompt.md)
-
-The original tangent cut map supplies an END still for the first cut but no START still; that boundary is unresolved.
+**Caution:** the source still includes a START label. Do not mistake it for an approved clean animation frame.

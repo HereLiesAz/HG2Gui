@@ -1,7 +1,13 @@
-# 34_mv_elevator_incident — clip 11: script
+# 34_mv_elevator_incident — clip 11 | script
 
-**Source:** the original tangent cut map
+**Source:** docs/script (2).md
 
-**Narration beat (verbatim cut map):**
+Narration beat, verbatim from the original tangent cut map:
 
 The atmosphere objected later.
+
+## Corresponding original script excerpt
+
+The atmosphere objected later.
+
+The elevator did not recognize either as a competent standards authority.

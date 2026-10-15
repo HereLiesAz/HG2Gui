@@ -1,12 +1,11 @@
 # pkg install — clip 03
 
-**Duration:** 5.0 seconds · 10:00–15:00  
-**Original scene:** [scene.md](../../scenes/03/scene.md)  
-**Animation script:** [animation.md](../../animation.md)
+**Duration:** 5 seconds · 10:00–15:00
 
-| Boundary | Expected source | Status | Image | Provenance |
-| --- | --- | --- | --- | --- |
-| START | `02_pkg_install_frame_02.png` | missing | not available |  |
-| END | `02_pkg_install_frame_03.png` | present | [image](end.png) | `docs/02_pkg_install_frame_03.png` |
+- START: [start.png](start.png)
+- END: [end.png](end.png)
+- [Corresponding script passage](script.md)
+- [Start/end shot specifications and original asset locations](shots.md)
+- [Specific image-to-video prompt](prompt.md)
 
-[Clip script](script.md) · [Clip generation prompt](prompt.md)
+Canonical scene description and text come from the v2 cut sheet.

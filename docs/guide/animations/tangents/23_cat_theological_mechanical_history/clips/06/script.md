@@ -1,7 +1,11 @@
-# 23_cat_theological_mechanical_history — clip 06: script
+# 23_cat_theological_mechanical_history — clip 06 | script
 
-**Source:** the original tangent cut map
+**Source:** docs/script (1).md
 
-**Narration beat (verbatim cut map):**
+Narration beat, verbatim from the original tangent cut map:
+
+The principle spread.
+
+## Corresponding original script excerpt
 
 The principle spread.
