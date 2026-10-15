@@ -11,12 +11,12 @@ SEQUENCE: ls; CLIP 02; Original runtime undocumented.
 START: Loose colored folders and a white page float between two teal filing cabinets.
 END: The inspector enters the scattered collection and judges the rearranged folders hands-on-hips.
 
-MOTION DIRECTOR'S TIMING
-0.0–2.4s: Slide the green, rust and lilac folders into a more legible order as the inspector enters and surveys them.
-2.4–4.6s: Slide the green, rust and lilac folders into a more legible order as the inspector enters and surveys them.
-4.6–5.0s: Hold the exact finishing composition, no additional changes.
+MOTION DIRECTOR'S RELATIVE ACTION PHASES (runtime not yet established)
+Opening: Slide the green, rust and lilac folders into a more legible order as the inspector enters and surveys them.
+Transformation: Slide the green, rust and lilac folders into a more legible order as the inspector enters and surveys them.
+Final image: Hold the exact finishing composition, no additional changes.
 
 THE EXACT VISIBLE TRANSITION: Slide the green, rust and lilac folders into a more legible order as the inspector enters and surveys them.
 
-Both boundary images exist; their exact silhouettes and compositions take precedence over wording.
+Both verified legacy boundary images exist. Match their compositions at start and finish; approve a runtime before timing the action.
 ~~~

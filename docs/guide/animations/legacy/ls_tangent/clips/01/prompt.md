@@ -11,12 +11,12 @@ SEQUENCE: ls_tangent; CLIP 01; Original runtime undocumented.
 START: A giant green-faced official stands at left of three miniature picketers carrying tall red placards.
 END: The picketers advance to the right, the official remains planted.
 
-MOTION DIRECTOR'S TIMING
-0.0–2.4s: March the three workers in measured unison past the still blue-clad official; keep the placards blank.
-2.4–4.6s: March the three workers in measured unison past the still blue-clad official; keep the placards blank.
-4.6–5.0s: Hold the exact finishing composition, no additional changes.
+MOTION DIRECTOR'S RELATIVE ACTION PHASES (runtime not yet established)
+Opening: March the three workers in measured unison past the still blue-clad official; keep the placards blank.
+Transformation: March the three workers in measured unison past the still blue-clad official; keep the placards blank.
+Final image: Hold the exact finishing composition, no additional changes.
 
 THE EXACT VISIBLE TRANSITION: March the three workers in measured unison past the still blue-clad official; keep the placards blank.
 
-Both boundary images exist; their exact silhouettes and compositions take precedence over wording.
+Both verified legacy boundary images exist. Match their compositions at start and finish; approve a runtime before timing the action.
 ~~~

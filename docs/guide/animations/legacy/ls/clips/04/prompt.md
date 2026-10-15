@@ -11,12 +11,12 @@ SEQUENCE: ls; CLIP 04; Original runtime undocumented.
 START: The inspector walks through the teal doorway, holding the yellow knob.
 END: The door is closed, inspector gone, hanging checklist unchanged.
 
-MOTION DIRECTOR'S TIMING
-0.0–2.4s: Complete the step through the threshold, close the door, hold on the empty entrance.
-2.4–4.6s: Complete the step through the threshold, close the door, hold on the empty entrance.
-4.6–5.0s: Hold the exact finishing composition, no additional changes.
+MOTION DIRECTOR'S RELATIVE ACTION PHASES (runtime not yet established)
+Opening: Complete the step through the threshold, close the door, hold on the empty entrance.
+Transformation: Complete the step through the threshold, close the door, hold on the empty entrance.
+Final image: Hold the exact finishing composition, no additional changes.
 
 THE EXACT VISIBLE TRANSITION: Complete the step through the threshold, close the door, hold on the empty entrance.
 
-Both boundary images exist; their exact silhouettes and compositions take precedence over wording.
+Both verified legacy boundary images exist. Match their compositions at start and finish; approve a runtime before timing the action.
 ~~~

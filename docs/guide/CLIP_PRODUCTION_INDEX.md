@@ -1,8 +1,8 @@
 # Animation production — by sequence and clip
 
-Each clip folder contains independently usable [START/END shots](shots.md), its assigned [script passage](script.md), and a genuinely clip-specific [animation prompt](prompt.md). Existing source assets are copied into the owning clip. Never treat missing images or inferred dialogue as finished work.
+Each clip folder contains its own `shots.md`, `script.md`, `prompt.md`, and available original START/END images. Follow the per-animation indexes below; these files do not exist at the guide root.
 
-[Style rules](../00_READ_ME_FIRST.md) · [Cut sheet](../HG2Gui_animation_5s_cut_sheet_v2.md) · [Original provenance](MANIFEST.json)
+[Style rules](../00_READ_ME_FIRST.md) · [Cut sheet](../HG2Gui_animation_5s_cut_sheet_v2.md) · [Original provenance](MANIFEST.json) · [Missing-frame checklist](ANIMATION_TODO.md)
 
 **Tangent source stills visibly say START; the previous folder layout incorrectly labeled those images END.** Here they are START references. Their END images have not been supplied.
 

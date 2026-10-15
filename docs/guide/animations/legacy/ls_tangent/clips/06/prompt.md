@@ -11,12 +11,12 @@ SEQUENCE: ls_tangent; CLIP 06; Original runtime undocumented.
 START: Giant official behind cabinet imagines a green folder inside a speech bubble.
 END: The bubble says ALREADY HERE and a red-uniform worker stands beside the cabinet.
 
-MOTION DIRECTOR'S TIMING
-0.0–2.4s: Replace the folder pictogram with the exact ALREADY HERE phrase and let the single clerk enter.
-2.4–4.6s: Replace the folder pictogram with the exact ALREADY HERE phrase and let the single clerk enter.
-4.6–5.0s: Hold the exact finishing composition, no additional changes.
+MOTION DIRECTOR'S RELATIVE ACTION PHASES (runtime not yet established)
+Opening: Replace the folder pictogram with the exact ALREADY HERE phrase and let the single clerk enter.
+Transformation: Replace the folder pictogram with the exact ALREADY HERE phrase and let the single clerk enter.
+Final image: Hold the exact finishing composition, no additional changes.
 
 THE EXACT VISIBLE TRANSITION: Replace the folder pictogram with the exact ALREADY HERE phrase and let the single clerk enter.
 
-Both boundary images exist; their exact silhouettes and compositions take precedence over wording.
+Both verified legacy boundary images exist. Match their compositions at start and finish; approve a runtime before timing the action.
 ~~~

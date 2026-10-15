@@ -11,12 +11,12 @@ SEQUENCE: ls_tangent; CLIP 05; Original runtime undocumented.
 START: Giant official watches a cabinet while three red-clad workers raise their arms.
 END: All three workers settle into a quiet formal queue beneath the immobile official.
 
-MOTION DIRECTOR'S TIMING
-0.0–2.4s: Lower fists and gestures to stillness; the official keeps hands on the cabinet.
-2.4–4.6s: Lower fists and gestures to stillness; the official keeps hands on the cabinet.
-4.6–5.0s: Hold the exact finishing composition, no additional changes.
+MOTION DIRECTOR'S RELATIVE ACTION PHASES (runtime not yet established)
+Opening: Lower fists and gestures to stillness; the official keeps hands on the cabinet.
+Transformation: Lower fists and gestures to stillness; the official keeps hands on the cabinet.
+Final image: Hold the exact finishing composition, no additional changes.
 
 THE EXACT VISIBLE TRANSITION: Lower fists and gestures to stillness; the official keeps hands on the cabinet.
 
-Both boundary images exist; their exact silhouettes and compositions take precedence over wording.
+Both verified legacy boundary images exist. Match their compositions at start and finish; approve a runtime before timing the action.
 ~~~

@@ -11,12 +11,12 @@ SEQUENCE: ls_tangent; CLIP 03; Original runtime undocumented.
 START: An enormous placard reads THEN STOP WORKING IN US; red-uniform worker gestures beside a green filing cabinet.
 END: The worker opens the lower drawer and places red-and-white papers inside.
 
-MOTION DIRECTOR'S TIMING
-0.0–2.4s: Maintain the four exact words on each line of the placard; open and file the papers without any extra text.
-2.4–4.6s: Maintain the four exact words on each line of the placard; open and file the papers without any extra text.
-4.6–5.0s: Hold the exact finishing composition, no additional changes.
+MOTION DIRECTOR'S RELATIVE ACTION PHASES (runtime not yet established)
+Opening: Maintain the four exact words on each line of the placard; open and file the papers without any extra text.
+Transformation: Maintain the four exact words on each line of the placard; open and file the papers without any extra text.
+Final image: Hold the exact finishing composition, no additional changes.
 
 THE EXACT VISIBLE TRANSITION: Maintain the four exact words on each line of the placard; open and file the papers without any extra text.
 
-Both boundary images exist; their exact silhouettes and compositions take precedence over wording.
+Both verified legacy boundary images exist. Match their compositions at start and finish; approve a runtime before timing the action.
 ~~~

@@ -11,12 +11,12 @@ SEQUENCE: ls_tangent; CLIP 04; Original runtime undocumented.
 START: The clerk touches a green three-drawer cabinet.
 END: The clerk walks away to the right; one small dust puff trails at his feet.
 
-MOTION DIRECTOR'S TIMING
-0.0–2.4s: Release the drawer, stride to the right and leave the cabinet unchanged.
-2.4–4.6s: Release the drawer, stride to the right and leave the cabinet unchanged.
-4.6–5.0s: Hold the exact finishing composition, no additional changes.
+MOTION DIRECTOR'S RELATIVE ACTION PHASES (runtime not yet established)
+Opening: Release the drawer, stride to the right and leave the cabinet unchanged.
+Transformation: Release the drawer, stride to the right and leave the cabinet unchanged.
+Final image: Hold the exact finishing composition, no additional changes.
 
 THE EXACT VISIBLE TRANSITION: Release the drawer, stride to the right and leave the cabinet unchanged.
 
-Both boundary images exist; their exact silhouettes and compositions take precedence over wording.
+Both verified legacy boundary images exist. Match their compositions at start and finish; approve a runtime before timing the action.
 ~~~

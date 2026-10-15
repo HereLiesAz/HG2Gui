@@ -452,7 +452,6 @@ def build_tangents(manifest: dict, asset_index: dict[str, list[Path]]) -> None:
 
         cut_rows = re.findall(r"\|\s*(\d{2})\s*\|\s*`([^`]+)`\s*\|\s*(.*?)\s*\|", text)
         scene_records = []
-        scene_records = []
         storyboard_sections = [
             f"# Storyboard — {folder_name}", "",
             f"Source cut map: `{rel(script_path)}`.",
@@ -771,6 +770,8 @@ Tangent cut-map PNGs visibly include a `Start:` overlay. Each is stored as that 
 """
     write(OUT / "README.md", readme)
     write(OUT / "MANIFEST.json", json.dumps(manifest, indent=2, sort_keys=True))
+    # Rebuild the checklist before any generated links reference it.
+    runpy.run_path(str(ROOT / "scripts/build_animation_todo.py"), run_name="__main__")
     runpy.run_path(str(ROOT / "scripts/build_animation_clip_packets.py"), run_name="__main__")
 
 

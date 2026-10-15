@@ -11,12 +11,12 @@ SEQUENCE: ls; CLIP 01; Original runtime undocumented.
 START: Burgundy-uniform inspector stands at left of a closed teal door with a hanging checklist to its right.
 END: The inspector pulls open the tall teal door, revealing the dark interior.
 
-MOTION DIRECTOR'S TIMING
-0.0–2.4s: Reach for the round yellow knob and swing the door forward; no cutaway, no additional props.
-2.4–4.6s: Reach for the round yellow knob and swing the door forward; no cutaway, no additional props.
-4.6–5.0s: Hold the exact finishing composition, no additional changes.
+MOTION DIRECTOR'S RELATIVE ACTION PHASES (runtime not yet established)
+Opening: Reach for the round yellow knob and swing the door forward; no cutaway, no additional props.
+Transformation: Reach for the round yellow knob and swing the door forward; no cutaway, no additional props.
+Final image: Hold the exact finishing composition, no additional changes.
 
 THE EXACT VISIBLE TRANSITION: Reach for the round yellow knob and swing the door forward; no cutaway, no additional props.
 
-Both boundary images exist; their exact silhouettes and compositions take precedence over wording.
+Both verified legacy boundary images exist. Match their compositions at start and finish; approve a runtime before timing the action.
 ~~~
