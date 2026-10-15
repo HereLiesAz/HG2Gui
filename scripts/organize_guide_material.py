@@ -761,7 +761,7 @@ This is the organized, non-destructive collection of Guide-related production ma
 - `animations/tangents/` — the four scripted Guide tangents that precede canonical entries.
 - `animations/legacy/` — older/incomplete animated material that has numbered visual material but no current production packet.
 
-Each animation contains its complete script, storyboard, and a [production clip index](CLIP_PRODUCTION_INDEX.md). Each `clips/NN/` contains a verified START/END pair when available, its cut-specific script beat, and an image-to-video prompt. Historical `scenes/NN/` source records are retained.
+Each animation preserves its existing source material and storyboard, with a [production clip index](CLIP_PRODUCTION_INDEX.md). Each `clips/NN/` contains a verified START/END pair when available, its cut-specific script beat, and an image-to-video prompt. Historical `scenes/NN/` source records are retained.
 
 ## Clip production
 
