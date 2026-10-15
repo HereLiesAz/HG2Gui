@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import runpy
 import shutil
 from pathlib import Path
 
@@ -760,7 +761,11 @@ This is the organized, non-destructive collection of Guide-related production ma
 - `animations/tangents/` — the four scripted Guide tangents that precede canonical entries.
 - `animations/legacy/` — older/incomplete animated material that has numbered visual material but no current production packet.
 
-Every animation folder contains its complete animation text and a `storyboard.md`. Every `scenes/NN/scene.md` contains only material belonging to that scene.
+Each animation preserves its existing source material and storyboard, with a [production clip index](CLIP_PRODUCTION_INDEX.md). Each `clips/NN/` contains a verified START/END pair when available, its cut-specific script beat, and an image-to-video prompt. Historical `scenes/NN/` source records are retained.
+
+## Clip production
+
+[Browse all animation clip packets](CLIP_PRODUCTION_INDEX.md). Use each animation's `CLIPS.md` index to find a clip's `README.md`, `script.md`, `prompt.md`, and actual start/end images. Missing frames and legacy narration remain explicitly unresolved, not invented. Run `scripts/organize_guide_material.py` to rebuild these packets together with the original scene material.
 
 ## Visual material
 
@@ -797,6 +802,7 @@ Tangent sources provide one ordered still per cut rather than explicit START/END
 """
     write(OUT / "README.md", readme)
     write(OUT / "MANIFEST.json", json.dumps(manifest, indent=2, sort_keys=True))
+    runpy.run_path(str(ROOT / "scripts/build_animation_clip_packets.py"), run_name="__main__")
 
 
 if __name__ == "__main__":

@@ -209,6 +209,8 @@ def build_content_index(manifest: dict, reference_report: dict, verification: di
         f"- Missing or unresolved boundary slots: **{verification['missing_or_unresolved']}**",
         "- Detailed actionable list: [`ANIMATION_TODO.md`](ANIMATION_TODO.md)",
         "",
+        "[Per-animation, per-clip production packets](CLIP_PRODUCTION_INDEX.md) include exact cut script beats, new prompts, and real start/end frames when present.",
+        "",
         "## Organization",
         "",
         "Each animation directory contains its complete animation text, storyboard/cut information, scene folders, and animation-specific references when available.",

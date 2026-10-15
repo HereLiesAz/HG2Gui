@@ -150,6 +150,7 @@ CI success proves compilation/tests/static gates represented in the workflow. An
 
 ## Documentation
 
+- [Animation clip production](docs/guide/CLIP_PRODUCTION_INDEX.md)
 - [Vision](docs/VISION.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Android architecture](docs/HG2GUI_ARCHITECTURE.md)
