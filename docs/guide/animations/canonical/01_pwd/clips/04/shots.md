@@ -21,3 +21,7 @@ Hold the deadpan tableau for the cut.
 - Type: no image supplied
 
 Adjacent clips must reuse identical boundary artwork; never synthesize a duplicate.
+
+## Existing sequence-specific artwork (not approved as exact boundary frames)
+
+- [workers_rise_with_a_command_prompt.png](references/workers_rise_with_a_command_prompt.png) — source `docs/workers_rise_with_a_command_prompt.png`; reference only, not a substitution for the missing canonical START/END.

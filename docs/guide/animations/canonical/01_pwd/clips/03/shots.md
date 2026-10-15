@@ -21,3 +21,7 @@ End with the whole line moving toward frame edge.
 - Type: no image supplied
 
 Adjacent clips must reuse identical boundary artwork; never synthesize a duplicate.
+
+## Existing sequence-specific artwork (not approved as exact boundary frames)
+
+- [tech_protest_workers_demand_change.png](references/tech_protest_workers_demand_change.png) — source `docs/tech_protest_workers_demand_change.png`; reference only, not a substitution for the missing canonical START/END.

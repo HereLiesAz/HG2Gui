@@ -24,7 +24,7 @@ Each scene has a `frames/` directory with explicit START and END records. Real b
 ### Animation-specific loose media moved out of the shared bucket
 
 - `01_pwd` — 6 source asset(s) organized with the animation
-- `02_pkg_install` — 8 source asset(s) organized with the animation
+- `02_pkg_install` — 9 source asset(s) organized with the animation
 - `02_pkg_install_small_empire_of_dependencies` — 12 source asset(s) organized with the animation
 - `03_apt_get_update` — 2 source asset(s) organized with the animation
 - `22_find_cartographical_disaster` — 6 source asset(s) organized with the animation

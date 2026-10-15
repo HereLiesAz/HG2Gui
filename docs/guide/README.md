@@ -9,11 +9,11 @@ This is the organized, non-destructive collection of Guide-related production ma
 - `animations/tangents/` — the four scripted Guide tangents that precede canonical entries.
 - `animations/legacy/` — older/incomplete animated material that has numbered visual material but no current production packet.
 
-Each animation preserves its existing source material and storyboard, with a [production clip index](CLIP_PRODUCTION_INDEX.md). Each `clips/NN/` contains a verified START/END pair when available, its source-matched script passage, separate START/END shot descriptions, and an individualized image-to-video prompt. Historical `scenes/NN/` source records are retained.
+Each animation preserves its existing source material and storyboard, with a [production clip index](CLIP_PRODUCTION_INDEX.md). Each `clips/NN/` contains independently sourced START and END frames when available, its source-matched script passage, separate START/END shot descriptions, and an individualized image-to-video prompt. Historical `scenes/NN/` source records are retained.
 
 ## Clip production
 
-[Browse all animation clip packets](CLIP_PRODUCTION_INDEX.md). Use each animation's `CLIPS.md` index to find a clip's `README.md`, `script.md`, `prompt.md`, and actual start/end images. Missing frames and legacy narration remain explicitly unresolved, not invented. Run `scripts/organize_guide_material.py` to rebuild these packets together with the original scene material.
+[Browse all animation clip packets](CLIP_PRODUCTION_INDEX.md). Use each animation's `CLIPS.md` index to find a clip's `README.md`, `script.md`, `shots.md`, `prompt.md`, and available START/END image files. Missing frames and legacy narration remain explicitly unresolved, not invented. Run `scripts/organize_guide_material.py` to refresh source inventories without erasing curated clip writing.
 
 ## Visual material
 
