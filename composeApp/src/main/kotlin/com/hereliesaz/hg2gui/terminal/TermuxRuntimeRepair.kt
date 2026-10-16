@@ -25,11 +25,10 @@ object TermuxRuntimeRepair {
      * sourced into bash would just be parsed as shell. Pure, see TermuxRuntimeRepairTest.
      */
     internal fun isShellShebang(shebangLine: String): Boolean {
-        if (!shebangLine.startsWith("#!")) return false
         val words = shebangLine.removePrefix("#!").trim().split(Regex("\\s+")).filter(String::isNotEmpty)
-        val first = words.firstOrNull()?.substringAfterLast('/') ?: return false
+        val first = words.firstOrNull()?.substringAfterLast('/')
         val interpreter = if (first == "env") words.drop(1).firstOrNull { !it.startsWith("-") }?.substringAfterLast('/') else first
-        return interpreter in SOURCEABLE_SHELLS
+        return shebangLine.startsWith("#!") && interpreter in SOURCEABLE_SHELLS
     }
 
     fun repair(context: Context) {

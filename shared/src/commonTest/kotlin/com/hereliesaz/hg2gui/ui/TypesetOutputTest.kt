@@ -120,6 +120,7 @@ class TypesetOutputTest {
         val text = """
             USER       PID %CPU %MEM COMMAND
             root         1  0.0  0.1 /usr/bin/init --daemon --quiet
+            az         204  1.2  0.4 /usr/bin/sshd -D
         """.trimIndent()
         assertTrue(looksLikeWideTable(text))
         assertEquals("/usr/bin/init --daemon --quiet", parseWideTable(text)[0].fields.last().second)

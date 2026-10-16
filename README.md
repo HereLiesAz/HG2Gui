@@ -117,7 +117,7 @@ Each installed package has an `adb` / `root` / `network` / `host-read` / `host-w
 
 HG2Gui is a terminal and file manager, so it declares a broad set; each is used only on demand and none feeds a remote service (see [Privacy policy](docs/PRIVACY_POLICY.md) for the full list):
 
-- location, contacts, phone (call and phone state), camera, Bluetooth: for the matching built-ins and Termux-style device queries, requested at first use;
+- contacts, phone (placing calls), camera, Bluetooth: for the matching built-ins, requested at first use;
 - write system settings: brightness and similar built-ins;
 - all files access: reading and writing shared storage you point it at;
 - install packages: handing an APK to the Android installer for self-update/APK install (Android confirms);
