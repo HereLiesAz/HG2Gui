@@ -1240,9 +1240,15 @@ class TerminalActivity : FragmentActivity() {
                                         // getUriForFile throws IllegalArgumentException for a file
                                         // outside provider_paths.xml's roots - report, don't crash.
                                         val uri = try {
-                                            FileProvider.getUriForFile(this@TerminalActivity, GenericFileProvider.PROVIDER_NAME, file)
-                                        } catch (e: IllegalArgumentException) {
-                                            Toast.makeText(this@TerminalActivity, "Can't share ${file.name} from this location.", Toast.LENGTH_LONG).show()
+                                            FileProvider.getUriForFile(
+                                                this@TerminalActivity, GenericFileProvider.PROVIDER_NAME, file
+                                            )
+                                        } catch (ignored: IllegalArgumentException) {
+                                            Toast.makeText(
+                                                this@TerminalActivity,
+                                                "Can't share ${file.name} from this location.",
+                                                Toast.LENGTH_LONG
+                                            ).show()
                                             return@launch
                                         }
                                         val intent = Intent(Intent.ACTION_SEND).apply {
@@ -1260,8 +1266,10 @@ class TerminalActivity : FragmentActivity() {
                                         paths.mapNotNull { path ->
                                             VfsManager.resolve(this@TerminalActivity, path)?.takeIf { it.isFile }?.let { file ->
                                                 try {
-                                                    FileProvider.getUriForFile(this@TerminalActivity, GenericFileProvider.PROVIDER_NAME, file)
-                                                } catch (e: IllegalArgumentException) {
+                                                    FileProvider.getUriForFile(
+                                                        this@TerminalActivity, GenericFileProvider.PROVIDER_NAME, file
+                                                    )
+                                                } catch (ignored: IllegalArgumentException) {
                                                     null
                                                 }
                                             }
@@ -1276,7 +1284,11 @@ class TerminalActivity : FragmentActivity() {
                                         startActivity(Intent.createChooser(intent, "Share ${uris.size} items"))
                                     }
                                     if (uris.size < paths.size) {
-                                        Toast.makeText(this@TerminalActivity, "${paths.size - uris.size} item(s) couldn't be shared from this location.", Toast.LENGTH_LONG).show()
+                                        Toast.makeText(
+                                            this@TerminalActivity,
+                                            "${paths.size - uris.size} item(s) couldn't be shared from this location.",
+                                            Toast.LENGTH_LONG
+                                        ).show()
                                     }
                                 }
                             },

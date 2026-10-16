@@ -52,7 +52,7 @@ class LongTaskService : Service() {
         scope.launch {
             try {
                 task.block()
-            } catch (e: Exception) {
+            } catch (@Suppress("TooGenericExceptionCaught") e: Exception) { // arbitrary caller code must not kill the service
                 Log.w(TAG, "background task '${task.title}' failed", e)
             } finally {
                 if (active.decrementAndGet() == 0) {
@@ -92,8 +92,9 @@ class LongTaskService : Service() {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) context.startForegroundService(intent)
                 else context.startService(intent)
                 true
-            } catch (e: Exception) {
+            } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
                 // ForegroundServiceStartNotAllowedException / IllegalStateException.
+                Log.w(TAG, "could not start long-task service for '$title'", e)
                 tasks.remove(id)
                 false
             }

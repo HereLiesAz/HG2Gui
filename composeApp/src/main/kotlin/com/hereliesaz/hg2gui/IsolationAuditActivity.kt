@@ -303,10 +303,9 @@ private fun telemetryKind(line: String): String = when {
  */
 private fun redactedNetworkRow(line: String): String? {
     val fields = line.removePrefix("network:").split(':')
-    if (fields.size < 5) return null
-    val proto = fields[0].takeIf { it.matches(Regex("[a-z0-9]+")) } ?: return null
-    val remotePort = fields[4].toIntOrNull(16) ?: return null
-    return "$proto remote port $remotePort"
+    val proto = fields.firstOrNull()?.takeIf { it.matches(Regex("[a-z0-9]+")) }
+    val remotePort = fields.getOrNull(4)?.toIntOrNull(16)
+    return if (proto == null || remotePort == null) null else "$proto remote port $remotePort"
 }
 
 private fun telemetryDetail(line: String): String = line.substringAfter(':', line)
