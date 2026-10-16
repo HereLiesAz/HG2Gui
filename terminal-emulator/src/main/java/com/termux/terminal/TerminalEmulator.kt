@@ -718,7 +718,11 @@ class TerminalEmulator(
                     }
                 } else if (dcs.startsWith("+q")) {
                     val parts = dcs.substring(2).split(";").toTypedArray()
-                    for (part in parts) {
+                    for (rawPart in parts) {
+                        // Only ever echo back a pure-hex name: anything else in `part` is
+                        // attacker-controlled bytes (e.g. from `cat`ing a file) that would be
+                        // injected verbatim into the shell's input via the reply.
+                        val part = if (HEX_PAYLOAD.matches(rawPart)) rawPart else ""
                         if (part.length % 2 == 0) {
                             val transBuffer = StringBuilder()
                             var c: Char
@@ -2001,6 +2005,7 @@ class TerminalEmulator(
     }
 
     companion object {
+        private val HEX_PAYLOAD = Regex("^[0-9A-Fa-f]*$")
         /** Log unknown or unimplemented escape sequences received from the shell process. */
         private const val LOG_ESCAPE_SEQUENCES = false
 
