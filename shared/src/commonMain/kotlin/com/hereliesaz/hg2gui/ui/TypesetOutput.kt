@@ -98,8 +98,11 @@ fun KeyValueTable(text: String, ink: Color, modifier: Modifier = Modifier) {
  * plenty of real output is neither two columns nor prose: `ps aux` is eleven columns, `ls -l` is
  * nine ... a design that refuses horizontal scrolling needs an answer for data that is genuinely
  * wide." [looksLikeWideTable]/[parseWideTable] cover that: a header line names each column, every
- * data line beneath it packs at least that many whitespace-separated fields - `ps aux`, `ls -l`,
- * `df -h`, `netstat`. Each row reflows as its own labelled-field record ([WideTableRecords]),
+ * data line beneath it packs at least that many whitespace-separated fields AND each field lines
+ * up under its header label (left- or right-aligned to it) - `ps aux`, `netstat`. Plain
+ * whitespace-separated prose with enough words per line does not qualify. `ls -l` and `df -h` do
+ * not either: `ls -l` has no header row at all (only a `total N` line, skipped here), and `df -h`'s
+ * "Mounted on" header is two words for one column. Each row reflows as its own labelled-field record ([WideTableRecords]),
  * "which suits this design better than a table anyway" per the doc's own recommendation, rather
  * than either wrapping into unreadable ribbons or being clipped at the screen edge.
  */
@@ -115,11 +118,33 @@ private const val MIN_WIDE_TABLE_COLUMNS = 3
  *  whitespace-separated fields as the header names, or this reports false and the raw text
  *  fallback (always correct) is what renders instead. */
 fun looksLikeWideTable(text: String): Boolean {
-    val lines = text.lines().filter { it.isNotBlank() }
+    val lines = wideTableLines(text)
     if (lines.size < 3) return false
-    val headerTokens = WORD.findAll(lines[0]).count()
-    return headerTokens >= MIN_WIDE_TABLE_COLUMNS && lines.drop(1).all { WORD.findAll(it).count() >= headerTokens }
+    val header = WORD.findAll(lines[0]).toList()
+    if (header.size < MIN_WIDE_TABLE_COLUMNS || LS_MODE_COLUMN.containsMatchIn(lines[0])) return false
+    return lines.drop(1).all { row ->
+        val tokens = WORD.findAll(row).toList()
+        tokens.size >= header.size && header.indices.all { i ->
+            // The last column takes the rest of the line, so its position is free; every other
+            // field must share its header label's left edge or its right edge.
+            i == header.lastIndex ||
+                tokens[i].range.first == header[i].range.first ||
+                tokens[i].range.last == header[i].range.last
+        }
+    }
 }
+
+// `ls -l` prints "total 48" before its rows. That line isn't a header and, left in, it was taken
+// for one (and `ls -l` has no real header at all).
+private val LS_TOTAL_LINE = Regex("""^total\s+\d+\s*$""")
+
+// A permissions column ("drwxr-xr-x", "-rw-r--r--") as the first token marks an `ls -l` row.
+private val LS_MODE_COLUMN = Regex("""^\s*[-dlbcps][-rwxsStT]{9}[.+@]?\s""")
+
+private fun wideTableLines(text: String): List<String> =
+    text.lines().filter { it.isNotBlank() }.let { all ->
+        if (all.isNotEmpty() && LS_TOTAL_LINE.matches(all[0])) all.drop(1) else all
+    }
 
 internal data class WideTableRow(val fields: List<Pair<String, String>>)
 
@@ -132,7 +157,7 @@ internal data class WideTableRow(val fields: List<Pair<String, String>>)
  *  rest of its line, so a field that legitimately contains spaces (`ps aux`'s COMMAND) survives
  *  intact instead of being cut at its own first space. */
 internal fun parseWideTable(text: String): List<WideTableRow> {
-    val lines = text.lines().filter { it.isNotBlank() }
+    val lines = wideTableLines(text)
     val headerMatches = WORD.findAll(lines[0]).toList()
     val labels = headerMatches.map { it.value }
     val dataLines = lines.drop(1)
