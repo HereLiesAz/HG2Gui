@@ -17,13 +17,19 @@ data class SshPreset(
  * until the assembled command is actually run.
  */
 object SshFlow {
+    /** ssh's arguments for this connection, each value shell-quoted (the result is typed into a
+     *  shell input line), options first and the target after `--` so a host like
+     *  `-oProxyCommand=...` can never be parsed as an option. */
     fun argsFor(user: String, host: String, port: Int, keyPath: String?): String {
         val target = if (user.isNotBlank()) "$user@$host" else host
-        val parts = mutableListOf(target)
+        val parts = mutableListOf<String>()
         if (port != 22) parts += listOf("-p", port.toString())
-        if (keyPath != null) parts += listOf("-i", keyPath)
+        if (keyPath != null) parts += listOf("-i", shellQuote(keyPath))
+        parts += listOf("--", shellQuote(target))
         return parts.joinToString(" ")
     }
+
+    internal fun shellQuote(value: String): String = "'" + value.replace("'", "'\\''") + "'"
 
     fun buildCommand(user: String, host: String, port: Int, keyPath: String?): String =
         "ssh " + argsFor(user, host, port, keyPath)
@@ -52,6 +58,9 @@ object SshFlow {
             host = hostInput
             user = session.awaitPromptAnswer("ssh — username (blank = don't specify)").trim()
         }
+
+        // An option-looking host/user is never a real destination - refuse rather than build it.
+        if (host.isEmpty() || host.startsWith("-") || user.startsWith("-")) return
 
         val port = session.awaitPromptAnswer("ssh — port (blank = 22)").trim().toIntOrNull() ?: 22
         val keyPath = session.awaitPromptAnswer("ssh — private key path (blank = password auth)")
