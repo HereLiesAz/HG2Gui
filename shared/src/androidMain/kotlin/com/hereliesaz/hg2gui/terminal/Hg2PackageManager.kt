@@ -294,7 +294,6 @@ class Hg2PackageManager(
         }
     }
 
-
     private suspend fun installPreparedPackage(
         prepared: PreparedPackage,
         old: Installed?,
