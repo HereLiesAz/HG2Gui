@@ -54,6 +54,7 @@ kotlin {
             implementation(libs.androidx.activity.compose)
             implementation(libs.androidx.fragment)
             implementation(libs.androidx.biometric)
+            implementation(libs.androidx.security.crypto)
             implementation(libs.androidx.uiautomator.shell)
             implementation(libs.anthropic.java)
             implementation(libs.androidx.localbroadcastmanager)
