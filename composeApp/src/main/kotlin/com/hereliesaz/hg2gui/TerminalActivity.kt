@@ -307,7 +307,7 @@ class TerminalActivity : FragmentActivity() {
             var azpInstallingId by remember { mutableStateOf<String?>(null) }
             // AZP-2: a script package's dependency/wrapper step (ScriptInstaller.install, which
             // can run `pkg install -y` unconfirmed) only proceeds without asking first when the
-            // signature is TRUSTED or VALID - anything else (most saliently UNSIGNED, since only
+            // signature is TRUSTED - anything else (VALID self-signed, and most saliently UNSIGNED, since only
             // a corrupted signature was ever rejected outright) pauses on this and waits for a tap.
             var azpTrustConfirm by remember { mutableStateOf<Pair<AzpListing, CompletableDeferred<Boolean>>?>(null) }
             // UX-4: closing a tab with a command actually running kills that process mid-run with
@@ -768,13 +768,14 @@ class TerminalActivity : FragmentActivity() {
                                     if (install == null) {
                                         null
                                     } else {
-                                        // Only a TRUSTED or VALID signature (an internally-consistent
-                                        // one, whether or not the signer is registry-vouched-for)
-                                        // proceeds unconfirmed - UNSIGNED and anything else pauses
-                                        // here for an explicit tap before running the dependency
-                                        // install and wiring an executable onto PATH.
+                                        // Only a TRUSTED signature (a registry-vouched-for signer)
+                                        // proceeds unconfirmed. VALID only means internally
+                                        // consistent - anyone can self-sign - so it, UNSIGNED and
+                                        // anything else pause here for an explicit tap before
+                                        // running the dependency install and wiring an executable
+                                        // onto PATH.
                                         val scriptCommand = install.script?.let { script ->
-                                            val proceed = install.trust == AzpTrust.TRUSTED || install.trust == AzpTrust.VALID ||
+                                            val proceed = install.trust == AzpTrust.TRUSTED ||
                                                 run {
                                                     val decision = CompletableDeferred<Boolean>()
                                                     azpTrustConfirm = listing to decision
