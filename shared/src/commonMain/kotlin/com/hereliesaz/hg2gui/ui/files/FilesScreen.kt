@@ -325,6 +325,8 @@ fun FilesScreen(
         }
     }
 
+    val pickerBackStep = remember { BackStepState() }
+
     // UI-1: must run before the PickMove/PickCopy/Storage early-returns below so a system-back
     // press while any of those (or select mode, a rename/create prompt, or a drilled-in folder)
     // is showing steps up exactly one level instead of skipping straight past all of them to
@@ -342,6 +344,9 @@ fun FilesScreen(
                 // left the visible search results on screen with nothing to show for the back
                 // press, requiring a second one to actually leave search.
                 searchActive -> { searchActive = false; searchQuery = ""; screen = FMScreen.Browse }
+                // The destination picker steps up one folder at a time before it closes.
+                (screen == FMScreen.PickMove || screen == FMScreen.PickCopy) && pickerBackStep.canStepBack ->
+                    pickerBackStep.stepBack()
                 screen != FMScreen.Browse -> { screen = FMScreen.Browse }
                 selectMode -> { selectMode = false; selected = emptySet() }
                 openChain.isNotEmpty() -> { openChain = openChain.dropLast(1) }
@@ -408,7 +413,8 @@ fun FilesScreen(
                     }
                 }
             },
-            modifier = modifier
+            modifier = modifier,
+            backStep = pickerBackStep
         )
         return
     }
