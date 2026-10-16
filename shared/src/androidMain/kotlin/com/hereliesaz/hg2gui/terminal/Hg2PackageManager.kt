@@ -2,6 +2,14 @@ package com.hereliesaz.hg2gui.terminal
 
 import android.content.Context
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.flowOn
@@ -72,21 +80,26 @@ class Hg2PackageManager(
     fun run(line: String): Flow<String> = channelFlow {
         val output: suspend (String) -> Unit = { send(it) }
         val args = words(line).drop(1)
-        when (args.firstOrNull()) {
-            "install", "in" -> install(requirePackages(args, "install"), forceRequested = false, emit = output)
-            "update" -> updateIndex(output)
-            "upgrade", "up" -> upgrade(output)
-            "remove", "rm", "uninstall" -> remove(requirePackages(args, "remove"), purge = false, emit = output)
-            "purge" -> remove(requirePackages(args, "purge"), purge = true, emit = output)
-            "clean" -> clean(output)
-            "search" -> search(args.drop(1).joinToString(" "), output)
-            "show", "info" -> show(requirePackages(args, "show"), output)
-            "list-installed" -> {
-                val installed = readInstalled().values.sortedBy { it.name }
-                send(if (installed.isEmpty()) "No installed packages recorded by dpkg." else installed.joinToString("\n") { "${it.name} ${it.version}" })
+        // One package operation at a time across every TerminalEngine/MCP caller in the process:
+        // concurrent dpkg runs, or one run's recovery replaying another's live journal, would
+        // corrupt the prefix.
+        PACKAGE_OPERATION_LOCK.withLock {
+            when (args.firstOrNull()) {
+                "install", "in" -> install(requirePackages(args, "install"), forceRequested = false, emit = output)
+                "update" -> updateIndex(output)
+                "upgrade", "up" -> upgrade(output)
+                "remove", "rm", "uninstall" -> remove(requirePackages(args, "remove"), purge = false, emit = output)
+                "purge" -> remove(requirePackages(args, "purge"), purge = true, emit = output)
+                "clean" -> clean(output)
+                "search" -> search(args.drop(1).joinToString(" "), output)
+                "show", "info" -> show(requirePackages(args, "show"), output)
+                "list-installed" -> {
+                    val installed = readInstalled().values.sortedBy { it.name }
+                    send(if (installed.isEmpty()) "No installed packages recorded by dpkg." else installed.joinToString("\n") { "${it.name} ${it.version}" })
+                }
+                null -> send(USAGE)
+                else -> send("HG2Gui package manager: unsupported operation '${args.first()}'.\n$USAGE")
             }
-            null -> send(USAGE)
-            else -> send("HG2Gui package manager: unsupported operation '${args.first()}'.\n$USAGE")
         }
     }.flowOn(Dispatchers.IO)
 
@@ -265,18 +278,22 @@ class Hg2PackageManager(
         transaction: PackageTransactionGroup,
         cause: Throwable,
         emit: suspend (String) -> Unit
-    ): Throwable {
-        emit("$operation failed; rolling back the complete package plan…")
+    ): Throwable = withContext(NonCancellable) {
+        // Runs even when the failure *is* a cancellation: an unrolled-back plan would leave dpkg
+        // state half-mutated. Progress lines are best-effort since the collector may be gone.
+        val say: suspend (String) -> Unit = { line -> runCatching { emit(line) } }
+        say("$operation failed; rolling back the complete package plan…")
         val failures = transaction.rollback()
-        return if (failures.isEmpty()) {
-            emit("Rollback complete. Package payload and dpkg metadata were restored.")
+        if (failures.isEmpty()) {
+            say("Rollback complete. Package payload and dpkg metadata were restored.")
             cause
         } else {
             val detail = failures.joinToString("\n")
-            emit("Rollback was incomplete:\n$detail")
+            say("Rollback was incomplete:\n$detail")
             IllegalStateException("${cause.message ?: operation} (rollback incomplete: $detail)", cause)
         }
     }
+
 
     private suspend fun installPreparedPackage(
         prepared: PreparedPackage,
@@ -446,15 +463,7 @@ class Hg2PackageManager(
             .start()
 
         val tail = ArrayDeque<String>(DPKG_ERROR_TAIL_LINES)
-        process.inputStream.bufferedReader().use { reader ->
-            while (true) {
-                val line = reader.readLine() ?: break
-                if (tail.size == DPKG_ERROR_TAIL_LINES) tail.removeFirst()
-                tail.addLast(line)
-                emit(line)
-            }
-        }
-        val code = process.waitFor()
+        val code = streamProcess(process, tail, emit)
         if (code != 0) {
             val detail = tail.joinToString("\n").trim()
             error("${packageName}.${script.name} exited with code $code${if (detail.isBlank()) "" else ":\n$detail"}")
@@ -604,7 +613,7 @@ class Hg2PackageManager(
         forceRequested: Boolean
     ): List<PackageRecord> {
         val requestedSet = requested.toSet()
-        val visiting = HashSet<String>()
+        val visiting = HashMap<String, PackageRecord>()
         val planned = LinkedHashMap<String, PackageRecord>()
         val providers = buildMap<String, MutableList<PackageRecord>> {
             available.values.forEach { pkg ->
@@ -618,6 +627,14 @@ class Hg2PackageManager(
         }
 
         fun plannedSatisfies(relation: Relation): Boolean = planned.values.any { item ->
+            if (item.name == relation.name && versionSatisfies(item.version, relation)) return@any true
+            item.provides.any { provided -> provided.name == relation.name && providedVersionSatisfies(provided, relation) }
+        }
+
+        // A package still on the DFS stack is part of a dependency cycle (A -> B -> A). It will be
+        // planned once its own walk unwinds, and dpkg configures cycles together, so it counts as
+        // satisfied-in-plan rather than as an unsatisfiable relation.
+        fun visitingSatisfies(relation: Relation): Boolean = visiting.values.any { item ->
             if (item.name == relation.name && versionSatisfies(item.version, relation)) return@any true
             item.provides.any { provided -> provided.name == relation.name && providedVersionSatisfies(provided, relation) }
         }
@@ -672,11 +689,11 @@ class Hg2PackageManager(
         lateinit var visitPackage: (PackageRecord) -> Unit
 
         fun visitRelation(alternatives: List<Relation>, owner: String, kind: String) {
-            if (alternatives.any(::installedSatisfies) || alternatives.any(::plannedSatisfies)) return
+            if (alternatives.any(::installedSatisfies) || alternatives.any(::plannedSatisfies) || alternatives.any(::visitingSatisfies)) return
             val candidate = alternatives.firstNotNullOfOrNull(::candidateFor)
                 ?: error("$owner $kind unavailable alternative: ${alternatives.joinToString(" | ")}")
             visitPackage(candidate)
-            if (!alternatives.any(::installedSatisfies) && !alternatives.any(::plannedSatisfies)) {
+            if (!alternatives.any(::installedSatisfies) && !alternatives.any(::plannedSatisfies) && !alternatives.any(::visitingSatisfies)) {
                 error("$owner $kind was not satisfied after planning: ${alternatives.joinToString(" | ")}")
             }
         }
@@ -687,7 +704,7 @@ class Hg2PackageManager(
                 pkg.name in requestedSet || requested.any { requestedName -> pkg.provides.any { it.name == requestedName } }
             )
             if (pkg.name in installed && !forcedRequested) return
-            if (!visiting.add(pkg.name)) return
+            if (visiting.putIfAbsent(pkg.name, pkg) != null) return
             installedConflict(pkg)?.let { error("Cannot install ${pkg.name}: $it. HG2Gui will not auto-remove conflicting packages.") }
             plannedConflict(pkg)?.let { error("Cannot install ${pkg.name}: $it") }
             pkg.preDepends.forEach { visitRelation(it, pkg.name, "pre-depends on") }
@@ -742,6 +759,45 @@ class Hg2PackageManager(
         runDpkg(listOf("--triggers-only", "--pending"), emit)
     }
 
+    /**
+     * Streams [process]'s merged output to [emit] and returns its exit code. If the calling
+     * coroutine is cancelled the child is destroyed (closing its pipe unblocks the read) and the
+     * cancellation is rethrown, so a cancelled `pkg` never leaves dpkg or a maintainer script
+     * running behind the rollback.
+     */
+    private suspend fun streamProcess(
+        process: Process,
+        tail: ArrayDeque<String>,
+        emit: suspend (String) -> Unit
+    ): Int = try {
+        coroutineScope {
+            val reaper = launch {
+                try {
+                    awaitCancellation()
+                } finally {
+                    process.destroy()
+                }
+            }
+            try {
+                process.inputStream.bufferedReader().use { reader ->
+                    while (true) {
+                        val line = reader.readLine() ?: break
+                        if (tail.size == DPKG_ERROR_TAIL_LINES) tail.removeFirst()
+                        tail.addLast(line)
+                        emit(line)
+                    }
+                }
+                ensureActive()
+                process.waitFor()
+            } finally {
+                reaper.cancel()
+            }
+        }
+    } catch (t: Throwable) {
+        process.destroy()
+        throw t
+    }
+
     private suspend fun runDpkg(args: List<String>, emit: suspend (String) -> Unit) {
         val process = ProcessBuilder(listOf(dpkgLauncher.absolutePath) + args)
             .directory(prefix)
@@ -750,15 +806,7 @@ class Hg2PackageManager(
             .start()
 
         val tail = ArrayDeque<String>(DPKG_ERROR_TAIL_LINES)
-        process.inputStream.bufferedReader().use { reader ->
-            while (true) {
-                val line = reader.readLine() ?: break
-                if (tail.size == DPKG_ERROR_TAIL_LINES) tail.removeFirst()
-                tail.addLast(line)
-                emit(line)
-            }
-        }
-        val code = process.waitFor()
+        val code = streamProcess(process, tail, emit)
         if (code != 0) {
             val detail = tail.joinToString("\n").trim()
             error("dpkg exited with code $code${if (detail.isBlank()) "" else ":\n$detail"}")
@@ -873,6 +921,8 @@ class Hg2PackageManager(
     }
 
     companion object {
+        /** Process-wide: every Hg2PackageManager instance shares the one dpkg prefix. */
+        private val PACKAGE_OPERATION_LOCK = Mutex()
         private const val OLD_PREFIX = "/data/data/com.termux/files/usr"
         private const val DPKG_ERROR_TAIL_LINES = 40
         private val MAINTAINER_SCRIPTS = listOf("preinst", "postinst", "prerm", "postrm")
