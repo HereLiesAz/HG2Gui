@@ -306,8 +306,11 @@ fun TerminalScreen(
                             },
                             { prompt -> session.awaitPromptAnswer(prompt) },
                             { code -> exitCode = code },
-                            { stderrChunk -> session.updateBufferEntry(entryId) { it.copy(stderr = stderrChunk) } },
-                            { styled -> session.updateBufferEntry(entryId) { it.copy(styledOutput = styled) } }
+                            // The engine calls these from its IO threads. updateBufferEntry is a
+                            // read-modify-write of session.buffer, so hop to this (main) scope -
+                            // otherwise it races the other updates and loses entries.
+                            { stderrChunk -> scope.launch { session.updateBufferEntry(entryId) { it.copy(stderr = stderrChunk) } } },
+                            { styled -> scope.launch { session.updateBufferEntry(entryId) { it.copy(styledOutput = styled) } } }
                         )
                     } catch (e: CancellationException) {
                         throw e
