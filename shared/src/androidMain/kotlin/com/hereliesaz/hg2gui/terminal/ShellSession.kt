@@ -41,11 +41,8 @@ actual class ShellSession private constructor(
     private val shellFamily: ShellFamily = ShellFamily.SH
 ) {
     companion object {
-        private const val SENTINEL = "__HG2GUI_EOC_a7f3__"
         private const val SENTINEL_HEAD = "__HG2GUI_EOC_"
-        private const val SENTINEL_TAIL = "a7f3__"
         private const val START_HEAD = "__HG2GUI_SOC_"
-        private const val START_MARKER = "__HG2GUI_SOC_a7f3__"
         private const val NATIVE_BASH = "libbin_bash.so"
         private const val DEFAULT_SHELL = "/system/bin/sh"
         private const val TIMEOUT_MS = 15_000L
@@ -80,7 +77,14 @@ actual class ShellSession private constructor(
                 "TERMINFO" to "${prefix.absolutePath}/share/terminfo",
                 "HG2GUI_BASH" to nativeBash.absolutePath
             )
-            Hg2ExecEnvironment.apply(context, env, bootstrapHome)
+            // A damaged bootstrap (missing exec preload, unwritable PRoot tmp) must not crash
+            // session creation: fall back to the bare system shell and say why in the log.
+            try {
+                Hg2ExecEnvironment.apply(context, env, bootstrapHome)
+            } catch (e: Exception) {
+                android.util.Log.w("ShellSession", "Termux exec environment unavailable; using the bare system shell", e)
+                return null
+            }
             return bootstrapHome to env
         }
 
@@ -158,9 +162,26 @@ actual class ShellSession private constructor(
         }
     }
 
+    // Per-session random nonce: a fixed marker could be forged by any command's output (a cat'd
+    // file, a malicious package) to end a command early or spoof its exit status and cwd. The
+    // framing still sends HEAD and TAIL as separate printf arguments, so the echoed command text
+    // in PTY mode never contains the assembled marker.
+    private val sentinelTail: String = java.security.SecureRandom().let { random ->
+        (1..16).joinToString("") { Integer.toHexString(random.nextInt(16)) } + "__"
+    }
+    private val sentinel = SENTINEL_HEAD + sentinelTail
+    private val startMarker = START_HEAD + sentinelTail
+
     private var process: Process? = null
     private var ptyFd: Int = -1
+    // The one owner of the pty fd: stdin/stdout wrap this same FileDescriptor object, and closing
+    // it through Os.close invalidates it for them too, so nothing closes the raw int twice (a
+    // second close could hit an unrelated fd that reused the number).
+    private var ptyDescriptor: FileDescriptor? = null
     private var ptyPid: Int = -1
+    // Set once the waiter thread has reaped the pty child; its pid may then be reused by an
+    // unrelated process and must not be signalled.
+    private val ptyReaped = AtomicBoolean(false)
     private var stdin: BufferedWriter? = null
     private var stdout: BufferedReader? = null
     private var stderr: BufferedReader? = null
@@ -220,17 +241,24 @@ actual class ShellSession private constructor(
         if (fd < 0) throw IOException("createSubprocess() failed to open a pty")
         ptyFd = fd
         ptyPid = pid[0]
+        ptyReaped.set(false)
         val wrapped = wrapFileDescriptor(fd)
+        ptyDescriptor = wrapped
         stdin = BufferedWriter(OutputStreamWriter(FileOutputStream(wrapped)))
         stdout = BufferedReader(InputStreamReader(FileInputStream(wrapped)))
         thread(name = "ShellSession-pty-waiter[pid=$ptyPid]") {
             JNI.waitFor(ptyPid)
+            ptyReaped.set(true)
             alive.set(false)
         }
     }
 
     private fun survivedStartup(): Boolean {
         if (!alive.get()) return false
+        // Some callers (a service's onStartCommand) build their engine on the main thread; never
+        // block it for the probe. There the check is immediate only, and a shell that dies a
+        // moment later surfaces as "shell died" on its first command instead of falling back.
+        if (android.os.Looper.myLooper() == android.os.Looper.getMainLooper()) return processStillRunning()
         try {
             Thread.sleep(STARTUP_PROBE_MS)
         } catch (e: InterruptedException) {
@@ -284,7 +312,7 @@ actual class ShellSession private constructor(
             val emulator = TerminalEmulator(DummyTerminalOutput(), 120, 24, 10, 10, 1000, null)
             val stderrEmulator = TerminalEmulator(DummyTerminalOutput(), 120, 24, 10, 10, 1000, null)
 
-            sin.write(ShellCommandProtocol.frame(shellFamily, command, START_HEAD, SENTINEL_HEAD, SENTINEL_TAIL))
+            sin.write(ShellCommandProtocol.frame(shellFamily, command, START_HEAD, SENTINEL_HEAD, sentinelTail))
             sin.flush()
 
             val pending = StringBuilder()
@@ -304,7 +332,12 @@ actual class ShellSession private constructor(
                 if (serr == null) return
                 if (serr.ready()) {
                     val n = serr.read(errBuf)
-                    if (n > 0) pendingErr.append(errBuf, 0, n)
+                    if (n > 0) {
+                        pendingErr.append(errBuf, 0, n)
+                        // A command that only reports progress on stderr is still making
+                        // progress; don't time it out as if it were silent.
+                        deadline = System.currentTimeMillis() + TIMEOUT_MS
+                    }
                 }
                 if (pendingErr.length <= emittedUpToErr) return
                 emittedUpToErr = trimConsumedPrefix(
@@ -344,7 +377,7 @@ actual class ShellSession private constructor(
                         deadline = System.currentTimeMillis() + TIMEOUT_MS
                     }
                 } else {
-                    val marker = pending.indexOf(SENTINEL, emittedUpTo)
+                    val marker = pending.indexOf(sentinel, emittedUpTo)
                     val idleMs = System.currentTimeMillis() - lastDataAt
                     val tailIsUnterminated = pending.length > emittedUpTo &&
                         pending[pending.length - 1] != '\n' && pending[pending.length - 1] != '\r'
@@ -384,9 +417,9 @@ actual class ShellSession private constructor(
                 }
 
                 if (!started) continue
-                val marker = pending.indexOf(SENTINEL, emittedUpTo)
+                val marker = pending.indexOf(sentinel, emittedUpTo)
                 if (marker < 0) {
-                    val safeEnd = (pending.length - SENTINEL.length).coerceAtLeast(emittedUpTo)
+                    val safeEnd = (pending.length - sentinel.length).coerceAtLeast(emittedUpTo)
                     emittedUpTo = trimConsumedPrefix(
                         pending,
                         flush(pending, emittedUpTo, safeEnd, emulator, onLine)
@@ -395,13 +428,13 @@ actual class ShellSession private constructor(
                     continue
                 }
 
-                val newlineIdx = pending.indexOf("\n", marker + SENTINEL.length)
+                val newlineIdx = pending.indexOf("\n", marker + sentinel.length)
                 if (newlineIdx < 0) continue
                 emittedUpTo = trimConsumedPrefix(
                     pending,
                     flush(pending, emittedUpTo, marker, emulator, onLine)
                 )
-                val tail = pending.substring(marker + SENTINEL.length, newlineIdx).trimEnd('\r')
+                val tail = pending.substring(marker + sentinel.length, newlineIdx).trimEnd('\r')
                 val split = tail.indexOf(':')
                 if (split > 0) {
                     try {
@@ -426,14 +459,14 @@ actual class ShellSession private constructor(
 
     /** Drops everything up to and including the start marker's line; true once it has been seen. */
     private fun discardBeforeStart(pending: StringBuilder): Boolean {
-        val at = pending.indexOf(START_MARKER)
+        val at = pending.indexOf(startMarker)
         if (at < 0) {
             // Keep only a tail long enough to hold a marker split across reads.
-            val keep = START_MARKER.length
+            val keep = startMarker.length
             if (pending.length > keep) pending.delete(0, pending.length - keep)
             return false
         }
-        val eol = pending.indexOf("\n", at + START_MARKER.length)
+        val eol = pending.indexOf("\n", at + startMarker.length)
         if (eol < 0) {
             pending.delete(0, at)
             return false
@@ -449,12 +482,16 @@ actual class ShellSession private constructor(
         emulator: TerminalEmulator,
         onLine: (String) -> Unit
     ): Int {
-        if (to <= from) return from
-        val chunk = pending.substring(from, to)
+        // Never end a flush between the two halves of a surrogate pair (an emoji split across
+        // reads or by the sentinel hold-back): the lone high surrogate would decode as U+FFFD.
+        // It stays pending and goes out with its low half on the next flush.
+        val end = if (to > from && pending[to - 1].isHighSurrogate()) to - 1 else to
+        if (end <= from) return from
+        val chunk = pending.substring(from, end)
         val bytes = chunk.replace("\r\n", "\n").replace("\n", "\r\n").toByteArray(Charsets.UTF_8)
         emulator.append(bytes, bytes.size)
         onLine(emulator.transcriptText())
-        return to
+        return end
     }
 
     private fun trimConsumedPrefix(pending: StringBuilder, emittedUpTo: Int): Int {
@@ -513,17 +550,21 @@ actual class ShellSession private constructor(
         killChild()
     }
 
+    @Synchronized
     private fun killChild() {
         if (usePty) {
-            if (ptyPid > 0) {
+            if (ptyPid > 0 && !ptyReaped.get()) {
                 try {
                     Os.kill(ptyPid, OsConstants.SIGKILL)
                 } catch (ignored: ErrnoException) {}
             }
-            if (ptyFd >= 0) {
-                JNI.close(ptyFd)
-                ptyFd = -1
+            ptyDescriptor?.let { descriptor ->
+                if (descriptor.valid()) {
+                    try { Os.close(descriptor) } catch (ignored: ErrnoException) {}
+                }
             }
+            ptyDescriptor = null
+            ptyFd = -1
         } else {
             process?.destroy()
         }
