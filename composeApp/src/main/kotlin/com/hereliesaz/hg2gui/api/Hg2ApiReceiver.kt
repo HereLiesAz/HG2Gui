@@ -39,6 +39,18 @@ internal fun containsForegroundOnlyCommand(command: String): Boolean =
         .map { it.substringAfterLast('/').lowercase() }
         .any { it in FOREGROUND_ONLY_COMMANDS }
 
+/** Lifecycle operations that read state or only snapshot it, so they may run with HG2Gui in the background. */
+private val BACKGROUND_LIFECYCLE_OPERATIONS = setOf("info", "snapshot")
+
+/**
+ * Whether a `hg2package` lifecycle [operation] may run for an external caller. Read-only/snapshot
+ * operations always may; `enable` changes what a package may do, so it needs HG2Gui in the
+ * foreground ([appInForeground]) with the user present. Everything else is never allowed here.
+ * Pure, see Hg2ApiCommandFilterTest.
+ */
+internal fun lifecycleOperationAllowed(operation: String, appInForeground: Boolean): Boolean =
+    operation in BACKGROUND_LIFECYCLE_OPERATIONS || (operation == "enable" && appInForeground)
+
 /** Typed, same-signature external capability API. */
 class Hg2ApiReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -161,9 +173,10 @@ class Hg2ApiReceiver : BroadcastReceiver() {
         val operation = request.getStringExtra(EXTRA_OPERATION)?.trim().orEmpty()
         val manager = request.getStringExtra(EXTRA_MANAGER)?.trim().orEmpty()
         val name = request.getStringExtra(EXTRA_PACKAGE)?.trim().orEmpty()
-        // disable/isolate change what a package may do and need the user present, like every
-        // other destructive lifecycle action - only these read-only/restorative ones run here.
-        if (operation !in setOf("info", "enable", "snapshot")) {
+        // enable/disable/isolate change what a package may do and need the user present, like every
+        // other destructive lifecycle action - only info/snapshot run from the background; enable
+        // additionally runs while HG2Gui is in the foreground.
+        if (!lifecycleOperationAllowed(operation, isAppInForeground(context))) {
             return reply(context, request, false, error = "destructive lifecycle actions require foreground user interaction")
         }
         if (!SAFE_WORD.matches(manager) || !SAFE_PACKAGE.matches(name)) return reply(context, request, false, error = "invalid manager/package")

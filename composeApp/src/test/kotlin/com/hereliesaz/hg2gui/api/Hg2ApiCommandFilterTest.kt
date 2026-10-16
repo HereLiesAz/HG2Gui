@@ -28,4 +28,14 @@ class Hg2ApiCommandFilterTest {
         assertFalse(containsForegroundOnlyCommand("pkg install git"))
         assertFalse(containsForegroundOnlyCommand("cat bootstrap.log"))
     }
+
+    @Test
+    fun lifecycleEnableNeedsForeground() {
+        assertTrue(lifecycleOperationAllowed("info", appInForeground = false))
+        assertTrue(lifecycleOperationAllowed("snapshot", appInForeground = false))
+        assertFalse(lifecycleOperationAllowed("enable", appInForeground = false))
+        assertTrue(lifecycleOperationAllowed("enable", appInForeground = true))
+        assertFalse(lifecycleOperationAllowed("disable", appInForeground = true))
+        assertFalse(lifecycleOperationAllowed("isolate", appInForeground = true))
+    }
 }
