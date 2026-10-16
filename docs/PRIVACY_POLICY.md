@@ -48,9 +48,8 @@ None of these happen passively or in the background without you taking the corre
 
 HG2Gui declares the permissions below. None is used to collect data for the maintainers. Runtime ("dangerous") permissions are requested only when you run a command or open a feature that needs them, and you can revoke them in Android Settings at any time.
 
-- Location (`ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION`): lets commands and packages that query location or Wi-Fi/network details work, as in a real Termux environment. Not read in the background.
 - Contacts (`READ_CONTACTS`, `WRITE_CONTACTS`): for the contact built-ins that look up, add or edit contacts when you ask.
-- Phone (`CALL_PHONE`, `READ_PHONE_STATE`): `call` places a call only when you run it; phone state lets device-information commands report telephony details.
+- Phone (`CALL_PHONE`): `call` places a call only when you run it.
 - Camera (`CAMERA`): the torch/flashlight built-in and commands that use the camera. No photos or video are taken or sent by the app itself.
 - Bluetooth (`BLUETOOTH_CONNECT`): the Bluetooth control built-in.
 - Modify system settings (`WRITE_SETTINGS`): brightness and similar system-setting built-ins; you grant it on a dedicated Android screen.
