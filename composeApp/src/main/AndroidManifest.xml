@@ -101,7 +101,6 @@
             android:name=".EditorActivity"
             android:excludeFromRecents="true"
             android:label="@string/editor_label"
-            android:noHistory="true"
             android:theme="@style/Custom.Solid"
             android:exported="true"
             android:windowSoftInputMode="stateAlwaysVisible|adjustResize">
