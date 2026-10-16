@@ -19,6 +19,16 @@ private val FULLSCREEN_BASE_COMMANDS = setOf(
     "claude", "gemini", "codex", "copilot", "gh"
 )
 
+/** Interpreters and shells are only interactive as a bare REPL (or with an explicit -i): with a
+ *  script, `-c`/`-e` code, or `--version`, they're ordinary one-shot output and stay on the
+ *  flattened transcript like any other command. */
+private val REPL_ONLY_COMMANDS = setOf("python3", "python", "node", "irb", "ghci", "bash", "zsh", "fish")
+
+private fun isRepl(tokens: List<String>): Boolean {
+    val args = tokens.drop(1)
+    return args.isEmpty() || args.any { it == "-i" || it == "--interactive" }
+}
+
 /** Matches "git rebase -i"/"--interactive" specifically - every other `git` invocation (status,
  *  log, diff, commit, ...) is line-based output a one-shot pipe already renders correctly. */
 private fun isInteractiveGitRebase(tokens: List<String>): Boolean {
@@ -41,6 +51,7 @@ fun fullScreenCommandOf(commandLine: String): String? {
     return when {
         leading == null -> null
         leading == "gh" && !isInteractiveGh(tokens) -> null
+        leading in REPL_ONLY_COMMANDS && !isRepl(tokens) -> null
         leading in FULLSCREEN_BASE_COMMANDS -> leading
         isInteractiveGitRebase(tokens) -> "git rebase -i"
         else -> null
