@@ -131,6 +131,7 @@ private fun buildContourPath(density: Array<FloatArray>, cellPx: Float): Path {
  * Renders a block of ASCII/box-drawing art as one traced flat vector silhouette instead of
  * literal monospace glyphs - see [buildContourPath].
  */
+@Composable
 fun AsciiArtCanvas(text: String, ink: Color, modifier: Modifier = Modifier, maxCell: Dp = 7.dp) {
     // The density grid is O(rows x cols) and the contour trace is worse - computed once per text
     // (not per recomposition), and bounded so a huge block of "art" can't stall the UI thread.
