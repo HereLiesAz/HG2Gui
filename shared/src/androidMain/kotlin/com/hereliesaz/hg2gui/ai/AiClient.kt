@@ -57,7 +57,7 @@ object AiClient {
                 skills.joinToString("\n\n") { (id, text) -> "## Skill: $id\n$text" }
         }
         val params = MessageCreateParams.builder()
-            .model("claude-opus-5")
+            .model("claude-opus-5-5")
             .maxTokens(2048L)
             .system(system)
             .outputConfig(OutputConfig.builder().effort(OutputConfig.Effort.LOW).build())
