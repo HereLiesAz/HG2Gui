@@ -331,6 +331,7 @@ class TerminalActivity : FragmentActivity() {
             // W5: cleared every time History opens so a stale search from a previous visit
             // doesn't linger; see CommandHistoryStore's own doc comment for the log itself.
             var historyQuery by remember { mutableStateOf("") }
+            var confirmKillFullScreen by remember { mutableStateOf(false) }
             fun closeSession(closing: TerminalSession) {
                 val remaining = sessions.filterNot { it.ui.id == closing.ui.id }
                 sessions = remaining
@@ -618,11 +619,9 @@ class TerminalActivity : FragmentActivity() {
                     screen == Screen.Mcp -> screen = Screen.Settings
                     screen == Screen.Environment -> screen = Screen.Settings
                     screen == Screen.History -> screen = Screen.Settings
-                    screen == Screen.FullScreenApp -> {
-                        fullScreenSession?.kill()
-                        fullScreenSession = null
-                        screen = Screen.Terminal
-                    }
+                    // A back gesture is easy to make by accident, and killing the pty throws away
+                    // whatever the app (editor, REPL, ssh) was holding - ask first.
+                    screen == Screen.FullScreenApp -> confirmKillFullScreen = true
                     else -> screen = Screen.Terminal
                 }
             }
@@ -1112,6 +1111,21 @@ class TerminalActivity : FragmentActivity() {
                         confirmLabel = "INSTALL",
                         onConfirm = { decision.complete(true); azpTrustConfirm = null },
                         onDismiss = { decision.complete(false); azpTrustConfirm = null }
+                    )
+                }
+
+                if (confirmKillFullScreen) {
+                    ConfirmDialog(
+                        title = "CLOSE ${fullScreenSession?.commandLine?.uppercase().orEmpty()}?",
+                        message = "Closing now ends the running program.",
+                        confirmLabel = "CLOSE",
+                        onConfirm = {
+                            confirmKillFullScreen = false
+                            fullScreenSession?.kill()
+                            fullScreenSession = null
+                            screen = Screen.Terminal
+                        },
+                        onDismiss = { confirmKillFullScreen = false }
                     )
                 }
 
