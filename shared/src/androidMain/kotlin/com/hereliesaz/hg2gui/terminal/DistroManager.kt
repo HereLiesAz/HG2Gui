@@ -33,13 +33,15 @@ object DistroManager {
     // from that release's own bootstrap-aarch64.zip at the same time, not on its own.
     private const val BOOTSTRAP_RELEASE_TAG = "bootstrap-2026.08.16-r1+apt.android-7"
     // SHA-256 pins (lowercase hex) of each ABI's bootstrap-<arch>.zip at BOOTSTRAP_RELEASE_TAG,
-    // keyed by bootstrapArch(). Verified after download whenever a pin is present; an absent pin
-    // only logs/emits a loud warning (the archive is then trusted on TLS + GitHub alone).
-    // TODO: fill these in from the release's published checksums - they were not knowable when
-    // this check was added, and inventing values would just brick every bootstrap. Bump them
-    // together with BOOTSTRAP_RELEASE_TAG.
+    // keyed by bootstrapArch(). Verification is mandatory: a missing pin or a mismatch fails the
+    // bootstrap, so an arch without a pin can never install an unverified archive. Computed with
+    // sha256sum over the files downloaded from BOOTSTRAP_BASE_URL. Bump them together with
+    // BOOTSTRAP_RELEASE_TAG.
     private val BOOTSTRAP_SHA256: Map<String, String> = mapOf(
-        // "aarch64" to "<sha256 of bootstrap-aarch64.zip>",
+        "aarch64" to "ed83429ff0835b97155c5f80f2c74abf892f691f9fb9259eaca52fe1fb88e8f0",
+        "arm" to "2c17da5e0e02dd633464664cb02a780433c0c73d21192309c788c472860d0e48",
+        "i686" to "b817b44266f237d27c7c7664f4bb14cef79e763aebaf126244b10fcb82b1a5b3",
+        "x86_64" to "a6e8a7fc83e0093550a4495aaabdae2ab8082acbb08846bba521ab327951c747",
     )
     private const val BOOTSTRAP_BASE_URL =
         "https://github.com/termux/termux-packages/releases/download/$BOOTSTRAP_RELEASE_TAG"
@@ -147,10 +149,8 @@ object DistroManager {
 
             val actualSha256 = digest.digest().joinToString("") { "%02x".format(it) }
             val pinnedSha256 = BOOTSTRAP_SHA256[arch]
-            if (pinnedSha256 == null) {
-                android.util.Log.w("hg2gui", "No SHA-256 pin for bootstrap-$arch.zip; got $actualSha256 - integrity NOT verified")
-                emit("WARNING: no integrity pin for bootstrap-$arch.zip (sha256 $actualSha256) - not verified.")
-            } else if (!pinnedSha256.equals(actualSha256, ignoreCase = true)) {
+                ?: throw IOException("No SHA-256 pin for bootstrap-$arch.zip (got $actualSha256); refusing to install an unverified archive")
+            if (!pinnedSha256.equals(actualSha256, ignoreCase = true)) {
                 throw IOException("bootstrap-$arch.zip SHA-256 mismatch: expected $pinnedSha256, got $actualSha256")
             }
 
