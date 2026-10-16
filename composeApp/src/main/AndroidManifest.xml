@@ -86,7 +86,7 @@
 
         <activity
             android:name=".TerminalActivity"
-            android:configChanges="keyboardHidden|orientation|screenSize|keyboard|navigation|uiMode"
+            android:configChanges="keyboardHidden|orientation|screenSize|screenLayout|smallestScreenSize|density|fontScale|locale|layoutDirection|keyboard|navigation|uiMode"
             android:documentLaunchMode="intoExisting"
             android:exported="true"
             android:launchMode="singleTop"

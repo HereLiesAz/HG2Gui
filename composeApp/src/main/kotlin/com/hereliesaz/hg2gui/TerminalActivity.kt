@@ -255,6 +255,12 @@ class TerminalActivity : FragmentActivity() {
     // that got us here actually wanted to."
     private var deviceStoragePendingActivation = false
 
+    // S1: set right before screen = Screen.FullScreenApp (onRun's dispatch below); torn
+    // down (session.kill()) on every exit path - back gesture, the ✕ pill, or the child
+    // process finishing on its own - so a killed/finished pty never lingers. Activity-level
+    // (not `remember`) so onDestroy can kill a pty that is still running when the Activity goes.
+    private var fullScreenSession by mutableStateOf<FullScreenPtySession?>(null)
+
     override fun onResume() {
         super.onResume()
         val granted = StorageAccessManager.hasFullAccess(this)
@@ -262,6 +268,11 @@ class TerminalActivity : FragmentActivity() {
         if (granted && deviceStoragePendingActivation) {
             deviceStoragePendingActivation = false
             deviceStorageActive = VfsManager.setDeviceStorageMode(this, true)
+        } else if (!granted && deviceStorageActive) {
+            // Access was revoked in Settings while we were away - device storage can no longer be
+            // read, so drop back to the sandbox rather than showing a mode that just fails.
+            VfsManager.setDeviceStorageMode(this, false)
+            deviceStorageActive = false
         }
     }
 
@@ -314,10 +325,6 @@ class TerminalActivity : FragmentActivity() {
             // no warning today - this pauses on a tap first; a tab that's just sitting idle still
             // closes immediately, same as before.
             var closeSessionConfirm by remember { mutableStateOf<TerminalSession?>(null) }
-            // S1: set right before screen = Screen.FullScreenApp (onRun's dispatch below); torn
-            // down (session.kill()) on every exit path - back gesture, the ✕ pill, or the child
-            // process finishing on its own - so a killed/finished pty never lingers.
-            var fullScreenSession by remember { mutableStateOf<FullScreenPtySession?>(null) }
             // W5: cleared every time History opens so a stale search from a previous visit
             // doesn't linger; see CommandHistoryStore's own doc comment for the log itself.
             var historyQuery by remember { mutableStateOf("") }
@@ -1306,6 +1313,8 @@ class TerminalActivity : FragmentActivity() {
     }
 
     override fun onDestroy() {
+        fullScreenSession?.kill()
+        fullScreenSession = null
         sessions.forEach {
             it.ui.destroy()
             it.engine.destroy()
