@@ -68,6 +68,20 @@ class McpTools(
         pairs.forEach { (k, v) -> put(k, v) }
     }
 
+    /**
+     * Non-null (a refusal) when [path] names a protected location an MCP agent may not mutate -
+     * see [isMcpProtectedVfsPath]. Checked on both the normalized request path and the canonical
+     * (symlink-resolved) target, so a symlink in $HOME pointing at ~/.bashrc can't launder a write.
+     */
+    private fun protectedPathRefusal(path: String): ToolCallResult.Failure? {
+        val canonical = VfsManager.resolve(context, path)?.let { VfsManager.pathOf(context, it) }
+        return if (isMcpProtectedVfsPath(path) || (canonical != null && isMcpProtectedVfsPath(canonical))) {
+            ToolCallResult.Failure(McpJsonRpc.INVALID_PARAMS, "Refused: $path is a protected dotfile/config location")
+        } else {
+            null
+        }
+    }
+
     private val vfsTools: List<ToolSpec> = listOf(
         ToolSpec(
             "vfs.list",
@@ -116,6 +130,7 @@ class McpTools(
                 ?: return@ToolSpec ToolCallResult.Failure(McpJsonRpc.INVALID_PARAMS, "Missing \"path\"")
             val content = args.stringArg("content")
                 ?: return@ToolSpec ToolCallResult.Failure(McpJsonRpc.INVALID_PARAMS, "Missing \"content\"")
+            protectedPathRefusal(path)?.let { return@ToolSpec it }
             if (VfsManager.writeText(context, path, content)) ToolCallResult.Success(textContent("ok"))
             else ToolCallResult.Failure(McpJsonRpc.INTERNAL_ERROR, "Failed to write: $path")
         },
@@ -126,6 +141,7 @@ class McpTools(
         ) { args ->
             val path = args?.absPathArg("path")
                 ?: return@ToolSpec ToolCallResult.Failure(McpJsonRpc.INVALID_PARAMS, "Missing \"path\"")
+            protectedPathRefusal(path)?.let { return@ToolSpec it }
             if (VfsManager.mkdir(context, path)) ToolCallResult.Success(textContent("ok"))
             else ToolCallResult.Failure(McpJsonRpc.INTERNAL_ERROR, "Failed to create: $path")
         },
@@ -136,6 +152,7 @@ class McpTools(
         ) { args ->
             val path = args?.absPathArg("path")
                 ?: return@ToolSpec ToolCallResult.Failure(McpJsonRpc.INVALID_PARAMS, "Missing \"path\"")
+            protectedPathRefusal(path)?.let { return@ToolSpec it }
             if (VfsManager.delete(context, path)) ToolCallResult.Success(textContent("ok"))
             else ToolCallResult.Failure(McpJsonRpc.INTERNAL_ERROR, "Failed to delete: $path")
         },
@@ -151,6 +168,7 @@ class McpTools(
                 ?: return@ToolSpec ToolCallResult.Failure(McpJsonRpc.INVALID_PARAMS, "Missing \"from\"")
             val to = args.absPathArg("to")
                 ?: return@ToolSpec ToolCallResult.Failure(McpJsonRpc.INVALID_PARAMS, "Missing \"to\"")
+            (protectedPathRefusal(from) ?: protectedPathRefusal(to))?.let { return@ToolSpec it }
             if (VfsManager.move(context, from, to)) ToolCallResult.Success(textContent("ok"))
             else ToolCallResult.Failure(McpJsonRpc.INTERNAL_ERROR, "Failed to move $from -> $to")
         },
@@ -166,6 +184,7 @@ class McpTools(
                 ?: return@ToolSpec ToolCallResult.Failure(McpJsonRpc.INVALID_PARAMS, "Missing \"from\"")
             val to = args.absPathArg("to")
                 ?: return@ToolSpec ToolCallResult.Failure(McpJsonRpc.INVALID_PARAMS, "Missing \"to\"")
+            (protectedPathRefusal(from) ?: protectedPathRefusal(to))?.let { return@ToolSpec it }
             if (VfsManager.copy(context, from, to)) ToolCallResult.Success(textContent("ok"))
             else ToolCallResult.Failure(McpJsonRpc.INTERNAL_ERROR, "Failed to copy $from -> $to")
         }
