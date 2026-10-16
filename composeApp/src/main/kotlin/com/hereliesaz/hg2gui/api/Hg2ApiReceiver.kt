@@ -21,6 +21,21 @@ import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
 
+private val FOREGROUND_ONLY_COMMANDS = setOf("hg2auth", "bootstrap")
+
+/**
+ * True iff any shell token in [command] - after splitting on whitespace and shell control/
+ * substitution characters and dropping quotes/backslashes - has a basename of `hg2auth` or
+ * `bootstrap` (case-insensitive). Deliberately over-broad: a false positive just means the caller
+ * has to run that command in the foreground. Pure, see Hg2ApiCommandFilterTest.
+ */
+internal fun containsForegroundOnlyCommand(command: String): Boolean =
+    command.split(Regex("""[\s;|&()`<>{}$=]+"""))
+        .asSequence()
+        .map { it.replace(Regex("""["'\\]"""), "") }
+        .map { it.substringAfterLast('/').lowercase() }
+        .any { it in FOREGROUND_ONLY_COMMANDS }
+
 /** Typed, same-signature external capability API. */
 class Hg2ApiReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -92,9 +107,10 @@ class Hg2ApiReceiver : BroadcastReceiver() {
     private suspend fun execute(context: Context, request: Intent) {
         val command = request.getStringExtra(EXTRA_COMMAND)?.trim().orEmpty()
         if (command.isEmpty()) return reply(context, request, false, error = "missing command")
-        // Block all hg2auth and bootstrap invocations — both require foreground approval
-        val lower = command.lowercase()
-        if (lower.startsWith("hg2auth") || lower == "bootstrap" || lower.startsWith("bootstrap ")) {
+        // Block all hg2auth and bootstrap invocations — both require foreground approval. A plain
+        // prefix check missed `env hg2auth`, `sh -c hg2auth`, `true; hg2auth`, `/abs/hg2auth`,
+        // `X=1 hg2auth`, so every token anywhere in the line is checked instead.
+        if (containsForegroundOnlyCommand(command)) {
             return reply(context, request, false, error = "authority commands require foreground approval")
         }
         val engine = TerminalEngine(context)
@@ -134,7 +150,9 @@ class Hg2ApiReceiver : BroadcastReceiver() {
         val operation = request.getStringExtra(EXTRA_OPERATION)?.trim().orEmpty()
         val manager = request.getStringExtra(EXTRA_MANAGER)?.trim().orEmpty()
         val name = request.getStringExtra(EXTRA_PACKAGE)?.trim().orEmpty()
-        if (operation !in setOf("info", "disable", "enable", "isolate", "snapshot")) {
+        // disable/isolate change what a package may do and need the user present, like every
+        // other destructive lifecycle action - only these read-only/restorative ones run here.
+        if (operation !in setOf("info", "enable", "snapshot")) {
             return reply(context, request, false, error = "destructive lifecycle actions require foreground user interaction")
         }
         if (!SAFE_WORD.matches(manager) || !SAFE_PACKAGE.matches(name)) return reply(context, request, false, error = "invalid manager/package")
