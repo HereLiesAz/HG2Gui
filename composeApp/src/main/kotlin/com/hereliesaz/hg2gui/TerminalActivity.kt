@@ -33,8 +33,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -351,8 +353,15 @@ class TerminalActivity : FragmentActivity() {
             // back to when a pill's origin rect hasn't been reported yet.
             val revealDensity = LocalDensity.current
             val revealConfiguration = LocalConfiguration.current
-            val revealFullWidthPx = with(revealDensity) { revealConfiguration.screenWidthDp.dp.toPx() }
-            val revealFullHeightPx = with(revealDensity) { revealConfiguration.screenHeightDp.dp.toPx() }
+            // The reveal frame runs the perimeter of the root Box, so size it from that Box's real
+            // measured size (below) - the configuration's screen dp includes system bars/insets
+            // and doesn't track split-screen or freeform windows. The configuration value is only
+            // the first-frame fallback before the root has been measured.
+            var rootSizePx by remember { mutableStateOf(IntSize.Zero) }
+            val revealFullWidthPx = if (rootSizePx.width > 0) rootSizePx.width.toFloat()
+                else with(revealDensity) { revealConfiguration.screenWidthDp.dp.toPx() }
+            val revealFullHeightPx = if (rootSizePx.height > 0) rootSizePx.height.toFloat()
+                else with(revealDensity) { revealConfiguration.screenHeightDp.dp.toPx() }
             val revealDefaultBaseWidthPx = with(revealDensity) { REVEAL_DEFAULT_BASE_WIDTH.toPx() }
             val revealMinThicknessPx = with(revealDensity) { REVEAL_MIN_THICKNESS.toPx() }
 
@@ -628,7 +637,7 @@ class TerminalActivity : FragmentActivity() {
 
             HG2GuiTheme(scale = fontScalePercent / 100f) {
                 val currentTree = tree
-                Box(Modifier.fillMaxSize()) {
+                Box(Modifier.fillMaxSize().onSizeChanged { rootSizePx = it }) {
                 when {
                     screen == Screen.Settings -> SettingsScreen(
                         fullscreen = fullscreen,
