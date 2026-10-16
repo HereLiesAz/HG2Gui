@@ -1,5 +1,9 @@
 package com.hereliesaz.hg2gui.ui
 
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.Role
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.tween
@@ -939,7 +943,11 @@ private fun SessionTabs(
                         if (on && sessions.size > 1) {
                             Spacer(Modifier.width(6.dp))
                             Box(
-                                Modifier.clickable { onClose(s.id) }.padding(8.dp),
+                                Modifier
+                                    .semantics { contentDescription = "Close ${s.name}" }
+                                    .minimumInteractiveComponentSize()
+                                    .clickable(role = Role.Button) { onClose(s.id) }
+                                    .padding(8.dp),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text("×", style = MaterialTheme.typography.titleMedium.copy(color = Azphalt.Yellow, fontSize = 10.sp))
@@ -969,7 +977,10 @@ private fun SessionTabs(
             Text("FILES", style = MaterialTheme.typography.titleMedium.copy(color = Azphalt.White, fontSize = 8.sp, fontWeight = FontWeight.Black))
         }
         Box(
-            Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp).clickable(onClick = onOpenSettings),
+            Modifier
+                .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                .semantics { contentDescription = "Settings" }
+                .clickable(role = Role.Button, onClick = onOpenSettings),
             contentAlignment = Alignment.Center
         ) {
             Box(
@@ -980,7 +991,10 @@ private fun SessionTabs(
             }
         }
         Box(
-            Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp).clickable(onClick = onOpenGuide),
+            Modifier
+                .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                .semantics { contentDescription = "Command guide" }
+                .clickable(role = Role.Button, onClick = onOpenGuide),
             contentAlignment = Alignment.Center
         ) {
             Box(
