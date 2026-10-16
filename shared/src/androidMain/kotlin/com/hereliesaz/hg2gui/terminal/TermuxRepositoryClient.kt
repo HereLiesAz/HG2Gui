@@ -22,7 +22,9 @@ class TermuxRepositoryClient(
     data class IndexResult(
         val mirror: String,
         val packagesGz: File,
-        val releaseText: String
+        val releaseText: String,
+        /** The signed InRelease `Date:` in epoch millis, or null if it carried none. */
+        val releaseDateMillis: Long? = null
     )
 
     private val prefix = DistroManager.prefixDir(context)
@@ -31,11 +33,32 @@ class TermuxRepositoryClient(
     private val repositoryState = File(prefix, "var/lib/hg2pkg")
     private val cachedPackages = File(repositoryState, "Packages")
     private val authenticatedMarker = File(repositoryState, "Packages.authenticated")
+    // The newest signed InRelease Date ever accepted. Never deleted on refresh (unlike the marker),
+    // so a mirror replaying an older - validly signed - InRelease is refused even after a crash.
+    private val acceptedReleaseDate = File(repositoryState, "InRelease.date")
 
     init {
         // Builds predating signed-index enforcement may have left a perfectly parseable but
-        // unauthenticated Packages cache behind. Never grandfather it into the new trust model.
-        if (cachedPackages.exists() && !authenticatedMarker.isFile) cachedPackages.delete()
+        // unauthenticated Packages cache behind. Never grandfather it into the new trust model -
+        // and the marker's recorded digest must actually match the cache on disk, otherwise any
+        // write to Packages after authentication would silently inherit the marker's trust.
+        if (cachedPackages.exists()) {
+            val recorded = authenticatedMarker.takeIf { it.isFile }?.readLines()?.getOrNull(2)?.trim()
+            if (recorded == null || !recorded.equals(sha256(cachedPackages), ignoreCase = true)) {
+                cachedPackages.delete()
+                authenticatedMarker.delete()
+            }
+        }
+    }
+
+    /**
+     * Records that the decompressed index the caller just promoted to `Packages` came from an
+     * authenticated [result]: the marker stores the SHA-256 of `Packages` itself, which [init]
+     * re-checks on every construction. Call only after the promote has fully completed.
+     */
+    fun markIndexAuthenticated(architecture: String, result: IndexResult) {
+        authenticatedMarker.parentFile?.mkdirs()
+        authenticatedMarker.writeText("$architecture\n${result.mirror}\n${sha256(cachedPackages)}\n")
     }
 
     fun fetchAuthenticatedIndex(architecture: String, workDir: File): IndexResult {
@@ -51,12 +74,15 @@ class TermuxRepositoryClient(
         authenticatedMarker.delete()
         cachedPackages.delete()
 
+        val lastAcceptedDate = acceptedReleaseDate.takeIf { it.isFile }?.readText()?.trim()?.toLongOrNull()
         val failures = mutableListOf<String>()
         for (mirror in MAIN_MIRRORS) {
             runCatching {
-                val result = fetchFromMirror(mirror, architecture, workDir)
-                authenticatedMarker.parentFile?.mkdirs()
-                authenticatedMarker.writeText("$architecture\n${result.mirror}\n${sha256(result.packagesGz)}\n")
+                val result = fetchFromMirror(mirror, architecture, workDir, lastAcceptedDate)
+                result.releaseDateMillis?.let {
+                    acceptedReleaseDate.parentFile?.mkdirs()
+                    acceptedReleaseDate.writeText(it.toString())
+                }
                 return result
             }.onFailure { failures += "$mirror — ${it.message ?: it::class.java.simpleName}" }
         }
@@ -92,7 +118,12 @@ class TermuxRepositoryClient(
         return ordered.map { "$it/${filename.trimStart('/')}" }
     }
 
-    private fun fetchFromMirror(mirror: String, architecture: String, workDir: File): IndexResult {
+    private fun fetchFromMirror(
+        mirror: String,
+        architecture: String,
+        workDir: File,
+        lastAcceptedDateMillis: Long?
+    ): IndexResult {
         val safeMirror = mirror.substringAfter("https://").replace(Regex("[^A-Za-z0-9._-]"), "_")
         val inRelease = File(workDir, "InRelease-$safeMirror")
         val packagesGz = File(workDir, "Packages-$architecture-$safeMirror.gz")
@@ -100,6 +131,7 @@ class TermuxRepositoryClient(
         download("$mirror/dists/stable/InRelease", inRelease)
         verifyInRelease(inRelease)
         val releaseText = clearSignedPayload(inRelease.readText())
+        val releaseDate = checkReleaseFreshness(releaseText, System.currentTimeMillis(), lastAcceptedDateMillis)
         val relative = "main/binary-$architecture/Packages.gz"
         val expected = releaseSha256(releaseText, relative)
             ?: error("Signed InRelease from $mirror has no SHA256 entry for $relative")
@@ -109,7 +141,7 @@ class TermuxRepositoryClient(
         if (!actual.equals(expected, ignoreCase = true)) {
             error("Packages.gz digest mismatch from $mirror: expected $expected, got $actual")
         }
-        return IndexResult(mirror, packagesGz, releaseText)
+        return IndexResult(mirror, packagesGz, releaseText, releaseDate)
     }
 
     private fun download(url: String, destination: File) {
@@ -218,4 +250,44 @@ class TermuxRepositoryClient(
             "https://ftp.agdsn.de/termux/termux-main"
         )
     }
+}
+
+/** A top-level `Field: value` from a Debian Release/InRelease payload, or null if absent. */
+internal fun releaseField(release: String, name: String): String? =
+    release.lineSequence()
+        .firstOrNull { !it.startsWith(' ') && it.startsWith("$name:") }
+        ?.substringAfter(':')
+        ?.trim()
+
+/** Parses a Debian Release date ("Sat, 16 Aug 2026 12:00:00 UTC"), or null if unparseable. */
+internal fun parseReleaseDate(value: String): Long? = listOf(
+    "EEE, dd MMM yyyy HH:mm:ss zzz",
+    "EEE, dd MMM yyyy HH:mm:ss Z",
+).firstNotNullOfOrNull { pattern ->
+    try {
+        java.text.SimpleDateFormat(pattern, java.util.Locale.US).apply { isLenient = false }.parse(value)?.time
+    } catch (_: java.text.ParseException) {
+        null
+    }
+}
+
+/**
+ * Freeze/replay protection for an already signature-verified InRelease payload: rejects it when
+ * its `Valid-Until` has passed, or its `Date` is older than [lastAcceptedDateMillis] (the newest
+ * one previously accepted - a mirror serving an old, validly signed snapshot to hold back
+ * security updates). A present-but-unparseable field is rejected too. Returns the payload's
+ * `Date` in epoch millis (null if it has none). Pure, see TermuxReleaseFreshnessTest.
+ */
+internal fun checkReleaseFreshness(release: String, nowMillis: Long, lastAcceptedDateMillis: Long?): Long? {
+    releaseField(release, "Valid-Until")?.let { raw ->
+        val validUntil = parseReleaseDate(raw) ?: error("InRelease has an unparseable Valid-Until: $raw")
+        if (nowMillis > validUntil) error("InRelease expired (Valid-Until $raw)")
+    }
+    val date = releaseField(release, "Date")?.let { raw ->
+        parseReleaseDate(raw) ?: error("InRelease has an unparseable Date: $raw")
+    }
+    if (date != null && lastAcceptedDateMillis != null && date < lastAcceptedDateMillis) {
+        error("InRelease Date is older than the last accepted index (possible replay)")
+    }
+    return date
 }

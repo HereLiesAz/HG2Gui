@@ -587,6 +587,7 @@ class Hg2PackageManager(
             tmp.copyTo(packagesFile, overwrite = true)
             tmp.delete()
         }
+        repository.markIndexAuthenticated(architecture, authenticated)
         activeMirror = authenticated.mirror
         emit("Authenticated repository: ${authenticated.mirror}")
         emit("HG2Gui package index ready: ${parsePackages(packagesFile.readText()).size} packages.")
