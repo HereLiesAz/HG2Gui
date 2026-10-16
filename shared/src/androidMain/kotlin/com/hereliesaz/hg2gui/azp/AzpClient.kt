@@ -17,6 +17,7 @@ private const val REPOSITORY_BASE = "https://www.azphalt.store"
  * has no such runtime) - see AzpInstaller for what "install" actually means here.
  */
 object AzpClient {
+    private const val MAX_DOWNLOAD_BYTES = 256L * 1024 * 1024
     private val json = Json { ignoreUnknownKeys = true }
     private val http = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
@@ -51,11 +52,34 @@ object AzpClient {
     /** Downloads the raw `.azp` (a ZIP archive) for the given package/version. Free packages
      *  only - paid packages need a Bearer entitlement HG2Gui does not yet implement. */
     suspend fun download(id: String, version: String): ByteArray? = withContext(Dispatchers.IO) {
-        val url = "$REPOSITORY_BASE/packages/$id/versions/$version/download"
+        // id/version come from search results (untrusted) - never let them add path segments
+        // or query strings to the request, and refuse the same values AzpInstaller would.
+        if (!isValidAzpPathSegment(id) || !isValidAzpPathSegment(version)) return@withContext null
+        val url = REPOSITORY_BASE.toHttpUrl().newBuilder()
+            .addPathSegment("packages").addPathSegment(id)
+            .addPathSegment("versions").addPathSegment(version)
+            .addPathSegment("download")
+            .build()
         val request = Request.Builder().url(url).get().build()
         http.newCall(request).execute().use { resp ->
             if (!resp.isSuccessful) return@withContext null
-            resp.body.bytes()
+            val body = resp.body
+            if (body.contentLength() > MAX_DOWNLOAD_BYTES) return@withContext null
+            // Streamed with a hard cap rather than body.bytes(), which would buffer an unbounded
+            // (or lying-Content-Length) response entirely into memory.
+            val out = java.io.ByteArrayOutputStream()
+            body.byteStream().use { input ->
+                val buffer = ByteArray(8192)
+                var total = 0L
+                while (true) {
+                    val n = input.read(buffer)
+                    if (n < 0) break
+                    total += n
+                    if (total > MAX_DOWNLOAD_BYTES) return@withContext null
+                    out.write(buffer, 0, n)
+                }
+            }
+            out.toByteArray()
         }
     }
 

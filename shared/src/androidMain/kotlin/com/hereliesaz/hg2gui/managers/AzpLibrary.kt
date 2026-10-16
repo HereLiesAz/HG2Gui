@@ -5,6 +5,7 @@ import androidx.core.content.edit
 import com.hereliesaz.hg2gui.azp.AzpInstalled
 import com.hereliesaz.hg2gui.azp.AzpInstaller
 import com.hereliesaz.hg2gui.azp.AzpTrust
+import com.hereliesaz.hg2gui.azp.isValidAzpPathSegment
 
 private const val PREFS_NAME = "hg2gui_azp"
 private const val KEY_IDS = "azp_ids"
@@ -93,9 +94,10 @@ object AzpLibrary {
             if (p.getString("$id.kind", "asset") != "skill") continue
             val version = p.getString("$id.version", "") ?: continue
             val skillIds = p.getString("$id.skillIds", "")?.split(",")?.filter { it.isNotBlank() } ?: continue
-            val root = AzpInstaller.rootDir(context, id, version)
+            val root = AzpInstaller.rootDirOrNull(context, id, version) ?: continue
             for (skillId in skillIds) {
                 if (remaining <= 0) break
+                if (!isValidAzpPathSegment(skillId)) continue
                 val skillMd = root.resolve("skills/$skillId/SKILL.md")
                 if (!skillMd.exists()) continue
                 val text = skillMd.readText().take(remaining)
