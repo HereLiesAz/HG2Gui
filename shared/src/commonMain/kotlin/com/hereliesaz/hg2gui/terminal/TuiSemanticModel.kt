@@ -84,13 +84,15 @@ object TuiSemanticParser {
     private val confirmWords = Regex("""(?i)\b(confirm|continue|proceed|overwrite|delete|remove|install|allow|accept)\b""")
     private val modalWords = Regex("""(?i)\b(dialog|confirm|confirmation|warning|error|choose|select|options?)\b""")
     private val tabLine = Regex("""(?:^|\s)(?:\[([^]]+)]|([^|│]+))(?:\s*[|│]\s*|$)""")
-    private val progressPercent = Regex("""\b(\d{1,3})%\b""")
+    private val progressPercent = Regex("""\b(\d{1,3})%""")
     private val tableSeparator = Regex("""^\s*[+┌├└│|].*(?:[-─]{2,}|[+┬┼┴]).*$""")
     private val resultPrefix = Regex("""^\s*(?:[-*•]|\d+[.)])\s+\S""")
     private val paneSeparator = Regex("""\s[│|]\s""")
     private val diffLine = Regex("""^\s*(?:diff --git|index\s|---\s|\+\+\+\s|@@\s|[+-][^+-]|\\ No newline)""")
     private val logLine = Regex("""(?i)^\s*(?:(?:\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2})|(?:\d{2}:\d{2}:\d{2})|(?:[A-Z]/[A-Za-z0-9_.-]+)).*\b(?:trace|debug|info|warn|warning|error|fatal)\b""")
     private val editorLine = Regex("""^\s*\d+\s+(?:[│|]\s*)?\S.*$""")
+    // "12 | code" - an editor line-number gutter, not a tab strip.
+    private val lineNumberGutter = Regex("""^\s*\d+\s*[|│]""")
     private val editorStatus = Regex("""(?i)(?:--\s*(?:insert|normal|visual|replace)\s*--|\bLn\s+\d+|\bline\s+\d+\s*,\s*col)""")
 
     fun parse(rows: List<TuiRow>, alternateScreen: Boolean, mouseAware: Boolean = false): TuiSnapshot {
@@ -187,7 +189,7 @@ object TuiSemanticParser {
 
     private fun detectTabs(visible: List<TuiRow>, menuRows: Set<Int>): List<TuiTab> {
         val candidate = visible.firstOrNull { row ->
-            row.index !in menuRows && (row.text.count { it == '|' || it == '│' } >= 1 || row.text.count { it == '[' } >= 2)
+            row.index !in menuRows && !lineNumberGutter.containsMatchIn(row.text) && (row.text.count { it == '|' || it == '│' } >= 1 || row.text.count { it == '[' } >= 2)
         } ?: return emptyList()
         val matches = tabLine.findAll(candidate.text).mapNotNull { match ->
             val raw = (match.groupValues[1].ifBlank { match.groupValues[2] }).trim()

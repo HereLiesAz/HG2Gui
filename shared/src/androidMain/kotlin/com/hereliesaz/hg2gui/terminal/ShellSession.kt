@@ -326,7 +326,7 @@ actual class ShellSession private constructor(
             val buf = CharArray(4096)
             // PTY mode echoes the framed input (and the shell prompt) back on the same stream as
             // real output; nothing is real output until the start marker arrives. Pipes don't echo.
-            var started = !usePty
+            var started = false // pipes print the start marker line too; it must be consumed in both modes
 
             fun drainStderr() {
                 if (serr == null) return

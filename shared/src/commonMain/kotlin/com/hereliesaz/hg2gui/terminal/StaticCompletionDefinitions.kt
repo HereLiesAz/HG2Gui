@@ -33,7 +33,10 @@ object StaticCompletionDefinitions {
         text.lineSequence()
             .filter { line -> "_arguments" in line || "_values" in line || "_describe" in line }
             .flatMap { line ->
-                zshChoiceSet.findAll(line).flatMap { match -> literalWords(match.value.removeSurrounding("(", ")")).asSequence() }
+                zshChoiceSet.findAll(line)
+                    // "${(f)...}" / "$(...)" are expansions (code), not literal choice sets.
+                    .filter { match -> line.getOrNull(match.range.first - 1).let { it != '$' && it != '{' } }
+                    .flatMap { match -> literalWords(match.value.removeSurrounding("(", ")")).asSequence() }
             }
             .map { it.trim('"', '\'', '[', ']', '{', '}') }
             .filter { it.isNotBlank() && '$' !in it && '`' !in it && it.startsWith(prefix, ignoreCase = true) }
