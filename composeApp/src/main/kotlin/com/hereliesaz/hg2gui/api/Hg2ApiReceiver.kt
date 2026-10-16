@@ -11,6 +11,9 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import androidx.core.app.NotificationCompat
+import android.app.ActivityManager
+import android.os.Process
+import com.hereliesaz.hg2gui.LongTaskService
 import com.hereliesaz.hg2gui.terminal.CooperativeMetadata
 import com.hereliesaz.hg2gui.terminal.TerminalEngine
 import kotlinx.coroutines.CoroutineScope
@@ -39,6 +42,14 @@ internal fun containsForegroundOnlyCommand(command: String): Boolean =
 /** Typed, same-signature external capability API. */
 class Hg2ApiReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
+        // Shell commands can run far past a receiver's goAsync() window, so they move into a
+        // foreground service and reply via the callback when done. Android 12+ often refuses a
+        // foreground-service start from a broadcast; then the old goAsync path is all there is.
+        if (intent.action in LONG_RUNNING_ACTIONS) {
+            val appContext = context.applicationContext
+            val request = Intent(intent)
+            if (LongTaskService.launch(appContext, "HG2Gui API command") { dispatch(appContext, request) }) return
+        }
         val pending = goAsync()
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
             try { dispatch(context.applicationContext, intent) } finally { pending.finish() }
@@ -164,13 +175,48 @@ class Hg2ApiReceiver : BroadcastReceiver() {
         val command = request.getStringExtra(EXTRA_COMMAND).orEmpty()
         if (authority !in setOf("adb", "root")) return reply(context, request, false, error = "unknown authority")
         if (command.isBlank()) return reply(context, request, false, error = "missing command")
-        context.startActivity(Intent(context, Hg2ApiAuthorityActivity::class.java).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        launchOrNotify(context, Intent(context, Hg2ApiAuthorityActivity::class.java).apply {
             putExtra(EXTRA_AUTHORITY, authority)
             putExtra(EXTRA_COMMAND, command)
             callback(request)?.let { putExtra(EXTRA_REPLY, it) }
-        })
+        }, "Approve ${authority} command")
     }
+
+    /**
+     * Android 10+ silently drops activity starts from a background app, so a request that needs
+     * the user (dialog, picker, authority, share, open) only starts directly while HG2Gui is in the
+     * foreground. Otherwise it is posted as a notification whose tap opens the same screen.
+     * Returns true when the activity was started now, false when it waits on the notification.
+     */
+    private fun launchOrNotify(context: Context, intent: Intent, title: String): Boolean {
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        if (isAppInForeground(context)) {
+            context.startActivity(intent)
+            return true
+        }
+        val manager = context.getSystemService(NotificationManager::class.java) ?: return false
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) manager.createNotificationChannel(NotificationChannel(CHANNEL, "HG2Gui API", NotificationManager.IMPORTANCE_DEFAULT))
+        val id = PROMPT_NOTIFICATION_BASE + (nextPromptId++ and 0xFFFF)
+        val pending = PendingIntent.getActivity(context, id, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        manager.notify(id, NotificationCompat.Builder(context, CHANNEL)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle(title)
+            .setContentText("An app is asking HG2Gui for this - tap to continue.")
+            .setContentIntent(pending)
+            .setAutoCancel(true)
+            .build())
+        return false
+    }
+
+    private fun isAppInForeground(context: Context): Boolean {
+        val processes = context.getSystemService(ActivityManager::class.java)?.runningAppProcesses ?: return false
+        return processes.any {
+            it.pid == Process.myPid() && it.importance <= ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+        }
+    }
+
+    /** `launched` says whether the activity is up now or waits on a notification tap. */
+    private fun launchResult(launched: Boolean): String = JSONObject().put("launched", launched).toString()
 
     private fun notify(context: Context, request: Intent) {
         val manager = context.getSystemService(NotificationManager::class.java) ?: return reply(context, request, false, error = "notifications unavailable")
@@ -184,12 +230,11 @@ class Hg2ApiReceiver : BroadcastReceiver() {
     }
 
     private fun launchDialog(context: Context, request: Intent) {
-        context.startActivity(Intent(context, Hg2ApiDialogActivity::class.java).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        launchOrNotify(context, Intent(context, Hg2ApiDialogActivity::class.java).apply {
             putExtra(EXTRA_TITLE, request.getStringExtra(EXTRA_TITLE))
             putExtra(EXTRA_TEXT, request.getStringExtra(EXTRA_TEXT))
             callback(request)?.let { putExtra(EXTRA_REPLY, it) }
-        })
+        }, request.getStringExtra(EXTRA_TITLE) ?: "HG2Gui dialog")
     }
 
     private fun share(context: Context, request: Intent) {
@@ -197,24 +242,26 @@ class Hg2ApiReceiver : BroadcastReceiver() {
             type = request.getStringExtra(EXTRA_MIME) ?: "text/plain"
             putExtra(Intent.EXTRA_TEXT, request.getStringExtra(EXTRA_TEXT).orEmpty())
         }
-        context.startActivity(Intent.createChooser(intent, request.getStringExtra(EXTRA_TITLE) ?: "Share").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-        reply(context, request, true)
+        // Success is only reported once the chooser actually started (or was posted for the
+        // user to tap) - a failed start used to be acknowledged as success regardless.
+        runCatching { launchOrNotify(context, Intent.createChooser(intent, request.getStringExtra(EXTRA_TITLE) ?: "Share"), "Share from HG2Gui") }
+            .onSuccess { reply(context, request, true, data = launchResult(it)) }
+            .onFailure { reply(context, request, false, error = it.message ?: "share failed") }
     }
 
     private fun open(context: Context, request: Intent) {
         val uri = request.getStringExtra(EXTRA_URI)?.let(Uri::parse) ?: return reply(context, request, false, error = "missing uri")
-        runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
-            .onSuccess { reply(context, request, true) }
+        runCatching { launchOrNotify(context, Intent(Intent.ACTION_VIEW, uri), "Open link from HG2Gui") }
+            .onSuccess { reply(context, request, true, data = launchResult(it)) }
             .onFailure { reply(context, request, false, error = it.message ?: "no app can open uri") }
     }
 
     private fun launchPicker(context: Context, request: Intent, directory: Boolean) {
-        context.startActivity(Intent(context, Hg2ApiPickerActivity::class.java).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        launchOrNotify(context, Intent(context, Hg2ApiPickerActivity::class.java).apply {
             putExtra(EXTRA_PICK_DIRECTORY, directory)
             putExtra(EXTRA_MIME, request.getStringExtra(EXTRA_MIME))
             callback(request)?.let { putExtra(EXTRA_REPLY, it) }
-        })
+        }, if (directory) "Pick a folder for an app" else "Pick a file for an app")
     }
 
     private fun deviceInfo(): String = JSONObject()
@@ -360,5 +407,8 @@ class Hg2ApiReceiver : BroadcastReceiver() {
         private const val CHANNEL = "hg2gui-api"
         private const val MAX_OUTPUT = 128_000
         private const val DEFAULT_METADATA_TTL = 30_000L
+        private const val PROMPT_NOTIFICATION_BASE = 0x4A000
+        @Volatile private var nextPromptId = 0
+        private val LONG_RUNNING_ACTIONS = setOf(ACTION_EXECUTE, ACTION_PACKAGE, ACTION_LIFECYCLE)
     }
 }
