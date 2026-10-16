@@ -79,7 +79,7 @@
             </intent-filter>
         </receiver>
 
-        <activity android:name=".api.Hg2ApiPickerActivity" android:exported="false" android:excludeFromRecents="true" android:noHistory="true" />
+        <activity android:name=".api.Hg2ApiPickerActivity" android:exported="false" android:excludeFromRecents="true" />
         <activity android:name=".api.Hg2ApiDialogActivity" android:exported="false" android:excludeFromRecents="true" android:noHistory="true" />
         <activity android:name=".api.Hg2ApiAuthorityActivity" android:exported="false" android:excludeFromRecents="true" android:noHistory="true" />
         <activity android:name=".IsolationAuditActivity" android:exported="false" android:excludeFromRecents="true" />
@@ -131,6 +131,9 @@
             </intent-filter>
         </activity>
 
+        <service android:name=".LongTaskService" android:exported="false" android:foregroundServiceType="specialUse">
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="Finishes a user-started app update download or a same-signature HG2Gui API command" />
+        </service>
         <service android:name=".mcp.McpServerService" android:exported="false" android:foregroundServiceType="specialUse">
             <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="Loopback MCP server for on-device AI agent pairing, user-started" />
         </service>
