@@ -1,8 +1,8 @@
 package com.hereliesaz.hg2gui.terminal
 
 import android.content.Context
+import com.hereliesaz.hg2gui.util.collectOutput
 import java.io.File
-import java.util.concurrent.TimeUnit
 
 /**
  * Android runtime adapters for shell completion systems. Completion probes never execute the
@@ -161,15 +161,11 @@ object ShellCompletionBridge {
             cwd?.let(::File)?.takeIf(File::isDirectory)?.let(builder::directory)
             builder.redirectErrorStream(true)
             val process = builder.start()
-            val finished = process.waitFor(TIMEOUT_MS, TimeUnit.MILLISECONDS)
-            if (!finished) {
-                process.destroyForcibly()
-                return null
-            }
-            process.inputStream.bufferedReader().use { reader ->
-                val text = reader.readText()
-                if (text.length <= MAX_OUTPUT_CHARS) text else text.take(MAX_OUTPUT_CHARS)
-            }
+            // Drained while waiting: a large completion list would otherwise fill the pipe and
+            // stall the shell until the timeout discarded a healthy result.
+            val result = process.collectOutput(TIMEOUT_MS, MAX_OUTPUT_CHARS * 4) ?: return null
+            val text = result.stdout.toString(Charsets.UTF_8)
+            if (text.length <= MAX_OUTPUT_CHARS) text else text.take(MAX_OUTPUT_CHARS)
         } catch (_: Exception) {
             null
         }

@@ -1,8 +1,8 @@
 package com.hereliesaz.hg2gui.terminal
 
 import android.content.Context
+import com.hereliesaz.hg2gui.util.collectOutput
 import java.io.File
-import java.util.concurrent.TimeUnit
 
 /**
  * Completion sources whose values come from HG2Gui/runtime state rather than a shell's generic
@@ -11,6 +11,8 @@ import java.util.concurrent.TimeUnit
  */
 object SemanticCompletionProviders {
     private const val TIMEOUT_MS = 1_500L
+    private const val MAX_OUTPUT_BYTES = 256 * 1024
+    private val REMOTE_HEAD = Regex("refs/remotes/[^/]+/HEAD")
     private const val MAX_CANDIDATES = 200
 
     fun complete(context: Context, request: CompletionRequest): List<CompletionCandidate> = buildList {
@@ -25,14 +27,18 @@ object SemanticCompletionProviders {
     fun gitBranches(context: Context, cwd: String?): List<String> {
         val git = executable(context, "git") ?: return emptyList()
         val output = runProbe(
+            context = context,
             executable = git,
-            args = listOf("for-each-ref", "--format=%(refname:short)", "refs/heads", "refs/remotes"),
+            args = listOf("for-each-ref", "--format=%(refname)", "refs/heads", "refs/remotes"),
             cwd = cwd
         ) ?: return emptyList()
         return output.lineSequence()
             .map(String::trim)
             .filter(String::isNotBlank)
-            .filterNot { it.endsWith("/HEAD") }
+            // Only a remote's symbolic HEAD (refs/remotes/<remote>/HEAD) is noise; a local branch
+            // that merely ends in "/HEAD" is a real branch, so filter on the full refname.
+            .filterNot { REMOTE_HEAD.matches(it) }
+            .map { it.removePrefix("refs/heads/").removePrefix("refs/remotes/") }
             .distinct()
             .sorted()
             .take(MAX_CANDIDATES)
@@ -98,7 +104,7 @@ object SemanticCompletionProviders {
         if (!remoteOperation) return emptyList()
 
         val git = executable(context, "git") ?: return emptyList()
-        val output = runProbe(git, listOf("remote"), request.cwd) ?: return emptyList()
+        val output = runProbe(context, git, listOf("remote"), request.cwd) ?: return emptyList()
         return output.lineSequence()
             .map(String::trim)
             .filter(String::isNotBlank)
@@ -221,17 +227,16 @@ object SemanticCompletionProviders {
         ).firstOrNull(File::canExecute)
     }
 
-    private fun runProbe(executable: File, args: List<String>, cwd: String?): String? = try {
+    private fun runProbe(context: Context, executable: File, args: List<String>, cwd: String?): String? = try {
         val builder = ProcessBuilder(listOf(executable.absolutePath) + args)
         cwd?.let(::File)?.takeIf(File::isDirectory)?.let(builder::directory)
+        // A Termux-built git needs the same prefix/linker/exec-interceptor environment as any
+        // other Termux binary HG2Gui launches, or it fails to resolve its libraries and helpers.
+        runCatching { Hg2ExecEnvironment.apply(context, builder.environment()) }
         builder.redirectErrorStream(true)
         val process = builder.start()
-        if (!process.waitFor(TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
-            process.destroyForcibly()
-            null
-        } else {
-            process.inputStream.bufferedReader().use { it.readText() }
-        }
+        // Drained while waiting, so a repository with many refs can't fill the pipe and time out.
+        process.collectOutput(TIMEOUT_MS, MAX_OUTPUT_BYTES)?.stdout?.toString(Charsets.UTF_8)
     } catch (_: Exception) {
         null
     }
