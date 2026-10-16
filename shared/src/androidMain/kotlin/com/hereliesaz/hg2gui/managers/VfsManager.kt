@@ -166,7 +166,7 @@ object VfsManager {
     fun readText(context: Context, name: String): String? =
         resolve(context, name)
             ?.takeIf { it.isFile && it.length() <= MAX_READ_TEXT_BYTES }
-            ?.readText()
+            ?.let { f -> try { f.readText() } catch (e: Exception) { null } }
 
     fun writeText(context: Context, name: String, text: String): Boolean {
         val f = resolve(context, name) ?: return false

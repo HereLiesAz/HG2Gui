@@ -68,7 +68,9 @@ class ContactManager(private val context: Context) {
     fun refreshContacts(context: Context): Thread? {
         // Request permission if missing
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(context as Activity, arrayOf(Manifest.permission.READ_CONTACTS), PermissionCodes.COMMAND_SUGGESTION_REQUEST_PERMISSION)
+            (context as? Activity)?.let {
+                ActivityCompat.requestPermissions(it, arrayOf(Manifest.permission.READ_CONTACTS), PermissionCodes.COMMAND_SUGGESTION_REQUEST_PERMISSION)
+            }
             return null
         }
 
@@ -98,14 +100,13 @@ class ContactManager(private val context: Context) {
                 )
 
                 if (phones != null) {
+                    // Rows arrive grouped by display name, so one contact's numbers are
+                    // contiguous; a change of CONTACT_ID closes the previous group.
                     var lastId = -1
                     var lastNumbers = ArrayList<String>()
                     var nrml = ArrayList<String>() // Normalized numbers to check for duplicates
                     var defaultNumber = 0
                     var name: String? = null
-                    var number: String?
-                    var id: Int
-                    var prim: Int
 
                     while (phones.moveToNext()) {
                         val contactIdIndex = phones.getColumnIndex(ContactsContract.Data.CONTACT_ID)
@@ -115,48 +116,39 @@ class ContactManager(private val context: Context) {
 
                         if (contactIdIndex == -1 || numberIndex == -1 || superPrimaryIndex == -1 || displayNameIndex == -1) continue
 
-                        id = phones.getInt(contactIdIndex)
-                        number = phones.getString(numberIndex)
+                        val id = phones.getInt(contactIdIndex)
+                        val number = phones.getString(numberIndex)
+                        if (number.isNullOrEmpty()) continue
 
-                        // Check if this is the primary number
-                        prim = phones.getInt(superPrimaryIndex)
-                        if (prim > 0) {
-                            defaultNumber = lastNumbers.size
-                        }
-
-                        if (number == null || number.isEmpty()) continue
-
-                        if (phones.isFirst) {
-                            lastId = id
-                            name = phones.getString(displayNameIndex)
-                        } else if (id != lastId || phones.isLast) {
-                            // New contact ID encountered, verify and add previous one
-                            lastId = id
-
+                        if (id != lastId) {
+                            // New contact ID encountered: flush the previous one first
                             if (name != null) {
                                 currentContacts.add(Contact(name, lastNumbers, defaultNumber))
                             }
-
-                            // Reset buffers for new contact
+                            lastId = id
                             lastNumbers = ArrayList()
                             nrml = ArrayList()
-                            name = null
                             defaultNumber = 0
-
                             name = phones.getString(displayNameIndex)
                         }
 
                         // Normalize number to avoid duplicates (e.g. spacing differences)
                         val normalized = number.replace(Utils.SPACE.toRegex(), Utils.EMPTYSTRING)
-                        if (!nrml.contains(normalized)) {
+                        val existing = nrml.indexOf(normalized)
+                        val position = if (existing >= 0) {
+                            existing
+                        } else {
                             nrml.add(normalized)
                             lastNumbers.add(number)
+                            lastNumbers.size - 1
                         }
 
-                        // Handle the very last contact in the cursor
-                        if (name != null && phones.isLast) {
-                            currentContacts.add(Contact(name, lastNumbers, defaultNumber))
-                        }
+                        // The super-primary flag belongs to this row's number, wherever it landed
+                        if (phones.getInt(superPrimaryIndex) > 0) defaultNumber = position
+                    }
+                    // Flush the final contact (the loop only flushes on an ID change)
+                    if (name != null) {
+                        currentContacts.add(Contact(name, lastNumbers, defaultNumber))
                     }
                     phones.close()
                 }

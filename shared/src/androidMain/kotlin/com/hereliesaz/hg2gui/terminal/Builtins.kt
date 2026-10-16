@@ -62,6 +62,21 @@ object Builtins {
      *  Activity's teardown. */
     fun destroy(context: Context) {
         ContactManagerHolder.instance?.destroy(context)
+        ContactManagerHolder.instance = null
+    }
+
+    /** Starts [intent] from whatever context the caller holds - an application/service context
+     *  needs FLAG_ACTIVITY_NEW_TASK or startActivity throws. */
+    private fun launch(context: Context, intent: Intent) {
+        if (context !is Activity) intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        context.startActivity(intent)
+    }
+
+    /** Runtime permission prompts need an Activity; from any other context there is nothing to
+     *  show the dialog on, so the request is skipped and the caller's "run again" message stands. */
+    private fun requestPermissions(context: Context, permissions: Array<String>, requestCode: Int) {
+        val activity = context as? Activity ?: return
+        ActivityCompat.requestPermissions(activity, permissions, requestCode)
     }
 
     // --- System toggles -----------------------------------------------------------------
@@ -72,7 +87,7 @@ object Builtins {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             // setWifiEnabled() is a silent no-op for third-party apps from Q onward - the quick
             // panel is the only thing that actually changes anything.
-            context.startActivity(Intent(Settings.Panel.ACTION_WIFI))
+            launch(context, Intent(Settings.Panel.ACTION_WIFI))
             "Wi-Fi is currently ${if (enabled) "ON" else "OFF"} — opening the quick panel to change it."
         } else {
             @Suppress("DEPRECATION")
@@ -88,18 +103,18 @@ object Builtins {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
             ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED
         ) {
-            ActivityCompat.requestPermissions(
-                context as Activity, arrayOf(Manifest.permission.BLUETOOTH_CONNECT), PermissionCodes.COMMAND_REQUEST_PERMISSION
+            requestPermissions(
+                context, arrayOf(Manifest.permission.BLUETOOTH_CONNECT), PermissionCodes.COMMAND_REQUEST_PERMISSION
             )
             return "Requesting Bluetooth permission — run \"bluetooth\" again once granted."
         }
 
         return if (adapter.isEnabled) {
             // No public disable() for third-party apps since API 33 - settings is the only path.
-            context.startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS))
+            launch(context, Intent(Settings.ACTION_BLUETOOTH_SETTINGS))
             "Bluetooth is on — opening settings to turn it off."
         } else {
-            context.startActivity(Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE))
+            launch(context, Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE))
             "Requesting to enable Bluetooth…"
         }
     }
@@ -107,14 +122,14 @@ object Builtins {
     private fun airplane(context: Context): String {
         // No third-party app can flip this directly on any supported version - settings is not
         // a fallback here, it's the only real option.
-        context.startActivity(Intent(Settings.ACTION_AIRPLANE_MODE_SETTINGS))
+        launch(context, Intent(Settings.ACTION_AIRPLANE_MODE_SETTINGS))
         return "Opening airplane mode settings…"
     }
 
     private fun flash(context: Context): String {
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(
-                context as Activity, arrayOf(Manifest.permission.CAMERA), PermissionCodes.COMMAND_REQUEST_PERMISSION
+            requestPermissions(
+                context, arrayOf(Manifest.permission.CAMERA), PermissionCodes.COMMAND_REQUEST_PERMISSION
             )
             return "Requesting camera permission — run \"flash\" again once granted."
         }
@@ -145,7 +160,7 @@ object Builtins {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) return true
         val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (nm.isNotificationPolicyAccessGranted) return true
-        context.startActivity(Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS))
+        launch(context, Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS))
         return false
     }
 
@@ -198,7 +213,8 @@ object Builtins {
 
     private fun brightness(context: Context, args: List<String>): String {
         if (!Settings.System.canWrite(context)) {
-            context.startActivity(
+            launch(
+                context,
                 Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS, Uri.parse("package:${context.packageName}"))
             )
             return "Requesting permission to change display settings — run this again once granted."
@@ -244,16 +260,15 @@ object Builtins {
     private object ContactManagerHolder {
         @Volatile var instance: ContactManager? = null
         fun get(context: Context): ContactManager =
-            instance ?: ContactManager(context).also { instance = it }
+            instance ?: ContactManager(context.applicationContext).also { instance = it }
     }
 
     private fun call(context: Context, args: List<String>): String {
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED ||
             ContextCompat.checkSelfPermission(context, Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED
         ) {
-            ActivityCompat.requestPermissions(
-                context as Activity,
-                arrayOf(Manifest.permission.READ_CONTACTS, Manifest.permission.CALL_PHONE),
+            requestPermissions(
+                context, arrayOf(Manifest.permission.READ_CONTACTS, Manifest.permission.CALL_PHONE),
                 PermissionCodes.COMMAND_REQUEST_PERMISSION
             )
             return "Requesting call permissions — run \"call\" again once granted."
@@ -272,7 +287,7 @@ object Builtins {
         val uri = Uri.parse("tel:$encoded")
 
         return try {
-            context.startActivity(Intent(Intent.ACTION_CALL, uri))
+            launch(context, Intent(Intent.ACTION_CALL, uri))
             "Calling $number…"
         } catch (e: SecurityException) {
             "No permission to place calls."
@@ -281,8 +296,8 @@ object Builtins {
 
     private fun contacts(context: Context, args: List<String>): String {
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(
-                context as Activity, arrayOf(Manifest.permission.READ_CONTACTS), PermissionCodes.COMMAND_REQUEST_PERMISSION
+            requestPermissions(
+                context, arrayOf(Manifest.permission.READ_CONTACTS), PermissionCodes.COMMAND_REQUEST_PERMISSION
             )
             return "Requesting contacts permission — run \"contacts\" again once granted."
         }
@@ -294,7 +309,8 @@ object Builtins {
         return when (sub) {
             "ls" -> manager.listNamesAndNumbers().joinToString("\n\n").ifBlank { "(no contacts)" }
             "add" -> {
-                context.startActivity(
+                launch(
+                context,
                     Intent(ContactsContract.Intents.Insert.ACTION).setType(ContactsContract.RawContacts.CONTENT_TYPE)
                 )
                 "Opening Contacts to add a new entry…"
@@ -308,13 +324,13 @@ object Builtins {
             "edit" -> {
                 if (rest.isBlank()) return "Usage: contacts edit <number>"
                 val uri = manager.fromPhone(rest) ?: return "No contact with number $rest."
-                context.startActivity(Intent(Intent.ACTION_EDIT).setDataAndType(uri, ContactsContract.Contacts.CONTENT_ITEM_TYPE))
+                launch(context, Intent(Intent.ACTION_EDIT).setDataAndType(uri, ContactsContract.Contacts.CONTENT_ITEM_TYPE))
                 "Opening editor for $rest…"
             }
             "rm" -> {
                 if (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
-                    ActivityCompat.requestPermissions(
-                        context as Activity, arrayOf(Manifest.permission.WRITE_CONTACTS), PermissionCodes.COMMAND_REQUEST_PERMISSION
+                    requestPermissions(
+                context, arrayOf(Manifest.permission.WRITE_CONTACTS), PermissionCodes.COMMAND_REQUEST_PERMISSION
                     )
                     return "Requesting permission to edit contacts — run this again once granted."
                 }
@@ -408,7 +424,7 @@ object Builtins {
 
         val intent = Intent().setClassName(context, "com.hereliesaz.hg2gui.EditorActivity")
         intent.putExtra("path", file.absolutePath)
-        context.startActivity(intent)
+        launch(context, intent)
         return "Opening ${file.name}…"
     }
 
