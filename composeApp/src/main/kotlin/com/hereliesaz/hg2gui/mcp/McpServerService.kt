@@ -37,7 +37,7 @@ import java.security.SecureRandom
  * differ (JDK 6u17+), unlike `String.equals`/`==`, which return as soon as a mismatched byte or
  * length is found. The pairing token is 192 bits of entropy, so a timing side-channel here isn't
  * a practical break either way - this closes the hardening gap without pretending it was ever an
- * exploitable one. `internal`, not `private`, so McpServerServiceTest (androidUnitTest) can call
+ * exploitable one. `internal`, not `private`, so McpServerServiceTest (composeApp/src/test) can call
  * it directly - it's plain java.security, no Robolectric/instrumented runtime needed.
  */
 internal fun constantTimeEquals(a: String, b: String): Boolean =
@@ -250,6 +250,9 @@ class McpServerService : Service() {
             }
             writer.write("{\"authorized\":true}\n")
             writer.flush()
+            // The pre-auth timeout (MCP-2) only guards the unauthenticated phase; an authorized
+            // agent legitimately idles between requests (LLM think-time), so clear it.
+            socket.soTimeout = 0
 
             val currentTools = tools ?: return
             while (isRunning.value) {
