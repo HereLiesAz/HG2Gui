@@ -80,8 +80,10 @@ fun AiSettingsScreen(
                 fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em
             )
             Text(
-                "An Anthropic API key, used only for the AI command-search chat. Stored " +
-                    "unencrypted on this device, same as this app's other local settings.",
+                "An Anthropic API key, used only for the AI command-search chat and for " +
+                    "Isolation audit's Ask AI, which sends a summary of that package's sandbox " +
+                    "changes and observed activity to Anthropic when you tap it. Stored " +
+                    "encrypted on this device (Android Keystore).",
                 // .55f, the style guide's own "text-muted" token - not .6f, which no other
                 // caption in the app uses for this role.
                 color = Azphalt.Ink.copy(alpha = .55f), fontSize = 11.sp, lineHeight = 15.sp,

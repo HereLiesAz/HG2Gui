@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
-    <external-path name="external_files" path="."/>
-    <!-- root-path exposes /storage/ for cross-user SD card access; name de-duplicated from external_files -->
-    <root-path name="storage_root" path="/storage/" />
+    <!-- The VFS sandbox root (DistroManager.homeDir = filesDir/home): Share from the Files screen
+         in sandbox mode needs this, or getUriForFile throws. Only home/, never usr/ or prefs. -->
+    <files-path name="home" path="home/" />
+    <!-- Device-storage mode's root (Environment.getExternalStorageDirectory). The former
+         root-path "/storage/" grant was wider than anything VFS can actually reach. -->
+    <external-path name="external_files" path="." />
 </paths>

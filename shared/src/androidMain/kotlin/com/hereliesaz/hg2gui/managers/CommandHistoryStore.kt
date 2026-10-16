@@ -28,26 +28,66 @@ object CommandHistoryStore {
 
     private fun file(context: Context): File = File(context.filesDir, FILE_NAME)
 
-    private fun escape(text: String): String = text.replace("\\", "\\\\").replace("\t", "\\t").replace("\n", "\\n")
-    private fun unescape(text: String): String = text.replace("\\n", "\n").replace("\\t", "\t").replace("\\\\", "\\")
+    internal fun escape(text: String): String = buildString(text.length) {
+        for (c in text) {
+            when (c) {
+                '\\' -> append("\\\\")
+                '\t' -> append("\\t")
+                '\n' -> append("\\n")
+                '\r' -> append("\\r")
+                else -> append(c)
+            }
+        }
+    }
+
+    /** Exact inverse of [escape]: one left-to-right scan, so an escaped backslash followed by
+     *  `n` (a literal `\n` in the command) is never re-read as a newline escape. */
+    internal fun unescape(text: String): String = buildString(text.length) {
+        var i = 0
+        while (i < text.length) {
+            val c = text[i]
+            if (c == '\\' && i + 1 < text.length) {
+                when (text[i + 1]) {
+                    '\\' -> append('\\')
+                    't' -> append('\t')
+                    'n' -> append('\n')
+                    'r' -> append('\r')
+                    else -> { append(c); append(text[i + 1]) }
+                }
+                i += 2
+            } else {
+                append(c)
+                i++
+            }
+        }
+    }
 
     /** Call once a command has actually run (or been dispatched to a full-screen surface) -
      *  not for every keystroke, and not for a blank/whitespace-only line. */
     fun record(context: Context, sessionLabel: String, command: String, timestampMs: Long) {
         if (command.isBlank()) return
-        val line = "$timestampMs\t${escape(sessionLabel)}\t${escape(command)}\n"
-        val target = file(context)
-        val existing = if (target.exists()) target.readLines() else emptyList()
-        val trimmed = (existing + line.trimEnd('\n')).takeLast(MAX_ENTRIES)
-        target.writeText(trimmed.joinToString("\n", postfix = "\n"))
+        val line = "$timestampMs\t${escape(sessionLabel)}\t${escape(command)}"
+        // Every tab records into the one file: serialize the read-modify-write, and replace the
+        // file atomically so a crash mid-write can't truncate the whole history.
+        synchronized(this) {
+            val target = file(context)
+            val existing = if (target.exists()) target.readLines() else emptyList()
+            val trimmed = (existing + line).takeLast(MAX_ENTRIES)
+            val temp = File(target.parentFile, "$FILE_NAME.tmp")
+            temp.writeText(trimmed.joinToString("\n", postfix = "\n"))
+            if (!temp.renameTo(target)) {
+                target.writeText(temp.readText())
+                temp.delete()
+            }
+        }
     }
 
     /** Every recorded entry, most recent first. [query], when non-blank, keeps only commands
      *  containing it (case-insensitive) - the whole point of a *searchable* cross-session log. */
     fun search(context: Context, query: String = ""): List<CommandHistoryEntry> {
         val target = file(context)
-        if (!target.exists()) return emptyList()
-        val entries = target.readLines().mapNotNull { line -> parseLine(line) }
+        val lines = synchronized(this) { if (target.exists()) target.readLines() else return emptyList() }
+        val entries = lines.mapNotNull { line -> parseLine(line) }
         val filtered = if (query.isBlank()) entries else entries.filter { it.command.contains(query, ignoreCase = true) }
         return filtered.sortedByDescending { it.timestampMs }
     }

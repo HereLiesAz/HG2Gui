@@ -52,7 +52,43 @@ object PackageLifecycleStore {
         internal val entries: Map<String, RunFileStamp>
     )
 
+    private class InstalledCache(val fingerprint: List<Long>, val packages: List<InstalledPackage>)
+
+    @Volatile
+    private var installedCache: InstalledCache? = null
+
+    /**
+     * Every installed package across the supported managers. TerminalEngine calls this (via
+     * [ownerOfBinary]) for every command line, so the full scan is cached and reused until the
+     * dpkg status file or one of the other managers' install roots changes, or a disabled/
+     * isolated flag is flipped through this store.
+     */
     fun installed(context: Context): List<InstalledPackage> {
+        val fingerprint = installFingerprint(context)
+        installedCache?.takeIf { it.fingerprint == fingerprint }?.let { return it.packages }
+        return scanInstalled(context).also { installedCache = InstalledCache(fingerprint, it) }
+    }
+
+    /** mtime of dpkg's status file plus each manager root a package install adds an entry to. */
+    private fun installFingerprint(context: Context): List<Long> {
+        val prefix = DistroManager.prefixDir(context)
+        val home = DistroManager.homeDir(context)
+        val roots = buildList {
+            add(File(prefix, "var/lib/dpkg/status"))
+            File(prefix, "lib").listFiles().orEmpty()
+                .filter { it.isDirectory && it.name.startsWith("python") }
+                .forEach { add(File(it, "site-packages")) }
+            add(File(home, ".local/share/pipx/venvs"))
+            add(File(home, ".local/pipx/venvs"))
+            val npm = File(prefix, "lib/node_modules")
+            add(npm)
+            npm.listFiles().orEmpty().filter { it.isDirectory && it.name.startsWith("@") }.forEach(::add)
+            File(prefix, "lib/ruby/gems").listFiles().orEmpty().forEach { add(File(it, "specifications")) }
+        }
+        return roots.flatMap { listOf(it.lastModified(), if (it.isFile) it.length() else 0L) }
+    }
+
+    private fun scanInstalled(context: Context): List<InstalledPackage> {
         val prefix = DistroManager.prefixDir(context)
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         return buildList {
@@ -77,24 +113,30 @@ object PackageLifecycleStore {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit {
             putBoolean(disabledKey(manager, name), disabled)
         }
+        installedCache = null
     }
 
     fun setIsolated(context: Context, manager: String, name: String, isolated: Boolean) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit {
             putBoolean(isolatedKey(manager, name), isolated)
         }
+        installedCache = null
     }
 
     fun beginRun(context: Context, pkg: InstalledPackage, cwd: String): RunSnapshot? {
         if (pkg.isolated || cwd.isBlank()) return null
         val dir = File(cwd)
         if (!dir.isDirectory) return null
-        return RunSnapshot(pkg.key, dir, runSnapshot(dir))
+        // A capped walk can't tell "created by this run" from "already there but past the cap",
+        // so an incomplete snapshot tracks nothing rather than marking pre-existing files as the
+        // package's own (and later offering them to a reset).
+        val entries = runSnapshot(dir) ?: return null
+        return RunSnapshot(pkg.key, dir, entries)
     }
 
     fun finishRun(context: Context, snapshot: RunSnapshot?) {
         if (snapshot == null || !snapshot.directory.isDirectory) return
-        val now = runSnapshot(snapshot.directory)
+        val now = runSnapshot(snapshot.directory) ?: return
         val created = now.keys.filter { it !in snapshot.entries }
         val modified = now.keys.filter { path ->
             val before = snapshot.entries[path]
@@ -214,10 +256,14 @@ object PackageLifecycleStore {
         return candidates
     }
 
-    private fun runSnapshot(root: File): Map<String, RunFileStamp> {
+    /** Stamps of everything under [root], or null when the tree exceeds [MAX_PROVENANCE_FILES]
+     *  or can't be fully read - a partial snapshot is not a usable before/after baseline. */
+    private fun runSnapshot(root: File): Map<String, RunFileStamp>? {
         val result = linkedMapOf<String, RunFileStamp>()
         try {
-            root.walkTopDown().drop(1).take(MAX_PROVENANCE_FILES).forEach { file ->
+            var count = 0
+            root.walkTopDown().drop(1).forEach { file ->
+                if (++count > MAX_PROVENANCE_FILES) return null
                 val relative = runCatching { file.relativeTo(root).path }.getOrNull() ?: return@forEach
                 result[relative] = RunFileStamp(
                     size = if (file.isFile) file.length() else 0L,
@@ -226,7 +272,7 @@ object PackageLifecycleStore {
                 )
             }
         } catch (_: SecurityException) {
-            return result
+            return null
         }
         return result
     }

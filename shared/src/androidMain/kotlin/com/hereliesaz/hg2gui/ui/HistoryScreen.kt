@@ -8,11 +8,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Text
@@ -96,7 +97,9 @@ fun HistoryScreen(
         }
 
         LazyColumn(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 20.dp)) {
-            items(entries, key = { "${it.timestampMs}:${it.command}" }) { entry ->
+            // Index in the key: the same command can be logged twice in one millisecond, and a
+            // duplicate LazyColumn key crashes.
+            itemsIndexed(entries, key = { index, it -> "$index:${it.timestampMs}:${it.command}" }) { _, entry ->
                 HistoryRow(entry, nowMillis, onClick = { onSelect(entry.command) })
             }
         }
@@ -148,7 +151,7 @@ private fun HistoryRow(entry: CommandHistoryEntry, nowMillis: Long, onClick: () 
             modifier = Modifier.padding(top = 2.dp)
         )
     }
-    Box(Modifier.fillMaxWidth().background(Azphalt.Ink.copy(alpha = .12f)))
+    Box(Modifier.fillMaxWidth().height(1.dp).background(Azphalt.Ink.copy(alpha = .12f)))
 }
 
 private fun relativeTime(agoMs: Long): String {

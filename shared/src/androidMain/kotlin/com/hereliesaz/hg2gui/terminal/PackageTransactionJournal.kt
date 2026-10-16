@@ -144,6 +144,7 @@ class PackageTransactionJournal private constructor(
             try {
                 File(transaction, "package-name").writeText(packageName)
                 File(transaction, "created-at").writeText(System.currentTimeMillis().toString())
+                File(transaction, OWNER_FILE).writeText("${android.os.Process.myPid()} $PROCESS_TOKEN")
                 if (status.isFile) {
                     Files.copy(status.toPath(), File(transaction, "status").toPath(), StandardCopyOption.COPY_ATTRIBUTES)
                 }
@@ -180,10 +181,18 @@ class PackageTransactionJournal private constructor(
             }
         }
 
+        /** Distinguishes this process from an earlier one that happened to get the same PID. */
+        private val PROCESS_TOKEN: String = java.util.UUID.randomUUID().toString()
+        private const val OWNER_FILE = "owner"
+
         /**
          * A successful transaction deletes its journal. Any journal surviving process death is
          * therefore incomplete. Newer snapshots must be replayed first so the full dpkg status
          * and shared mechanism state walk backward to the original pre-plan state.
+         *
+         * Callers hold the package-operation lock, so a journal owned by this process is never
+         * in flight here. A journal whose owner marker names a different, still-running process
+         * is left untouched and reported as a recovery failure, which blocks the new mutation.
          */
         fun recoverAbandoned(context: Context): List<String> {
             val prefix = DistroManager.prefixDir(context)
@@ -199,6 +208,9 @@ class PackageTransactionJournal private constructor(
                     if (packageName.isBlank()) {
                         transaction.deleteRecursively()
                         return@map "Discarded unreadable package transaction ${transaction.name}."
+                    }
+                    liveForeignOwner(transaction)?.let { pid ->
+                        return@map "Could not recover interrupted package transaction for $packageName: still owned by running process $pid."
                     }
                     val entries = readManifest(File(transaction, "manifest"))
                     val mechanismEntries = readManifest(File(transaction, "mechanisms.manifest"))
@@ -216,6 +228,16 @@ class PackageTransactionJournal private constructor(
                         onFailure = { "Could not recover interrupted package transaction for $packageName: ${it.message}" }
                     )
                 }
+        }
+
+        /** The owner PID when the journal belongs to another process that is still alive. */
+        private fun liveForeignOwner(transaction: File): Int? {
+            val owner = runCatching { File(transaction, OWNER_FILE).readText().trim() }.getOrNull() ?: return null
+            val pid = owner.substringBefore(' ').toIntOrNull() ?: return null
+            val token = owner.substringAfter(' ', "")
+            if (token == PROCESS_TOKEN) return null
+            if (pid == android.os.Process.myPid()) return null // PID reused by this new process
+            return pid.takeIf { File("/proc/$it").exists() }
         }
 
         private fun transactionCreatedAt(transaction: File): Long =

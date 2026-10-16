@@ -132,13 +132,22 @@ object RemoteDiscovery {
 
     private fun execute(context: Context, preset: SshPreset, script: String): ExecResult {
         val ssh = findSsh(context) ?: return ExecResult("SSH client is unavailable. Install openssh first.", 127)
+        // A host (or user) beginning with "-" would be parsed by ssh as an option such as
+        // -oProxyCommand=..., i.e. local command execution from a preset field.
+        if (preset.host.startsWith("-") || preset.user.startsWith("-")) {
+            return ExecResult("Refusing SSH preset ${preset.name}: host/user must not start with '-'.", 2)
+        }
         val command = mutableListOf(
             ssh.absolutePath,
             "-o", "BatchMode=yes",
             "-o", "ConnectTimeout=8",
+            // BatchMode can't answer a first-contact host-key prompt; accept-new pins a new host
+            // on first use but still refuses a changed key (unlike StrictHostKeyChecking=no).
+            "-o", "StrictHostKeyChecking=accept-new",
             "-p", preset.port.toString()
         )
         preset.keyPath?.takeIf(String::isNotBlank)?.let { command += listOf("-i", it) }
+        command += "--"
         command += target(preset)
         command += "sh -lc ${shellQuote(script)}"
 
@@ -221,7 +230,7 @@ object RemoteDiscovery {
     private fun buildSshDisplayCommand(preset: SshPreset): String = buildString {
         append("ssh -p ").append(preset.port)
         preset.keyPath?.takeIf(String::isNotBlank)?.let { append(" -i ").append(shellQuote(it)) }
-        append(' ').append(shellQuote(target(preset)))
+        append(" -- ").append(shellQuote(target(preset)))
     }
 
     private fun usage(): String = "Usage: remote <discover|status|help|packages> <preset> [command]"

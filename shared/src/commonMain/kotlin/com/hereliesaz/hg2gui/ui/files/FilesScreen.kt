@@ -14,8 +14,6 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -319,13 +317,15 @@ fun FilesScreen(
         } else if (entry.isDirectory) {
             openEntry(depth, entry)
         } else if (entry.isImage) {
-            // Images already get their own thumbnail grid (FileRows) - a tap opens the real
+            // Images already get their own tile grid (FileRows) - a tap opens the real
             // editor/viewer directly rather than an inline text preview that doesn't apply to them.
             onOpenFile(entry.path)
         } else {
             previewPath = if (previewPath == entry.path) null else entry.path
         }
     }
+
+    val pickerBackStep = remember { BackStepState() }
 
     // UI-1: must run before the PickMove/PickCopy/Storage early-returns below so a system-back
     // press while any of those (or select mode, a rename/create prompt, or a drilled-in folder)
@@ -344,6 +344,9 @@ fun FilesScreen(
                 // left the visible search results on screen with nothing to show for the back
                 // press, requiring a second one to actually leave search.
                 searchActive -> { searchActive = false; searchQuery = ""; screen = FMScreen.Browse }
+                // The destination picker steps up one folder at a time before it closes.
+                (screen == FMScreen.PickMove || screen == FMScreen.PickCopy) && pickerBackStep.canStepBack ->
+                    pickerBackStep.stepBack()
                 screen != FMScreen.Browse -> { screen = FMScreen.Browse }
                 selectMode -> { selectMode = false; selected = emptySet() }
                 openChain.isNotEmpty() -> { openChain = openChain.dropLast(1) }
@@ -386,6 +389,14 @@ fun FilesScreen(
             onConfirm = { target ->
                 scope.launch {
                     val isMove = screen == FMScreen.PickMove
+                    // Copying (or moving) into the folder an item already lives in names the item
+                    // itself as the "collision" - offering to overwrite it would replace a file
+                    // with itself. Say so instead of showing the overwrite prompt.
+                    if (selected.any { vfsParentPath(it) == (target.trimEnd('/').ifEmpty { "/" }) }) {
+                        opError = if (isMove) "That's already where it is - pick a different folder." else "Can't copy into the folder it's already in - pick a different folder."
+                        screen = FMScreen.Browse
+                        return@launch
+                    }
                     val destNames = listDir(target).map { it.name }.toSet()
                     val collides = selected.any { it.trimEnd('/').substringAfterLast('/') in destNames }
                     if (collides) {
@@ -402,7 +413,8 @@ fun FilesScreen(
                     }
                 }
             },
-            modifier = modifier
+            modifier = modifier,
+            backStep = pickerBackStep
         )
         return
     }
@@ -676,14 +688,18 @@ fun FilesScreen(
                 onNameChange = { createInput = it },
                 onConfirm = {
                     val name = createInput.trim()
-                    if (name.isNotEmpty()) {
+                    val badName = invalidNameMessage(name)
+                    if (badName != null) {
+                        opError = badName
+                    } else if (name.isNotEmpty()) {
                         scope.launch {
                             val ok = when (creating) {
                                 CreateMode.FOLDER -> onCreateFolder(currentTargetDir, name)
                                 CreateMode.FILE -> onCreateFile(currentTargetDir, name)
                                 null -> true
                             }
-                            opError = if (!ok) "$name already exists here." else null
+                            // The callback only says it failed, not why - an existing name is just one cause.
+                            opError = if (!ok) "Couldn't create $name - it may already exist, or this folder isn't writable." else null
                             refresh()
                         }
                     }
@@ -695,18 +711,16 @@ fun FilesScreen(
 
         renameTarget?.let { target ->
             Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp)) {
-                Text(
-                    "Same capsule as creating something — renaming isn't a different tool, just a filled-in one.",
-                    color = Azphalt.Ink.copy(alpha = .5f), fontSize = 9.sp, lineHeight = 13.sp,
-                    modifier = Modifier.padding(bottom = 6.dp)
-                )
                 NamePrompt(
                     label = "RENAME",
                     name = renameInput,
                     onNameChange = { renameInput = it },
                     onConfirm = {
                         val name = renameInput.trim()
-                        if (name.isNotEmpty() && name != target.name) {
+                        val badName = invalidNameMessage(name)
+                        if (badName != null) {
+                            opError = badName
+                        } else if (name.isNotEmpty() && name != target.name) {
                             scope.launch {
                                 val siblingNames = listDir(vfsParentPath(target.path)).map { it.name }.toSet()
                                 if (name in siblingNames) {
@@ -802,8 +816,14 @@ fun FilesScreen(
                 confirmLabel = "DELETE",
                 onConfirm = {
                     scope.launch {
-                        val failed = selected.filterNot { onDelete(it) }.toSet()
-                        opError = if (failed.isNotEmpty()) "${failed.size} of ${selected.size} didn't delete." else null
+                        // A selected folder's trash move takes its selected children with it, so
+                        // deleting those separately afterwards would just fail ("not found") and
+                        // be miscounted. Only delete the topmost selected paths.
+                        val topmost = selected.filter { p ->
+                            selected.none { other -> other != p && p.startsWith(other.trimEnd('/') + "/") }
+                        }
+                        val failed = topmost.filterNot { onDelete(it) }.toSet()
+                        opError = if (failed.isNotEmpty()) "${failed.size} of ${topmost.size} didn't delete." else null
                         closeChainIfAffected(selected - failed)
                         selected = emptySet(); selectMode = false; refresh()
                     }
@@ -1195,7 +1215,7 @@ private fun ExpandableLevel(depth: Int, openChain: List<VfsEntry>, ctx: LevelCon
                     // .55f, the app-wide "text-muted, eyebrows and captions" tier (style guide "03 -
                     // Transparency") - the 45% tier is for micro labels inside a pill, which this
                     // section caption isn't.
-                    "FOLDERS · ${folders.size}", color = Azphalt.Ink.copy(alpha = .55f),
+                    "FOLDERS · ${folders.size}", color = Azphalt.currentGround.onPage.copy(alpha = .55f),
                     fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.18.em
                 )
             }
@@ -1218,7 +1238,7 @@ private fun ExpandableLevel(depth: Int, openChain: List<VfsEntry>, ctx: LevelCon
                 Text(
                     // .55f, the app-wide "text-muted, eyebrows and captions" tier - see the
                     // FOLDERS caption above for the same reasoning.
-                    "FILES · ${files.size}", color = Azphalt.Ink.copy(alpha = .55f),
+                    "FILES · ${files.size}", color = Azphalt.currentGround.onPage.copy(alpha = .55f),
                     fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.18.em,
                     modifier = Modifier.padding(top = 4.dp)
                 )
@@ -1231,7 +1251,7 @@ private fun ExpandableLevel(depth: Int, openChain: List<VfsEntry>, ctx: LevelCon
 @Composable
 private fun EmptyLabel() {
     Text(
-        "NOTHING HERE", color = Azphalt.Ink.copy(alpha = .4f),
+        "NOTHING HERE", color = Azphalt.currentGround.onPage.copy(alpha = .4f),
         fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.14.em
     )
 }
@@ -1239,7 +1259,7 @@ private fun EmptyLabel() {
 @Composable
 private fun LoadingLabel() {
     Text(
-        "LOADING…", color = Azphalt.Ink.copy(alpha = .4f),
+        "LOADING…", color = Azphalt.currentGround.onPage.copy(alpha = .4f),
         fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.14.em
     )
 }
@@ -1256,20 +1276,28 @@ private fun FileRows(
     val others = files.filterNot { it.isImage }
 
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        // A folder made mostly of images renders itself as a thumbnail grid, in place,
-        // automatically - never a manual list/grid toggle.
+        // A folder made mostly of images renders itself as a grid of tiles, in place,
+        // automatically - never a manual list/grid toggle. The tiles are hue swatches with the
+        // file name (see ImageTile): nothing here decodes the images, so these are not thumbnails.
         if (images.size >= 3) {
             Text(
-                "${images.size} PHOTOS", color = Azphalt.Ink.copy(alpha = .5f),
+                "${images.size} PHOTOS", color = Azphalt.currentGround.onPage.copy(alpha = .5f),
                 fontSize = 8.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.1.em
             )
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(3),
-                modifier = Modifier.fillMaxWidth().height(((images.size / 3 + 1) * 90).dp),
-                horizontalArrangement = Arrangement.spacedBy(5.dp),
-                verticalArrangement = Arrangement.spacedBy(5.dp)
-            ) {
-                items(images, key = { it.path }) { img -> ImageTile(img, selection, actions, totalBytes) }
+            // Plain rows of three square tiles rather than a LazyVerticalGrid in a fixed-height box:
+            // the height follows from the width (aspectRatio) instead of a guessed 90dp per row,
+            // so no row is clipped or padded and there is no nested scrolling container.
+            Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                images.chunked(3).forEach { rowImages ->
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                        rowImages.forEach { img ->
+                            key(img.path) {
+                                Box(Modifier.weight(1f)) { ImageTile(img, selection, actions, totalBytes) }
+                            }
+                        }
+                        repeat(3 - rowImages.size) { Spacer(Modifier.weight(1f)) }
+                    }
+                }
             }
         }
         others.forEach { f ->
@@ -1331,16 +1359,16 @@ private fun FileRow(f: VfsEntry, selection: SelectionState, actions: FolderEntry
                 // body copy, same as every other identifier here that names an actual leaf item
                 // rather than a folder/chrome label.
                 Text(
-                    f.name, color = if (selectedTint) Azphalt.Yellow else Azphalt.Ink,
+                    f.name, color = if (selectedTint) Azphalt.Yellow else Azphalt.currentGround.onPage,
                     fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em, maxLines = 1
                 )
                 Text(
                     formatFileSize(f.sizeBytes),
-                    color = if (selectedTint) Azphalt.Yellow.copy(alpha = .75f) else Azphalt.Ink.copy(alpha = .55f),
+                    color = if (selectedTint) Azphalt.Yellow.copy(alpha = .75f) else Azphalt.currentGround.onPage.copy(alpha = .55f),
                     fontSize = 9.sp
                 )
             }
-            if (!selection.selectMode) EntryMenu(f, actions.onRename, actions.onDelete, actions.onShare, tint = Azphalt.Ink)
+            if (!selection.selectMode) EntryMenu(f, actions.onRename, actions.onDelete, actions.onShare, tint = Azphalt.currentGround.onPage)
         }
         if (isOpen) FilePreviewPane(f, preview.cache[f.path]) { preview.onOpenFile(f.path) }
     }
@@ -1369,17 +1397,17 @@ private fun FilePreviewPane(entry: VfsEntry, preview: FilePreview?, onOpenInEdit
                 val kind = entry.name.substringAfterLast('.', "THIS").uppercase()
                 Text(
                     if (preview.truncated) "TOO LARGE TO PREVIEW" else "CAN'T PREVIEW $kind",
-                    color = Azphalt.Ink.copy(alpha = .5f), fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.12.em
+                    color = Azphalt.currentGround.onPage.copy(alpha = .5f), fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.12.em
                 )
             }
-            preview.isMarkdown -> MarkdownPreview(preview.text, onPage, Azphalt.Ink)
+            preview.isMarkdown -> MarkdownPreview(preview.text, onPage, onPage)
             preview.styled.isNotEmpty() -> preview.styled.forEach { line ->
-                Text(buildStyledLine(line, Azphalt.Ink), fontSize = 10.sp, fontFamily = FontFamily.Monospace)
+                Text(buildStyledLine(line, onPage), fontSize = 10.sp, fontFamily = FontFamily.Monospace)
             }
-            else -> Text(preview.text, color = Azphalt.Ink, fontSize = 10.sp, fontFamily = FontFamily.Monospace)
+            else -> Text(preview.text, color = Azphalt.currentGround.onPage, fontSize = 10.sp, fontFamily = FontFamily.Monospace)
         }
         Text(
-            "OPEN IN EDITOR", color = Azphalt.Ink.copy(alpha = .7f), fontSize = 8.sp, fontWeight = FontWeight.Bold,
+            "OPEN IN EDITOR", color = Azphalt.currentGround.onPage.copy(alpha = .7f), fontSize = 8.sp, fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(top = 8.dp).clickable(onClick = onOpenInEditor)
         )
     }
@@ -1426,13 +1454,13 @@ private fun ColumnScope.RecentSearches(recent: List<String>, onSelect: (String) 
     Column(Modifier.fillMaxWidth().weight(1f).padding(horizontal = 20.dp, vertical = 12.dp)) {
         if (recent.isEmpty()) {
             Text(
-                "TYPE TO SEARCH", color = Azphalt.Ink.copy(alpha = .4f),
+                "TYPE TO SEARCH", color = Azphalt.currentGround.onPage.copy(alpha = .4f),
                 fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.1.em
             )
         } else {
             Text(
                 // .55f, the app-wide "text-muted, eyebrows and captions" tier.
-                "RECENT SEARCHES", color = Azphalt.Ink.copy(alpha = .55f),
+                "RECENT SEARCHES", color = Azphalt.currentGround.onPage.copy(alpha = .55f),
                 fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.18.em
             )
             Spacer(Modifier.height(8.dp))
@@ -1449,7 +1477,7 @@ private fun ColumnScope.RecentSearches(recent: List<String>, onSelect: (String) 
                                 .clickable { onSelect(q) }
                                 .padding(horizontal = 14.dp, vertical = 8.dp)
                         ) {
-                            Text(q, color = Azphalt.Ink.copy(alpha = .7f), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                            Text(q, color = Azphalt.currentGround.onPage.copy(alpha = .7f), fontSize = 10.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -1462,7 +1490,7 @@ private fun ColumnScope.RecentSearches(recent: List<String>, onSelect: (String) 
 private fun ColumnScope.SearchResults(results: List<VfsSearchResult>, onOpen: (VfsSearchResult) -> Unit) {
     if (results.isEmpty()) {
         Text(
-            "NOTHING", color = Azphalt.Ink.copy(alpha = .4f),
+            "NOTHING", color = Azphalt.currentGround.onPage.copy(alpha = .4f),
             fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.1.em,
             modifier = Modifier.padding(start = 20.dp, top = 20.dp)
         )
@@ -1478,13 +1506,21 @@ private fun ColumnScope.SearchResults(results: List<VfsSearchResult>, onOpen: (V
             ) {
                 Text(
                     r.entry.name + if (r.entry.isDirectory) "/" else "",
-                    color = Azphalt.Ink, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold
+                    color = Azphalt.currentGround.onPage, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold
                 )
-                Text(r.parentPath, color = Azphalt.Ink.copy(alpha = .5f), fontSize = 10.sp)
+                Text(r.parentPath, color = Azphalt.currentGround.onPage.copy(alpha = .5f), fontSize = 10.sp)
             }
             Box(Modifier.fillMaxWidth().height(1.dp).background(Azphalt.Ink.copy(alpha = .12f)))
         }
     }
+}
+
+/** A file/folder name must be a single path component. Null when [name] is acceptable
+ *  (blank is handled by the callers, which simply do nothing). */
+internal fun invalidNameMessage(name: String): String? = when {
+    '/' in name -> "A name can't contain '/'."
+    name == "." || name == ".." -> "\"$name\" isn't a valid name."
+    else -> null
 }
 
 @Composable
@@ -1524,7 +1560,7 @@ private fun FilterChip(label: String, active: Boolean, onClick: () -> Unit) {
             .padding(horizontal = 14.dp, vertical = 8.dp)
     ) {
         Text(
-            label, color = if (active) Azphalt.Yellow else Azphalt.Ink.copy(alpha = .55f),
+            label, color = if (active) Azphalt.Yellow else Azphalt.currentGround.onPage.copy(alpha = .55f),
             fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.1.em
         )
     }
@@ -1541,7 +1577,7 @@ private fun Chip(
     onClick: () -> Unit = {}
 ) {
     val bg = if (filled) background else Azphalt.Ink.copy(alpha = .14f)
-    val fg = if (filled) foreground else Azphalt.Ink.copy(alpha = .55f)
+    val fg = if (filled) foreground else Azphalt.currentGround.onPage.copy(alpha = .55f)
     Box(
         modifier
             .clip(RoundedCornerShape(percent = 50))

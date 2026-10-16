@@ -26,14 +26,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -51,6 +54,7 @@ import com.hereliesaz.hg2gui.azp.AzpTrust
 import com.hereliesaz.hg2gui.azp.ScriptInstaller
 import com.hereliesaz.hg2gui.managers.AiSettings
 import com.hereliesaz.hg2gui.managers.AzpLibrary
+import com.hereliesaz.hg2gui.managers.CommandHistoryEntry
 import com.hereliesaz.hg2gui.managers.CommandHistoryStore
 import com.hereliesaz.hg2gui.managers.ContactManager
 import com.hereliesaz.hg2gui.managers.OsContextStore
@@ -255,6 +259,12 @@ class TerminalActivity : FragmentActivity() {
     // that got us here actually wanted to."
     private var deviceStoragePendingActivation = false
 
+    // S1: set right before screen = Screen.FullScreenApp (onRun's dispatch below); torn
+    // down (session.kill()) on every exit path - back gesture, the ✕ pill, or the child
+    // process finishing on its own - so a killed/finished pty never lingers. Activity-level
+    // (not `remember`) so onDestroy can kill a pty that is still running when the Activity goes.
+    private var fullScreenSession by mutableStateOf<FullScreenPtySession?>(null)
+
     override fun onResume() {
         super.onResume()
         val granted = StorageAccessManager.hasFullAccess(this)
@@ -262,6 +272,11 @@ class TerminalActivity : FragmentActivity() {
         if (granted && deviceStoragePendingActivation) {
             deviceStoragePendingActivation = false
             deviceStorageActive = VfsManager.setDeviceStorageMode(this, true)
+        } else if (!granted && deviceStorageActive) {
+            // Access was revoked in Settings while we were away - device storage can no longer be
+            // read, so drop back to the sandbox rather than showing a mode that just fails.
+            VfsManager.setDeviceStorageMode(this, false)
+            deviceStorageActive = false
         }
     }
 
@@ -299,6 +314,7 @@ class TerminalActivity : FragmentActivity() {
             var aiBusy by remember { mutableStateOf(false) }
             var azpResults by remember { mutableStateOf<List<AzpListing>>(emptyList()) }
             var azpBusy by remember { mutableStateOf(false) }
+            var azpError by remember { mutableStateOf<String?>(null) }
             // Cancelled before every new search starts (see onSearch below) so a stale response
             // from an earlier query/kind can never land after a newer one and silently overwrite
             // it - AzpStoreScreen already gates its own kind chips/search field on !azpBusy, but
@@ -307,20 +323,17 @@ class TerminalActivity : FragmentActivity() {
             var azpInstallingId by remember { mutableStateOf<String?>(null) }
             // AZP-2: a script package's dependency/wrapper step (ScriptInstaller.install, which
             // can run `pkg install -y` unconfirmed) only proceeds without asking first when the
-            // signature is TRUSTED or VALID - anything else (most saliently UNSIGNED, since only
+            // signature is TRUSTED - anything else (VALID self-signed, and most saliently UNSIGNED, since only
             // a corrupted signature was ever rejected outright) pauses on this and waits for a tap.
             var azpTrustConfirm by remember { mutableStateOf<Pair<AzpListing, CompletableDeferred<Boolean>>?>(null) }
             // UX-4: closing a tab with a command actually running kills that process mid-run with
             // no warning today - this pauses on a tap first; a tab that's just sitting idle still
             // closes immediately, same as before.
             var closeSessionConfirm by remember { mutableStateOf<TerminalSession?>(null) }
-            // S1: set right before screen = Screen.FullScreenApp (onRun's dispatch below); torn
-            // down (session.kill()) on every exit path - back gesture, the ✕ pill, or the child
-            // process finishing on its own - so a killed/finished pty never lingers.
-            var fullScreenSession by remember { mutableStateOf<FullScreenPtySession?>(null) }
             // W5: cleared every time History opens so a stale search from a previous visit
             // doesn't linger; see CommandHistoryStore's own doc comment for the log itself.
             var historyQuery by remember { mutableStateOf("") }
+            var confirmKillFullScreen by remember { mutableStateOf(false) }
             fun closeSession(closing: TerminalSession) {
                 val remaining = sessions.filterNot { it.ui.id == closing.ui.id }
                 sessions = remaining
@@ -328,6 +341,7 @@ class TerminalActivity : FragmentActivity() {
                     // remaining can be empty when the last session is closed; guard against crash.
                     activeSessionId = remaining.firstOrNull()?.ui?.id ?: closing.ui.id
                 }
+                closing.ui.destroy()
                 closing.engine.destroy()
             }
             val scope = rememberCoroutineScope()
@@ -339,8 +353,15 @@ class TerminalActivity : FragmentActivity() {
             // back to when a pill's origin rect hasn't been reported yet.
             val revealDensity = LocalDensity.current
             val revealConfiguration = LocalConfiguration.current
-            val revealFullWidthPx = with(revealDensity) { revealConfiguration.screenWidthDp.dp.toPx() }
-            val revealFullHeightPx = with(revealDensity) { revealConfiguration.screenHeightDp.dp.toPx() }
+            // The reveal frame runs the perimeter of the root Box, so size it from that Box's real
+            // measured size (below) - the configuration's screen dp includes system bars/insets
+            // and doesn't track split-screen or freeform windows. The configuration value is only
+            // the first-frame fallback before the root has been measured.
+            var rootSizePx by remember { mutableStateOf(IntSize.Zero) }
+            val revealFullWidthPx = if (rootSizePx.width > 0) rootSizePx.width.toFloat()
+                else with(revealDensity) { revealConfiguration.screenWidthDp.dp.toPx() }
+            val revealFullHeightPx = if (rootSizePx.height > 0) rootSizePx.height.toFloat()
+                else with(revealDensity) { revealConfiguration.screenHeightDp.dp.toPx() }
             val revealDefaultBaseWidthPx = with(revealDensity) { REVEAL_DEFAULT_BASE_WIDTH.toPx() }
             val revealMinThicknessPx = with(revealDensity) { REVEAL_MIN_THICKNESS.toPx() }
 
@@ -607,18 +628,16 @@ class TerminalActivity : FragmentActivity() {
                     screen == Screen.Mcp -> screen = Screen.Settings
                     screen == Screen.Environment -> screen = Screen.Settings
                     screen == Screen.History -> screen = Screen.Settings
-                    screen == Screen.FullScreenApp -> {
-                        fullScreenSession?.kill()
-                        fullScreenSession = null
-                        screen = Screen.Terminal
-                    }
+                    // A back gesture is easy to make by accident, and killing the pty throws away
+                    // whatever the app (editor, REPL, ssh) was holding - ask first.
+                    screen == Screen.FullScreenApp -> confirmKillFullScreen = true
                     else -> screen = Screen.Terminal
                 }
             }
 
             HG2GuiTheme(scale = fontScalePercent / 100f) {
                 val currentTree = tree
-                Box(Modifier.fillMaxSize()) {
+                Box(Modifier.fillMaxSize().onSizeChanged { rootSizePx = it }) {
                 when {
                     screen == Screen.Settings -> SettingsScreen(
                         fullscreen = fullscreen,
@@ -644,27 +663,48 @@ class TerminalActivity : FragmentActivity() {
                     )
 
                     screen == Screen.Environment -> {
-                        val bootstrap = ShellSession.bootstrapBashEnv(this@TerminalActivity, null)
-                        EnvironmentScreen(
-                            installed = bootstrap != null,
-                            env = bootstrap?.second.orEmpty(),
-                            onBack = { screen = Screen.Settings },
-                            fullscreen = fullscreen
-                        )
+                        // Both reads hit disk (bootstrapBashEnv probes the prefix, the history
+                        // search reads and parses the whole log) - run on IO, never in composition.
+                        // null = still loading, so a slow probe doesn't flash "not installed".
+                        val bootstrap by produceState<Pair<Boolean, Map<String, String>>?>(null) {
+                            value = withContext(Dispatchers.IO) {
+                                ShellSession.bootstrapBashEnv(this@TerminalActivity, null)
+                                    .let { (it != null) to it?.second.orEmpty() }
+                            }
+                        }
+                        bootstrap?.let { (installed, env) ->
+                            EnvironmentScreen(
+                                installed = installed,
+                                env = env,
+                                onBack = { screen = Screen.Settings },
+                                fullscreen = fullscreen
+                            )
+                        }
                     }
 
-                    screen == Screen.History -> HistoryScreen(
-                        entries = CommandHistoryStore.search(this@TerminalActivity, historyQuery),
-                        query = historyQuery,
-                        onQueryChange = { historyQuery = it },
-                        onSelect = { command ->
-                            sessions.firstOrNull { it.ui.id == activeSessionId }?.ui?.inputText = command
-                            screen = Screen.Terminal
-                        },
-                        onBack = { screen = Screen.Settings },
-                        fullscreen = fullscreen,
-                        nowMillis = System.currentTimeMillis()
-                    )
+                    screen == Screen.History -> {
+                        val historyEntries by produceState(emptyList<CommandHistoryEntry>(), historyQuery) {
+                            value = withContext(Dispatchers.IO) { CommandHistoryStore.search(this@TerminalActivity, historyQuery) }
+                        }
+                        HistoryScreen(
+                            entries = historyEntries,
+                            query = historyQuery,
+                            onQueryChange = { historyQuery = it },
+                            onSelect = { command ->
+                                // The picked line replaces the whole input - pills already in the
+                                // trail or a half-built chain would otherwise prefix it.
+                                sessions.firstOrNull { it.ui.id == activeSessionId }?.ui?.let { ui ->
+                                    ui.tokens = emptyList()
+                                    ui.composedPrefix = ""
+                                    ui.inputText = command
+                                }
+                                screen = Screen.Terminal
+                            },
+                            onBack = { screen = Screen.Settings },
+                            fullscreen = fullscreen,
+                            nowMillis = System.currentTimeMillis()
+                        )
+                    }
 
                     screen == Screen.AiSettings -> AiSettingsScreen(
                         fullscreen = fullscreen,
@@ -702,11 +742,20 @@ class TerminalActivity : FragmentActivity() {
                                     )
                                     aiBusy = false
                                 }
+                            } else {
+                                // Used to be a silent no-op - the question just vanished.
+                                aiMessages = aiMessages + AiMessage(fromUser = true, text = question) + AiMessage(
+                                    fromUser = false,
+                                    text = if (key.isNullOrBlank()) "No API key is set - add one in AI settings first."
+                                    else "No terminal session is open to ask about.",
+                                    command = null
+                                )
                             }
                         },
                         onUseCommand = { command ->
                             sessions.firstOrNull { it.ui.id == activeSessionId }?.let { session ->
                                 session.ui.tokens = emptyList()
+                                session.ui.composedPrefix = ""
                                 session.ui.inputText = command
                             }
                             screen = Screen.Terminal
@@ -719,14 +768,18 @@ class TerminalActivity : FragmentActivity() {
                         fullscreen = fullscreen,
                         results = azpResults,
                         busy = azpBusy,
+                        error = azpError,
                         installingId = azpInstallingId,
                         onSearch = { query, kind ->
                             azpBusy = true
                             azpSearchJob?.cancel()
                             azpSearchJob = scope.launch {
                                 val response = try {
-                                    AzpClient.search(query, kind.takeUnless { it == "all" })
+                                    AzpClient.search(query, kind.takeUnless { it == "all" }).also { azpError = null }
+                                } catch (e: kotlinx.coroutines.CancellationException) {
+                                    throw e
                                 } catch (e: Exception) {
+                                    azpError = "Search failed: ${e.message ?: "couldn't reach the store"}"
                                     null
                                 }
                                 val installed = withContext(Dispatchers.IO) {
@@ -768,13 +821,14 @@ class TerminalActivity : FragmentActivity() {
                                     if (install == null) {
                                         null
                                     } else {
-                                        // Only a TRUSTED or VALID signature (an internally-consistent
-                                        // one, whether or not the signer is registry-vouched-for)
-                                        // proceeds unconfirmed - UNSIGNED and anything else pauses
-                                        // here for an explicit tap before running the dependency
-                                        // install and wiring an executable onto PATH.
+                                        // Only a TRUSTED signature (a registry-vouched-for signer)
+                                        // proceeds unconfirmed. VALID only means internally
+                                        // consistent - anyone can self-sign - so it, UNSIGNED and
+                                        // anything else pause here for an explicit tap before
+                                        // running the dependency install and wiring an executable
+                                        // onto PATH.
                                         val scriptCommand = install.script?.let { script ->
-                                            val proceed = install.trust == AzpTrust.TRUSTED || install.trust == AzpTrust.VALID ||
+                                            val proceed = install.trust == AzpTrust.TRUSTED ||
                                                 run {
                                                     val decision = CompletableDeferred<Boolean>()
                                                     azpTrustConfirm = listing to decision
@@ -811,7 +865,19 @@ class TerminalActivity : FragmentActivity() {
                                 azpInstallingId = null
                             }
                         },
-                        onBack = { screen = Screen.Terminal }
+                        onBack = { screen = Screen.Terminal },
+                        onUninstall = { listing ->
+                            azpInstallingId = listing.id
+                            scope.launch {
+                                withContext(Dispatchers.IO) {
+                                    runCatching { ScriptInstaller.uninstall(this@TerminalActivity, listing.id) }
+                                }
+                                azpResults = azpResults.map {
+                                    if (it.id == listing.id) it.copy(installed = false, trust = "", scriptCommand = "") else it
+                                }
+                                azpInstallingId = null
+                            }
+                        }
                     )
 
                     screen == Screen.Mcp -> {
@@ -838,10 +904,18 @@ class TerminalActivity : FragmentActivity() {
                     screen == Screen.Guide -> CommandGuideScreen(
                         tree = currentTree.orEmpty(),
                         fullscreen = fullscreen,
-                        onCommandSelected = { tokens ->
-                            sessions.firstOrNull { it.ui.id == activeSessionId }?.let { session ->
-                                session.ui.tokens = tokens
-                                session.ui.inputText = ""
+                        onCommandSelected = { tokens, complete ->
+                            // Opening a root pill reports an empty trail - that is browsing, not
+                            // a pick, and must not wipe whatever the user had already typed.
+                            if (tokens.isNotEmpty()) {
+                                sessions.firstOrNull { it.ui.id == activeSessionId }?.let { session ->
+                                    session.ui.tokens = tokens
+                                    session.ui.composedPrefix = ""
+                                    session.ui.inputText = ""
+                                }
+                                // A finished command goes straight back to the terminal, where
+                                // it now sits in the input for review.
+                                if (complete) screen = Screen.Terminal
                             }
                         },
                         onBack = { screen = Screen.Terminal },
@@ -886,7 +960,8 @@ class TerminalActivity : FragmentActivity() {
                             if (sessions.size > 1) {
                                 val closing = sessions.firstOrNull { it.ui.id == id }
                                 if (closing != null) {
-                                    if (closing.ui.running) {
+                                    // An idle session with output still loses that scrollback.
+                                    if (closing.ui.running || closing.ui.buffer.isNotEmpty()) {
                                         closeSessionConfirm = closing
                                     } else {
                                         closeSession(closing)
@@ -1048,10 +1123,26 @@ class TerminalActivity : FragmentActivity() {
                     )
                 }
 
+                if (confirmKillFullScreen) {
+                    ConfirmDialog(
+                        title = "CLOSE ${fullScreenSession?.commandLine?.uppercase().orEmpty()}?",
+                        message = "Closing now ends the running program.",
+                        confirmLabel = "CLOSE",
+                        onConfirm = {
+                            confirmKillFullScreen = false
+                            fullScreenSession?.kill()
+                            fullScreenSession = null
+                            screen = Screen.Terminal
+                        },
+                        onDismiss = { confirmKillFullScreen = false }
+                    )
+                }
+
                 closeSessionConfirm?.let { closing ->
                     ConfirmDialog(
                         title = "CLOSE ${closing.ui.name}?",
-                        message = "A command is still running in this session - closing it now kills that process.",
+                        message = if (closing.ui.running) "A command is still running in this session - closing it now kills that process."
+                            else "This session's output will be lost.",
                         confirmLabel = "CLOSE",
                         onConfirm = { closeSession(closing); closeSessionConfirm = null },
                         onDismiss = { closeSessionConfirm = null }
@@ -1146,7 +1237,14 @@ class TerminalActivity : FragmentActivity() {
                                         VfsManager.resolve(this@TerminalActivity, path)
                                     }
                                     if (file != null && file.isFile) {
-                                        val uri = FileProvider.getUriForFile(this@TerminalActivity, GenericFileProvider.PROVIDER_NAME, file)
+                                        // getUriForFile throws IllegalArgumentException for a file
+                                        // outside provider_paths.xml's roots - report, don't crash.
+                                        val uri = try {
+                                            FileProvider.getUriForFile(this@TerminalActivity, GenericFileProvider.PROVIDER_NAME, file)
+                                        } catch (e: IllegalArgumentException) {
+                                            Toast.makeText(this@TerminalActivity, "Can't share ${file.name} from this location.", Toast.LENGTH_LONG).show()
+                                            return@launch
+                                        }
                                         val intent = Intent(Intent.ACTION_SEND).apply {
                                             type = "*/*"
                                             putExtra(Intent.EXTRA_STREAM, uri)
@@ -1161,7 +1259,11 @@ class TerminalActivity : FragmentActivity() {
                                     val uris = withContext(Dispatchers.IO) {
                                         paths.mapNotNull { path ->
                                             VfsManager.resolve(this@TerminalActivity, path)?.takeIf { it.isFile }?.let { file ->
-                                                FileProvider.getUriForFile(this@TerminalActivity, GenericFileProvider.PROVIDER_NAME, file)
+                                                try {
+                                                    FileProvider.getUriForFile(this@TerminalActivity, GenericFileProvider.PROVIDER_NAME, file)
+                                                } catch (e: IllegalArgumentException) {
+                                                    null
+                                                }
                                             }
                                         }
                                     }
@@ -1172,6 +1274,9 @@ class TerminalActivity : FragmentActivity() {
                                             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                                         }
                                         startActivity(Intent.createChooser(intent, "Share ${uris.size} items"))
+                                    }
+                                    if (uris.size < paths.size) {
+                                        Toast.makeText(this@TerminalActivity, "${paths.size - uris.size} item(s) couldn't be shared from this location.", Toast.LENGTH_LONG).show()
                                     }
                                 }
                             },
@@ -1278,7 +1383,12 @@ class TerminalActivity : FragmentActivity() {
     }
 
     override fun onDestroy() {
-        sessions.forEach { it.engine.destroy() }
+        fullScreenSession?.kill()
+        fullScreenSession = null
+        sessions.forEach {
+            it.ui.destroy()
+            it.engine.destroy()
+        }
         Builtins.destroy(this)
         super.onDestroy()
     }

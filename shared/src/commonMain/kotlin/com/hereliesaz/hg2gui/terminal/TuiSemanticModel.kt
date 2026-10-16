@@ -117,7 +117,10 @@ object TuiSemanticParser {
         }
 
         val menuRows = layers.flatMap { layer -> layer.items.map { it.row } }.toSet()
-        val prompt = visible.lastOrNull { looksLikePrompt(it) && it.index !in menuRows }
+        // A prompt is the last thing on screen: a cursor row with other content below it is a body
+        // row of an editor/pager/monitor, not a question waiting for an answer.
+        val lastContentRow = visible.lastOrNull { it.text.isNotBlank() }?.index
+        val prompt = visible.lastOrNull { looksLikePrompt(it) && it.index !in menuRows && it.index == lastContentRow }
             ?.let { row -> TuiPrompt(row.index, row.text.trim(), promptKind(row.text)) }
 
         val tabs = detectTabs(visible, menuRows)
@@ -288,8 +291,10 @@ object TuiSemanticParser {
             ?: numberedMenu.matchEntire(text)?.groupValues?.getOrNull(1)
             ?: text.trim()
 
+    /** The cursor sits on a row that ends like a question/prompt (`:`, `>`, `?`, `[y/n]`). Short
+     *  text alone is not enough - the cursor is on *some* row of every vim/less/htop screen. */
     private fun looksLikePrompt(row: TuiRow): Boolean =
-        row.cursorColumn != null && (promptSuffix.containsMatchIn(row.text) || row.text.length <= 100)
+        row.cursorColumn != null && promptSuffix.containsMatchIn(row.text)
 
     private fun promptKind(text: String): TuiPromptKind = when {
         passwordWords.containsMatchIn(text) -> TuiPromptKind.PASSWORD

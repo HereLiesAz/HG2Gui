@@ -1,18 +1,21 @@
 package com.hereliesaz.hg2gui.ui.guide
 
-import androidx.compose.foundation.text.ClickableText
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.TextUnit
-
-private const val COMMAND_TAG = "guide-command"
 
 @Composable
 internal fun GuideLinkedText(
@@ -25,22 +28,26 @@ internal fun GuideLinkedText(
     modifier: Modifier = Modifier,
     onCommandSelected: (String) -> Unit
 ) {
+    // LinkAnnotation (rather than ClickableText + offset hit-testing) makes each command a real
+    // link: TalkBack lists and activates it, and it takes focus from a keyboard. The click lambda
+    // is read through rememberUpdatedState so a new callback doesn't rebuild the string.
+    val latestSelected by rememberUpdatedState(onCommandSelected)
     val annotated = remember(text, commands, commandColor) {
-        annotateCommands(text, commands, commandColor)
+        annotateCommands(text, commands, commandColor) { latestSelected(it) }
     }
-    ClickableText(
+    Text(
         text = annotated,
         modifier = modifier,
-        style = TextStyle(color = color, fontSize = fontSize, lineHeight = lineHeight),
-        onClick = { offset ->
-            annotated.getStringAnnotations(COMMAND_TAG, offset, offset)
-                .firstOrNull()
-                ?.let { onCommandSelected(it.item) }
-        }
+        style = TextStyle(color = color, fontSize = fontSize, lineHeight = lineHeight)
     )
 }
 
-private fun annotateCommands(text: String, commands: Set<String>, commandColor: Color): AnnotatedString {
+private fun annotateCommands(
+    text: String,
+    commands: Set<String>,
+    commandColor: Color,
+    onCommandSelected: (String) -> Unit
+): AnnotatedString {
     data class Hit(val start: Int, val end: Int, val command: String)
 
     val occupied = BooleanArray(text.length)
@@ -61,11 +68,16 @@ private fun annotateCommands(text: String, commands: Set<String>, commandColor: 
             }
         }
 
+    val commandStyle = TextLinkStyles(SpanStyle(color = commandColor, fontWeight = FontWeight.SemiBold))
     return buildAnnotatedString {
-        append(text)
-        hits.forEach { hit ->
-            addStringAnnotation(COMMAND_TAG, hit.command, hit.start, hit.end)
-            addStyle(SpanStyle(color = commandColor, fontWeight = FontWeight.SemiBold), hit.start, hit.end)
+        var cursor = 0
+        hits.sortedBy { it.start }.forEach { hit ->
+            append(text.substring(cursor, hit.start))
+            withLink(LinkAnnotation.Clickable(hit.command, commandStyle) { onCommandSelected(hit.command) }) {
+                append(text.substring(hit.start, hit.end))
+            }
+            cursor = hit.end
         }
+        append(text.substring(cursor))
     }
 }

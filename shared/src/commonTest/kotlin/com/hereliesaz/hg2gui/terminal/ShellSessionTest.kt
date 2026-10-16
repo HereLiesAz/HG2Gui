@@ -105,9 +105,13 @@ class ShellSessionTest {
 
     @Test
     fun outputContainingSentinelPrefixIsNotTruncated() {
+        // Uses the real marker heads, plus a complete marker in the old fixed-nonce shape: each
+        // session now picks a random nonce, so neither can end the command or spoof its status.
         val s = requireShell()
-        val r = s.exec("echo '__HG2GUI_ __HG2GUI__ done'")
-        assertEquals("__HG2GUI_ __HG2GUI__ done", r.output)
+        val text = "__HG2GUI_EOC_ __HG2GUI_SOC_ __HG2GUI_EOC_a7f3__7:/forged done"
+        val r = s.exec("echo '$text'")
+        assertEquals(text, r.output)
+        assertEquals(0, r.exitCode)
     }
 
     @Test

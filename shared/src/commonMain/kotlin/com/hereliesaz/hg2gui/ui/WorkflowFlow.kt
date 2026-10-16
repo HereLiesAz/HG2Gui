@@ -15,8 +15,15 @@ object WorkflowFlow {
     fun placeholders(template: String): List<String> =
         placeholderRegex.findAll(template).map { it.groupValues[1] }.distinct().toList()
 
+    /** Substitutes each `{placeholder}` with its value single-quoted as one shell word, so a
+     *  value like `x; rm -rf ~` or `$(id)` stays inert literal text. Placeholders therefore
+     *  belong bare in templates (`git commit -m {message}`), not inside quotes of their own. */
     fun render(template: String, values: Map<String, String>): String =
-        placeholderRegex.replace(template) { match -> values[match.groupValues[1]] ?: match.value }
+        placeholderRegex.replace(template) { match ->
+            values[match.groupValues[1]]?.let(::shellQuote) ?: match.value
+        }
+
+    internal fun shellQuote(value: String): String = "'" + value.replace("'", "'\\''") + "'"
 
     suspend fun runNewWorkflowWizard(session: SessionUiState, save: suspend (Workflow) -> Unit) {
         val name = session.awaitPromptAnswer("Workflow name?").trim()
@@ -24,7 +31,7 @@ object WorkflowFlow {
 
         val template = session.awaitPromptAnswer(
             "Command template? Use {name} for a value you'll fill in each time, " +
-                "e.g. git commit -m \"{message}\""
+                "e.g. git commit -m {message}"
         ).trim()
         if (template.isEmpty()) return
 

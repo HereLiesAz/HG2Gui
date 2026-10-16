@@ -11,11 +11,9 @@ public class StoppableThread extends Thread {
         // Per-thread handler: setDefaultUncaughtExceptionHandler would replace the JVM-wide
         // default for every thread in the process, clobbering the app's real crash handler
         // (e.g. termux-shared's CrashHandler) on every construction of a StoppableThread.
-        setUncaughtExceptionHandler((t, e) -> {
-            Utils.log(e);
-            Utils.toFile(e);
-            System.exit(1);
-        });
+        // A failed background refresh is logged, not fatal: killing the whole process (the
+        // old System.exit(1)) took the terminal down over e.g. a contacts provider hiccup.
+        setUncaughtExceptionHandler((t, e) -> Utils.log(e));
     }
 
     @Override

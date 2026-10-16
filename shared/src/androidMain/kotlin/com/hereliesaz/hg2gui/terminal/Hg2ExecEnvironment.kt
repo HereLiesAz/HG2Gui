@@ -23,6 +23,12 @@ object Hg2ExecEnvironment {
         return File(nativeDir, HG2GUI_PRELOAD_LIBRARY)
     }
 
+    /**
+     * Fills [env] with the Termux exec environment. Throws [IllegalArgumentException] when the
+     * exec preload or PRoot temp directory is unavailable: package operations surface that as
+     * their error, while interactive session creation (ShellSession.bootstrapBashEnv) catches it
+     * and falls back to the bare system shell instead of failing to open a tab.
+     */
     fun apply(
         context: Context,
         env: MutableMap<String, String>,

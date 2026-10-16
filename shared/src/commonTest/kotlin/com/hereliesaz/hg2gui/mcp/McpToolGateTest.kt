@@ -28,4 +28,40 @@ class McpToolGateTest {
         // shell.* gate by a loose substring check - only the literal "shell." prefix counts.
         assertFalse(isShellToolGated("shelldone.x", shellExecEnabled = false))
     }
+
+    @Test
+    fun hiddenTopLevelDotfilesAreProtected() {
+        assertTrue(isMcpProtectedVfsPath("/.bash_profile"))
+        assertTrue(isMcpProtectedVfsPath("/.bashrc"))
+        assertTrue(isMcpProtectedVfsPath("/.profile"))
+        assertTrue(isMcpProtectedVfsPath("/.zshrc"))
+        assertTrue(isMcpProtectedVfsPath("/.hg2gui-env"))
+        assertTrue(isMcpProtectedVfsPath("/.config/autostart/x.desktop"))
+    }
+
+    @Test
+    fun sshDirectoryIsProtectedAtAnyDepth() {
+        assertTrue(isMcpProtectedVfsPath("/.ssh/authorized_keys"))
+        assertTrue(isMcpProtectedVfsPath("/projects/.ssh/config"))
+    }
+
+    @Test
+    fun dotDotTraversalIsNormalizedBeforeChecking() {
+        assertTrue(isMcpProtectedVfsPath("/notes/../.bashrc"))
+        assertTrue(isMcpProtectedVfsPath("/./.profile"))
+    }
+
+    @Test
+    fun rootItselfIsProtected() {
+        assertTrue(isMcpProtectedVfsPath("/"))
+        assertTrue(isMcpProtectedVfsPath("/notes/.."))
+    }
+
+    @Test
+    fun ordinaryFilesAreNotProtected() {
+        assertFalse(isMcpProtectedVfsPath("/notes.txt"))
+        assertFalse(isMcpProtectedVfsPath("/Downloads/photo.png"))
+        // Dotfiles nested below a visible top-level folder are user content, not shell config.
+        assertFalse(isMcpProtectedVfsPath("/project/.gitignore"))
+    }
 }

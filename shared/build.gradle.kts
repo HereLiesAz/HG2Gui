@@ -54,13 +54,13 @@ kotlin {
             implementation(libs.androidx.activity.compose)
             implementation(libs.androidx.fragment)
             implementation(libs.androidx.biometric)
+            implementation(libs.androidx.security.crypto)
             implementation(libs.androidx.uiautomator.shell)
             implementation(libs.anthropic.java)
             implementation(libs.androidx.localbroadcastmanager)
             implementation(libs.material)
 
             implementation(project(":terminal-emulator"))
-            implementation(project(":termux-shared"))
         }
         val desktopMain by getting {
             dependencies {

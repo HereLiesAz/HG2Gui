@@ -40,10 +40,6 @@ Most product/runtime implementation:
 
 Vendored terminal emulator/PTY implementation. It supplies live screen buffers, cursor state, alternate-screen state, text attributes, terminal mouse-tracking state, and terminal key encoding used by Adaptive TUI wrapping.
 
-### `:termux-shared`
-
-Vendored Termux-compatible Android utilities.
-
 ## TerminalActivity and sessions
 
 Each terminal tab owns its own `TerminalEngine` and UI state. `TerminalActivity` owns top-level navigation, permissions, screen composition, and full-screen PTY handoff; execution policy remains in `TerminalEngine`.

@@ -190,7 +190,9 @@ private fun AuditCard(entry: IsolationAuditEntry) {
                         aiResult = runCatching {
                             AiClient.ask(
                                 apiKey = apiKey,
-                                cwd = PackageIsolation.root(context, PackageLifecycleStore.installed(context).first { it.name == entry.packageName && it.isolated }).absolutePath,
+                                // Placeholder, not the sandbox's real absolute path - the device's
+                                // on-disk layout (user id, package dir) isn't the AI's business.
+                                cwd = "/sandbox",
                                 question = auditInterpretationPrompt(entry)
                             ).text
                         }.getOrElse { "AI interpretation failed: ${it.message ?: it.javaClass.simpleName}" }
@@ -273,8 +275,16 @@ private fun auditInterpretationPrompt(entry: IsolationAuditEntry): String {
         safeRows(audit.created).forEach { appendLine("created: ${it.substringAfterLast('/')}") }
         safeRows(audit.modified).forEach { appendLine("modified: ${it.substringAfterLast('/')}") }
         safeRows(audit.deleted).forEach { appendLine("deleted: ${it.substringAfterLast('/')}") }
-        safeRows(audit.telemetry).forEach { appendLine("observed: $it") }
-        if (audit.telemetry.any { SENSITIVE_WORDS.containsMatchIn(it) }) appendLine("Some telemetry rows were withheld as potentially secret-bearing.")
+        // Raw telemetry rows carry full command lines, file paths and peer addresses - only
+        // per-category counts, plus network peers with the address redacted, leave the device.
+        audit.telemetry.groupingBy(::telemetryKind).eachCount().toSortedMap().forEach { (kind, count) ->
+            appendLine("observed $kind events: $count")
+        }
+        audit.telemetry.filter { telemetryKind(it) == "NETWORK" }
+            .mapNotNull(::redactedNetworkRow)
+            .distinct()
+            .take(24)
+            .forEach { appendLine("network: $it") }
     }
 }
 
@@ -284,6 +294,19 @@ private fun telemetryKind(line: String): String = when {
     line.startsWith("process:") || line.startsWith("root-process:") -> "PROCESS"
     line.startsWith("file-") -> "FILES"
     else -> "OTHER"
+}
+
+/**
+ * `network:<proto>:<local>:<remote>:<state>:<inode>` (from /proc/net, hex `ADDR:PORT` pairs)
+ * reduced to `<proto> remote port <n>` - the peer's address is withheld, only its port (which
+ * says what kind of service was contacted) is kept. Null for a row that doesn't parse.
+ */
+private fun redactedNetworkRow(line: String): String? {
+    val fields = line.removePrefix("network:").split(':')
+    if (fields.size < 5) return null
+    val proto = fields[0].takeIf { it.matches(Regex("[a-z0-9]+")) } ?: return null
+    val remotePort = fields[4].toIntOrNull(16) ?: return null
+    return "$proto remote port $remotePort"
 }
 
 private fun telemetryDetail(line: String): String = line.substringAfter(':', line)

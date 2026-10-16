@@ -718,7 +718,11 @@ class TerminalEmulator(
                     }
                 } else if (dcs.startsWith("+q")) {
                     val parts = dcs.substring(2).split(";").toTypedArray()
-                    for (part in parts) {
+                    for (rawPart in parts) {
+                        // Only ever echo back a pure-hex name: anything else in `part` is
+                        // attacker-controlled bytes (e.g. from `cat`ing a file) that would be
+                        // injected verbatim into the shell's input via the reply.
+                        val part = if (HEX_PAYLOAD.matches(rawPart)) rawPart else ""
                         if (part.length % 2 == 0) {
                             val transBuffer = StringBuilder()
                             var c: Char
@@ -1563,24 +1567,17 @@ class TerminalEmulator(
                     mColors.reset()
                     mSession.onColorsChanged()
                 } else {
-                    var lastIndex = 0
-                    var charIndex = 0
-                    while (true) {
-                        val endOfInput = charIndex == textParameter.length
-                        if (endOfInput || textParameter[charIndex] == ';') {
-                            try {
-                                val colorToReset = Integer.parseInt(textParameter.substring(lastIndex, charIndex))
-                                mColors.reset(colorToReset)
-                                mSession.onColorsChanged()
-                                if (endOfInput) break
-                                charIndex++
-                                lastIndex = charIndex
-                            } catch (e: NumberFormatException) {
-                                // Ignore.
-                            }
-                        }
-                        charIndex++
+                    // Each ';'-separated field is a palette index; malformed or out-of-range ones are
+                    // skipped. (The old hand-rolled scan never terminated its loop on a bad final
+                    // field and then indexed past the end of the string.)
+                    var changed = false
+                    for (field in textParameter.split(';')) {
+                        val colorToReset = field.toIntOrNull() ?: continue
+                        if (colorToReset !in 0 until TextStyle.NUM_INDEXED_COLORS) continue
+                        mColors.reset(colorToReset)
+                        changed = true
                     }
+                    if (changed) mSession.onColorsChanged()
                 }
             }
             110, 111, 112 -> {
@@ -1950,6 +1947,15 @@ class TerminalEmulator(
         mUtf8Index = 0
         mUtf8ToFollow = 0
 
+        // RIS also drops SGR attributes and returns to the main screen.
+        mEffect = 0
+        mUnderlineColor = TextStyle.COLOR_INDEX_FOREGROUND
+        if (mScreen !== mMainBuffer) {
+            val resized = !(mMainBuffer.mColumns == mColumns && mMainBuffer.mScreenRows == mRows)
+            mScreen = mMainBuffer
+            if (resized) resizeScreen()
+        }
+
         mColors.reset()
         mSession.onColorsChanged()
     }
@@ -2001,6 +2007,7 @@ class TerminalEmulator(
     }
 
     companion object {
+        private val HEX_PAYLOAD = Regex("^[0-9A-Fa-f]*$")
         /** Log unknown or unimplemented escape sequences received from the shell process. */
         private const val LOG_ESCAPE_SEQUENCES = false
 

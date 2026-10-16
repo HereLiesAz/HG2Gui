@@ -1,3 +1,7 @@
+> **Superseded.** This describes an early standalone delivery bundle that no longer matches the
+> repository layout. See `docs/MANIFEST.txt` for the current pointers and `docs/guide/MANIFEST.json`
+> for the authoritative, programmatically-checked file manifest. Kept for history only.
+
 # Bundle Manifest
 
 ## 00_READ_ME_FIRST.md

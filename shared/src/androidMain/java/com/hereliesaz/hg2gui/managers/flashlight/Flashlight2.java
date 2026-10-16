@@ -20,13 +20,11 @@ package com.hereliesaz.hg2gui.managers.flashlight;
 
 import android.annotation.TargetApi;
 import android.content.Context;
-import android.content.Intent;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
-import com.hereliesaz.hg2gui.util.PrivateIOReceiver;
+import com.hereliesaz.hg2gui.util.Utils;
 
 /**
  * Created by I327891 on 04-Feb-17.
@@ -52,18 +50,14 @@ public class Flashlight2 extends Flashlight {
             try {
                 this.mCameraIDList = mCameraManager.getCameraIdList();
             } catch (CameraAccessException e) {
-                Intent intent = new Intent(PrivateIOReceiver.ACTION_OUTPUT);
-                intent.putExtra(PrivateIOReceiver.TEXT, e.toString());
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(intent);
+                Utils.log(e);
                 return;
             }
             try {
                 CameraCharacteristics mCameraParameters = mCameraManager.getCameraCharacteristics(this.mCameraIDList[0]);
                 this.flashSupported = mCameraParameters.get(CameraCharacteristics.FLASH_INFO_AVAILABLE);
             } catch (Exception e) {
-                Intent intent = new Intent(PrivateIOReceiver.ACTION_OUTPUT);
-                intent.putExtra(PrivateIOReceiver.TEXT, e.toString());
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(intent);
+                Utils.log(e);
                 return;
             }
             if (this.flashSupported) {
@@ -71,9 +65,7 @@ public class Flashlight2 extends Flashlight {
                     mCameraManager.setTorchMode(this.mCameraIDList[0], true);
                     this.updateStatus(true);
                 } catch (CameraAccessException e) {
-                    Intent intent = new Intent(PrivateIOReceiver.ACTION_OUTPUT);
-                    intent.putExtra(PrivateIOReceiver.TEXT, e.toString());
-                    LocalBroadcastManager.getInstance(mContext).sendBroadcast(intent);
+                    Utils.log(e);
                 }
             }
         }
@@ -87,9 +79,7 @@ public class Flashlight2 extends Flashlight {
                 try {
                     mCameraManager.setTorchMode(mCameraIDList[0], false);
                 } catch (CameraAccessException e) {
-                    Intent intent = new Intent(PrivateIOReceiver.ACTION_OUTPUT);
-                    intent.putExtra(PrivateIOReceiver.TEXT, e.toString());
-                    LocalBroadcastManager.getInstance(mContext).sendBroadcast(intent);
+                    Utils.log(e);
                     return;
                 }
                 this.updateStatus(false);

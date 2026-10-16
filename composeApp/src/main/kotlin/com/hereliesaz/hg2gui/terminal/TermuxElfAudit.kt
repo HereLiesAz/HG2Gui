@@ -100,14 +100,19 @@ object TermuxElfAudit {
     private fun containsAscii(file: File, needle: ByteArray): Boolean = runCatching {
         if (needle.isEmpty()) return true
         val failure = kmpFailureTable(needle)
-        file.inputStream().buffered().use { input ->
+        // Chunked reads: a per-byte read() call, even through a buffer, dominated the audit on
+        // large libraries. The KMP state carries across chunk boundaries.
+        file.inputStream().use { input ->
+            val chunk = ByteArray(64 * 1024)
             var matched = 0
             while (true) {
-                val b = input.read(); if (b < 0) return false
-                val byte = b.toByte()
-                while (matched > 0 && byte != needle[matched]) matched = failure[matched - 1]
-                if (byte == needle[matched]) matched++
-                if (matched == needle.size) return true
+                val n = input.read(chunk); if (n < 0) return false
+                for (i in 0 until n) {
+                    val byte = chunk[i]
+                    while (matched > 0 && byte != needle[matched]) matched = failure[matched - 1]
+                    if (byte == needle[matched]) matched++
+                    if (matched == needle.size) return true
+                }
             }
         }
         @Suppress("UNREACHABLE_CODE") false

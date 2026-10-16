@@ -1,5 +1,9 @@
 package com.hereliesaz.hg2gui.ui.files
 
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.Role
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -247,7 +251,11 @@ fun StorageScreen(
                         }
                         Text(
                             "×", color = Azphalt.currentGround.onPage.copy(alpha = .7f), fontSize = 15.sp,
-                            modifier = Modifier.clickable { deleteTarget = f }.padding(start = 8.dp)
+                            modifier = Modifier
+                                .semantics { contentDescription = "Delete ${f.name}" }
+                                .minimumInteractiveComponentSize()
+                                .clickable(role = Role.Button) { deleteTarget = f }
+                                .padding(start = 8.dp)
                         )
                     }
                 }
@@ -297,7 +305,11 @@ fun StorageScreen(
                                 )
                                 Text(
                                     "×", color = Azphalt.currentGround.onPage.copy(alpha = .7f), fontSize = 15.sp,
-                                    modifier = Modifier.clickable { purgeTarget = entry }.padding(start = 4.dp)
+                                    modifier = Modifier
+                                        .semantics { contentDescription = "Delete forever" }
+                                        .minimumInteractiveComponentSize()
+                                        .clickable(role = Role.Button) { purgeTarget = entry }
+                                        .padding(start = 4.dp)
                                 )
                             }
                         }

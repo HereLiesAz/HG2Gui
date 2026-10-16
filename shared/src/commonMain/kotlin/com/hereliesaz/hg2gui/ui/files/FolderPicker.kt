@@ -5,11 +5,15 @@ import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -28,6 +32,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import com.hereliesaz.hg2gui.ui.BackStepState
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
 import com.hereliesaz.hg2gui.ui.menu.onPage
 import com.hereliesaz.hg2gui.ui.menu.pageBrush
@@ -54,15 +59,37 @@ fun FolderPicker(
     listDir: suspend (path: String) -> List<VfsEntry>,
     onConfirm: (targetPath: String) -> Unit,
     onCancel: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    // Lets the host's system-back handling step up one folder at a time instead of cancelling the
+    // whole picker; null (the default) keeps the old cancel-on-back behaviour.
+    backStep: BackStepState? = null
 ) {
     var currentPath by remember { mutableStateOf("/") }
     var folders by remember { mutableStateOf<List<VfsEntry>>(emptyList()) }
     var openIndex by remember { mutableStateOf<Int?>(null) }
+    var listError by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(currentPath) {
-        folders = listDir(currentPath).filter { it.isDirectory }.sortedBy { it.name.lowercase() }
+        // A listing that throws used to take the whole picker down with it.
+        try {
+            folders = listDir(currentPath).filter { it.isDirectory }.sortedBy { it.name.lowercase() }
+            listError = null
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            folders = emptyList()
+            listError = "Couldn't open this folder: ${e.message ?: "unknown error"}"
+        }
         openIndex = null
+    }
+
+    val atRoot = currentPath.trim('/').isEmpty()
+    SideEffect {
+        backStep?.canStepBack = !atRoot
+        backStep?.stepBack = { currentPath = vfsParentPath(currentPath) }
+    }
+    DisposableEffect(backStep) {
+        onDispose { backStep?.reset() }
     }
 
     val density = LocalDensity.current
@@ -74,7 +101,10 @@ fun FolderPicker(
             verticalAlignment = Alignment.CenterVertically
         ) {
             PickerChip("‹ CANCEL", onClick = onCancel)
-            PickerChip(title.uppercase(), filled = false, clickable = false)
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                if (!atRoot) PickerChip("‹ UP") { currentPath = vfsParentPath(currentPath) }
+                PickerChip(title.uppercase(), filled = false, clickable = false)
+            }
         }
 
         Row(
@@ -83,12 +113,30 @@ fun FolderPicker(
             verticalAlignment = Alignment.CenterVertically
         ) {
             val crumbs = currentPath.trim('/').split('/').filter { it.isNotEmpty() }
+            // Each crumb jumps straight back to that ancestor.
+            Row(Modifier.horizontalScroll(rememberScrollState())) {
+                val crumbStyle = Azphalt.currentGround.onPage.copy(alpha = .55f)
+                Text(
+                    "/", color = crumbStyle, fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1,
+                    modifier = Modifier.clickable { currentPath = "/" }.padding(vertical = 8.dp)
+                )
+                crumbs.forEachIndexed { i, name ->
+                    val target = "/" + crumbs.take(i + 1).joinToString("/")
+                    Text(
+                        name + if (i < crumbs.lastIndex) "/" else "",
+                        color = crumbStyle, fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1,
+                        modifier = Modifier.clickable { currentPath = target }.padding(vertical = 8.dp)
+                    )
+                }
+            }
+        }
+
+        listError?.let {
             Text(
-                "/" + crumbs.joinToString("/"),
-                color = Azphalt.currentGround.onPage.copy(alpha = .55f),
+                it,
+                color = Azphalt.currentGround.onPage.copy(alpha = .7f),
                 fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1
+                modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 4.dp)
             )
         }
 

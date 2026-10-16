@@ -126,8 +126,7 @@ class FullScreenPtySession private constructor(
             )
             val envArray = env.map { (k, v) -> "$k=$v" }.toTypedArray()
             val args = when (selectedFamily) {
-                ShellFamily.FISH -> arrayOf(selected.absolutePath, "-l", "-c", commandLine)
-                ShellFamily.BASH, ShellFamily.ZSH -> arrayOf(selected.absolutePath, "-l", "-c", commandLine)
+                ShellFamily.FISH, ShellFamily.BASH, ShellFamily.ZSH -> arrayOf(selected.absolutePath, "-l", "-c", commandLine)
                 else -> arrayOf(selected.absolutePath, "-c", commandLine)
             }
             val termuxSession = TerminalSession(
