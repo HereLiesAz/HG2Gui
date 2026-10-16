@@ -95,7 +95,8 @@ class ShellSessionTest {
         val s = requireShell()
         val script = java.io.File.createTempFile("hg2gui-source-test", ".sh")
         script.writeText("export SOURCED_MARKER=from-script\nsourced_fn() { echo called; }\n")
-        s.exec("source ${script.absolutePath}")
+        // POSIX ".": /bin/sh is dash on Linux CI, which has no `source` builtin.
+        s.exec(". ${script.absolutePath}")
         val exported = s.exec("echo \$SOURCED_MARKER")
         val fn = s.exec("sourced_fn")
         script.delete()
