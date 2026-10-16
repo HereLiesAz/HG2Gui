@@ -24,6 +24,19 @@ import java.util.zip.ZipInputStream
  */
 object DistroManager {
 
+    /**
+     * Resolves [name] under [root] and rejects (zip-slip) any path whose canonical form escapes
+     * [root]. `internal` so it can be unit tested without an Android runtime.
+     */
+    internal fun resolveContained(root: File, name: String): File {
+        val canonicalRoot = root.canonicalFile
+        val resolved = File(canonicalRoot, name).canonicalFile
+        if (resolved != canonicalRoot && !resolved.path.startsWith(canonicalRoot.path + File.separator)) {
+            throw IOException("Path escapes install prefix: $name")
+        }
+        return resolved
+    }
+
     // Pinned, not /releases/latest/download/ - BootstrapManifest's 330 executables/libraries are
     // a frozen snapshot of exactly this release's bin/, lib/, and libexec/, bundled into the APK
     // itself (see that file's own doc comment for why). Pointing this at whatever "latest" is at
@@ -182,15 +195,15 @@ object DistroManager {
                         symlinksText.append(zis.bufferedReader(Charsets.UTF_8).readText())
                     }
                     entry.isDirectory -> {
-                        File(prefix, entry.name).mkdirs()
+                        resolveContained(prefix, entry.name).mkdirs()
                     }
                     entry.name in manifest -> {
                         // Still needs its own directory to exist, for whatever else in this same
                         // directory isn't manifest-covered - just not this file's own content.
-                        File(prefix, entry.name).parentFile?.mkdirs()
+                        resolveContained(prefix, entry.name).parentFile?.mkdirs()
                     }
                     else -> {
-                        val outFile = File(prefix, entry.name)
+                        val outFile = resolveContained(prefix, entry.name)
                         outFile.parentFile?.mkdirs()
                         outFile.outputStream().buffered().use { out -> zis.copyTo(out) }
                         rewriteShebangIfNeeded(outFile, prefix)
@@ -217,7 +230,11 @@ object DistroManager {
                 rawTarget
             }
             val linkPath = line.substring(separatorIndex + SYMLINK_SEPARATOR.length)
-            val linkFile = File(prefix, linkPath)
+            // Zip-slip: a SYMLINKS.txt line must not create a link outside the prefix. The
+            // containment check resolves the parent directory only, so the link itself is never
+            // followed.
+            val linkParent = resolveContained(prefix, File(linkPath).parent ?: ".")
+            val linkFile = File(linkParent, File(linkPath).name)
             linkFile.parentFile?.mkdirs()
             // unlink()s the path itself rather than whatever it points to - a no-op if nothing
             // was there yet, and clears a stale symlink left by a prior failed bootstrap attempt.
