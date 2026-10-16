@@ -59,8 +59,15 @@ Current actions include:
 - `isolate`
 - `release`
 - `reset`
+- `snapshot` — create a bounded restore point of HG2Gui-managed runtime state;
+- `restore <manager> <package> <id>` — replace managed state from a restore point (confirms);
+- `snapshot-delete <manager> <package> <id>` — delete a restore point (confirms);
+- `capability <manager> <package> [capability [ask|deny|allow-once]]` — show or set the capability policy (see below);
+- `capability-request <manager> <package> <capability>` — ask for a one-shot grant of a capability (see below);
 - `remove`
 - `purge`
+
+Headless callers (the external API, MCP) may run only `info`, `snapshot`, `update`, `disable`, `isolate`; `enable` additionally needs HG2Gui in the foreground through the external API. `reset`, `restore`, `snapshot-delete`, `remove`, `purge`, `release`, `capability` and `capability-request` always need interactive confirmation.
 
 The owning manager currently comes from adapters for:
 
@@ -85,6 +92,24 @@ Reset keeps the installed payload while clearing package runtime state HG2Gui ca
 ### Update / Remove / Purge
 
 These actions delegate through the owning manager where meaningful. Destructive lifecycle actions require confirmation in interactive use.
+
+### Capability policy
+
+Each installed package has a policy for five capabilities: `adb`, `root`, `network`, `host-read`, `host-write`. The mode is one of:
+
+- **ASK** (default) — fails closed until a human answers; `capability-request` prompts "Allow this request once?";
+- **ALLOW ONCE** (`allow-once`) — a single grant, held only in memory and consumed by exactly one decision, so it never survives an app restart or becomes standing authority;
+- **DENY** — always refused.
+
+Only ASK and DENY are stored persistently. Examples:
+
+~~~text
+hg2package capability pkg git
+hg2package capability pkg git network allow-once
+hg2package capability-request pkg git network
+~~~
+
+**Isolated-run network grant.** A PRoot-isolated package cannot be given a truthful offline network namespace on Android, so launching it requires a `network` grant: with the policy at ASK or DENY the launch fails closed with an explanation. Arm it with **Authority → Package policies → (package) → network → Allow once**, then run the package again; the grant is consumed by that launch.
 
 ## Package execution backends
 
@@ -191,6 +216,17 @@ The Guide remains open so reading and command composition can interleave. Guide 
 
 File/directory operands can invoke the graphical picker. Files is also a dedicated native browsing surface rather than merely a command category.
 
+## `remote`
+
+`remote <discover|status|help|packages> <preset> [command]` inspects an SSH preset's host over SSH (OS, shell, package manager, installed commands and packages) and caches the result per preset.
+
+- `remote discover <preset>` — query the host and cache the inventory;
+- `remote status <preset>` — show the cached inventory;
+- `remote help <preset> <command>` — fetch help for a command on the remote host;
+- `remote packages <preset>` — list the remote packages.
+
+It needs a saved SSH preset and an SSH client; it is available headless.
+
 ## Isolation Audit
 
 **Settings → Isolation audit** opens the native audit screen for isolated packages. It reports latest observed process/file/network/authority telemetry and current sandbox state.
@@ -214,7 +250,14 @@ Typed API actions include:
 - device information;
 - share/open actions;
 - lifecycle operations;
-- foreground-approved ADB/root authority requests.
+- foreground-approved ADB/root authority requests;
+- `CAPABILITIES` (`com.hereliesaz.hg2gui.api.CAPABILITIES`) — returns the machine-readable schema of every action with its required/optional extras and whether it needs foreground approval;
+- `AUDIT_HISTORY` (`com.hereliesaz.hg2gui.api.AUDIT_HISTORY`) — returns the history of API requests the receiver has handled;
+- metadata channels (`METADATA_PUBLISH`, `METADATA_READ`, `METADATA_LIST`, `METADATA_CLEAR`).
+
+**Metadata channels** let a cooperating app publish short-lived descriptions that HG2Gui can use to understand its own screen or output. A channel name is 1-96 characters of `A-Za-z0-9._:/-`; a payload is at most 128 KiB; the lifetime is 1 s to 5 min (default 30 s); at most 64 channels are held, in memory only, and the oldest is evicted first. Terminal state stays authoritative once a producer stops refreshing.
+
+The package `enable` lifecycle operation over the API needs HG2Gui in the foreground; `info` and `snapshot` run from the background.
 
 The API is capability-oriented and does not make background integration synonymous with elevation.
 

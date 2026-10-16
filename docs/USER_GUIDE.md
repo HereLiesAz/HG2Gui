@@ -131,6 +131,20 @@ HG2Gui chooses among three package execution paths:
 
 A generic command failure is not enough to trigger a silent PRoot retry.
 
+## Capability policy
+
+Every installed package has a per-capability policy for `adb`, `root`, `network`, `host-read` and `host-write`:
+
+- **ASK** (default): HG2Gui asks you each time; until you answer, the request is refused.
+- **ALLOW ONCE**: allows exactly one request and is then used up. It is kept only in memory, so restarting the app clears it.
+- **DENY**: always refused.
+
+Change it from **Authority → Package policies**, or with `hg2package capability`. A package asks for a one-time grant with `hg2package capability-request`. Running an isolated package needs a **network** grant for that launch (isolation cannot provide a real offline network on Android); without it the run is refused with a message saying how to allow it once.
+
+## Restore points
+
+**Snapshot** (`hg2package snapshot`) saves a bounded restore point of the state HG2Gui manages for a package; **Restore** puts it back after a confirmation, and `snapshot-delete` removes one.
+
 ## Isolating a package
 
 Choose **Isolate** on an installed package.
@@ -157,6 +171,8 @@ This is not complete kernel syscall tracing. Very short-lived events can escape 
 ### Isolation Audit
 
 Open **Settings → Isolation audit** to inspect latest observed activity for isolated packages. The view groups authority attempts, network observations, processes, and file observations and shows current sandbox size/state.
+
+If you have saved an Anthropic API key, **ASK AI · SEND SUMMARY** sends that package's audit summary (sandbox file paths changed and the observed process, file, network and authority telemetry) to Anthropic for interpretation. Nothing is sent unless you tap it.
 
 ## Execution authority
 
@@ -197,7 +213,13 @@ Typed capabilities include:
 - package lifecycle operations;
 - foreground-approved ADB/root authority requests.
 
+Apps can also read the API's own schema (`CAPABILITIES`) and request history (`AUDIT_HISTORY`), and exchange short-lived **metadata channels** (publish/read/list/clear) so HG2Gui can understand what they are showing. Enabling a package over the API requires HG2Gui to be in the foreground.
+
 The API does not make background callers automatically privileged.
+
+## Remote hosts
+
+`remote discover <preset>` inspects a saved SSH preset's host (OS, shell, package manager, commands, packages) and caches it; `remote status|help|packages <preset>` read from it so completion and help can describe the remote machine.
 
 ## SSH
 

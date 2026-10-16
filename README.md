@@ -109,12 +109,25 @@ The Android API receiver is protected by the signature permission:
 
 It exposes typed actions instead of making an untrusted broadcast string synonymous with terminal execution. ADB/root requests are routed through a foreground approval activity; headless callers do not inherit elevation.
 
+### Capability policy
+
+Each installed package has an `adb` / `root` / `network` / `host-read` / `host-write` policy: **ASK** (default, refused until you answer), **ALLOW ONCE** (one request, in memory only) or **DENY**. Launching an isolated package needs a one-shot `network` grant. See `hg2package capability` and `capability-request` in [Commands](docs/COMMANDS.md). The API also offers `CAPABILITIES` (schema), `AUDIT_HISTORY` and short-lived metadata channels; `remote` inspects SSH presets; `hg2package snapshot`/`restore` manage restore points.
+
+## Android permissions
+
+HG2Gui is a terminal and file manager, so it declares a broad set; each is used only on demand and none feeds a remote service (see [Privacy policy](docs/PRIVACY_POLICY.md) for the full list):
+
+- location, contacts, phone (call and phone state), camera, Bluetooth: for the matching built-ins and Termux-style device queries, requested at first use;
+- write system settings: brightness and similar built-ins;
+- all files access: reading and writing shared storage you point it at;
+- install packages: handing an APK to the Android installer for self-update/APK install (Android confirms);
+- network, notifications, foreground service, wake lock: downloads, long-running commands, and their results.
+
 ## Project structure
 
 - `:composeApp` — Android application entry points, activities/services, API transport, resources, build/signing/packaging.
 - `:shared` — Compose UI, terminal routing, shell/TUI/completion adapters, package management, lifecycle/isolation/authority, managers and integrations.
 - `:terminal-emulator` — vendored terminal emulator and PTY support.
-- `:termux-shared` — vendored Termux-compatible Android support library.
 
 Key runtime files include:
 
@@ -135,9 +148,9 @@ Key runtime files include:
 Authoritative toolchain values live in Gradle/version files. At this documentation pass the repository uses:
 
 - JDK 21
-- AGP 9.4.0
-- Kotlin 2.4.20
-- Compose Multiplatform 1.12.0
+- AGP 9.4.1
+- Kotlin 2.4.21
+- Compose Multiplatform 1.12.1
 - `compileSdk` / `targetSdk` 37
 - `minSdk` 24
 - NDK `29.0.14206865`
@@ -145,6 +158,10 @@ Authoritative toolchain values live in Gradle/version files. At this documentati
 ```bash
 ./gradlew assembleDebug
 ```
+
+The bundled Termux-derived binaries and native launchers are `arm64-v8a` only, and the app is restricted to that ABI (`abiFilters`), so it will not install on 32-bit or x86 devices. Provenance, licences and the source offer for `composeApp/src/main/jniLibs` are in its `NOTICE.md`, with checksums in `SHA256SUMS`.
+
+`version.properties` is bumped only on CI or when `-PautoIncrement` is passed. Pull requests run `.github/workflows/ci.yml` (unit tests and detekt).
 
 CI success proves compilation/tests/static gates represented in the workflow. Android runtime compatibility still requires real-device confirmation for cases that depend on Android linker, ICU, package execution, permissions, ADB, root, or PRoot behavior.
 

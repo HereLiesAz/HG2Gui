@@ -1,6 +1,6 @@
 # Privacy Policy
 
-Last updated: 2026-08-04
+Last updated: 2026-10-16
 
 Thank you for using HG2Gui ("the Project"). This Privacy Policy explains what information the Project may collect, how that information may be used, and the choices you have about the collection and use of your information.
 
@@ -39,9 +39,25 @@ None of these happen passively or in the background without you taking the corre
 - Termux bootstrap download: on first launch (or when you run `bootstrap` by hand), the app downloads the real Termux bootstrap archive from GitHub Releases (`github.com/termux/termux-packages`) to give you a real shell.
 - Package management: `apt`/`apt-get`/`pkg` talk to Termux's own package mirror (`packages-cf.termux.dev`) exactly as they would in the official Termux app, whenever you run an update/install/search yourself.
 - The Store (azphalt.store): the **Store** pill's search and install actions talk to the `azphalt.store` package registry. Nothing here runs without an explicit search or install tap.
-- AI chat: only if you've set an API key in Settings → AI SETTINGS, the **AI** pill's chat sends your typed question to the Anthropic API to get a suggested command. No key, no requests. The key itself is stored locally on-device (unencrypted `SharedPreferences`, same as every other local setting here) and is never sent anywhere but Anthropic's API.
+- AI chat: only if you've set an API key in Settings → AI SETTINGS, the **AI** pill's chat sends your typed question to the Anthropic API to get a suggested command. No key, no requests. The key itself is stored locally on-device in encrypted storage (`EncryptedSharedPreferences`, backed by the Android Keystore; a key saved by an older version in plain `SharedPreferences` is moved into it once and the plain copy deleted) and is never sent anywhere but Anthropic's API.
+- Isolation audit "Ask AI": with the same API key set, **Settings → Isolation audit → ASK AI · SEND SUMMARY** sends a text summary of that one isolated package's latest run to the Anthropic API for interpretation: package name, manager and version, the sandbox file paths created/modified/deleted, and the observed process, open-file, network and authority-attempt telemetry. The sandbox's real on-device path is replaced by a placeholder. It happens only when you tap that button, per package.
 - MCP server: if you start it from Settings → MCP SERVER, it listens on `127.0.0.1` only (loopback) — it never accepts a connection from the network, only from this same device.
 - Any other shell command you run (`curl`, `wget`, `ssh`, `git`, …) talks to whatever you point it at, exactly like it would in a real terminal — the app itself isn't a party to that traffic.
+
+5b. Android Permissions
+
+HG2Gui declares the permissions below. None is used to collect data for the maintainers. Runtime ("dangerous") permissions are requested only when you run a command or open a feature that needs them, and you can revoke them in Android Settings at any time.
+
+- Location (`ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION`): lets commands and packages that query location or Wi-Fi/network details work, as in a real Termux environment. Not read in the background.
+- Contacts (`READ_CONTACTS`, `WRITE_CONTACTS`): for the contact built-ins that look up, add or edit contacts when you ask.
+- Phone (`CALL_PHONE`, `READ_PHONE_STATE`): `call` places a call only when you run it; phone state lets device-information commands report telephony details.
+- Camera (`CAMERA`): the torch/flashlight built-in and commands that use the camera. No photos or video are taken or sent by the app itself.
+- Bluetooth (`BLUETOOTH_CONNECT`): the Bluetooth control built-in.
+- Modify system settings (`WRITE_SETTINGS`): brightness and similar system-setting built-ins; you grant it on a dedicated Android screen.
+- All files access (`MANAGE_EXTERNAL_STORAGE`, plus legacy `READ_EXTERNAL_STORAGE`/`WRITE_EXTERNAL_STORAGE` on older Android): a terminal and file manager must read and write the files you point it at in shared storage.
+- Install packages (`REQUEST_INSTALL_PACKAGES`): lets HG2Gui hand an APK to the Android installer when you choose to update the app or install an APK; Android still asks you to confirm.
+- Network (`INTERNET`, `ACCESS_NETWORK_STATE`, `CHANGE_NETWORK_STATE`): the requests listed in section 5a and network-state built-ins.
+- Notifications, foreground service, wake lock, vibrate (`POST_NOTIFICATIONS`, `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_SPECIAL_USE`, `WAKE_LOCK`, `VIBRATE`): keep long commands running and report their results.
 
 6. Sharing Data (User Actions)
 
