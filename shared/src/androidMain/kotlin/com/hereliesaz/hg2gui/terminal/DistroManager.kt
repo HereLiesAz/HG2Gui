@@ -32,6 +32,15 @@ object DistroManager {
     // Bumping this to a new release means regenerating BootstrapManifest.kt and jniLibs/arm64-v8a/
     // from that release's own bootstrap-aarch64.zip at the same time, not on its own.
     private const val BOOTSTRAP_RELEASE_TAG = "bootstrap-2026.08.16-r1+apt.android-7"
+    // SHA-256 pins (lowercase hex) of each ABI's bootstrap-<arch>.zip at BOOTSTRAP_RELEASE_TAG,
+    // keyed by bootstrapArch(). Verified after download whenever a pin is present; an absent pin
+    // only logs/emits a loud warning (the archive is then trusted on TLS + GitHub alone).
+    // TODO: fill these in from the release's published checksums - they were not knowable when
+    // this check was added, and inventing values would just brick every bootstrap. Bump them
+    // together with BOOTSTRAP_RELEASE_TAG.
+    private val BOOTSTRAP_SHA256: Map<String, String> = mapOf(
+        // "aarch64" to "<sha256 of bootstrap-aarch64.zip>",
+    )
     private const val BOOTSTRAP_BASE_URL =
         "https://github.com/termux/termux-packages/releases/download/$BOOTSTRAP_RELEASE_TAG"
     private const val BOOTSTRAP_FILE = "bootstrap.zip"
@@ -111,6 +120,7 @@ object DistroManager {
 
         try {
             val request = Request.Builder().url(url).build()
+            val digest = java.security.MessageDigest.getInstance("SHA-256")
             client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) throw Exception("Download failed: HTTP ${response.code}")
 
@@ -119,7 +129,7 @@ object DistroManager {
                 var downloadedBytes = 0L
 
                 body.byteStream().use { input ->
-                    FileOutputStream(destFile).use { output ->
+                    java.security.DigestOutputStream(FileOutputStream(destFile), digest).use { output ->
                         val buffer = ByteArray(8192)
                         var bytesRead: Int
                         while (input.read(buffer).also { bytesRead = it } != -1) {
@@ -133,6 +143,15 @@ object DistroManager {
                         }
                     }
                 }
+            }
+
+            val actualSha256 = digest.digest().joinToString("") { "%02x".format(it) }
+            val pinnedSha256 = BOOTSTRAP_SHA256[arch]
+            if (pinnedSha256 == null) {
+                android.util.Log.w("hg2gui", "No SHA-256 pin for bootstrap-$arch.zip; got $actualSha256 - integrity NOT verified")
+                emit("WARNING: no integrity pin for bootstrap-$arch.zip (sha256 $actualSha256) - not verified.")
+            } else if (!pinnedSha256.equals(actualSha256, ignoreCase = true)) {
+                throw IOException("bootstrap-$arch.zip SHA-256 mismatch: expected $pinnedSha256, got $actualSha256")
             }
 
             emit("Download complete. Extracting...")
@@ -171,6 +190,17 @@ object DistroManager {
      */
     private fun extractBootstrap(zipFile: File, prefix: File, nativeLibraryDir: String) {
         prefix.mkdirs()
+        val prefixCanonical = prefix.canonicalFile
+        // Zip-slip containment, mirroring AzpInstaller: any entry (or SYMLINKS.txt link path)
+        // that canonicalizes outside the prefix aborts the whole bootstrap - bootstrap()'s catch
+        // then wipes the partial prefix.
+        fun contained(name: String): File {
+            val target = File(prefix, name).canonicalFile
+            if (target != prefixCanonical && !target.path.startsWith(prefixCanonical.path + File.separator)) {
+                throw IOException("path traversal in bootstrap entry: $name")
+            }
+            return target
+        }
         val symlinksText = StringBuilder()
         val manifest = BootstrapManifest.ENTRIES.toMap()
 
@@ -182,15 +212,15 @@ object DistroManager {
                         symlinksText.append(zis.bufferedReader(Charsets.UTF_8).readText())
                     }
                     entry.isDirectory -> {
-                        File(prefix, entry.name).mkdirs()
+                        contained(entry.name).mkdirs()
                     }
                     entry.name in manifest -> {
                         // Still needs its own directory to exist, for whatever else in this same
                         // directory isn't manifest-covered - just not this file's own content.
-                        File(prefix, entry.name).parentFile?.mkdirs()
+                        contained(entry.name).parentFile?.mkdirs()
                     }
                     else -> {
-                        val outFile = File(prefix, entry.name)
+                        val outFile = contained(entry.name)
                         outFile.parentFile?.mkdirs()
                         outFile.outputStream().buffered().use { out -> zis.copyTo(out) }
                         rewriteShebangIfNeeded(outFile, prefix)
@@ -218,6 +248,16 @@ object DistroManager {
             }
             val linkPath = line.substring(separatorIndex + SYMLINK_SEPARATOR.length)
             val linkFile = File(prefix, linkPath)
+            // The link itself may already exist (stale from a failed attempt), so canonicalize its
+            // parent rather than the link - that check is what matters for where it gets created.
+            val linkName = linkFile.name
+            if (linkName.isEmpty() || linkName == "." || linkName == "..") {
+                throw IOException("invalid symlink path in $SYMLINKS_ENTRY: $linkPath")
+            }
+            val linkParent = (linkFile.parentFile ?: prefix).canonicalFile
+            if (linkParent != prefixCanonical && !linkParent.path.startsWith(prefixCanonical.path + File.separator)) {
+                throw IOException("path traversal in $SYMLINKS_ENTRY link path: $linkPath")
+            }
             linkFile.parentFile?.mkdirs()
             // unlink()s the path itself rather than whatever it points to - a no-op if nothing
             // was there yet, and clears a stale symlink left by a prior failed bootstrap attempt.
