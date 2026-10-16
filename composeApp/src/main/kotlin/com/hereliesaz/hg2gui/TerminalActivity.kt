@@ -328,6 +328,7 @@ class TerminalActivity : FragmentActivity() {
                     // remaining can be empty when the last session is closed; guard against crash.
                     activeSessionId = remaining.firstOrNull()?.ui?.id ?: closing.ui.id
                 }
+                closing.ui.destroy()
                 closing.engine.destroy()
             }
             val scope = rememberCoroutineScope()
@@ -1305,7 +1306,10 @@ class TerminalActivity : FragmentActivity() {
     }
 
     override fun onDestroy() {
-        sessions.forEach { it.engine.destroy() }
+        sessions.forEach {
+            it.ui.destroy()
+            it.engine.destroy()
+        }
         Builtins.destroy(this)
         super.onDestroy()
     }
