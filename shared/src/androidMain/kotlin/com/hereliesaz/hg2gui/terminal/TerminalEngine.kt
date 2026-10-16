@@ -2,6 +2,7 @@ package com.hereliesaz.hg2gui.terminal
 
 import android.content.Context
 import com.hereliesaz.hg2gui.managers.StyledSpan
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -50,7 +51,7 @@ class TerminalEngine(
 
         when {
             verb == "bootstrap" -> launch(Dispatchers.IO) {
-                DistroManager.bootstrap(context, client).collect { trySend(it) }
+                DistroManager.bootstrap(context, client).collect { send(it) }
                 val old = shell
                 shell = ShellSession.forAndroid(home, context)
                 pendingBackendNotice = shell.fallbackNoticeOrNull()
@@ -61,10 +62,10 @@ class TerminalEngine(
 
             verb == "download" || verb == "hg2download" -> launch(Dispatchers.IO) {
                 try {
-                    downloader.run(trimmed).collect { trySend(it) }
+                    downloader.run(trimmed).collect { send(it) }
                     onExit(0)
                 } catch (e: Exception) {
-                    trySend("HG2Gui download error: ${e.message ?: e.javaClass.simpleName}")
+                    send("HG2Gui download error: ${e.message ?: e.javaClass.simpleName}")
                     onExit(-1)
                 } finally {
                     close()
@@ -73,7 +74,7 @@ class TerminalEngine(
 
             verb == "remote" -> launch(Dispatchers.IO) {
                 val output = RemoteDiscovery.run(context, shellWords(trimmed).drop(1))
-                trySend(output)
+                send(output)
                 onExit(if (output.startsWith("Remote discovery failed") || output.startsWith("No SSH preset") || output.startsWith("SSH client is unavailable")) 1 else 0)
                 close()
             }
@@ -82,13 +83,13 @@ class TerminalEngine(
                 val code = try {
                     runAuthority(
                         line = trimmed,
-                        emit = { trySend(it) },
+                        emit = { send(it) },
                         onNeedInput = onNeedInput,
                         onStderr = onStderr,
                         onStyledOutput = onStyledOutput
                     )
                 } catch (e: Exception) {
-                    trySend("HG2Gui authority error: ${e.message ?: e.javaClass.simpleName}")
+                    send("HG2Gui authority error: ${e.message ?: e.javaClass.simpleName}")
                     -1
                 }
                 onExit(code)
@@ -99,13 +100,13 @@ class TerminalEngine(
                 val code = try {
                     runPackageLifecycle(
                         line = trimmed,
-                        emit = { trySend(it) },
+                        emit = { send(it) },
                         onNeedInput = onNeedInput,
                         onStderr = onStderr,
                         onStyledOutput = onStyledOutput
                     )
                 } catch (e: Exception) {
-                    trySend("HG2Gui package lifecycle error: ${e.message ?: e.javaClass.simpleName}")
+                    send("HG2Gui package lifecycle error: ${e.message ?: e.javaClass.simpleName}")
                     -1
                 }
                 onExit(code)
@@ -113,7 +114,7 @@ class TerminalEngine(
             }
 
             packageOwner?.disabled == true -> launch(Dispatchers.IO) {
-                trySend(
+                send(
                     "${packageOwner.name} is installed but disabled in HG2Gui. " +
                         "Enable it under Packages → ${packageOwner.managerLabel} → ${packageOwner.name}."
                 )
@@ -124,10 +125,10 @@ class TerminalEngine(
             verb == "pkg" || verb == "hg2pkg" || aptPackageCommand != null -> launch(Dispatchers.IO) {
                 val packageLine = aptPackageCommand ?: trimmed
                 try {
-                    packages.run(packageLine).collect { trySend(it) }
+                    packages.run(packageLine).collect { send(it) }
                     onExit(0)
                 } catch (e: Exception) {
-                    trySend("HG2Gui package error: ${e.message ?: e.javaClass.simpleName}")
+                    send("HG2Gui package error: ${e.message ?: e.javaClass.simpleName}")
                     onExit(-1)
                 } finally {
                     close()
@@ -140,18 +141,18 @@ class TerminalEngine(
                 val target = shellWords(trimmed).getOrNull(2)
                 val code = try {
                     if (target == null) {
-                        trySend("Usage: vfs mount <real-path>")
+                        send("Usage: vfs mount <real-path>")
                         1
                     } else {
                         val command = Builtins.vfsMountCommand(context, target)
                         val answer = onNeedInput("Run as root? $command [y/N]")
                         if (!answer.isYes()) {
-                            trySend("vfs mount cancelled.")
+                            send("vfs mount cancelled.")
                             0
                         } else {
                             runRawAuthorityCommand(
                                 ExecutionAuthority.rootCommand(context, command),
-                                { trySend(it) },
+                                { send(it) },
                                 onNeedInput,
                                 onStderr,
                                 onStyledOutput
@@ -159,7 +160,7 @@ class TerminalEngine(
                         }
                     }
                 } catch (e: Exception) {
-                    trySend("HG2Gui authority error: ${e.message ?: e.javaClass.simpleName}")
+                    send("HG2Gui authority error: ${e.message ?: e.javaClass.simpleName}")
                     -1
                 }
                 onExit(code)
@@ -176,26 +177,36 @@ class TerminalEngine(
                 val notice = pendingBackendNotice
                 pendingBackendNotice = null
                 val emitWithNotice: suspend (String) -> Unit = { output ->
-                    trySend(if (notice != null) "$notice\n$output" else output)
+                    send(if (notice != null) "$notice\n$output" else output)
                 }
-                val exitCode = if (packageOwner != null) {
-                    runOwnedPackage(
-                        packageOwner,
-                        verb,
-                        trimmed,
-                        emit = emitWithNotice,
-                        onNeedInput = onNeedInput,
-                        onStderr = onStderr,
-                        onStyledOutput = onStyledOutput
-                    )
-                } else {
-                    shell.stream(
-                        trimmed,
-                        onLine = { output -> runBlocking { emitWithNotice(output) } },
-                        onNeedInput = { prompt -> runBlocking { onNeedInput(prompt) } },
-                        onStderrLine = onStderr,
-                        onStyledLine = onStyledOutput
-                    )
+                // Same contract as the other branches: an exception never skips onExit/close,
+                // or the caller's prompt would wait on a command that already died.
+                val exitCode = try {
+                    if (packageOwner != null) {
+                        runOwnedPackage(
+                            packageOwner,
+                            verb,
+                            trimmed,
+                            emit = emitWithNotice,
+                            onNeedInput = onNeedInput,
+                            onStderr = onStderr,
+                            onStyledOutput = onStyledOutput
+                        )
+                    } else {
+                        shell.stream(
+                            trimmed,
+                            onLine = { output -> runBlocking { emitWithNotice(output) } },
+                            onNeedInput = { prompt -> runBlocking { onNeedInput(prompt) } },
+                            onStderrLine = onStderr,
+                            onStyledLine = onStyledOutput
+                        )
+                    }
+                } catch (e: CancellationException) {
+                    onExit(null)
+                    throw e
+                } catch (e: Exception) {
+                    runCatching { send("HG2Gui shell error: ${e.message ?: e.javaClass.simpleName}") }
+                    -1
                 }
                 onExit(exitCode)
                 close()
