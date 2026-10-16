@@ -43,7 +43,9 @@ object AzpClient {
                 .build()
             val request = Request.Builder().url(url).get().build()
             http.newCall(request).execute().use { resp ->
-                if (!resp.isSuccessful) return@withContext AzpSearchResponse()
+                // Thrown rather than an empty response, so the store can say the search failed
+                // instead of showing "no packages" for an outage.
+                if (!resp.isSuccessful) throw java.io.IOException("store returned HTTP ${resp.code}")
                 val body = resp.body.string()
                 json.decodeFromString(AzpSearchResponse.serializer(), body)
             }

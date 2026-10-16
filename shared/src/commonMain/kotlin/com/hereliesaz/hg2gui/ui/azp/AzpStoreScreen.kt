@@ -2,6 +2,8 @@ package com.hereliesaz.hg2gui.ui.azp
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -26,6 +28,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import com.hereliesaz.hg2gui.ui.ConfirmDialog
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
 import com.hereliesaz.hg2gui.ui.menu.onPage
 import com.hereliesaz.hg2gui.ui.menu.pageBrush
@@ -72,9 +75,13 @@ fun AzpStoreScreen(
     onBack: () -> Unit,
     /** Removes an installed package (wrapper, files, record); null hides the REMOVE capsule. */
     onUninstall: ((AzpListing) -> Unit)? = null,
+    /** Last search failure, shown above the results; null when the last search succeeded. */
+    error: String? = null,
 ) {
     var query by remember { mutableStateOf("") }
     var kind by remember { mutableStateOf("all") }
+    // Removing deletes the package's files and PATH wrapper - one stray tap shouldn't do that.
+    var confirmRemove by remember { mutableStateOf<AzpListing?>(null) }
 
     Column(
         Modifier
@@ -103,7 +110,8 @@ fun AzpStoreScreen(
         Eyebrow("STORE")
 
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 6.dp),
+            // Scrolls rather than clipping the last kind chips on a narrow screen.
+            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 6.dp),
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             KINDS.forEach { k ->
@@ -176,15 +184,35 @@ fun AzpStoreScreen(
             }
         }
 
+        if (error != null) {
+            Text(
+                error,
+                color = Azphalt.currentGround.onPage.copy(alpha = .7f),
+                fontSize = 11.sp,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
+            )
+        }
+
         LazyColumn(
             modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 20.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
             contentPadding = PaddingValues(bottom = 12.dp)
         ) {
             items(results) { listing ->
-                AzpRow(listing, installingId == listing.id, onInstall, onUninstall)
+                AzpRow(listing, installingId == listing.id, onInstall, onUninstall?.let { { picked: AzpListing -> confirmRemove = picked } })
             }
         }
+    }
+
+    val removing = confirmRemove
+    if (removing != null && onUninstall != null) {
+        ConfirmDialog(
+            title = "REMOVE ${removing.name.uppercase()}?",
+            message = "This deletes the package's files and its command wrapper.",
+            confirmLabel = "REMOVE",
+            onConfirm = { confirmRemove = null; onUninstall(removing) },
+            onDismiss = { confirmRemove = null }
+        )
     }
 }
 
