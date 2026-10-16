@@ -64,7 +64,10 @@ class EditorActivity : ComponentActivity() {
         val path: String? = when {
             internalPath != null -> internalPath
             isContentUri -> null  // resolved below via contentResolver
-            else -> externalUri?.path
+            // Only a real file:// URI names a filesystem path - any other scheme's getPath()
+            // (http, a custom scheme) is not something to open as a local file.
+            externalUri?.scheme.equals("file", ignoreCase = true) -> externalUri?.path
+            else -> null
         }
 
         if (path == null && !isContentUri) {
@@ -82,9 +85,15 @@ class EditorActivity : ComponentActivity() {
         }
 
         val displayName = file?.name ?: externalUri?.lastPathSegment ?: "file"
+        // A file:// path from another app carries no grant of its own - this app (which may hold
+        // all-files storage access) would be reading/writing it on that app's behalf, a confused
+        // deputy. So an externally supplied file:// path only opens after the user explicitly
+        // confirms it here; content:// URIs instead carry the sender's own scoped grant.
+        val needsFileConsent = internalPath == null && file != null
 
         setContent {
             var content by remember { mutableStateOf<String?>(null) }
+            var fileConsent by remember { mutableStateOf(!needsFileConsent) }
             var error by remember { mutableStateOf<String?>(null) }
             var dirty by remember { mutableStateOf(false) }
             // SYS-2: dirty existed only to show/hide the Save pill - neither exit path ever
@@ -98,7 +107,8 @@ class EditorActivity : ComponentActivity() {
             val scope = rememberCoroutineScope()
             val resolver = contentResolver
 
-            LaunchedEffect(path, externalUri) {
+            LaunchedEffect(path, externalUri, fileConsent) {
+                if (!fileConsent) return@LaunchedEffect
                 val (loaded, loadError) = withContext(Dispatchers.IO) {
                     try {
                         val bytes: ByteArray = when {
@@ -141,7 +151,7 @@ class EditorActivity : ComponentActivity() {
                         scope.launch(Dispatchers.IO) {
                             try {
                                 when {
-                                    file != null -> file.writeText(current)
+                                    file != null && fileConsent -> file.writeText(current)
                                     externalUri != null -> {
                                         val writable = (intent.flags and Intent.FLAG_GRANT_WRITE_URI_PERMISSION) != 0
                                         if (!writable) {
@@ -170,6 +180,17 @@ class EditorActivity : ComponentActivity() {
                     },
                     onBack = { requestBack() }
                 )
+
+                if (!fileConsent) {
+                    ConfirmDialog(
+                        title = "OPEN FILE FROM ANOTHER APP?",
+                        message = "Another app asked HG2Gui to open ${file?.absolutePath}. " +
+                            "HG2Gui will read it and can save over it with its own storage access.",
+                        confirmLabel = "OPEN",
+                        onConfirm = { fileConsent = true },
+                        onDismiss = { finish() }
+                    )
+                }
 
                 if (confirmDiscard) {
                     ConfirmDialog(
