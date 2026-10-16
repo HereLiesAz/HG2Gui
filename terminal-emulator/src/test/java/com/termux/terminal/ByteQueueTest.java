@@ -28,6 +28,14 @@ public class ByteQueueTest extends TestCase {
 		assertArrayEquals(new byte[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, arr);
 	}
 
+	public void testZeroLengthWriteIsANoOp() throws Exception {
+		ByteQueue q = new ByteQueue(10);
+		assertTrue(q.write(new byte[0], 0, 0));
+		assertEquals(0, q.read(new byte[10], false));
+		q.close();
+		assertFalse(q.write(new byte[0], 0, 0));
+	}
+
 	public void testQueueWraparound() throws Exception {
 		ByteQueue q = new ByteQueue(10);
 

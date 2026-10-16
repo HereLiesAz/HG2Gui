@@ -351,7 +351,7 @@ actual class ShellSession private constructor(
 
                 if (System.currentTimeMillis() > deadline) {
                     val bytes = "\r\n[timed out after ${TIMEOUT_MS / 1000}s]".toByteArray()
-                    emulator.append(bytes, bytes.size)
+                    safeAppend(emulator, bytes)
                     onLine(emulator.transcriptText())
                     if (generation.get() == myGeneration) {
                         alive.set(false)
@@ -475,6 +475,15 @@ actual class ShellSession private constructor(
         return true
     }
 
+    /** Feeds [bytes] to [emulator]; a parser failure on odd output drops that chunk, not the session. */
+    private fun safeAppend(emulator: TerminalEmulator, bytes: ByteArray) {
+        try {
+            emulator.append(bytes, bytes.size)
+        } catch (e: Exception) {
+            android.util.Log.w("ShellSession", "Emulator failed on a chunk of output", e)
+        }
+    }
+
     private fun flush(
         pending: StringBuilder,
         from: Int,
@@ -489,7 +498,7 @@ actual class ShellSession private constructor(
         if (end <= from) return from
         val chunk = pending.substring(from, end)
         val bytes = chunk.replace("\r\n", "\n").replace("\n", "\r\n").toByteArray(Charsets.UTF_8)
-        emulator.append(bytes, bytes.size)
+        safeAppend(emulator, bytes)
         onLine(emulator.transcriptText())
         return end
     }

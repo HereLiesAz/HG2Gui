@@ -1567,24 +1567,17 @@ class TerminalEmulator(
                     mColors.reset()
                     mSession.onColorsChanged()
                 } else {
-                    var lastIndex = 0
-                    var charIndex = 0
-                    while (true) {
-                        val endOfInput = charIndex == textParameter.length
-                        if (endOfInput || textParameter[charIndex] == ';') {
-                            try {
-                                val colorToReset = Integer.parseInt(textParameter.substring(lastIndex, charIndex))
-                                mColors.reset(colorToReset)
-                                mSession.onColorsChanged()
-                                if (endOfInput) break
-                                charIndex++
-                                lastIndex = charIndex
-                            } catch (e: NumberFormatException) {
-                                // Ignore.
-                            }
-                        }
-                        charIndex++
+                    // Each ';'-separated field is a palette index; malformed or out-of-range ones are
+                    // skipped. (The old hand-rolled scan never terminated its loop on a bad final
+                    // field and then indexed past the end of the string.)
+                    var changed = false
+                    for (field in textParameter.split(';')) {
+                        val colorToReset = field.toIntOrNull() ?: continue
+                        if (colorToReset !in 0 until TextStyle.NUM_INDEXED_COLORS) continue
+                        mColors.reset(colorToReset)
+                        changed = true
                     }
+                    if (changed) mSession.onColorsChanged()
                 }
             }
             110, 111, 112 -> {
@@ -1953,6 +1946,15 @@ class TerminalEmulator(
         // XXX: Should we set terminal driver back to IUTF8 with termios?
         mUtf8Index = 0
         mUtf8ToFollow = 0
+
+        // RIS also drops SGR attributes and returns to the main screen.
+        mEffect = 0
+        mUnderlineColor = TextStyle.COLOR_INDEX_FOREGROUND
+        if (mScreen !== mMainBuffer) {
+            val resized = !(mMainBuffer.mColumns == mColumns && mMainBuffer.mScreenRows == mRows)
+            mScreen = mMainBuffer
+            if (resized) resizeScreen()
+        }
 
         mColors.reset()
         mSession.onColorsChanged()
