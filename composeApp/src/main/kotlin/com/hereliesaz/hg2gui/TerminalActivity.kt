@@ -26,6 +26,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -51,6 +52,7 @@ import com.hereliesaz.hg2gui.azp.AzpTrust
 import com.hereliesaz.hg2gui.azp.ScriptInstaller
 import com.hereliesaz.hg2gui.managers.AiSettings
 import com.hereliesaz.hg2gui.managers.AzpLibrary
+import com.hereliesaz.hg2gui.managers.CommandHistoryEntry
 import com.hereliesaz.hg2gui.managers.CommandHistoryStore
 import com.hereliesaz.hg2gui.managers.ContactManager
 import com.hereliesaz.hg2gui.managers.OsContextStore
@@ -310,6 +312,7 @@ class TerminalActivity : FragmentActivity() {
             var aiBusy by remember { mutableStateOf(false) }
             var azpResults by remember { mutableStateOf<List<AzpListing>>(emptyList()) }
             var azpBusy by remember { mutableStateOf(false) }
+            var azpError by remember { mutableStateOf<String?>(null) }
             // Cancelled before every new search starts (see onSearch below) so a stale response
             // from an earlier query/kind can never land after a newer one and silently overwrite
             // it - AzpStoreScreen already gates its own kind chips/search field on !azpBusy, but
@@ -652,27 +655,48 @@ class TerminalActivity : FragmentActivity() {
                     )
 
                     screen == Screen.Environment -> {
-                        val bootstrap = ShellSession.bootstrapBashEnv(this@TerminalActivity, null)
-                        EnvironmentScreen(
-                            installed = bootstrap != null,
-                            env = bootstrap?.second.orEmpty(),
-                            onBack = { screen = Screen.Settings },
-                            fullscreen = fullscreen
-                        )
+                        // Both reads hit disk (bootstrapBashEnv probes the prefix, the history
+                        // search reads and parses the whole log) - run on IO, never in composition.
+                        // null = still loading, so a slow probe doesn't flash "not installed".
+                        val bootstrap by produceState<Pair<Boolean, Map<String, String>>?>(null) {
+                            value = withContext(Dispatchers.IO) {
+                                ShellSession.bootstrapBashEnv(this@TerminalActivity, null)
+                                    .let { (it != null) to it?.second.orEmpty() }
+                            }
+                        }
+                        bootstrap?.let { (installed, env) ->
+                            EnvironmentScreen(
+                                installed = installed,
+                                env = env,
+                                onBack = { screen = Screen.Settings },
+                                fullscreen = fullscreen
+                            )
+                        }
                     }
 
-                    screen == Screen.History -> HistoryScreen(
-                        entries = CommandHistoryStore.search(this@TerminalActivity, historyQuery),
-                        query = historyQuery,
-                        onQueryChange = { historyQuery = it },
-                        onSelect = { command ->
-                            sessions.firstOrNull { it.ui.id == activeSessionId }?.ui?.inputText = command
-                            screen = Screen.Terminal
-                        },
-                        onBack = { screen = Screen.Settings },
-                        fullscreen = fullscreen,
-                        nowMillis = System.currentTimeMillis()
-                    )
+                    screen == Screen.History -> {
+                        val historyEntries by produceState(emptyList<CommandHistoryEntry>(), historyQuery) {
+                            value = withContext(Dispatchers.IO) { CommandHistoryStore.search(this@TerminalActivity, historyQuery) }
+                        }
+                        HistoryScreen(
+                            entries = historyEntries,
+                            query = historyQuery,
+                            onQueryChange = { historyQuery = it },
+                            onSelect = { command ->
+                                // The picked line replaces the whole input - pills already in the
+                                // trail or a half-built chain would otherwise prefix it.
+                                sessions.firstOrNull { it.ui.id == activeSessionId }?.ui?.let { ui ->
+                                    ui.tokens = emptyList()
+                                    ui.composedPrefix = ""
+                                    ui.inputText = command
+                                }
+                                screen = Screen.Terminal
+                            },
+                            onBack = { screen = Screen.Settings },
+                            fullscreen = fullscreen,
+                            nowMillis = System.currentTimeMillis()
+                        )
+                    }
 
                     screen == Screen.AiSettings -> AiSettingsScreen(
                         fullscreen = fullscreen,
@@ -710,11 +734,20 @@ class TerminalActivity : FragmentActivity() {
                                     )
                                     aiBusy = false
                                 }
+                            } else {
+                                // Used to be a silent no-op - the question just vanished.
+                                aiMessages = aiMessages + AiMessage(fromUser = true, text = question) + AiMessage(
+                                    fromUser = false,
+                                    text = if (key.isNullOrBlank()) "No API key is set - add one in AI settings first."
+                                    else "No terminal session is open to ask about.",
+                                    command = null
+                                )
                             }
                         },
                         onUseCommand = { command ->
                             sessions.firstOrNull { it.ui.id == activeSessionId }?.let { session ->
                                 session.ui.tokens = emptyList()
+                                session.ui.composedPrefix = ""
                                 session.ui.inputText = command
                             }
                             screen = Screen.Terminal
@@ -727,14 +760,18 @@ class TerminalActivity : FragmentActivity() {
                         fullscreen = fullscreen,
                         results = azpResults,
                         busy = azpBusy,
+                        error = azpError,
                         installingId = azpInstallingId,
                         onSearch = { query, kind ->
                             azpBusy = true
                             azpSearchJob?.cancel()
                             azpSearchJob = scope.launch {
                                 val response = try {
-                                    AzpClient.search(query, kind.takeUnless { it == "all" })
+                                    AzpClient.search(query, kind.takeUnless { it == "all" }).also { azpError = null }
+                                } catch (e: kotlinx.coroutines.CancellationException) {
+                                    throw e
                                 } catch (e: Exception) {
+                                    azpError = "Search failed: ${e.message ?: "couldn't reach the store"}"
                                     null
                                 }
                                 val installed = withContext(Dispatchers.IO) {
@@ -859,10 +896,18 @@ class TerminalActivity : FragmentActivity() {
                     screen == Screen.Guide -> CommandGuideScreen(
                         tree = currentTree.orEmpty(),
                         fullscreen = fullscreen,
-                        onCommandSelected = { tokens ->
-                            sessions.firstOrNull { it.ui.id == activeSessionId }?.let { session ->
-                                session.ui.tokens = tokens
-                                session.ui.inputText = ""
+                        onCommandSelected = { tokens, complete ->
+                            // Opening a root pill reports an empty trail - that is browsing, not
+                            // a pick, and must not wipe whatever the user had already typed.
+                            if (tokens.isNotEmpty()) {
+                                sessions.firstOrNull { it.ui.id == activeSessionId }?.let { session ->
+                                    session.ui.tokens = tokens
+                                    session.ui.composedPrefix = ""
+                                    session.ui.inputText = ""
+                                }
+                                // A finished command goes straight back to the terminal, where
+                                // it now sits in the input for review.
+                                if (complete) screen = Screen.Terminal
                             }
                         },
                         onBack = { screen = Screen.Terminal },
@@ -907,7 +952,8 @@ class TerminalActivity : FragmentActivity() {
                             if (sessions.size > 1) {
                                 val closing = sessions.firstOrNull { it.ui.id == id }
                                 if (closing != null) {
-                                    if (closing.ui.running) {
+                                    // An idle session with output still loses that scrollback.
+                                    if (closing.ui.running || closing.ui.buffer.isNotEmpty()) {
                                         closeSessionConfirm = closing
                                     } else {
                                         closeSession(closing)
@@ -1072,7 +1118,8 @@ class TerminalActivity : FragmentActivity() {
                 closeSessionConfirm?.let { closing ->
                     ConfirmDialog(
                         title = "CLOSE ${closing.ui.name}?",
-                        message = "A command is still running in this session - closing it now kills that process.",
+                        message = if (closing.ui.running) "A command is still running in this session - closing it now kills that process."
+                            else "This session's output will be lost.",
                         confirmLabel = "CLOSE",
                         onConfirm = { closeSession(closing); closeSessionConfirm = null },
                         onDismiss = { closeSessionConfirm = null }
