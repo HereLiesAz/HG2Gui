@@ -134,6 +134,38 @@ class TerminalEngine(
                 }
             }
 
+            // `vfs mount` needs root: route it through the same explicit confirmation and
+            // ExecutionAuthority su backend as `hg2auth root shell`, never a silent su call.
+            verb == "vfs" && shellWords(trimmed).getOrNull(1) == "mount" -> launch(Dispatchers.IO) {
+                val target = shellWords(trimmed).getOrNull(2)
+                val code = try {
+                    if (target == null) {
+                        trySend("Usage: vfs mount <real-path>")
+                        1
+                    } else {
+                        val command = Builtins.vfsMountCommand(context, target)
+                        val answer = onNeedInput("Run as root? $command [y/N]")
+                        if (!answer.isYes()) {
+                            trySend("vfs mount cancelled.")
+                            0
+                        } else {
+                            runRawAuthorityCommand(
+                                ExecutionAuthority.rootCommand(context, command),
+                                { trySend(it) },
+                                onNeedInput,
+                                onStderr,
+                                onStyledOutput
+                            )
+                        }
+                    }
+                } catch (e: Exception) {
+                    trySend("HG2Gui authority error: ${e.message ?: e.javaClass.simpleName}")
+                    -1
+                }
+                onExit(code)
+                close()
+            }
+
             verb in Builtins.NAMES -> launch(Dispatchers.IO) {
                 send(Builtins.run(context, trimmed))
                 onExit(null)

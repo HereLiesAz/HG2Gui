@@ -22,7 +22,6 @@ import com.hereliesaz.hg2gui.managers.ContactManager
 import com.hereliesaz.hg2gui.managers.VfsManager
 import com.hereliesaz.hg2gui.managers.flashlight.TorchManager
 import com.hereliesaz.hg2gui.util.CalculationEngine
-import com.hereliesaz.hg2gui.util.libsuperuser.Shell
 import java.io.File
 
 /**
@@ -373,14 +372,25 @@ object Builtins {
         }
     }
 
+    // Reached only when Builtins.run is called directly (no interactive prompt available) -
+    // TerminalEngine intercepts `vfs mount` first and runs [vfsMountCommand] through the same
+    // hg2auth root confirmation + ExecutionAuthority path as `hg2auth root shell`. Running su here
+    // silently, with the target spliced unquoted into the command, was a root shell injection.
     private fun vfsMount(context: Context, target: String?): String {
-        if (!Shell.SU.available()) return "Root not available — vfs mount requires a rooted device (su)."
         if (target == null) return "Usage: vfs mount <real-path>"
-        val root = VfsManager.init(context)
-        val result = Shell.SU.run("mkdir -p '$target' && mount --bind '${root.absolutePath}' '$target'")
-        return if (result != null) "Mounted ${root.absolutePath} at $target"
-        else "Mount failed — check that su granted access and the target path is valid."
+        return "vfs mount needs an interactive root confirmation - run it from a terminal tab, " +
+            "or use: hg2auth root shell ${vfsMountCommand(context, target)}"
     }
+
+    /** The root command `vfs mount <target>` runs: bind-mounts the vfs root at [target], with
+     *  every interpolated value single-quoted so a target like `x'; rm -rf / #` stays one literal
+     *  path argument. */
+    fun vfsMountCommand(context: Context, target: String): String {
+        val root = VfsManager.init(context)
+        return "mkdir -p -- ${shellQuote(target)} && mount --bind -- ${shellQuote(root.absolutePath)} ${shellQuote(target)}"
+    }
+
+    private fun shellQuote(value: String): String = "'${value.replace("'", "'\\''")}'"
 
     /** `edit`'s argument is a real filesystem path (from the Shell/file… picker, or the Files
      *  screen's own [VfsManager]-resolved absolute path) - not a name relative to the VFS
