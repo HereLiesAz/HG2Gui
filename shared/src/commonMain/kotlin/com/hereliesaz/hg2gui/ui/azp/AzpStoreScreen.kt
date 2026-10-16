@@ -70,6 +70,8 @@ fun AzpStoreScreen(
     onSearch: (query: String, kind: String) -> Unit,
     onInstall: (AzpListing) -> Unit,
     onBack: () -> Unit,
+    /** Removes an installed package (wrapper, files, record); null hides the REMOVE capsule. */
+    onUninstall: ((AzpListing) -> Unit)? = null,
 ) {
     var query by remember { mutableStateOf("") }
     var kind by remember { mutableStateOf("all") }
@@ -180,14 +182,19 @@ fun AzpStoreScreen(
             contentPadding = PaddingValues(bottom = 12.dp)
         ) {
             items(results) { listing ->
-                AzpRow(listing, installingId == listing.id, onInstall)
+                AzpRow(listing, installingId == listing.id, onInstall, onUninstall)
             }
         }
     }
 }
 
 @Composable
-private fun AzpRow(listing: AzpListing, installing: Boolean, onInstall: (AzpListing) -> Unit) {
+private fun AzpRow(
+    listing: AzpListing,
+    installing: Boolean,
+    onInstall: (AzpListing) -> Unit,
+    onUninstall: ((AzpListing) -> Unit)?
+) {
     Row(
         Modifier
             .fillMaxWidth()
@@ -252,6 +259,22 @@ private fun AzpRow(listing: AzpListing, installing: Boolean, onInstall: (AzpList
             }
         }
         Spacer(Modifier.width(10.dp))
+        if (listing.installed && onUninstall != null) {
+            Box(
+                Modifier
+                    .clip(RoundedCornerShape(percent = 50))
+                    .background(Azphalt.Ink)
+                    .clickable(enabled = !installing) { onUninstall(listing) }
+                    .padding(horizontal = 12.dp, vertical = 7.dp)
+            ) {
+                Text(
+                    "REMOVE",
+                    color = Azphalt.Yellow,
+                    fontSize = 8.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em
+                )
+            }
+            Spacer(Modifier.width(6.dp))
+        }
         Box(
             Modifier
                 .clip(RoundedCornerShape(percent = 50))

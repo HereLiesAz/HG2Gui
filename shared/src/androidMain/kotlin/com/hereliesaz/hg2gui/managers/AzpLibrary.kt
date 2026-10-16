@@ -53,8 +53,10 @@ object AzpLibrary {
         skillIds: List<String>,
         trust: AzpTrust = AzpTrust.UNSIGNED,
         /** For `kind:"script"` only - the name it's callable as on PATH once [ScriptInstaller]
-         *  has written its wrapper, so the store row can show it. Blank if installation didn't
-         *  reach that point (e.g. no Termux bootstrap yet - see [ScriptInstaller.Result]). */
+         *  has written its wrapper, so the store row can show it. Null if installation didn't
+         *  reach that point (e.g. no Termux bootstrap yet - see [ScriptInstaller.Result]); a
+         *  reinstall that stops short keeps the previously stored command, since that earlier
+         *  wrapper is still on PATH. A non-script kind clears it. */
         scriptCommand: String? = null,
     ) {
         val p = prefs(context)
@@ -66,7 +68,10 @@ object AzpLibrary {
             putString("$id.kind", kind)
             putString("$id.skillIds", skillIds.joinToString(","))
             putString("$id.trust", trust.name)
-            if (scriptCommand != null) putString("$id.scriptCommand", scriptCommand) else remove("$id.scriptCommand")
+            when {
+                scriptCommand != null -> putString("$id.scriptCommand", scriptCommand)
+                kind != "script" -> remove("$id.scriptCommand")
+            }
         }
     }
 

@@ -812,7 +812,19 @@ class TerminalActivity : FragmentActivity() {
                                 azpInstallingId = null
                             }
                         },
-                        onBack = { screen = Screen.Terminal }
+                        onBack = { screen = Screen.Terminal },
+                        onUninstall = { listing ->
+                            azpInstallingId = listing.id
+                            scope.launch {
+                                withContext(Dispatchers.IO) {
+                                    runCatching { ScriptInstaller.uninstall(this@TerminalActivity, listing.id) }
+                                }
+                                azpResults = azpResults.map {
+                                    if (it.id == listing.id) it.copy(installed = false, trust = "", scriptCommand = "") else it
+                                }
+                                azpInstallingId = null
+                            }
+                        }
                     )
 
                     screen == Screen.Mcp -> {
