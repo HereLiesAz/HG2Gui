@@ -338,7 +338,7 @@ class Hg2ApiReceiver : BroadcastReceiver() {
         const val EXTRA_RESULT_TYPE = "result_type"
         const val EXTRA_PICK_DIRECTORY = "pick_directory"
         private val SAFE_WORD = Regex("[A-Za-z0-9_.+-]+")
-        private val SAFE_PACKAGE = Regex("[A-Za-z0-9@._+=-]+")
+        private val SAFE_PACKAGE = Regex("[A-Za-z0-9@._+=][A-Za-z0-9@._+=-]*")
         private const val CHANNEL = "hg2gui-api"
         private const val MAX_OUTPUT = 128_000
         private const val DEFAULT_METADATA_TTL = 30_000L
