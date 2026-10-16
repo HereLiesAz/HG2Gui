@@ -60,7 +60,6 @@ kotlin {
             implementation(libs.material)
 
             implementation(project(":terminal-emulator"))
-            implementation(project(":termux-shared"))
         }
         val desktopMain by getting {
             dependencies {
