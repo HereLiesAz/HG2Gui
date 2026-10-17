@@ -30,7 +30,7 @@ class StaticCompletionDefinitionsTest {
     @Test
     fun ignoresDynamicZshChoiceExpressions() {
         val candidates = StaticCompletionDefinitions.parseZsh(
-            "_arguments '1:branch:(${(f)\$(git branch)})'",
+            "_arguments '1:branch:(\${(f)\$(git branch)})'",
             prefix = ""
         )
 

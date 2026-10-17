@@ -6,7 +6,9 @@ object CalculationEngine {
 
     /**
      * Evaluates a mathematical expression string.
-     * Supports +, -, *, /, ^, sqrt, sin, cos, tan.
+     * Supports +, -, *, /, ^, parentheses, and sqrt, sin, cos, tan (degrees, case-insensitive).
+     * A parenthesised function argument binds before `^`: `sqrt(9)^2` is 9, not sqrt(81).
+     * Throws [RuntimeException] on malformed input, including a missing `)`.
      */
     fun eval(str: String): Double {
         return object {
@@ -29,6 +31,7 @@ object CalculationEngine {
             fun parse(): Double {
                 nextChar()
                 val x = parseExpression()
+                while (ch == ' '.code) nextChar()
                 if (pos < str.length) throw RuntimeException("Unexpected: " + ch.toChar())
                 return x
             }
@@ -51,21 +54,32 @@ object CalculationEngine {
                 }
             }
 
+            fun isLetter(c: Int) = c >= 'a'.code && c <= 'z'.code || c >= 'A'.code && c <= 'Z'.code
+
+            fun parseParenthesised(): Double {
+                val x = parseExpression()
+                if (!eat(')'.code)) throw RuntimeException("Missing ')'")
+                return x
+            }
+
             fun parseFactor(): Double {
                 if (eat('+'.code)) return parseFactor()
                 if (eat('-'.code)) return -parseFactor()
                 var x: Double
+                while (ch == ' '.code) nextChar()
                 val startPos = pos
                 if (eat('('.code)) {
-                    x = parseExpression()
-                    eat(')'.code)
+                    x = parseParenthesised()
                 } else if (ch >= '0'.code && ch <= '9'.code || ch == '.'.code) {
                     while (ch >= '0'.code && ch <= '9'.code || ch == '.'.code) nextChar()
-                    x = str.substring(startPos, pos).toDouble()
-                } else if (ch >= 'a'.code && ch <= 'z'.code) {
-                    while (ch >= 'a'.code && ch <= 'z'.code) nextChar()
-                    val func = str.substring(startPos, pos)
-                    x = parseFactor()
+                    x = str.substring(startPos, pos).toDoubleOrNull()
+                        ?: throw RuntimeException("Bad number: " + str.substring(startPos, pos))
+                } else if (isLetter(ch)) {
+                    while (isLetter(ch)) nextChar()
+                    val func = str.substring(startPos, pos).lowercase()
+                    // `f(expr)` takes exactly the parenthesised argument, so a following `^`
+                    // applies to f's result; a bare `f x` keeps taking one factor.
+                    x = if (eat('('.code)) parseParenthesised() else parseFactor()
                     x = when (func) {
                         "sqrt" -> sqrt(x)
                         "sin" -> sin(x.toRad())

@@ -32,7 +32,7 @@ plugins {
 
 // CodeQL's default-setup scanning covers this repo's Actions/JS but has no Kotlin support at
 // all, so detekt is the only static-analysis gate over composeApp/shared - the app's own code.
-// Deliberately NOT applied to terminal-emulator/termux-shared: those are a vendored Termux fork,
+// Deliberately NOT applied to terminal-emulator: that is a vendored Termux fork,
 // not code this project maintains, and running a style/complexity linter over someone else's
 // upstream source would be pure noise. A checked-in baseline (config/detekt/*-baseline.xml,
 // generate with `./gradlew detektBaseline`) suppresses every finding that already existed when
@@ -62,7 +62,13 @@ subprojects {
     }
 }
 
+// Rewrites version.properties, so it only runs when explicitly asked for (-PautoIncrement) or on
+// CI (the CI env var, which GitHub Actions sets); a local build never dirties the working tree.
+val autoIncrementEnabled = providers.gradleProperty("autoIncrement").isPresent ||
+    !System.getenv("CI").isNullOrEmpty()
+
 val autoIncrementVersion = tasks.register("autoIncrementVersion") {
+    onlyIf { autoIncrementEnabled }
     doLast {
         val versionFile = rootProject.file("version.properties")
         if (versionFile.exists()) {
@@ -133,6 +139,10 @@ tasks.register("printVersionEnv") {
 
 tasks.register("incrementAndPushVersion") {
     doLast {
+        // Resets the working tree to origin and pushes: never run this on a developer machine.
+        if (System.getenv("CI").isNullOrEmpty()) {
+            throw GradleException("incrementAndPushVersion runs only on CI (CI env var not set); it hard-resets the checkout.")
+        }
         val versionFile = rootProject.file("version.properties")
         // Auto-detect branch from Environment if not provided via -PtargetBranch
         val branch = project.findProperty("targetBranch")?.toString()
@@ -163,7 +173,7 @@ tasks.register("incrementAndPushVersion") {
                 // numbers the stale commit already has, `git commit` errors with "nothing to
                 // commit" since the working tree already matches HEAD. `reset --hard` discards
                 // that stale commit outright so every attempt starts from origin's real tip.
-                // No stash guard: this task is CI-only; the working tree is always clean here.
+                // No stash guard: this task is CI-only (enforced above); the working tree is always clean here.
                 // The reset discards any stale local commit from a prior failed push attempt.
                 git("reset", "--hard", "origin/$branch")
                 

@@ -39,8 +39,9 @@ object ShellAliases {
     }
 
     /**
-     * After a command has run, the shortest key whose expansion [ranLine] just spelled out in
-     * full - so the UI can hint "you could have typed gs" - or null if no alias would have
+     * After a command has run, the alias whose expansion [ranLine] just spelled out in full -
+     * the longest matching expansion when several do, i.e. the alias that would have saved the
+     * most typing - so the UI can hint "you could have typed gs", or null if no alias would have
      * shortened it (including when the alias was already used).
      */
     fun hintForRanCommand(ranLine: String): Pair<String, String>? =

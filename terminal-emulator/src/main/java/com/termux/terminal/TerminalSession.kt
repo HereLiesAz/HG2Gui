@@ -85,6 +85,9 @@ class TerminalSession(
      * {@link JNI#createSubprocess(String, String, String[], String[], int[], int, int, int, int)}.
      */
     private var mTerminalFileDescriptor = 0
+    private val mStreamThreadsRunning = java.util.concurrent.atomic.AtomicInteger(0)
+    private val mProcessExited = java.util.concurrent.atomic.AtomicBoolean(false)
+    private val mPtyClosed = java.util.concurrent.atomic.AtomicBoolean(false)
 
     /** Set by the application for user identification of session, not by terminal. */
     @JvmField
@@ -142,6 +145,11 @@ class TerminalSession(
         mClient?.setTerminalShellPid(this, mShellPid)
 
         val terminalFileDescriptorWrapped = wrapFileDescriptor(mTerminalFileDescriptor, mClient)
+        // The pty fd has exactly one closer: closePtyIfUnused(), which runs only once the process has
+        // exited (cleanupResources) AND both stream threads below have finished with the fd.
+        // Closing it from cleanupResources while the reader was still inside read() could hand the
+        // fd number to something else and have that thread read from the wrong file.
+        mStreamThreadsRunning.set(2)
 
         object : Thread("TermSessionInputReader[pid=$mShellPid]") {
             override fun run() {
@@ -157,6 +165,8 @@ class TerminalSession(
                     }
                 } catch (e: Exception) {
                     // Ignore, just shutting down.
+                } finally {
+                    streamThreadDone()
                 }
             }
         }.start()
@@ -174,6 +184,8 @@ class TerminalSession(
                     }
                 } catch (e: IOException) {
                     // Ignore.
+                } finally {
+                    streamThreadDone()
                 }
             }
         }.start()
@@ -263,7 +275,20 @@ class TerminalSession(
         // Stop the reader and writer threads, and close the I/O streams
         mTerminalToProcessIOQueue.close()
         mProcessToTerminalIOQueue.close()
-        JNI.close(mTerminalFileDescriptor)
+        mProcessExited.set(true)
+        closePtyIfUnused()
+    }
+
+    private fun streamThreadDone() {
+        mStreamThreadsRunning.decrementAndGet()
+        closePtyIfUnused()
+    }
+
+    /** Closes the pty fd once, and only when the process is gone and no thread is using it. */
+    private fun closePtyIfUnused() {
+        if (mProcessExited.get() && mStreamThreadsRunning.get() <= 0 && mPtyClosed.compareAndSet(false, true)) {
+            JNI.close(mTerminalFileDescriptor)
+        }
     }
 
     override fun titleChanged(oldTitle: String?, newTitle: String?) {
@@ -322,7 +347,12 @@ class TerminalSession(
         override fun handleMessage(msg: Message) {
             val bytesRead = mProcessToTerminalIOQueue.read(mReceiveBuffer, false)
             if (bytesRead > 0) {
-                mEmulator?.append(mReceiveBuffer, bytesRead)
+                // A parser bug on hostile/odd output must cost this chunk, not crash the main thread.
+                try {
+                    mEmulator?.append(mReceiveBuffer, bytesRead)
+                } catch (e: Exception) {
+                    Logger.logStackTraceWithMessage(mClient, LOG_TAG, "Emulator failed on a chunk of output", e)
+                }
                 notifyScreenUpdate()
             }
 
@@ -341,7 +371,11 @@ class TerminalSession(
                 exitDescription += " - press Enter]"
 
                 val bytesToWrite = exitDescription.toByteArray(Charsets.UTF_8)
-                mEmulator?.append(bytesToWrite, bytesToWrite.size)
+                try {
+                    mEmulator?.append(bytesToWrite, bytesToWrite.size)
+                } catch (e: Exception) {
+                    Logger.logStackTraceWithMessage(mClient, LOG_TAG, "Emulator failed on the exit notice", e)
+                }
                 notifyScreenUpdate()
 
                 mClient?.onSessionFinished(this@TerminalSession)

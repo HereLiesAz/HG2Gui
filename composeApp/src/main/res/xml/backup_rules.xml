@@ -1,10 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  MCP-12: allowBackup="true" with no exclusion meant hg2gui_mcp_prefs (the shell-exec-enabled
-  flag, set only after a biometric confirmation - see McpServerService.requestEnableShellExec)
-  could restore straight onto a different device that never confirmed anything itself. Pre-12
-  full backup rules - see data_extraction_rules.xml for the 12+ equivalent.
+  Backup is disabled outright (allowBackup="false" in the manifest); these rules are the
+  belt-and-braces for anything that still honors them. filesDir holds the Termux $HOME (.ssh keys,
+  shell history, dotfiles) and prefix (usr/), and shared prefs hold the AI API key and the
+  biometric-confirmed MCP shell-exec flag (MCP-12) - none of it may restore onto another device.
+  Pre-12 full backup rules - see data_extraction_rules.xml for the 12+ equivalent.
 -->
 <full-backup-content>
-    <exclude domain="sharedpref" path="hg2gui_mcp_prefs.xml" />
+    <exclude domain="root" path="." />
+    <exclude domain="file" path="." />
+    <exclude domain="database" path="." />
+    <exclude domain="sharedpref" path="." />
+    <exclude domain="external" path="." />
 </full-backup-content>

@@ -43,7 +43,8 @@ fun EditorScreen(
     onContentChange: (String) -> Unit,
     onSave: () -> Unit,
     onBack: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onDismissError: () -> Unit = {}
 ) {
     Column(modifier.fillMaxSize().background(Azphalt.currentGround.pageBrush())) {
         Row(
@@ -67,8 +68,36 @@ fun EditorScreen(
             }
         }
 
+        // Once text is loaded, an error (a failed save) is a dismissible banner over the field -
+        // never a replacement for it, which would hide the very edits the save failed to keep.
+        if (error != null && content != null) {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 4.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Azphalt.Ink.copy(alpha = .14f))
+                    .clickable(onClick = onDismissError)
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    error,
+                    style = MaterialTheme.typography.bodyMedium.copy(color = Azphalt.currentGround.onPage, fontSize = 13.sp),
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    "DISMISS",
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        color = Azphalt.currentGround.onPage, fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em
+                    )
+                )
+            }
+        }
+
         when {
-            error != null -> Text(
+            error != null && content == null -> Text(
                 error,
                 style = MaterialTheme.typography.bodyMedium.copy(color = Azphalt.currentGround.onPage.copy(alpha = .7f), fontSize = 13.sp),
                 modifier = Modifier.padding(20.dp)

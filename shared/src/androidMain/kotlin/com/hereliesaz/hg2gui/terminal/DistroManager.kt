@@ -24,19 +24,6 @@ import java.util.zip.ZipInputStream
  */
 object DistroManager {
 
-    /**
-     * Resolves [name] under [root] and rejects (zip-slip) any path whose canonical form escapes
-     * [root]. `internal` so it can be unit tested without an Android runtime.
-     */
-    internal fun resolveContained(root: File, name: String): File {
-        val canonicalRoot = root.canonicalFile
-        val resolved = File(canonicalRoot, name).canonicalFile
-        if (resolved != canonicalRoot && !resolved.path.startsWith(canonicalRoot.path + File.separator)) {
-            throw IOException("Path escapes install prefix: $name")
-        }
-        return resolved
-    }
-
     // Pinned, not /releases/latest/download/ - BootstrapManifest's 330 executables/libraries are
     // a frozen snapshot of exactly this release's bin/, lib/, and libexec/, bundled into the APK
     // itself (see that file's own doc comment for why). Pointing this at whatever "latest" is at
@@ -45,6 +32,17 @@ object DistroManager {
     // Bumping this to a new release means regenerating BootstrapManifest.kt and jniLibs/arm64-v8a/
     // from that release's own bootstrap-aarch64.zip at the same time, not on its own.
     private const val BOOTSTRAP_RELEASE_TAG = "bootstrap-2026.08.16-r1+apt.android-7"
+    // SHA-256 pins (lowercase hex) of each ABI's bootstrap-<arch>.zip at BOOTSTRAP_RELEASE_TAG,
+    // keyed by bootstrapArch(). Verification is mandatory: a missing pin or a mismatch fails the
+    // bootstrap, so an arch without a pin can never install an unverified archive. Computed with
+    // sha256sum over the files downloaded from BOOTSTRAP_BASE_URL. Bump them together with
+    // BOOTSTRAP_RELEASE_TAG.
+    private val BOOTSTRAP_SHA256: Map<String, String> = mapOf(
+        "aarch64" to "ed83429ff0835b97155c5f80f2c74abf892f691f9fb9259eaca52fe1fb88e8f0",
+        "arm" to "2c17da5e0e02dd633464664cb02a780433c0c73d21192309c788c472860d0e48",
+        "i686" to "b817b44266f237d27c7c7664f4bb14cef79e763aebaf126244b10fcb82b1a5b3",
+        "x86_64" to "a6e8a7fc83e0093550a4495aaabdae2ab8082acbb08846bba521ab327951c747",
+    )
     private const val BOOTSTRAP_BASE_URL =
         "https://github.com/termux/termux-packages/releases/download/$BOOTSTRAP_RELEASE_TAG"
     private const val BOOTSTRAP_FILE = "bootstrap.zip"
@@ -124,6 +122,7 @@ object DistroManager {
 
         try {
             val request = Request.Builder().url(url).build()
+            val digest = java.security.MessageDigest.getInstance("SHA-256")
             client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) throw Exception("Download failed: HTTP ${response.code}")
 
@@ -132,7 +131,7 @@ object DistroManager {
                 var downloadedBytes = 0L
 
                 body.byteStream().use { input ->
-                    FileOutputStream(destFile).use { output ->
+                    java.security.DigestOutputStream(FileOutputStream(destFile), digest).use { output ->
                         val buffer = ByteArray(8192)
                         var bytesRead: Int
                         while (input.read(buffer).also { bytesRead = it } != -1) {
@@ -146,6 +145,13 @@ object DistroManager {
                         }
                     }
                 }
+            }
+
+            val actualSha256 = digest.digest().joinToString("") { "%02x".format(it) }
+            val pinnedSha256 = BOOTSTRAP_SHA256[arch]
+                ?: throw IOException("No SHA-256 pin for bootstrap-$arch.zip (got $actualSha256); refusing to install an unverified archive")
+            if (!pinnedSha256.equals(actualSha256, ignoreCase = true)) {
+                throw IOException("bootstrap-$arch.zip SHA-256 mismatch: expected $pinnedSha256, got $actualSha256")
             }
 
             emit("Download complete. Extracting...")
@@ -184,6 +190,17 @@ object DistroManager {
      */
     private fun extractBootstrap(zipFile: File, prefix: File, nativeLibraryDir: String) {
         prefix.mkdirs()
+        val prefixCanonical = prefix.canonicalFile
+        // Zip-slip containment, mirroring AzpInstaller: any entry (or SYMLINKS.txt link path)
+        // that canonicalizes outside the prefix aborts the whole bootstrap - bootstrap()'s catch
+        // then wipes the partial prefix.
+        fun contained(name: String): File {
+            val target = File(prefix, name).canonicalFile
+            if (target != prefixCanonical && !target.path.startsWith(prefixCanonical.path + File.separator)) {
+                throw IOException("path traversal in bootstrap entry: $name")
+            }
+            return target
+        }
         val symlinksText = StringBuilder()
         val manifest = BootstrapManifest.ENTRIES.toMap()
 
@@ -195,15 +212,15 @@ object DistroManager {
                         symlinksText.append(zis.bufferedReader(Charsets.UTF_8).readText())
                     }
                     entry.isDirectory -> {
-                        resolveContained(prefix, entry.name).mkdirs()
+                        contained(entry.name).mkdirs()
                     }
                     entry.name in manifest -> {
                         // Still needs its own directory to exist, for whatever else in this same
                         // directory isn't manifest-covered - just not this file's own content.
-                        resolveContained(prefix, entry.name).parentFile?.mkdirs()
+                        contained(entry.name).parentFile?.mkdirs()
                     }
                     else -> {
-                        val outFile = resolveContained(prefix, entry.name)
+                        val outFile = contained(entry.name)
                         outFile.parentFile?.mkdirs()
                         outFile.outputStream().buffered().use { out -> zis.copyTo(out) }
                         rewriteShebangIfNeeded(outFile, prefix)
@@ -230,11 +247,17 @@ object DistroManager {
                 rawTarget
             }
             val linkPath = line.substring(separatorIndex + SYMLINK_SEPARATOR.length)
-            // Zip-slip: a SYMLINKS.txt line must not create a link outside the prefix. The
-            // containment check resolves the parent directory only, so the link itself is never
-            // followed.
-            val linkParent = resolveContained(prefix, File(linkPath).parent ?: ".")
-            val linkFile = File(linkParent, File(linkPath).name)
+            val linkFile = File(prefix, linkPath)
+            // The link itself may already exist (stale from a failed attempt), so canonicalize its
+            // parent rather than the link - that check is what matters for where it gets created.
+            val linkName = linkFile.name
+            if (linkName.isEmpty() || linkName == "." || linkName == "..") {
+                throw IOException("invalid symlink path in $SYMLINKS_ENTRY: $linkPath")
+            }
+            val linkParent = (linkFile.parentFile ?: prefix).canonicalFile
+            if (linkParent != prefixCanonical && !linkParent.path.startsWith(prefixCanonical.path + File.separator)) {
+                throw IOException("path traversal in $SYMLINKS_ENTRY link path: $linkPath")
+            }
             linkFile.parentFile?.mkdirs()
             // unlink()s the path itself rather than whatever it points to - a no-op if nothing
             // was there yet, and clears a stale symlink left by a prior failed bootstrap attempt.
@@ -445,6 +468,9 @@ object DistroManager {
         val binDir = File(prefix, "bin")
         val scriptNames = binDir.listFiles { f -> f.isFile && !Files.isSymbolicLink(f.toPath()) && !isElf(f) }
             ?.map { it.name }
+            // Each name becomes a bash function definition sourced on every login - a file in
+            // bin/ named e.g. "x;rm -rf ~" must never reach that profile as code.
+            ?.filter { com.hereliesaz.hg2gui.azp.isSafeCommandName(it) }
             ?.sorted()
             .orEmpty()
 
@@ -456,7 +482,7 @@ object DistroManager {
         wrapperFile.writeText(buildString {
             appendLine("# Auto-generated by HG2Gui - regenerated on every launch, do not edit.")
             for (name in scriptNames) {
-                appendLine("$name() ( source \"\$PREFIX/bin/$name\" \"\$@\" )")
+                appendLine("$name() ( source \"\$PREFIX/bin/\"'$name' \"\$@\" )")
             }
         })
 

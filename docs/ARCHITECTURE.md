@@ -238,9 +238,9 @@ An ordinary composed command still requires explicit **RUN**. Inputs answering a
 Authoritative toolchain values live in Gradle/version files. At this documentation pass:
 
 - JDK 21
-- AGP 9.4.0
-- Kotlin 2.4.20
-- Compose Multiplatform 1.12.0
+- AGP 9.4.1
+- Kotlin 2.4.21
+- Compose Multiplatform 1.12.1
 - `compileSdk` / `targetSdk` 37
 - `minSdk` 24
 - NDK `29.0.14206865`

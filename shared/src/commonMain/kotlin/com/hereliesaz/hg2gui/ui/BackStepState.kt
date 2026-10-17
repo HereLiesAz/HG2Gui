@@ -19,4 +19,11 @@ import androidx.compose.runtime.setValue
 class BackStepState {
     var canStepBack: Boolean by mutableStateOf(false)
     var stepBack: () -> Unit by mutableStateOf({})
+
+    /** Called when the owning screen leaves composition, so a stale "I can step back" from a
+     *  screen that is gone can't swallow the next system-back press. */
+    fun reset() {
+        canStepBack = false
+        stepBack = {}
+    }
 }

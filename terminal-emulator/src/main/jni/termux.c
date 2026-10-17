@@ -1,4 +1,5 @@
 #include <dirent.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <jni.h>
 #include <signal.h>
@@ -48,6 +49,7 @@ static int create_subprocess(JNIEnv* env,
             ptsname_r(ptm, devname, sizeof(devname))
 #endif
        ) {
+        close(ptm);
         return throw_runtime_exception(env, "Cannot grantpt()/unlockpt()/ptsname_r() on /dev/ptmx");
     }
 
@@ -64,6 +66,7 @@ static int create_subprocess(JNIEnv* env,
 
     pid_t pid = fork();
     if (pid < 0) {
+        close(ptm);
         return throw_runtime_exception(env, "Fork failed");
     } else if (pid > 0) {
         *pProcessId = (int) pid;
@@ -201,7 +204,13 @@ JNIEXPORT void JNICALL Java_com_termux_terminal_JNI_setPtyUTF8Mode(JNIEnv* TERMU
 JNIEXPORT jint JNICALL Java_com_termux_terminal_JNI_waitFor(JNIEnv* TERMUX_UNUSED(env), jclass TERMUX_UNUSED(clazz), jint pid)
 {
     int status;
-    waitpid(pid, &status, 0);
+    pid_t waited;
+    // Retry when a signal interrupts the wait; any other failure (e.g. ECHILD, the child was
+    // already reaped) leaves status uninitialised, so report it as a failed exit instead.
+    do {
+        waited = waitpid(pid, &status, 0);
+    } while (waited < 0 && errno == EINTR);
+    if (waited < 0) return -1;
     if (WIFEXITED(status)) {
         return WEXITSTATUS(status);
     } else if (WIFSIGNALED(status)) {

@@ -258,11 +258,11 @@ fun SettingsScreen(
 private fun SettingRow(title: String, description: String, control: @Composable () -> Unit) {
     Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp)) {
         Text(
-            title.uppercase(), color = Azphalt.Ink,
+            title.uppercase(), color = Azphalt.currentGround.onPage,
             fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em
         )
         Text(
-            description, color = Azphalt.Ink.copy(alpha = .55f),
+            description, color = Azphalt.currentGround.onPage.copy(alpha = .55f),
             fontSize = 11.sp, lineHeight = 15.sp,
             modifier = Modifier.padding(top = 4.dp, bottom = 10.dp)
         )
@@ -293,7 +293,7 @@ private fun SegmentedToggle(
                     .padding(horizontal = 16.dp, vertical = 9.dp)
             ) {
                 Text(
-                    label, color = if (on) Azphalt.Yellow else Azphalt.Ink.copy(alpha = .55f),
+                    label, color = if (on) Azphalt.Yellow else Azphalt.currentGround.onPage.copy(alpha = .55f),
                     fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em
                 )
             }

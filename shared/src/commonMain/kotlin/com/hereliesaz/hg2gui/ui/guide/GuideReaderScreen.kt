@@ -297,7 +297,9 @@ private fun ColumnScope.GuideEntryReader(
                 WipeItem(seq++, wipeKey, wide = true, modifier = Modifier.padding(top = 20.dp)) {
                     Column {
                         FactRow("Chapter", entry.chapterTitle)
-                        FactRow("Actually does something", "Yes")
+                        // Derived from the live command tree, not asserted: a guide entry for a command
+                        // this build doesn't offer doesn't "actually do something" here.
+                        FactRow("Actually does something", if (runtimeInfo.available) "Yes" else "Not in this build")
                         FactRow(
                             "Live runtime",
                             if (runtimeInfo.available) {

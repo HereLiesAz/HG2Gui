@@ -56,4 +56,17 @@ class FullScreenCommandsTest {
     fun leadingWhitespaceAndExtraSpaces_areTolerated() {
         assertEquals("vim", fullScreenCommandOf("   vim   foo.txt"))
     }
+
+    @Test
+    fun interpretersAreFullScreenOnlyAsARepl() {
+        assertEquals("python3", fullScreenCommandOf("python3"))
+        assertEquals("node", fullScreenCommandOf("node"))
+        assertEquals("python3", fullScreenCommandOf("python3 -i script.py"))
+        assertNull(fullScreenCommandOf("python3 script.py"))
+        assertNull(fullScreenCommandOf("python -c 'print(1)'"))
+        assertNull(fullScreenCommandOf("node build.js"))
+        assertNull(fullScreenCommandOf("bash -c 'echo hi'"))
+        assertNull(fullScreenCommandOf("bash install.sh"))
+        assertNull(fullScreenCommandOf("python3 --version"))
+    }
 }

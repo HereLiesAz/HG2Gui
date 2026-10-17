@@ -83,4 +83,20 @@ class AzpInstallerDigestTest {
         )
         assertFalse(filesMatchDigests(extracted, declared))
     }
+
+    @Test
+    fun azpPathSegment_acceptsPlainIdsAndVersions() {
+        assertTrue(isValidAzpPathSegment("git-sync"))
+        assertTrue(isValidAzpPathSegment("1.2.3-beta_1"))
+    }
+
+    @Test
+    fun azpPathSegment_rejectsTraversalAndSeparators() {
+        assertFalse(isValidAzpPathSegment("."))
+        assertFalse(isValidAzpPathSegment(".."))
+        assertFalse(isValidAzpPathSegment("../../usr"))
+        assertFalse(isValidAzpPathSegment("a/b"))
+        assertFalse(isValidAzpPathSegment(""))
+        assertFalse(isValidAzpPathSegment("x?y=1"))
+    }
 }

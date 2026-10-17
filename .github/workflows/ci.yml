@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches-ignore:
+      - gh-pages
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: gradle
+
+      # ubuntu-latest ships the Android SDK (ANDROID_HOME); make sure the exact platform,
+      # build-tools and NDK this build pins are present.
+      - name: Install Android SDK components
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+            "platforms;android-37.0" "build-tools;37.0.0" "ndk;29.0.14206865"
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      # CI sets CI=true, which would let autoIncrementVersion rewrite version.properties on this
+      # throwaway checkout; harmless here (nothing is committed), and it keeps tasks identical to
+      # the release build.
+      - name: Unit tests
+        run: ./gradlew :shared:testAndroidHostTest :terminal-emulator:testDebugUnitTest --build-cache
+
+      # :composeApp:detekt was already failing before this workflow existed (its baseline covers only
+      # a fraction of the module), so it reports without blocking until the baseline is regenerated.
+      - name: Static analysis (non-blocking)
+        continue-on-error: true
+        run: ./gradlew detekt --build-cache

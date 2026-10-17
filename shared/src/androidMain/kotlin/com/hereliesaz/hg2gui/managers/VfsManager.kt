@@ -166,7 +166,7 @@ object VfsManager {
     fun readText(context: Context, name: String): String? =
         resolve(context, name)
             ?.takeIf { it.isFile && it.length() <= MAX_READ_TEXT_BYTES }
-            ?.readText()
+            ?.let { f -> try { f.readText() } catch (e: Exception) { null } }
 
     fun writeText(context: Context, name: String, text: String): Boolean {
         val f = resolve(context, name) ?: return false
@@ -189,6 +189,7 @@ object VfsManager {
     fun copy(context: Context, from: String, to: String): Boolean {
         val f = resolve(context, from) ?: return false
         val t = resolve(context, to) ?: return false
+        if (isSelfOrDescendant(f, t)) return false // same truncation hazard as copyInto
         return try {
             if (f.isDirectory) f.copyRecursively(t, overwrite = true) else { f.copyTo(t, overwrite = true); true }
         } catch (e: Exception) {
@@ -431,6 +432,11 @@ object VfsManager {
         if (!contains(file) || !contains(targetDir)) return false
         if (file.isDirectory && isSelfOrDescendant(file, targetDir)) return false
         val target = File(targetDir, file.name)
+        // Copying onto itself (into the folder it already lives in) would have copyTo/
+        // copyRecursively overwrite the source with a stream read from that same source -
+        // truncating it. A directory is refused above when targetDir is inside it; this also
+        // covers the target landing exactly on the source, and a file whose target sits inside it.
+        if (isSelfOrDescendant(file, target)) return false
         return try {
             if (file.isDirectory) file.copyRecursively(target, overwrite = true) else { file.copyTo(target, overwrite = true); true }
         } catch (e: Exception) {

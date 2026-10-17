@@ -16,21 +16,58 @@ object TermuxRuntimeRepair {
     private const val X11_REPO = "https://packages.termux.dev/apt/termux-x11"
     private const val NEEDS_APT_UPDATE = ".hg2gui-needs-update"
     private val SAFE_SCRIPT_NAME = Regex("[A-Za-z0-9_.+-]+")
+    private const val REPAIR_STAMP = ".hg2gui-repair-stamp"
+    private val SOURCEABLE_SHELLS = setOf("sh", "bash")
+
+    /**
+     * True iff [shebangLine] (the script's first line) runs it with sh or bash - directly or via
+     * `env` - the only scripts the wrapper may `source` into bash. A python/perl/node script
+     * sourced into bash would just be parsed as shell. Pure, see TermuxRuntimeRepairTest.
+     */
+    internal fun isShellShebang(shebangLine: String): Boolean {
+        val words = shebangLine.removePrefix("#!").trim().split(Regex("\\s+")).filter(String::isNotEmpty)
+        val first = words.firstOrNull()?.substringAfterLast('/')
+        val interpreter = if (first == "env") words.drop(1).firstOrNull { !it.startsWith("-") }?.substringAfterLast('/') else first
+        return shebangLine.startsWith("#!") && interpreter in SOURCEABLE_SHELLS
+    }
 
     fun repair(context: Context) {
         val prefix = DistroManager.prefixDir(context)
         val bin = File(prefix, "bin")
         if (!prefix.isDirectory || !bin.isDirectory) return
-        listOf("bin", "libexec", "lib").forEach { subdir ->
-            val root = File(prefix, subdir)
-            if (root.exists()) root.walkTopDown().forEach { repairScript(it, prefix) }
+        // The full-tree walks (script prefix rewrite + ELF audit) run on every launch otherwise,
+        // reading every file under the prefix. Skip them while nothing that could add or change
+        // files there has happened since the last completed run.
+        val stamp = repairStamp(context, prefix)
+        val stampFile = File(prefix, REPAIR_STAMP)
+        val upToDate = runCatching { stampFile.readText() == stamp }.getOrDefault(false)
+        if (!upToDate) {
+            listOf("bin", "libexec", "lib").forEach { subdir ->
+                val root = File(prefix, subdir)
+                if (root.exists()) root.walkTopDown().forEach { repairScript(it, prefix) }
+            }
         }
         repairMainRepoKey(prefix)
         writeMainRepoSource(prefix)
         val nativeLibraryDir = context.applicationInfo.nativeLibraryDir
         writeAptConfig(prefix, nativeLibraryDir)
         writeScriptWrappers(prefix, DistroManager.homeDir(context), nativeLibraryDir)
-        TermuxElfAudit.audit(context)
+        if (!upToDate) {
+            TermuxElfAudit.audit(context)
+            runCatching { stampFile.writeText(stamp) }
+        }
+    }
+
+    /** Changes whenever packages are installed/removed (dpkg status), top-level bin/lib/libexec
+     *  entries change, or the app itself is updated (new launchers, new repair rules). */
+    private fun repairStamp(context: Context, prefix: File): String {
+        val appUpdated = runCatching { context.packageManager.getPackageInfo(context.packageName, 0).lastUpdateTime }.getOrDefault(0L)
+        val status = File(prefix, "var/lib/dpkg/status")
+        return buildString {
+            append("app=").append(appUpdated)
+            append(";status=").append(status.lastModified()).append('/').append(status.length())
+            listOf("bin", "lib", "libexec").forEach { append(';').append(it).append('=').append(File(prefix, it).lastModified()) }
+        }
     }
 
     private fun repairScript(file: File, prefix: File) {
@@ -146,7 +183,7 @@ object TermuxRuntimeRepair {
     private fun writeScriptWrappers(prefix: File, home: File, nativeLibraryDir: String) {
         home.mkdirs()
         val scripts = File(prefix, "bin").listFiles().orEmpty()
-            .filter { it.isFile && !Files.isSymbolicLink(it.toPath()) && !isElf(it) }
+            .filter { it.isFile && !Files.isSymbolicLink(it.toPath()) && !isElf(it) && isShellShebang(firstLine(it)) }
             .map { it.name }
             // Restrict to names safe to embed as shell function identifiers — anything else
             // (e.g. a filename containing ' ' or '$') would inject shell syntax into the wrapper.
@@ -180,6 +217,14 @@ object TermuxRuntimeRepair {
             profile.appendText((if (existing.isNotEmpty() && !existing.endsWith('\n')) "\n" else "") + PROFILE_LINE + "\n")
         }
     }
+
+    private fun firstLine(file: File): String = runCatching {
+        file.inputStream().use { input ->
+            val head = ByteArray(256)
+            val n = input.read(head).coerceAtLeast(0)
+            String(head, 0, n, Charsets.UTF_8).lineSequence().firstOrNull().orEmpty()
+        }
+    }.getOrDefault("")
 
     private fun isElf(file: File): Boolean = runCatching {
         file.inputStream().use { input ->

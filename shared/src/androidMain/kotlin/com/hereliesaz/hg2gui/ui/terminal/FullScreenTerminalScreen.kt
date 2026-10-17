@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hereliesaz.hg2gui.terminal.FullScreenPtySession
 import com.hereliesaz.hg2gui.terminal.TuiTerminalAdapter
+import com.hereliesaz.hg2gui.terminal.terminalRowText
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
 import com.termux.terminal.KeyHandler
 import com.termux.terminal.TerminalEmulator
@@ -85,20 +86,30 @@ fun FullScreenTerminalScreen(
     forceRaw: Boolean = false
 ) {
     var rawOverride by remember(holder) { mutableStateOf(forceRaw) }
+    // Registered before choosing a surface: with the effect below the old early return, a session
+    // that exited while the adaptive wrapper was showing never reported its exit.
+    val exitCode = holder.exitCode
+    LaunchedEffect(exitCode) { if (exitCode != null) onExit() }
+
+    var wrapped = false
     if (!rawOverride) {
         @Suppress("UNUSED_VARIABLE")
         val generation = holder.generation
-        val semantic = TuiTerminalAdapter.snapshot(holder)
-        if (semantic?.isWrappable == true) {
-            AdaptiveTuiWrapperScreen(
-                holder = holder,
-                onRawTerminal = { rawOverride = true },
-                onExit = onExit
-            )
-            return
-        }
+        wrapped = TuiTerminalAdapter.snapshot(holder)?.isWrappable == true
     }
+    if (wrapped) {
+        AdaptiveTuiWrapperScreen(
+            holder = holder,
+            onRawTerminal = { rawOverride = true },
+            onExit = onExit
+        )
+    } else {
+        RawTerminalSurface(holder, onExit)
+    }
+}
 
+@Composable
+private fun RawTerminalSurface(holder: FullScreenPtySession, onExit: () -> Unit) {
     val measurer = rememberTextMeasurer()
     val focusRequester = remember { FocusRequester() }
     var ctrlArmed by remember { mutableStateOf(false) }
@@ -112,8 +123,6 @@ fun FullScreenTerminalScreen(
     val cellHeightPx = cellMetrics.size.height.coerceAtLeast(1)
 
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
-    val exitCode = holder.exitCode
-    LaunchedEffect(exitCode) { if (exitCode != null) onExit() }
 
     Column(Modifier.fillMaxSize().background(Azphalt.Ink)) {
         TerminalTopBar(holder, ctrlArmed, onCtrlToggle = { ctrlArmed = !ctrlArmed }, onExit = onExit)
@@ -278,6 +287,13 @@ private fun handleSpecialKey(holder: FullScreenPtySession, event: KeyEvent, curs
 }
 
 private fun specialKeyCode(native: NativeKeyEvent, cursorApp: Boolean, keypadApp: Boolean): String? {
+    // Hardware Ctrl+letter: KeyHandler has no mapping for it and the hidden text field turns it
+    // into a clipboard shortcut rather than a character, so send the control byte directly
+    // (Alt adds the usual ESC prefix).
+    if (native.isCtrlPressed && native.keyCode in NativeKeyEvent.KEYCODE_A..NativeKeyEvent.KEYCODE_Z) {
+        val control = (native.keyCode - NativeKeyEvent.KEYCODE_A + 1).toChar().toString()
+        return if (native.isAltPressed) "\u001b$control" else control
+    }
     var mods = 0
     if (native.isShiftPressed) mods = mods or KeyHandler.KEYMOD_SHIFT
     if (native.isCtrlPressed) mods = mods or KeyHandler.KEYMOD_CTRL
@@ -373,15 +389,7 @@ private fun DrawScope.drawCursor(holder: FullScreenPtySession, emulator: Termina
     }
 }
 
-private fun rowRunText(line: TerminalRow?, from: Int, to: Int): String {
-    if (line == null) return " ".repeat(to - from)
-    val builder = StringBuilder(to - from)
-    for (c in from until to) {
-        val idx = line.findStartOfColumn(c)
-        builder.append(if (idx < line.getSpaceUsed()) line.mText[idx] else ' ')
-    }
-    return builder.toString()
-}
+private fun rowRunText(line: TerminalRow?, from: Int, to: Int): String = terminalRowText(line, from, to)
 
 private fun resolveColor(colors: IntArray, styleColor: Int): Int =
     if (styleColor and 0xff000000.toInt() == 0xff000000.toInt()) styleColor else colors[styleColor]

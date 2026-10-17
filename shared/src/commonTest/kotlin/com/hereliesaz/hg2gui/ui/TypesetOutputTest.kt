@@ -120,9 +120,33 @@ class TypesetOutputTest {
         val text = """
             USER       PID %CPU %MEM COMMAND
             root         1  0.0  0.1 /usr/bin/init --daemon --quiet
+            az         204  1.2  0.4 /usr/bin/sshd -D
         """.trimIndent()
         assertTrue(looksLikeWideTable(text))
         assertEquals("/usr/bin/init --daemon --quiet", parseWideTable(text)[0].fields.last().second)
+    }
+
+    @Test
+    fun lsLong_isNotWideTable() {
+        // `ls -l` has no header row; "total 12" must not be mistaken for one, and the first file
+        // row must not become the column labels.
+        val text = """
+            total 12
+            drwxr-xr-x 2 user user 4096 Jan  1 10:00 docs
+            -rw-r--r-- 1 user user  220 Jan  1 10:00 notes.txt
+            -rw-r--r-- 1 user user 3526 Jan  1 10:00 readme.md
+        """.trimIndent()
+        assertFalse(looksLikeWideTable(text))
+    }
+
+    @Test
+    fun wordyLinesWithoutColumnAlignment_areNotWideTable() {
+        val text = """
+            the quick brown fox jumps
+            over a lazy dog today again
+            and then went home to sleep
+        """.trimIndent()
+        assertFalse(looksLikeWideTable(text))
     }
 
     @Test

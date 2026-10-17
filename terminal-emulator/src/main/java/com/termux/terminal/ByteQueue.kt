@@ -56,7 +56,8 @@ internal class ByteQueue(size: Int) {
     /**
      * Attempt to write the specified portion of the provided buffer to the queue.
      * <p/>
-     * Returns whether the output was totally written, false if it was closed before.
+     * Returns whether the output was totally written, false if it was closed before. A zero-length
+     * write queues nothing and reports whether the queue is still open.
      */
     fun write(buffer: ByteArray, offset: Int, lengthToWrite: Int): Boolean {
         var currentOffset = offset
@@ -64,9 +65,11 @@ internal class ByteQueue(size: Int) {
 
         if (remainingLengthToWrite + currentOffset > buffer.size) {
             throw IllegalArgumentException("length + offset > buffer.length")
-        } else if (remainingLengthToWrite <= 0) {
-            throw IllegalArgumentException("length <= 0")
+        } else if (remainingLengthToWrite < 0) {
+            throw IllegalArgumentException("length < 0")
         }
+        // A zero-length write (an empty read from a stream) has nothing to queue - it is not an error.
+        if (remainingLengthToWrite == 0) return synchronized(this) { mOpen }
 
         val bufferLength = mBuffer.size
 

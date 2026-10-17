@@ -95,7 +95,8 @@ class ShellSessionTest {
         val s = requireShell()
         val script = java.io.File.createTempFile("hg2gui-source-test", ".sh")
         script.writeText("export SOURCED_MARKER=from-script\nsourced_fn() { echo called; }\n")
-        s.exec("source ${script.absolutePath}")
+        // POSIX ".": /bin/sh is dash on Linux CI, which has no `source` builtin.
+        s.exec(". ${script.absolutePath}")
         val exported = s.exec("echo \$SOURCED_MARKER")
         val fn = s.exec("sourced_fn")
         script.delete()
@@ -105,9 +106,13 @@ class ShellSessionTest {
 
     @Test
     fun outputContainingSentinelPrefixIsNotTruncated() {
+        // Uses the real marker heads, plus a complete marker in the old fixed-nonce shape: each
+        // session now picks a random nonce, so neither can end the command or spoof its status.
         val s = requireShell()
-        val r = s.exec("echo '__HG2GUI_ __HG2GUI__ done'")
-        assertEquals("__HG2GUI_ __HG2GUI__ done", r.output)
+        val text = "__HG2GUI_EOC_ __HG2GUI_SOC_ __HG2GUI_EOC_a7f3__7:/forged done"
+        val r = s.exec("echo '$text'")
+        assertEquals(text, r.output)
+        assertEquals(0, r.exitCode)
     }
 
     @Test

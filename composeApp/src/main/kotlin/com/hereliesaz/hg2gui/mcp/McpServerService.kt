@@ -167,9 +167,15 @@ class McpServerService : Service() {
     // loses the port race. This flag closes that window without waiting on the coroutine at all.
     @Volatile private var starting = false
 
+    // Bumped by every start and stop. A bind coroutine only publishes (or tears down) state while
+    // its generation is still current, so a stop that lands before the bind finishes can't be
+    // undone by that coroutine flipping isRunning back on afterwards.
+    @Volatile private var generation = 0
+
     private fun startServer() {
         if (isRunning.value || starting) return
         starting = true
+        val myGeneration = ++generation
 
         val generatedToken = generateToken()
         val builtEngine = TerminalEngine(applicationContext)
@@ -181,6 +187,11 @@ class McpServerService : Service() {
         scope.launch {
             try {
                 val socket = ServerSocket(port.value, 0, InetAddress.getByName("127.0.0.1"))
+                if (generation != myGeneration) {
+                    // stopServer() ran while we were binding - it already cleaned up.
+                    socket.close()
+                    return@launch
+                }
                 serverSocket = socket
                 token.value = generatedToken
                 isRunning.value = true
@@ -209,7 +220,9 @@ class McpServerService : Service() {
                 // MCP-5: the engine/tools were already constructed above - a bind failure (most
                 // likely the port already taken) must not leave that shell alive with nothing
                 // pointing at it, and must not leave the "running" notification up for a server
-                // that never actually started.
+                // that never actually started. A stale generation means stopServer() (or a newer
+                // start) already owns that state.
+                if (generation != myGeneration) return@launch
                 isRunning.value = false
                 starting = false
                 token.value = null
@@ -250,8 +263,8 @@ class McpServerService : Service() {
             }
             writer.write("{\"authorized\":true}\n")
             writer.flush()
-            // The pre-auth timeout (MCP-2) only guards the unauthenticated phase; an authorized
-            // agent legitimately idles between requests (LLM think-time), so clear it.
+            // The read timeout only exists to drop a client that never authenticates. A paired
+            // client may legitimately sit idle between requests for as long as it likes.
             socket.soTimeout = 0
 
             val currentTools = tools ?: return
@@ -267,6 +280,8 @@ class McpServerService : Service() {
     }
 
     private fun stopServer() {
+        generation++
+        starting = false
         isRunning.value = false
         try {
             serverSocket?.close()

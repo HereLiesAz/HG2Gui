@@ -11,14 +11,16 @@ READ ALL ATTACHED MATERIAL BEFORE GENERATING ANYTHING.
 
 ### Current status
 
-All 35 canonical Guide-entry animation sequences are complete; see
-`docs/guide/animations/canonical/` for the finished set and
-`docs/HG2Gui_animation_5s_production_packets/00_MANIFEST.md` for the
-per-sequence cut manifest. This file is kept as the style/format reference
-for producing any *new* sequence added later — it is not an active
-session-handoff note, and nothing below the rules is a to-do list. Do not
-redesign the project, rewrite an existing sequence, or invent a different
-production system when using it for a new entry.
+The 35 canonical Guide-entry animation sequences have complete production
+packets and cut sheets (see `docs/guide/animations/canonical/` and
+`docs/HG2Gui_animation_5s_production_packets/00_MANIFEST.md`), but the
+rendered boundary frames are NOT complete: most canonical START/END images
+are still missing and the tangent frames are unverified (see
+`docs/guide/ANIMATION_TODO.md` and `docs/guide/README.md` for exact
+coverage). This file is kept as the style/format reference for producing any
+new sequence or missing frame - it is not an active session-handoff note.
+Do not redesign the project, rewrite an existing sequence, or invent a
+different production system when using it.
 
 The animation text in the canonical animation sequence file is canonical. Preserve the intended visual joke and sequence of events.
 

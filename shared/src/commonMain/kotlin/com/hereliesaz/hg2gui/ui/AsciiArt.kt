@@ -1,16 +1,20 @@
 package com.hereliesaz.hg2gui.ui
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -129,8 +133,47 @@ private fun buildContourPath(density: Array<FloatArray>, cellPx: Float): Path {
  */
 @Composable
 fun AsciiArtCanvas(text: String, ink: Color, modifier: Modifier = Modifier, maxCell: Dp = 7.dp) {
-    val lines = text.lines()
-    val cols = lines.maxOf { it.length }.coerceAtLeast(1)
+    // The density grid is O(rows x cols) and the contour trace is worse - computed once per text
+    // (not per recomposition), and bounded so a huge block of "art" can't stall the UI thread.
+    val grid = remember(text) { buildDensityGrid(text) }
+    val density = grid.density
+    val cols = grid.cols
+    val rows = grid.rows
+
+    // maxWidth has to be read from constraints BoxWithConstraints itself is measured with, which
+    // means horizontalScroll can't be on this Box - horizontalScroll always hands its child
+    // Constraints.Infinity, so a BoxWithConstraints inside one never sees a real width to fit to.
+    // Scrolling only kicks in on the Canvas below, once cell has already been sized against the
+    // real available width.
+    BoxWithConstraints(modifier) {
+        val cell = min(maxCell, maxWidth / cols)
+        // The traced path is cached by drawWithCache and only rebuilt when the size/cell changes.
+        Box(
+            Modifier
+                .horizontalScroll(rememberScrollState())
+                .width(cell * (cols + 2))
+                .height(cell * (rows + 2))
+                // A traced silhouette has no text for a screen reader; say what it is, and that the
+                // plain text is one tap away (the PLAIN TEXT toggle on the block).
+                .semantics { contentDescription = "ASCII art, $rows rows by $cols columns. Use the plain text toggle to read it." }
+                .drawWithCache {
+                    val path = buildContourPath(density, cell.toPx())
+                    onDrawBehind { drawPath(path, color = ink) }
+                }
+        )
+    }
+}
+
+private const val MAX_ART_ROWS = 200
+private const val MAX_ART_COLS = 300
+
+internal class DensityGrid(val density: Array<FloatArray>, val rows: Int, val cols: Int)
+
+/** Ink-density samples for [text], capped at [MAX_ART_ROWS] x [MAX_ART_COLS] (the rest is
+ *  dropped from the silhouette; the raw text is still one toggle away). */
+internal fun buildDensityGrid(text: String): DensityGrid {
+    val lines = text.lines().take(MAX_ART_ROWS)
+    val cols = lines.maxOf { it.length }.coerceIn(1, MAX_ART_COLS)
     val rows = lines.size
     // A 1-sample zero border on every side so art touching the block's edge still closes into a
     // shape instead of being cut off mid-contour.
@@ -140,24 +183,7 @@ fun AsciiArtCanvas(text: String, ink: Color, modifier: Modifier = Modifier, maxC
             else charDensity(lines[r - 1].getOrElse(c - 1) { ' ' })
         }
     }
-
-    // maxWidth has to be read from constraints BoxWithConstraints itself is measured with, which
-    // means horizontalScroll can't be on this Box - horizontalScroll always hands its child
-    // Constraints.Infinity, so a BoxWithConstraints inside one never sees a real width to fit to.
-    // Scrolling only kicks in on the Canvas below, once cell has already been sized against the
-    // real available width.
-    BoxWithConstraints(modifier) {
-        val cell = min(maxCell, maxWidth / cols)
-        Canvas(
-            Modifier
-                .horizontalScroll(rememberScrollState())
-                .width(cell * (cols + 2))
-                .height(cell * (rows + 2))
-        ) {
-            val path = buildContourPath(density, cell.toPx())
-            drawPath(path, color = ink)
-        }
-    }
+    return DensityGrid(density, rows, cols)
 }
 
 private fun min(a: Dp, b: Dp) = if (a.value < b.value) a else b

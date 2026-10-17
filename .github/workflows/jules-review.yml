@@ -25,26 +25,44 @@ jobs:
       issues: 'write'
       pull-requests: 'write'
     steps:
+      # PR/issue text is attacker-controlled: it reaches the shell only through env vars (never
+      # inline expression interpolation into the script) and is handed on as a step output.
+      - name: 'Build review prompt'
+        id: 'prompt'
+        env:
+          REPO: '${{ github.repository }}'
+          NUMBER: '${{ github.event.pull_request.number || github.event.issue.number }}'
+          TITLE: '${{ github.event.pull_request.title || github.event.issue.title }}'
+          BODY: '${{ github.event.pull_request.body || github.event.issue.body }}'
+          EXTRA: '${{ inputs.additional_context }}'
+        run: |-
+          {
+            echo 'prompt<<JULES_PROMPT_EOF'
+            echo "Please review pull request #${NUMBER} in ${REPO}."
+            echo
+            echo "**Title:** ${TITLE}"
+            echo
+            echo '**Description:**'
+            echo "${BODY}"
+            echo
+            if [ -n "${EXTRA}" ]; then
+              echo "**Additional context from requester:** ${EXTRA}"
+              echo
+            fi
+            echo 'Review the diff for:'
+            echo '- Correctness bugs and logic errors'
+            echo '- Security issues (injection, permission leaks, unvalidated input at boundaries)'
+            echo '- Performance regressions'
+            echo '- Opportunities for simplification or reuse'
+            echo
+            echo 'Post your findings as a review comment on the PR. If you find fixable issues, open a follow-up PR with the corrections rather than blocking the review.'
+            echo 'JULES_PROMPT_EOF'
+          } >> "$GITHUB_OUTPUT"
+
       - name: 'Invoke Jules for PR review'
         uses: 'google-labs-code/jules-invoke@v1.0.0'
         with:
-          prompt: |-
-            Please review pull request #${{ github.event.pull_request.number || github.event.issue.number }} in ${{ github.repository }}.
-
-            **Title:** ${{ github.event.pull_request.title || github.event.issue.title }}
-
-            **Description:**
-            ${{ github.event.pull_request.body || github.event.issue.body }}
-
-            ${{ inputs.additional_context && format('**Additional context from requester:** {0}', inputs.additional_context) || '' }}
-
-            Review the diff for:
-            - Correctness bugs and logic errors
-            - Security issues (injection, permission leaks, unvalidated input at boundaries)
-            - Performance regressions
-            - Opportunities for simplification or reuse
-
-            Post your findings as a review comment on the PR. If you find fixable issues, open a follow-up PR with the corrections rather than blocking the review.
+          prompt: '${{ steps.prompt.outputs.prompt }}'
           jules_api_key: '${{ secrets.JULES_API_KEY }}'
           include_last_commit: true
           include_commit_log: true

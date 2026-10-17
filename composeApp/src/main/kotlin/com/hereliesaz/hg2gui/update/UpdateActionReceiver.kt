@@ -3,6 +3,7 @@ package com.hereliesaz.hg2gui.update
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import com.hereliesaz.hg2gui.LongTaskService
 
 class UpdateActionReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -13,15 +14,23 @@ class UpdateActionReceiver : BroadcastReceiver() {
         val sha256 = intent.getStringExtra(EXTRA_SHA256)
         if (versionCode < 0L) return
 
+        val update = AppUpdateChecker.Update(versionName, versionCode, downloadUrl, sha256)
+        val appContext = context.applicationContext
+        // A download easily outlives a receiver - run it in a foreground service so the process
+        // isn't reaped mid-download. Tapping the notification that sent this broadcast is a
+        // foreground-service start exemption, so this normally succeeds; if the platform still
+        // refuses, hold the broadcast open until the work finishes rather than dropping it at once.
+        if (LongTaskService.launch(appContext, "Updating HG2Gui ${update.versionName}") {
+                AppUpdateChecker.downloadAndInstallBlocking(appContext, update)
+            }) return
         val pending = goAsync()
-        try {
-            AppUpdateChecker.downloadAndInstall(
-                context,
-                AppUpdateChecker.Update(versionName, versionCode, downloadUrl, sha256)
-            )
-        } finally {
-            pending.finish()
-        }
+        Thread {
+            try {
+                AppUpdateChecker.downloadAndInstallBlocking(appContext, update)
+            } finally {
+                pending.finish()
+            }
+        }.start()
     }
 
     companion object {
