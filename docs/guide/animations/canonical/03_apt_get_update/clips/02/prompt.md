@@ -7,7 +7,7 @@ EXACTLY 5.0 seconds. ORIGINAL 1:1 square flat 2D HG2Gui Guide animation in the s
 
 Locked background: powder blue `#7EA6B7`
 START: Use the supplied start.png exactly; match pose, layout, proportions and colors.
-END: missing, expected 03_apt_get_update_frame_02.png. A real approved end image must exist before producing the final matched render.
+END: Use the supplied end.png exactly; match pose, layout, proportions and colors.
 If a boundary is unavailable, this is a planning prompt only; generate and approve the missing frame first, never silently substitute.
 
 ANIMATE THIS VISUAL ACTION EXACTLY:

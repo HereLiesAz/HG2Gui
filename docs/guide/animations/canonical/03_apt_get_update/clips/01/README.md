@@ -6,7 +6,7 @@
 
 | Boundary | Expected source | Status | Image | Provenance |
 | --- | --- | --- | --- | --- |
-| START | `03_apt_get_update_frame_00.png` | missing | not available |  |
+| START | `03_apt_get_update_frame_00.png` | present | [image](start.png) | `docs/03_apt_get_update_frame_00.png` |
 | END | `03_apt_get_update_frame_01.png` | present | [image](end.png) | `docs/03_apt_get_update_frame_01.png` |
 
 [Clip script](script.md) · [Clip generation prompt](prompt.md)

@@ -262,11 +262,13 @@
             },
             "start": {
               "expected": "03_apt_get_update_frame_00.png",
-              "local": null,
+              "local": "docs/guide/animations/canonical/03_apt_get_update/scenes/01/frames/start.png",
               "role": "start",
               "semantics": "explicit_cut_sheet_boundary",
-              "sources": [],
-              "status": "missing"
+              "sources": [
+                "docs/03_apt_get_update_frame_00.png"
+              ],
+              "status": "present"
             }
           },
           "text": "docs/guide/animations/canonical/03_apt_get_update/scenes/01/scene.md"
@@ -279,11 +281,13 @@
           "storyboard": {
             "end": {
               "expected": "03_apt_get_update_frame_02.png",
-              "local": null,
+              "local": "docs/guide/animations/canonical/03_apt_get_update/scenes/02/frames/end.png",
               "role": "end",
               "semantics": "explicit_cut_sheet_boundary",
-              "sources": [],
-              "status": "missing"
+              "sources": [
+                "docs/03_apt_get_update_frame_02.png"
+              ],
+              "status": "present"
             },
             "start": {
               "expected": "03_apt_get_update_frame_01.png",
@@ -306,19 +310,23 @@
           "storyboard": {
             "end": {
               "expected": "03_apt_get_update_frame_03.png",
-              "local": null,
+              "local": "docs/guide/animations/canonical/03_apt_get_update/scenes/03/frames/end.png",
               "role": "end",
               "semantics": "explicit_cut_sheet_boundary",
-              "sources": [],
-              "status": "missing"
+              "sources": [
+                "docs/03_apt_get_update_frame_03.png"
+              ],
+              "status": "present"
             },
             "start": {
               "expected": "03_apt_get_update_frame_02.png",
-              "local": null,
+              "local": "docs/guide/animations/canonical/03_apt_get_update/scenes/03/frames/start.png",
               "role": "start",
               "semantics": "explicit_cut_sheet_boundary",
-              "sources": [],
-              "status": "missing"
+              "sources": [
+                "docs/03_apt_get_update_frame_02.png"
+              ],
+              "status": "present"
             }
           },
           "text": "docs/guide/animations/canonical/03_apt_get_update/scenes/03/scene.md"
