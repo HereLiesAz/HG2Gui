@@ -1,7 +1,17 @@
-# top — clip 03: script
+# top — clip 03 | script
 
-**Source:** `docs/HG2Gui_animation_5s_cut_sheet_v2.md`
+**Source:** docs/HG2Gui_animation_5s_cut_sheet_v2.md
 
-**Visual action (verbatim cut sheet):**
+Visual action, verbatim from the revised 5-second cut sheet:
 
 One process hits `99%` and receives a tiny trophy. Confetti appears for half a second; simultaneously the entire terminal freezes rigid. A boardroom stamp descends over the frozen picture: `RECORD QUARTER`. Hold on the trophy beside a completely unusable system.
+
+## Corresponding original script excerpt
+
+One reaches 99%.
+
+A little trophy appears.
+
+The terminal freezes.
+
+The Board records a record quarter.

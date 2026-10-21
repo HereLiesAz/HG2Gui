@@ -1,7 +1,7 @@
-# ls_tangent — clip 01: script
+# ls_tangent — clip 01 | script
 
-**Source:** no verified clip script
+**Source:** Existing START and END images only
 
-**Unresolved source script:**
+No verifiable dialogue or narration script accompanies these legacy image pairs. The following action is an editorial description of the two actual shots.
 
-No verified clip-level script was found for this legacy boundary pair. No dialogue or plot is inferred from filename alone.
+March the three workers in measured unison past the still blue-clad official; keep the placards blank.

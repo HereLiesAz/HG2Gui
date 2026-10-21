@@ -180,4 +180,46 @@ class TuiSemanticModelTest {
 
         assertFalse(snapshot.isWrappable)
     }
+
+    @Test
+    fun cursorInEditorBody_isNotAPrompt() {
+        val snapshot = TuiSemanticParser.parse(
+            rows = listOf(
+                TuiRow(0, "fun main() {"),
+                TuiRow(1, "    println(\"hi\")", cursorColumn = 4),
+                TuiRow(2, "}"),
+                TuiRow(3, "~"),
+                TuiRow(4, "\"Main.kt\" 3L, 30B")
+            ),
+            alternateScreen = true
+        )
+        assertEquals(null, snapshot.prompt)
+    }
+
+    @Test
+    fun pagerAndMonitorScreens_haveNoPrompt() {
+        val less = TuiSemanticParser.parse(
+            rows = listOf(TuiRow(0, "line one", cursorColumn = 0), TuiRow(1, "line two"), TuiRow(2, "(END)")),
+            alternateScreen = true
+        )
+        assertEquals(null, less.prompt)
+        val htop = TuiSemanticParser.parse(
+            rows = listOf(
+                TuiRow(0, "  1  [|||     ] Cpu 12.0%", cursorColumn = 0),
+                TuiRow(1, "  PID USER  CPU% COMMAND"),
+                TuiRow(2, "F1Help F10Quit")
+            ),
+            alternateScreen = true
+        )
+        assertEquals(null, htop.prompt)
+    }
+
+    @Test
+    fun trailingQuestionOnLastRow_isStillAPrompt() {
+        val snapshot = TuiSemanticParser.parse(
+            rows = listOf(TuiRow(0, "Overwrite file? [y/N]", cursorColumn = 21)),
+            alternateScreen = false
+        )
+        assertEquals(TuiPromptKind.CONFIRMATION, assertNotNull(snapshot.prompt).kind)
+    }
 }

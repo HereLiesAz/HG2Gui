@@ -48,6 +48,10 @@ android {
         targetSdk = 37
         versionCode = resolvedVersionCode
         versionName = resolvedVersionName
+        // The bundled Termux-derived binaries (src/main/jniLibs) and native launchers are
+        // arm64-v8a only; without this filter the app would install on other ABIs and then
+        // fail at first launch with missing libraries.
+        ndk { abiFilters += "arm64-v8a" }
     }
     sourceSets.getByName("main").jniLibs.directories.add(generatedLauncherJniDir.get().asFile.absolutePath)
     packaging {
@@ -209,7 +213,6 @@ androidComponents {
 dependencies {
     implementation(project(":shared"))
     implementation(project(":terminal-emulator"))
-    implementation(project(":termux-shared"))
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)

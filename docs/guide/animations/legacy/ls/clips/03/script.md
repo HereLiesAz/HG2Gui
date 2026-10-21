@@ -1,7 +1,7 @@
-# ls — clip 03: script
+# ls — clip 03 | script
 
-**Source:** no verified clip script
+**Source:** Existing START and END images only
 
-**Unresolved source script:**
+No verifiable dialogue or narration script accompanies these legacy image pairs. The following action is an editorial description of the two actual shots.
 
-No verified clip-level script was found for this legacy boundary pair. No dialogue or plot is inferred from filename alone.
+Animate the brief pen mark and mechanical realignment of folders; preserve their colors and positions at both boundaries.

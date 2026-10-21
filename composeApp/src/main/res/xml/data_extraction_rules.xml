@@ -1,13 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  MCP-12: the Android 12+ equivalent of backup_rules.xml - excludes the same biometric-confirmed
-  shell-exec flag from both cloud backup and device-to-device transfer.
+  Android 12+ equivalent of backup_rules.xml. Needed even with allowBackup="false": on 12+ that
+  flag no longer stops device-to-device transfer, so everything (home/.ssh, usr/, the AI API key
+  and MCP shell-exec prefs) is excluded from both cloud backup and device transfer here.
 -->
 <data-extraction-rules>
     <cloud-backup>
-        <exclude domain="sharedpref" path="hg2gui_mcp_prefs.xml" />
+        <exclude domain="root" path="." />
+        <exclude domain="file" path="." />
+        <exclude domain="database" path="." />
+        <exclude domain="sharedpref" path="." />
+        <exclude domain="external" path="." />
     </cloud-backup>
     <device-transfer>
-        <exclude domain="sharedpref" path="hg2gui_mcp_prefs.xml" />
+        <exclude domain="root" path="." />
+        <exclude domain="file" path="." />
+        <exclude domain="database" path="." />
+        <exclude domain="sharedpref" path="." />
+        <exclude domain="external" path="." />
     </device-transfer>
 </data-extraction-rules>

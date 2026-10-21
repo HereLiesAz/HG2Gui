@@ -16,4 +16,8 @@
 /.artifacts/
 /composeApp/playstore/release/composeApp-playstore-release.aab
 /test_write.txt
-*.txt
+/composeApp/test_write.txt
+/shared/test_write.txt
+# Scratch output from local runs (logs, dumps); tracked .txt files are added explicitly
+/*.log
+/hs_err_pid*.log

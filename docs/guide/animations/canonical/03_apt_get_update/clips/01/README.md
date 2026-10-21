@@ -1,12 +1,11 @@
 # apt-get update — clip 01
 
-**Duration:** 5.0 seconds · 00:00–05:00  
-**Original scene:** [scene.md](../../scenes/01/scene.md)  
-**Animation script:** [animation.md](../../animation.md)
+**Duration:** 5 seconds · 00:00–05:00
 
-| Boundary | Expected source | Status | Image | Provenance |
-| --- | --- | --- | --- | --- |
-| START | `03_apt_get_update_frame_00.png` | present | [image](start.png) | `docs/03_apt_get_update_frame_00.png` |
-| END | `03_apt_get_update_frame_01.png` | present | [image](end.png) | `docs/03_apt_get_update_frame_01.png` |
+- START: **missing** — see [start-shot specification](shots.md)
+- END: [end.png](end.png)
+- [Corresponding script passage](script.md)
+- [Start/end shot specifications and original asset locations](shots.md)
+- [Specific image-to-video prompt](prompt.md)
 
-[Clip script](script.md) · [Clip generation prompt](prompt.md)
+Canonical scene description and text come from the v2 cut sheet.

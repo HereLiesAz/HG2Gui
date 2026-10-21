@@ -50,4 +50,14 @@ class AsciiArtTest {
             assertTrue("'$c' should stay below ISO_LEVEL", charDensity(c) < ISO_LEVEL)
         }
     }
+
+    @Test
+    fun densityGrid_isCappedAndBordered() {
+        val huge = (0 until 1000).joinToString("\n") { "#".repeat(2000) }
+        val grid = buildDensityGrid(huge)
+        assertTrue(grid.rows <= 200)
+        assertTrue(grid.cols <= 300)
+        assertTrue(grid.density.size == grid.rows + 2)
+        assertTrue(grid.density[0].all { it == 0f })
+    }
 }

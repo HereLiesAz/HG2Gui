@@ -202,8 +202,13 @@ object PackageIsolation {
         "    for child in \$(cat \"/proc/\$p/task/\$p/children\" 2>/dev/null); do hg2_scan_pid \"\$child\"; done",
         "  fi",
         "}",
-        "( eval ${q(original)} ) &",
+        // A non-interactive shell runs an `&` job with stdin from /dev/null; hand the isolated
+        // command the wrapper's real stdin (tty/pipe) explicitly so interactive packages and
+        // piped input still work while the scanner loop watches it.
+        "exec 3<&0",
+        "( eval ${q(original)} ) <&3 3<&- &",
         "main=\$!",
+        "exec 3<&-",
         "hg2_log \"root-process:\$main\"",
         "while kill -0 \"\$main\" 2>/dev/null; do hg2_scan_pid \"\$main\"; sleep 0.05; done",
         "hg2_scan_pid \"\$main\"",

@@ -48,7 +48,7 @@ enum class ShellCompletionProvider {
 object ShellPromptParser {
     private val ansi = Regex("\u001B\\[[;?0-9]*[ -/]*[@-~]")
     private val gitParen = Regex("(?:git:)?\\(([^)]+)\\)")
-    private val gitBranch = Regex("(?:|branch[: ]+|git[: ]+)([^\\s)]+)", RegexOption.IGNORE_CASE)
+    private val gitBranch = Regex("(?:\\s*|branch[: ]+|git[: ]+)([^\\s)]+)", RegexOption.IGNORE_CASE)
     private val userHost = Regex("(?:^|\\s)([A-Za-z0-9._-]+)@([A-Za-z0-9._-]+)(?:\\s|$)")
     private val pathLike = Regex("(?:^|\\s)(~(?:/[^\\s]*)?|/(?:[^\\s]+/?)*)(?:\\s|$)")
     private val exitCode = Regex("(?:exit|status)[:= ]+(\\d+)", RegexOption.IGNORE_CASE)

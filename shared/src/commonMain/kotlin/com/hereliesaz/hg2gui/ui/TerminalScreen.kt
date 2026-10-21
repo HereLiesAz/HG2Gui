@@ -1,5 +1,9 @@
 package com.hereliesaz.hg2gui.ui
 
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.Role
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.tween
@@ -42,6 +46,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
@@ -67,6 +72,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private const val MAX_BUFFER_ENTRIES = 200
+
+// Lines past the animated head (OUTPUT_WIPE_STAGGER_CAP) render as one block; this bounds that block.
+private const val MAX_RENDERED_TAIL_LINES = 1500
 
 private fun SessionUiState.updateBufferEntry(entryId: Long, transform: (TerminalHistoryEntry) -> TerminalHistoryEntry) {
     buffer = buffer.map { entry -> if (entry.id == entryId) transform(entry) else entry }
@@ -306,8 +314,11 @@ fun TerminalScreen(
                             },
                             { prompt -> session.awaitPromptAnswer(prompt) },
                             { code -> exitCode = code },
-                            { stderrChunk -> session.updateBufferEntry(entryId) { it.copy(stderr = stderrChunk) } },
-                            { styled -> session.updateBufferEntry(entryId) { it.copy(styledOutput = styled) } }
+                            // The engine calls these from its IO threads. updateBufferEntry is a
+                            // read-modify-write of session.buffer, so hop to this (main) scope -
+                            // otherwise it races the other updates and loses entries.
+                            { stderrChunk -> scope.launch { session.updateBufferEntry(entryId) { it.copy(stderr = stderrChunk) } } },
+                            { styled -> scope.launch { session.updateBufferEntry(entryId) { it.copy(styledOutput = styled) } } }
                         )
                     } catch (e: CancellationException) {
                         throw e
@@ -804,13 +815,22 @@ private fun OutputLines(entry: TerminalHistoryEntry, onCopyLine: (String) -> Uni
         }
         if (lines.size > OUTPUT_WIPE_STAGGER_CAP) {
             val onPage = Azphalt.currentGround.onPage
-            Text(
+            // Built once per output, not on every recomposition, and capped: a command that prints
+            // tens of thousands of lines would otherwise lay out one enormous Text. The copy/share
+            // actions still use the full entry.output.
+            val tail = remember(lines, onPage) {
+                val rest = lines.drop(OUTPUT_WIPE_STAGGER_CAP)
+                val shown = rest.takeLast(MAX_RENDERED_TAIL_LINES)
                 buildAnnotatedString {
-                    lines.drop(OUTPUT_WIPE_STAGGER_CAP).forEachIndexed { index, spans ->
+                    if (shown.size < rest.size) append("… ${rest.size - shown.size} earlier lines not shown (COPY has all of it)\n")
+                    shown.forEachIndexed { index, spans ->
                         if (index > 0) append("\n")
                         append(buildStyledLine(spans, onPage))
                     }
-                },
+                }
+            }
+            Text(
+                tail,
                 style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace, fontSize = 12.sp)
             )
         }
@@ -825,8 +845,9 @@ private fun OutputWipeLine(seq: Int, spans: List<StyledSpan>, onCopyLine: (Strin
         progress.animateTo(1f, tween(OUTPUT_WIPE_MS, easing = OUTPUT_WIPE_EASE))
     }
     val onPage = Azphalt.currentGround.onPage
+    val line = remember(spans, onPage) { buildStyledLine(spans, onPage) }
     Text(
-        buildStyledLine(spans, onPage),
+        line,
         modifier = Modifier
             .drawWithContent {
                 clipRect(right = size.width * progress.value) { this@drawWithContent.drawContent() }
@@ -922,7 +943,11 @@ private fun SessionTabs(
                         if (on && sessions.size > 1) {
                             Spacer(Modifier.width(6.dp))
                             Box(
-                                Modifier.clickable { onClose(s.id) }.padding(8.dp),
+                                Modifier
+                                    .semantics { contentDescription = "Close ${s.name}" }
+                                    .minimumInteractiveComponentSize()
+                                    .clickable(role = Role.Button) { onClose(s.id) }
+                                    .padding(8.dp),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text("×", style = MaterialTheme.typography.titleMedium.copy(color = Azphalt.Yellow, fontSize = 10.sp))
@@ -952,7 +977,10 @@ private fun SessionTabs(
             Text("FILES", style = MaterialTheme.typography.titleMedium.copy(color = Azphalt.White, fontSize = 8.sp, fontWeight = FontWeight.Black))
         }
         Box(
-            Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp).clickable(onClick = onOpenSettings),
+            Modifier
+                .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                .semantics { contentDescription = "Settings" }
+                .clickable(role = Role.Button, onClick = onOpenSettings),
             contentAlignment = Alignment.Center
         ) {
             Box(
@@ -963,7 +991,10 @@ private fun SessionTabs(
             }
         }
         Box(
-            Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp).clickable(onClick = onOpenGuide),
+            Modifier
+                .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                .semantics { contentDescription = "Command guide" }
+                .clickable(role = Role.Button, onClick = onOpenGuide),
             contentAlignment = Alignment.Center
         ) {
             Box(
@@ -1068,7 +1099,13 @@ private fun CommandLine(
                         cursorBrush = SolidColor(Azphalt.Yellow),
                         singleLine = true,
                         visualTransformation = if (masked) PasswordVisualTransformation() else VisualTransformation.None,
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
+                        // Autocorrect/suggestions mangle shell input (and would learn a password into the
+                        // keyboard's dictionary); a masked prompt also asks for the password keyboard.
+                        keyboardOptions = KeyboardOptions(
+                            autoCorrectEnabled = false,
+                            keyboardType = if (masked) KeyboardType.Password else KeyboardType.Text,
+                            imeAction = ImeAction.Go
+                        ),
                         keyboardActions = KeyboardActions(onGo = { onRun() })
                     )
                 }

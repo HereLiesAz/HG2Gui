@@ -87,13 +87,25 @@ class SessionUiState(val id: String, name: String, cwd: String) {
         val deferred = CompletableDeferred<String>()
         pendingAnswer = deferred
         pendingPrompt = uiPrompt
-        val answer = deferred.await()
-        pendingPrompt = null
-        pendingAnswer = null
-        answer
+        // finally: a cancelled caller (tab closed, command killed) must not leave a stale prompt
+        // on screen or a dead deferred that the next answerPrompt() would complete into nothing.
+        try {
+            deferred.await()
+        } finally {
+            if (pendingAnswer === deferred) {
+                pendingPrompt = null
+                pendingAnswer = null
+            }
+        }
     }
 
     fun answerPrompt(text: String) {
         pendingAnswer?.complete(text)
+    }
+
+    /** Session teardown: releases any command still waiting in [awaitPromptAnswer] with an empty
+     *  answer so its coroutine/thread can finish instead of waiting forever. */
+    fun destroy() {
+        pendingAnswer?.complete("")
     }
 }

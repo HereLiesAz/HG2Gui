@@ -20,10 +20,12 @@ fun applyCompletion(
     val before = line.substring(0, safeCursor)
     val after = line.substring(safeCursor)
     val tokenStart = before.indexOfLast { it.isWhitespace() }.let { if (it < 0) 0 else it + 1 }
-    val inserted = candidate.insertText + if (candidate.appendSpace && !after.startsWith(" ")) " " else ""
+    val spaceFollows = candidate.appendSpace && after.startsWith(" ")
+    val inserted = candidate.insertText + if (candidate.appendSpace && !spaceFollows) " " else ""
     val next = before.substring(0, tokenStart) + inserted + after
     return CompletionInsertion(
         line = next,
-        cursor = tokenStart + inserted.length
+        // An existing space after the cursor already is the trailing space: step over it.
+        cursor = tokenStart + inserted.length + if (spaceFollows) 1 else 0
     )
 }

@@ -1,7 +1,11 @@
-# 02_pkg_install_small_empire_of_dependencies — clip 04: script
+# 02_pkg_install_small_empire_of_dependencies — clip 04 | script
 
-**Source:** the original tangent cut map
+**Source:** docs/script (3).md
 
-**Narration beat (verbatim cut map):**
+Narration beat, verbatim from the original tangent cut map:
 
 Things began to arrive.
+
+## Corresponding original script excerpt
+
+Then labels.

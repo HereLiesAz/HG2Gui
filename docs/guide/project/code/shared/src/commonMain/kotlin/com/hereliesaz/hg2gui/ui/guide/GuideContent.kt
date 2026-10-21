@@ -1,3 +1,5 @@
+// MIRROR: a snapshot copy of shared/src/commonMain/kotlin/com/hereliesaz/hg2gui/ui/guide/GuideContent.kt
+// kept with the Guide project bundle for reference. It is not compiled; edit the original, not this.
 package com.hereliesaz.hg2gui.ui.guide
 
 /**

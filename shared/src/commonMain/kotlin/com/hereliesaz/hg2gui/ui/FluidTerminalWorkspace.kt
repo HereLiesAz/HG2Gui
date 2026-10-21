@@ -19,6 +19,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.movableContentOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -58,6 +61,13 @@ internal fun FluidTerminalWorkspace(
     bufferContent: @Composable ColumnScope.() -> Unit,
     commandTreeContent: @Composable (Modifier) -> Unit
 ) {
+    // The command tree appears at a different spot in the tree for each layout (none / side /
+    // stacked). Without movableContentOf, crossing a layout boundary - e.g. the first command
+    // output arriving, or rotating - disposes the whole PillMenu and its navigation state and
+    // builds a new one. rememberUpdatedState lets the one movable instance follow the caller's
+    // latest lambda instead of being rebuilt whenever that lambda is re-created.
+    val latestCommandTree by rememberUpdatedState(commandTreeContent)
+    val movableCommandTree = remember { movableContentOf { m: Modifier -> latestCommandTree(m) } }
     val expansion by animateFloatAsState(
         targetValue = if (bufferExpanded && hasBuffer) 1f else 0f,
         animationSpec = tween(FLOW_EXPAND_MS)
@@ -73,7 +83,7 @@ internal fun FluidTerminalWorkspace(
         if (!hasBuffer) {
             CommandRegion(
                 modifier = Modifier.fillMaxSize(),
-                commandTreeContent = commandTreeContent
+                commandTreeContent = movableCommandTree
             )
             return@BoxWithConstraints
         }
@@ -96,7 +106,7 @@ internal fun FluidTerminalWorkspace(
                     .offset(x = -push)
                     .width(commandWidth)
                     .fillMaxHeight(),
-                commandTreeContent = commandTreeContent
+                commandTreeContent = movableCommandTree
             )
 
             BufferRegion(
@@ -130,7 +140,7 @@ internal fun FluidTerminalWorkspace(
                     .offset(y = push)
                     .fillMaxWidth()
                     .height(commandHeight),
-                commandTreeContent = commandTreeContent
+                commandTreeContent = movableCommandTree
             )
         }
     }

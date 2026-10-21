@@ -1,7 +1,7 @@
-# echo — clip 02: script
+# echo — clip 02 | script
 
-**Source:** no verified clip script
+**Source:** Existing START and END images only
 
-**Unresolved source script:**
+No verifiable dialogue or narration script accompanies these legacy image pairs. The following action is an editorial description of the two actual shots.
 
-No verified clip-level script was found for this legacy boundary pair. No dialogue or plot is inferred from filename alone.
+Propagate the wavefront in stepped arcs from left to right, preserving the horn and its little stand.

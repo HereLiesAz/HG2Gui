@@ -1,17 +1,22 @@
-# AI chat — clip 03: generation prompt
+# AI chat — clip 03 | image-to-video prompt
 
-**Source script:** [script.md](script.md)
+**Inputs:** START artwork absent → END artwork absent · [Script](script.md) · [Shot descriptions](shots.md)
 
 ~~~text
-EXACTLY 5.0 seconds. ORIGINAL 1:1 square flat 2D HG2Gui Guide animation in the screen-printed cut-paper pictogram language of the 2005 Hitchhiker's Guide (do not copy film designs). One uninterrupted matte flat background color, edge to edge; limited matte palette, sparse geometry, flattened perspective, deadpan comedy, crisp linear slides/pivots/flips with slight printed-edge texture. NO app chrome, chapter tabs, banners, borders, black bars, labels or captions added by the production process. Text ONLY when narratively required as an in-scene sign or command; reproduce scripted words exactly. No subtitles, gradients, glossy surfaces, bloom, shadows, camera shake, depth of field, 3D, photorealism, anime, sci-fi HUD, dissolves or bouncy easing. Preserve established character and prop silhouettes, proportions, costume and palette exactly. One major visual action per clip. Reach exact end composition at 4.6 seconds and hold to 5.0; no fade.
+Create the specified animation as a flat, matte screen-printed cut-paper pictogram, with economically drawn figures, crisp mechanical motion, dramatic negative space and utterly deadpan staging. Use the supplied start and end images as literal visual constraints when they exist, retaining all recurring body proportions, silhouettes, clothing, prop identities, scale, palette and camera positions. No invented narrators, subtitles, extra signs, modern HUD, gradients, glossy rendering, 3D, camera shake, fades, letterboxes, borders, production labels, Guide tabs, or title card. The app supplies its own chrome. Only show in-world text specifically required by the scene.
 
-Locked background: cobalt `#176EAA`
-START: missing, expected 17_ai_chat_frame_02.png. A real approved start image must exist before producing the final matched render.
-END: missing, expected 17_ai_chat_frame_03.png. A real approved end image must exist before producing the final matched render.
-If a boundary is unavailable, this is a planning prompt only; generate and approve the missing frame first, never silently substitute.
+Render EXACTLY 1:1 square; single background cobalt `#176EAA`.
 
-ANIMATE THIS VISUAL ACTION EXACTLY:
-The Guide opens the cabinet and inspects the historic first question. It is simply `pwd`. The celebration freezes. Camera begins a slow flat pan across the adjacent ANSWERS archive. End halfway toward a shelf label.
+SEQUENCE: AI chat; CLIP 03; 5 seconds · 10:00–15:00.
+START: Resume precisely from the preceding clip's final tableau: End on plaque.
+END: End halfway toward a shelf label.
 
-For shared consecutive boundaries, use exactly the SAME approved image file, not a regenerated lookalike.
+MOTION DIRECTOR'S TIMING
+0.0–2.4s: The Guide opens the cabinet and inspects the historic first question. It is simply `pwd`. The celebration freezes.
+2.4–4.6s: Camera begins a slow flat pan across the adjacent ANSWERS archive. End halfway toward a shelf label.
+4.6–5.0s: Hold the exact finishing composition, no additional changes.
+
+EXACT STORY ACTION / WORDS: The Guide opens the cabinet and inspects the historic first question. It is simply `pwd`. The celebration freezes. Camera begins a slow flat pan across the adjacent ANSWERS archive. End halfway toward a shelf label.
+
+A REQUIRED BOUNDARY IS MISSING: these written shots are production requirements, not fabricated files. Final matched video generation must wait for approved boundary art.
 ~~~

@@ -56,4 +56,44 @@ class FileHighlighterTest {
         assertEquals("two", lines[1][0].text)
         assertTrue(lines[2].isEmpty())
     }
+
+    @Test
+    fun parseAnsiLine_nonSgrCsiIsDroppedWithoutEatingText() {
+        // Before: the scan ran to the next 'm', swallowing "hello wor" along with ESC[2K.
+        val spans = parseAnsiLine("$ESC[2Khello world$ESC[?25h!")
+        assertEquals("hello world!", spans.joinToString("") { it.text })
+        assertTrue(spans.all { it.hue == null })
+    }
+
+    @Test
+    fun parseAnsiLine_256ColorSubParamsAreNotReadAsStandaloneCodes() {
+        val spans = parseAnsiLine("$ESC[38;5;1mred$ESC[0m")
+        assertEquals(1, spans.size)
+        assertEquals(Azphalt.hueNames.indexOf("red"), spans[0].hue)
+        assertEquals(false, spans[0].bold)
+    }
+
+    @Test
+    fun parseAnsiLine_256ColorOutsideBasePaletteHasNoHue() {
+        val spans = parseAnsiLine("$ESC[38;5;202morange")
+        assertEquals(null, spans[0].hue)
+        assertEquals(false, spans[0].bold)
+    }
+
+    @Test
+    fun parseAnsiLine_truecolorAndBackgroundDoNotLeakIntoStyle() {
+        // 38;2;1;2;3 would otherwise set bold (1) and green (32 is not here, but 2/3 must not
+        // be misread either); 48;5;1 must not paint the foreground red.
+        val spans = parseAnsiLine("$ESC[38;2;1;31;3mtc$ESC[48;5;1mbg")
+        assertEquals(null, spans[0].hue)
+        assertEquals(false, spans[0].bold)
+        assertEquals(null, spans[1].hue)
+        assertEquals(false, spans[1].bold)
+    }
+
+    @Test
+    fun parseAnsiLine_unterminatedEscapeDropsTheRest() {
+        val spans = parseAnsiLine("ok$ESC[31")
+        assertEquals("ok", spans.joinToString("") { it.text })
+    }
 }

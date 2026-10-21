@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
@@ -59,8 +60,24 @@ fun PathPickerScreen(
     var pathHistory by remember(startPath) { mutableStateOf<List<String>>(emptyList()) }
     var entries by remember { mutableStateOf<List<VfsEntry>>(emptyList()) }
 
+    var listError by remember { mutableStateOf<String?>(null) }
+
     LaunchedEffect(currentPath) {
-        entries = listDir(currentPath).sortedWith(compareBy({ !it.isDirectory }, { it.name.lowercase() }))
+        // A listing that throws (permissions revoked, the directory vanished) used to crash the
+        // composition; show it and leave an empty list so the user can still go up or cancel.
+        try {
+            entries = listDir(currentPath).sortedWith(compareBy({ !it.isDirectory }, { it.name.lowercase() }))
+            listError = null
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            entries = emptyList()
+            listError = "Couldn't open this folder: ${e.message ?: "unknown error"}"
+        }
+    }
+
+    DisposableEffect(backStep) {
+        onDispose { backStep.reset() }
     }
 
     SideEffect {
@@ -90,6 +107,15 @@ fun PathPickerScreen(
             maxLines = 1,
             modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 10.dp)
         )
+
+        listError?.let {
+            Text(
+                it,
+                color = Azphalt.currentGround.onPage.copy(alpha = .7f),
+                fontSize = 11.sp,
+                modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 8.dp)
+            )
+        }
 
         LazyColumn(
             modifier = Modifier.weight(1f).fillMaxWidth().padding(20.dp),

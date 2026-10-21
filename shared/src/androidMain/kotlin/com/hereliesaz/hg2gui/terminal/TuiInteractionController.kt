@@ -4,7 +4,6 @@ import android.view.KeyEvent as NativeKeyEvent
 import com.termux.terminal.KeyHandler
 import com.termux.terminal.TerminalEmulator
 import kotlinx.coroutines.delay
-import kotlin.math.abs
 
 /**
  * Drives a wrapped terminal UI while re-reading semantic state after every generated action.
@@ -86,14 +85,6 @@ object TuiInteractionController {
             current = observed
         }
         return if (current == targetIndex) Result(true) else Result(false, "target tab could not be reconciled")
-    }
-
-    suspend fun selectResult(holder: FullScreenPtySession, currentRow: Int, targetRow: Int): Result {
-        val delta = targetRow - currentRow
-        val key = if (delta >= 0) NativeKeyEvent.KEYCODE_DPAD_DOWN else NativeKeyEvent.KEYCODE_DPAD_UP
-        repeat(abs(delta)) { sendKey(holder, key); delay(25) }
-        sendKey(holder, NativeKeyEvent.KEYCODE_ENTER)
-        return Result(true)
     }
 
     /** Sends a real terminal mouse press/release only when the child has enabled mouse tracking. */

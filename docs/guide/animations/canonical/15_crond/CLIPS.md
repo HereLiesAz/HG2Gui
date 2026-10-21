@@ -1,10 +1,10 @@
-# crond — production clips
+# crond — animation clips
 
-[Source animation](animation.md) · [Existing storyboard](storyboard.md)
+[Full animation script](animation.md) · [Storyboard](storyboard.md) · [Guide-wide clip index](../../../CLIP_PRODUCTION_INDEX.md)
 
-| Clip | START | END | Script | Prompt |
+| Clip | Frames | Script excerpt | START/END shots | Animation prompt |
 | --- | --- | --- | --- | --- |
-| [01](clips/01/README.md) | **missing** | **missing** | [script](clips/01/script.md) | [prompt](clips/01/prompt.md) |
-| [02](clips/02/README.md) | **missing** | **missing** | [script](clips/02/script.md) | [prompt](clips/02/prompt.md) |
-| [03](clips/03/README.md) | **missing** | **missing** | [script](clips/03/script.md) | [prompt](clips/03/prompt.md) |
-| [04](clips/04/README.md) | **missing** | **missing** | [script](clips/04/script.md) | [prompt](clips/04/prompt.md) |
+| [01](clips/01/README.md) | — → — | [script](clips/01/script.md) | [shots](clips/01/shots.md) | [prompt](clips/01/prompt.md) |
+| [02](clips/02/README.md) | — → — | [script](clips/02/script.md) | [shots](clips/02/shots.md) | [prompt](clips/02/prompt.md) |
+| [03](clips/03/README.md) | — → — | [script](clips/03/script.md) | [shots](clips/03/shots.md) | [prompt](clips/03/prompt.md) |
+| [04](clips/04/README.md) | — → — | [script](clips/04/script.md) | [shots](clips/04/shots.md) | [prompt](clips/04/prompt.md) |

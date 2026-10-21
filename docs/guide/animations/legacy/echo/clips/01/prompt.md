@@ -1,16 +1,22 @@
-# echo — clip 01: generation prompt
+# echo — clip 01 | image-to-video prompt
 
-**Source script:** [script.md](script.md)
+**Inputs:** [START](start.png) → [END](end.png) · [Script](script.md) · [Shot descriptions](shots.md)
 
 ~~~text
-EXACTLY 5.0 seconds. ORIGINAL 1:1 square flat 2D HG2Gui Guide animation in the screen-printed cut-paper pictogram language of the 2005 Hitchhiker's Guide (do not copy film designs). One uninterrupted matte flat background color, edge to edge; limited matte palette, sparse geometry, flattened perspective, deadpan comedy, crisp linear slides/pivots/flips with slight printed-edge texture. NO app chrome, chapter tabs, banners, borders, black bars, labels or captions added by the production process. Text ONLY when narratively required as an in-scene sign or command; reproduce scripted words exactly. No subtitles, gradients, glossy surfaces, bloom, shadows, camera shake, depth of field, 3D, photorealism, anime, sci-fi HUD, dissolves or bouncy easing. Preserve established character and prop silhouettes, proportions, costume and palette exactly. One major visual action per clip. Reach exact end composition at 4.6 seconds and hold to 5.0; no fade.
+Create the specified animation as a flat, matte screen-printed cut-paper pictogram, with economically drawn figures, crisp mechanical motion, dramatic negative space and utterly deadpan staging. Use the supplied start and end images as literal visual constraints when they exist, retaining all recurring body proportions, silhouettes, clothing, prop identities, scale, palette and camera positions. No invented narrators, subtitles, extra signs, modern HUD, gradients, glossy rendering, 3D, camera shake, fades, letterboxes, borders, production labels, Guide tabs, or title card. The app supplies its own chrome. Only show in-world text specifically required by the scene.
 
-Use the unchanged background color visible in the supplied frames.
-START: Use the supplied start.png exactly; match pose, layout, proportions and colors.
-END: Use the supplied end.png exactly; match pose, layout, proportions and colors.
-If a boundary is unavailable, this is a planning prompt only; generate and approve the missing frame first, never silently substitute.
+This is older non-square footage: retain the exact native aspect of the supplied START and END. Do not force 1:1.
 
-UNSCRIPTED LEGACY CLIP: animate the shortest plausible continuous graphic movement directly from the provided START image to the END image; invent no events, signs, characters, dialogue, or narration.
+SEQUENCE: echo; CLIP 01; Original runtime undocumented.
+START: A dark-uniform woman at left speaks through a red horn; a large cream speech balloon fills the right.
+END: She stands hands-on-hips while the red horn rests separately on a small navy pedestal at right.
 
-For shared consecutive boundaries, use exactly the SAME approved image file, not a regenerated lookalike.
+MOTION DIRECTOR'S RELATIVE ACTION PHASES (runtime not yet established)
+Opening: Separate the horn from her hand, place it on the pedestal and let the bubble dissipate.
+Transformation: Keep the plain olive field.
+Final image: Hold the exact finishing composition, no additional changes.
+
+THE EXACT VISIBLE TRANSITION: Separate the horn from her hand, place it on the pedestal and let the bubble dissipate. Keep the plain olive field.
+
+Both verified legacy boundary images exist. Match their compositions at start and finish; approve a runtime before timing the action.
 ~~~

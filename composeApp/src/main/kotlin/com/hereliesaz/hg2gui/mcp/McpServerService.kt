@@ -37,7 +37,7 @@ import java.security.SecureRandom
  * differ (JDK 6u17+), unlike `String.equals`/`==`, which return as soon as a mismatched byte or
  * length is found. The pairing token is 192 bits of entropy, so a timing side-channel here isn't
  * a practical break either way - this closes the hardening gap without pretending it was ever an
- * exploitable one. `internal`, not `private`, so McpServerServiceTest (androidUnitTest) can call
+ * exploitable one. `internal`, not `private`, so McpServerServiceTest (composeApp/src/test) can call
  * it directly - it's plain java.security, no Robolectric/instrumented runtime needed.
  */
 internal fun constantTimeEquals(a: String, b: String): Boolean =
@@ -167,9 +167,15 @@ class McpServerService : Service() {
     // loses the port race. This flag closes that window without waiting on the coroutine at all.
     @Volatile private var starting = false
 
+    // Bumped by every start and stop. A bind coroutine only publishes (or tears down) state while
+    // its generation is still current, so a stop that lands before the bind finishes can't be
+    // undone by that coroutine flipping isRunning back on afterwards.
+    @Volatile private var generation = 0
+
     private fun startServer() {
         if (isRunning.value || starting) return
         starting = true
+        val myGeneration = ++generation
 
         val generatedToken = generateToken()
         val builtEngine = TerminalEngine(applicationContext)
@@ -181,6 +187,11 @@ class McpServerService : Service() {
         scope.launch {
             try {
                 val socket = ServerSocket(port.value, 0, InetAddress.getByName("127.0.0.1"))
+                if (generation != myGeneration) {
+                    // stopServer() ran while we were binding - it already cleaned up.
+                    socket.close()
+                    return@launch
+                }
                 serverSocket = socket
                 token.value = generatedToken
                 isRunning.value = true
@@ -209,7 +220,9 @@ class McpServerService : Service() {
                 // MCP-5: the engine/tools were already constructed above - a bind failure (most
                 // likely the port already taken) must not leave that shell alive with nothing
                 // pointing at it, and must not leave the "running" notification up for a server
-                // that never actually started.
+                // that never actually started. A stale generation means stopServer() (or a newer
+                // start) already owns that state.
+                if (generation != myGeneration) return@launch
                 isRunning.value = false
                 starting = false
                 token.value = null
@@ -250,6 +263,9 @@ class McpServerService : Service() {
             }
             writer.write("{\"authorized\":true}\n")
             writer.flush()
+            // The read timeout only exists to drop a client that never authenticates. A paired
+            // client may legitimately sit idle between requests for as long as it likes.
+            socket.soTimeout = 0
 
             val currentTools = tools ?: return
             while (isRunning.value) {
@@ -264,6 +280,8 @@ class McpServerService : Service() {
     }
 
     private fun stopServer() {
+        generation++
+        starting = false
         isRunning.value = false
         try {
             serverSocket?.close()

@@ -29,7 +29,12 @@ import java.util.concurrent.TimeUnit
 /** Checks HG2Gui's rolling GitHub release, downloads newer APKs itself, verifies them and hands
  * them to Android's package installer. The browser is no longer part of the update path. */
 object AppUpdateChecker {
-    private const val RELEASES_API = "https://api.github.com/repos/HereLiesAz/HG2Gui/releases/tags/latest-debug-v0.7"
+    private const val RELEASES_TAG_API = "https://api.github.com/repos/HereLiesAz/HG2Gui/releases/tags/latest-debug-v"
+    // Used only if the installed versionName can't be parsed.
+    private const val FALLBACK_SERIES = "0.7"
+    private const val PREFS = "hg2gui_updates"
+    private const val KEY_LAST_CHECK = "last_check_millis"
+    private const val CHECK_INTERVAL_MS = 6L * 60 * 60 * 1000
     private const val CHANNEL_ID = "hg2gui_updates"
     private const val NOTIFICATION_ID = 2001
     private const val DOWNLOAD_NOTIFICATION_ID = 2002
@@ -49,10 +54,17 @@ object AppUpdateChecker {
             .build()
     }
 
+    /** The rolling release this build line publishes to: `latest-debug-v<major>.<minor>`, taken
+     *  from the installed versionName so a new minor series doesn't keep polling the old tag. */
+    internal fun releaseSeries(versionName: String?): String =
+        Regex("""^(\d+)\.(\d+)""").find(versionName.orEmpty())?.let { "${it.groupValues[1]}.${it.groupValues[2]}" }
+            ?: FALLBACK_SERIES
+
     fun check(context: Context): Update? {
         val installedCode = installedVersionCode(context)
+        val installedName = runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull()
         val request = Request.Builder()
-            .url(RELEASES_API)
+            .url(RELEASES_TAG_API + releaseSeries(installedName))
             .header("Accept", "application/vnd.github+json")
             .header("User-Agent", "HG2Gui-update-checker")
             .build()
@@ -88,6 +100,13 @@ object AppUpdateChecker {
 
     fun checkAndNotify(context: Context) {
         val appContext = context.applicationContext
+        // Called on every TerminalActivity start - don't hit the GitHub API (60 req/h
+        // unauthenticated) each time; once per CHECK_INTERVAL_MS is plenty for a rolling build.
+        val prefs = appContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val now = System.currentTimeMillis()
+        val last = prefs.getLong(KEY_LAST_CHECK, 0L)
+        if (now - last in 0 until CHECK_INTERVAL_MS) return
+        prefs.edit().putLong(KEY_LAST_CHECK, now).apply()
         Thread {
             val update = check(appContext) ?: return@Thread
             if (canNotify(appContext)) {
@@ -102,7 +121,14 @@ object AppUpdateChecker {
 
     fun downloadAndInstall(context: Context, update: Update) {
         val appContext = context.applicationContext
-        Thread {
+        Thread { downloadAndInstallBlocking(appContext, update) }.start()
+    }
+
+    /** Downloads, verifies and hands [update] to the installer on the calling thread. Every
+     *  failure ends in a failure notification (or toast); it never throws. */
+    fun downloadAndInstallBlocking(context: Context, update: Update) {
+        val appContext = context.applicationContext
+        run {
             try {
                 ensureNotificationChannel(appContext)
                 val target = File(appContext.cacheDir, "updates/hg2gui-${update.versionName}.apk")
@@ -120,11 +146,12 @@ object AppUpdateChecker {
             } catch (e: Exception) {
                 notifyFailure(appContext, e.message ?: "Update failed")
             }
-        }.start()
+        }
     }
 
     private fun verifyDownloadedApk(context: Context, apk: File, update: Update) {
-        val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) PackageManager.GET_SIGNING_CERTIFICATES else 0
+        @Suppress("DEPRECATION")
+        val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) PackageManager.GET_SIGNING_CERTIFICATES else PackageManager.GET_SIGNATURES
         @Suppress("DEPRECATION")
         val archive = context.packageManager.getPackageArchiveInfo(apk.absolutePath, flags)
             ?: error("Downloaded file is not a valid APK")
@@ -145,6 +172,17 @@ object AppUpdateChecker {
             val archiveSigners = archive.signingInfo?.apkContentsSigners?.map { it.toCharsString() }?.toSet().orEmpty()
             // An unsigned archive (empty archiveSigners) must also be rejected — the previous
             // guard only caught mismatched signers, letting an unsigned APK through.
+            if (archiveSigners.isEmpty() || (installedSigners.isNotEmpty() && archiveSigners != installedSigners)) {
+                error("Update APK signature does not match the installed app")
+            }
+        } else {
+            // Below API 28 there is no signingInfo; GET_SIGNATURES gives the same set to compare.
+            @Suppress("DEPRECATION")
+            val installed = context.packageManager.getPackageInfo(context.packageName, PackageManager.GET_SIGNATURES)
+            @Suppress("DEPRECATION")
+            val installedSigners = installed.signatures?.map { it.toCharsString() }?.toSet().orEmpty()
+            @Suppress("DEPRECATION")
+            val archiveSigners = archive.signatures?.map { it.toCharsString() }?.toSet().orEmpty()
             if (archiveSigners.isEmpty() || (installedSigners.isNotEmpty() && archiveSigners != installedSigners)) {
                 error("Update APK signature does not match the installed app")
             }

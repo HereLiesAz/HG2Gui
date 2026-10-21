@@ -47,21 +47,40 @@ jobs:
             core.setOutput('available_labels', labelNames.join(','));
             core.info(`Found ${labelNames.length} labels: ${labelNames.join(', ')}`);
 
+      # Issue text is attacker-controlled: env vars only, handed on as a step output.
+      - name: 'Build triage prompt'
+        id: 'prompt'
+        if: "${{ steps.get_labels.outputs.available_labels != '' }}"
+        env:
+          REPO: '${{ github.repository }}'
+          NUMBER: '${{ github.event.issue.number }}'
+          TITLE: '${{ github.event.issue.title }}'
+          BODY: '${{ github.event.issue.body }}'
+          LABELS: '${{ steps.get_labels.outputs.available_labels }}'
+          EXTRA: '${{ inputs.additional_context }}'
+        run: |-
+          {
+            echo 'prompt<<JULES_PROMPT_EOF'
+            echo 'Triage the following GitHub issue and apply the most appropriate labels from the available set.'
+            echo
+            echo "**Issue #${NUMBER}: ${TITLE}**"
+            echo
+            echo "${BODY}"
+            echo
+            echo '**Available labels (comma-separated):**'
+            echo "${LABELS}"
+            echo
+            if [ -n "${EXTRA}" ]; then
+              echo "**Additional context:** ${EXTRA}"
+              echo
+            fi
+            echo "Apply labels to issue #${NUMBER} in ${REPO} using only labels from the available set above. Do not invent new labels. If the issue provides insufficient information to pick a label confidently, apply \"status/needs-triage\" if it exists, otherwise leave it unlabeled."
+            echo 'JULES_PROMPT_EOF'
+          } >> "$GITHUB_OUTPUT"
+
       - name: 'Invoke Jules for issue triage'
-        if: '${{ steps.get_labels.outputs.available_labels != '''' }}'
+        if: "${{ steps.get_labels.outputs.available_labels != '' }}"
         uses: 'google-labs-code/jules-invoke@v1.0.0'
         with:
-          prompt: |-
-            Triage the following GitHub issue and apply the most appropriate labels from the available set.
-
-            **Issue #${{ github.event.issue.number }}: ${{ github.event.issue.title }}**
-
-            ${{ github.event.issue.body }}
-
-            **Available labels (comma-separated):**
-            ${{ steps.get_labels.outputs.available_labels }}
-
-            ${{ inputs.additional_context && format('**Additional context:** {0}', inputs.additional_context) || '' }}
-
-            Apply labels to issue #${{ github.event.issue.number }} in ${{ github.repository }} using only labels from the available set above. Do not invent new labels. If the issue provides insufficient information to pick a label confidently, apply "status/needs-triage" if it exists, otherwise leave it unlabeled.
+          prompt: '${{ steps.prompt.outputs.prompt }}'
           jules_api_key: '${{ secrets.JULES_API_KEY }}'

@@ -1,5 +1,6 @@
 package com.hereliesaz.hg2gui.mcp
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -62,8 +63,9 @@ object McpJsonRpc {
 
     val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
-    /** Parses one line, dispatches it, and serializes the reply - never throws: a malformed
-     *  line becomes a Parse error response, same as any other JSON-RPC failure mode. */
+    /** Parses one line, dispatches it, and serializes the reply - never throws (other than
+     *  coroutine cancellation): a malformed line becomes a Parse error response and a tool that
+     *  throws becomes an Internal error response, same as any other JSON-RPC failure mode. */
     suspend fun handleLine(line: String, tools: McpToolProvider): String {
         val request = try {
             json.decodeFromString(JsonRpcRequest.serializer(), line)
@@ -99,7 +101,14 @@ object McpJsonRpc {
                     JsonRpcResponse(id = request.id, error = JsonRpcError(INVALID_PARAMS, "Missing tool name"))
                 } else {
                     val arguments = params["arguments"] as? JsonObject
-                    when (val result = tools.callTool(name, arguments)) {
+                    val result = try {
+                        tools.callTool(name, arguments)
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        ToolCallResult.Failure(INTERNAL_ERROR, "Internal error: ${e.message ?: e.javaClass.simpleName}")
+                    }
+                    when (result) {
                         is ToolCallResult.Success -> JsonRpcResponse(id = request.id, result = buildJsonObject {
                             put("content", result.content)
                             put("isError", false)

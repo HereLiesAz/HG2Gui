@@ -50,9 +50,12 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.math.roundToInt
 
 /*
@@ -89,7 +92,10 @@ object Azphalt {
         "gray", "sage", "tan", "brown"
     )
 
-    fun hueOf(id: String) = (id.hashCode().let { if (it < 0) -it else it }) % hues.size
+    // Widened to Long before negating: -Int.MIN_VALUE overflows back to a negative Int and would
+    // index hues out of range. (floorMod would also fix that, but renumbers every id whose hash is
+    // negative, which would change the hue a pill has always had.)
+    fun hueOf(id: String) = (id.hashCode().toLong().let { if (it < 0) -it else it } % hues.size).toInt()
 
     /** A named background - "the page is yellow. Not black, not white." - plus its own fold
      *  gradient. [weight] controls how often [randomGround] picks it; Mustard is weighted far
@@ -544,9 +550,31 @@ fun PillMenu(
                     val rowsBelow = roots.size - 1 - roots.indexOf(host)
                     val anchor = trail.lastOrNull() ?: host
                     // Resolved once per anchor, not on every recomposition - resolveChildren can do
-                    // real I/O (a directory listing, a PATH scan), and remember(anchor.id) keeps
-                    // that to one call per navigation into this node.
-                    val effectiveChildren = remember(anchor.id) { anchor.resolveChildren?.invoke() ?: anchor.children }
+                    // real I/O (a directory listing, a PATH scan), so it runs off the main thread
+                    // via produceState, keyed on the anchor id AND the resolver itself: a rebuilt
+                    // tree hands back a fresh resolver, which re-resolves instead of showing stale
+                    // children. The id travels with the result so a late result for the previous
+                    // anchor is never shown under the new one.
+                    val resolver = anchor.resolveChildren
+                    val resolved by produceState<Pair<String, List<MenuNode>>?>(null, anchor.id, resolver) {
+                        if (resolver != null) {
+                            val children = withContext(Dispatchers.Default) {
+                                try {
+                                    resolver()
+                                } catch (e: CancellationException) {
+                                    throw e
+                                } catch (e: Exception) {
+                                    emptyList()
+                                }
+                            }
+                            value = anchor.id to children
+                        }
+                    }
+                    val effectiveChildren = when {
+                        resolver == null -> anchor.children
+                        resolved?.first == anchor.id -> resolved!!.second
+                        else -> emptyList()
+                    }
                     // ChildBand's own `selected == null` check only guards against a second tap
                     // landing on one of ITS OWN sibling pills - it has no way to know about
                     // HostPill or TrailRow, which sit outside it and keep accepting taps for the

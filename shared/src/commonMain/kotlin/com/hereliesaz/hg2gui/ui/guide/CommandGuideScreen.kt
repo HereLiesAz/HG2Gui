@@ -36,7 +36,8 @@ import com.hereliesaz.hg2gui.ui.menu.PillMenu
 fun CommandGuideScreen(
     tree: List<MenuNode>,
     fullscreen: Boolean,
-    onCommandSelected: (List<String>) -> Unit,
+    /** tokens picked so far; complete = a whole command was chosen (Guide entry, terminal pill). */
+    onCommandSelected: (tokens: List<String>, complete: Boolean) -> Unit,
     onBack: () -> Unit,
     backStep: BackStepState,
     modifier: Modifier = Modifier
@@ -48,7 +49,7 @@ fun CommandGuideScreen(
         GuideReaderScreen(
             fullscreen = fullscreen,
             onBack = { readingGuide = false },
-            onCommandSelected = { command -> onCommandSelected(listOf(command)) },
+            onCommandSelected = { command -> onCommandSelected(listOf(command), true) },
             backStep = backStep,
             runtimeIndex = runtimeIndex,
             modifier = modifier
@@ -119,7 +120,7 @@ fun CommandGuideScreen(
         PillMenu(
             roots = tree,
             modifier = Modifier.weight(1f).padding(horizontal = 20.dp, vertical = 12.dp),
-            onRun = { picked, _ -> onCommandSelected(picked) }
+            onRun = { picked, isTerminal -> onCommandSelected(picked, isTerminal) }
         )
     }
 }

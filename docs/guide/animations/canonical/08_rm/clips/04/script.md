@@ -1,7 +1,17 @@
-# rm — clip 04: script
+# rm — clip 04 | script
 
-**Source:** `docs/HG2Gui_animation_5s_cut_sheet_v2.md`
+**Source:** docs/HG2Gui_animation_5s_cut_sheet_v2.md
 
-**Visual action (verbatim cut sheet):**
+Visual action, verbatim from the revised 5-second cut sheet:
 
 A new file rises into the same storage slot from below, neatly labeled `draft_final.txt`. The philosopher compares the new file, the hole, and the unfinished book, then slowly closes the book. No commentary. Hold on the replacement occupying the reused space.
+
+## Corresponding original script excerpt
+
+A new file rises into the same space.
+
+It is labelled:
+
+`draft_final.txt`
+
+The philosopher closes the book.

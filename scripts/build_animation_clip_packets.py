@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Build self-contained Guide animation clip packets from verified source material.
 
-This is called after organize_guide_material.py recreates docs/guide.
+This is called after organize_guide_material.py refreshes the source inventory.
 Never manufacture missing boundary images or narration for legacy clips.
 """
 from __future__ import annotations
@@ -16,7 +16,7 @@ GUIDE = ROOT / "docs/guide"
 CUT_SHEET = ROOT / "docs/HG2Gui_animation_5s_cut_sheet_v2.md"
 
 STYLE = (
-    "EXACTLY 5.0 seconds. ORIGINAL 1:1 square flat 2D HG2Gui Guide animation "
+    "Flat 2D HG2Gui Guide animation "
     "in the screen-printed cut-paper pictogram language of the 2005 Hitchhiker's Guide "
     "(do not copy film designs). One uninterrupted matte flat background color, edge to edge; "
     "limited matte palette, sparse geometry, flattened perspective, deadpan comedy, crisp "
@@ -26,14 +26,112 @@ STYLE = (
     "words exactly. No subtitles, gradients, glossy surfaces, bloom, shadows, camera shake, "
     "depth of field, 3D, photorealism, anime, sci-fi HUD, dissolves or bouncy easing. "
     "Preserve established character and prop silhouettes, proportions, costume and palette "
-    "exactly. One major visual action per clip. Reach exact end composition at 4.6 seconds "
-    "and hold to 5.0; no fade."
+    "exactly. One major visual action per clip; no fade."
+)
+
+# The latest canonical cut-sheet requires square five-second outputs; the archived
+# tangent screenshots and legacy shot pairs are NOT all square.
+STYLE_CANONICAL = "Exactly 5.0 seconds, 1:1 square. Reach the endpoint at 4.6s; hold to 5.0s. "
+STYLE_TANGENT = (
+    "Five-second tangent cut. The numbered START still is an annotated, non-square "
+    "storyboard screenshot, not an approved clean boundary. Extract or approve "
+    "clean 1:1 artwork before rendering; do not preserve the visible START/END labels. "
+)
+STYLE_LEGACY = (
+    "Legacy source duration is unverified: do not set a runtime or timed final hold "
+    "until approved. Preserve the supplied native aspect ratio of both real images; "
+    "do not crop, stretch, letterbox or force square dimensions. "
 )
 
 
-def write(path: Path, content: str) -> None:
+def write(path: Path, content: str, *, refresh: bool = False) -> None:
+    """Keep curated scripts/prompts/shots; refresh indexes generated from the manifest."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(content.rstrip() + "\n", encoding="utf-8")
+    rendered = content.rstrip() + "\n"
+    if path.exists():
+        if not refresh or path.read_text(encoding="utf-8") == rendered:
+            return
+    path.write_text(rendered, encoding="utf-8")
+
+
+def refresh_readme(path: Path, content: str, start_line: str, end_line: str) -> None:
+    """Update frame availability without replacing hand-authored per-clip notes."""
+    if not path.exists():
+        write(path, content)
+        return
+    previous = path.read_text(encoding="utf-8")
+    changed = previous
+    # An existing missing-frame explanation may be hand-written; only touch it
+    # when image availability actually changes, not on every rebuild.
+    for role, wanted in (("start", start_line), ("end", end_line)):
+        found = re.search(rf"(?m)^- {role.upper()}:.*$", changed)
+        if not found:
+            continue
+        old_available = f"[{role}.png]" in found.group(0)
+        new_available = f"[{role}.png]" in wanted
+        if old_available != new_available:
+            changed = changed[:found.start()] + wanted + changed[found.end():]
+    if changed != previous:
+        write(path, changed, refresh=True)
+
+
+def format_shot_record(role: str, boundary: dict, available: bool, kind: str) -> str:
+    """Use the same metadata structure that refresh_shots updates later."""
+    origin = ", ".join(boundary.get("sources") or []) or "not supplied"
+    provenance = (
+        "annotated START screenshot" if kind == "tangents" and role == "start"
+        else "original artwork" if available
+        else "no image supplied"
+    )
+    image = f"[image]({role}.png)" if available else "NO IMAGE"
+    expected = boundary.get("expected") or "not declared"
+    return (
+        f"## {role.upper()} shot\n\n"
+        f"**{role.upper()}** — {image}\n\n"
+        f"- Declared filename: `{expected}`\n"
+        f"- Source: {origin}\n"
+        f"- Type: {provenance}\n"
+    )
+
+
+def refresh_shots(path: Path, boundaries: dict, available: dict[str, bool], kind: str) -> None:
+    """Keep hand-authored shot descriptions, refreshing changed frame metadata only."""
+    if not path.exists():
+        return
+    original = path.read_text(encoding="utf-8")
+    result = original
+    for role in ("start", "end"):
+        heading = re.search(
+            rf"(?ms)^## {role.upper()}(?: shot)?\n.*?(?=^## |\Z)", result
+        )
+        if not heading:
+            continue
+        section = heading.group(0)
+        had_frame = bool(re.search(
+            rf"(?m)^\*\*{role.upper()}\*\* — \[image\]", section
+        ))
+        if had_frame == available[role]:
+            continue
+        frame = boundaries[role]
+        source = ", ".join(frame.get("sources") or []) or "not supplied"
+        origin = (
+            "annotated START screenshot" if kind == "tangents" and role == "start"
+            else "original artwork" if available[role]
+            else "no image supplied"
+        )
+        target = (
+            f"**{role.upper()}** — [image]({role}.png)" if available[role]
+            else f"**{role.upper()}** — NO IMAGE"
+        )
+        section = re.sub(
+            rf"(?m)^\*\*{role.upper()}\*\* — .*?$",
+            lambda _: target, section,
+        )
+        section = re.sub(r"(?m)^- Source: .*?$", lambda _: f"- Source: {source}", section)
+        section = re.sub(r"(?m)^- Type: .*?$", lambda _: f"- Type: {origin}", section)
+        result = result[:heading.start()] + section + result[heading.end():]
+    if result != original:
+        write(path, result, refresh=True)
 
 
 def cut_map() -> dict[int, dict]:
@@ -73,25 +171,30 @@ def build() -> tuple[int, int]:
         ("legacy", manifest["legacy_animations"]),
     )
     index = [
-        "# Guide animation clip production index", "",
-        "Production-ready packets by animation and clip. Each clip folder contains its script excerpt, "
-        "video-generation prompt, verified START/END shots when present, and source attribution. "
-        "Original animation, scene, and storyboard source files remain unchanged.",
-        "", "[Style lock](../HG2Gui_animation_style_lock_prompt_v2.md) · "
-        "[Missing-frame checklist](ANIMATION_TODO.md) · [Full provenance](MANIFEST.json)",
-        "", "**Missing images and unverified legacy narration are not fabricated.**", "",
+        "# Animation production — by sequence and clip",
+        "",
+        "Each clip folder contains its own `shots.md`, `script.md`, `prompt.md`, and available "
+        "original START/END images. Follow the per-animation indexes below; these files "
+        "do not exist at the guide root.",
+        "",
+        "[Style rules](../00_READ_ME_FIRST.md) · [Cut sheet](../HG2Gui_animation_5s_cut_sheet_v2.md) · "
+        "[Original provenance](MANIFEST.json) · [Missing-frame checklist](ANIMATION_TODO.md)",
+        "",
+        "**Tangent stills visibly contain START production labels: these are source references, "
+        "not clean boundary images. No tangent END images have been verified.**", "",
     ]
     clip_count = frame_count = 0
     for kind, animations in groups:
-        label = {"canonical": "Canonical", "tangents": "Tangents", "legacy": "Legacy"}[kind]
-        index.extend((f"## {label} ({len(animations)})", ""))
+        index.extend((f"## {kind}", ""))
         for animation in animations:
             folder = animation["folder"]
             name = animation.get("command") or animation.get("name") or Path(folder).name
             rows = [
                 f"# {name} — production clips", "",
-                "[Source animation](animation.md) · [Existing storyboard](storyboard.md)", "",
-                "| Clip | START | END | Script | Prompt |", "| --- | --- | --- | --- | --- |",
+                "[Full animation script](animation.md) · [Storyboard](storyboard.md) · "
+                "[Guide-wide clip index](../../../CLIP_PRODUCTION_INDEX.md)", "",
+                "| Clip | Frames | Script excerpt | START/END shots | Animation prompt |",
+                "| --- | --- | --- | --- | --- |",
             ]
             for scene in animation["scenes"]:
                 number = f"{int(scene['scene']):02d}"
@@ -143,7 +246,13 @@ def build() -> tuple[int, int]:
 
                 def guard(role: str) -> str:
                     if exists(role):
-                        detail = f"Use the supplied {role}.png exactly; match pose, layout, proportions and colors."
+                        if kind == "tangents":
+                            detail = (
+                                f"{role}.png is an annotated source START screenshot, not an exact "
+                                "clean animation boundary. Approve clean 1:1 source art first."
+                            )
+                        else:
+                            detail = f"Use the supplied {role}.png exactly; match pose, layout, proportions and colors."
                     else:
                         detail = (
                             f"{status(role)}, expected {expected(role)}. A real approved {role} image "
@@ -164,10 +273,15 @@ def build() -> tuple[int, int]:
                         "events, signs, characters, dialogue, or narration."
                     )
                     background = "Use the unchanged background color visible in the supplied frames."
+                style = STYLE + " " + {
+                    "canonical": STYLE_CANONICAL,
+                    "tangents": STYLE_TANGENT,
+                    "legacy": STYLE_LEGACY,
+                }[kind]
                 write(destination / "prompt.md",
                       f"# {name} — clip {number}: generation prompt\n\n"
                       "**Source script:** [script.md](script.md)\n\n~~~text\n"
-                      f"{STYLE}\n\n{background}\n{guard('start')}\n{guard('end')}\n"
+                      f"{style}\n\n{background}\n{guard('start')}\n{guard('end')}\n"
                       "If a boundary is unavailable, this is a planning prompt only; generate and "
                       "approve the missing frame first, never silently substitute.\n\n"
                       f"{action}\n\nFor shared consecutive boundaries, use exactly the SAME approved "
@@ -185,38 +299,60 @@ def build() -> tuple[int, int]:
                     else "unspecified in source (not assumed)"
                 )
                 note = ""
-                if kind == "tangents" and scene["scene"] == 1:
+                if kind == "tangents":
                     note = (
-                        "The original tangent cut map supplies an END still for the first cut "
-                        "but no START still; that boundary is unresolved."
+                        "The tangent cut-map still is a labeled START source screenshot, not an "
+                        "approved clean frame. The clip END still has not been supplied."
                     )
                 elif kind == "legacy":
                     note = (
                         "No current five-second production packet or per-clip narration exists "
                         "for this legacy pair; the images are verified but the story beat is not."
                     )
-                write(destination / "README.md",
-                      f"# {name} — clip {number}\n\n**Duration:** {duration}  \n"
-                      f"**Original scene:** [scene.md](../../scenes/{number}/scene.md)  \n"
-                      "**Animation script:** [animation.md](../../animation.md)\n\n"
-                      "| Boundary | Expected source | Status | Image | Provenance |\n"
-                      "| --- | --- | --- | --- | --- |\n"
-                      + boundary_row("start") + "\n" + boundary_row("end")
-                      + "\n\n[Clip script](script.md) · [Clip generation prompt](prompt.md)\n\n" + note)
+                start_line = (
+                    "- START: [start.png](start.png)" if exists("start")
+                    else "- START: **missing** — see [shot specification](shots.md)"
+                )
+                end_line = (
+                    "- END: [end.png](end.png)" if exists("end")
+                    else "- END: **missing** — see [shot specification](shots.md)"
+                )
+                readme = (
+                    f"# {name} — clip {number}\n\n**Duration:** {duration}\n\n"
+                    f"{start_line}\n{end_line}\n"
+                    "- [Corresponding script passage](script.md)\n"
+                    "- [START/END shot specifications](shots.md)\n"
+                    "- [Clip-specific animation prompt](prompt.md)\n\n"
+                    + note
+                )
+                refresh_readme(destination / "README.md", readme, start_line, end_line)
+
+                # Preserve author-reviewed shot prose. New shot files use refreshable
+                # START/END metadata so later source additions do not go stale.
+                write(destination / "shots.md",
+                      f"# {name} — clip {number}: START and END shot details\n\n"
+                      + format_shot_record("start", boundaries["start"], exists("start"), kind)
+                      + "\n" + format_shot_record("end", boundaries["end"], exists("end"), kind)
+                      + "\n**Documented action:**\n\n"
+                      + (beat or "Legacy clip action not documented.") + "\n")
+
+                refresh_shots(destination / "shots.md", boundaries,
+                              {role: exists(role) for role in ("start", "end")}, kind)
 
                 def listing_frame(role: str) -> str:
                     if exists(role):
                         return f"[image](clips/{number}/{role}.png)"
                     return f"**{status(role)}**"
 
-                rows.append(f"| [{number}](clips/{number}/README.md) | {listing_frame('start')} | "
+                rows.append(f"| [{number}](clips/{number}/README.md) | {listing_frame('start')} → "
                             f"{listing_frame('end')} | [script](clips/{number}/script.md) | "
+                            f"[shots](clips/{number}/shots.md) | "
                             f"[prompt](clips/{number}/prompt.md) |")
-            write(ROOT / folder / "CLIPS.md", "\n".join(rows))
+            write(ROOT / folder / "CLIPS.md", "\n".join(rows), refresh=True)
             idx_path = folder.removeprefix("docs/guide/")
             index.append(f"- [{name}]({idx_path}/CLIPS.md) — {len(animation['scenes'])} clips")
         index.append("")
-    write(GUIDE / "CLIP_PRODUCTION_INDEX.md", "\n".join(index))
+    write(GUIDE / "CLIP_PRODUCTION_INDEX.md", "\n".join(index), refresh=True)
     return clip_count, frame_count
 
 

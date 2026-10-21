@@ -1,7 +1,11 @@
-# 22_find_cartographical_disaster — clip 01: script
+# 22_find_cartographical_disaster — clip 01 | script
 
-**Source:** the original tangent cut map
+**Source:** docs/script.md
 
-**Narration beat (verbatim cut map):**
+Narration beat, verbatim from the original tangent cut map:
 
 `find` is named after the Cartographical Disaster of Nth.
+
+## Corresponding original script excerpt
+
+The command `find` is named after the Cartographical Disaster of Nth.

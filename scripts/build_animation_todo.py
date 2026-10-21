@@ -1,191 +1,129 @@
 #!/usr/bin/env python3
+"""Reproducible per-clip boundary checklist for Guide animations.
+
+Run after organize_guide_material.py (or after finalize_animation_guide.py).
+--check verifies that the tracked inventory matches the manifest without writing.
+"""
 from __future__ import annotations
 
+import argparse
 import json
-from collections import OrderedDict
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "docs/guide/MANIFEST.json"
 OUT = ROOT / "docs/guide/ANIMATION_TODO.md"
-MATERIALIZED = {"present", "present_duplicate_identical"}
+PRESENT = {"present", "present_duplicate_identical"}
 
 
-def is_materialized(boundary: dict | None) -> bool:
-    return bool(boundary) and boundary.get("status") in MATERIALIZED and bool(boundary.get("local"))
+def supplied(boundary: dict | None) -> bool:
+    """Inventory claims must be backed by real files, not just status strings."""
+    if not boundary or boundary.get("status") not in PRESENT:
+        return False
+    local = boundary.get("local")
+    return bool(local) and (ROOT / local).is_file()
 
 
-def boundary_label(boundary: dict | None) -> str:
-    if not boundary:
-        return "MISSING RECORD"
-    expected = boundary.get("expected") or "not declared"
-    if is_materialized(boundary):
-        return f"✅ `{expected}`"
-    status = boundary.get("status", "unknown")
-    return f"⬜ `{expected}` — {status}"
-
-
-def entry_name(entry: dict, kind: str) -> str:
-    if kind == "canonical":
-        return f"{entry['index']:02d} — `{entry['command']}`"
-    if kind == "legacy":
-        return f"legacy — `{entry.get('name', Path(entry['folder']).name)}`"
-    return Path(entry["folder"]).name
-
-
-def collect_counts(entries: list[dict]) -> dict[str, int]:
-    counts = {"animations": len(entries), "clips": 0, "slots": 0, "materialized": 0, "missing": 0}
-    for entry in entries:
-        scenes = entry.get("scenes", [])
-        counts["clips"] += len(scenes)
-        for scene in scenes:
-            storyboard = scene.get("storyboard", {})
+def counts(entries: list[dict]) -> dict[str, int]:
+    count = {"animations": len(entries), "clips": 0, "slots": 0, "supplied": 0}
+    for item in entries:
+        for scene in item["scenes"]:
+            count["clips"] += 1
             for role in ("start", "end"):
-                counts["slots"] += 1
-                if is_materialized(storyboard.get(role)):
-                    counts["materialized"] += 1
-                else:
-                    counts["missing"] += 1
-    return counts
+                count["slots"] += 1
+                count["supplied"] += int(supplied(scene["storyboard"].get(role)))
+    return count
 
 
-def unique_boundary_status(entry: dict) -> OrderedDict[str, bool]:
-    unique: OrderedDict[str, bool] = OrderedDict()
-    for scene in entry.get("scenes", []):
-        for role in ("start", "end"):
-            boundary = scene.get("storyboard", {}).get(role)
-            if not boundary:
-                continue
-            expected = boundary.get("expected")
-            if not expected:
-                continue
-            unique[expected] = unique.get(expected, False) or is_materialized(boundary)
-    return unique
+def boundary_text(boundary: dict | None, group: str) -> str:
+    if not boundary:
+        return "⬜ not supplied — unresolved"
+    expected = boundary.get("expected") or "not supplied"
+    if supplied(boundary):
+        caution = " (annotated)" if group == "tangents" else ""
+        return f"✅ `{expected}`{caution}"
+    label = f"`{expected}`" if boundary.get("expected") else expected
+    return f"⬜ {label} — {boundary.get('status') or 'unresolved'}"
 
 
-def render_section(entries: list[dict], kind: str) -> list[str]:
-    lines: list[str] = []
-    title = {"canonical": "Canonical animations", "tangent": "Tangent animations", "legacy": "Legacy / incomplete animations"}[kind]
-    lines += [f"## {title}", ""]
-
-    for entry in entries:
-        scenes = entry.get("scenes", [])
-        complete = all(
-            is_materialized(scene.get("storyboard", {}).get(role))
-            for scene in scenes
-            for role in ("start", "end")
-        )
-        mark = "x" if complete else " "
-        lines += [f"### [{mark}] {entry_name(entry, kind)}", ""]
-
-        if kind == "canonical":
-            unique = unique_boundary_status(entry)
-            present_unique = sum(unique.values())
-            lines.append(
-                f"Unique canonical boundary frames: **{present_unique}/{len(unique)} present**. "
-                "Adjacent clips intentionally share the same boundary image."
-            )
-            lines.append("")
-
-        lines += ["| Clip / scene | Start frame | End frame |", "| ---: | --- | --- |"]
-        for scene in scenes:
-            sb = scene.get("storyboard", {})
-            lines.append(
-                f"| {int(scene['scene']):02d} | {boundary_label(sb.get('start'))} | {boundary_label(sb.get('end'))} |"
-            )
-        lines.append("")
-
-        missing_unique: list[str] = []
-        if kind == "canonical":
-            missing_unique = [name for name, present in unique_boundary_status(entry).items() if not present]
-        else:
-            for scene in scenes:
+def render(data: dict) -> str:
+    kinds = (
+        ("canonical", "Canonical", data.get("canonical_animations", [])),
+        ("tangents", "Tangents", data.get("tangent_animations", [])),
+        ("legacy", "Legacy", data.get("legacy_animations", [])),
+    )
+    stats = [(name, counts(entries)) for _, name, entries in kinds]
+    total = {key: sum(c[key] for _, c in stats) for key in ("animations", "clips", "slots", "supplied")}
+    unique: dict[str, bool] = {}
+    for item in data.get("canonical_animations", []):
+        for scene in item["scenes"]:
+            for role in ("start", "end"):
+                boundary = scene["storyboard"].get(role)
+                if boundary and boundary.get("expected"):
+                    name = boundary["expected"]
+                    unique[name] = unique.get(name, False) or supplied(boundary)
+    tangent = stats[1][1]
+    rows = [
+        "# Animation shot inventory and missing boundaries",
+        "",
+        "Source: `docs/guide/MANIFEST.json`. Generated review of the original cut-sheet declarations, existing source stills and per-clip START/END roles.",
+        "",
+        f"**Warning:** The {tangent['supplied']} tangent START images are original screenshots with visible `Start:` labels, **not clean production frames**. All {tangent['slots'] - tangent['supplied']} tangent END frames are unverified.",
+        "",
+        "| Group | Animations | Clips | Boundary positions | Source images | Absent/unresolved |",
+        "| --- | ---: | ---: | ---: | ---: | ---: |",
+    ]
+    for group, count in stats:
+        rows.append(f"| {group} | {count['animations']} | {count['clips']} | {count['slots']} | {count['supplied']} | {count['slots'] - count['supplied']} |")
+    rows += [
+        f"| **Total** | **{total['animations']}** | **{total['clips']}** | **{total['slots']}** | **{total['supplied']}** | **{total['slots'] - total['supplied']}** |",
+        "",
+        f"Canonical unique named frame files: **{sum(unique.values())}/{len(unique)}**. Canonical neighboring cuts share the identical bytes for common boundaries.",
+        "",
+        "[Individual clip scripts, shot descriptions and prompts](CLIP_PRODUCTION_INDEX.md)",
+        "",
+        "## Required outstanding images",
+        "",
+        "Do not mark an item complete without inspecting the actual asset. A file name alone or a numbered tangent screenshot is not proof of an END shot.",
+        "",
+    ]
+    for kind, title, animations in kinds:
+        rows += [f"## {title}", ""]
+        for item in animations:
+            name = item.get("command") or item.get("name") or Path(item["folder"]).name
+            missing: list[str] = []
+            clip_rows = ["| Clip | START | END |", "| --- | --- | --- |"]
+            for scene in item["scenes"]:
+                number = f"{int(scene['scene']):02d}"
+                boundaries = scene["storyboard"]
+                start = boundary_text(boundaries.get("start"), kind)
+                end = boundary_text(boundaries.get("end"), kind)
+                link = item["folder"].removeprefix("docs/guide/") + f"/clips/{number}/README.md"
+                clip_rows.append(f"| [{number}]({link}) | {start} | {end} |")
                 for role in ("start", "end"):
-                    boundary = scene.get("storyboard", {}).get(role)
-                    if not is_materialized(boundary):
-                        expected = boundary.get("expected") if boundary else None
-                        label = expected or f"scene {int(scene['scene']):02d} {role} boundary"
-                        if label not in missing_unique:
-                            missing_unique.append(label)
-
-        if missing_unique:
-            lines += ["**TODO — missing boundaries**", ""]
-            lines += [f"- [ ] `{name}`" if not name.startswith("scene ") else f"- [ ] {name}" for name in missing_unique]
-            lines.append("")
-        else:
-            lines += ["All start/end boundaries for this animation are materialized.", ""]
-
-    return lines
+                    frame = boundaries.get(role)
+                    if not supplied(frame):
+                        expected = frame.get("expected") if frame else None
+                        missing.append(f"Clip {number} {role.upper()}: {expected or 'no declared image'}")
+            rows += [f"### {name} — {'incomplete' if missing else 'both boundaries supplied'}", "", *clip_rows, ""]
+            if missing:
+                rows += [f"- [ ] {reason}" for reason in missing]
+                rows.append("")
+    return "\n".join(rows).rstrip() + "\n"
 
 
 def main() -> None:
-    data = json.loads(MANIFEST.read_text(encoding="utf-8"))
-    canonical = data.get("canonical_animations", [])
-    tangents = data.get("tangent_animations", [])
-    legacy = data.get("legacy_animations", [])
-
-    groups = [
-        ("Canonical", canonical),
-        ("Tangents", tangents),
-        ("Legacy", legacy),
-    ]
-    totals = {"animations": 0, "clips": 0, "slots": 0, "materialized": 0, "missing": 0}
-    group_counts: list[tuple[str, dict[str, int]]] = []
-    for label, entries in groups:
-        counts = collect_counts(entries)
-        group_counts.append((label, counts))
-        for key in totals:
-            totals[key] += counts[key]
-
-    canonical_unique = OrderedDict()
-    for entry in canonical:
-        for name, present in unique_boundary_status(entry).items():
-            canonical_unique[name] = canonical_unique.get(name, False) or present
-
-    lines = [
-        "# HG2Gui animation TODO",
-        "",
-        "This file is generated from `docs/guide/MANIFEST.json` by `scripts/build_animation_todo.py`.",
-        "It audits every animation clip/scene for both a START and END storyboard boundary.",
-        "A checked animation means every start/end boundary used by every clip is backed by an actual image file in the organized Guide tree.",
-        "",
-        "## Current coverage",
-        "",
-        "| Group | Animations | Clips / scenes | Boundary slots | Materialized | Missing / unresolved |",
-        "| --- | ---: | ---: | ---: | ---: | ---: |",
-    ]
-    for label, counts in group_counts:
-        lines.append(
-            f"| {label} | {counts['animations']} | {counts['clips']} | {counts['slots']} | {counts['materialized']} | {counts['missing']} |"
-        )
-    lines.append(
-        f"| **Total** | **{totals['animations']}** | **{totals['clips']}** | **{totals['slots']}** | **{totals['materialized']}** | **{totals['missing']}** |"
-    )
-    lines += [
-        "",
-        f"Canonical production uses **{len(canonical_unique)} unique boundary image filenames** across the canonical clips because adjacent clips share boundaries. "
-        f"**{sum(canonical_unique.values())}/{len(canonical_unique)} unique canonical frames are currently present.**",
-        "",
-        "## Boundary rules",
-        "",
-        "- Every clip must have both a START and END image.",
-        "- When clip N END is clip N+1 START, it is the **same image**, copied into both scene folders by the organizer.",
-        "- A declared filename without an image is not considered complete.",
-        "- Missing frames are listed below; no substitute artwork is fabricated.",
-        "- Existing source artwork may be canonicalized through `docs/animation_frame_aliases.json`; run `scripts/materialize_animation_frame_aliases.py`, then `scripts/organize_guide_material.py`, then this script.",
-        "",
-    ]
-
-    lines += render_section(canonical, "canonical")
-    lines += render_section(tangents, "tangent")
-    lines += render_section(legacy, "legacy")
-
-    OUT.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
-    print(f"Wrote {OUT.relative_to(ROOT)}")
-    print(
-        f"coverage: {totals['materialized']}/{totals['slots']} boundary slots materialized; "
-        f"{totals['missing']} missing/unresolved"
-    )
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--check", action="store_true", help="fail if checked-in checklist is stale")
+    args = parser.parse_args()
+    output = render(json.loads(MANIFEST.read_text(encoding="utf-8")))
+    if args.check:
+        if not OUT.exists() or OUT.read_text(encoding="utf-8") != output:
+            raise SystemExit("Animation TODO differs from MANIFEST: regenerate with python3 scripts/build_animation_todo.py")
+        print("Animation checklist is current")
+    else:
+        OUT.write_text(output, encoding="utf-8")
+        print(f"Updated {OUT.relative_to(ROOT)}")
 
 
 if __name__ == "__main__":

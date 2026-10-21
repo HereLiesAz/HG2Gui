@@ -1,5 +1,6 @@
 package com.hereliesaz.hg2gui.ai
 
+import com.anthropic.client.AnthropicClient
 import com.anthropic.client.okhttp.AnthropicOkHttpClient
 import com.anthropic.models.messages.MessageCreateParams
 import com.anthropic.models.messages.OutputConfig
@@ -26,13 +27,29 @@ Do not claim that a command has more authority than its syntax requests. HG2Gui 
  * to a typed local intention and handed back for user review.
  */
 object AiClient {
+    // One SDK client (and so one OkHttp connection pool / dispatcher) reused across requests,
+    // rebuilt only when the API key changes; the replaced client is closed so its threads and
+    // pooled connections don't leak.
+    private var cachedKey: String? = null
+    private var cachedClient: AnthropicClient? = null
+
+    @Synchronized
+    private fun clientFor(apiKey: String): AnthropicClient {
+        cachedClient?.takeIf { cachedKey == apiKey }?.let { return it }
+        cachedClient?.let { old -> runCatching { old.close() } }
+        return AnthropicOkHttpClient.builder().apiKey(apiKey).build().also {
+            cachedClient = it
+            cachedKey = apiKey
+        }
+    }
+
     suspend fun ask(
         apiKey: String,
         cwd: String,
         question: String,
         skills: List<Pair<String, String>> = emptyList(),
     ): AiReply = withContext(Dispatchers.IO) {
-        val client = AnthropicOkHttpClient.builder().apiKey(apiKey).build()
+        val client = clientFor(apiKey)
         var system = SYSTEM_PROMPT.replace("{cwd}", cwd)
         if (skills.isNotEmpty()) {
             system += "\n\nThe user has installed the following skills from the azphalt store. " +
@@ -40,7 +57,7 @@ object AiClient {
                 skills.joinToString("\n\n") { (id, text) -> "## Skill: $id\n$text" }
         }
         val params = MessageCreateParams.builder()
-            .model("claude-opus-5")
+            .model("claude-opus-5-5")
             .maxTokens(2048L)
             .system(system)
             .outputConfig(OutputConfig.builder().effort(OutputConfig.Effort.LOW).build())

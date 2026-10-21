@@ -53,8 +53,26 @@ data class AzpInstallResult(
 object AzpInstaller {
     private val json = Json { ignoreUnknownKeys = true }
 
+    // Caps on what one archive may expand to - a zip bomb (or just a hostile 10^6-entry archive)
+    // must fail the install rather than fill the device's storage.
+    private const val MAX_EXTRACTED_BYTES = 512L * 1024 * 1024
+    private const val MAX_ENTRIES = 10_000
+
+    /** `filesDir/azp/<id>/<version>/`. [id] and [version] come from the registry (untrusted), so
+     *  each must be a plain path segment (see [isValidAzpPathSegment]) and the result must still
+     *  canonicalize inside `azp/` - otherwise this throws [IllegalArgumentException], never
+     *  returning a directory a later `deleteRecursively()`/extract could escape through. */
     fun rootDir(context: Context, id: String, version: String): File =
-        File(File(context.filesDir, "azp"), "$id/$version")
+        rootDirOrNull(context, id, version)
+            ?: throw IllegalArgumentException("invalid package id/version: $id/$version")
+
+    /** [rootDir], but null instead of throwing for an invalid [id]/[version]. */
+    fun rootDirOrNull(context: Context, id: String, version: String): File? {
+        if (!isValidAzpPathSegment(id) || !isValidAzpPathSegment(version)) return null
+        val azpRoot = File(context.filesDir, "azp").canonicalFile
+        val dir = File(azpRoot, "$id/$version").canonicalFile
+        return if (dir.path.startsWith(azpRoot.path + File.separator)) dir else null
+    }
 
     suspend fun install(
         context: Context,
@@ -86,10 +104,13 @@ object AzpInstaller {
                 // so the check costs no extra read pass over what was just extracted.
                 val extractedDigests = mutableMapOf<String, String>()
 
+                var totalBytes = 0L
+                var entryCount = 0
                 ZipInputStream(bytes.inputStream()).use { zip ->
                     var entry = zip.nextEntry
                     while (entry != null) {
                         val name = entry.name
+                        if (++entryCount > MAX_ENTRIES) throw java.io.IOException("archive has too many entries")
                         // Path containment: refuse any entry that would escape staging via .. or
                         // an absolute path (package-format.md's own path-containment requirement).
                         // AZP-8: a package that has to smuggle a zip-slip entry to work at all is
@@ -105,7 +126,20 @@ object AzpInstaller {
                         } else {
                             target.parentFile?.mkdirs()
                             val digest = MessageDigest.getInstance("SHA-256")
-                            DigestOutputStream(target.outputStream(), digest).use { out -> zip.copyTo(out) }
+                            DigestOutputStream(target.outputStream(), digest).use { out ->
+                                // Bounded copy: entry sizes in the zip header are attacker-chosen,
+                                // so count the bytes actually inflated instead.
+                                val buffer = ByteArray(8192)
+                                while (true) {
+                                    val n = zip.read(buffer)
+                                    if (n < 0) break
+                                    totalBytes += n
+                                    if (totalBytes > MAX_EXTRACTED_BYTES) {
+                                        throw java.io.IOException("archive expands beyond $MAX_EXTRACTED_BYTES bytes")
+                                    }
+                                    out.write(buffer, 0, n)
+                                }
+                            }
                             extractedDigests[name] = digest.digest().joinToString("") { "%02x".format(it) }
                         }
                         zip.closeEntry()
@@ -203,3 +237,10 @@ internal fun filesMatchDigests(extracted: Map<String, String>, declared: Map<Str
     }
     return true
 }
+
+private val AZP_PATH_SEGMENT = Regex("^[A-Za-z0-9._-]+$")
+
+/** True iff [segment] (a registry-supplied package id or version) is safe as a single directory
+ *  name: only letters, digits, `.`, `_`, `-`, and not `.` or `..`. Pure, see AzpInstallerDigestTest. */
+internal fun isValidAzpPathSegment(segment: String): Boolean =
+    segment != "." && segment != ".." && AZP_PATH_SEGMENT.matches(segment)

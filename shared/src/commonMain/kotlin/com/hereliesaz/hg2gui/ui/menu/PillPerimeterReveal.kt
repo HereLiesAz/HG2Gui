@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -279,6 +280,24 @@ fun PillPerimeterReveal(state: PerimeterRevealState, hue: Color, content: @Compo
                                     translationX = -14.dp.toPx() * (1f - state.setWipe.value)
                                 }
                         ) { content() }
+
+                        // drawWithContent's clipRect only hides pixels - the hidden content is still
+                        // laid out and still hit-testable, so a tap on the flat hue fill could land on
+                        // a button nobody can see yet. Until both wipes have finished, a transparent
+                        // sheet on top swallows pointer input.
+                        if (state.flood.value < 1f || state.setWipe.value < 1f) {
+                            Box(
+                                Modifier
+                                    .fillMaxSize()
+                                    .pointerInput(Unit) {
+                                        awaitPointerEventScope {
+                                            while (true) {
+                                                awaitPointerEvent().changes.forEach { it.consume() }
+                                            }
+                                        }
+                                    }
+                            )
+                        }
                     }
                 }
             }

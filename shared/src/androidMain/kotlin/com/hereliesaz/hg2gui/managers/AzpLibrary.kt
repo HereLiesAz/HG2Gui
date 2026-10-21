@@ -5,6 +5,7 @@ import androidx.core.content.edit
 import com.hereliesaz.hg2gui.azp.AzpInstalled
 import com.hereliesaz.hg2gui.azp.AzpInstaller
 import com.hereliesaz.hg2gui.azp.AzpTrust
+import com.hereliesaz.hg2gui.azp.isValidAzpPathSegment
 
 private const val PREFS_NAME = "hg2gui_azp"
 private const val KEY_IDS = "azp_ids"
@@ -52,8 +53,10 @@ object AzpLibrary {
         skillIds: List<String>,
         trust: AzpTrust = AzpTrust.UNSIGNED,
         /** For `kind:"script"` only - the name it's callable as on PATH once [ScriptInstaller]
-         *  has written its wrapper, so the store row can show it. Blank if installation didn't
-         *  reach that point (e.g. no Termux bootstrap yet - see [ScriptInstaller.Result]). */
+         *  has written its wrapper, so the store row can show it. Null if installation didn't
+         *  reach that point (e.g. no Termux bootstrap yet - see [ScriptInstaller.Result]); a
+         *  reinstall that stops short keeps the previously stored command, since that earlier
+         *  wrapper is still on PATH. A non-script kind clears it. */
         scriptCommand: String? = null,
     ) {
         val p = prefs(context)
@@ -65,7 +68,10 @@ object AzpLibrary {
             putString("$id.kind", kind)
             putString("$id.skillIds", skillIds.joinToString(","))
             putString("$id.trust", trust.name)
-            if (scriptCommand != null) putString("$id.scriptCommand", scriptCommand) else remove("$id.scriptCommand")
+            when {
+                scriptCommand != null -> putString("$id.scriptCommand", scriptCommand)
+                kind != "script" -> remove("$id.scriptCommand")
+            }
         }
     }
 
@@ -93,9 +99,10 @@ object AzpLibrary {
             if (p.getString("$id.kind", "asset") != "skill") continue
             val version = p.getString("$id.version", "") ?: continue
             val skillIds = p.getString("$id.skillIds", "")?.split(",")?.filter { it.isNotBlank() } ?: continue
-            val root = AzpInstaller.rootDir(context, id, version)
+            val root = AzpInstaller.rootDirOrNull(context, id, version) ?: continue
             for (skillId in skillIds) {
                 if (remaining <= 0) break
+                if (!isValidAzpPathSegment(skillId)) continue
                 val skillMd = root.resolve("skills/$skillId/SKILL.md")
                 if (!skillMd.exists()) continue
                 val text = skillMd.readText().take(remaining)

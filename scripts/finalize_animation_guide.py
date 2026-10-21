@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import runpy
 import shutil
 from pathlib import Path
 
@@ -29,6 +30,7 @@ CANONICAL_REFERENCES: dict[str, list[tuple[str, str]]] = {
         ("ChatGPT Image Aug 14, 2026, 12_00_50 AM.png", "source artwork canonicalized as frame_04"),
         ("02_pkg_install_frame_00.png", "canonical boundary frame_00"),
         ("02_pkg_install_frame_01.png", "canonical boundary frame_01"),
+        ("02_pkg_install_frame_02.png", "canonical boundary frame_02"),
         ("02_pkg_install_frame_03.png", "canonical boundary frame_03"),
         ("02_pkg_install_frame_04.png", "canonical boundary frame_04"),
     ],
@@ -211,6 +213,8 @@ def build_content_index(manifest: dict, reference_report: dict, verification: di
         "",
         "[Per-animation, per-clip production packets](CLIP_PRODUCTION_INDEX.md) include exact cut script beats, new prompts, and real start/end frames when present.",
         "",
+        "Source tangent cut-map PNGs are labeled START images; all tangent END images remain unresolved until independently approved.",
+        "",
         "## Organization",
         "",
         "Each animation directory contains its complete animation text, storyboard/cut information, scene folders, and animation-specific references when available.",
@@ -247,6 +251,7 @@ def main() -> None:
     }
     manifest["boundary_verification"] = verification
     MANIFEST.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    runpy.run_path(str(ROOT / "scripts/build_animation_todo.py"), run_name="__main__")
 
     combined: dict[str, list[dict]] = {}
     combined.update(canonical)
