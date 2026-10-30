@@ -181,7 +181,7 @@ class ShellSessionRecoveryTest {
         )
         assertEquals(124, exitCode)
         assertTrue("returns promptly: ${System.currentTimeMillis() - startedAt}ms", System.currentTimeMillis() - startedAt < 6_000L)
-        assertTrue(snapshots.last().contains("[timed out after 0s]"))
+        assertTrue(snapshots.last().contains("[timed out after 500ms]"))
         assertEquals("yes", s.exec("echo \$KEEP").output)
     }
 

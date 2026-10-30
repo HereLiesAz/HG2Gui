@@ -660,7 +660,7 @@ actual class ShellSession private constructor(
 
             val cancelNote = when (cancelReason) {
                 CANCEL_INTERRUPT -> "[interrupted]"
-                CANCEL_TIMEOUT -> "[timed out after ${timeoutMs / 1000}s]"
+                CANCEL_TIMEOUT -> "[timed out after ${if (timeoutMs >= 1000L) "${timeoutMs / 1000}s" else "${timeoutMs}ms"}]"
                 CANCEL_DECLINED -> "[cancelled: the prompt was not answered]"
                 else -> null
             }
