@@ -62,7 +62,6 @@ import com.hereliesaz.hg2gui.ui.LocalAzphaltUiScale
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
 import com.hereliesaz.hg2gui.ui.menu.onPage
 import com.hereliesaz.hg2gui.ui.screenInsets
-import com.hereliesaz.hg2gui.ui.theme.LocalAzphaltType
 import com.termux.terminal.KeyHandler
 import com.termux.terminal.TerminalEmulator
 import com.termux.terminal.TerminalRow
