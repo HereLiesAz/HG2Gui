@@ -45,7 +45,13 @@ object PrefixRuntimeConfig {
     }
 
     /**
-     * The complete `apt.conf`. [prefix] is the LOGICAL prefix apt will see at run time (the final
+     * The complete `apt.conf`. apt's own Dir::* defaults are compiled into its binary as absolute
+     * paths against Termux's package name, with no first-line fix like a shebang, so apt is
+     * pointed at this file via APT_CONFIG (set by ShellSession for every bootstrap-tier command)
+     * and every Dir:: setting names this app's real prefix instead. `Acquire::https::CaInfo`
+     * points straight at the bundled CA bundle because on genuine Termux that bundle only becomes
+     * active once the ca-certificates postinst runs `trust extract`, a step a raw extraction never
+     * runs. [prefix] is the LOGICAL prefix apt will see at run time (the final
      * install path), which differs from the directory being written to while a bootstrap is still
      * being staged.
      */

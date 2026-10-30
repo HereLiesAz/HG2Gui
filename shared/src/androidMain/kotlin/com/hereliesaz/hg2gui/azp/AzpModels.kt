@@ -96,5 +96,22 @@ enum class AzpTrust {
     /** Signature verifies and the signer key is directly in the registry's published set. */
     TRUSTED,
     /** This Android version has no Ed25519 support (`java.security`, API 33+) to check with. */
-    UNVERIFIABLE,
+    UNVERIFIABLE;
+
+    /**
+     * Whether text from a package at this trust level may be folded into the AI system prompt
+     * (`AzpLibrary.installedSkillTexts`). Only [TRUSTED] qualifies: a skill's `SKILL.md` becomes
+     * instructions to the model, so a package nobody vouched for (unsigned, merely self-signed
+     * [VALID] - anyone can self-sign - unverifiable, a legacy [UNCHECKED] record, or a failed
+     * [INVALID] one) must not be able to steer command suggestions. Such a skill stays installed
+     * and on disk; it just is not read into prompts until a reinstall earns [TRUSTED].
+     */
+    val reachesAiPrompt: Boolean get() = this == TRUSTED
+
+    companion object {
+        /** The trust stored as [name] by `AzpLibrary.record`; null or an unknown name is
+         *  [UNCHECKED] (a record that predates verification), never a positive claim. */
+        fun fromStored(name: String?): AzpTrust =
+            name?.let { stored -> entries.firstOrNull { it.name == stored } } ?: UNCHECKED
+    }
 }
