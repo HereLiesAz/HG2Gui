@@ -803,29 +803,32 @@ class TerminalActivity : FragmentActivity() {
                     screen == Screen.Environment -> {
                         // Both reads hit disk (bootstrapBashEnv probes the prefix, the history
                         // search reads and parses the whole log) - run on IO, never in composition.
-                        // null = still loading, so a slow probe doesn't flash "not installed".
+                        // null = still loading: the screen draws its chrome and a "reading" line
+                        // rather than a blank page, and never flashes "not installed" early.
                         val bootstrap by produceState<Pair<Boolean, Map<String, String>>?>(null) {
                             value = withContext(Dispatchers.IO) {
                                 ShellSession.bootstrapBashEnv(this@TerminalActivity, null)
                                     .let { (it != null) to it?.second.orEmpty() }
                             }
                         }
-                        bootstrap?.let { (installed, env) ->
-                            EnvironmentScreen(
-                                installed = installed,
-                                env = env,
-                                onBack = { screen = Screen.Settings },
-                                fullscreen = fullscreen
-                            )
-                        }
+                        EnvironmentScreen(
+                            installed = bootstrap?.first ?: false,
+                            env = bootstrap?.second.orEmpty(),
+                            onBack = { screen = Screen.Settings },
+                            fullscreen = fullscreen,
+                            loading = bootstrap == null
+                        )
                     }
 
                     screen == Screen.History -> {
-                        val historyEntries by produceState(emptyList<CommandHistoryEntry>(), historyQuery) {
+                        // null until the first read returns, so the screen says "loading" instead of
+                        // flashing "No commands recorded yet." A later re-read (new query, a delete)
+                        // keeps showing the previous list until the new one lands.
+                        val historyEntries by produceState<List<CommandHistoryEntry>?>(null, historyQuery, historyReload) {
                             value = withContext(Dispatchers.IO) { CommandHistoryStore.search(this@TerminalActivity, historyQuery) }
                         }
                         HistoryScreen(
-                            entries = historyEntries,
+                            entries = historyEntries.orEmpty(),
                             query = historyQuery,
                             onQueryChange = { historyQuery = it },
                             onSelect = { command ->
@@ -840,7 +843,25 @@ class TerminalActivity : FragmentActivity() {
                             },
                             onBack = { screen = Screen.Settings },
                             fullscreen = fullscreen,
-                            nowMillis = System.currentTimeMillis()
+                            nowMillis = System.currentTimeMillis(),
+                            loading = historyEntries == null,
+                            onDelete = { entry ->
+                                scope.launch {
+                                    withContext(Dispatchers.IO) { CommandHistoryStore.delete(this@TerminalActivity, entry) }
+                                    historyReload++
+                                }
+                            },
+                            onClear = {
+                                scope.launch {
+                                    val cleared = withContext(Dispatchers.IO) { CommandHistoryStore.clear(this@TerminalActivity) }
+                                    historyReload++
+                                    if (cleared) {
+                                        Toast.makeText(this@TerminalActivity, R.string.toast_history_cleared, Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        Toast.makeText(this@TerminalActivity, R.string.toast_history_clear_failed, Toast.LENGTH_LONG).show()
+                                    }
+                                }
+                            }
                         )
                     }
 
@@ -848,9 +869,23 @@ class TerminalActivity : FragmentActivity() {
                         fullscreen = fullscreen,
                         apiKey = aiApiKey,
                         onSave = { newKey ->
-                            aiApiKey = newKey
-                            AiSettings.setApiKey(this@TerminalActivity, newKey)
-                            screen = aiSettingsCameFrom
+                            val wanted = newKey?.trim()?.takeIf { it.isNotEmpty() }
+                            scope.launch {
+                                // Keystore I/O stays off the main thread. setApiKey gives up
+                                // silently when the secure store cannot be opened, so "saved" is
+                                // only believed once the key reads back - the in-memory copy and
+                                // the screen change must not outrun what is actually on disk.
+                                val persisted = withContext(Dispatchers.IO) {
+                                    AiSettings.setApiKey(this@TerminalActivity, wanted)
+                                    AiSettings.apiKey(this@TerminalActivity) == wanted
+                                }
+                                if (persisted) {
+                                    aiApiKey = wanted
+                                    screen = aiSettingsCameFrom
+                                } else {
+                                    Toast.makeText(this@TerminalActivity, R.string.toast_api_key_not_saved, Toast.LENGTH_LONG).show()
+                                }
+                            }
                         },
                         onBack = { screen = aiSettingsCameFrom }
                     )
@@ -906,10 +941,13 @@ class TerminalActivity : FragmentActivity() {
                         fullscreen = fullscreen,
                         results = azpResults,
                         busy = azpBusy,
-                        error = azpError,
+                        // One banner carries both a search failure and the last install/remove
+                        // outcome; the install/remove message is the more recent action.
+                        error = azpMessage ?: azpError,
                         installingId = azpInstallingId,
                         onSearch = { query, kind ->
                             azpBusy = true
+                            azpMessage = null
                             azpSearchJob?.cancel()
                             azpSearchJob = scope.launch {
                                 val response = try {
@@ -938,82 +976,77 @@ class TerminalActivity : FragmentActivity() {
                         },
                         onInstall = { listing ->
                             azpInstallingId = listing.id
+                            azpMessage = null
                             scope.launch {
-                                val trustedKeys = azpTrustedKeys()
-                                val result = try {
-                                    val rawInstall = withContext(Dispatchers.IO) {
-                                        val bytes = AzpClient.download(listing.id, listing.version) ?: return@withContext null
-                                        AzpInstaller.install(
-                                            this@TerminalActivity, listing.id, listing.version, bytes, trustedKeys.orEmpty()
-                                        )
-                                    }
-                                    // A failed key fetch (trustedKeys == null) can only ever have
-                                    // checked a package against zero keys - VALID under those
-                                    // conditions means "the check couldn't rule anything in or
-                                    // out," not "confirmed internally consistent."
-                                    val install = if (trustedKeys == null && rawInstall?.trust == AzpTrust.VALID) {
-                                        rawInstall.copy(trust = AzpTrust.UNVERIFIABLE)
-                                    } else {
-                                        rawInstall
-                                    }
-                                    if (install == null) {
-                                        null
-                                    } else {
-                                        // Only a TRUSTED signature (a registry-vouched-for signer)
-                                        // proceeds unconfirmed. VALID only means internally
-                                        // consistent - anyone can self-sign - so it, UNSIGNED and
-                                        // anything else pause here for an explicit tap before
-                                        // running the dependency install and wiring an executable
-                                        // onto PATH.
-                                        val scriptCommand = install.script?.let { script ->
-                                            val proceed = install.trust == AzpTrust.TRUSTED ||
-                                                run {
-                                                    val decision = CompletableDeferred<Boolean>()
-                                                    azpTrustConfirm = listing to decision
-                                                    decision.await()
+                                try {
+                                    val trustedKeys = azpTrustedKeys()
+                                    // Typed outcome: a failure says which check refused the package
+                                    // (network, digest, signature, ...) instead of leaving a silent INSTALL.
+                                    when (val outcome = AzpInstaller.downloadAndInstall(
+                                        this@TerminalActivity, listing.id, listing.version, trustedKeys.orEmpty()
+                                    )) {
+                                        is AzpInstallOutcome.Failed ->
+                                            azpMessage = "Couldn't install ${listing.name}: ${outcome.failure.message}"
+                                        is AzpInstallOutcome.Installed -> {
+                                            // A failed key fetch (trustedKeys == null) can only ever have
+                                            // checked a package against zero keys - VALID under those
+                                            // conditions means "the check couldn't rule anything in or
+                                            // out," not "confirmed internally consistent."
+                                            val install = if (trustedKeys == null && outcome.result.trust == AzpTrust.VALID) {
+                                                outcome.result.copy(trust = AzpTrust.UNVERIFIABLE)
+                                            } else {
+                                                outcome.result
+                                            }
+                                            finishAzpInstall(listing, install, ::askAzp)?.let { (done, scriptCommand, note) ->
+                                                azpResults = azpResults.map {
+                                                    if (it.id == listing.id) {
+                                                        it.copy(installed = true, trust = done.trust.name, scriptCommand = scriptCommand.orEmpty())
+                                                    } else it
                                                 }
-                                            if (proceed) {
-                                                val outcome = withContext(Dispatchers.IO) {
-                                                    ScriptInstaller.install(this@TerminalActivity, listing.id, listing.version, script)
-                                                }
-                                                (outcome as? ScriptInstaller.Result.Installed)?.command
-                                            } else null
+                                                azpMessage = note
+                                            }
                                         }
-                                        withContext(Dispatchers.IO) {
-                                            AzpLibrary.record(
-                                                this@TerminalActivity, listing.id, listing.name, listing.version,
-                                                install.kind, install.skillIds, install.trust, scriptCommand
-                                            )
-                                        }
-                                        install to scriptCommand
                                     }
-                                } catch (e: Exception) {
+                                } catch (e: CancellationException) {
+                                    throw e
+                                } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
                                     // A dropped connection or a malformed archive/manifest must
-                                    // not crash the app - the row just stays on INSTALL.
-                                    null
+                                    // not crash the app - and must not be silent either.
+                                    azpMessage = "Couldn't install ${listing.name}: ${e.message ?: e.javaClass.simpleName}"
+                                } finally {
+                                    azpInstallingId = null
                                 }
-                                if (result != null) {
-                                    val (install, scriptCommand) = result
-                                    azpResults = azpResults.map {
-                                        if (it.id == listing.id) {
-                                            it.copy(installed = true, trust = install.trust.name, scriptCommand = scriptCommand.orEmpty())
-                                        } else it
-                                    }
-                                }
-                                azpInstallingId = null
                             }
                         },
                         onBack = { screen = Screen.Terminal },
                         onUninstall = { listing ->
                             azpInstallingId = listing.id
+                            azpMessage = null
                             scope.launch {
-                                withContext(Dispatchers.IO) {
-                                    runCatching { ScriptInstaller.uninstall(this@TerminalActivity, listing.id) }
+                                try {
+                                    val failure = withContext(Dispatchers.IO) {
+                                        runCatching { ScriptInstaller.uninstall(this@TerminalActivity, listing.id) }.exceptionOrNull()
+                                    }
+                                    // The record is the truth: uninstall() removes it last, so a
+                                    // package still recorded was not (fully) removed.
+                                    val stillInstalled = withContext(Dispatchers.IO) {
+                                        AzpLibrary.isInstalled(this@TerminalActivity, listing.id)
+                                    }
+                                    if (stillInstalled) {
+                                        azpMessage = "Couldn't remove ${listing.name}" +
+                                            (failure?.message?.let { ": $it" } ?: ".")
+                                    } else {
+                                        azpResults = azpResults.map {
+                                            if (it.id == listing.id) it.copy(installed = false, trust = "", scriptCommand = "") else it
+                                        }
+                                        if (failure != null) {
+                                            azpMessage = "Removed ${listing.name}, but some of its files could not be cleaned up: " +
+                                                (failure.message ?: failure.javaClass.simpleName)
+                                        }
+                                    }
+                                } finally {
+                                    azpInstallingId = null
                                 }
-                                azpResults = azpResults.map {
-                                    if (it.id == listing.id) it.copy(installed = false, trust = "", scriptCommand = "") else it
-                                }
-                                azpInstallingId = null
                             }
                         }
                     )

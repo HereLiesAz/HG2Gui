@@ -20,8 +20,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
@@ -230,7 +230,7 @@ private fun CodeCapsule(text: String, description: String) {
             .clip(AzphaltSurface.note)
             .background(Azphalt.Ink)
             .padding(horizontal = 16.dp, vertical = 10.dp)
-            .semantics { contentDescription = description }
+            .clearAndSetSemantics { contentDescription = description }
     ) {
         Text(
             text,

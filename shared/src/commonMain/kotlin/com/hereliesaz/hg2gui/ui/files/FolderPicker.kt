@@ -303,7 +303,7 @@ private fun MorphTile(
                     if (isOpen) {
                         Text(
                             "TAP TO GO INSIDE",
-                            color = textColor.copy(alpha = .85f),
+                            color = textColor,
                             style = type.endCap,
                             modifier = Modifier.padding(top = 4.dp)
                         )
