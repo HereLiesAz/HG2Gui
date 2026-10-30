@@ -8,6 +8,8 @@ The application is Kotlin/Compose. `:composeApp` contains Android entry points a
 
 Each terminal tab owns a persistent `TerminalEngine`, which owns a persistent `ShellSession`. Shell state and working directory survive between ordinary commands.
 
+The session survives mistakes. A command is passed to the shell as one quoted string for `eval`, so a syntax error (`echo (`, an unterminated quote) becomes an exit status rather than ending the shell. If the shell does die (`exit`, a crash), the next command starts a fresh one, prefixed with `[shell restarted]`, with the working directory reset to home. A command that is silent for 15 seconds is not killed: its output shows `[still running - no output for Ns]`, repeated once per period, and it keeps running until it finishes, is interrupted, or (for a caller that sets one) reaches its time limit. An interrupt stops the running command and its children and leaves the session alive; a declined prompt cancels only the command that asked.
+
 `TerminalEngine` is the policy seam in front of that shell. Its broad dispatch order is:
 
 1. bootstrap/download controls;
@@ -41,7 +43,7 @@ Each non-interactive caller constructs the engine with an `ExecutionPolicy` (`AP
 - package lifecycle actions other than `info` and `snapshot`; `enable` is allowed only for an API call that arrives while HG2Gui is on screen;
 - the device-affecting built-ins (`call`, `contacts`, `brightness`, `wifi`, `bluetooth`, `airplane`, `flash`, `edit`, `volume set|profile`) unless a person answers yes to that exact line. The current background callers (API execute, MCP, installers) answer every prompt with nothing, so in practice they are refused.
 
-`runToCompletion()` supports normal non-interactive work but never grants ADB/root authority. Authority status may be queried; elevated execution requires foreground approval.
+MCP `shell.exec` has a 120-second watchdog that interrupts the command (exit 124) and stops waiting 10 seconds later. `runToCompletion()` supports normal non-interactive work but never grants ADB/root authority. Authority status may be queried; elevated execution requires foreground approval.
 
 ## 2. Termux-derived runtime
 

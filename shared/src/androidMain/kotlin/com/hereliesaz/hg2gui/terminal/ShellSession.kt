@@ -658,6 +658,19 @@ actual class ShellSession private constructor(
                 break
             }
 
+            val timeoutText = if (timeoutMs >= 1000L) (timeoutMs / 1000).toString() + "s" else timeoutMs.toString() + "ms"
+            val cancelNote = when (cancelReason) {
+                CANCEL_INTERRUPT -> "[interrupted]"
+                CANCEL_TIMEOUT -> "[timed out after $timeoutText]"
+                CANCEL_DECLINED -> "[cancelled: the prompt was not answered]"
+                else -> null
+            }
+            fun appendNote(note: String) {
+                val lead = if (emulator.getCursorCol() == 0) "" else "\r\n"
+                safeAppend(emulator, (lead + note).toByteArray())
+                onLine(emulator.transcriptText())
+                onStyledLine(emulator.styledTranscript())
+            }
             if (!completed) {
                 // Left the loop without the end marker: cancelled, or the shell ended. Everything
                 // read so far is real output (including what the end-marker hold-back kept back).
@@ -667,20 +680,18 @@ actual class ShellSession private constructor(
                         flush(pending, emittedUpTo, pending.length, emulator, onLine)
                     )
                 }
-                drainStderr()
-                val note = when {
-                    cancelReason == CANCEL_INTERRUPT -> "[interrupted]"
-                    cancelReason == CANCEL_TIMEOUT -> "[timed out after ${timeoutMs / 1000}s]"
-                    cancelReason == CANCEL_DECLINED -> "[cancelled: the prompt was not answered]"
-                    shellEnded -> "[shell exited - a new one starts with the next command]"
-                    else -> null
-                }
+                // The streams of a shell that was just killed may already be closed.
+                try { drainStderr() } catch (ignored: IOException) {}
+                val note = cancelNote ?: if (shellEnded) "[shell exited - a new one starts with the next command]" else null
                 if (note != null) {
-                    val lead = if (emulator.getCursorCol() == 0) "" else "\r\n"
-                    safeAppend(emulator, (lead + note).toByteArray())
+                    appendNote(note)
+                } else {
+                    onLine(emulator.transcriptText())
+                    onStyledLine(emulator.styledTranscript())
                 }
-                onLine(emulator.transcriptText())
-                onStyledLine(emulator.styledTranscript())
+            } else if (cancelNote != null && exitCode != 0) {
+                // The shell reported the cancelled command's end (the usual pipe-mode outcome).
+                appendNote(cancelNote)
             }
             if (cancelReason != CANCEL_NONE && exitCode != 0) {
                 exitCode = if (cancelReason == CANCEL_TIMEOUT) EXIT_TIMED_OUT else EXIT_INTERRUPTED
