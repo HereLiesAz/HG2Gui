@@ -4,6 +4,12 @@ package com.hereliesaz.hg2gui.terminal
  * A shell-agnostic completion candidate. Shell/framework-specific completion systems are adapters
  * that produce these; HG2Gui surfaces only consume this model.
  *
+ * [value] is the raw text (a file name, a branch, a host); [insertText] is what is typed into the
+ * command line and therefore must be shell syntax. Leaving [insertText] at its default asks
+ * [CompletionNormalizer.merge] to fill it with [value] quoted as one inert shell word
+ * ([CompletionWords.quote]), so a name containing a space, `;`, `$(...)` or a backtick can never
+ * split into extra arguments or run. A provider that sets [insertText] explicitly owns its quoting.
+ *
  * [enumerationComplete] is deliberately explicit. A provider may know useful candidates without
  * knowing every valid value (for example hosts from known_hosts); only a complete enumeration may
  * replace open text input with a native choice-only surface.
@@ -55,7 +61,24 @@ data class CompletionRequest(
 ) {
     val safeCursor: Int get() = cursor.coerceIn(0, line.length)
     val beforeCursor: String get() = line.substring(0, safeCursor)
-    val tokenPrefix: String get() = beforeCursor.substringAfterLast(' ')
+
+    /** Index in [line] where the word under the cursor starts; quote and escape aware. */
+    val tokenStart: Int get() = CompletionWords.currentTokenStart(beforeCursor)
+
+    /**
+     * The word under the cursor exactly as typed (quotes and backslashes included). This is the
+     * same span [applyCompletion] replaces, so what is matched is what is overwritten.
+     */
+    val tokenPrefix: String get() = beforeCursor.substring(tokenStart)
+
+    /**
+     * [tokenPrefix] with the user's quoting removed (`My\ F` -> `My F`): the literal text to
+     * compare against raw candidate values and to hand to a shell's completion primitive as data.
+     */
+    val tokenValue: String get() = CompletionWords.unquote(tokenPrefix)
+
+    /** True when the word under the cursor is the first word of the line (a command name). */
+    val isCommandPosition: Boolean get() = beforeCursor.substring(0, tokenStart).isBlank()
 }
 
 interface CompletionProvider {
@@ -103,9 +126,29 @@ object CompletionNormalizer {
             }
             .toList()
 
+    /**
+     * Gives a candidate whose [CompletionCandidate.insertText] was left at its default the
+     * shell-quoted form of its value. Safe to apply more than once: an already-quoted candidate has
+     * `insertText != value` (or needed no quoting) and is returned unchanged.
+     */
+    fun shellSafe(candidate: CompletionCandidate): CompletionCandidate {
+        if (candidate.insertText != candidate.value) return candidate
+        val quoted = CompletionWords.quote(candidate.value)
+        return if (quoted == candidate.insertText) candidate else candidate.copy(insertText = quoted)
+    }
+
+    /**
+     * A file name that starts with `-` would be read by the command as an option once inserted
+     * (`rm -rf` offered as a "file" out of a downloaded archive). When nothing has been typed yet,
+     * such a name is offered as `./-name` instead; once the user has typed the dash themselves
+     * they asked for it, and the name is left alone.
+     */
+    fun guardOptionLookalike(value: String, typedValue: String): String =
+        if (typedValue.isEmpty() && value.startsWith("-")) "./$value" else value
+
     fun merge(candidates: List<CompletionCandidate>): List<CompletionCandidate> {
         val bestByInsert = linkedMapOf<String, CompletionCandidate>()
-        candidates.forEach { candidate ->
+        candidates.map { shellSafe(it) }.forEach { candidate ->
             val key = candidate.insertText
             val old = bestByInsert[key]
             bestByInsert[key] = when {
@@ -127,9 +170,13 @@ object CompletionNormalizer {
     fun filterFor(request: CompletionRequest, candidates: List<CompletionCandidate>): List<CompletionCandidate> {
         val prefix = request.tokenPrefix
         if (prefix.isBlank()) return candidates
+        // The typed word may be quoted/escaped (`My\ F`) while candidate values are raw, so a
+        // candidate matches on its inserted syntax, its label, or its raw value vs the unquoted word.
+        val typed = request.tokenValue
         return candidates.filter {
             it.insertText.startsWith(prefix, ignoreCase = true) ||
-                it.label.startsWith(prefix, ignoreCase = true)
+                it.label.startsWith(prefix, ignoreCase = true) ||
+                it.value.startsWith(typed, ignoreCase = true)
         }
     }
 

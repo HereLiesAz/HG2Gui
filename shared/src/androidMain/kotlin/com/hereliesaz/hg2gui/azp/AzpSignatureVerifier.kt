@@ -28,6 +28,25 @@ import java.security.spec.X509EncodedKeySpec
  * counter-signed but not directly listed reports [AzpTrust.VALID], not [AzpTrust.TRUSTED].
  */
 object AzpSignatureVerifier {
+    /**
+     * True iff [publicKey] names the same key as any of [trustedKeys]. Keys are compared by their
+     * canonical base64 form ([canonicalKey]), not as raw strings: the registry may publish the
+     * same SPKI DER wrapped at 76 columns, padded or unpadded, or URL-safe, and a verbatim string
+     * compare would silently downgrade a genuinely [AzpTrust.TRUSTED] signer to [AzpTrust.VALID].
+     * A blank key never matches (a blank published key must not trust a blank signer).
+     */
+    internal fun isTrustedKey(publicKey: String, trustedKeys: List<String>): Boolean {
+        val wanted = canonicalKey(publicKey)
+        if (wanted.isEmpty()) return false
+        return trustedKeys.any { canonicalKey(it) == wanted }
+    }
+
+    /** Whitespace removed, URL-safe alphabet mapped to the standard one, `=` padding dropped. */
+    internal fun canonicalKey(key: String): String =
+        key.filterNot { it.isWhitespace() || it == '=' }
+            .replace('-', '+')
+            .replace('_', '/')
+
     fun verify(manifestBytes: ByteArray, signature: AzpSignature?, trustedKeys: List<String>): AzpTrust {
         if (signature == null || signature.publicKey.isBlank() || signature.signature.isBlank()) {
             return AzpTrust.UNSIGNED
@@ -45,7 +64,7 @@ object AzpSignatureVerifier {
             verifier.update(manifestBytes)
             when {
                 !verifier.verify(signatureBytes) -> AzpTrust.INVALID
-                signature.publicKey in trustedKeys -> AzpTrust.TRUSTED
+                isTrustedKey(signature.publicKey, trustedKeys) -> AzpTrust.TRUSTED
                 else -> AzpTrust.VALID
             }
         } catch (e: Exception) {

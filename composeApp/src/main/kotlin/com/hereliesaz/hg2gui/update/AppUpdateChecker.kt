@@ -27,9 +27,11 @@ import java.io.File
 import java.util.concurrent.TimeUnit
 
 /** Checks HG2Gui's rolling GitHub release, downloads newer APKs itself, verifies them and hands
- * them to Android's package installer. The browser is no longer part of the update path. */
+ * them to Android's package installer. The browser is no longer part of the update path.
+ * Only non-debuggable release builds are ever offered or installed - see UpdatePolicy.kt for the
+ * channel contract. */
 object AppUpdateChecker {
-    private const val RELEASES_TAG_API = "https://api.github.com/repos/HereLiesAz/HG2Gui/releases/tags/latest-debug-v"
+    private const val RELEASES_TAG_API = "https://api.github.com/repos/HereLiesAz/HG2Gui/releases/tags/"
     // Used only if the installed versionName can't be parsed.
     private const val FALLBACK_SERIES = "0.7"
     private const val PREFS = "hg2gui_updates"
@@ -38,7 +40,6 @@ object AppUpdateChecker {
     private const val CHANNEL_ID = "hg2gui_updates"
     private const val NOTIFICATION_ID = 2001
     private const val DOWNLOAD_NOTIFICATION_ID = 2002
-    private val VERSIONED_APK = Regex("""hg2gui-playstore-debug-([0-9]+(?:\.[0-9]+)*)\.apk""")
 
     data class Update(
         val versionName: String,
@@ -54,8 +55,8 @@ object AppUpdateChecker {
             .build()
     }
 
-    /** The rolling release this build line publishes to: `latest-debug-v<major>.<minor>`, taken
-     *  from the installed versionName so a new minor series doesn't keep polling the old tag. */
+    /** The rolling release this build line publishes to: `latest-v<major>.<minor>` (see [updateReleaseTag]),
+     *  taken from the installed versionName so a new minor series doesn't keep polling the old tag. */
     internal fun releaseSeries(versionName: String?): String =
         Regex("""^(\d+)\.(\d+)""").find(versionName.orEmpty())?.let { "${it.groupValues[1]}.${it.groupValues[2]}" }
             ?: FALLBACK_SERIES
@@ -64,7 +65,7 @@ object AppUpdateChecker {
         val installedCode = installedVersionCode(context)
         val installedName = runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull()
         val request = Request.Builder()
-            .url(RELEASES_TAG_API + releaseSeries(installedName))
+            .url(RELEASES_TAG_API + updateReleaseTag(releaseSeries(installedName)))
             .header("Accept", "application/vnd.github+json")
             .header("User-Agent", "HG2Gui-update-checker")
             .build()
@@ -73,25 +74,17 @@ object AppUpdateChecker {
             client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) return null
                 val assets = JSONObject(response.body.string()).optJSONArray("assets") ?: JSONArray()
-                var newest: Update? = null
-                for (i in 0 until assets.length()) {
-                    val asset = assets.optJSONObject(i) ?: continue
-                    val match = VERSIONED_APK.matchEntire(asset.optString("name")) ?: continue
-                    val versionName = match.groupValues[1]
-                    val build = versionName.substringAfterLast('.').toLongOrNull() ?: continue
-                    val url = asset.optString("browser_download_url")
-                    if (url.isBlank()) continue
-                    // GitHub's asset API omits the digest field for older releases; when absent,
-                    // sha256 is null and verifyDownloadedApk skips the hash check (APK signature
-                    // verification still runs and is the primary integrity gate).
-                    val digest = asset.optString("digest")
-                        .takeIf { it.startsWith("sha256:", ignoreCase = true) }
-                        ?.substringAfter(':')
-                        ?.takeIf { it.length == 64 }
-                    val candidate = Update(versionName, build, url, digest)
-                    if (newest == null || candidate.versionCode > newest!!.versionCode) newest = candidate
-                }
-                newest?.takeIf { it.versionCode > installedCode }
+                // GitHub's asset API omits the digest field for older releases; when absent,
+                // sha256 is null and verifyDownloadedApk skips the hash check (APK signature
+                // verification still runs and is the primary integrity gate).
+                newestUpdate(
+                    (0 until assets.length()).mapNotNull { i ->
+                        assets.optJSONObject(i)?.let {
+                            ReleaseAsset(it.optString("name"), it.optString("browser_download_url"), it.optString("digest").ifEmpty { null })
+                        }
+                    },
+                    installedCode
+                )
             }
         } catch (_: Exception) {
             null
@@ -100,6 +93,8 @@ object AppUpdateChecker {
 
     fun checkAndNotify(context: Context) {
         val appContext = context.applicationContext
+        // The user can switch the automatic check off in Settings; a manual update is unaffected.
+        if (!com.hereliesaz.hg2gui.managers.UpdateCheckPreference.isEnabled(appContext)) return
         // Called on every TerminalActivity start - don't hit the GitHub API (60 req/h
         // unauthenticated) each time; once per CHECK_INTERVAL_MS is plenty for a rolling build.
         val prefs = appContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -155,16 +150,16 @@ object AppUpdateChecker {
         @Suppress("DEPRECATION")
         val archive = context.packageManager.getPackageArchiveInfo(apk.absolutePath, flags)
             ?: error("Downloaded file is not a valid APK")
-        if (archive.packageName != context.packageName) {
-            error("Update APK belongs to ${archive.packageName}, not ${context.packageName}")
-        }
         val archiveCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) archive.longVersionCode else {
             @Suppress("DEPRECATION") archive.versionCode.toLong()
         }
-        if (archiveCode != update.versionCode) {
-            error("Update APK version code $archiveCode does not match release ${update.versionCode}")
-        }
-        if (archiveCode <= installedVersionCode(context)) error("Downloaded APK is not newer than the installed app")
+        archiveIdentityError(archive.packageName, context.packageName, archiveCode, update.versionCode, installedVersionCode(context))
+            ?.let { error(it) }
+        // Belt and braces for the channel contract: even a correctly signed APK is refused if it is
+        // debuggable (or if the platform could not tell us), so a mis-published debug build can never
+        // be installed through the updater.
+        val applicationFlags = archive.applicationInfo?.flags ?: error("Could not read the update APK's application info")
+        if (isDebuggable(applicationFlags)) error("Update APK is a debuggable build; refusing to install it")
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             val installed = context.packageManager.getPackageInfo(context.packageName, PackageManager.GET_SIGNING_CERTIFICATES)
@@ -172,7 +167,7 @@ object AppUpdateChecker {
             val archiveSigners = archive.signingInfo?.apkContentsSigners?.map { it.toCharsString() }?.toSet().orEmpty()
             // An unsigned archive (empty archiveSigners) must also be rejected — the previous
             // guard only caught mismatched signers, letting an unsigned APK through.
-            if (archiveSigners.isEmpty() || (installedSigners.isNotEmpty() && archiveSigners != installedSigners)) {
+            if (!signersAcceptable(installedSigners, archiveSigners)) {
                 error("Update APK signature does not match the installed app")
             }
         } else {
@@ -183,7 +178,7 @@ object AppUpdateChecker {
             val installedSigners = installed.signatures?.map { it.toCharsString() }?.toSet().orEmpty()
             @Suppress("DEPRECATION")
             val archiveSigners = archive.signatures?.map { it.toCharsString() }?.toSet().orEmpty()
-            if (archiveSigners.isEmpty() || (installedSigners.isNotEmpty() && archiveSigners != installedSigners)) {
+            if (!signersAcceptable(installedSigners, archiveSigners)) {
                 error("Update APK signature does not match the installed app")
             }
         }

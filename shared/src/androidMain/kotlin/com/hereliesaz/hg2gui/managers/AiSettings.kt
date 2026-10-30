@@ -86,12 +86,54 @@ object AiSettings {
         }
     }
 
-    fun setApiKey(context: Context, apiKey: String?) {
-        val secure = securePrefs(context) ?: return
-        secure.edit(commit = true) {
-            if (apiKey.isNullOrBlank()) remove(KEY_API_KEY) else putString(KEY_API_KEY, apiKey)
+    /** What [saveApiKey] managed to do. Only [Saved] and [Cleared] mean the new state will survive a restart. */
+    enum class SaveResult {
+        /** The key is stored (encrypted) and will be read back after a restart. */
+        Saved,
+
+        /** A blank key was given and the stored key was removed. */
+        Cleared,
+
+        /** The encrypted store could not be opened or recreated; nothing was written. */
+        StoreUnavailable,
+
+        /** The store opened but the write did not land; the previous value is unchanged. */
+        WriteFailed;
+
+        /** True when the requested state is now what is persisted. */
+        val persisted: Boolean get() = this == Saved || this == Cleared
+
+        companion object {
+            /** The outcome for a write of a [blank] (or non-blank) key; [committed] is the commit() result. */
+            internal fun of(storeOpen: Boolean, committed: Boolean, blank: Boolean): SaveResult = when {
+                !storeOpen -> StoreUnavailable
+                !committed -> WriteFailed
+                blank -> Cleared
+                else -> Saved
+            }
         }
-        // A key set before migration ran must not linger in plain text.
-        plainPrefs(context).edit(commit = true) { remove(KEY_API_KEY) }
+    }
+
+    /**
+     * Stores [apiKey] (trimmed; blank removes it) and reports whether it was really persisted, so
+     * the UI can say so instead of showing "saved" for a key that is gone after a restart.
+     */
+    fun saveApiKey(context: Context, apiKey: String?): SaveResult {
+        val key = apiKey?.trim()
+        val blank = key.isNullOrEmpty()
+        val secure = securePrefs(context)
+            ?: return SaveResult.of(storeOpen = false, committed = false, blank = blank)
+        val committed = secure.edit().apply {
+            if (blank) remove(KEY_API_KEY) else putString(KEY_API_KEY, key)
+        }.commit()
+        // A key set before migration ran must not linger in plain text - but only drop the plain
+        // copy once the encrypted write has landed.
+        if (committed) plainPrefs(context).edit(commit = true) { remove(KEY_API_KEY) }
+        return SaveResult.of(storeOpen = true, committed = committed, blank = blank)
+    }
+
+    /** Source-compatible form of [saveApiKey] for callers that do not report the outcome. */
+    fun setApiKey(context: Context, apiKey: String?) {
+        saveApiKey(context, apiKey)
     }
 }

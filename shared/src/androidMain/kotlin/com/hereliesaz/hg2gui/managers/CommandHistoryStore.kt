@@ -62,25 +62,57 @@ object CommandHistoryStore {
         }
     }
 
+    /** Writes [lines] over the log atomically (temp file + rename), so a crash mid-write can't
+     *  truncate the whole history. Callers hold the store lock. */
+    private fun writeLines(context: Context, lines: List<String>) {
+        val target = file(context)
+        if (lines.isEmpty()) {
+            target.delete()
+            return
+        }
+        val temp = File(target.parentFile, "$FILE_NAME.tmp")
+        temp.writeText(lines.joinToString("\n", postfix = "\n"))
+        if (!temp.renameTo(target)) {
+            target.writeText(temp.readText())
+            temp.delete()
+        }
+    }
+
     /** Call once a command has actually run (or been dispatched to a full-screen surface) -
      *  not for every keystroke, and not for a blank/whitespace-only line. */
     fun record(context: Context, sessionLabel: String, command: String, timestampMs: Long) {
         if (command.isBlank()) return
         val line = "$timestampMs\t${escape(sessionLabel)}\t${escape(command)}"
-        // Every tab records into the one file: serialize the read-modify-write, and replace the
-        // file atomically so a crash mid-write can't truncate the whole history.
+        // Every tab records into the one file: serialize the read-modify-write.
         synchronized(this) {
             val target = file(context)
             val existing = if (target.exists()) target.readLines() else emptyList()
-            val trimmed = (existing + line).takeLast(MAX_ENTRIES)
-            val temp = File(target.parentFile, "$FILE_NAME.tmp")
-            temp.writeText(trimmed.joinToString("\n", postfix = "\n"))
-            if (!temp.renameTo(target)) {
-                target.writeText(temp.readText())
-                temp.delete()
-            }
+            writeLines(context, (existing + line).takeLast(MAX_ENTRIES))
         }
     }
+
+    /** Removes [entry] from the log (every line with the same timestamp, session label and
+     *  command - the log has no other identity). Returns whether anything was removed. */
+    fun delete(context: Context, entry: CommandHistoryEntry): Boolean = synchronized(this) {
+        val target = file(context)
+        if (!target.exists()) return@synchronized false
+        val existing = target.readLines()
+        val kept = withoutEntry(existing, entry)
+        if (kept.size == existing.size) return@synchronized false
+        writeLines(context, kept)
+        true
+    }
+
+    /** Erases the whole log. Returns false only if the file exists and could not be removed. */
+    fun clear(context: Context): Boolean = synchronized(this) {
+        val target = file(context)
+        File(target.parentFile, "$FILE_NAME.tmp").delete()
+        !target.exists() || target.delete()
+    }
+
+    /** [lines] minus every line that parses to [entry]; unparseable lines are kept untouched. */
+    internal fun withoutEntry(lines: List<String>, entry: CommandHistoryEntry): List<String> =
+        lines.filterNot { parseLine(it) == entry }
 
     /** Every recorded entry, most recent first. [query], when non-blank, keeps only commands
      *  containing it (case-insensitive) - the whole point of a *searchable* cross-session log. */
@@ -92,7 +124,7 @@ object CommandHistoryStore {
         return filtered.sortedByDescending { it.timestampMs }
     }
 
-    private fun parseLine(line: String): CommandHistoryEntry? {
+    internal fun parseLine(line: String): CommandHistoryEntry? {
         val parts = line.split("\t", limit = PARTS_PER_LINE)
         val timestamp = parts.getOrNull(0)?.toLongOrNull()
         if (parts.size != PARTS_PER_LINE || timestamp == null) return null

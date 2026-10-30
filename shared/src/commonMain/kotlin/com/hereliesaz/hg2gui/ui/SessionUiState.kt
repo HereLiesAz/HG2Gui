@@ -1,5 +1,6 @@
 package com.hereliesaz.hg2gui.ui
 
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -10,6 +11,48 @@ import com.hereliesaz.hg2gui.terminal.ShellPresentation
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+
+/**
+ * What a session tab should badge: the command it is running, a prompt it is blocked on, or output
+ * that finished while another tab was in front. Each carries a [glyph] for the tab label (a shape,
+ * so it never depends on colour) and a [description] for screen readers.
+ */
+enum class SessionActivity(val glyph: String, val description: String?) {
+    Idle("", null),
+    Running("…", "running"),
+    WaitingForInput("?", "waiting for input"),
+    Finished("✓", "finished")
+}
+
+/** Waiting beats running (the command is blocked on the user), and a finished badge only shows once idle. */
+internal fun sessionActivityOf(running: Boolean, waitingForInput: Boolean, finishedWhileAway: Boolean): SessionActivity = when {
+    waitingForInput -> SessionActivity.WaitingForInput
+    running -> SessionActivity.Running
+    finishedWhileAway -> SessionActivity.Finished
+    else -> SessionActivity.Idle
+}
+
+/**
+ * Remembers how many lines of each output entry have already been revealed, so the line wipe plays
+ * once per line: scrolling an entry out of the lazy list and back in (which recreates its
+ * composables) must not replay it, and lines that stream in later wipe in on arrival only.
+ */
+class OutputWipeLedger {
+    private val shown = HashMap<Long, Int>()
+
+    /** Lines of [entryId] that have already been on screen. */
+    fun shownLines(entryId: Long): Int = shown[entryId] ?: 0
+
+    /** Records that [lineCount] lines of [entryId] are now on screen (never lowers the count). */
+    fun record(entryId: Long, lineCount: Int) {
+        if (lineCount > (shown[entryId] ?: 0)) shown[entryId] = lineCount
+    }
+
+    /** Drops entries that left the buffer so the ledger cannot grow without bound. */
+    fun retainOnly(entryIds: Set<Long>) {
+        shown.keys.retainAll(entryIds)
+    }
+}
 
 /**
  * One terminal session's UI state: its own scrollback, command history and in-progress
@@ -27,6 +70,36 @@ class SessionUiState(val id: String, name: String, cwd: String) {
     var composedPrefix by mutableStateOf("")
     var running by mutableStateOf(false)
     var shellPresentation by mutableStateOf(ShellPresentation(cwd = cwd))
+
+    /**
+     * Scroll position of this session's output. Owned here (not remembered by the screen) so a tab
+     * switch, or leaving the terminal for Settings and coming back, returns to where the user was.
+     */
+    val listState: LazyListState by lazy(LazyThreadSafetyMode.NONE) { LazyListState() }
+
+    /** True while the output should keep its newest line in view; cleared when the user scrolls away. */
+    var followTail by mutableStateOf(true)
+
+    /** Which output lines have already played their entrance (see [OutputWipeLedger]). */
+    val wipeLedger = OutputWipeLedger()
+
+    /** A command finished while this tab was not the one in front; cleared when it is shown again. */
+    var finishedWhileAway by mutableStateOf(false)
+
+    /** What this session's tab should badge. */
+    val activity: SessionActivity
+        get() = sessionActivityOf(running, pendingPrompt != null, finishedWhileAway)
+
+    /**
+     * Re-derives [shellPresentation] after a command: the current [cwd], the repository state
+     * [probe] reports for it, and [exitCode]. A result for a directory the session has since left
+     * is dropped. The default probe reports nothing, so the cwd and exit status still update.
+     */
+    suspend fun refreshShellPresentation(exitCode: Int?, probe: ShellProbe = NoShellProbe) {
+        val forCwd = cwd
+        val next = ShellStatusProjector.project(shellPresentation, forCwd, exitCode, probe)
+        if (cwd == forCwd && next != shellPresentation) shellPresentation = next
+    }
 
     /**
      * Candidates supplied by the Completion Bridge for the current composed command. They are
@@ -52,6 +125,14 @@ class SessionUiState(val id: String, name: String, cwd: String) {
     var transientStatus by mutableStateOf<String?>(null)
 
     var pendingPrompt by mutableStateOf<String?>(null)
+        private set
+
+    /**
+     * The prompt the child is waiting on with its surrounding lines intact (bounded by
+     * [ConfirmPrompts.detailOf]), where [pendingPrompt] keeps only the final logical line. A
+     * confirmation dialog shows this so a multi-line command in "Run as root? ..." is read in full.
+     */
+    var pendingPromptDetail by mutableStateOf<String?>(null)
         private set
     private var pendingAnswer: CompletableDeferred<String>? = null
 
@@ -87,6 +168,7 @@ class SessionUiState(val id: String, name: String, cwd: String) {
         val deferred = CompletableDeferred<String>()
         pendingAnswer = deferred
         pendingPrompt = uiPrompt
+        pendingPromptDetail = ConfirmPrompts.detailOf(prompt)
         // finally: a cancelled caller (tab closed, command killed) must not leave a stale prompt
         // on screen or a dead deferred that the next answerPrompt() would complete into nothing.
         try {
@@ -94,6 +176,7 @@ class SessionUiState(val id: String, name: String, cwd: String) {
         } finally {
             if (pendingAnswer === deferred) {
                 pendingPrompt = null
+                pendingPromptDetail = null
                 pendingAnswer = null
             }
         }

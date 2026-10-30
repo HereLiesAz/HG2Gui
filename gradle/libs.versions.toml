@@ -1,16 +1,16 @@
 [versions]
 agp = "9.4.1"
+# Pinned NDK, read by composeApp/build.gradle.kts and .github/workflows/ci.yml (the only two places that need it).
+ndk = "29.0.14206865"
 detekt = "1.23.8"
 annotation = "1.11.0"
-appcompat = "1.6.1"
-commonsIo = "2.22.0"
 componentsResources = "1.12.1"
 desugar_jdk_libs = "2.1.5"
-foundation = "1.12.1"
+foundation = "1.12.2"
 guava = "33.7.2-jre"
 junitVersion = "1.3.0"
 kotlin = "2.4.21"
-compose-multiplatform = "1.12.1"
+compose-multiplatform = "1.12.2"
 androidx-activityCompose = "1.13.0"
 androidx-appcompat = "1.8.0"
 androidx-core-ktx = "1.19.1"
@@ -20,13 +20,9 @@ androidx-security-crypto = "1.1.0"
 junit = "4.13.2"
 listenablefuture = "9999.0-empty-to-avoid-conflict-with-guava"
 localbroadcastmanager = "1.1.0"
-markwonVersion = "4.6.2"
 material = "1.14.0"
 material3 = "1.9.0"
 okhttp = "5.5.0"
-htmlcleaner = "2.29"
-jsonpath = "3.0.0"
-jsoup = "1.23.2"
 comparestring2 = "1.0.9"
 kotlinx-serialization-json = "1.11.0"
 anthropic-java = "2.71.0"
@@ -41,37 +37,26 @@ composeHotReload = "1.2.0"
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "androidx-activityCompose" }
 androidx-annotation = { module = "androidx.annotation:annotation", version.ref = "annotation" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "androidx-appcompat" }
-androidx-core = { module = "androidx.core:core", version.ref = "androidx-core-ktx" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "androidx-core-ktx" }
 androidx-fragment = { group = "androidx.fragment", name = "fragment-ktx", version.ref = "androidx-fragment" }
 androidx-biometric = { group = "androidx.biometric", name = "biometric", version.ref = "androidx-biometric" }
 androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "androidx-security-crypto" }
-androidx-junit = { module = "androidx.test.ext:junit", version.ref = "junitVersion" }
 androidx-localbroadcastmanager = { module = "androidx.localbroadcastmanager:localbroadcastmanager", version.ref = "localbroadcastmanager" }
-androidx-window = { module = "androidx.window:window", version.ref = "window" }
-commons-io = { module = "commons-io:commons-io", version.ref = "commonsIo" }
 components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "componentsResources" }
-core = { module = "io.noties.markwon:core", version.ref = "markwonVersion" }
 desugar_jdk_libs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugar_jdk_libs" }
-ext-strikethrough = { module = "io.noties.markwon:ext-strikethrough", version.ref = "markwonVersion" }
 foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "foundation" }
-guava = { module = "com.google.guava:guava", version.ref = "guava" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
-linkify = { module = "io.noties.markwon:linkify", version.ref = "markwonVersion" }
 listenablefuture = { module = "com.google.guava:listenablefuture", version.ref = "listenablefuture" }
 material = { module = "com.google.android.material:material", version.ref = "material" }
 material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "material3" }
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
-htmlcleaner = { group = "net.sourceforge.htmlcleaner", name = "htmlcleaner", version.ref = "htmlcleaner" }
-json-path = { group = "com.jayway.jsonpath", name = "json-path", version.ref = "jsonpath" }
-jsoup = { group = "org.jsoup", name = "jsoup", version.ref = "jsoup" }
 comparestring2 = { group = "it.andreuzzi", name = "CompareString2", version.ref = "comparestring2" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinx-serialization-json" }
 anthropic-java = { group = "com.anthropic", name = "anthropic-java", version.ref = "anthropic-java" }
-recycler = { module = "io.noties.markwon:recycler", version.ref = "markwonVersion" }
 runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "runtime" }
-termux-am-library = { module = "com.termux:termux-am-library", version.ref = "termuxAmLibrary" }
-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "uiTooling" }
+# Same release train as foundation/runtime (the Compose Multiplatform 1.12.1 line). ui-tooling below tracks
+# its own, debug-only version (uiTooling) and may be ahead.
+ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "foundation" }
 ui-tooling = { module = "org.jetbrains.compose.ui:ui-tooling", version.ref = "uiTooling" }
 ui-tooling-preview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "uiTooling" }
 androidx-uiautomator-shell = { group = "androidx.test.uiautomator", name = "uiautomator-shell", version.ref = "uiautomatorShell" }

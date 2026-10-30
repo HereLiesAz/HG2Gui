@@ -65,7 +65,11 @@ static int hg2_execve(const char *pathname, char *const argv[], char *const envp
         return raw_execve(pathname, argv, envp);
     }
 
-#if defined(__aarch64__) || defined(__x86_64__)
+#ifdef HG2_LINKER_PATH
+    /* Test hook: lets the preload be exercised on a glibc host, where "ld.so prog args" has the
+     * same argv convention as the Android linker. Never defined for the Android build. */
+    const char *linker = HG2_LINKER_PATH;
+#elif defined(__aarch64__) || defined(__x86_64__)
     const char *linker = "/system/bin/linker64";
 #else
     const char *linker = "/system/bin/linker";
@@ -73,25 +77,64 @@ static int hg2_execve(const char *pathname, char *const argv[], char *const envp
 
     size_t argc = 0;
     if (argv) while (argv[argc]) argc++;
+    /* Arguments after argv[0]; argv may legitimately be empty or NULL. */
+    size_t rest = argc > 1 ? argc - 1 : 0;
 
-    char **next = calloc(argc + 2, sizeof(char *));
+    char **next = calloc(rest + 3, sizeof(char *));
     if (!next) {
         errno = ENOMEM;
         return -1;
     }
 
-    /* argv layout: [linker, candidate, argv[1], argv[2], ..., NULL]
-     * The linker passes next[1..] to the loaded ELF as its argv, so the ELF sees
-     * argv[0]=candidate (its own path) and argv[1..]=the original arguments.
-     * argv[0] (the caller's program name) is intentionally not forwarded — the
-     * linker sets the ELF's argv[0] to the candidate path, which is the normal
-     * exec convention; adding argv[0] again would insert a spurious extra argument. */
+    /* argv layout: [linker, program, argv[1], argv[2], ..., NULL]
+     * The linker runs `program` and hands it [program, argv[1], ...]: the program's own argv[0] is
+     * always the path given to the linker, and the linker has no way to override it, so the
+     * caller's argv[0] cannot be forwarded (adding it would insert a spurious extra argument).
+     * What we can choose is WHICH path that is. Multicall binaries (unxz/gunzip -> xz, view -> vim,
+     * busybox-style applets) pick their behaviour from the basename of argv[0], so hand the linker
+     * the path as it was invoked (`pathname`, e.g. $PREFIX/bin/unxz, which the linker opens through
+     * the symlink) rather than the symlink-resolved `candidate`, which would be the target's name.
+     * Ownership and ELF-ness were already decided on the resolved `candidate` above. A caller
+     * argv[0] that is not a name of this file (a login shell's "-bash", exec -a) is still lost. */
     next[0] = (char *)linker;
-    next[1] = (char *)candidate;
-    for (size_t i = 1; i < argc; ++i) next[i + 1] = argv[i];
-    next[argc + 1] = NULL;
+    next[1] = (char *)pathname;
+    for (size_t i = 0; i < rest; ++i) next[i + 2] = argv[i + 1];
+    next[rest + 2] = NULL;
 
     int result = raw_execve(linker, next, envp);
+    int saved_errno = errno;
+    free(next);
+    errno = saved_errno;
+    return result;
+}
+
+/* POSIX execvp/execlp/execvpe: a file the kernel refuses with ENOEXEC (a script with no #! line)
+ * is run as `sh file args...`. Goes back through hg2_execve so an app-owned ELF shell is still
+ * started via the system linker. */
+static int script_exec(const char *file, char *const argv[], char *const envp[]) {
+    size_t argc = 0;
+    if (argv) while (argv[argc]) argc++;
+    size_t rest = argc > 1 ? argc - 1 : 0;
+
+    char **next = calloc(rest + 3, sizeof(char *));
+    if (!next) {
+        errno = ENOMEM;
+        return -1;
+    }
+
+    char shell[PATH_MAX];
+    const char *sh = "/system/bin/sh";
+    if (g_prefix && snprintf(shell, sizeof(shell), "%s/bin/sh", g_prefix) < (int)sizeof(shell) &&
+        access(shell, X_OK) == 0) {
+        sh = shell;
+    }
+
+    next[0] = (char *)sh;
+    next[1] = (char *)file;
+    for (size_t i = 0; i < rest; ++i) next[i + 2] = argv[i + 1];
+    next[rest + 2] = NULL;
+
+    int result = hg2_execve(sh, next, envp);
     int saved_errno = errno;
     free(next);
     errno = saved_errno;
@@ -103,7 +146,11 @@ static int path_exec(const char *name, char *const argv[], char *const envp[]) {
         errno = ENOENT;
         return -1;
     }
-    if (strchr(name, '/')) return hg2_execve(name, argv, envp);
+    if (strchr(name, '/')) {
+        hg2_execve(name, argv, envp);
+        if (errno == ENOEXEC) script_exec(name, argv, envp);
+        return -1;
+    }
 
     const char *path = getenv("PATH");
     if (!path || !*path) path = "/system/bin:/system/xbin";
@@ -126,6 +173,11 @@ static int path_exec(const char *name, char *const argv[], char *const envp[]) {
             strcpy(candidate + dir_len + 1, name);
 
             hg2_execve(candidate, argv, envp);
+            if (errno == ENOEXEC) {
+                /* Only reached for files that are not app-owned ELFs; if the shell exec also
+                 * fails, its errno decides below like any other failure. */
+                script_exec(candidate, argv, envp);
+            }
             if (errno == EACCES) {
                 saw_eacces = 1;
             } else if (errno != ENOENT && errno != ENOTDIR) {

@@ -3,12 +3,11 @@ package com.hereliesaz.hg2gui.ui.files
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -22,21 +21,30 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.em
-import androidx.compose.ui.unit.sp
+import com.hereliesaz.hg2gui.ui.AzphaltChip
+import com.hereliesaz.hg2gui.ui.AzphaltHeading
 import com.hereliesaz.hg2gui.ui.BackStepState
+import com.hereliesaz.hg2gui.ui.StatusKind
+import com.hereliesaz.hg2gui.ui.liveRegionPolite
+import com.hereliesaz.hg2gui.ui.maxContentWidth
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
+import com.hereliesaz.hg2gui.ui.menu.contrastingText
 import com.hereliesaz.hg2gui.ui.menu.onPage
 import com.hereliesaz.hg2gui.ui.menu.pageBrush
+import com.hereliesaz.hg2gui.ui.statusColor
 import com.hereliesaz.hg2gui.ui.theme.AzphaltSurface
+import com.hereliesaz.hg2gui.ui.theme.LocalAzphaltType
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
@@ -52,6 +60,9 @@ import kotlinx.coroutines.launch
  */
 
 private const val COLUMNS = 3
+private const val HUE_PRIMARY = 6
+private const val MIN_TAP_DP = 48
+private const val LABEL_MIN_WIDTH_DP = 24
 
 @Composable
 fun FolderPicker(
@@ -68,6 +79,9 @@ fun FolderPicker(
     var folders by remember { mutableStateOf<List<VfsEntry>>(emptyList()) }
     var openIndex by remember { mutableStateOf<Int?>(null) }
     var listError by remember { mutableStateOf<String?>(null) }
+    // Which path [folders] was last read for - an empty list is "NO SUBFOLDERS" only once the
+    // listing for the current path has actually come back, never while it is still in flight.
+    var loadedPath by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(currentPath) {
         // A listing that throws used to take the whole picker down with it.
@@ -80,6 +94,7 @@ fun FolderPicker(
             folders = emptyList()
             listError = "Couldn't open this folder: ${e.message ?: "unknown error"}"
         }
+        loadedPath = currentPath
         openIndex = null
     }
 
@@ -94,61 +109,37 @@ fun FolderPicker(
 
     val density = LocalDensity.current
 
-    Column(modifier.fillMaxSize().background(Azphalt.currentGround.pageBrush())) {
-        Row(
-            Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 18.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            PickerChip("‹ CANCEL", onClick = onCancel)
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                if (!atRoot) PickerChip("‹ UP") { currentPath = vfsParentPath(currentPath) }
-                PickerChip(title.uppercase(), filled = false, clickable = false)
-            }
-        }
-
+    Column(modifier.fillMaxSize().background(Azphalt.currentGround.pageBrush()).maxContentWidth()) {
         Row(
             Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 10.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            val crumbs = currentPath.trim('/').split('/').filter { it.isNotEmpty() }
-            // Each crumb jumps straight back to that ancestor.
-            Row(Modifier.horizontalScroll(rememberScrollState())) {
-                val crumbStyle = Azphalt.currentGround.onPage.copy(alpha = .55f)
-                Text(
-                    "/", color = crumbStyle, fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1,
-                    modifier = Modifier.clickable { currentPath = "/" }.padding(vertical = 8.dp)
+            AzphaltChip("‹ CANCEL", onClick = onCancel, contentDescription = "Cancel")
+            if (!atRoot) {
+                AzphaltChip(
+                    "‹ UP", onClick = { currentPath = vfsParentPath(currentPath) },
+                    contentDescription = "Up one folder"
                 )
-                crumbs.forEachIndexed { i, name ->
-                    val target = "/" + crumbs.take(i + 1).joinToString("/")
-                    Text(
-                        name + if (i < crumbs.lastIndex) "/" else "",
-                        color = crumbStyle, fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1,
-                        modifier = Modifier.clickable { currentPath = target }.padding(vertical = 8.dp)
-                    )
-                }
             }
         }
+        AzphaltHeading(title, Modifier.padding(start = 20.dp, end = 20.dp, top = 4.dp))
+
+        // Each crumb jumps straight back to that ancestor.
+        PathCrumbs(currentPath, onNavigate = { currentPath = it }, modifier = Modifier.padding(horizontal = 20.dp))
 
         listError?.let {
             Text(
                 it,
-                color = Azphalt.currentGround.onPage.copy(alpha = .7f),
-                fontSize = 11.sp,
-                modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 4.dp)
+                color = statusColor(StatusKind.Error),
+                style = captionTextStyle(),
+                modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 4.dp).liveRegionPolite()
             )
         }
 
         Box(Modifier.weight(1f).fillMaxWidth().padding(20.dp)) {
             if (folders.isEmpty()) {
-                Text(
-                    "NO SUBFOLDERS HERE",
-                    color = Azphalt.currentGround.onPage.copy(alpha = .4f),
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = 0.18.em
-                )
+                StatusLabel(if (loadedPath == currentPath) "NO SUBFOLDERS HERE" else "LOADING…")
             } else {
                 var canvasWidthPx by remember { mutableStateOf(0f) }
                 Box(
@@ -175,13 +166,53 @@ fun FolderPicker(
         }
 
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp),
+            Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            PickerChip("USE THIS FOLDER", background = Azphalt.hues[6], foreground = Azphalt.White, fillWidth = true) {
-                onConfirm(currentPath)
-            }
+            AzphaltChip(
+                "USE THIS FOLDER", onClick = { onConfirm(currentPath) },
+                modifier = Modifier.fillMaxWidth(), tint = Azphalt.hues[HUE_PRIMARY],
+                contentDescription = "Use this folder: $currentPath"
+            )
         }
+    }
+}
+
+/**
+ * The breadcrumb strip both pickers share: "/" then one tappable crumb per ancestor, each a
+ * 48dp-tall target that calls [onNavigate] with that ancestor's path. It starts scrolled to the
+ * *end*, so a long path shows the folder you are in rather than the first few segments (the start
+ * is a swipe away).
+ */
+@Composable
+internal fun PathCrumbs(path: String, onNavigate: (String) -> Unit, modifier: Modifier = Modifier) {
+    val crumbs = path.trim('/').split('/').filter { it.isNotEmpty() }
+    // A fresh state per path: a reversed scroller sitting at 0 is pinned to its end.
+    val scroll = remember(path) { ScrollState(0) }
+    val muted = statusColor(StatusKind.Muted)
+    val here = Azphalt.currentGround.onPage
+    Row(modifier.fillMaxWidth().horizontalScroll(scroll, reverseScrolling = true)) {
+        Crumb("/", "Go to the top folder", if (crumbs.isEmpty()) here else muted) { onNavigate("/") }
+        crumbs.forEachIndexed { i, name ->
+            val target = "/" + crumbs.take(i + 1).joinToString("/")
+            val isLast = i == crumbs.lastIndex
+            Crumb(
+                name + if (isLast) "" else "/", "Go to folder $name", if (isLast) here else muted
+            ) { onNavigate(target) }
+        }
+    }
+}
+
+@Composable
+private fun Crumb(text: String, description: String, color: Color, onClick: () -> Unit) {
+    Box(
+        Modifier
+            .semantics { contentDescription = description }
+            .clickable(role = Role.Button, onClick = onClick)
+            .defaultMinSize(minWidth = MIN_TAP_DP.dp, minHeight = MIN_TAP_DP.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(text, color = color, style = captionTextStyle().copy(fontWeight = FontWeight.Bold), maxLines = 1)
     }
 }
 
@@ -219,6 +250,9 @@ private fun MorphTile(
     val w = remember { Animatable(rect.w) }
     val h = remember { Animatable(rect.h) }
     val easing = CubicBezierEasing(0f, .9f, .1f, 1f)
+    // Text on a hue is whichever of Ink/White reads better on *that* hue, not a fixed White.
+    val textColor = hue.contrastingText()
+    val type = LocalAzphaltType.current
 
     LaunchedEffect(rect) {
         launchAll(
@@ -230,6 +264,7 @@ private fun MorphTile(
     }
 
     with(density) {
+        val showLabel = w.value.toDp() > LABEL_MIN_WIDTH_DP.dp
         Box(
             Modifier
                 .offset { IntOffset(x.value.toInt(), y.value.toInt()) }
@@ -245,26 +280,31 @@ private fun MorphTile(
                     }
                 )
                 .background(hue)
-                .clickable { if (isOpen) onOpenDescend() else onClick() }
+                // A rod is too thin to carry its name, so it is spoken instead.
+                .then(if (showLabel) Modifier else Modifier.semantics { contentDescription = "Folder $label" })
+                .clickable(
+                    onClickLabel = if (isOpen) "Go inside $label" else "Open $label",
+                    role = Role.Button
+                ) { if (isOpen) onOpenDescend() else onClick() }
                 .padding(if (isOpen) 14.dp else 6.dp),
             contentAlignment = if (isOpen) Alignment.TopStart else Alignment.BottomStart
         ) {
-            if (w.value.toDp() > 24.dp) {
+            if (showLabel) {
                 Column {
                     Text(
                         label.uppercase(),
-                        color = Azphalt.White,
-                        fontSize = if (isOpen) 15.sp else 8.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = 0.06.em,
-                        maxLines = if (isOpen) 1 else 2
+                        color = textColor,
+                        style = if (isOpen) type.capsule else type.endCap,
+                        // Closed tiles are ~100dp squares: three lines of 11sp, then an ellipsis,
+                        // rather than a name clipped mid-word at two.
+                        maxLines = if (isOpen) 1 else 3,
+                        overflow = TextOverflow.Ellipsis
                     )
                     if (isOpen) {
                         Text(
                             "TAP TO GO INSIDE",
-                            color = Azphalt.White.copy(alpha = .7f),
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Bold,
+                            color = textColor,
+                            style = type.endCap,
                             modifier = Modifier.padding(top = 4.dp)
                         )
                     }
@@ -277,31 +317,5 @@ private fun MorphTile(
 private suspend fun launchAll(vararg blocks: suspend () -> Unit) {
     coroutineScope {
         blocks.forEach { block -> launch { block() } }
-    }
-}
-
-@Composable
-private fun PickerChip(
-    label: String,
-    modifier: Modifier = Modifier,
-    background: Color = Azphalt.Ink,
-    foreground: Color = Azphalt.Yellow,
-    filled: Boolean = true,
-    clickable: Boolean = true,
-    fillWidth: Boolean = false,
-    onClick: () -> Unit = {}
-) {
-    val bg = if (filled) background else Azphalt.Ink.copy(alpha = .14f)
-    val fg = if (filled) foreground else Azphalt.currentGround.onPage.copy(alpha = .55f)
-    Box(
-        modifier
-            .then(if (fillWidth) Modifier.fillMaxWidth() else Modifier)
-            .clip(RoundedCornerShape(percent = 50))
-            .background(bg)
-            .then(if (clickable) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(horizontal = 14.dp, vertical = 9.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(label, color = fg, fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em)
     }
 }

@@ -3,6 +3,7 @@ package com.hereliesaz.hg2gui.azp
 import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.jsonArray
@@ -49,6 +50,11 @@ data class AzpInstallResult(
  * applies regardless of signing, since `manifest.files` is a plain integrity contract independent
  * of trust. Only free packages are supported; paid packages need a Bearer entitlement this client
  * does not yet obtain.
+ *
+ * [install] keeps its nullable contract (null = did not install) for existing callers, but null
+ * says nothing about *why*. [installResult] and [downloadAndInstall] are the same pipeline with a
+ * typed [AzpInstallOutcome]: every rejection carries an [AzpFailure] naming the cause, so the
+ * store can tell the user "digest mismatch" or "signature invalid" instead of a silent INSTALL.
  */
 object AzpInstaller {
     private val json = Json { ignoreUnknownKeys = true }
@@ -74,6 +80,7 @@ object AzpInstaller {
         return if (dir.path.startsWith(azpRoot.path + File.separator)) dir else null
     }
 
+    /** [installResult] flattened to the legacy contract: the result, or null on any failure. */
     suspend fun install(
         context: Context,
         id: String,
@@ -81,8 +88,48 @@ object AzpInstaller {
         bytes: ByteArray,
         trustedKeys: List<String> = emptyList(),
     ): AzpInstallResult? =
+        (installResult(context, id, version, bytes, trustedKeys) as? AzpInstallOutcome.Installed)?.result
+
+    /** Downloads (see [AzpClient.downloadResult]) and installs in one step, with the first
+     *  failure from either stage as a typed [AzpInstallOutcome.Failed]. */
+    suspend fun downloadAndInstall(
+        context: Context,
+        id: String,
+        version: String,
+        trustedKeys: List<String> = emptyList(),
+    ): AzpInstallOutcome = when (val download = AzpClient.downloadResult(id, version)) {
+        is AzpDownloadOutcome.Failed -> AzpInstallOutcome.Failed(download.failure)
+        is AzpDownloadOutcome.Downloaded -> installResult(context, id, version, download.bytes, trustedKeys)
+    }
+
+    private class ParsedManifest(
+        val kind: String,
+        val skillIds: List<String>,
+        val script: ScriptDto?,
+        val declaredFiles: Map<String, String>,
+    )
+
+    /** A rejection raised inside the install pipeline; caught by [installResult] and reported. */
+    private class AzpInstallException(val kind: AzpFailureKind, message: String) : Exception(message)
+
+    /**
+     * The install pipeline. Never throws (except cancellation): a rejection - bad id, corrupt or
+     * hostile archive, digest or signature failure - is an [AzpInstallOutcome.Failed] whose
+     * [AzpFailure.message] says which check refused it. The previous working copy is untouched on
+     * every failure.
+     */
+    suspend fun installResult(
+        context: Context,
+        id: String,
+        version: String,
+        bytes: ByteArray,
+        trustedKeys: List<String> = emptyList(),
+    ): AzpInstallOutcome =
         withContext(Dispatchers.IO) {
-            val dest = rootDir(context, id, version)
+            val dest = rootDirOrNull(context, id, version)
+                ?: return@withContext AzpInstallOutcome.Failed(
+                    AzpFailure(AzpFailureKind.INVALID_PACKAGE, "Invalid package id or version: $id / $version")
+                )
             // AZP-9: extracted and validated into a staging directory first, never straight into
             // `dest`. A reinstall of an already-installed id/version (e.g. retrying after a
             // network blip) used to extract directly on top of the working copy; a corrupt
@@ -110,7 +157,9 @@ object AzpInstaller {
                     var entry = zip.nextEntry
                     while (entry != null) {
                         val name = entry.name
-                        if (++entryCount > MAX_ENTRIES) throw java.io.IOException("archive has too many entries")
+                        if (++entryCount > MAX_ENTRIES) {
+                            throw AzpInstallException(AzpFailureKind.ARCHIVE_LIMITS, "The archive has too many entries.")
+                        }
                         // Path containment: refuse any entry that would escape staging via .. or
                         // an absolute path (package-format.md's own path-containment requirement).
                         // AZP-8: a package that has to smuggle a zip-slip entry to work at all is
@@ -119,7 +168,10 @@ object AzpInstaller {
                         // signal at all, rather than the same hard rejection a bad digest gets.
                         val target = File(staging, name).canonicalFile
                         if (!target.path.startsWith(staging.canonicalPath + File.separator) && target != staging) {
-                            throw java.io.IOException("path traversal in archive entry: $name")
+                            throw AzpInstallException(
+                                AzpFailureKind.ARCHIVE_PATH_TRAVERSAL,
+                                "The archive entry \"$name\" would be written outside the package folder."
+                            )
                         }
                         if (entry.isDirectory) {
                             target.mkdirs()
@@ -135,7 +187,10 @@ object AzpInstaller {
                                     if (n < 0) break
                                     totalBytes += n
                                     if (totalBytes > MAX_EXTRACTED_BYTES) {
-                                        throw java.io.IOException("archive expands beyond $MAX_EXTRACTED_BYTES bytes")
+                                        throw AzpInstallException(
+                                            AzpFailureKind.ARCHIVE_LIMITS,
+                                            "The archive expands beyond ${MAX_EXTRACTED_BYTES / (1024 * 1024)} MB."
+                                        )
                                     }
                                     out.write(buffer, 0, n)
                                 }
@@ -148,20 +203,37 @@ object AzpInstaller {
                 }
 
                 val manifestFile = File(staging, "manifest.json")
-                if (!manifestFile.exists()) { staging.deleteRecursively(); return@withContext null }
+                if (!manifestFile.exists()) {
+                    throw AzpInstallException(AzpFailureKind.MANIFEST_MISSING, "The package has no manifest.json.")
+                }
                 val manifestBytes = manifestFile.readBytes()
-                val manifest = json.parseToJsonElement(String(manifestBytes)).jsonObject
-                val kind = manifest["kind"]?.jsonPrimitive?.content ?: "asset"
-                val skillIds = if (kind == "skill") {
-                    manifest["skill"]?.jsonObject?.get("skills")?.jsonArray
-                        ?.mapNotNull { it.jsonObject["id"]?.jsonPrimitive?.content }
-                        ?: emptyList()
-                } else emptyList()
-                val script = if (kind == "script") {
-                    manifest["script"]?.jsonObject?.let {
-                        try { json.decodeFromJsonElement(ScriptDto.serializer(), it) } catch (e: Exception) { null }
-                    }
-                } else null
+                val parsed = try {
+                    val manifest = json.parseToJsonElement(String(manifestBytes)).jsonObject
+                    val manifestKind = manifest["kind"]?.jsonPrimitive?.content ?: "asset"
+                    ParsedManifest(
+                        kind = manifestKind,
+                        skillIds = if (manifestKind == "skill") {
+                            manifest["skill"]?.jsonObject?.get("skills")?.jsonArray
+                                ?.mapNotNull { it.jsonObject["id"]?.jsonPrimitive?.content }
+                                ?: emptyList()
+                        } else emptyList(),
+                        script = if (manifestKind == "script") {
+                            manifest["script"]?.jsonObject?.let {
+                                try { json.decodeFromJsonElement(ScriptDto.serializer(), it) } catch (e: Exception) { null }
+                            }
+                        } else null,
+                        declaredFiles = manifest["files"]?.jsonObject
+                            ?.mapValues { (_, v) -> v.jsonPrimitive.content.removePrefix("sha256-") }
+                            ?: emptyMap()
+                    )
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    throw AzpInstallException(
+                        AzpFailureKind.MANIFEST_INVALID,
+                        "manifest.json is not a valid package manifest (${e.message ?: e.javaClass.simpleName})."
+                    )
+                }
 
                 // Integrity: every payload entry's digest must match `manifest.files`, and every
                 // entry (besides the detached `signature.json`, which is exempt - it's the
@@ -169,11 +241,8 @@ object AzpInstaller {
                 // be listed there. A digest mismatch or an unlisted payload file both fail
                 // installation the same way a bad signature does: reject and delete, don't
                 // install partially-trusted content.
-                val declaredFiles = manifest["files"]?.jsonObject
-                    ?.mapValues { (_, v) -> v.jsonPrimitive.content.removePrefix("sha256-") }
-                    ?: emptyMap()
-                if (!filesMatchDigests(extractedDigests, declaredFiles)) {
-                    staging.deleteRecursively(); return@withContext null
+                describeDigestProblem(extractedDigests, parsed.declaredFiles)?.let {
+                    throw AzpInstallException(AzpFailureKind.INTEGRITY_MISMATCH, "Integrity check failed: $it")
                 }
 
                 val signatureFile = File(staging, "signature.json")
@@ -189,10 +258,19 @@ object AzpInstaller {
                     // it's a corrupt or tampered one, and gets the same outright rejection as a
                     // signature that fails cryptographic verification, not the benign UNSIGNED
                     // tier AzpSignatureVerifier.verify() would otherwise give a null signature.
-                    if (signature == null) AzpTrust.INVALID
-                    else AzpSignatureVerifier.verify(manifestBytes, signature, trustedKeys)
+                    if (signature == null) {
+                        throw AzpInstallException(
+                            AzpFailureKind.SIGNATURE_INVALID, "signature.json is corrupt and cannot be read."
+                        )
+                    } else {
+                        AzpSignatureVerifier.verify(manifestBytes, signature, trustedKeys)
+                    }
                 }
-                if (trust == AzpTrust.INVALID) { staging.deleteRecursively(); return@withContext null }
+                if (trust == AzpTrust.INVALID) {
+                    throw AzpInstallException(
+                        AzpFailureKind.SIGNATURE_INVALID, "The package signature does not verify; it was altered or is corrupt."
+                    )
+                }
 
                 // Every check passed - only now does the previous working copy (if any) get
                 // replaced, and only by first deleting `dest` and renaming staging into place, so
@@ -206,12 +284,29 @@ object AzpInstaller {
                     staging.deleteRecursively()
                 }
 
-                AzpInstallResult(kind, skillIds, trust, script)
+                AzpInstallOutcome.Installed(AzpInstallResult(parsed.kind, parsed.skillIds, trust, parsed.script))
+            } catch (e: CancellationException) {
+                staging.deleteRecursively()
+                throw e
+            } catch (e: AzpInstallException) {
+                staging.deleteRecursively()
+                AzpInstallOutcome.Failed(AzpFailure(e.kind, e.message.orEmpty()))
             } catch (e: Exception) {
                 staging.deleteRecursively()
-                null
+                AzpInstallOutcome.Failed(classifyInstallError(e))
             }
         }
+}
+
+/** Maps an unexpected exception from the install pipeline to a typed failure. */
+internal fun classifyInstallError(e: Exception): AzpFailure {
+    val detail = e.message ?: e.javaClass.simpleName
+    return when (e) {
+        is java.util.zip.ZipException -> AzpFailure(AzpFailureKind.ARCHIVE_UNREADABLE, "The package is not a readable ZIP archive ($detail).")
+        is java.io.IOException -> AzpFailure(AzpFailureKind.STORAGE, "Could not write the package to app storage ($detail).")
+        is IllegalArgumentException -> AzpFailure(AzpFailureKind.MANIFEST_INVALID, "The package manifest is malformed ($detail).")
+        else -> AzpFailure(AzpFailureKind.STORAGE, "Installation failed ($detail).")
+    }
 }
 
 /**
@@ -226,17 +321,8 @@ object AzpInstaller {
  * by design, specifically so it's unit-testable without a Robolectric/instrumented Android
  * runtime - see AzpInstallerDigestTest.
  */
-internal fun filesMatchDigests(extracted: Map<String, String>, declared: Map<String, String>): Boolean {
-    for ((path, actualDigest) in extracted) {
-        if (path == "manifest.json" || path == "signature.json") continue
-        val wantDigest = declared[path] ?: return false
-        if (!wantDigest.equals(actualDigest, ignoreCase = true)) return false
-    }
-    for (path in declared.keys) {
-        if (path !in extracted) return false
-    }
-    return true
-}
+internal fun filesMatchDigests(extracted: Map<String, String>, declared: Map<String, String>): Boolean =
+    describeDigestProblem(extracted, declared) == null
 
 private val AZP_PATH_SEGMENT = Regex("^[A-Za-z0-9._-]+$")
 

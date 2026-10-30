@@ -4,9 +4,13 @@ import android.content.Context
 import org.json.JSONArray
 import org.json.JSONObject
 
-/** Machine-readable description of the isolation boundary HG2Gui actually applies. */
+/**
+ * Machine-readable description of the isolation HG2Gui actually applies: private state plus
+ * best-effort observation over PRoot. [json] states its own limits (`boundary.strength`,
+ * `procExposed`) so a reader never mistakes it for a verified security boundary.
+ */
 object PackageIsolationDefinition {
-    const val SCHEMA_VERSION = 3
+    const val SCHEMA_VERSION = 4
 
     fun json(context: Context, pkg: PackageLifecycleStore.InstalledPackage): String {
         val dependencyClosure = if (pkg.manager == "pkg") {
@@ -25,6 +29,10 @@ object PackageIsolationDefinition {
                 .put("manager", pkg.manager)
                 .put("name", pkg.name)
                 .put("version", pkg.version))
+            .put("boundary", JSONObject()
+                .put("strength", "state-separation-best-effort")
+                .put("procExposed", true)
+                .put("note", "PRoot is ptrace path translation, not a chroot; /proc and /system are bound into the guest and the guest writes its own audit log"))
             .put("execution", JSONObject()
                 .put("backend", "PROOT_ISOLATED")
                 .put("failClosed", true)

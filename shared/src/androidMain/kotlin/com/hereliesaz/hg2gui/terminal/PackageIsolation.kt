@@ -1,18 +1,42 @@
 package com.hereliesaz.hg2gui.terminal
 
 import android.content.Context
-import android.util.AtomicFile
-import android.util.Base64
 import java.io.File
-import java.nio.file.Files
 
-/** Filesystem isolation and best-effort runtime observability for package-owned commands. */
+/**
+ * Filesystem STATE SEPARATION and BEST-EFFORT OBSERVATION for package-owned commands.
+ *
+ * This is deliberately not described as a security boundary. The engine is PRoot: a ptrace-based
+ * path translator running as the same Android UID as HG2Gui, not a chroot, namespace or sandbox.
+ * What it provides is (a) a private, per-package copy of the prefix and home so a package's writes
+ * land in its own tree instead of the shared one, and (b) an after-the-fact record of what changed
+ * and what was observed while it ran. It does NOT confine a hostile process: network access is
+ * unconfined, and a same-UID process may find ways around path translation. The guest therefore
+ * gets no `/proc` bind (raw `/proc` exposes kernel-resolved `/proc/<pid>/root`, `cwd`, `fd` and
+ * `environ` links that bypass translation) - only a handful of static informational files.
+ *
+ * Observation is done by a watcher that runs OUTSIDE the PRoot guest and writes its log outside the
+ * guest root, so the observed process cannot rewrite it through normal path access; it samples
+ * `/proc` at ~20 Hz, so short-lived opens can still be missed.
+ */
 object PackageIsolation {
-    private const val TELEMETRY_PREFIX = "__HG2GUI_TELEMETRY__/"
-    private const val AUDIT_RELATIVE = ".hg2gui/audit/latest.log"
+    private const val LEGACY_AUDIT_RELATIVE = ".hg2gui/audit/latest.log"
     private const val LEGACY_SUMMARY_RELATIVE = ".hg2gui/audit/summary.tsv"
     private const val SUMMARY_RELATIVE = "audit/summary.tsv"
+    private const val LIVE_LOG_RELATIVE = "audit/live.log"
     private const val MAX_TELEMETRY_ROWS = 500
+    private const val MAX_TELEMETRY_ROW_CHARS = 1024
+
+    /** Static, non-PID `/proc` files bound into the guest instead of the whole `/proc`. */
+    internal val PROC_ALLOWLIST = listOf(
+        "/proc/cpuinfo",
+        "/proc/meminfo",
+        "/proc/stat",
+        "/proc/uptime",
+        "/proc/loadavg",
+        "/proc/version",
+        "/proc/filesystems"
+    )
 
     data class FileStamp(val size: Long, val modified: Long, val directory: Boolean)
 
@@ -46,6 +70,9 @@ object PackageIsolation {
     private fun summaryFile(context: Context, pkg: PackageLifecycleStore.InstalledPackage): File =
         File(packageBase(context, pkg), SUMMARY_RELATIVE)
 
+    /** Host-side watcher log: next to, not inside, the guest root. */
+    internal fun liveLogFile(base: File): File = File(base, LIVE_LOG_RELATIVE)
+
     fun engine(context: Context): File? {
         val nativeDir = File(context.applicationInfo.nativeLibraryDir)
         val prefix = DistroManager.prefixDir(context)
@@ -66,20 +93,30 @@ object PackageIsolation {
 
     fun seedCommand(context: Context, pkg: PackageLifecycleStore.InstalledPackage): String {
         val base = packageBase(context, pkg)
-        val root = root(context, pkg)
         val hostPrefix = DistroManager.prefixDir(context)
         val hostHome = DistroManager.homeDir(context)
+        val plan = runCatching { IsolationSeedPlanner.prepare(hostPrefix, pkg, base) }.getOrNull()
+        return buildSeedCommand(base, hostPrefix, hostHome, pkg.version, plan?.manifest)
+    }
+
+    /** Pure builder behind [seedCommand]; see PackageIsolationTest. */
+    internal fun buildSeedCommand(
+        base: File,
+        hostPrefix: File,
+        hostHome: File,
+        version: String,
+        manifest: File?
+    ): String {
+        val root = File(base, "root")
         val guestPrefix = File(root, hostPrefix.absolutePath.trimStart('/'))
         val guestHome = File(root, hostHome.absolutePath.trimStart('/'))
-        val marker = marker(context, pkg)
+        val marker = File(root, ".hg2gui-seeded")
         val denied = File(root, ".hg2gui/denied")
-        val auditHost = File(root, AUDIT_RELATIVE)
-        val plan = runCatching { IsolationSeedPlanner.prepare(context, pkg, base) }.getOrNull()
+        val liveLog = liveLogFile(base)
 
         val privilegedNames = listOf("adb", "su", "tsu", "magisk", "proot")
             .joinToString(" ") { q(File(guestPrefix, "bin/$it").absolutePath) }
-        val seedCopy = if (plan?.manifest?.isFile == true) {
-            val manifest = plan.manifest
+        val seedCopy = if (manifest?.isFile == true) {
             "hp=${q(hostPrefix.absolutePath)}; gp=${q(guestPrefix.absolutePath)}; " +
                 "while IFS= read -r src; do " +
                 "rel=\"\${src#\"\$hp\"/}\"; [ \"\$rel\" != \"\$src\" ] || continue; " +
@@ -91,13 +128,13 @@ object PackageIsolation {
 
         return listOf(
             "rm -rf ${q(root.absolutePath)}",
-            "mkdir -p ${q(guestPrefix.absolutePath)} ${q(guestHome.absolutePath)} ${q(denied.parentFile!!.absolutePath)} ${q(auditHost.parentFile!!.absolutePath)}",
+            "mkdir -p ${q(guestPrefix.absolutePath)} ${q(guestHome.absolutePath)} ${q(denied.parentFile!!.absolutePath)} ${q(liveLog.parentFile!!.absolutePath)}",
             seedCopy,
             "rm -f $privilegedNames",
             ": > ${q(denied.absolutePath)}",
-            ": > ${q(auditHost.absolutePath)}",
+            ": > ${q(liveLog.absolutePath)}",
             "mkdir -p ${q(File(guestHome, ".cache").absolutePath)} ${q(File(guestHome, ".config").absolutePath)} ${q(File(guestHome, ".local/share").absolutePath)} ${q(File(guestHome, ".local/state").absolutePath)} ${q(File(guestHome, ".tmp").absolutePath)}",
-            "printf '%s\\n' ${q(pkg.version)} > ${q(marker.absolutePath)}"
+            "printf '%s\\n' ${q(version)} > ${q(marker.absolutePath)}"
         ).joinToString(" && ")
     }
 
@@ -117,45 +154,89 @@ object PackageIsolation {
 
         val proot = engine(context)
             ?: error("Isolation engine is unavailable. Install the proot package before isolating packages.")
-        val root = root(context, pkg)
-        val denied = File(root, ".hg2gui/denied")
+        val base = packageBase(context, pkg)
         val prefix = DistroManager.prefixDir(context).absolutePath
-        val home = DistroManager.homeDir(context).absolutePath
-        val bash = "$prefix/bin/bash"
-        val guestAudit = "/$AUDIT_RELATIVE"
-        val monitored = monitorScript(original, guestAudit)
+        return buildCommand(
+            LaunchSpec(
+                proot = proot,
+                root = root(context, pkg),
+                liveLog = liveLogFile(base),
+                hostPrefix = prefix,
+                hostHome = DistroManager.homeDir(context).absolutePath,
+                hostBash = "$prefix/bin/bash",
+                original = original,
+                bindSystem = File("/system").exists(),
+                bindApex = File("/apex").exists(),
+                procFiles = PROC_ALLOWLIST.filter { File(it).exists() },
+                suPaths = listOf("/system/bin/su", "/system/xbin/su").filter { File(it).exists() }
+            )
+        )
+    }
 
-        return buildString {
-            append(q(proot.absolutePath))
-            append(" -r ").append(q(root.absolutePath))
-            if (File("/system").exists()) append(" -b /system")
-            if (File("/apex").exists()) append(" -b /apex")
-            if (File("/proc").exists()) append(" -b /proc")
-            for (path in listOf("/system/bin/su", "/system/xbin/su")) {
-                if (File(path).exists()) append(" -b ").append(q("${denied.absolutePath}:$path"))
-            }
-            append(" -w ").append(q(home))
-            append(" /system/bin/env")
-            append(" HOME=").append(q(home))
-            append(" PREFIX=").append(q(prefix))
-            append(" PATH=").append(q("$prefix/bin:/system/bin"))
-            append(" LD_LIBRARY_PATH=").append(q("$prefix/lib"))
-            append(" TMPDIR=").append(q("$home/.tmp"))
-            append(" XDG_CONFIG_HOME=").append(q("$home/.config"))
-            append(" XDG_CACHE_HOME=").append(q("$home/.cache"))
-            append(" XDG_DATA_HOME=").append(q("$home/.local/share"))
-            append(" XDG_STATE_HOME=").append(q("$home/.local/state"))
-            append(' ').append(q(bash)).append(" -lc ").append(q(monitored))
+    /** Everything [buildCommand] needs, so the command shape can be asserted without a device. */
+    internal class LaunchSpec(
+        val proot: File,
+        val root: File,
+        val liveLog: File,
+        val hostPrefix: String,
+        val hostHome: String,
+        val hostBash: String,
+        val original: String,
+        val bindSystem: Boolean,
+        val bindApex: Boolean,
+        val procFiles: List<String>,
+        val suPaths: List<String>,
+        /** The in-guest `env` used to set the guest environment; overridable only for host tests. */
+        val guestEnv: String = "/system/bin/env",
+        /** Pause between watcher samples, seconds. */
+        val sampleInterval: String = "0.05"
+    )
+
+    /**
+     * Builds the single shell line that runs [LaunchSpec.original] inside PRoot.
+     *
+     * The line is `bash -c '<watcher>'`: the watcher script runs on the HOST side, starts PRoot in
+     * the background and samples its process tree through the host's own `/proc`, appending rows to
+     * [LaunchSpec.liveLog], which lives outside the guest root and is not bound into the guest. The
+     * guest never sees `/proc` itself (only the static files in [PROC_ALLOWLIST]).
+     */
+    internal fun buildCommand(spec: LaunchSpec): String {
+        val denied = File(spec.root, ".hg2gui/denied")
+        val prootCommand = buildString {
+            append(q(spec.proot.absolutePath))
+            append(" -r ").append(q(spec.root.absolutePath))
+            if (spec.bindSystem) append(" -b /system")
+            if (spec.bindApex) append(" -b /apex")
+            for (file in spec.procFiles) append(" -b ").append(q(file))
+            for (path in spec.suPaths) append(" -b ").append(q("${denied.absolutePath}:$path"))
+            append(" -w ").append(q(spec.hostHome))
+            append(' ').append(spec.guestEnv)
+            append(" HOME=").append(q(spec.hostHome))
+            append(" PREFIX=").append(q(spec.hostPrefix))
+            append(" PATH=").append(q("${spec.hostPrefix}/bin:/system/bin"))
+            append(" LD_LIBRARY_PATH=").append(q("${spec.hostPrefix}/lib"))
+            append(" TMPDIR=").append(q("${spec.hostHome}/.tmp"))
+            append(" XDG_CONFIG_HOME=").append(q("${spec.hostHome}/.config"))
+            append(" XDG_CACHE_HOME=").append(q("${spec.hostHome}/.cache"))
+            append(" XDG_DATA_HOME=").append(q("${spec.hostHome}/.local/share"))
+            append(" XDG_STATE_HOME=").append(q("${spec.hostHome}/.local/state"))
+            append(' ').append(q(spec.hostBash)).append(" -lc ").append(q(spec.original))
         }
+        val watcher = watcherScript(prootCommand, spec.proot.absolutePath, spec.root.absolutePath, spec.liveLog.absolutePath, spec.sampleInterval)
+        return q(spec.hostBash) + " -c " + q(watcher)
     }
 
     /**
-     * Wraps the child with a same-UID /proc sampler. This is not kernel audit or syscall tracing:
-     * very short-lived opens can escape a sample. Every observation is normalized to one physical
-     * log row before the hard row limit is enforced.
+     * Host-side watcher: runs [prootCommand] in the background and samples its process tree.
+     * This is not kernel audit or syscall tracing: very short-lived opens can escape a sample.
+     * Every observation is normalized to one physical log row (control characters removed, length
+     * capped) before the hard row limit is enforced. File paths under the guest root are shown
+     * relative to it, as the guest sees them.
      */
-    private fun monitorScript(original: String, audit: String): String = listOf(
+    private fun watcherScript(prootCommand: String, prootBin: String, root: String, audit: String, interval: String): String = listOf(
         "audit=${q(audit)}",
+        "root=${q(root)}",
+        "proot_bin=${q(prootBin)}",
         "mkdir -p \"\$(dirname \"\$audit\")\"",
         ": > \"\$audit\"",
         "limit=$MAX_TELEMETRY_ROWS",
@@ -163,7 +244,8 @@ object PackageIsolation {
         "truncated=0",
         "hg2_log() {",
         "  local safe",
-        "  safe=\"\$(printf '%s' \"\$1\" | tr '\\r\\n' '  ')\"",
+        "  safe=\"\$(printf '%s' \"\$1\" | tr '\\000-\\037\\177' '?')\"",
+        "  safe=\"\${safe:0:$MAX_TELEMETRY_ROW_CHARS}\"",
         "  grep -Fqx -- \"\$safe\" \"\$audit\" 2>/dev/null && return",
         "  if [ \"\$count\" -ge \"\$((limit - 1))\" ]; then",
         "    if [ \"\$truncated\" -eq 0 ]; then printf 'telemetry-limit:%s\\n' \"\$limit\" >> \"\$audit\"; truncated=1; fi",
@@ -173,9 +255,12 @@ object PackageIsolation {
         "  count=\$((count + 1))",
         "}",
         "hg2_scan_pid() {",
-        "  local p=\"\$1\" child fd target flags mode inode proto row",
+        "  local p=\"\$1\" child fd target flags mode inode proto row shown tracer=0",
         "  [ -r \"/proc/\$p/cmdline\" ] || return",
         "  local cmd=\"\$(tr '\\000' ' ' < \"/proc/\$p/cmdline\" 2>/dev/null)\"",
+        "  case \"\$cmd\" in \"\$proot_bin \"*) tracer=1 ;; esac",
+        // The tracer itself is infrastructure: its fds are PRoot's own bookkeeping, not the package's.
+        "  if [ \"\$tracer\" -eq 0 ]; then",
         "  local ppid=\"\$(awk '/^PPid:/ {print \$2}' \"/proc/\$p/status\" 2>/dev/null)\"",
         "  hg2_log \"process:\$p:\$ppid:\$cmd\"",
         "  case \"\$cmd\" in *\"/su \"*|*\" su \"*|*\"adb\"*|*\"magisk\"*|*\"tsu\"*) hg2_log \"authority-attempt:\$p:\$cmd\" ;; esac",
@@ -194,23 +279,26 @@ object PackageIsolation {
         "    elif [ \"\${target#/}\" != \"\$target\" ]; then",
         "      mode=unknown",
         "      case \"\$flags\" in *1|*100001|*1000001) mode=write ;; *2|*100002|*1000002) mode=readwrite ;; *) mode=read ;; esac",
-        "      hg2_log \"file-\$mode:\$p:\$target\"",
-        "      case \"\$target\" in *\" (deleted)\") hg2_log \"file-deleted-open:\$p:\$target\" ;; esac",
+        "      shown=\"\$target\"",
+        "      case \"\$target\" in \"\$root\"/*) shown=\"\${target#\"\$root\"}\" ;; esac",
+        "      hg2_log \"file-\$mode:\$p:\$shown\"",
+        "      case \"\$target\" in *\" (deleted)\") hg2_log \"file-deleted-open:\$p:\$shown\" ;; esac",
         "    fi",
         "  done",
+        "  fi",
         "  if [ -r \"/proc/\$p/task/\$p/children\" ]; then",
         "    for child in \$(cat \"/proc/\$p/task/\$p/children\" 2>/dev/null); do hg2_scan_pid \"\$child\"; done",
         "  fi",
         "}",
         // A non-interactive shell runs an `&` job with stdin from /dev/null; hand the isolated
-        // command the wrapper's real stdin (tty/pipe) explicitly so interactive packages and
-        // piped input still work while the scanner loop watches it.
+        // command the watcher's real stdin (tty/pipe) explicitly so interactive packages and
+        // piped input still work while the sampling loop watches it.
         "exec 3<&0",
-        "( eval ${q(original)} ) <&3 3<&- &",
+        "( eval ${q(prootCommand)} ) <&3 3<&- &",
         "main=\$!",
         "exec 3<&-",
         "hg2_log \"root-process:\$main\"",
-        "while kill -0 \"\$main\" 2>/dev/null; do hg2_scan_pid \"\$main\"; sleep 0.05; done",
+        "while kill -0 \"\$main\" 2>/dev/null; do hg2_scan_pid \"\$main\"; sleep $interval; done",
         "hg2_scan_pid \"\$main\"",
         "wait \"\$main\"",
         "code=\$?",
@@ -226,7 +314,7 @@ object PackageIsolation {
             root.walkTopDown().forEach { file ->
                 if (file == root) return@forEach
                 val relative = file.relativeTo(root).path
-                if (relative == AUDIT_RELATIVE || relative == LEGACY_SUMMARY_RELATIVE) return@forEach
+                if (relative == LEGACY_AUDIT_RELATIVE || relative == LEGACY_SUMMARY_RELATIVE) return@forEach
                 result[relative] = FileStamp(
                     size = if (file.isFile) file.length() else 0L,
                     modified = file.lastModified(),
@@ -236,7 +324,7 @@ object PackageIsolation {
         } catch (_: Exception) {
             // Keep the partial snapshot; an incomplete audit is preferable to losing the run.
         }
-        val telemetry = readGuestTelemetry(root)
+        val telemetry = readObservedTelemetry(liveLogFile(packageBase(context, pkg)))
         return Snapshot(pkg.key, summary, result, telemetry)
     }
 
@@ -268,16 +356,7 @@ object PackageIsolation {
         }.toByteArray(Charsets.UTF_8)
 
         try {
-            file.parentFile?.mkdirs()
-            val atomic = AtomicFile(file)
-            val stream = atomic.startWrite()
-            try {
-                stream.write(serialized)
-                atomic.finishWrite(stream)
-            } catch (error: Exception) {
-                atomic.failWrite(stream)
-                throw error
-            }
+            AtomicFiles.write(file, serialized)
         } catch (_: Exception) {
             // Audit persistence is observability only; it must never change command exit behavior.
         }
@@ -318,7 +397,8 @@ object PackageIsolation {
 
     fun formatAudit(audit: Audit, maxPaths: Int = 40): String {
         val lines = mutableListOf<String>()
-        lines += "Isolation audit: ${audit.created.size} created, ${audit.modified.size} modified, ${audit.deleted.size} deleted; ${audit.telemetry.size} runtime observations."
+        lines += "Isolation audit: ${audit.created.size} created, ${audit.modified.size} modified, ${audit.deleted.size} deleted (host-diffed); " +
+            "${audit.telemetry.size} sampled runtime observations (best-effort, not tamper-proof)."
         fun add(label: String, paths: List<String>) {
             if (paths.isEmpty() || lines.size >= maxPaths + 1) return
             paths.take((maxPaths + 1 - lines.size).coerceAtLeast(0)).forEach { lines += "$label $it" }
@@ -333,22 +413,32 @@ object PackageIsolation {
         return lines.joinToString("\n")
     }
 
-    private fun readGuestTelemetry(root: File): List<String> {
-        val audit = File(root, AUDIT_RELATIVE)
-        if (!audit.isFile) return emptyList()
+    /**
+     * Reads the host-side watcher's log. The file sits outside the guest root, but its content is
+     * still treated as untrusted display text: control characters (terminal escape injection) are
+     * replaced, each row is length-capped and the row count is bounded.
+     */
+    internal fun readObservedTelemetry(log: File): List<String> {
+        if (!log.isFile) return emptyList()
         return try {
-            if (Files.isSymbolicLink(audit.toPath())) return emptyList()
-            val rootPath = root.canonicalFile.toPath()
-            val auditPath = audit.canonicalFile.toPath()
-            if (!auditPath.startsWith(rootPath)) return emptyList()
-            audit.useLines { lines -> lines.filter(String::isNotBlank).take(MAX_TELEMETRY_ROWS).toList() }
+            log.useLines { lines ->
+                lines.filter(String::isNotBlank)
+                    .take(MAX_TELEMETRY_ROWS)
+                    .map { sanitizeTelemetryRow(it) }
+                    .toList()
+            }
         } catch (_: Exception) {
             emptyList()
         }
     }
 
-    private fun encode(value: String): String = Base64.encodeToString(value.toByteArray(Charsets.UTF_8), Base64.NO_WRAP)
-    private fun decode(value: String): String = String(Base64.decode(value, Base64.DEFAULT), Charsets.UTF_8)
+    internal fun sanitizeTelemetryRow(row: String): String =
+        buildString {
+            for (c in row.take(MAX_TELEMETRY_ROW_CHARS)) append(if (c.isISOControl()) '?' else c)
+        }
+
+    private fun encode(value: String): String = PlainBase64.encodeString(value)
+    private fun decode(value: String): String = PlainBase64.decodeString(value)
     private fun safeKey(value: String): String = value.replace(Regex("[^A-Za-z0-9._-]"), "_")
     private fun q(value: String): String = "'${value.replace("'", "'\\''")}'"
 }

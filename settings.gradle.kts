@@ -36,7 +36,17 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        maven { url = uri("https://jitpack.io") }
+        // JitPack builds arbitrary GitHub repos on demand, so it is consulted ONLY for its own
+        // `com.github.<user>` coordinates: no other group (okhttp, kotlinx, androidx, ...) can ever be
+        // resolved from it, which closes the dependency-confusion path a blanket jitpack.io entry opens.
+        // Nothing in the catalog resolves from here today (CompareString2 is on Maven Central); the
+        // entry stays for future `com.github.*` dependencies. Gradle dependency-verification metadata
+        // (gradle/verification-metadata.xml) is NOT in place - it needs a networked
+        // `./gradlew --write-verification-metadata sha256 ...` run on a developer machine.
+        maven {
+            url = uri("https://jitpack.io")
+            content { includeGroupByRegex("""com\.github\..*""") }
+        }
     }
 }
 

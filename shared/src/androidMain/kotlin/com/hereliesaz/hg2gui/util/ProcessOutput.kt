@@ -5,7 +5,16 @@ import java.io.InputStream
 import java.util.concurrent.TimeUnit
 
 /** What a bounded one-shot child process produced. [stdout] holds at most the requested cap. */
-internal class ProcessOutput(val exitCode: Int, val stdout: ByteArray, val truncated: Boolean)
+internal class ProcessOutput(val exitCode: Int, val stdout: ByteArray, val truncated: Boolean) {
+    /**
+     * [stdout] decoded as UTF-8, or null when the process exited with a code outside
+     * [acceptedExitCodes]. A probe whose exit code is ignored turns a failed launch (a missing
+     * shared library, `fatal: not a git repository`) into rows the caller then parses as data;
+     * callers say which non-zero codes are a normal answer (`compgen` exits 1 for "no match").
+     */
+    fun textIfExit(acceptedExitCodes: Set<Int> = setOf(0)): String? =
+        if (exitCode in acceptedExitCodes) stdout.toString(Charsets.UTF_8) else null
+}
 
 /**
  * Waits up to [timeoutMs] for this process while draining stdout (and stderr, unless it was

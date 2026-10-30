@@ -26,7 +26,8 @@ actual class ShellSession actual constructor(homePath: String?) {
         onLine: (line: String) -> Unit,
         onNeedInput: (prompt: String) -> String?,
         onStderrLine: (line: String) -> Unit,
-        onStyledLine: (lines: List<List<StyledSpan>>) -> Unit
+        onStyledLine: (lines: List<List<StyledSpan>>) -> Unit,
+        timeoutMs: Long
     ): Int {
         onLine("shell is not running")
         return -1

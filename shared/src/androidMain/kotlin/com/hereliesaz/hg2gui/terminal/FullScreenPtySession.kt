@@ -114,8 +114,11 @@ class FullScreenPtySession private constructor(
         private const val INTR_BYTE: Byte = 0x03
 
         fun launch(context: Context, cwd: String, commandLine: String): FullScreenPtySession? {
-            val home = File(cwd).takeIf { it.isDirectory }
-            val (_, env) = ShellSession.bootstrapBashEnv(context, home) ?: return null
+            // HOME is the real home directory, never the working directory: ssh, git, vim, gh
+            // etc. look for ~/.ssh, ~/.gitconfig and ~/.vimrc there. The directory the program
+            // starts in is a separate thing (the TerminalSession cwd below).
+            val (realHome, env) = ShellSession.bootstrapBashEnv(context, null) ?: return null
+            val startDir = cwd.takeIf { File(it).isDirectory } ?: realHome.absolutePath
             val selectedName = ShellPreference.selected(context)
             val selected = ShellPreference.executable(context, selectedName)
                 ?: ShellPreference.executable(context, ShellPreference.BASH)
@@ -131,13 +134,13 @@ class FullScreenPtySession private constructor(
             }
             val termuxSession = TerminalSession(
                 selected.absolutePath,
-                cwd,
+                startDir,
                 args,
                 envArray,
                 INITIAL_TRANSCRIPT_ROWS,
                 null
             )
-            val detected = ShellAdapterRegistry.detect(context, cwd)
+            val detected = ShellAdapterRegistry.detect(context, startDir)
             val leading = commandLine.trim().substringBefore(' ').substringAfterLast('/')
             val explicitShell = when (leading) {
                 "bash" -> ShellFamily.BASH
@@ -147,9 +150,9 @@ class FullScreenPtySession private constructor(
                 else -> ShellFamily.UNKNOWN
             }
             val basePresentation = if (explicitShell == ShellFamily.UNKNOWN) {
-                ShellPresentation(cwd = cwd)
+                ShellPresentation(cwd = startDir)
             } else {
-                detected.copy(shell = explicitShell, cwd = cwd, completionProvider = when (explicitShell) {
+                detected.copy(shell = explicitShell, cwd = startDir, completionProvider = when (explicitShell) {
                     ShellFamily.BASH -> ShellCompletionProvider.BASH_COMPLETION
                     ShellFamily.ZSH -> ShellCompletionProvider.ZSH_COMPLETION
                     ShellFamily.FISH -> ShellCompletionProvider.FISH_COMPLETION

@@ -42,23 +42,40 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import com.hereliesaz.hg2gui.ui.AzphaltChip
 import com.hereliesaz.hg2gui.ui.ConfirmDialog
+import com.hereliesaz.hg2gui.ui.StatusKind
 import com.hereliesaz.hg2gui.ui.buildStyledLine
+import com.hereliesaz.hg2gui.ui.maxContentWidth
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
+import com.hereliesaz.hg2gui.ui.menu.contrastingText
 import com.hereliesaz.hg2gui.ui.menu.onPage
 import com.hereliesaz.hg2gui.ui.menu.pageBrush
+import com.hereliesaz.hg2gui.ui.screenInsets
+import com.hereliesaz.hg2gui.ui.statusColor
 import com.hereliesaz.hg2gui.ui.theme.AzphaltSurface
+import com.hereliesaz.hg2gui.ui.theme.LocalAzphaltType
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -177,6 +194,12 @@ fun FilesScreen(
     // Most-recent-first, capped, no duplicates - just enough to let a tap re-run a search that
     // was actually submitted, not every half-typed query.
     val recentSearches = remember { mutableStateListOf<String>() }
+    // M-4: opening search puts the cursor in the field (and raises the keyboard) straight away,
+    // instead of making the user tap a field they already asked for.
+    val searchFocus = remember { FocusRequester() }
+    LaunchedEffect(searchActive) {
+        if (searchActive) requestFocusSafely(searchFocus)
+    }
 
     var selectMode by remember { mutableStateOf(false) }
     var selected by remember { mutableStateOf<Set<String>>(emptySet()) }
@@ -453,179 +476,195 @@ fun FilesScreen(
             ),
             onBack = { screen = FMScreen.Browse },
             fullscreen = fullscreen,
+            // m-4: "SEE LARGEST FILES" jumps to the LARGEST tab by itself; this re-reads the
+            // stats and trash first so that list is current, not whatever was loaded on entry.
+            onFreeUpSpace = { refresh() },
             errorMessage = opError,
             onErrorDismiss = { opError = null },
-            modifier = modifier
+            modifier = modifier,
+            nowMillis = nowMillis
         )
         return
     }
 
+    // M-4: one inset policy for the whole screen - system bars (unless the fullscreen preference
+    // hides them), display cutout and the on-screen keyboard - so the NEW FOLDER / RENAME prompt
+    // and the bottom bar ride above the keyboard instead of hiding behind it. M-14: the column is
+    // capped at a readable width on tablets, with the page colour still full-bleed behind it.
+    // `screenInsets` consumes the insets the caller's own padding already took, so nothing is
+    // counted twice.
     Column(
         modifier
             .fillMaxSize()
             .background(Azphalt.currentGround.pageBrush())
-            .then(if (fullscreen) Modifier else Modifier.windowInsetsPadding(WindowInsets.systemBars))
+            .screenInsets(fullscreen = fullscreen)
+            .maxContentWidth()
     ) {
+        val muted = statusColor(StatusKind.Muted)
         // --- Header --------------------------------------------------------------------
         // Dropped in from above the top edge as one unit, rather than appearing in place.
         Column(Modifier.offset(y = (-90).dp * (1f - chromeIn.value))) {
         Row(
-            Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 18.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 10.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (selectMode) {
-                Chip("‹ ${selected.size} SELECTED", onClick = { selectMode = false; selected = emptySet() })
+                AzphaltChip(
+                    "‹ ${selected.size} SELECTED",
+                    onClick = { selectMode = false; selected = emptySet() },
+                    contentDescription = "${selected.size} selected. Tap to leave selection mode."
+                )
             } else {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Chip("‹ CLOSE", onClick = onBack)
-                    // Drops in alongside the rest of the header, but only once there is
-                    // somewhere to go up to - the root level has no parent of its own.
-                    if (openChain.isNotEmpty()) {
-                        Chip("…", background = Azphalt.Yellow, foreground = Azphalt.Ink, onClick = { openChain = openChain.dropLast(1) })
-                    }
+                AzphaltChip("‹ CLOSE", onClick = onBack, contentDescription = "Close files")
+                // Drops in alongside the rest of the header, but only once there is
+                // somewhere to go up to - the root level has no parent of its own.
+                if (openChain.isNotEmpty()) {
+                    AzphaltChip(
+                        "‹ UP", onClick = { openChain = openChain.dropLast(1) },
+                        tint = Azphalt.Yellow, contentDescription = "Up one folder"
+                    )
                 }
-                // "Here" is wherever the chain has actually drilled to - the deepest open level's
-                // own listing, not a sum across every depth (a folder's contents don't also sit
-                // beside it at the level above).
-                Chip("${entriesAt(openChain.size)?.size ?: 0} THINGS HERE", filled = false, clickable = false)
+            }
+            // "Here" is wherever the chain has actually drilled to - the deepest open level's
+            // own listing, not a sum across every depth (a folder's contents don't also sit
+            // beside it at the level above). n-7: null means that listing hasn't come back yet,
+            // which is "LOADING", not "0 THINGS HERE".
+            if (!selectMode) {
+                val here = entriesAt(openChain.size)
+                Text(
+                    if (here == null) "LOADING…" else "${here.size} THINGS HERE",
+                    color = muted, style = labelTextStyle(), textAlign = TextAlign.End,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
             }
         }
 
-        // --- Search / sort row ------------------------------------------------------------
+        // --- Search row ---------------------------------------------------------------------
         if (!selectMode) {
-            Row(
-                Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
+            if (searchActive) {
                 Row(
                     Modifier
-                        .weight(if (searchActive) 1f else 0.001f, fill = searchActive)
-                        .clip(RoundedCornerShape(percent = 50))
+                        .fillMaxWidth()
+                        .padding(start = 20.dp, end = 20.dp, top = 6.dp)
+                        .heightIn(min = 48.dp)
+                        .clip(AzphaltSurface.capsule)
                         .background(Azphalt.Ink.copy(alpha = .10f))
-                        .clickable(enabled = !searchActive) { searchActive = true }
-                        .padding(start = 14.dp, end = 10.dp, top = 8.dp, bottom = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        .padding(start = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (searchActive) {
-                        BasicTextField(
-                            value = searchQuery,
-                            onValueChange = { searchQuery = it; screen = if (it.isBlank()) FMScreen.Browse else FMScreen.Search },
-                            modifier = Modifier.weight(1f),
-                            textStyle = androidx.compose.ui.text.TextStyle(
-                                color = Azphalt.currentGround.onPage, fontSize = 13.sp, fontWeight = FontWeight.SemiBold
-                            ),
-                            cursorBrush = SolidColor(Azphalt.currentGround.onPage),
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                            keyboardActions = KeyboardActions(onSearch = { recordSearch(searchQuery) })
-                        )
-                        Text(
-                            "✕", color = Azphalt.currentGround.onPage.copy(alpha = .6f), fontSize = 13.sp,
-                            modifier = Modifier.clickable {
-                                searchActive = false; searchQuery = ""; screen = FMScreen.Browse
+                    BasicTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it; screen = if (it.isBlank()) FMScreen.Browse else FMScreen.Search },
+                        modifier = Modifier
+                            .weight(1f)
+                            .focusRequester(searchFocus)
+                            .semantics { contentDescription = "Search files" },
+                        textStyle = nameTextStyle().copy(color = Azphalt.currentGround.onPage),
+                        cursorBrush = SolidColor(Azphalt.currentGround.onPage),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                        keyboardActions = KeyboardActions(onSearch = { recordSearch(searchQuery) }),
+                        decorationBox = { inner ->
+                            Box(contentAlignment = Alignment.CenterStart) {
+                                if (searchQuery.isEmpty()) {
+                                    Text("SEARCH FILES", color = muted, style = labelTextStyle())
+                                }
+                                inner()
                             }
-                        )
-                    } else {
-                        Text(
-                            "SEARCH", color = Azphalt.currentGround.onPage.copy(alpha = .55f),
-                            fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.1.em
-                        )
-                    }
+                        }
+                    )
+                    // Its own word and shape ("✕" = close this search); the entry actions say
+                    // TRASH and the trash tab says DELETE FOREVER, so no two actions share a glyph.
+                    RowAction(
+                        "✕", "Close search", Azphalt.currentGround.onPage,
+                        { searchActive = false; searchQuery = ""; screen = FMScreen.Browse }
+                    )
                 }
-                if (!searchActive) {
-                    Row(
-                        Modifier
-                            .clip(RoundedCornerShape(percent = 50))
-                            .background(Azphalt.Ink.copy(alpha = .10f))
-                            .clickable { sortMode = if (sortMode == SortMode.NAME) SortMode.NEWEST else SortMode.NAME }
-                            .padding(horizontal = 14.dp, vertical = 8.dp)
-                    ) {
-                        Text(
-                            "${sortMode.label.uppercase()} ▾", color = Azphalt.currentGround.onPage.copy(alpha = .55f),
-                            fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.1.em
-                        )
-                    }
-                    Row(
-                        Modifier
-                            .clip(RoundedCornerShape(percent = 50))
-                            .background(Azphalt.Ink.copy(alpha = .10f))
-                            .clickable { screen = FMScreen.Storage }
-                            .padding(horizontal = 14.dp, vertical = 8.dp)
-                    ) {
-                        Text(
-                            "STORAGE ›", color = Azphalt.currentGround.onPage.copy(alpha = .55f),
-                            fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.1.em
-                        )
-                    }
+            } else {
+                // Navigation, not filtering: where to look (search, the storage report, which
+                // root). Scrolls rather than wraps, like the filter row beneath.
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(start = 20.dp, end = 20.dp, top = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    AzphaltChip("SEARCH", onClick = { searchActive = true }, contentDescription = "Search files")
+                    AzphaltChip("STORAGE ›", onClick = { screen = FMScreen.Storage }, contentDescription = "Open the storage report")
                     // DEV-STORAGE-1: not gated on `deviceStorage.granted` - tapping it without
                     // the permission yet is exactly what should kick off asking for it, same as
-                    // every other permission-backed builtin in this app (see Builtins.kt).
-                    Row(
-                        Modifier
-                            .clip(RoundedCornerShape(percent = 50))
-                            .background(if (deviceStorage.active) Azphalt.Yellow else Azphalt.Ink.copy(alpha = .10f))
-                            .clickable { deviceStorage.onToggle() }
-                            .padding(horizontal = 14.dp, vertical = 8.dp)
-                    ) {
-                        Text(
-                            if (deviceStorage.active) "DEVICE" else "SANDBOX",
-                            color = if (deviceStorage.active) Azphalt.Ink else Azphalt.currentGround.onPage.copy(alpha = .55f),
-                            fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.1.em
-                        )
-                    }
+                    // every other permission-backed builtin in this app (see Builtins.kt). The
+                    // label names the current root (a toggle state, not a verb) and the spoken
+                    // description names what a tap does.
+                    AzphaltChip(
+                        if (deviceStorage.active) "ROOT: DEVICE" else "ROOT: SANDBOX",
+                        onClick = { deviceStorage.onToggle() },
+                        selected = deviceStorage.active,
+                        tint = Azphalt.Yellow,
+                        contentDescription = if (deviceStorage.active) {
+                            "Showing device storage. Tap to switch back to the app sandbox."
+                        } else {
+                            "Showing the app sandbox. Tap to switch to device storage."
+                        }
+                    )
                 }
             }
         }
 
-        // --- Filter row --------------------------------------------------------------------
-        // Its own row rather than folded into the search/sort one above - a folder listing on a
-        // phone is narrow enough that three more chips there would start wrapping or crowding
-        // the search well. Horizontally scrollable so a later filter never has to fight the
-        // ones already here for room.
+        // --- View row (sort + filters) -----------------------------------------------------
+        // Its own row rather than folded into the one above - a folder listing on a phone is
+        // narrow enough that this many chips there would start wrapping or crowding it.
+        // Horizontally scrollable so a later filter never has to fight the ones already here for
+        // room. Sort is two explicit options (a radio pair) rather than one chip that silently
+        // flips; the kind/age chips say they cycle and announce which value they are on.
         if (!selectMode && !searchActive) {
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .padding(start = 20.dp, end = 20.dp, top = 8.dp)
+                    .padding(start = 20.dp, end = 20.dp)
                     .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                FilterChip(
-                    kindFilter.label.uppercase(), active = kindFilter != KindFilter.ALL,
-                    onClick = {
-                        val values = KindFilter.entries
-                        kindFilter = values[(kindFilter.ordinal + 1) % values.size]
-                    }
+                Text("SORT", color = muted, style = labelTextStyle())
+                SortMode.entries.forEach { mode ->
+                    AzphaltChip(
+                        mode.label.uppercase(), onClick = { sortMode = mode },
+                        selected = sortMode == mode, role = Role.RadioButton,
+                        contentDescription = "Sort by ${mode.label.lowercase()}"
+                    )
+                }
+                val nextKind = KindFilter.entries[(kindFilter.ordinal + 1) % KindFilter.entries.size]
+                AzphaltChip(
+                    "SHOW: ${kindFilter.label.uppercase()}",
+                    onClick = { kindFilter = nextKind },
+                    selected = kindFilter != KindFilter.ALL,
+                    contentDescription = "Show ${kindFilter.label.lowercase()}. Tap to change to ${nextKind.label.lowercase()}."
                 )
-                FilterChip(
-                    recencyFilter.label.uppercase(), active = recencyFilter != RecencyFilter.ANY,
-                    onClick = {
-                        val values = RecencyFilter.entries
-                        recencyFilter = values[(recencyFilter.ordinal + 1) % values.size]
-                    }
+                val nextRecency = RecencyFilter.entries[(recencyFilter.ordinal + 1) % RecencyFilter.entries.size]
+                AzphaltChip(
+                    "WHEN: ${recencyFilter.label.uppercase()}",
+                    onClick = { recencyFilter = nextRecency },
+                    selected = recencyFilter != RecencyFilter.ANY,
+                    contentDescription = "Modified ${recencyFilter.label.lowercase()}. Tap to change to ${nextRecency.label.lowercase()}."
                 )
-                FilterChip("HIDDEN", active = showHidden, onClick = { showHidden = !showHidden })
+                AzphaltChip(
+                    "HIDDEN FILES", onClick = { showHidden = !showHidden },
+                    selected = showHidden,
+                    contentDescription = "Show hidden files: ${if (showHidden) "on" else "off"}"
+                )
             }
         }
         }
 
         // VFS-13: the one place a failed file operation becomes visible instead of vanishing
-        // silently - tap to dismiss, same as any other transient chip in this screen.
+        // silently - a live region (announced without moving focus), tap to dismiss.
         opError?.let { message ->
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(start = 20.dp, end = 20.dp, top = 8.dp)
-                    .clip(RoundedCornerShape(percent = 50))
-                    .background(Azphalt.hues[6])
-                    .clickable { opError = null }
-                    .padding(horizontal = 16.dp, vertical = 10.dp)
-            ) {
-                Text(message, color = Azphalt.White, fontSize = 10.sp, fontWeight = FontWeight.ExtraBold)
-            }
+            ErrorBanner(message, { opError = null }, Modifier.padding(start = 20.dp, end = 20.dp, top = 8.dp))
         }
 
         // --- Content ------------------------------------------------------------------------
@@ -684,6 +723,7 @@ fun FilesScreen(
         if (creating != null) {
             NamePrompt(
                 label = if (creating == CreateMode.FOLDER) "NEW FOLDER" else "NEW FILE",
+                fieldDescription = if (creating == CreateMode.FOLDER) "Name for the new folder" else "Name for the new file",
                 name = createInput,
                 onNameChange = { createInput = it },
                 onConfirm = {
@@ -710,34 +750,33 @@ fun FilesScreen(
         }
 
         renameTarget?.let { target ->
-            Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp)) {
-                NamePrompt(
-                    label = "RENAME",
-                    name = renameInput,
-                    onNameChange = { renameInput = it },
-                    onConfirm = {
-                        val name = renameInput.trim()
-                        val badName = invalidNameMessage(name)
-                        if (badName != null) {
-                            opError = badName
-                        } else if (name.isNotEmpty() && name != target.name) {
-                            scope.launch {
-                                val siblingNames = listDir(vfsParentPath(target.path)).map { it.name }.toSet()
-                                if (name in siblingNames) {
-                                    pendingRenameOverwrite = target to name
-                                } else {
-                                    val ok = onRename(target.path, name)
-                                    opError = if (!ok) "Couldn't rename that." else null
-                                    if (ok) renameChainIfAffected(target.path, name)
-                                    refresh()
-                                }
+            NamePrompt(
+                label = "RENAME",
+                fieldDescription = "New name for ${target.name}",
+                name = renameInput,
+                onNameChange = { renameInput = it },
+                onConfirm = {
+                    val name = renameInput.trim()
+                    val badName = invalidNameMessage(name)
+                    if (badName != null) {
+                        opError = badName
+                    } else if (name.isNotEmpty() && name != target.name) {
+                        scope.launch {
+                            val siblingNames = listDir(vfsParentPath(target.path)).map { it.name }.toSet()
+                            if (name in siblingNames) {
+                                pendingRenameOverwrite = target to name
+                            } else {
+                                val ok = onRename(target.path, name)
+                                opError = if (!ok) "Couldn't rename that." else null
+                                if (ok) renameChainIfAffected(target.path, name)
+                                refresh()
                             }
                         }
-                        renameTarget = null
-                    },
-                    onCancel = { renameTarget = null }
-                )
-            }
+                    }
+                    renameTarget = null
+                },
+                onCancel = { renameTarget = null }
+            )
         }
 
         pendingRenameOverwrite?.let { (target, newName) ->
@@ -761,38 +800,43 @@ fun FilesScreen(
 
         // --- Bottom bar ---------------------------------------------------------------------
         // Popped up from below the bottom edge, mirroring the header's drop from above.
+        // Scrolls instead of squeezing: at a large Text size the chips outgrow a phone's width,
+        // and a weighted spacer used to collapse to nothing and push the last one off-screen.
         Row(
             Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 14.dp)
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp, vertical = 8.dp)
                 .offset(y = 90.dp * (1f - chromeIn.value)),
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             if (selectMode) {
-                Chip("MOVE", onClick = { screen = FMScreen.PickMove })
-                Chip("COPY", onClick = { screen = FMScreen.PickCopy })
-                Chip("SHARE", onClick = { onShareMultiple(selected) })
-                Spacer(Modifier.weight(1f))
-                Chip("DELETE", background = Azphalt.hues[6], foreground = Azphalt.White, onClick = {
-                    batchDeleteConfirm = true
-                })
+                AzphaltChip("MOVE", onClick = { screen = FMScreen.PickMove }, contentDescription = "Move the selected items")
+                AzphaltChip("COPY", onClick = { screen = FMScreen.PickCopy }, contentDescription = "Copy the selected items")
+                AzphaltChip("SHARE", onClick = { onShareMultiple(selected) }, contentDescription = "Share the selected items")
+                AzphaltChip(
+                    "DELETE", onClick = { batchDeleteConfirm = true },
+                    tint = Azphalt.hues[6], contentDescription = "Move the selected items to the trash"
+                )
             } else {
-                Chip("+ NEW FOLDER", filled = false, onClick = { creating = CreateMode.FOLDER; createInput = "" })
-                Chip("+ NEW FILE", filled = false, onClick = { creating = CreateMode.FILE; createInput = "" })
-                Spacer(Modifier.weight(1f))
-                Chip("SELECT", onClick = { selectMode = true })
+                AzphaltChip(
+                    "NEW FOLDER", onClick = { creating = CreateMode.FOLDER; createInput = "" },
+                    contentDescription = "Create a new folder"
+                )
+                AzphaltChip(
+                    "NEW FILE", onClick = { creating = CreateMode.FILE; createInput = "" },
+                    contentDescription = "Create a new file"
+                )
+                AzphaltChip("SELECT", onClick = { selectMode = true }, contentDescription = "Select several items")
             }
         }
 
         deleteTarget?.let { entry ->
             ConfirmDialog(
                 title = "DELETE ${entry.name}?",
-                // TRASH-1: no longer final - moved into Storage > Trash, recoverable there.
-                message = if (entry.isDirectory) {
-                    "This moves ${entry.name} and everything inside it to the trash."
-                } else {
-                    "This moves ${entry.name} to the trash."
-                },
+                // TRASH-1: no longer final - moved into Storage > Trash, recoverable there until
+                // the 30-day retention (M-13) runs out, which the text now says.
+                message = trashConfirmMessage(entry.name, entry.isDirectory),
                 confirmLabel = "DELETE",
                 onConfirm = {
                     scope.launch {
@@ -810,9 +854,9 @@ fun FilesScreen(
         if (batchDeleteConfirm) {
             ConfirmDialog(
                 title = "DELETE ${selected.size} THINGS?",
-                // TRASH-1: no longer final - moved into Storage > Trash, recoverable there.
-                message = "This moves everything selected, including the contents of any selected " +
-                    "folders, to the trash.",
+                // TRASH-1: no longer final - moved into Storage > Trash, recoverable there until
+                // the 30-day retention runs out (said in the text).
+                message = trashBatchConfirmMessage(),
                 confirmLabel = "DELETE",
                 onConfirm = {
                     scope.launch {
@@ -1124,15 +1168,29 @@ private fun FolderTile(
                 .height(motion.h.value.toDp())
                 .graphicsLayer { scaleX = motion.scale.value; scaleY = motion.scale.value }
                 .clip(folderTileShape(isOpen, motion.w.value.toDp()))
-                .background(if (isOpen && selection.selectMode && selection.isSelected) Azphalt.Ink else hue)
+                .background(if (selection.selectMode && selection.isSelected) Azphalt.Ink else hue)
                 .combinedClickable(
                     onClick = { actions.onTap(entry) },
                     onLongClick = { actions.onLongPress(entry) }
                 )
-                .padding(if (isOpen) 14.dp else 6.dp),
+                .selectableState(selection.selectMode, selection.isSelected)
+                // A rod is too thin to carry its name, so it is spoken instead.
+                .then(
+                    if (isOpen || motion.w.value.toDp() > 24.dp) {
+                        Modifier
+                    } else {
+                        Modifier.semantics { contentDescription = "Folder ${entry.name}" }
+                    }
+                )
+                // The open header's content is 48dp tall (56dp minus 4dp top and bottom), so its
+                // RENAME / TRASH actions keep a full-size tap target.
+                .padding(
+                    horizontal = if (isOpen) 14.dp else 6.dp,
+                    vertical = if (isOpen) 4.dp else 6.dp
+                ),
             contentAlignment = if (isOpen) Alignment.CenterStart else Alignment.BottomStart
         ) {
-            FolderTileContent(entry, isOpen, motion.w.value.toDp(), selection, actions)
+            FolderTileContent(entry, isOpen, motion.w.value.toDp(), selection, actions, hue)
         }
     }
 }
@@ -1153,31 +1211,62 @@ private fun FolderTileContent(
     isOpen: Boolean,
     width: Dp,
     selection: FolderTileSelection,
-    actions: FolderEntryActions
+    actions: FolderEntryActions,
+    hue: Color
 ) {
+    val isSelectedTint = selection.selectMode && selection.isSelected
+    // m-14: whichever of Ink/White reads better on this folder's own hue (a selected tile is Ink,
+    // so it gets the house yellow) - never a fixed White, which fails on amber, cyan, green...
+    val textColor = if (isSelectedTint) Azphalt.Yellow else hue.contrastingText()
     if (isOpen) {
-        val isSelectedTint = selection.selectMode && selection.isSelected
         Row(
             Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            // M-6: the name takes what the fixed-width actions leave and ellipsizes.
+            Row(
+                Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 if (selection.selectMode) SelectMark(selection.isSelected, dark = true)
                 Text(
-                    entry.name.uppercase(), color = if (isSelectedTint) Azphalt.Yellow else Azphalt.White,
-                    fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.06.em, maxLines = 1
+                    entry.name.uppercase(), color = textColor,
+                    style = LocalAzphaltType.current.chip,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
                 )
             }
-            if (!selection.selectMode) EntryMenu(entry, actions.onRename, actions.onDelete, actions.onShare, tint = Azphalt.White)
+            if (!selection.selectMode) EntryMenu(entry, actions.onRename, actions.onDelete, actions.onShare, tint = textColor)
         }
     } else if (width > 24.dp) {
-        Text(
-            entry.name.uppercase(), color = Azphalt.White, fontSize = 8.sp,
-            fontWeight = FontWeight.ExtraBold, letterSpacing = 0.06.em, maxLines = 2
-        )
+        Box(Modifier.fillMaxSize()) {
+            // Closed tiles are ~100dp squares: three lines at the 11sp floor, then an ellipsis,
+            // rather than a name clipped mid-word at two lines of 8sp.
+            Text(
+                entry.name.uppercase(), color = textColor, style = labelTextStyle(),
+                maxLines = 3, overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.align(Alignment.BottomStart)
+            )
+            if (selection.selectMode) {
+                Box(Modifier.align(Alignment.TopEnd)) { SelectMark(selection.isSelected, dark = true) }
+            }
+        }
     }
 }
+
+/** In selection mode a row/tile is a selectable item: expose `selected` and a spoken state, so the
+ *  checkmark (a drawn glyph) is never the only carrier of "this one is picked". */
+private fun Modifier.selectableState(selectMode: Boolean, isSelected: Boolean): Modifier =
+    if (!selectMode) {
+        this
+    } else {
+        this.semantics {
+            this.selected = isSelected
+            stateDescription = if (isSelected) "Selected" else "Not selected"
+        }
+    }
 
 @Composable
 private fun OverflowTile(rect: TileRect, count: Int, onClick: () -> Unit) {
@@ -1190,7 +1279,8 @@ private fun OverflowTile(rect: TileRect, count: Int, onClick: () -> Unit) {
                 .height(rect.h.toDp())
                 .clip(AzphaltSurface.note)
                 .background(Azphalt.Ink.copy(alpha = .14f))
-                .clickable(onClick = onClick),
+                .semantics { contentDescription = "Show $count more folders" }
+                .clickable(role = Role.Button, onClick = onClick),
             contentAlignment = Alignment.Center
         ) {
             Text(
@@ -1208,15 +1298,14 @@ private fun ExpandableLevel(depth: Int, openChain: List<VfsEntry>, ctx: LevelCon
     val folders = entries?.filter { it.isDirectory } ?: emptyList()
     val files = entries?.filterNot { it.isDirectory } ?: emptyList()
 
+    val muted = statusColor(StatusKind.Muted)
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         if (folders.isNotEmpty()) {
             if (openEntry == null) {
                 Text(
-                    // .55f, the app-wide "text-muted, eyebrows and captions" tier (style guide "03 -
-                    // Transparency") - the 45% tier is for micro labels inside a pill, which this
-                    // section caption isn't.
-                    "FOLDERS · ${folders.size}", color = Azphalt.currentGround.onPage.copy(alpha = .55f),
-                    fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.18.em
+                    // The muted status tier: the app-wide "text-muted, eyebrows and captions"
+                    // colour, but measured against the ground so it stays >= 4.5:1 on every one.
+                    "FOLDERS · ${folders.size}", color = muted, style = labelTextStyle()
                 )
             }
             FolderBand(folders = folders, openEntry = openEntry, selection = ctx.selection, actions = ctx.entryActionsAt(depth))
@@ -1236,10 +1325,8 @@ private fun ExpandableLevel(depth: Int, openChain: List<VfsEntry>, ctx: LevelCon
         if (files.isNotEmpty()) {
             if (folders.isNotEmpty() || openEntry != null) {
                 Text(
-                    // .55f, the app-wide "text-muted, eyebrows and captions" tier - see the
-                    // FOLDERS caption above for the same reasoning.
-                    "FILES · ${files.size}", color = Azphalt.currentGround.onPage.copy(alpha = .55f),
-                    fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.18.em,
+                    // See the FOLDERS caption above for the colour.
+                    "FILES · ${files.size}", color = muted, style = labelTextStyle(),
                     modifier = Modifier.padding(top = 4.dp)
                 )
             }
@@ -1250,18 +1337,12 @@ private fun ExpandableLevel(depth: Int, openChain: List<VfsEntry>, ctx: LevelCon
 
 @Composable
 private fun EmptyLabel() {
-    Text(
-        "NOTHING HERE", color = Azphalt.currentGround.onPage.copy(alpha = .4f),
-        fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.14.em
-    )
+    StatusLabel("NOTHING HERE")
 }
 
 @Composable
 private fun LoadingLabel() {
-    Text(
-        "LOADING…", color = Azphalt.currentGround.onPage.copy(alpha = .4f),
-        fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.14.em
-    )
+    StatusLabel("LOADING…")
 }
 
 @Composable
@@ -1280,10 +1361,7 @@ private fun FileRows(
         // automatically - never a manual list/grid toggle. The tiles are hue swatches with the
         // file name (see ImageTile): nothing here decodes the images, so these are not thumbnails.
         if (images.size >= 3) {
-            Text(
-                "${images.size} PHOTOS", color = Azphalt.currentGround.onPage.copy(alpha = .5f),
-                fontSize = 8.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.1.em
-            )
+            Text("${images.size} PHOTOS", color = statusColor(StatusKind.Muted), style = labelTextStyle())
             // Plain rows of three square tiles rather than a LazyVerticalGrid in a fixed-height box:
             // the height follows from the width (aspectRatio) instead of a guessed 90dp per row,
             // so no row is clipped or padded and there is no nested scrolling container.
@@ -1308,22 +1386,28 @@ private fun FileRows(
 
 @Composable
 private fun ImageTile(img: VfsEntry, selection: SelectionState, actions: FolderEntryActions, totalBytes: Long?) {
+    val hue = fileHue(img, totalBytes)
+    val isSelected = img.path in selection.selected
     Box(
         Modifier
             .aspectRatio(1f)
             .clip(AzphaltSurface.note)
             // The tile's own hue never changes on selection - only the mark does.
-            .background(fileHue(img, totalBytes))
+            .background(hue)
             .combinedClickable(onClick = { actions.onTap(img) }, onLongClick = { actions.onLongPress(img) })
+            .selectableState(selection.selectMode, isSelected)
     ) {
+        // m-14: Ink or White, whichever reads better on this tile's hue (the size ramp runs from
+        // violet through amber to red); 11sp, the floor of the type scale, two lines then an
+        // ellipsis - it was 7sp, one line, white at 80% on cyan.
         Text(
-            img.name, color = Azphalt.White.copy(alpha = .8f), fontSize = 7.sp,
-            fontWeight = FontWeight.Bold, maxLines = 1,
+            img.name, color = hue.contrastingText(), style = captionTextStyle().copy(fontWeight = FontWeight.Bold),
+            maxLines = 2, overflow = TextOverflow.Ellipsis,
             modifier = Modifier.align(Alignment.BottomStart).padding(6.dp)
         )
         if (selection.selectMode) {
             Box(Modifier.align(Alignment.TopEnd).padding(4.dp)) {
-                SelectMark(img.path in selection.selected, dark = true)
+                SelectMark(isSelected, dark = true)
             }
         }
     }
@@ -1332,6 +1416,8 @@ private fun ImageTile(img: VfsEntry, selection: SelectionState, actions: FolderE
 @Composable
 private fun FileRow(f: VfsEntry, selection: SelectionState, actions: FolderEntryActions, preview: PreviewContext) {
     val selectedTint = selection.selectMode && f.path in selection.selected
+    val onPage = Azphalt.currentGround.onPage
+    val muted = statusColor(StatusKind.Muted)
     // F3: open widens the shape from a pill into the same "note" surface every other expanding
     // panel on this screen uses - a fully-rounded pill reads oddly once it's tall enough to hold
     // a multi-line preview.
@@ -1348,27 +1434,31 @@ private fun FileRow(f: VfsEntry, selection: SelectionState, actions: FolderEntry
         Row(
             Modifier
                 .fillMaxWidth()
+                .heightIn(min = 48.dp)
                 .combinedClickable(onClick = { actions.onTap(f) }, onLongClick = { actions.onLongPress(f) })
-                .padding(start = 16.dp, end = 8.dp, top = 10.dp, bottom = 10.dp),
+                .selectableState(selection.selectMode, selectedTint)
+                .padding(start = 16.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (selection.selectMode) SelectMark(f.path in selection.selected, dark = false)
+            if (selection.selectMode) SelectMark(selectedTint, dark = false)
+            // M-6: the name column takes whatever the fixed-width actions leave and ellipsizes,
+            // instead of claiming the whole row and squeezing RENAME / SHARE / TRASH to nothing.
+            Column(Modifier.weight(1f)) {
                 // Filenames are literal, not labels - the one place real case survives outside
                 // body copy, same as every other identifier here that names an actual leaf item
                 // rather than a folder/chrome label.
                 Text(
-                    f.name, color = if (selectedTint) Azphalt.Yellow else Azphalt.currentGround.onPage,
-                    fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em, maxLines = 1
+                    f.name, color = if (selectedTint) Azphalt.Yellow else onPage,
+                    style = nameTextStyle(), maxLines = 1, overflow = TextOverflow.Ellipsis
                 )
                 Text(
                     formatFileSize(f.sizeBytes),
-                    color = if (selectedTint) Azphalt.Yellow.copy(alpha = .75f) else Azphalt.currentGround.onPage.copy(alpha = .55f),
-                    fontSize = 9.sp
+                    color = if (selectedTint) Azphalt.Yellow.copy(alpha = .75f) else muted,
+                    style = captionTextStyle()
                 )
             }
-            if (!selection.selectMode) EntryMenu(f, actions.onRename, actions.onDelete, actions.onShare, tint = Azphalt.currentGround.onPage)
+            if (!selection.selectMode) EntryMenu(f, actions.onRename, actions.onDelete, actions.onShare, tint = onPage)
         }
         if (isOpen) FilePreviewPane(f, preview.cache[f.path]) { preview.onOpenFile(f.path) }
     }
@@ -1395,57 +1485,60 @@ private fun FilePreviewPane(entry: VfsEntry, preview: FilePreview?, onOpenInEdit
             preview == null -> LoadingLabel()
             preview.text == null -> {
                 val kind = entry.name.substringAfterLast('.', "THIS").uppercase()
-                Text(
-                    if (preview.truncated) "TOO LARGE TO PREVIEW" else "CAN'T PREVIEW $kind",
-                    color = Azphalt.currentGround.onPage.copy(alpha = .5f), fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.12.em
-                )
+                StatusLabel(if (preview.truncated) "TOO LARGE TO PREVIEW" else "CAN'T PREVIEW $kind")
             }
             preview.isMarkdown -> MarkdownPreview(preview.text, onPage, onPage)
             preview.styled.isNotEmpty() -> preview.styled.forEach { line ->
-                Text(buildStyledLine(line, onPage), fontSize = 10.sp, fontFamily = FontFamily.Monospace)
+                Text(buildStyledLine(line, onPage), fontSize = PREVIEW_MONO_SP, fontFamily = FontFamily.Monospace)
             }
-            else -> Text(preview.text, color = Azphalt.currentGround.onPage, fontSize = 10.sp, fontFamily = FontFamily.Monospace)
+            else -> Text(preview.text, color = onPage, fontSize = PREVIEW_MONO_SP, fontFamily = FontFamily.Monospace)
         }
-        Text(
-            "OPEN IN EDITOR", color = Azphalt.currentGround.onPage.copy(alpha = .7f), fontSize = 8.sp, fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(top = 8.dp).clickable(onClick = onOpenInEditor)
+        // The only route from a preview to actually editing the file: a real 48dp chip, not 8sp
+        // text with no padding.
+        AzphaltChip(
+            "OPEN IN EDITOR", onClick = onOpenInEditor,
+            modifier = Modifier.padding(top = 4.dp),
+            contentDescription = "Open ${entry.name} in the editor"
         )
     }
 }
 
+/** Preview text is monospace code, not a UI label, so it is not on the Azphalt scale; it still
+ *  respects the 11sp floor. */
+private val PREVIEW_MONO_SP = 12.sp
+
+/**
+ * The round mark at the edge of a row in selection mode. Purely visual: the row itself carries the
+ * `selected` state and spoken "Selected" / "Not selected" (see [selectableState]), so the mark's
+ * checkmark glyph is hidden from accessibility rather than read out as "check mark".
+ */
 @Composable
-private fun SelectMark(selected: Boolean, dark: Boolean) {
+private fun SelectMark(isChecked: Boolean, dark: Boolean) {
     Box(
         Modifier
-            .size(16.dp)
+            .size(20.dp)
+            .clearAndSetSemantics { }
             .clip(RoundedCornerShape(percent = 50))
-            .background(if (selected) Azphalt.Yellow else (if (dark) Azphalt.White.copy(alpha = .25f) else Azphalt.Ink.copy(alpha = .2f))),
+            .background(if (isChecked) Azphalt.Yellow else (if (dark) Azphalt.White.copy(alpha = .25f) else Azphalt.Ink.copy(alpha = .2f))),
         contentAlignment = Alignment.Center
     ) {
-        if (selected) Text("✓", color = Azphalt.Ink, fontSize = 9.sp, fontWeight = FontWeight.Black)
+        if (isChecked) Text("✓", color = Azphalt.Ink, fontSize = 13.sp, fontWeight = FontWeight.Black)
     }
 }
 
 @Composable
 private fun EntryMenu(entry: VfsEntry, onRename: (VfsEntry) -> Unit, onDelete: (VfsEntry) -> Unit, onShare: (VfsEntry) -> Unit, tint: Color) {
-    // UI-7: these Text labels had no padding at all - well under the 48dp minimum touch target,
-    // and with only 10dp between them, an imprecise tap intended for RENAME/SHARE could land on
-    // the destructive × instead. Each gets its own invisible 48x48dp centered tap zone, the same
-    // minWidth+minHeight pairing SessionTabs/ModifierKeys already use for a single-glyph target -
-    // that alone also restores real separation between them without changing the visible spacing.
-    val tapZone = Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
-    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        Box(tapZone.clickable { onRename(entry) }, contentAlignment = Alignment.Center) {
-            Text("RENAME", color = tint.copy(alpha = .7f), fontSize = 8.sp, fontWeight = FontWeight.Bold)
-        }
+    // UI-7: these labels used to have no padding at all - well under the 48dp minimum touch
+    // target - so an imprecise tap intended for RENAME/SHARE could land on the destructive one.
+    // Each is a [RowAction]: a 48x48dp minimum hit box, and a spoken description that names the
+    // item. M-11: the destructive one says what it does (TRASH: it moves to the trash, restorable
+    // for 30 days) instead of a bare "×" that also meant "close search" and "delete forever".
+    Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+        RowAction("RENAME", "Rename ${entry.name}", tint, { onRename(entry) })
         if (!entry.isDirectory) {
-            Box(tapZone.clickable { onShare(entry) }, contentAlignment = Alignment.Center) {
-                Text("SHARE", color = tint.copy(alpha = .7f), fontSize = 8.sp, fontWeight = FontWeight.Bold)
-            }
+            RowAction("SHARE", "Share ${entry.name}", tint, { onShare(entry) })
         }
-        Box(tapZone.clickable { onDelete(entry) }, contentAlignment = Alignment.Center) {
-            Text("×", color = tint.copy(alpha = .85f), fontSize = 13.sp)
-        }
+        RowAction("TRASH", "Move ${entry.name} to the trash", tint, { onDelete(entry) })
     }
 }
 
@@ -1453,32 +1546,20 @@ private fun EntryMenu(entry: VfsEntry, onRename: (VfsEntry) -> Unit, onDelete: (
 private fun ColumnScope.RecentSearches(recent: List<String>, onSelect: (String) -> Unit) {
     Column(Modifier.fillMaxWidth().weight(1f).padding(horizontal = 20.dp, vertical = 12.dp)) {
         if (recent.isEmpty()) {
-            Text(
-                "TYPE TO SEARCH", color = Azphalt.currentGround.onPage.copy(alpha = .4f),
-                fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.1.em
-            )
+            StatusLabel("TYPE TO SEARCH")
         } else {
-            Text(
-                // .55f, the app-wide "text-muted, eyebrows and captions" tier.
-                "RECENT SEARCHES", color = Azphalt.currentGround.onPage.copy(alpha = .55f),
-                fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.18.em
-            )
-            Spacer(Modifier.height(8.dp))
+            Text("RECENT SEARCHES", color = statusColor(StatusKind.Muted), style = labelTextStyle())
+            Spacer(Modifier.height(4.dp))
             Row(
                 Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 recent.forEach { q ->
                     key(q) {
-                        Row(
-                            Modifier
-                                .clip(RoundedCornerShape(percent = 50))
-                                .background(Azphalt.Ink.copy(alpha = .10f))
-                                .clickable { onSelect(q) }
-                                .padding(horizontal = 14.dp, vertical = 8.dp)
-                        ) {
-                            Text(q, color = Azphalt.currentGround.onPage.copy(alpha = .7f), fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                        }
+                        AzphaltChip(
+                            q, onClick = { onSelect(q) },
+                            contentDescription = "Search again for $q"
+                        )
                     }
                 }
             }
@@ -1489,26 +1570,34 @@ private fun ColumnScope.RecentSearches(recent: List<String>, onSelect: (String) 
 @Composable
 private fun ColumnScope.SearchResults(results: List<VfsSearchResult>, onOpen: (VfsSearchResult) -> Unit) {
     if (results.isEmpty()) {
-        Text(
-            "NOTHING", color = Azphalt.currentGround.onPage.copy(alpha = .4f),
-            fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.1.em,
-            modifier = Modifier.padding(start = 20.dp, top = 20.dp)
-        )
+        StatusLabel("NO MATCHES", Modifier.padding(start = 20.dp, top = 20.dp))
         return
     }
+    val muted = statusColor(StatusKind.Muted)
     LazyColumn(
         Modifier.fillMaxWidth().weight(1f).padding(horizontal = 20.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
         items(results, key = { it.entry.path }) { r ->
             Column(
-                Modifier.fillMaxWidth().clickable { onOpen(r) }.padding(vertical = 10.dp)
+                Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 48.dp)
+                    .clickable(
+                        onClickLabel = if (r.entry.isDirectory) "Open folder ${r.entry.name}" else "Open ${r.entry.name}",
+                        role = Role.Button
+                    ) { onOpen(r) }
+                    .padding(vertical = 10.dp)
             ) {
                 Text(
                     r.entry.name + if (r.entry.isDirectory) "/" else "",
-                    color = Azphalt.currentGround.onPage, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold
+                    color = Azphalt.currentGround.onPage, style = nameTextStyle(),
+                    maxLines = 1, overflow = TextOverflow.Ellipsis
                 )
-                Text(r.parentPath, color = Azphalt.currentGround.onPage.copy(alpha = .5f), fontSize = 10.sp)
+                Text(
+                    r.parentPath, color = muted, style = captionTextStyle(),
+                    maxLines = 1, overflow = TextOverflow.Ellipsis
+                )
             }
             Box(Modifier.fillMaxWidth().height(1.dp).background(Azphalt.Ink.copy(alpha = .12f)))
         }
@@ -1523,68 +1612,57 @@ internal fun invalidNameMessage(name: String): String? = when {
     else -> null
 }
 
+/**
+ * The NEW FOLDER / NEW FILE / RENAME prompt: a labelled card with the field on top and two real
+ * 48dp buttons under it. M-4: the field takes focus the moment the prompt opens (the keyboard
+ * comes up with it), the keyboard's Done key submits, and the prompt sits inside the screen's IME
+ * padding so it is never behind the keyboard. The cancel button says CANCEL (it used to be a
+ * literal "X", one of five unrelated meanings of that glyph).
+ */
 @Composable
-private fun NamePrompt(label: String, name: String, onNameChange: (String) -> Unit, onConfirm: () -> Unit, onCancel: () -> Unit) {
-    Row(
+private fun NamePrompt(
+    label: String,
+    fieldDescription: String,
+    name: String,
+    onNameChange: (String) -> Unit,
+    onConfirm: () -> Unit,
+    onCancel: () -> Unit
+) {
+    val focus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { requestFocusSafely(focus) }
+    val onPage = Azphalt.currentGround.onPage
+    Column(
         Modifier
             .fillMaxWidth()
             .padding(horizontal = 20.dp, vertical = 8.dp)
-            .heightIn(min = 32.dp)
-            .clip(RoundedCornerShape(percent = 50))
-            .background(Azphalt.Ink)
-            .padding(start = 14.dp, end = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
+            .clip(AzphaltSurface.note)
+            .background(Azphalt.Ink.copy(alpha = .10f))
+            .padding(start = 16.dp, end = 8.dp, top = 10.dp, bottom = 2.dp)
     ) {
-        Text(label, color = Azphalt.Yellow.copy(alpha = .7f), fontSize = 8.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.1.em)
+        Text(label, color = statusColor(StatusKind.Muted), style = labelTextStyle())
         BasicTextField(
             value = name,
             onValueChange = onNameChange,
-            modifier = Modifier.weight(1f),
-            textStyle = androidx.compose.ui.text.TextStyle(color = Azphalt.Yellow, fontSize = 12.sp),
-            cursorBrush = SolidColor(Azphalt.Yellow),
-            singleLine = true
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 48.dp)
+                .wrapContentHeight(Alignment.CenterVertically)
+                .focusRequester(focus)
+                .semantics { contentDescription = fieldDescription },
+            textStyle = LocalAzphaltType.current.body.copy(color = onPage),
+            cursorBrush = SolidColor(onPage),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { onConfirm() })
         )
-        Text("OK", color = Azphalt.Yellow, fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.clickable(onClick = onConfirm).padding(horizontal = 8.dp, vertical = 6.dp))
-        Text("X", color = Azphalt.Yellow.copy(alpha = .6f), fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.clickable(onClick = onCancel).padding(horizontal = 8.dp, vertical = 6.dp))
-    }
-}
-
-@Composable
-private fun FilterChip(label: String, active: Boolean, onClick: () -> Unit) {
-    Row(
-        Modifier
-            .clip(RoundedCornerShape(percent = 50))
-            .background(if (active) Azphalt.Ink else Azphalt.Ink.copy(alpha = .10f))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 8.dp)
-    ) {
-        Text(
-            label, color = if (active) Azphalt.Yellow else Azphalt.currentGround.onPage.copy(alpha = .55f),
-            fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.1.em
-        )
-    }
-}
-
-@Composable
-private fun Chip(
-    label: String,
-    modifier: Modifier = Modifier,
-    background: Color = Azphalt.Ink,
-    foreground: Color = Azphalt.Yellow,
-    filled: Boolean = true,
-    clickable: Boolean = true,
-    onClick: () -> Unit = {}
-) {
-    val bg = if (filled) background else Azphalt.Ink.copy(alpha = .14f)
-    val fg = if (filled) foreground else Azphalt.currentGround.onPage.copy(alpha = .55f)
-    Box(
-        modifier
-            .clip(RoundedCornerShape(percent = 50))
-            .background(bg)
-            .then(if (clickable) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(horizontal = 14.dp, vertical = 8.dp)
-    ) {
-        Text(label, color = fg, fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em)
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            AzphaltChip("CANCEL", onClick = onCancel, contentDescription = "Cancel")
+            Spacer(Modifier.width(6.dp))
+            AzphaltChip("OK", onClick = onConfirm, tint = Azphalt.hues[6], contentDescription = "Confirm: ${label.lowercase()}")
+        }
     }
 }

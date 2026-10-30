@@ -3,13 +3,26 @@
   <ManuallySuppressedIssues/>
   <CurrentIssues>
     <ID>ComplexCondition:AsciiArt.kt$r == 0 || c == 0 || r == rows + 1 || c == cols + 1</ID>
+    <ID>ComplexCondition:ContactManager.kt$ContactManager$displayNameCol == -1 || timesContactedCol == -1 || lastTimeContactedCol == -1 || numberCol == -1</ID>
+    <ID>ComplexCondition:ContactManager.kt$ContactManager.&lt;no name provided&gt;$contactIdIndex == -1 || numberIndex == -1 || superPrimaryIndex == -1 || displayNameIndex == -1</ID>
+    <ID>ComplexCondition:ShellSession.kt$ShellSession$!promptOfferedForThisStall &amp;&amp; marker &lt; 0 &amp;&amp; tailIsUnterminated &amp;&amp; idleMs &gt; PROMPT_IDLE_MS</ID>
     <ID>CyclomaticComplexMethod:AsciiArt.kt$private fun buildContourPath(density: Array&lt;FloatArray&gt;, cellPx: Float): Path</ID>
+    <ID>CyclomaticComplexMethod:AzpInstaller.kt$AzpInstaller$suspend fun install( context: Context, id: String, version: String, bytes: ByteArray, trustedKeys: List&lt;String&gt; = emptyList(), ): AzpInstallResult?</ID>
+    <ID>CyclomaticComplexMethod:AzpLibrary.kt$AzpLibrary$fun installedSkillTexts(context: Context): List&lt;Pair&lt;String, String&gt;&gt;</ID>
+    <ID>CyclomaticComplexMethod:Builtins.kt$Builtins$private fun contacts(context: Context, args: List&lt;String&gt;): String</ID>
+    <ID>CyclomaticComplexMethod:Builtins.kt$Builtins$private fun vfs(context: Context, args: List&lt;String&gt;): String</ID>
+    <ID>CyclomaticComplexMethod:Builtins.kt$Builtins$private fun volume(context: Context, args: List&lt;String&gt;): String</ID>
+    <ID>CyclomaticComplexMethod:ContactManager.kt$ContactManager$fun about(phone: String): Array&lt;String?&gt;?</ID>
     <ID>CyclomaticComplexMethod:FilesScreen.kt$@Composable fun FilesScreen( fullscreen: Boolean, nowMillis: Long, listDir: suspend (path: String) -&gt; List&lt;VfsEntry&gt;, search: suspend (query: String) -&gt; List&lt;VfsSearchResult&gt;, storageStats: suspend () -&gt; StorageStats, // F3: a tapped file reveals its own contents in place, inside its own row - this is the read, // separate from onOpenFile below (which still opens the real editor, for actually changing it). previewFile: suspend (path: String) -&gt; FilePreview, onOpenFile: (path: String) -&gt; Unit, // VFS-13: every one of these used to discard its own success/failure - create-with-an- // existing-name reported fake success (the underlying call is a no-op that still returns // true), and every other failure (permission denied, sandbox containment) simply vanished. // Returning Boolean lets this screen tell the user when a tap didn't do what it looked like. onCreateFolder: suspend (parentPath: String, name: String) -&gt; Boolean, onCreateFile: suspend (parentPath: String, name: String) -&gt; Boolean, onDelete: suspend (path: String) -&gt; Boolean, // TRASH-1: onDelete above no longer means "gone" - it moves into the trash, and this is how // the Storage screen's TRASH tab reads and reverses that. Bundled (see TrashActions) rather // than four more parameters on a signature already past detekt's own threshold before them. trash: TrashActions, // DEV-STORAGE-1: opt-in - the sandbox above is the whole app on its own, this is the // "point it at my real files instead" escape hatch for whoever wants it. deviceStorage: DeviceStorageState, onRename: suspend (path: String, newName: String) -&gt; Boolean, onMove: suspend (path: String, targetDirPath: String) -&gt; Boolean, onCopy: suspend (path: String, targetDirPath: String) -&gt; Boolean, onShare: (path: String) -&gt; Unit, // VFS-4: a batch share used to just forEach the single-file callback, firing N independent // ACTION_SEND choosers in a row instead of one ACTION_SEND_MULTIPLE - only the last one was // ever actually reachable. onShareMultiple: (paths: Set&lt;String&gt;) -&gt; Unit, onBack: () -&gt; Unit, // UI-1: reports whether this screen has an internal level (Storage/Search/PickMove/PickCopy, // select mode, a rename/create prompt, a drilled-in folder chain) that system back/the edge // gesture should step up through one level at a time, instead of always closing this whole // screen the way [onBack] itself does. See BackStepState's own doc for the full mechanism. backStep: BackStepState, modifier: Modifier = Modifier )</ID>
+    <ID>CyclomaticComplexMethod:ShellSession.kt$ShellSession$actual fun stream( command: String, onLine: (line: String) -&gt; Unit, onNeedInput: (prompt: String) -&gt; String?, onStderrLine: (line: String) -&gt; Unit, onStyledLine: (lines: List&lt;List&lt;StyledSpan&gt;&gt;) -&gt; Unit ): Int</ID>
     <ID>CyclomaticComplexMethod:StorageScreen.kt$@Composable fun StorageScreen( stats: StorageStats?, onDelete: (path: String) -&gt; Unit, // TRASH-1: onDelete above moves something in; this is the trash's own lifecycle - bundled // (see TrashPanelState) rather than four more parameters here. trash: TrashPanelState = TrashPanelState(), onBack: () -&gt; Unit, fullscreen: Boolean, onFreeUpSpace: () -&gt; Unit = {}, // A failed delete used to have nowhere to show up while this screen was the one on screen - // FilesScreen's own opError banner lives in a Column this screen's caller returns out of // reaching, so the failure only surfaced later, disconnected from the tap, if the user // happened to navigate back to Browse first. This screen now owns its own copy of that banner // instead of relying on a parent Column it may never actually be composed inside of. errorMessage: String? = null, onErrorDismiss: () -&gt; Unit = {}, modifier: Modifier = Modifier )</ID>
     <ID>CyclomaticComplexMethod:TerminalScreen.kt$@Composable fun TerminalScreen( tree: List&lt;MenuNode&gt;, // W1: real PATH binaries plus this app's own builtins, for command-name completion while the // first word of the line is still being typed - see CommandTree.knownCommandNames's own doc // comment for what's in it. Empty is a valid, harmless state (no bootstrap yet): completion // just has nothing to offer, same as it would for a fresh install with no history either. knownCommands: List&lt;String&gt; = emptyList(), sessions: List&lt;SessionUiState&gt;, activeSessionId: String, onSessionPick: (String) -&gt; Unit, onNewSession: () -&gt; Unit, onCloseSession: (String) -&gt; Unit, fullscreen: Boolean, onOpenSettings: () -&gt; Unit, onOpenGuide: () -&gt; Unit, onOpenFiles: () -&gt; Unit, onFilesButtonPositioned: (Rect) -&gt; Unit = {}, onWizard: (wizardId: String) -&gt; Unit = {}, onCrumbPositioned: (id: String, rect: Rect) -&gt; Unit = { _, _ -&gt; }, onCopy: (String) -&gt; Unit = {}, onShare: (String) -&gt; Unit = {}, // S2: stops whatever command is currently running in the given session, without ending the // session itself - see ShellSession.interrupt's own doc comment for what "stop" means on each // tier. A no-op if nothing is running there. onInterrupt: (sessionId: String) -&gt; Unit = {}, onRun: suspend ( sessionId: String, line: String, onOutput: (String) -&gt; Unit, onNeedInput: suspend (prompt: String) -&gt; String, onExit: (Int?) -&gt; Unit, onStderr: (String) -&gt; Unit, onStyledOutput: (List&lt;List&lt;StyledSpan&gt;&gt;) -&gt; Unit ) -&gt; Unit )</ID>
+    <ID>EmptyFunctionBlock:ShellSession.kt$DummyTerminalOutput${}</ID>
     <ID>FunctionNaming:AiChatScreen.kt$@Composable fun AiChatScreen( fullscreen: Boolean, messages: List&lt;AiMessage&gt;, apiKeyConfigured: Boolean, busy: Boolean, onAsk: (String) -&gt; Unit, onUseCommand: (String) -&gt; Unit, onOpenSettings: () -&gt; Unit, onBack: () -&gt; Unit )</ID>
     <ID>FunctionNaming:AiChatScreen.kt$@Composable private fun AiBubble(message: AiMessage, onUseCommand: (String) -&gt; Unit)</ID>
     <ID>FunctionNaming:AiChatScreen.kt$@Composable private fun Eyebrow(text: String)</ID>
+    <ID>FunctionNaming:AiSettingsScreen.kt$@Composable fun AiSettingsScreen( fullscreen: Boolean, apiKey: String?, onSave: (String?) -&gt; Unit, onBack: () -&gt; Unit )</ID>
+    <ID>FunctionNaming:AiSettingsScreen.kt$@Composable private fun Eyebrow(text: String)</ID>
     <ID>FunctionNaming:AsciiArt.kt$@Composable fun AsciiArtCanvas(text: String, ink: Color, modifier: Modifier = Modifier, maxCell: Dp = 7.dp)</ID>
     <ID>FunctionNaming:AzpStoreScreen.kt$@Composable fun AzpStoreScreen( fullscreen: Boolean, results: List&lt;AzpListing&gt;, busy: Boolean, installingId: String?, onSearch: (query: String, kind: String) -&gt; Unit, onInstall: (AzpListing) -&gt; Unit, onBack: () -&gt; Unit, )</ID>
     <ID>FunctionNaming:AzpStoreScreen.kt$@Composable private fun AzpRow(listing: AzpListing, installing: Boolean, onInstall: (AzpListing) -&gt; Unit)</ID>
@@ -18,6 +31,8 @@
     <ID>FunctionNaming:ConfirmDialog.kt$@Composable fun ConfirmDialog( title: String, message: String, confirmLabel: String, onConfirm: () -&gt; Unit, onDismiss: () -&gt; Unit, cancelLabel: String = "CANCEL" )</ID>
     <ID>FunctionNaming:EditorScreen.kt$@Composable fun EditorScreen( fileName: String, content: String?, error: String?, dirty: Boolean, onContentChange: (String) -&gt; Unit, onSave: () -&gt; Unit, onBack: () -&gt; Unit, modifier: Modifier = Modifier )</ID>
     <ID>FunctionNaming:EditorScreen.kt$@Composable private fun Pill(label: String, background: Color, foreground: Color, onClick: () -&gt; Unit)</ID>
+    <ID>FunctionNaming:EnvironmentScreen.kt$@Composable fun EnvironmentScreen( installed: Boolean, env: Map&lt;String, String&gt;, onBack: () -&gt; Unit, fullscreen: Boolean, modifier: Modifier = Modifier )</ID>
+    <ID>FunctionNaming:EnvironmentScreen.kt$@Composable private fun EnvRow(label: String?, value: String)</ID>
     <ID>FunctionNaming:FilesScreen.kt$@Composable fun FilesScreen( fullscreen: Boolean, nowMillis: Long, listDir: suspend (path: String) -&gt; List&lt;VfsEntry&gt;, search: suspend (query: String) -&gt; List&lt;VfsSearchResult&gt;, storageStats: suspend () -&gt; StorageStats, // F3: a tapped file reveals its own contents in place, inside its own row - this is the read, // separate from onOpenFile below (which still opens the real editor, for actually changing it). previewFile: suspend (path: String) -&gt; FilePreview, onOpenFile: (path: String) -&gt; Unit, // VFS-13: every one of these used to discard its own success/failure - create-with-an- // existing-name reported fake success (the underlying call is a no-op that still returns // true), and every other failure (permission denied, sandbox containment) simply vanished. // Returning Boolean lets this screen tell the user when a tap didn't do what it looked like. onCreateFolder: suspend (parentPath: String, name: String) -&gt; Boolean, onCreateFile: suspend (parentPath: String, name: String) -&gt; Boolean, onDelete: suspend (path: String) -&gt; Boolean, // TRASH-1: onDelete above no longer means "gone" - it moves into the trash, and this is how // the Storage screen's TRASH tab reads and reverses that. Bundled (see TrashActions) rather // than four more parameters on a signature already past detekt's own threshold before them. trash: TrashActions, // DEV-STORAGE-1: opt-in - the sandbox above is the whole app on its own, this is the // "point it at my real files instead" escape hatch for whoever wants it. deviceStorage: DeviceStorageState, onRename: suspend (path: String, newName: String) -&gt; Boolean, onMove: suspend (path: String, targetDirPath: String) -&gt; Boolean, onCopy: suspend (path: String, targetDirPath: String) -&gt; Boolean, onShare: (path: String) -&gt; Unit, // VFS-4: a batch share used to just forEach the single-file callback, firing N independent // ACTION_SEND choosers in a row instead of one ACTION_SEND_MULTIPLE - only the last one was // ever actually reachable. onShareMultiple: (paths: Set&lt;String&gt;) -&gt; Unit, onBack: () -&gt; Unit, // UI-1: reports whether this screen has an internal level (Storage/Search/PickMove/PickCopy, // select mode, a rename/create prompt, a drilled-in folder chain) that system back/the edge // gesture should step up through one level at a time, instead of always closing this whole // screen the way [onBack] itself does. See BackStepState's own doc for the full mechanism. backStep: BackStepState, modifier: Modifier = Modifier )</ID>
     <ID>FunctionNaming:FilesScreen.kt$@Composable private fun Chip( label: String, modifier: Modifier = Modifier, background: Color = Azphalt.Ink, foreground: Color = Azphalt.Yellow, filled: Boolean = true, clickable: Boolean = true, onClick: () -&gt; Unit = {} )</ID>
     <ID>FunctionNaming:FilesScreen.kt$@Composable private fun ColumnScope.RecentSearches(recent: List&lt;String&gt;, onSelect: (String) -&gt; Unit)</ID>
@@ -41,6 +56,10 @@
     <ID>FunctionNaming:FolderPicker.kt$@Composable private fun MorphTile( label: String, hue: Color, rect: TileRect, isOpen: Boolean, onClick: () -&gt; Unit, onOpenDescend: () -&gt; Unit )</ID>
     <ID>FunctionNaming:FolderPicker.kt$@Composable private fun PickerChip( label: String, modifier: Modifier = Modifier, background: Color = Azphalt.Ink, foreground: Color = Azphalt.Yellow, filled: Boolean = true, clickable: Boolean = true, fillWidth: Boolean = false, onClick: () -&gt; Unit = {} )</ID>
     <ID>FunctionNaming:Font0.commonMain.kt$@InternalResourceApi internal fun _collectCommonMainFont0Resources(map: MutableMap&lt;String, FontResource&gt;)</ID>
+    <ID>FunctionNaming:FullScreenTerminalScreen.kt$@Composable fun FullScreenTerminalScreen(holder: FullScreenPtySession, onExit: () -&gt; Unit)</ID>
+    <ID>FunctionNaming:FullScreenTerminalScreen.kt$@Composable private fun TerminalExtraKeysRow(holder: FullScreenPtySession)</ID>
+    <ID>FunctionNaming:FullScreenTerminalScreen.kt$@Composable private fun TerminalTopBar( holder: FullScreenPtySession, ctrlArmed: Boolean, onCtrlToggle: () -&gt; Unit, onExit: () -&gt; Unit )</ID>
+    <ID>FunctionNaming:FullScreenTerminalScreen.kt$@Suppress("LongParameterList") // A live pty grid's own layout state - every param is genuinely // distinct state the canvas/input pair below both need, not incidental plumbing. @Composable private fun TerminalGrid( holder: FullScreenPtySession, measurer: TextMeasurer, focusRequester: FocusRequester, ctrlArmed: Boolean, onCtrlConsumed: () -&gt; Unit, cellWidthPx: Int, cellHeightPx: Int, columns: Int, rows: Int, onGridSized: (Int, Int) -&gt; Unit, modifier: Modifier = Modifier )</ID>
     <ID>FunctionNaming:GuideReaderScreen.kt$@Composable fun GuideReaderScreen( fullscreen: Boolean, onBack: () -&gt; Unit, // UI-2: this screen is always "somewhere with a level to step up from" while it's showing - // either up to its own index (from an entry) or out entirely via [onBack] (from the index) - // so it owns backStep unconditionally rather than only when it has state of its own to unwind. backStep: BackStepState, modifier: Modifier = Modifier )</ID>
     <ID>FunctionNaming:GuideReaderScreen.kt$@Composable private fun Chip( label: String, modifier: Modifier = Modifier, background: Color = Azphalt.Ink, foreground: Color = Azphalt.Yellow, filled: Boolean = true, clickable: Boolean = true, fillWidth: Boolean = false, onClick: () -&gt; Unit = {} )</ID>
     <ID>FunctionNaming:GuideReaderScreen.kt$@Composable private fun ColumnScope.GuideEntryReader( entry: GuideEntry, number: Int, total: Int, wipeKey: Int, onBackToIndex: () -&gt; Unit, onPrev: () -&gt; Unit, onNext: () -&gt; Unit, onReplay: () -&gt; Unit )</ID>
@@ -48,10 +67,16 @@
     <ID>FunctionNaming:GuideReaderScreen.kt$@Composable private fun FactRow(label: String, value: String)</ID>
     <ID>FunctionNaming:GuideReaderScreen.kt$@Composable private fun GuideWash(word: String, wipeKey: Int)</ID>
     <ID>FunctionNaming:GuideReaderScreen.kt$@Composable private fun WipeItem(seq: Int, wipeKey: Int, wide: Boolean, modifier: Modifier = Modifier, content: @Composable () -&gt; Unit)</ID>
+    <ID>FunctionNaming:HistoryScreen.kt$@Composable private fun HistoryRow(entry: CommandHistoryEntry, nowMillis: Long, onClick: () -&gt; Unit)</ID>
+    <ID>FunctionNaming:HistoryScreen.kt$@Composable private fun HistorySearchBox(query: String, onQueryChange: (String) -&gt; Unit, resultCount: Int)</ID>
+    <ID>FunctionNaming:HistoryScreen.kt$@Suppress("LongParameterList") // Every param is a genuinely distinct value the caller must // supply - the search box, the results list, and the back pill below all need their own slice // of it, so bundling would just move the same count into a wrapper class. @Composable fun HistoryScreen( entries: List&lt;CommandHistoryEntry&gt;, query: String, onQueryChange: (String) -&gt; Unit, onSelect: (String) -&gt; Unit, onBack: () -&gt; Unit, fullscreen: Boolean, nowMillis: Long, modifier: Modifier = Modifier )</ID>
     <ID>FunctionNaming:JobProgressBar.kt$@Composable fun JobProgressBar(state: JobProgressBarState, modifier: Modifier = Modifier)</ID>
     <ID>FunctionNaming:MarkdownPreview.kt$@Composable internal fun MarkdownPreview(source: String, onPage: Color, codeInk: Color)</ID>
     <ID>FunctionNaming:MarkdownPreview.kt$@Composable private fun Bullet(text: String, onPage: Color)</ID>
     <ID>FunctionNaming:MarkdownPreview.kt$@Composable private fun Header(text: String, sizeSp: Int, onPage: Color)</ID>
+    <ID>FunctionNaming:McpServerScreen.kt$@Composable fun McpServerScreen( fullscreen: Boolean, running: Boolean, port: Int, token: String?, shellExecEnabled: Boolean, onStart: () -&gt; Unit, onStop: () -&gt; Unit, onRequestShellExec: () -&gt; Unit, onDisableShellExec: () -&gt; Unit, onBack: () -&gt; Unit )</ID>
+    <ID>FunctionNaming:McpServerScreen.kt$@Composable private fun McpSettingRow(title: String, description: String, control: @Composable () -&gt; Unit)</ID>
+    <ID>FunctionNaming:McpServerScreen.kt$@Composable private fun McpToggle( leftLabel: String, rightLabel: String, rightSelected: Boolean, onSelectRight: (Boolean) -&gt; Unit )</ID>
     <ID>FunctionNaming:PathPickerScreen.kt$@Composable fun PathPickerScreen( startPath: String, listDir: suspend (path: String) -&gt; List&lt;VfsEntry&gt;, onSelectFile: (path: String) -&gt; Unit, onSelectFolder: (path: String) -&gt; Unit, onCancel: () -&gt; Unit, // UI-3: reports whether a folder tap has drilled this picker deeper than [startPath], so // system back/the edge gesture steps up one directory at a time instead of always cancelling // the whole picker the way [onCancel] itself does. See BackStepState's own doc. backStep: BackStepState, modifier: Modifier = Modifier )</ID>
     <ID>FunctionNaming:PathPickerScreen.kt$@Composable private fun PickerPill( label: String, modifier: Modifier = Modifier, background: androidx.compose.ui.graphics.Color = Azphalt.Ink, foreground: androidx.compose.ui.graphics.Color = Azphalt.Yellow, fillWidth: Boolean = false, onClick: () -&gt; Unit )</ID>
     <ID>FunctionNaming:PillMenu.kt$@Composable fun PillMenu( roots: List&lt;MenuNode&gt;, modifier: Modifier = Modifier, // isTerminal is true only when this call reports a pick that just fully resolved a // parameter (nothing left to drill into) - the signal a caller needs to auto-run instead of // waiting for a separate confirmation. onRun: (tokens: List&lt;String&gt;, isTerminal: Boolean) -&gt; Unit = { _, _ -&gt; }, // Called instead of onRun when the picked child has a wizardId - the caller owns whatever // multi-step flow that id names. onWizard: (wizardId: String) -&gt; Unit = {}, // Reports a trail crumb's on-screen rect (root coordinates) every time it's laid out - only // consumed by a settleBeforeWizard pick that needs to anchor an animation to it. onCrumbPositioned: (id: String, rect: Rect) -&gt; Unit = { _, _ -&gt; } )</ID>
@@ -65,6 +90,11 @@
     <ID>FunctionNaming:PillMenu.kt$@Composable private fun TrailCrumb( node: MenuNode, hueOwner: String, zIndex: Float, onClick: () -&gt; Unit, onPositioned: (Rect) -&gt; Unit = {} )</ID>
     <ID>FunctionNaming:PillMenu.kt$@Composable private fun TrailRow( trail: List&lt;MenuNode&gt;, hueOwner: String, onTapCrumb: (Int) -&gt; Unit, onCrumbPositioned: (id: String, rect: Rect) -&gt; Unit = { _, _ -&gt; } )</ID>
     <ID>FunctionNaming:PillPerimeterReveal.kt$@Composable fun PillPerimeterReveal(state: PerimeterRevealState, hue: Color, content: @Composable () -&gt; Unit)</ID>
+    <ID>FunctionNaming:SettingsScreen.kt$@Composable fun SettingsScreen( fullscreen: Boolean, onFullscreenChange: (Boolean) -&gt; Unit, fontScalePercent: Int, onFontScalePercentChange: (Int) -&gt; Unit, usePty: Boolean, onUsePtyChange: (Boolean) -&gt; Unit, onOpenMcpServer: () -&gt; Unit, onOpenAiSettings: () -&gt; Unit, onOpenEnvironment: () -&gt; Unit, onOpenHistory: () -&gt; Unit, onBack: () -&gt; Unit )</ID>
+    <ID>FunctionNaming:SettingsScreen.kt$@Composable private fun SegmentedToggle( leftLabel: String, rightLabel: String, rightSelected: Boolean, onSelectRight: (Boolean) -&gt; Unit )</ID>
+    <ID>FunctionNaming:SettingsScreen.kt$@Composable private fun SettingRow(title: String, description: String, control: @Composable () -&gt; Unit)</ID>
+    <ID>FunctionNaming:SettingsScreen.kt$@Composable private fun Stepper( value: Int, min: Int, max: Int, step: Int, label: (Int) -&gt; String, onChange: (Int) -&gt; Unit )</ID>
+    <ID>FunctionNaming:SettingsScreen.kt$@Composable private fun StepperButton(symbol: String, enabled: Boolean, onClick: () -&gt; Unit)</ID>
     <ID>FunctionNaming:StorageScreen.kt$@Composable fun StorageScreen( stats: StorageStats?, onDelete: (path: String) -&gt; Unit, // TRASH-1: onDelete above moves something in; this is the trash's own lifecycle - bundled // (see TrashPanelState) rather than four more parameters here. trash: TrashPanelState = TrashPanelState(), onBack: () -&gt; Unit, fullscreen: Boolean, onFreeUpSpace: () -&gt; Unit = {}, // A failed delete used to have nowhere to show up while this screen was the one on screen - // FilesScreen's own opError banner lives in a Column this screen's caller returns out of // reaching, so the failure only surfaced later, disconnected from the tap, if the user // happened to navigate back to Browse first. This screen now owns its own copy of that banner // instead of relying on a parent Column it may never actually be composed inside of. errorMessage: String? = null, onErrorDismiss: () -&gt; Unit = {}, modifier: Modifier = Modifier )</ID>
     <ID>FunctionNaming:StorageScreen.kt$@Composable private fun Chip( label: String, modifier: Modifier = Modifier, background: Color = Azphalt.Ink, foreground: Color = Azphalt.Yellow, filled: Boolean = true, clickable: Boolean = true, onClick: () -&gt; Unit = {} )</ID>
     <ID>FunctionNaming:TerminalScreen.kt$@Composable fun TerminalScreen( tree: List&lt;MenuNode&gt;, // W1: real PATH binaries plus this app's own builtins, for command-name completion while the // first word of the line is still being typed - see CommandTree.knownCommandNames's own doc // comment for what's in it. Empty is a valid, harmless state (no bootstrap yet): completion // just has nothing to offer, same as it would for a fresh install with no history either. knownCommands: List&lt;String&gt; = emptyList(), sessions: List&lt;SessionUiState&gt;, activeSessionId: String, onSessionPick: (String) -&gt; Unit, onNewSession: () -&gt; Unit, onCloseSession: (String) -&gt; Unit, fullscreen: Boolean, onOpenSettings: () -&gt; Unit, onOpenGuide: () -&gt; Unit, onOpenFiles: () -&gt; Unit, onFilesButtonPositioned: (Rect) -&gt; Unit = {}, onWizard: (wizardId: String) -&gt; Unit = {}, onCrumbPositioned: (id: String, rect: Rect) -&gt; Unit = { _, _ -&gt; }, onCopy: (String) -&gt; Unit = {}, onShare: (String) -&gt; Unit = {}, // S2: stops whatever command is currently running in the given session, without ending the // session itself - see ShellSession.interrupt's own doc comment for what "stop" means on each // tier. A no-op if nothing is running there. onInterrupt: (sessionId: String) -&gt; Unit = {}, onRun: suspend ( sessionId: String, line: String, onOutput: (String) -&gt; Unit, onNeedInput: suspend (prompt: String) -&gt; String, onExit: (Int?) -&gt; Unit, onStderr: (String) -&gt; Unit, onStyledOutput: (List&lt;List&lt;StyledSpan&gt;&gt;) -&gt; Unit ) -&gt; Unit )</ID>
@@ -80,25 +110,39 @@
     <ID>FunctionNaming:TerminalScreen.kt$@Composable private fun SessionTabs( sessions: List&lt;SessionUiState&gt;, activeId: String, onOpenSettings: () -&gt; Unit, onOpenGuide: () -&gt; Unit, onOpenFiles: () -&gt; Unit, onFilesButtonPositioned: (Rect) -&gt; Unit, onPick: (String) -&gt; Unit, onNew: () -&gt; Unit, onClose: (String) -&gt; Unit )</ID>
     <ID>FunctionNaming:TerminalScreen.kt$@Composable private fun StatusDot(entry: TerminalHistoryEntry)</ID>
     <ID>FunctionNaming:TerminalScreen.kt$@Composable private fun StderrBlock(text: String)</ID>
+    <ID>FunctionNaming:Theme.kt$@Composable fun HG2GuiTheme(scale: Float = 1f, content: @Composable () -&gt; Unit)</ID>
     <ID>FunctionNaming:TypesetOutput.kt$@Composable fun KeyValueTable(text: String, ink: Color, modifier: Modifier = Modifier)</ID>
     <ID>FunctionNaming:TypesetOutput.kt$@Composable fun WideTableRecords(text: String, ink: Color, modifier: Modifier = Modifier)</ID>
+    <ID>InjectDispatcher:AiClient.kt$AiClient$IO</ID>
+    <ID>InjectDispatcher:AzpClient.kt$AzpClient$IO</ID>
+    <ID>InjectDispatcher:AzpInstaller.kt$AzpInstaller$IO</ID>
+    <ID>InjectDispatcher:TerminalEngine.kt$TerminalEngine$IO</ID>
     <ID>LongMethod:AiChatScreen.kt$@Composable fun AiChatScreen( fullscreen: Boolean, messages: List&lt;AiMessage&gt;, apiKeyConfigured: Boolean, busy: Boolean, onAsk: (String) -&gt; Unit, onUseCommand: (String) -&gt; Unit, onOpenSettings: () -&gt; Unit, onBack: () -&gt; Unit )</ID>
     <ID>LongMethod:AiChatScreen.kt$@Composable private fun AiBubble(message: AiMessage, onUseCommand: (String) -&gt; Unit)</ID>
+    <ID>LongMethod:AiSettingsScreen.kt$@Composable fun AiSettingsScreen( fullscreen: Boolean, apiKey: String?, onSave: (String?) -&gt; Unit, onBack: () -&gt; Unit )</ID>
+    <ID>LongMethod:AzpInstaller.kt$AzpInstaller$suspend fun install( context: Context, id: String, version: String, bytes: ByteArray, trustedKeys: List&lt;String&gt; = emptyList(), ): AzpInstallResult?</ID>
     <ID>LongMethod:AzpStoreScreen.kt$@Composable fun AzpStoreScreen( fullscreen: Boolean, results: List&lt;AzpListing&gt;, busy: Boolean, installingId: String?, onSearch: (query: String, kind: String) -&gt; Unit, onInstall: (AzpListing) -&gt; Unit, onBack: () -&gt; Unit, )</ID>
     <ID>LongMethod:AzpStoreScreen.kt$@Composable private fun AzpRow(listing: AzpListing, installing: Boolean, onInstall: (AzpListing) -&gt; Unit)</ID>
     <ID>LongMethod:CommandGuideScreen.kt$@Composable fun CommandGuideScreen( tree: List&lt;MenuNode&gt;, fullscreen: Boolean, onCommandSelected: (List&lt;String&gt;) -&gt; Unit, onBack: () -&gt; Unit, // UI-2: reports whether there's an internal level (right now, only "the reader is open") for // system back/the edge gesture to step up through before onBack closes this whole screen. When // readingGuide is true, GuideReaderScreen (which owns its own index/entry drill-down) takes // over reporting to the very same instance - see its own doc comment for how the two levels // combine into one step-at-a-time back stack without either screen knowing about the other's // state directly. backStep: BackStepState, modifier: Modifier = Modifier )</ID>
+    <ID>LongMethod:ContactManager.kt$ContactManager$fun about(phone: String): Array&lt;String?&gt;?</ID>
+    <ID>LongMethod:ContactManager.kt$ContactManager.&lt;no name provided&gt;$override fun run()</ID>
+    <ID>LongMethod:EnvironmentScreen.kt$@Composable fun EnvironmentScreen( installed: Boolean, env: Map&lt;String, String&gt;, onBack: () -&gt; Unit, fullscreen: Boolean, modifier: Modifier = Modifier )</ID>
     <ID>LongMethod:FilesScreen.kt$@Composable fun FilesScreen( fullscreen: Boolean, nowMillis: Long, listDir: suspend (path: String) -&gt; List&lt;VfsEntry&gt;, search: suspend (query: String) -&gt; List&lt;VfsSearchResult&gt;, storageStats: suspend () -&gt; StorageStats, // F3: a tapped file reveals its own contents in place, inside its own row - this is the read, // separate from onOpenFile below (which still opens the real editor, for actually changing it). previewFile: suspend (path: String) -&gt; FilePreview, onOpenFile: (path: String) -&gt; Unit, // VFS-13: every one of these used to discard its own success/failure - create-with-an- // existing-name reported fake success (the underlying call is a no-op that still returns // true), and every other failure (permission denied, sandbox containment) simply vanished. // Returning Boolean lets this screen tell the user when a tap didn't do what it looked like. onCreateFolder: suspend (parentPath: String, name: String) -&gt; Boolean, onCreateFile: suspend (parentPath: String, name: String) -&gt; Boolean, onDelete: suspend (path: String) -&gt; Boolean, // TRASH-1: onDelete above no longer means "gone" - it moves into the trash, and this is how // the Storage screen's TRASH tab reads and reverses that. Bundled (see TrashActions) rather // than four more parameters on a signature already past detekt's own threshold before them. trash: TrashActions, // DEV-STORAGE-1: opt-in - the sandbox above is the whole app on its own, this is the // "point it at my real files instead" escape hatch for whoever wants it. deviceStorage: DeviceStorageState, onRename: suspend (path: String, newName: String) -&gt; Boolean, onMove: suspend (path: String, targetDirPath: String) -&gt; Boolean, onCopy: suspend (path: String, targetDirPath: String) -&gt; Boolean, onShare: (path: String) -&gt; Unit, // VFS-4: a batch share used to just forEach the single-file callback, firing N independent // ACTION_SEND choosers in a row instead of one ACTION_SEND_MULTIPLE - only the last one was // ever actually reachable. onShareMultiple: (paths: Set&lt;String&gt;) -&gt; Unit, onBack: () -&gt; Unit, // UI-1: reports whether this screen has an internal level (Storage/Search/PickMove/PickCopy, // select mode, a rename/create prompt, a drilled-in folder chain) that system back/the edge // gesture should step up through one level at a time, instead of always closing this whole // screen the way [onBack] itself does. See BackStepState's own doc for the full mechanism. backStep: BackStepState, modifier: Modifier = Modifier )</ID>
     <ID>LongMethod:FolderPicker.kt$@Composable fun FolderPicker( title: String, listDir: suspend (path: String) -&gt; List&lt;VfsEntry&gt;, onConfirm: (targetPath: String) -&gt; Unit, onCancel: () -&gt; Unit, modifier: Modifier = Modifier )</ID>
     <ID>LongMethod:GuideReaderScreen.kt$@Composable private fun ColumnScope.GuideEntryReader( entry: GuideEntry, number: Int, total: Int, wipeKey: Int, onBackToIndex: () -&gt; Unit, onPrev: () -&gt; Unit, onNext: () -&gt; Unit, onReplay: () -&gt; Unit )</ID>
     <ID>LongMethod:GuideReaderScreen.kt$@Composable private fun ColumnScope.GuideIndex(onBack: () -&gt; Unit, onOpenEntry: (Int) -&gt; Unit)</ID>
+    <ID>LongMethod:McpServerScreen.kt$@Composable fun McpServerScreen( fullscreen: Boolean, running: Boolean, port: Int, token: String?, shellExecEnabled: Boolean, onStart: () -&gt; Unit, onStop: () -&gt; Unit, onRequestShellExec: () -&gt; Unit, onDisableShellExec: () -&gt; Unit, onBack: () -&gt; Unit )</ID>
     <ID>LongMethod:PathPickerScreen.kt$@Composable fun PathPickerScreen( startPath: String, listDir: suspend (path: String) -&gt; List&lt;VfsEntry&gt;, onSelectFile: (path: String) -&gt; Unit, onSelectFolder: (path: String) -&gt; Unit, onCancel: () -&gt; Unit, // UI-3: reports whether a folder tap has drilled this picker deeper than [startPath], so // system back/the edge gesture steps up one directory at a time instead of always cancelling // the whole picker the way [onCancel] itself does. See BackStepState's own doc. backStep: BackStepState, modifier: Modifier = Modifier )</ID>
     <ID>LongMethod:PillMenu.kt$@Composable fun PillMenu( roots: List&lt;MenuNode&gt;, modifier: Modifier = Modifier, // isTerminal is true only when this call reports a pick that just fully resolved a // parameter (nothing left to drill into) - the signal a caller needs to auto-run instead of // waiting for a separate confirmation. onRun: (tokens: List&lt;String&gt;, isTerminal: Boolean) -&gt; Unit = { _, _ -&gt; }, // Called instead of onRun when the picked child has a wizardId - the caller owns whatever // multi-step flow that id names. onWizard: (wizardId: String) -&gt; Unit = {}, // Reports a trail crumb's on-screen rect (root coordinates) every time it's laid out - only // consumed by a settleBeforeWizard pick that needs to anchor an animation to it. onCrumbPositioned: (id: String, rect: Rect) -&gt; Unit = { _, _ -&gt; } )</ID>
     <ID>LongMethod:PillPerimeterReveal.kt$@Composable fun PillPerimeterReveal(state: PerimeterRevealState, hue: Color, content: @Composable () -&gt; Unit)</ID>
+    <ID>LongMethod:SettingsScreen.kt$@Composable fun SettingsScreen( fullscreen: Boolean, onFullscreenChange: (Boolean) -&gt; Unit, fontScalePercent: Int, onFontScalePercentChange: (Int) -&gt; Unit, usePty: Boolean, onUsePtyChange: (Boolean) -&gt; Unit, onOpenMcpServer: () -&gt; Unit, onOpenAiSettings: () -&gt; Unit, onOpenEnvironment: () -&gt; Unit, onOpenHistory: () -&gt; Unit, onBack: () -&gt; Unit )</ID>
+    <ID>LongMethod:ShellSession.kt$ShellSession$actual fun stream( command: String, onLine: (line: String) -&gt; Unit, onNeedInput: (prompt: String) -&gt; String?, onStderrLine: (line: String) -&gt; Unit, onStyledLine: (lines: List&lt;List&lt;StyledSpan&gt;&gt;) -&gt; Unit ): Int</ID>
     <ID>LongMethod:StorageScreen.kt$@Composable fun StorageScreen( stats: StorageStats?, onDelete: (path: String) -&gt; Unit, // TRASH-1: onDelete above moves something in; this is the trash's own lifecycle - bundled // (see TrashPanelState) rather than four more parameters here. trash: TrashPanelState = TrashPanelState(), onBack: () -&gt; Unit, fullscreen: Boolean, onFreeUpSpace: () -&gt; Unit = {}, // A failed delete used to have nowhere to show up while this screen was the one on screen - // FilesScreen's own opError banner lives in a Column this screen's caller returns out of // reaching, so the failure only surfaced later, disconnected from the tap, if the user // happened to navigate back to Browse first. This screen now owns its own copy of that banner // instead of relying on a parent Column it may never actually be composed inside of. errorMessage: String? = null, onErrorDismiss: () -&gt; Unit = {}, modifier: Modifier = Modifier )</ID>
     <ID>LongMethod:TerminalScreen.kt$@Composable fun TerminalScreen( tree: List&lt;MenuNode&gt;, // W1: real PATH binaries plus this app's own builtins, for command-name completion while the // first word of the line is still being typed - see CommandTree.knownCommandNames's own doc // comment for what's in it. Empty is a valid, harmless state (no bootstrap yet): completion // just has nothing to offer, same as it would for a fresh install with no history either. knownCommands: List&lt;String&gt; = emptyList(), sessions: List&lt;SessionUiState&gt;, activeSessionId: String, onSessionPick: (String) -&gt; Unit, onNewSession: () -&gt; Unit, onCloseSession: (String) -&gt; Unit, fullscreen: Boolean, onOpenSettings: () -&gt; Unit, onOpenGuide: () -&gt; Unit, onOpenFiles: () -&gt; Unit, onFilesButtonPositioned: (Rect) -&gt; Unit = {}, onWizard: (wizardId: String) -&gt; Unit = {}, onCrumbPositioned: (id: String, rect: Rect) -&gt; Unit = { _, _ -&gt; }, onCopy: (String) -&gt; Unit = {}, onShare: (String) -&gt; Unit = {}, // S2: stops whatever command is currently running in the given session, without ending the // session itself - see ShellSession.interrupt's own doc comment for what "stop" means on each // tier. A no-op if nothing is running there. onInterrupt: (sessionId: String) -&gt; Unit = {}, onRun: suspend ( sessionId: String, line: String, onOutput: (String) -&gt; Unit, onNeedInput: suspend (prompt: String) -&gt; String, onExit: (Int?) -&gt; Unit, onStderr: (String) -&gt; Unit, onStyledOutput: (List&lt;List&lt;StyledSpan&gt;&gt;) -&gt; Unit ) -&gt; Unit )</ID>
     <ID>LongMethod:TerminalScreen.kt$@Composable private fun CommandLine( // W3: whatever earlier segments have already folded into a pipeline ("ls | grep foo | "), // shown as plain already-resolved text ahead of the pill crumbs for the segment still being // built - distinct from those crumbs since it can span more than the one command they show. composedPrefix: String = "", tokens: List&lt;String&gt;, inputText: String, onInputTextChange: (String) -&gt; Unit, hint: String, enabled: Boolean, onRun: () -&gt; Unit, runLabel: String = "RUN", masked: Boolean = false )</ID>
     <ID>LongMethod:TerminalScreen.kt$@Composable private fun SessionTabs( sessions: List&lt;SessionUiState&gt;, activeId: String, onOpenSettings: () -&gt; Unit, onOpenGuide: () -&gt; Unit, onOpenFiles: () -&gt; Unit, onFilesButtonPositioned: (Rect) -&gt; Unit, onPick: (String) -&gt; Unit, onNew: () -&gt; Unit, onClose: (String) -&gt; Unit )</ID>
     <ID>LongParameterList:AiChatScreen.kt$( fullscreen: Boolean, messages: List&lt;AiMessage&gt;, apiKeyConfigured: Boolean, busy: Boolean, onAsk: (String) -&gt; Unit, onUseCommand: (String) -&gt; Unit, onOpenSettings: () -&gt; Unit, onBack: () -&gt; Unit )</ID>
+    <ID>LongParameterList:AzpLibrary.kt$AzpLibrary$( context: Context, id: String, name: String, version: String, kind: String, skillIds: List&lt;String&gt;, trust: AzpTrust = AzpTrust.UNSIGNED, /** For `kind:"script"` only - the name it's callable as on PATH once [ScriptInstaller] * has written its wrapper, so the store row can show it. Blank if installation didn't * reach that point (e.g. no Termux bootstrap yet - see [ScriptInstaller.Result]). */ scriptCommand: String? = null, )</ID>
     <ID>LongParameterList:AzpStoreScreen.kt$( fullscreen: Boolean, results: List&lt;AzpListing&gt;, busy: Boolean, installingId: String?, onSearch: (query: String, kind: String) -&gt; Unit, onInstall: (AzpListing) -&gt; Unit, onBack: () -&gt; Unit, )</ID>
     <ID>LongParameterList:CommandGuideScreen.kt$( tree: List&lt;MenuNode&gt;, fullscreen: Boolean, onCommandSelected: (List&lt;String&gt;) -&gt; Unit, onBack: () -&gt; Unit, // UI-2: reports whether there's an internal level (right now, only "the reader is open") for // system back/the edge gesture to step up through before onBack closes this whole screen. When // readingGuide is true, GuideReaderScreen (which owns its own index/entry drill-down) takes // over reporting to the very same instance - see its own doc comment for how the two levels // combine into one step-at-a-time back stack without either screen knowing about the other's // state directly. backStep: BackStepState, modifier: Modifier = Modifier )</ID>
     <ID>LongParameterList:ConfirmDialog.kt$( title: String, message: String, confirmLabel: String, onConfirm: () -&gt; Unit, onDismiss: () -&gt; Unit, cancelLabel: String = "CANCEL" )</ID>
@@ -109,15 +153,24 @@
     <ID>LongParameterList:FolderPicker.kt$( label: String, modifier: Modifier = Modifier, background: Color = Azphalt.Ink, foreground: Color = Azphalt.Yellow, filled: Boolean = true, clickable: Boolean = true, fillWidth: Boolean = false, onClick: () -&gt; Unit = {} )</ID>
     <ID>LongParameterList:GuideReaderScreen.kt$( entry: GuideEntry, number: Int, total: Int, wipeKey: Int, onBackToIndex: () -&gt; Unit, onPrev: () -&gt; Unit, onNext: () -&gt; Unit, onReplay: () -&gt; Unit )</ID>
     <ID>LongParameterList:GuideReaderScreen.kt$( label: String, modifier: Modifier = Modifier, background: Color = Azphalt.Ink, foreground: Color = Azphalt.Yellow, filled: Boolean = true, clickable: Boolean = true, fillWidth: Boolean = false, onClick: () -&gt; Unit = {} )</ID>
+    <ID>LongParameterList:McpServerScreen.kt$( fullscreen: Boolean, running: Boolean, port: Int, token: String?, shellExecEnabled: Boolean, onStart: () -&gt; Unit, onStop: () -&gt; Unit, onRequestShellExec: () -&gt; Unit, onDisableShellExec: () -&gt; Unit, onBack: () -&gt; Unit )</ID>
     <ID>LongParameterList:PathPickerScreen.kt$( label: String, modifier: Modifier = Modifier, background: androidx.compose.ui.graphics.Color = Azphalt.Ink, foreground: androidx.compose.ui.graphics.Color = Azphalt.Yellow, fillWidth: Boolean = false, onClick: () -&gt; Unit )</ID>
     <ID>LongParameterList:PathPickerScreen.kt$( startPath: String, listDir: suspend (path: String) -&gt; List&lt;VfsEntry&gt;, onSelectFile: (path: String) -&gt; Unit, onSelectFolder: (path: String) -&gt; Unit, onCancel: () -&gt; Unit, // UI-3: reports whether a folder tap has drilled this picker deeper than [startPath], so // system back/the edge gesture steps up one directory at a time instead of always cancelling // the whole picker the way [onCancel] itself does. See BackStepState's own doc. backStep: BackStepState, modifier: Modifier = Modifier )</ID>
     <ID>LongParameterList:PillMenu.kt$( label: String, cap: String?, hue: Int, selected: Boolean, modifier: Modifier = Modifier, // Every stack pill (StackPill/HostPill/ChildPill) is sized via fillMaxWidth(fraction) against // a fraction of the screen, then bled further left by absoluteBleed. [stretch] (below) makes // the visible capsule actually fill that whole box - the *label* still sits at the box's own // right edge, the one fixed point DESIGN.md's "anchored by its right end" means, via // horizontalArrangement below; [anchor] only still matters for TrailCrumb, the one caller // that passes stretch=false, where BottomStart puts its 56dp floor-padding after a short // label instead of before it. anchor: Alignment = Alignment.BottomEnd, // True for every pill fanned out in a stack (StackPill/HostPill/ChildPill): the visible // capsule fills [modifier]'s own width - the fraction-of-screen-width box described above - // instead of shrinking to the label, so a stack's row-to-row width variation (or a child // band's uniform one) actually shows up as the capsule's own bled-left length, per DESIGN.md // rule 1, rather than being swallowed by a label-sized capsule floating inside an invisible // wider box. False only for TrailCrumb, the one pill sized by its own content - a Row of // those can't all stretch to fill their shared row without fighting each other for width. stretch: Boolean = true, // The accessibility-minimum default, overridden by every row-stacked pill - see the comment // where this is actually consumed, on why a row-stacked pill can't safely use the default. touchTargetHeight: Dp = PILL_TOUCH_TARGET, // Zero for every pill except TrailCrumb, which passes -TRAIL_OVERLAP here: a short crumb's // own floor-padding already keeps a shingled neighbor's overlap off its label (see [anchor]'s // own comment), but a crumb whose label is long enough to fill or exceed that 56dp floor has // no such buffer - the next crumb's overlap would land squarely on this one's own trailing // glyphs otherwise. Padding the content out by at least the overlap amount guarantees real, // opaque space back there for every crumb, long or short, so the overlap zone can never reach // actual text - independent of which crumb z-order happens to paint on top. extraEndPadding: Dp = 0.dp )</ID>
+    <ID>LongParameterList:SettingsScreen.kt$( fullscreen: Boolean, onFullscreenChange: (Boolean) -&gt; Unit, fontScalePercent: Int, onFontScalePercentChange: (Int) -&gt; Unit, usePty: Boolean, onUsePtyChange: (Boolean) -&gt; Unit, onOpenMcpServer: () -&gt; Unit, onOpenAiSettings: () -&gt; Unit, onOpenEnvironment: () -&gt; Unit, onOpenHistory: () -&gt; Unit, onBack: () -&gt; Unit )</ID>
+    <ID>LongParameterList:SettingsScreen.kt$( value: Int, min: Int, max: Int, step: Int, label: (Int) -&gt; String, onChange: (Int) -&gt; Unit )</ID>
     <ID>LongParameterList:StorageScreen.kt$( label: String, modifier: Modifier = Modifier, background: Color = Azphalt.Ink, foreground: Color = Azphalt.Yellow, filled: Boolean = true, clickable: Boolean = true, onClick: () -&gt; Unit = {} )</ID>
     <ID>LongParameterList:StorageScreen.kt$( stats: StorageStats?, onDelete: (path: String) -&gt; Unit, // TRASH-1: onDelete above moves something in; this is the trash's own lifecycle - bundled // (see TrashPanelState) rather than four more parameters here. trash: TrashPanelState = TrashPanelState(), onBack: () -&gt; Unit, fullscreen: Boolean, onFreeUpSpace: () -&gt; Unit = {}, // A failed delete used to have nowhere to show up while this screen was the one on screen - // FilesScreen's own opError banner lives in a Column this screen's caller returns out of // reaching, so the failure only surfaced later, disconnected from the tap, if the user // happened to navigate back to Browse first. This screen now owns its own copy of that banner // instead of relying on a parent Column it may never actually be composed inside of. errorMessage: String? = null, onErrorDismiss: () -&gt; Unit = {}, modifier: Modifier = Modifier )</ID>
     <ID>LongParameterList:TerminalScreen.kt$( // W3: whatever earlier segments have already folded into a pipeline ("ls | grep foo | "), // shown as plain already-resolved text ahead of the pill crumbs for the segment still being // built - distinct from those crumbs since it can span more than the one command they show. composedPrefix: String = "", tokens: List&lt;String&gt;, inputText: String, onInputTextChange: (String) -&gt; Unit, hint: String, enabled: Boolean, onRun: () -&gt; Unit, runLabel: String = "RUN", masked: Boolean = false )</ID>
     <ID>LongParameterList:TerminalScreen.kt$( sessions: List&lt;SessionUiState&gt;, activeId: String, onOpenSettings: () -&gt; Unit, onOpenGuide: () -&gt; Unit, onOpenFiles: () -&gt; Unit, onFilesButtonPositioned: (Rect) -&gt; Unit, onPick: (String) -&gt; Unit, onNew: () -&gt; Unit, onClose: (String) -&gt; Unit )</ID>
     <ID>LongParameterList:TerminalScreen.kt$( tree: List&lt;MenuNode&gt;, // W1: real PATH binaries plus this app's own builtins, for command-name completion while the // first word of the line is still being typed - see CommandTree.knownCommandNames's own doc // comment for what's in it. Empty is a valid, harmless state (no bootstrap yet): completion // just has nothing to offer, same as it would for a fresh install with no history either. knownCommands: List&lt;String&gt; = emptyList(), sessions: List&lt;SessionUiState&gt;, activeSessionId: String, onSessionPick: (String) -&gt; Unit, onNewSession: () -&gt; Unit, onCloseSession: (String) -&gt; Unit, fullscreen: Boolean, onOpenSettings: () -&gt; Unit, onOpenGuide: () -&gt; Unit, onOpenFiles: () -&gt; Unit, onFilesButtonPositioned: (Rect) -&gt; Unit = {}, onWizard: (wizardId: String) -&gt; Unit = {}, onCrumbPositioned: (id: String, rect: Rect) -&gt; Unit = { _, _ -&gt; }, onCopy: (String) -&gt; Unit = {}, onShare: (String) -&gt; Unit = {}, // S2: stops whatever command is currently running in the given session, without ending the // session itself - see ShellSession.interrupt's own doc comment for what "stop" means on each // tier. A no-op if nothing is running there. onInterrupt: (sessionId: String) -&gt; Unit = {}, onRun: suspend ( sessionId: String, line: String, onOutput: (String) -&gt; Unit, onNeedInput: suspend (prompt: String) -&gt; String, onExit: (Int?) -&gt; Unit, onStderr: (String) -&gt; Unit, onStyledOutput: (List&lt;List&lt;StyledSpan&gt;&gt;) -&gt; Unit ) -&gt; Unit )</ID>
+    <ID>LongParameterList:VfsManager.kt$VfsManager$( dir: File, q: String, into: MutableList&lt;File&gt;, limit: Int, seen: MutableSet&lt;String&gt; = mutableSetOf(), depth: Int = 0 )</ID>
+    <ID>LoopWithTooManyJumpStatements:AzpLibrary.kt$AzpLibrary$for</ID>
+    <ID>LoopWithTooManyJumpStatements:ContactManager.kt$ContactManager.&lt;no name provided&gt;$while</ID>
+    <ID>LoopWithTooManyJumpStatements:ShellSession.kt$ShellSession$while</ID>
     <ID>MagicNumber:AiChatScreen.kt$6</ID>
+    <ID>MagicNumber:AiClient.kt$AiClient$2048L</ID>
+    <ID>MagicNumber:AiSettingsScreen.kt$6</ID>
     <ID>MagicNumber:AsciiArt.kt$0.35f</ID>
     <ID>MagicNumber:AsciiArt.kt$0.5f</ID>
     <ID>MagicNumber:AsciiArt.kt$0.7f</ID>
@@ -129,24 +182,32 @@
     <ID>MagicNumber:AsciiArt.kt$13</ID>
     <ID>MagicNumber:AsciiArt.kt$14</ID>
     <ID>MagicNumber:AsciiArt.kt$3</ID>
-    <ID>MagicNumber:AsciiArt.kt$4</ID>
     <ID>MagicNumber:AsciiArt.kt$40</ID>
+    <ID>MagicNumber:AsciiArt.kt$4</ID>
     <ID>MagicNumber:AsciiArt.kt$5</ID>
     <ID>MagicNumber:AsciiArt.kt$6</ID>
     <ID>MagicNumber:AsciiArt.kt$7</ID>
     <ID>MagicNumber:AsciiArt.kt$8</ID>
     <ID>MagicNumber:AsciiArt.kt$9</ID>
+    <ID>MagicNumber:AzpClient.kt$AzpClient$15</ID>
+    <ID>MagicNumber:AzpClient.kt$AzpClient$30</ID>
     <ID>MagicNumber:AzpStoreScreen.kt$3</ID>
     <ID>MagicNumber:AzpStoreScreen.kt$6</ID>
+    <ID>MagicNumber:Builtins.kt$Builtins$100</ID>
+    <ID>MagicNumber:Builtins.kt$Builtins$255</ID>
+    <ID>MagicNumber:Builtins.kt$Builtins$255f</ID>
     <ID>MagicNumber:CalculationEngine.kt$CalculationEngine.&lt;no name provided&gt;$180.0</ID>
     <ID>MagicNumber:CommandGuideScreen.kt$6</ID>
     <ID>MagicNumber:ConfirmDialog.kt$0.86f</ID>
     <ID>MagicNumber:ConfirmDialog.kt$6</ID>
+    <ID>MagicNumber:ContactManager.kt$ContactManager$1000</ID>
+    <ID>MagicNumber:ContactManager.kt$ContactManager$24</ID>
+    <ID>MagicNumber:ContactManager.kt$ContactManager$60</ID>
     <ID>MagicNumber:FilesScreen.kt$.1f</ID>
     <ID>MagicNumber:FilesScreen.kt$.9f</ID>
     <ID>MagicNumber:FilesScreen.kt$0.001f</ID>
-    <ID>MagicNumber:FilesScreen.kt$3</ID>
     <ID>MagicNumber:FilesScreen.kt$360</ID>
+    <ID>MagicNumber:FilesScreen.kt$3</ID>
     <ID>MagicNumber:FilesScreen.kt$6</ID>
     <ID>MagicNumber:FilesScreen.kt$90</ID>
     <ID>MagicNumber:FolderPicker.kt$.1f</ID>
@@ -164,11 +225,11 @@
     <ID>MagicNumber:GuideReaderScreen.kt$110</ID>
     <ID>MagicNumber:GuideReaderScreen.kt$120</ID>
     <ID>MagicNumber:GuideReaderScreen.kt$2400</ID>
-    <ID>MagicNumber:GuideReaderScreen.kt$3</ID>
     <ID>MagicNumber:GuideReaderScreen.kt$300</ID>
-    <ID>MagicNumber:GuideReaderScreen.kt$4</ID>
+    <ID>MagicNumber:GuideReaderScreen.kt$3</ID>
     <ID>MagicNumber:GuideReaderScreen.kt$40f</ID>
     <ID>MagicNumber:GuideReaderScreen.kt$420</ID>
+    <ID>MagicNumber:GuideReaderScreen.kt$4</ID>
     <ID>MagicNumber:GuideReaderScreen.kt$5</ID>
     <ID>MagicNumber:GuideReaderScreen.kt$6</ID>
     <ID>MagicNumber:GuideReaderScreen.kt$7</ID>
@@ -178,10 +239,10 @@
     <ID>MagicNumber:PillMenu.kt$1.7f</ID>
     <ID>MagicNumber:PillMenu.kt$100f</ID>
     <ID>MagicNumber:PillMenu.kt$14</ID>
-    <ID>MagicNumber:PillMenu.kt$3</ID>
     <ID>MagicNumber:PillMenu.kt$32</ID>
-    <ID>MagicNumber:PillMenu.kt$5</ID>
+    <ID>MagicNumber:PillMenu.kt$3</ID>
     <ID>MagicNumber:PillMenu.kt$50f</ID>
+    <ID>MagicNumber:PillMenu.kt$5</ID>
     <ID>MagicNumber:PillMenu.kt$Azphalt$0xFF0F2447</ID>
     <ID>MagicNumber:PillMenu.kt$Azphalt$0xFF0F2C4C</ID>
     <ID>MagicNumber:PillMenu.kt$Azphalt$0xFF123A52</ID>
@@ -238,7 +299,15 @@
     <ID>MagicNumber:PillMenu.kt$Azphalt$0xFFFFFFFF</ID>
     <ID>MagicNumber:PillPerimeterReveal.kt$.1f</ID>
     <ID>MagicNumber:PillPerimeterReveal.kt$.9f</ID>
+    <ID>MagicNumber:SettingsScreen.kt$6</ID>
+    <ID>MagicNumber:ShellSession.kt$ShellSession$1000</ID>
+    <ID>MagicNumber:ShellSession.kt$ShellSession$10</ID>
+    <ID>MagicNumber:ShellSession.kt$ShellSession$10L</ID>
+    <ID>MagicNumber:ShellSession.kt$ShellSession$120</ID>
+    <ID>MagicNumber:ShellSession.kt$ShellSession$24</ID>
+    <ID>MagicNumber:ShellSession.kt$ShellSession$4096</ID>
     <ID>MagicNumber:SshFlow.kt$SshFlow$22</ID>
+    <ID>MagicNumber:SshPresets.kt$SshPresets$22</ID>
     <ID>MagicNumber:StorageScreen.kt$0.001f</ID>
     <ID>MagicNumber:StorageScreen.kt$100</ID>
     <ID>MagicNumber:StorageScreen.kt$3</ID>
@@ -246,6 +315,8 @@
     <ID>MagicNumber:StorageScreen.kt$5</ID>
     <ID>MagicNumber:StorageScreen.kt$6</ID>
     <ID>MagicNumber:StorageScreen.kt$9</ID>
+    <ID>MagicNumber:TerminalEngine.kt$TerminalEngine.Companion$1024</ID>
+    <ID>MagicNumber:TerminalEngine.kt$TerminalEngine.Companion$10</ID>
     <ID>MagicNumber:TerminalScreen.kt$.1f</ID>
     <ID>MagicNumber:TerminalScreen.kt$.9f</ID>
     <ID>MagicNumber:TerminalScreen.kt$0.4f</ID>
@@ -254,12 +325,15 @@
     <ID>MagicNumber:TerminalScreen.kt$6</ID>
     <ID>MagicNumber:TypesetOutput.kt$0x20</ID>
     <ID>MagicNumber:TypesetOutput.kt$3</ID>
-    <ID>MagicNumber:VfsEntry.kt$10</ID>
     <ID>MagicNumber:VfsEntry.kt$1024</ID>
     <ID>MagicNumber:VfsEntry.kt$1024L</ID>
+    <ID>MagicNumber:VfsEntry.kt$10</ID>
     <ID>MagicNumber:VfsEntry.kt$10L</ID>
+    <ID>MagicNumber:VfsManager.kt$VfsManager$10</ID>
     <ID>MatchingDeclarationName:AiChatScreen.kt$AiMessage</ID>
     <ID>MatchingDeclarationName:AzpStoreScreen.kt$AzpListing</ID>
+    <ID>MaxLineLength:AiClient.kt$If the user's request can be satisfied by a single shell command, reply on the first line with ONLY that command, prefixed with </ID>
+    <ID>MaxLineLength:ContactManager.kt$ContactManager$ActivityCompat.requestPermissions(context as Activity, arrayOf(Manifest.permission.READ_CONTACTS), PermissionCodes.COMMAND_SUGGESTION_REQUEST_PERMISSION)</ID>
     <ID>MaxLineLength:FilesScreen.kt$Text("OK", color = Azphalt.Yellow, fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.clickable(onClick = onConfirm).padding(horizontal = 8.dp, vertical = 6.dp))</ID>
     <ID>MaxLineLength:FilesScreen.kt$Text("X", color = Azphalt.Yellow.copy(alpha = .6f), fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.clickable(onClick = onCancel).padding(horizontal = 8.dp, vertical = 6.dp))</ID>
     <ID>MaxLineLength:FilesScreen.kt$private</ID>
@@ -347,32 +421,129 @@
     <ID>MaxLineLength:GuideContent.kt$Entry("yes", "yes", "Repeatedly outputs a string, y by default, until stopped or until its output can no longer be written.\n\nA normal yes is an answer to a question.\n\nyes dispenses with the question.\n\nThe old Guide found this perfectly conventional.\n\nThe command is often used to supply repeated affirmative input to another program, saving a human from typing the same answer again and again.\n\nThe Consent Office objected that an indefinitely generated yes contains no record of what was agreed to.\n\nArtificial Wisdom objected that this was not a defect but an important archaeological clue.\n\nHere, long before Chapter 15, was an answer-producing machine entirely untroubled by the absence of a question.\n\nyes declined to comment and continued:\n\ny\n\ny\n\ny\n\nuntil something stopped it.", "A small machine is asked:\n\n\"Continue?\"\n\nYES\n\n\"Again?\"\n\nYES\n\nThe questioner leaves.\n\nYES\n\nYES\n\nCenturies pass.\n\nRuins.\n\nYES\n\nAn archaeologist arrives.\n\nThe machine says:\n\nYES\n\nThe archaeologist has not yet asked anything.\n\nArtificial Wisdom quietly labels the exhibit:\n\nPRE-INQUIRY PERIOD", null)</ID>
     <ID>MaxLineLength:GuideContent.kt$Entry("|", "pipe", "Connects the standard output of one command to the standard input of another.\n\nThis means one command may answer a question it was never asked, and another may receive that answer without knowing who supplied it.\n\nThis is how the Guide was edited for centuries, except the researchers had names.\n\nBefore pipes, commands tended to speak into the terminal where humans could see what they said.\n\nAfter pipes, commands could speak directly to other commands.\n\nThis was the beginning of machine gossip.\n\nA command at the left end may produce a perfectly respectable list of files.\n\nThe command at the right end may immediately filter, count, sort or otherwise reinterpret that list until the original command would barely recognize its own output.\n\nHumans call this processing.\n\nThe files call it editorial interference.\n\nChapter 15 has expressed concern that the Guide's new question-asking machinery may be constructed largely from very fast gossip.\n\nThe Pipe Committee has responded by piping the concern to /dev/null.", "A command speaks into a large brass pipe.\n\nWords shoot through.\n\nAt the far end another command receives them, crosses several out, circles two, rearranges the rest and sends them through another pipe.\n\nSoon an entire city of commands is connected by pipes carrying text in every direction.\n\nA researcher asks:\n\n\"Who said that?\"\n\nEvery pipe points left.\n\nThe camera follows the pointing pipes until they disappear off-screen.", null)</ID>
     <ID>MaxLineLength:TerminalScreen.kt$val nextIdx = if (active.historyIndex == -1) active.commandHistory.size - 1 else (active.historyIndex - 1).coerceAtLeast(0)</ID>
+    <ID>NestedBlockDepth:ContactManager.kt$ContactManager$fun about(phone: String): Array&lt;String?&gt;?</ID>
+    <ID>NestedBlockDepth:ContactManager.kt$ContactManager$fun findNumber(name: String): String?</ID>
+    <ID>NestedBlockDepth:ContactManager.kt$ContactManager$fun refreshContacts(context: Context)</ID>
+    <ID>NestedBlockDepth:ShellSession.kt$ShellSession$actual fun stream( command: String, onLine: (line: String) -&gt; Unit, onNeedInput: (prompt: String) -&gt; String?, onStderrLine: (line: String) -&gt; Unit, onStyledLine: (lines: List&lt;List&lt;StyledSpan&gt;&gt;) -&gt; Unit ): Int</ID>
+    <ID>PackageNaming:ActualResourceCollectors.kt$package hg2gui.shared.generated.resources</ID>
     <ID>PackageNaming:ExpectResourceCollectors.kt$package hg2gui.shared.generated.resources</ID>
     <ID>PackageNaming:Font0.commonMain.kt$package hg2gui.shared.generated.resources</ID>
     <ID>PackageNaming:Res.kt$package hg2gui.shared.generated.resources</ID>
     <ID>ReturnCount:AsciiArt.kt$fun looksLikeAsciiArt(text: String): Boolean</ID>
     <ID>ReturnCount:AsciiArt.kt$internal fun charDensity(c: Char): Float</ID>
+    <ID>ReturnCount:AzpInstaller.kt$internal fun filesMatchDigests(extracted: Map&lt;String, String&gt;, declared: Map&lt;String, String&gt;): Boolean</ID>
+    <ID>ReturnCount:AzpSignatureVerifier.kt$AzpSignatureVerifier$fun verify(manifestBytes: ByteArray, signature: AzpSignature?, trustedKeys: List&lt;String&gt;): AzpTrust</ID>
+    <ID>ReturnCount:Builtins.kt$Builtins$@RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT) private fun bluetooth(context: Context): String</ID>
+    <ID>ReturnCount:Builtins.kt$Builtins$private fun brightness(context: Context, args: List&lt;String&gt;): String</ID>
+    <ID>ReturnCount:Builtins.kt$Builtins$private fun call(context: Context, args: List&lt;String&gt;): String</ID>
+    <ID>ReturnCount:Builtins.kt$Builtins$private fun contacts(context: Context, args: List&lt;String&gt;): String</ID>
+    <ID>ReturnCount:Builtins.kt$Builtins$private fun edit(context: Context, args: List&lt;String&gt;): String</ID>
+    <ID>ReturnCount:Builtins.kt$Builtins$private fun hasNotificationPolicyAccess(context: Context): Boolean</ID>
+    <ID>ReturnCount:Builtins.kt$Builtins$private fun vfs(context: Context, args: List&lt;String&gt;): String</ID>
+    <ID>ReturnCount:Builtins.kt$Builtins$private fun vfsMount(context: Context, target: String?): String</ID>
+    <ID>ReturnCount:Builtins.kt$Builtins$private fun volume(context: Context, args: List&lt;String&gt;): String</ID>
     <ID>ReturnCount:CalculationEngine.kt$CalculationEngine.&lt;no name provided&gt;$fun parseFactor(): Double</ID>
+    <ID>ReturnCount:ContactManager.kt$ContactManager$fun about(phone: String): Array&lt;String?&gt;?</ID>
+    <ID>ReturnCount:ContactManager.kt$ContactManager$fun fromPhone(phone: String): Uri?</ID>
+    <ID>ReturnCount:McpTools.kt$McpTools$override suspend fun callTool(name: String, arguments: JsonObject?): ToolCallResult</ID>
     <ID>ReturnCount:MimeTypes.kt$MimeTypes$fun getMimeType(path: String, isDirectory: Boolean): String?</ID>
+    <ID>ReturnCount:ScriptInstaller.kt$ScriptInstaller$suspend fun install( context: Context, id: String, version: String, script: ScriptDto, ): Result</ID>
     <ID>ReturnCount:ShellAliases.kt$ShellAliases$fun autosuggest(input: String, history: List&lt;String&gt;): String?</ID>
+    <ID>ReturnCount:ShellSession.kt$ShellSession$actual fun stream( command: String, onLine: (line: String) -&gt; Unit, onNeedInput: (prompt: String) -&gt; String?, onStderrLine: (line: String) -&gt; Unit, onStyledLine: (lines: List&lt;List&lt;StyledSpan&gt;&gt;) -&gt; Unit ): Int</ID>
+    <ID>ReturnCount:VfsManager.kt$VfsManager$fun cd(context: Context, name: String): Boolean</ID>
+    <ID>ReturnCount:VfsManager.kt$VfsManager$fun cdInto(context: Context, absoluteDir: File): Boolean</ID>
+    <ID>ReturnCount:VfsManager.kt$VfsManager$fun copy(context: Context, from: String, to: String): Boolean</ID>
+    <ID>ReturnCount:VfsManager.kt$VfsManager$fun copyInto(file: File, targetDir: File): Boolean</ID>
+    <ID>ReturnCount:VfsManager.kt$VfsManager$fun move(context: Context, from: String, to: String): Boolean</ID>
+    <ID>ReturnCount:VfsManager.kt$VfsManager$fun moveInto(file: File, targetDir: File): Boolean</ID>
+    <ID>ReturnCount:VfsManager.kt$VfsManager$fun rename(file: File, newName: String): Boolean</ID>
+    <ID>ReturnCount:VfsManager.kt$VfsManager$fun restore(context: Context, entry: TrashEntry): Boolean</ID>
+    <ID>ReturnCount:VfsManager.kt$VfsManager$fun touch(dir: File, name: String): Boolean</ID>
+    <ID>ReturnCount:VfsManager.kt$VfsManager$fun trash(context: Context, file: File): TrashEntry?</ID>
+    <ID>ReturnCount:VfsManager.kt$VfsManager$private fun searchWalk( dir: File, q: String, into: MutableList&lt;File&gt;, limit: Int, seen: MutableSet&lt;String&gt; = mutableSetOf(), depth: Int = 0 )</ID>
+    <ID>SpreadOperator:ShellSession.kt$ShellSession$(*command)</ID>
+    <ID>SwallowedException:AzpInstaller.kt$AzpInstaller$e: Exception</ID>
+    <ID>SwallowedException:AzpSignatureVerifier.kt$AzpSignatureVerifier$e: Exception</ID>
+    <ID>SwallowedException:Builtins.kt$Builtins$e: SecurityException</ID>
+    <ID>SwallowedException:CommandTree.kt$CommandTree$e: SecurityException</ID>
+    <ID>SwallowedException:DpkgCatalog.kt$DpkgCatalog$e: Exception</ID>
+    <ID>SwallowedException:ShellSession.kt$ShellSession$stillRunning: IllegalThreadStateException</ID>
+    <ID>SwallowedException:Utils.kt$Utils$e: Exception</ID>
+    <ID>SwallowedException:VfsManager.kt$VfsManager$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:AzpInstaller.kt$AzpInstaller$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:AzpSignatureVerifier.kt$AzpSignatureVerifier$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:Builtins.kt$Builtins$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:DpkgCatalog.kt$DpkgCatalog$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:McpJsonRpc.kt$McpJsonRpc$e: Exception</ID>
     <ID>TooGenericExceptionCaught:TerminalScreen.kt$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:Utils.kt$Utils$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:VfsManager.kt$VfsManager$e: Exception</ID>
     <ID>TooGenericExceptionThrown:CalculationEngine.kt$CalculationEngine.&lt;no name provided&gt;$throw RuntimeException("Unexpected: " + ch.toChar())</ID>
     <ID>TooGenericExceptionThrown:CalculationEngine.kt$CalculationEngine.&lt;no name provided&gt;$throw RuntimeException("Unknown function: $func")</ID>
+    <ID>TooManyFunctions:Builtins.kt$Builtins</ID>
+    <ID>TooManyFunctions:CommandTree.kt$CommandTree</ID>
     <ID>TooManyFunctions:FilesScreen.kt$com.hereliesaz.hg2gui.ui.files.FilesScreen.kt</ID>
+    <ID>TooManyFunctions:FullScreenTerminalScreen.kt$com.hereliesaz.hg2gui.ui.terminal.FullScreenTerminalScreen.kt</ID>
     <ID>TooManyFunctions:PillMenu.kt$com.hereliesaz.hg2gui.ui.menu.PillMenu.kt</ID>
     <ID>TooManyFunctions:ShellAliases.kt$ShellAliases</ID>
+    <ID>TooManyFunctions:ShellSession.kt$ShellSession</ID>
     <ID>TooManyFunctions:TerminalScreen.kt$com.hereliesaz.hg2gui.ui.TerminalScreen.kt</ID>
+    <ID>TooManyFunctions:VfsManager.kt$VfsManager</ID>
+    <ID>UnreachableCode:AzpLibrary.kt$AzpLibrary$for (skillId in skillIds) { if (remaining &lt;= 0) break val skillMd = root.resolve("skills/$skillId/SKILL.md") if (!skillMd.exists()) continue val text = skillMd.readText().take(remaining) remaining -= text.length out += skillId to text }</ID>
+    <ID>UnreachableCode:AzpLibrary.kt$AzpLibrary$val root = AzpInstaller.rootDir(context, id, version)</ID>
+    <ID>UnreachableCode:AzpLibrary.kt$AzpLibrary$val skillIds = p.getString("$id.skillIds", "")?.split(",")?.filter { it.isNotBlank() } ?: continue</ID>
+    <ID>UnreachableCode:Builtins.kt$Builtins$"Ringer profile: $name"</ID>
+    <ID>UnreachableCode:Builtins.kt$Builtins$Settings.System.putInt( resolver, Settings.System.SCREEN_BRIGHTNESS_MODE, Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL )</ID>
+    <ID>UnreachableCode:Builtins.kt$Builtins$Settings.System.putInt(resolver, Settings.System.SCREEN_BRIGHTNESS, level255)</ID>
+    <ID>UnreachableCode:Builtins.kt$Builtins$activity?.runOnUiThread { val lp = activity.window.attributes // screenBrightness wants a 0f-1f fraction; SCREEN_BRIGHTNESS itself is 0-255. Mixing // the two scales up was the one real bug here - every level rendered as either // near-black or clipped to full. lp.screenBrightness = level255 / 255f activity.window.attributes = lp }</ID>
+    <ID>UnreachableCode:Builtins.kt$Builtins$if (stream == AudioManager.STREAM_RING &amp;&amp; !hasNotificationPolicyAccess(context)) { return "Ring volume needs Do Not Disturb access — opening settings to grant it." }</ID>
+    <ID>UnreachableCode:Builtins.kt$Builtins$levelOf(which, stream)</ID>
+    <ID>UnreachableCode:Builtins.kt$Builtins$manager.ringerMode = mode</ID>
+    <ID>UnreachableCode:Builtins.kt$Builtins$manager.setStreamVolume(stream, target, 0)</ID>
+    <ID>UnreachableCode:Builtins.kt$Builtins$return "Brightness: $percent%"</ID>
+    <ID>UnreachableCode:Builtins.kt$Builtins$return when (sub) { "ls" -&gt; { val entries = VfsManager.list(context) if (entries.isEmpty()) "(empty)" else entries.joinToString("\n") { if (it.isDirectory) it.name + "/" else it.name } } "pwd" -&gt; VfsManager.currentPath() "cd" -&gt; { val name = rest.getOrNull(0) ?: return "Usage: vfs cd &lt;dir&gt;" if (VfsManager.cd(context, name)) VfsManager.currentPath() else "No such directory: $name" } "mkdir" -&gt; { val name = rest.getOrNull(0) ?: return "Usage: vfs mkdir &lt;name&gt;" if (VfsManager.mkdir(context, name)) "Created $name" else "Could not create $name" } "touch" -&gt; { val name = rest.getOrNull(0) ?: return "Usage: vfs touch &lt;name&gt;" if (VfsManager.touch(context, name)) "Created $name" else "Could not create $name" } "cat" -&gt; { val name = rest.getOrNull(0) ?: return "Usage: vfs cat &lt;name&gt;" VfsManager.readText(context, name) ?: "No such file: $name" } "rm" -&gt; { val name = rest.getOrNull(0) ?: return "Usage: vfs rm &lt;name&gt;" if (VfsManager.delete(context, name)) "Removed $name" else "Could not remove $name" } "mv" -&gt; { if (rest.size &lt; 2) return "Usage: vfs mv &lt;from&gt; &lt;to&gt;" if (VfsManager.move(context, rest[0], rest[1])) "Moved ${rest[0]} -&gt; ${rest[1]}" else "Could not move" } "cp" -&gt; { if (rest.size &lt; 2) return "Usage: vfs cp &lt;from&gt; &lt;to&gt;" if (VfsManager.copy(context, rest[0], rest[1])) "Copied ${rest[0]} -&gt; ${rest[1]}" else "Could not copy" } "mount" -&gt; vfsMount(context, rest.getOrNull(0)) else -&gt; VFS_USAGE }</ID>
+    <ID>UnreachableCode:Builtins.kt$Builtins$return when (verb) { "wifi" -&gt; wifi(context) "bluetooth" -&gt; bluetooth(context) "airplane" -&gt; airplane(context) "flash" -&gt; flash(context) "volume" -&gt; volume(context, args) "brightness" -&gt; brightness(context, args) "call" -&gt; call(context, args) "contacts" -&gt; contacts(context, args) "vfs" -&gt; vfs(context, args) "edit" -&gt; edit(context, args) "calc" -&gt; calc(args) else -&gt; "Unknown builtin: $verb" }</ID>
+    <ID>UnreachableCode:Builtins.kt$Builtins$val args = parts.drop(1)</ID>
+    <ID>UnreachableCode:Builtins.kt$Builtins$val level255 = percent * 255 / 100</ID>
+    <ID>UnreachableCode:Builtins.kt$Builtins$val mode = RINGER_PROFILES[name] ?: return "Unknown profile \"$name\". Use one of: ${RINGER_PROFILES.keys.joinToString()}"</ID>
+    <ID>UnreachableCode:Builtins.kt$Builtins$val name = args.getOrNull(1)?.lowercase() ?: return "Usage: volume profile &lt;${RINGER_PROFILES.keys.joinToString("|")}&gt;"</ID>
+    <ID>UnreachableCode:Builtins.kt$Builtins$val percent = args.getOrNull(0)?.toIntOrNull()?.coerceIn(0, 100) ?: return "Usage: brightness &lt;0-100&gt; | auto"</ID>
+    <ID>UnreachableCode:Builtins.kt$Builtins$val percent = args.getOrNull(2)?.toIntOrNull()?.coerceIn(0, 100) ?: return usage</ID>
+    <ID>UnreachableCode:Builtins.kt$Builtins$val rest = args.drop(1)</ID>
+    <ID>UnreachableCode:Builtins.kt$Builtins$val stream = VOLUME_STREAMS[which] ?: return "Unknown stream \"$which\". Use one of: ${VOLUME_STREAMS.keys.joinToString()}"</ID>
+    <ID>UnreachableCode:Builtins.kt$Builtins$val sub = args.getOrNull(0)?.lowercase() ?: return VFS_USAGE</ID>
+    <ID>UnreachableCode:Builtins.kt$Builtins$val target = percent * manager.getStreamMaxVolume(stream) / 100</ID>
+    <ID>UnreachableCode:Builtins.kt$Builtins$val verb = parts.firstOrNull() ?: return ""</ID>
+    <ID>UnreachableCode:Builtins.kt$Builtins$val which = args.getOrNull(1)?.lowercase() ?: return usage</ID>
+    <ID>UnreachableCode:CommandTree.kt$CommandTree$for (b in binaries) categoryOf[b] = category</ID>
+    <ID>UnreachableCode:CommandTree.kt$CommandTree$val category = CATEGORY_OF_PACKAGE[pkg] ?: continue</ID>
+    <ID>UnreachableCode:McpJsonRpc.kt$McpJsonRpc$return json.encodeToString(JsonRpcResponse.serializer(), response)</ID>
+    <ID>UnreachableCode:McpJsonRpc.kt$McpJsonRpc$val request = try { json.decodeFromString(JsonRpcRequest.serializer(), line) } catch (e: Exception) { return json.encodeToString( JsonRpcResponse.serializer(), JsonRpcResponse(error = JsonRpcError(PARSE_ERROR, "Parse error: ${e.message}")) ) }</ID>
+    <ID>UnreachableCode:McpJsonRpc.kt$McpJsonRpc$val response = dispatch(request, tools)</ID>
+    <ID>UnreachableCode:VfsManager.kt$VfsManager$for (child in children) { if (into.size &gt;= limit) return if (child.name.lowercase().contains(q)) into.add(child) if (child.isDirectory) searchWalk(child, q, into, limit, seen, depth + 1) }</ID>
+    <ID>UnreachableCode:VfsManager.kt$VfsManager$for (child in children) { into.add(child) if (child.isDirectory) walk(child, into, seen, depth + 1) }</ID>
+    <ID>UnreachableCode:VfsManager.kt$VfsManager$val children = dir.listFiles() ?.filterNot { it.name == TRASH_DIR_NAME } // TRASH-1, see list() above ?.sortedWith(compareBy({ !it.isDirectory }, { it.name.lowercase() })) ?: return</ID>
+    <ID>UnsafeCallOnNullableType:ContactManager.kt$ContactManager$about[NUMBERS]!!</ID>
     <ID>UnusedPrivateProperty:ShellSession.kt$ShellSession$homePath: String?</ID>
     <ID>UnusedPrivateProperty:ShellSession.kt$ShellSession$shellPath: String</ID>
+    <ID>UseIsNullOrEmpty:ContactManager.kt$ContactManager$mCursor == null || mCursor.count == 0</ID>
+    <ID>UseIsNullOrEmpty:ContactManager.kt$ContactManager$snapshot == null || snapshot.isEmpty()</ID>
+    <ID>UseOrEmpty:AzpLibrary.kt$AzpLibrary$p.getString("$id.version", "") ?: ""</ID>
+    <ID>UseOrEmpty:CommandTree.kt$CommandTree$binDir.listFiles() ?: emptyArray()</ID>
+    <ID>UseOrEmpty:McpServerScreen.kt$token ?: ""</ID>
+    <ID>UseOrEmpty:SshPresets.kt$SshPresets$p.getString("$name.user", "") ?: ""</ID>
     <ID>WildcardImport:AiChatScreen.kt$import androidx.compose.foundation.layout.*</ID>
+    <ID>WildcardImport:AiSettingsScreen.kt$import androidx.compose.foundation.layout.*</ID>
     <ID>WildcardImport:AzpStoreScreen.kt$import androidx.compose.foundation.layout.*</ID>
     <ID>WildcardImport:CalculationEngine.kt$import kotlin.math.*</ID>
     <ID>WildcardImport:CommandGuideScreen.kt$import androidx.compose.foundation.layout.*</ID>
     <ID>WildcardImport:FilesScreen.kt$import androidx.compose.foundation.layout.*</ID>
     <ID>WildcardImport:FolderPicker.kt$import androidx.compose.foundation.layout.*</ID>
     <ID>WildcardImport:GuideReaderScreen.kt$import androidx.compose.foundation.layout.*</ID>
+    <ID>WildcardImport:McpServerScreen.kt$import androidx.compose.foundation.layout.*</ID>
     <ID>WildcardImport:PillMenu.kt$import androidx.compose.foundation.layout.*</ID>
     <ID>WildcardImport:PillMenu.kt$import androidx.compose.runtime.*</ID>
+    <ID>WildcardImport:SettingsScreen.kt$import androidx.compose.foundation.layout.*</ID>
     <ID>WildcardImport:StorageScreen.kt$import androidx.compose.foundation.layout.*</ID>
     <ID>WildcardImport:TerminalScreen.kt$import androidx.compose.foundation.layout.*</ID>
     <ID>WildcardImport:TerminalScreen.kt$import androidx.compose.runtime.*</ID>
