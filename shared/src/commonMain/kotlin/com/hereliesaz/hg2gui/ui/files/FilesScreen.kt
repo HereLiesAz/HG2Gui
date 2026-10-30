@@ -194,6 +194,12 @@ fun FilesScreen(
     // Most-recent-first, capped, no duplicates - just enough to let a tap re-run a search that
     // was actually submitted, not every half-typed query.
     val recentSearches = remember { mutableStateListOf<String>() }
+    // M-4: opening search puts the cursor in the field (and raises the keyboard) straight away,
+    // instead of making the user tap a field they already asked for.
+    val searchFocus = remember { FocusRequester() }
+    LaunchedEffect(searchActive) {
+        if (searchActive) requestFocusSafely(searchFocus)
+    }
 
     var selectMode by remember { mutableStateOf(false) }
     var selected by remember { mutableStateOf<Set<String>>(emptySet()) }
@@ -713,6 +719,7 @@ fun FilesScreen(
         if (creating != null) {
             NamePrompt(
                 label = if (creating == CreateMode.FOLDER) "NEW FOLDER" else "NEW FILE",
+                fieldDescription = if (creating == CreateMode.FOLDER) "Name for the new folder" else "Name for the new file",
                 name = createInput,
                 onNameChange = { createInput = it },
                 onConfirm = {
@@ -739,34 +746,33 @@ fun FilesScreen(
         }
 
         renameTarget?.let { target ->
-            Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp)) {
-                NamePrompt(
-                    label = "RENAME",
-                    name = renameInput,
-                    onNameChange = { renameInput = it },
-                    onConfirm = {
-                        val name = renameInput.trim()
-                        val badName = invalidNameMessage(name)
-                        if (badName != null) {
-                            opError = badName
-                        } else if (name.isNotEmpty() && name != target.name) {
-                            scope.launch {
-                                val siblingNames = listDir(vfsParentPath(target.path)).map { it.name }.toSet()
-                                if (name in siblingNames) {
-                                    pendingRenameOverwrite = target to name
-                                } else {
-                                    val ok = onRename(target.path, name)
-                                    opError = if (!ok) "Couldn't rename that." else null
-                                    if (ok) renameChainIfAffected(target.path, name)
-                                    refresh()
-                                }
+            NamePrompt(
+                label = "RENAME",
+                fieldDescription = "New name for ${target.name}",
+                name = renameInput,
+                onNameChange = { renameInput = it },
+                onConfirm = {
+                    val name = renameInput.trim()
+                    val badName = invalidNameMessage(name)
+                    if (badName != null) {
+                        opError = badName
+                    } else if (name.isNotEmpty() && name != target.name) {
+                        scope.launch {
+                            val siblingNames = listDir(vfsParentPath(target.path)).map { it.name }.toSet()
+                            if (name in siblingNames) {
+                                pendingRenameOverwrite = target to name
+                            } else {
+                                val ok = onRename(target.path, name)
+                                opError = if (!ok) "Couldn't rename that." else null
+                                if (ok) renameChainIfAffected(target.path, name)
+                                refresh()
                             }
                         }
-                        renameTarget = null
-                    },
-                    onCancel = { renameTarget = null }
-                )
-            }
+                    }
+                    renameTarget = null
+                },
+                onCancel = { renameTarget = null }
+            )
         }
 
         pendingRenameOverwrite?.let { (target, newName) ->

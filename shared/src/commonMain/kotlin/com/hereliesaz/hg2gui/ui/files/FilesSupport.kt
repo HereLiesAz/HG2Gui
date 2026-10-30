@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -84,6 +85,18 @@ internal fun trashConfirmMessage(name: String, isDirectory: Boolean): String {
 internal fun trashBatchConfirmMessage(): String =
     "This moves everything selected, including the contents of any selected folders, to the " +
         "trash. ${trashRetentionNote()}"
+
+/**
+ * Moves keyboard focus to [requester]. A no-op instead of a crash when the field it was attached
+ * to has already left the composition (the prompt was cancelled in the same frame it opened).
+ */
+internal fun requestFocusSafely(requester: FocusRequester) {
+    try {
+        requester.requestFocus()
+    } catch (ignored: IllegalStateException) {
+        // The target is gone; there is nothing to focus.
+    }
+}
 
 /** Real-case name text (file and folder names are literals, not labels). */
 @Composable
