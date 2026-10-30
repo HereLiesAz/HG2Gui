@@ -117,6 +117,7 @@ class EditorActivity : ComponentActivity() {
             // consulted it before tearing the Activity down. Both the BACK pill and the system
             // back gesture now route through this instead of finish() directly.
             var confirmDiscard by rememberSaveable { mutableStateOf(false) }
+            var wrap by rememberSaveable { mutableStateOf(true) }
             fun requestBack() {
                 if (dirty) confirmDiscard = true else finish()
             }
@@ -204,7 +205,9 @@ class EditorActivity : ComponentActivity() {
                         }
                     },
                     onBack = { requestBack() },
-                    fullscreen = fullscreen
+                    fullscreen = fullscreen,
+                    wrap = wrap,
+                    onWrapChange = { wrap = it }
                 )
 
                 if (!fileConsent) {

@@ -62,7 +62,7 @@ private const val COPIED_NOTICE_MS = 3_000L
 /** The extras key Android 13+ reads to keep a clip out of clipboard previews. */
 private const val EXTRA_IS_SENSITIVE = "android.content.extra.IS_SENSITIVE"
 
-private enum class Copied { Token, Connect }
+private enum class McpCopied { Token, Connect }
 
 /**
  * Server on/off, the shell-exec toggle (biometric-gated on enable - the actual BiometricPrompt
@@ -93,7 +93,7 @@ fun McpServerScreen(
 ) {
     val context = LocalContext.current
     var tokenRevealed by remember { mutableStateOf(false) }
-    var copied by remember { mutableStateOf<Copied?>(null) }
+    var copied by remember { mutableStateOf<McpCopied?>(null) }
     val connectCommand = "adb forward tcp:$port tcp:$port"
 
     // The confirmation is transient; clearing it also lets the same copy be announced again.
@@ -170,7 +170,7 @@ fun McpServerScreen(
                         label = stringResource(Res.string.mcp_token_copy),
                         onClick = {
                             copyToClipboard(context, "HG2Gui MCP pairing token", tokenText, sensitive = true)
-                            copied = Copied.Token
+                            copied = McpCopied.Token
                         },
                         enabled = tokenText.isNotEmpty(),
                         contentDescription = stringResource(Res.string.mcp_token_copy_description)
@@ -178,8 +178,8 @@ fun McpServerScreen(
                 }
                 CopiedNotice(
                     when (copied) {
-                        Copied.Token -> stringResource(Res.string.mcp_token_copied)
-                        Copied.Connect -> stringResource(Res.string.mcp_connect_copied)
+                        McpCopied.Token -> stringResource(Res.string.mcp_token_copied)
+                        McpCopied.Connect -> stringResource(Res.string.mcp_connect_copied)
                         null -> null
                     }
                 )
@@ -194,7 +194,7 @@ fun McpServerScreen(
                     label = stringResource(Res.string.mcp_connect_copy),
                     onClick = {
                         copyToClipboard(context, "HG2Gui MCP adb forward", connectCommand, sensitive = false)
-                        copied = Copied.Connect
+                        copied = McpCopied.Connect
                     },
                     contentDescription = stringResource(Res.string.mcp_connect_copy_description)
                 )

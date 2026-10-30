@@ -18,11 +18,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -111,12 +107,13 @@ fun EditorScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     onDismissError: () -> Unit = {},
-    fullscreen: Boolean = false
+    fullscreen: Boolean = false,
+    wrap: Boolean = true,
+    onWrapChange: (Boolean) -> Unit = {}
 ) {
     val ground = Azphalt.currentGround
-    // Soft-wrap survives rotation (the Activity is recreated on it). Off means long lines scroll
-    // sideways instead of folding - what you want for a config file or a log.
-    var wrap by rememberSaveable(fileName) { mutableStateOf(true) }
+    // [wrap] is owned by the caller so it survives the Activity being recreated on rotation. Off
+    // means long lines scroll sideways instead of folding - what you want for a config file or log.
     val mono = editorUsesMonospace(fileName)
 
     Column(modifier.fillMaxSize().background(ground.pageBrush()).screenInsets(fullscreen)) {
@@ -132,7 +129,7 @@ fun EditorScreen(
                     if (content != null) {
                         AzphaltChip(
                             label = "WRAP",
-                            onClick = { wrap = !wrap },
+                            onClick = { onWrapChange(!wrap) },
                             selected = wrap,
                             contentDescription = "Soft wrap long lines"
                         )
