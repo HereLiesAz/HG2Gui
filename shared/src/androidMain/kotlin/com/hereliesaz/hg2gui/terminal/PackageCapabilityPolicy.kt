@@ -132,6 +132,18 @@ object PackageCapabilityPolicy {
     fun summary(context: Context, packageKey: String): Map<Capability, Mode> =
         Capability.entries.associateWith { mode(context, packageKey, it) }
 
+    /** Why a request for [capability] is refused when HG2Gui has no way to enforce a grant of it. */
+    fun unenforceableMessage(packageName: String, capability: Capability): String =
+        "Capability denied: $packageName → ${capability.wireName}. HG2Gui cannot hand ${capability.wireName} " +
+            "to a package process (it is masked inside isolation and never inherited), so a grant would change nothing. " +
+            "Run a one-off elevated command yourself with hg2auth instead."
+
+    /** The refusal for an isolated launch without a network grant; shared by the early check and the launch gate. */
+    fun networkRefusal(packageName: String, reason: String): String =
+        "Network policy blocked $packageName's isolated launch ($reason). " +
+            "This Android/PRoot boundary cannot run a process in a truthful offline network namespace, " +
+            "so HG2Gui fails closed. Arm Authority → Package policies → $packageName → network → Allow once, then run again."
+
     /** Test hook: forget every in-memory one-shot grant. */
     internal fun clearOneShotsForTest() = oneShot.clear()
 
