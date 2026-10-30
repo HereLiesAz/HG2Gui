@@ -796,38 +796,43 @@ fun FilesScreen(
 
         // --- Bottom bar ---------------------------------------------------------------------
         // Popped up from below the bottom edge, mirroring the header's drop from above.
+        // Scrolls instead of squeezing: at a large Text size the chips outgrow a phone's width,
+        // and a weighted spacer used to collapse to nothing and push the last one off-screen.
         Row(
             Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 14.dp)
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp, vertical = 8.dp)
                 .offset(y = 90.dp * (1f - chromeIn.value)),
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             if (selectMode) {
-                Chip("MOVE", onClick = { screen = FMScreen.PickMove })
-                Chip("COPY", onClick = { screen = FMScreen.PickCopy })
-                Chip("SHARE", onClick = { onShareMultiple(selected) })
-                Spacer(Modifier.weight(1f))
-                Chip("DELETE", background = Azphalt.hues[6], foreground = Azphalt.White, onClick = {
-                    batchDeleteConfirm = true
-                })
+                AzphaltChip("MOVE", onClick = { screen = FMScreen.PickMove }, contentDescription = "Move the selected items")
+                AzphaltChip("COPY", onClick = { screen = FMScreen.PickCopy }, contentDescription = "Copy the selected items")
+                AzphaltChip("SHARE", onClick = { onShareMultiple(selected) }, contentDescription = "Share the selected items")
+                AzphaltChip(
+                    "DELETE", onClick = { batchDeleteConfirm = true },
+                    tint = Azphalt.hues[6], contentDescription = "Move the selected items to the trash"
+                )
             } else {
-                Chip("+ NEW FOLDER", filled = false, onClick = { creating = CreateMode.FOLDER; createInput = "" })
-                Chip("+ NEW FILE", filled = false, onClick = { creating = CreateMode.FILE; createInput = "" })
-                Spacer(Modifier.weight(1f))
-                Chip("SELECT", onClick = { selectMode = true })
+                AzphaltChip(
+                    "NEW FOLDER", onClick = { creating = CreateMode.FOLDER; createInput = "" },
+                    contentDescription = "Create a new folder"
+                )
+                AzphaltChip(
+                    "NEW FILE", onClick = { creating = CreateMode.FILE; createInput = "" },
+                    contentDescription = "Create a new file"
+                )
+                AzphaltChip("SELECT", onClick = { selectMode = true }, contentDescription = "Select several items")
             }
         }
 
         deleteTarget?.let { entry ->
             ConfirmDialog(
                 title = "DELETE ${entry.name}?",
-                // TRASH-1: no longer final - moved into Storage > Trash, recoverable there.
-                message = if (entry.isDirectory) {
-                    "This moves ${entry.name} and everything inside it to the trash."
-                } else {
-                    "This moves ${entry.name} to the trash."
-                },
+                // TRASH-1: no longer final - moved into Storage > Trash, recoverable there until
+                // the 30-day retention (M-13) runs out, which the text now says.
+                message = trashConfirmMessage(entry.name, entry.isDirectory),
                 confirmLabel = "DELETE",
                 onConfirm = {
                     scope.launch {
@@ -845,9 +850,9 @@ fun FilesScreen(
         if (batchDeleteConfirm) {
             ConfirmDialog(
                 title = "DELETE ${selected.size} THINGS?",
-                // TRASH-1: no longer final - moved into Storage > Trash, recoverable there.
-                message = "This moves everything selected, including the contents of any selected " +
-                    "folders, to the trash.",
+                // TRASH-1: no longer final - moved into Storage > Trash, recoverable there until
+                // the 30-day retention runs out (said in the text).
+                message = trashBatchConfirmMessage(),
                 confirmLabel = "DELETE",
                 onConfirm = {
                     scope.launch {
