@@ -93,6 +93,8 @@ object AppUpdateChecker {
 
     fun checkAndNotify(context: Context) {
         val appContext = context.applicationContext
+        // The user can switch the automatic check off in Settings; a manual update is unaffected.
+        if (!com.hereliesaz.hg2gui.managers.UpdateCheckPreference.isEnabled(appContext)) return
         // Called on every TerminalActivity start - don't hit the GitHub API (60 req/h
         // unauthenticated) each time; once per CHECK_INTERVAL_MS is plenty for a rolling build.
         val prefs = appContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
