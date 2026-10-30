@@ -96,7 +96,7 @@ The current transaction layer handles repository verification, download reuse/re
 
 Package-name choices are populated from package/catalog metadata whenever available.
 
-This covers `pkg`/`apt`/`apt-get` typed as their own command or as one step of a `;` / `&&` / `||` list. Some things are refused instead of being run differently from what you typed: dry-run flags (`-s`, `--dry-run`), `apt autoremove`, options HG2Gui's manager does not implement, and a mutating `pkg`/`apt` placed behind `sudo`/`env`, in a pipe, in `bash -c` or in a control structure. `apt reinstall <name>` runs as `pkg install --reinstall <name>`. A direct `dpkg` command, or a command whose name is only known at run time (`$tool`, a shell function), is not covered by the transaction layer.
+This covers `pkg`/`apt`/`apt-get` typed as their own command or as one step of a `;` / `&&` / `||` list. Some things are refused instead of being run differently from what you typed: dry-run flags (`-s`, `--dry-run`), `apt autoremove`, options HG2Gui's manager does not implement, and a mutating `pkg`/`apt` placed behind `sudo`/`env`, in a pipe, in `bash -c` or in a control structure. `apt reinstall <name>` runs as `pkg install --reinstall <name>`. A direct `dpkg` command that would install, remove, purge, configure or unpack (`dpkg -i`, `-r`, `-P`, `--configure`, `--force-*`, …) is refused with a message pointing at `pkg install` / `pkg remove`, because it would bypass the transaction layer; read-only queries such as `dpkg -l`, `-L`, `-S` and `-s` work as usual. Calling `dpkg` by its absolute path, `dpkg-divert`/`dpkg-trigger`/`update-alternatives`, and a real `apt` run inside a script are not guarded.
 
 A line with an unterminated quote is refused before it reaches the shell.
 
@@ -130,6 +130,8 @@ Packages may expose:
 ### Disable / Enable
 
 Disable keeps the package installed and visible while HG2Gui blocks commands it can attribute to that package. Enable restores normal execution.
+
+A disabled package's commands are refused when you type them (including after `&&`, `;`, `|`, behind `env`/`sudo` and inside `bash -c`) and also when they are reached indirectly, through `$tool`, `$(which tool)`, a shell function, an alias or a script, because every shell HG2Gui starts has a small refusal script for each disabled command first on its `PATH`. The refusal reads `<command> is disabled (hg2package enable <manager> <package>)` and exits 126. It does not stop a command called by its full path (`$PREFIX/bin/tool`).
 
 ### Reset
 
@@ -174,7 +176,7 @@ An isolated package receives:
 - common host `su` paths masked;
 - fail-closed behavior when isolation cannot be established (the package does not run unisolated instead).
 
-Isolation keeps a package's files and state separate and lets HG2Gui see what changed. It is not a verified security sandbox: the isolated process runs as the same Android user as HG2Gui, and its network access is not confined. An isolated package runs only as its own command or one step of a `;` / `&&` / `||` list; in a pipe, `bash -c`, `$( )` or a control structure it is refused.
+Isolation keeps a package's files and state separate and lets HG2Gui see what changed. It is not a verified security sandbox: the isolated process runs as the same Android user as HG2Gui, and its network access is not confined. An isolated package runs only as its own command or one step of a `;` / `&&` / `||` list; in a pipe, `bash -c`, `$( )` or a control structure it is refused. This check reads the command line only: HG2Gui puts no `PATH` shims in front of isolated packages (they would break builds), so an isolated package's command reached through `$tool`, a shell function or a script runs normally, outside its private root.
 
 HG2Gui also performs best-effort runtime observation of:
 

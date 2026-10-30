@@ -329,6 +329,11 @@ internal object AptTranslation {
  *  4. an isolated package's binary runs only as its own command or one step of a `;`/`&&`/`||` list;
  *  5. `;`/`&&`/`||` lists that contain a command the engine handles itself run step by step with
  *     shell short-circuit semantics; everything else goes to the shell exactly as typed.
+ *
+ * Only the line's own text is analysed. A command word computed at run time, a shell function, an
+ * alias or a script is invisible here; a disabled package's binary is still refused for those by the
+ * PATH shims of [DisableShims], and a mutating `dpkg` by its guard. Isolation has no such second
+ * layer, and an absolute-path call escapes both.
  */
 internal object LinePlanner {
     enum class StepKind {

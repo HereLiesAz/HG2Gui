@@ -33,7 +33,12 @@ Before anything runs, `LinePlanner` (in `CommandRouting.kt`) analyses the whole 
 - an isolated package's binary runs only as its own command or as one step of a `;` / `&&` / `||` list, and is refused (exit 126) anywhere else;
 - a `;` / `&&` / `||` list that contains a command the engine handles itself runs one step at a time with the shell's short-circuit rules; everything else goes to the shell as typed.
 
-A command word that is only known at run time (`$tool`, a function, a sourced script) is invisible to this analysis, and a direct `dpkg` call is outside the transaction layer; the planner does not claim to cover them.
+The planner reads the command line only. A command word that is only known at run time (`$tool`, `$(which x)`), a shell function, an alias or a script that calls a package binary is invisible to it, so two further guards live in the shell's `PATH` rather than in the planner (`DisableShims`):
+
+- **Disable by PATH.** For every binary of a disabled package, a one-line `sh` script is kept in `<filesDir>/hg2gui-shims` (a sibling of the prefix, owned by no package). It prints `<binary> is disabled (hg2package enable <manager> <package>)` to stderr and exits 126. `Hg2ExecEnvironment.apply` puts that directory first on `PATH` for every shell environment built from `ShellSession.bootstrapBashEnv` (terminal tabs, full-screen sessions) and for PRoot compatibility runs, and the sourced `.hg2gui-script-wrappers.sh` re-asserts it. The set is regenerated on disable/enable (`PackageLifecycleStore.setDisabled`), at session start, and before every command the engine hands to the shell, so remove/purge and manager changes are picked up; a stale marked shim is deleted, files without the marker are never touched. A binary is shimmed only if every package providing it is disabled, so nothing owned by an enabled package, and no core tool of one, is shadowed. After a change the engine runs `hash -r` in each tab's shell once, because bash caches where it found a command. HG2Gui's own package manager runs the dpkg launcher by absolute path with `PATH=$PREFIX/bin:/system/bin`, so it never passes through a shim.
+- **Direct dpkg.** A permanent `dpkg` shim and the sourced `dpkg()` function share one guard (`PrefixRuntimeConfig.dpkgGuardFunction`): `-i`/`--install`, `-r`, `-P`, `--configure`, `--unpack`, `--triggers-only`, `--force-*`, `--no-force-*`, `--refuse-*`, `--set-selections`, `--clear-selections`, `--add/remove-architecture`, the `*-avail` actions and `--command-fd` exit 126 with a pointer to `pkg install` / `pkg remove`; every other argument list is passed to the APK's dpkg launcher.
+
+What this does not cover: a binary called by absolute path (`$PREFIX/bin/tool`) or by a program that rewrites `PATH`; `dpkg-divert`, `dpkg-trigger`, `update-alternatives` and a real `apt` run from a script (mutating `pkg`/`apt` is routed only when it is a command of the line); the launcher called by absolute path. Isolation has no PATH half: shimming an isolated package would break builds, so an isolated package's binary reached through a run-time command word, function or script runs unisolated.
 
 ### Headless execution
 
@@ -121,7 +126,7 @@ Top-level mutating `apt`/`apt-get` operations (as their own command or one step 
 - `pkg` itself rejects unknown `-`/`--` options instead of dropping them; `--reinstall` (alias `--force-requested`) is accepted only for `install`;
 - `pkg upgrade <name>` upgrades just the named installed package (an error if it is not installed) and is what a lifecycle Update of a `pkg` package runs, because `pkg install <name>` is a no-op for an installed package.
 
-A mutating `pkg`/`apt` that HG2Gui cannot route (wrapped in `sudo`/`env`, piped, nested, in a control structure) is refused; a direct `dpkg` call and run-time-computed command words are not covered by this layer.
+A mutating `pkg`/`apt` that HG2Gui cannot route (wrapped in `sudo`/`env`, piped, nested, in a control structure) is refused. A direct `dpkg` call that mutates is refused by the `dpkg` guard (see Line planning), whose shim is on `PATH`; `dpkg-divert`, `dpkg-trigger`, `update-alternatives` and a real `apt` inside a script, and calls by absolute path, remain outside this layer.
 
 The package transaction layer includes:
 
@@ -157,7 +162,7 @@ The common model records manager, package name, version, runnable binaries, disa
 
 HG2Gui-owned lifecycle semantics include:
 
-- **Disable/Enable** — retain installation while HG2Gui blocks/allows owned binaries;
+- **Disable/Enable** — retain installation while HG2Gui blocks/allows owned binaries: the line planner refuses them where they are written in the line, and `DisableShims` refuses them by `PATH` when they are reached through run-time command words, functions, aliases or scripts (not by absolute path);
 - **Reset** — retain installed payload while deleting attributable runtime state;
 - **Isolate/Release isolation** — select private-root execution policy independent of the package manager.
 
@@ -173,7 +178,7 @@ Manager-native operations such as update/remove/purge are delegated through the 
 
 Dynamically linked ELF with an appropriate interpreter remains on the direct path. Compatibility routing is narrow and explicit.
 
-If an isolated package cannot obtain its isolation backend, execution fails rather than running unisolated. An isolated package's binary is only run as its own command or one step of a `;` / `&&` / `||` list (see Line planning).
+If an isolated package cannot obtain its isolation backend, execution fails rather than running unisolated. An isolated package's binary is only run as its own command or one step of a `;` / `&&` / `||` list (see Line planning); that check reads the command line, and there are deliberately no `PATH` shims for isolated packages.
 
 ## 9. Package isolation and observability
 
@@ -300,11 +305,12 @@ CI verifies what its jobs actually compile/test/analyze. Real Android behavior t
 5. Adaptive TUI wrapping must preserve a RAW escape path.
 6. Generated TUI navigation must be reconciled with observed terminal state.
 7. Package compatibility routing must be evidence-based, not arbitrary fallback.
-8. An isolated package that cannot get its isolation backend fails instead of running unisolated, and it runs only as its own command or one step of a `;` / `&&` / `||` list; it is refused in pipes, `bash -c`, `$( )` and control structures. Isolation is state separation with best-effort observation, not a verified security boundary.
+8. An isolated package that cannot get its isolation backend fails instead of running unisolated, and it runs only as its own command or one step of a `;` / `&&` / `||` list; it is refused in pipes, `bash -c`, `$( )` and control structures. This is enforced on the command line only: a run-time command word, function or script that reaches an isolated package's binary is not intercepted. Isolation is state separation with best-effort observation, not a verified security boundary.
 9. HG2Gui's own routes to ADB/root are explicit and brokered by foreground approval; HG2Gui does not grant them ambiently. (It does not intercept an `su`/`adb` you run yourself from the shell.)
 10. Headless execution (API, MCP, installers) cannot elevate through ADB/root authority.
 11. External API authority requests require foreground approval.
 12. Native screens are allowed whenever they fit the task better than command composition.
+13. A disabled package's binaries are refused both by the line planner and, through `PATH` shims, when reached by a run-time command word, function, alias or script; neither covers a call by absolute path. A direct `dpkg` call that mutates is refused with a pointer to `pkg`. HG2Gui's own package manager never goes through these shims.
 
 ## 18. Documentation authority
 

@@ -35,6 +35,10 @@ class TerminalEngine(
 ) {
     private var shell = ShellSession.forAndroid(home, context)
     private var pendingBackendNotice: String? = shell.fallbackNoticeOrNull()
+
+    // The shim directory's change counter as this tab's shell last saw it. Creating the shell
+    // (above) already synced the directory, so it starts current.
+    private var shimGenerationSeen: Long = DisableShims.generation()
     private val client = sharedHttpClient(context)
     private val downloader by lazy { Hg2Downloader(context.applicationContext, client) }
     private val packages by lazy { Hg2PackageManager(context.applicationContext, client, downloader) }
@@ -272,11 +276,35 @@ class TerminalEngine(
         LinePlanner.StepKind.SHELL -> runShellLine(step.text, io)
     }
 
+    /**
+     * Run before anything is handed to the shell. Brings the PATH shims (Disable, dpkg guard) in
+     * line with what is installed now, and, if any shell changed them since this tab's shell last
+     * looked, drops the shell's cached command locations: bash remembers where `tool` was found, so
+     * without `hash -r` a freshly disabled tool would keep running from its remembered real path
+     * (and a re-enabled one would keep pointing at the deleted shim).
+     */
+    private fun prepareShell() {
+        DisableShims.sync(context)
+        val current = DisableShims.generation()
+        if (current == shimGenerationSeen) return
+        shimGenerationSeen = current
+        // A dead shell restarts with an empty cache, and its restart notice must not be swallowed here.
+        if (!shell.isAlive) return
+        try {
+            shell.stream(DisableShims.REHASH_COMMAND, onLine = {})
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            // Best effort: a failed rehash only delays the shim taking effect in this shell.
+        }
+    }
+
     private suspend fun runShellLine(line: String, io: Io): Int {
         val notice = pendingBackendNotice
         pendingBackendNotice = null
         val noticed = io.withNotice(notice)
         return try {
+            prepareShell()
             shell.stream(
                 line,
                 onLine = { output -> runBlocking { noticed.snapshot(output) } },
@@ -453,13 +481,16 @@ class TerminalEngine(
         }
     }
 
-    private fun streamThroughShell(command: String, io: Io): Int = shell.stream(
-        command,
-        onLine = { output -> runBlocking { io.snapshot(output) } },
-        onNeedInput = { prompt -> runBlocking { io.onNeedInput(prompt) } },
-        onStderrLine = io.onStderr,
-        onStyledLine = io.onStyled
-    )
+    private fun streamThroughShell(command: String, io: Io): Int {
+        prepareShell()
+        return shell.stream(
+            command,
+            onLine = { output -> runBlocking { io.snapshot(output) } },
+            onNeedInput = { prompt -> runBlocking { io.onNeedInput(prompt) } },
+            onStderrLine = io.onStderr,
+            onStyledLine = io.onStyled
+        )
+    }
 
     private suspend fun ensureProotEngine(emit: suspend (String) -> Unit, purpose: String) {
         if (PackageIsolation.engine(context) != null) return

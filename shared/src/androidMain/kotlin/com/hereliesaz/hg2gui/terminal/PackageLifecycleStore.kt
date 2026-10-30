@@ -126,6 +126,8 @@ object PackageLifecycleStore {
             putBoolean(disabledKey(manager, name), disabled)
         }
         installedCache = null
+        // PATH-level half of Disable: add/remove the shims for this package's binaries now.
+        DisableShims.sync(context)
     }
 
     fun setIsolated(context: Context, manager: String, name: String, isolated: Boolean) {

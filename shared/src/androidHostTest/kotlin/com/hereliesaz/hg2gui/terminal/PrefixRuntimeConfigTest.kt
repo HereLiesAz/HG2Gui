@@ -115,6 +115,18 @@ class PrefixRuntimeConfigTest {
     }
 
     @Test
+    fun wrappers_putTheDisableShimDirectoryFirstOnPath_andGuardDpkg() {
+        withHg2TempDir { dir ->
+            val (prefix, home) = scriptTree(dir)
+            PrefixRuntimeConfig.writeScriptWrappers(prefix, home, nativeDir)
+            val text = File(home, PrefixRuntimeConfig.WRAPPER_SCRIPT_NAME).readText()
+            assertTrue(text.contains("'${File(dir, DisableShims.DIRECTORY_NAME).absolutePath}'"))
+            assertTrue(text.contains("_hg2gui_dpkg_guard \"\$@\" || return \$?"))
+            assertTrue(text.indexOf("_hg2gui_dpkg_guard() {") < text.indexOf("dpkg() {"))
+        }
+    }
+
+    @Test
     fun shebangAndNameRules() {
         assertTrue(PrefixRuntimeConfig.isShellShebang("#!/usr/bin/env -S bash"))
         assertFalse(PrefixRuntimeConfig.isShellShebang("#!/usr/bin/env python3"))

@@ -31,6 +31,11 @@ object Hg2ExecEnvironment {
      *
      * [home] becomes `HOME` and `TERMUX__HOME`: it is the user's home directory, never a working
      * directory. A process's start directory is passed to the spawn call, not through here.
+     *
+     * Callers that set `PATH` before calling this with the prefix's `bin` first (the interactive and
+     * full-screen shells, PRoot compatibility runs) get [DisableShims]' directory prepended to it;
+     * Hg2PackageManager sets PATH afterwards, so the engine's own dpkg/maintainer-script runs never
+     * see the shims.
      */
     fun apply(
         context: Context,
@@ -65,5 +70,8 @@ object Hg2ExecEnvironment {
         env["TERMUX_EXEC__SYSTEM_LINKER_EXEC__MODE"] = "force"
         env["PROOT_TMP_DIR"] = prootTmp.absolutePath
         env["LD_PRELOAD"] = preload.absolutePath
+        // A shell environment (PATH starting with the prefix's bin) also gets the Disable /
+        // dpkg-guard shim directory in front; any other PATH is left exactly as it is.
+        DisableShims.applyToPath(context, env)
     }
 }
