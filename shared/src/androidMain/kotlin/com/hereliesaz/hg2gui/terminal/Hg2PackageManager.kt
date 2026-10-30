@@ -921,7 +921,7 @@ class Hg2PackageManager(
 
     companion object {
         /** Process-wide: every Hg2PackageManager instance shares the one dpkg prefix. */
-        private val PACKAGE_OPERATION_LOCK = Mutex()
+        internal val PACKAGE_OPERATION_LOCK = Mutex()
         private const val OLD_PREFIX = "/data/data/com.termux/files/usr"
         private const val DPKG_ERROR_TAIL_LINES = 40
         private val MAINTAINER_SCRIPTS = listOf("preinst", "postinst", "prerm", "postrm")

@@ -207,6 +207,27 @@ object PrefixRewriter {
         }.getOrDefault(false)
     }
 
+    /**
+     * Applies [replacements] in order to [file] (text only, same byte-level rules as
+     * [rewriteFile]). Returns true if any of them changed the file.
+     */
+    fun rewriteFile(file: File, replacements: List<Pair<String, String>>): Boolean {
+        val bytes = runCatching { file.readBytes() }.getOrNull() ?: return false
+        if (!looksLikeText(bytes)) return false
+        var current = bytes
+        var changed = false
+        for ((old, with) in replacements) {
+            val next = replaceInBytes(current, old, with) ?: continue
+            current = next
+            changed = true
+        }
+        if (!changed) return false
+        return runCatching {
+            file.writeBytes(current)
+            true
+        }.getOrDefault(false)
+    }
+
     private fun matchesAt(content: ByteArray, at: Int, needle: ByteArray): Boolean {
         for (j in needle.indices) {
             if (content[at + j] != needle[j]) return false

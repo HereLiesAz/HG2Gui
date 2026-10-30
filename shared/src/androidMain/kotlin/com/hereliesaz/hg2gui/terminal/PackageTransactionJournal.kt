@@ -323,7 +323,9 @@ class PackageTransactionJournal private constructor(
          * in flight here. A journal whose owner marker names a different, still-running process
          * is left untouched and reported as a recovery failure, which blocks the new mutation.
          */
-        fun recoverAbandoned(context: Context): List<String> = recoverAbandoned(Env.forContext(context))
+        fun recoverAbandoned(context: Context): List<String> {
+            return recoverAbandoned(Env.forContext(context))
+        }
 
         internal fun recoverAbandoned(env: Env): List<String> {
             migrateLegacyJournals(env)
@@ -418,9 +420,11 @@ class PackageTransactionJournal private constructor(
          * bootstrap): the journals describe state that no longer exists and replaying them over
          * the new prefix would corrupt it.
          */
-        fun discardAll(context: Context) = discardAll(Env.forContext(context))
+        fun discardAll(context: Context) {
+            discardAll(Env.forContext(context))
+        }
 
-        internal fun discardAll(env: Env) {
+        internal fun discardAll(env: Env): Unit {
             (listOf(env.journalRoot) + env.legacyRoots).filter { it.isDirectory }.forEach { root ->
                 root.listFiles().orEmpty().forEach { FileTrees.deleteRecursivelyNoFollow(it) }
             }
