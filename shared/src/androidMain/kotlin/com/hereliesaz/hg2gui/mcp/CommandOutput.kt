@@ -40,8 +40,4 @@ class CommandOutputAccumulator(private val maxChars: Int) {
 
     /** The collected output, at most [maxChars] long. */
     fun text(): String = (if (finalSnapshot) last else merged).take(maxChars)
-
-    /** True when [text] had to drop output because of the cap. */
-    fun truncated(): Boolean = (if (finalSnapshot) last.length else merged.length) > maxChars ||
-        (!finalSnapshot && merged.length >= maxChars)
 }
