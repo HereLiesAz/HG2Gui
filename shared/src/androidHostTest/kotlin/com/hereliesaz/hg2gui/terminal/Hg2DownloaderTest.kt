@@ -7,6 +7,7 @@ import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.security.MessageDigest
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
@@ -80,7 +81,7 @@ class Hg2DownloaderTest {
         val server = TestServer(body)
         try {
             withHg2TempDir { dir ->
-                block(server, Hg2Downloader(File(dir, "downloads"), OkHttpClient()), File(dir, "downloads/out.bin"))
+                block(server, Hg2Downloader(File(dir, "downloads"), OkHttpClient.Builder().readTimeout(3, TimeUnit.SECONDS).build()), File(dir, "downloads/out.bin"))
             }
         } finally {
             server.stop()
