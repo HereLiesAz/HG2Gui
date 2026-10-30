@@ -236,10 +236,15 @@ object DistroManager {
         if (staging.exists() && !FileTrees.deleteRecursivelyNoFollow(staging)) {
             throw IOException("Cannot clear stale staging directory ${staging.path}")
         }
-        extractBootstrap(zipFile, staging, prefix, nativeLibraryDir)
-        makeBinariesExecutable(staging)
-        BootstrapStaging.verify(staging, requireExecutableBash)
-        BootstrapStaging.swapIntoPlace(prefix, staging, backup)
+        try {
+            extractBootstrap(zipFile, staging, prefix, nativeLibraryDir)
+            makeBinariesExecutable(staging)
+            BootstrapStaging.verify(staging, requireExecutableBash)
+            BootstrapStaging.swapIntoPlace(prefix, staging, backup)
+        } catch (t: Throwable) {
+            FileTrees.deleteRecursivelyNoFollow(staging)
+            throw t
+        }
     }
 
     private fun logQuietly(e: Throwable) {
