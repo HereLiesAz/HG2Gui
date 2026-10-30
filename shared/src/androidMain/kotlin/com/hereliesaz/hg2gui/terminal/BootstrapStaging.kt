@@ -43,8 +43,9 @@ object BootstrapStaging {
     }
 
     /**
-     * Throws unless the staged tree looks like a working prefix: a `bin/` directory and an
-     * executable `bin/bash` (the same bar [DistroManager.isInstalled] applies to a live install).
+     * Throws unless the staged tree looks like a working prefix: a `bin/` directory, an
+     * executable `bin/bash` (the same bar [DistroManager.isInstalled] applies to a live install)
+     * and the archive's own `var/lib/dpkg/status`.
      * [requireExecutableBash] exists for host tests, where there is no exec-exempt native library
      * to link against.
      */
@@ -53,6 +54,10 @@ object BootstrapStaging {
         val bash = File(staged, "bin/bash")
         if (!bash.exists()) throw IOException("Bootstrap archive produced no bin/bash")
         if (requireExecutableBash && !bash.canExecute()) throw IOException("Staged bin/bash is not executable")
+        // bin/bash alone proves nothing: the exec-exempt links are created from the APK's manifest
+        // even when the archive itself yielded nothing. dpkg's status file only comes from the
+        // archive, so requiring it stops an empty/garbled extraction replacing a working prefix.
+        if (!File(staged, "var/lib/dpkg/status").isFile) throw IOException("Bootstrap archive produced no dpkg database")
     }
 
     /**

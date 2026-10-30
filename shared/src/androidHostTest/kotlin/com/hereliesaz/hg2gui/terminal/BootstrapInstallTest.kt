@@ -110,7 +110,8 @@ class BootstrapInstallTest {
         withHg2TempDir { dir ->
             val fx = Fixture(dir)
             fx.existingInstall()
-            val noBash = fx.zip("bin/" to null, "bin/pkg" to "#!/bin/sh\n".toByteArray())
+            val noBash = fx.zip("bin/" to null, "bin/pkg" to "#!/bin/sh\n".toByteArray(), "var/lib/dpkg/status" to ByteArray(0))
+            File(fx.nativeDir, "libbin_bash.so").delete()
 
             assertThrows(IOException::class.java) { fx.install(noBash) }
 
@@ -210,13 +211,17 @@ class BootstrapInstallTest {
     }
 
     @Test
-    fun verify_requiresBinAndBash() {
+    fun verify_requiresBinBashAndTheDpkgDatabase() {
         withHg2TempDir { dir ->
             val staged = File(dir, "s").apply { mkdirs() }
             assertThrows(IOException::class.java) { BootstrapStaging.verify(staged) }
             File(staged, "bin").mkdirs()
             assertThrows(IOException::class.java) { BootstrapStaging.verify(staged) }
             staged.write("bin/bash", "x")
+            assertThrows("an archive that yielded no dpkg database must not replace a prefix", IOException::class.java) {
+                BootstrapStaging.verify(staged, requireExecutableBash = false)
+            }
+            staged.write("var/lib/dpkg/status", "")
             BootstrapStaging.verify(staged, requireExecutableBash = false)
         }
     }
