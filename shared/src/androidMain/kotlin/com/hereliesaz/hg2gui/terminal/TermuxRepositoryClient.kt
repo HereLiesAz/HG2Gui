@@ -341,7 +341,7 @@ class TermuxRepositoryClient internal constructor(
         private val INDEX_LOCK = Any()
 
         /**
-         * SHA-256 of each `share/termux-keyring/*.gpg` shipped in the pinned bootstrap archive
+         * SHA-256 of each `.gpg` file under `share/termux-keyring/` shipped in the pinned bootstrap archive
          * (bootstrap-2026.08.16-r1+apt.android-7; identical across aarch64/arm/x86_64). Bump with
          * the bootstrap tag in [DistroManager]. The pacman keyring is listed for completeness but
          * is never used for APT.
