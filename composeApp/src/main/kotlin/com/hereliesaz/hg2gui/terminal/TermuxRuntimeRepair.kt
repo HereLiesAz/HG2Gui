@@ -5,31 +5,26 @@ import android.system.Os
 import java.io.File
 import java.nio.file.Files
 
+/**
+ * Per-launch repair of an extracted Termux prefix. The generated `etc/apt/apt.conf` and the
+ * `$HOME/.hg2gui-script-wrappers.sh` profile are NOT written here: [PrefixRuntimeConfig] (in
+ * `:shared`) is their single source of truth, shared with [DistroManager], so the two callers can
+ * no longer overwrite each other with different content.
+ */
 object TermuxRuntimeRepair {
     private const val TERMUX_PREFIX = "/data/data/com.termux/files/usr"
-    private const val WRAPPERS = ".hg2gui-script-wrappers.sh"
-    private const val PROFILE_LINE = "[ -f \"\$HOME/$WRAPPERS\" ] && . \"\$HOME/$WRAPPERS\""
-    private const val APT_KEY_LAUNCHER = "libhg2gui_apt_key.so"
-    private const val DPKG_LAUNCHER = "libhg2gui_dpkg.so"
     private const val MAIN_REPO = "https://packages.termux.dev/apt/termux-main"
     private const val ROOT_REPO = "https://packages.termux.dev/apt/termux-root"
     private const val X11_REPO = "https://packages.termux.dev/apt/termux-x11"
-    private const val NEEDS_APT_UPDATE = ".hg2gui-needs-update"
-    private val SAFE_SCRIPT_NAME = Regex("[A-Za-z0-9_.+-]+")
+    private const val NEEDS_APT_UPDATE = PrefixRuntimeConfig.NEEDS_APT_UPDATE
     private const val REPAIR_STAMP = ".hg2gui-repair-stamp"
-    private val SOURCEABLE_SHELLS = setOf("sh", "bash")
 
     /**
      * True iff [shebangLine] (the script's first line) runs it with sh or bash - directly or via
      * `env` - the only scripts the wrapper may `source` into bash. A python/perl/node script
      * sourced into bash would just be parsed as shell. Pure, see TermuxRuntimeRepairTest.
      */
-    internal fun isShellShebang(shebangLine: String): Boolean {
-        val words = shebangLine.removePrefix("#!").trim().split(Regex("\\s+")).filter(String::isNotEmpty)
-        val first = words.firstOrNull()?.substringAfterLast('/')
-        val interpreter = if (first == "env") words.drop(1).firstOrNull { !it.startsWith("-") }?.substringAfterLast('/') else first
-        return shebangLine.startsWith("#!") && interpreter in SOURCEABLE_SHELLS
-    }
+    internal fun isShellShebang(shebangLine: String): Boolean = PrefixRuntimeConfig.isShellShebang(shebangLine)
 
     fun repair(context: Context) {
         val prefix = DistroManager.prefixDir(context)
@@ -50,8 +45,8 @@ object TermuxRuntimeRepair {
         repairMainRepoKey(prefix)
         writeMainRepoSource(prefix)
         val nativeLibraryDir = context.applicationInfo.nativeLibraryDir
-        writeAptConfig(prefix, nativeLibraryDir)
-        writeScriptWrappers(prefix, DistroManager.homeDir(context), nativeLibraryDir)
+        PrefixRuntimeConfig.writeAptConf(prefix, prefix, nativeLibraryDir)
+        PrefixRuntimeConfig.writeScriptWrappers(prefix, DistroManager.homeDir(context), nativeLibraryDir)
         if (!upToDate) {
             TermuxElfAudit.audit(context)
             runCatching { stampFile.writeText(stamp) }
@@ -71,20 +66,19 @@ object TermuxRuntimeRepair {
     }
 
     private fun repairScript(file: File, prefix: File) {
-        if (!file.isFile || Files.isSymbolicLink(file.toPath()) || isElf(file)) return
+        if (!file.isFile || Files.isSymbolicLink(file.toPath()) || PrefixRuntimeConfig.isElf(file)) return
         val bytes = runCatching { file.readBytes() }.getOrNull() ?: return
         if (bytes.size < 2 || bytes[0] != '#'.code.toByte() || bytes[1] != '!'.code.toByte()) return
-        val text = String(bytes, Charsets.UTF_8)
-        if (TERMUX_PREFIX in text) {
-            val replaced = text.replace(TERMUX_PREFIX, prefix.absolutePath)
-            runCatching { atomicWrite(file, replaced) }
-        }
+        // Byte-level (PrefixRewriter): re-encoding a non-UTF-8 script through a String would
+        // corrupt every byte that is not valid UTF-8.
+        val replaced = PrefixRewriter.replaceInBytes(bytes, TERMUX_PREFIX, prefix.absolutePath)
+        if (replaced != null) runCatching { atomicWrite(file, replaced) }
         runCatching { file.setExecutable(true) }
     }
 
-    private fun atomicWrite(target: File, content: String) {
+    private fun atomicWrite(target: File, content: ByteArray) {
         val tmp = File(target.parentFile, ".${target.name}.tmp")
-        tmp.writeText(content)
+        tmp.writeBytes(content)
         if (!tmp.renameTo(target)) {
             tmp.copyTo(target, overwrite = true)
             tmp.delete()
@@ -106,7 +100,7 @@ object TermuxRuntimeRepair {
         val source = File(aptDir, "sources.list")
         val desiredSource = "deb $MAIN_REPO stable main\n"
         val sourceChanged = !source.exists() || source.readText() != desiredSource
-        atomicWrite(source, desiredSource)
+        atomicWrite(source, desiredSource.toByteArray(Charsets.UTF_8))
 
         val termuxDir = File(prefix, "etc/termux").apply { mkdirs() }
         val mirrorDir = File(termuxDir, "mirrors/hg2gui").apply { mkdirs() }
@@ -136,101 +130,4 @@ object TermuxRuntimeRepair {
             File(listsDir, NEEDS_APT_UPDATE).writeText("1\n")
         }
     }
-
-    private fun writeAptConfig(prefix: File, nativeLibraryDir: String) {
-        val p = prefix.absolutePath
-        val aptKeyLauncher = File(nativeLibraryDir, APT_KEY_LAUNCHER)
-        val dpkgLauncher = File(nativeLibraryDir, DPKG_LAUNCHER)
-        File(prefix, "var/cache/apt/archives/partial").mkdirs()
-        File(prefix, "var/lib/apt/lists/partial").mkdirs()
-        File(prefix, "var/lib/dpkg").mkdirs()
-        val etc = File(prefix, "etc/apt").apply { mkdirs() }
-        File(etc, "apt.conf").writeText(
-            """
-            Dir "$p/";
-            Dir::Etc "$p/etc/apt/";
-            Dir::Etc::sourcelist "$p/etc/apt/sources.list";
-            Dir::Etc::sourceparts "$p/etc/apt/sources.list.d/";
-            Dir::Etc::vendorlist "$p/etc/apt/vendors.list";
-            Dir::Etc::vendorparts "$p/etc/apt/vendors.list.d/";
-            Dir::Etc::main "$p/etc/apt/apt.conf";
-            Dir::Etc::parts "$p/etc/apt/apt.conf.d/";
-            Dir::Etc::preferences "$p/etc/apt/preferences";
-            Dir::Etc::preferencesparts "$p/etc/apt/preferences.d/";
-            Dir::Etc::trusted "$p/etc/apt/trusted.gpg";
-            Dir::Etc::trustedparts "$p/etc/apt/trusted.gpg.d/";
-            Dir::State "$p/var/lib/apt/";
-            Dir::State::lists "$p/var/lib/apt/lists/";
-            Dir::State::status "$p/var/lib/dpkg/status";
-            Dir::Cache "$p/var/cache/apt/";
-            Dir::Cache::archives "$p/var/cache/apt/archives/";
-            Dir::Log "$p/var/log/apt/";
-            Dir::Bin::methods "$p/lib/apt/methods/";
-            Dir::Bin::solvers:: "$p/lib/apt/solvers/";
-            Dir::Bin::dpkg "${dpkgLauncher.absolutePath}";
-            Dir::Bin::gpg "$p/bin/gpgv";
-            Dir::Bin::apt-key "${aptKeyLauncher.absolutePath}";
-            APT::Key::gpgvcommand "$p/bin/gpgv";
-            Acquire::gpgv::Command "$p/bin/gpgv";
-            Acquire::https::CaInfo "$p/etc/tls/cert.pem";
-            Acquire::Retries "3";
-            Acquire::http::Timeout "20";
-            Acquire::https::Timeout "20";
-            """.trimIndent()
-        )
-    }
-
-    private fun writeScriptWrappers(prefix: File, home: File, nativeLibraryDir: String) {
-        home.mkdirs()
-        val scripts = File(prefix, "bin").listFiles().orEmpty()
-            .filter { it.isFile && !Files.isSymbolicLink(it.toPath()) && !isElf(it) && isShellShebang(firstLine(it)) }
-            .map { it.name }
-            // Restrict to names safe to embed as shell function identifiers — anything else
-            // (e.g. a filename containing ' ' or '$') would inject shell syntax into the wrapper.
-            .filter { SAFE_SCRIPT_NAME.matches(it) }
-            .sorted()
-        val dpkgLauncher = File(nativeLibraryDir, DPKG_LAUNCHER).absolutePath
-        File(home, WRAPPERS).writeText(buildString {
-            appendLine("# Auto-generated by HG2Gui. Do not edit.")
-            appendLine("export DPKG_ADMINDIR=\"\$PREFIX/var/lib/dpkg\"")
-            scripts.forEach { appendLine("$it() ( source \"\$PREFIX/bin/$it\" \"\$@\" )") }
-            appendLine()
-            appendLine("dpkg() {")
-            appendLine("  \"$dpkgLauncher\" \"\$@\"")
-            appendLine("}")
-            appendLine()
-            appendLine("apt() {")
-            appendLine("  _hg2gui_marker=\"\$PREFIX/var/lib/apt/lists/$NEEDS_APT_UPDATE\"")
-            appendLine("  if [ -f \"\$_hg2gui_marker\" ] && [ \"\${1:-}\" != update ]; then")
-            appendLine("    \"\$PREFIX/bin/apt\" update || return \$?")
-            appendLine("    rm -f \"\$_hg2gui_marker\"")
-            appendLine("  fi")
-            appendLine("  \"\$PREFIX/bin/apt\" \"\$@\"")
-            appendLine("  _hg2gui_rc=\$?")
-            appendLine("  if [ \"\${1:-}\" = update ] && [ \$_hg2gui_rc -eq 0 ]; then rm -f \"\$_hg2gui_marker\"; fi")
-            appendLine("  return \$_hg2gui_rc")
-            appendLine("}")
-        })
-        val profile = File(home, ".bash_profile")
-        val existing = if (profile.exists()) profile.readText() else ""
-        if (PROFILE_LINE !in existing) {
-            profile.appendText((if (existing.isNotEmpty() && !existing.endsWith('\n')) "\n" else "") + PROFILE_LINE + "\n")
-        }
-    }
-
-    private fun firstLine(file: File): String = runCatching {
-        file.inputStream().use { input ->
-            val head = ByteArray(256)
-            val n = input.read(head).coerceAtLeast(0)
-            String(head, 0, n, Charsets.UTF_8).lineSequence().firstOrNull().orEmpty()
-        }
-    }.getOrDefault("")
-
-    private fun isElf(file: File): Boolean = runCatching {
-        file.inputStream().use { input ->
-            val m = ByteArray(4)
-            input.read(m) == 4 && m[0].toInt() == 0x7f && m[1] == 'E'.code.toByte() &&
-                m[2] == 'L'.code.toByte() && m[3] == 'F'.code.toByte()
-        }
-    }.getOrDefault(false)
 }

@@ -1,3 +1,6 @@
+# workflow_call only: no workflow in this repository calls it. The callers moved to HereLiesAz/workflows
+# (central execution, see the header of _reusable-build.yml), which `uses:` this file by path; it is
+# kept here rather than deleted because that reference cannot be checked from this repo.
 name: '🔀 Jules Triage'
 
 on:
@@ -59,23 +62,25 @@ jobs:
           LABELS: '${{ steps.get_labels.outputs.available_labels }}'
           EXTRA: '${{ inputs.additional_context }}'
         run: |-
+          # Random heredoc delimiter, see jules-review.yml: a fixed one lets an issue body inject outputs.
+          DELIM="JULES_PROMPT_$(cat /proc/sys/kernel/random/uuid)"
           {
-            echo 'prompt<<JULES_PROMPT_EOF'
+            echo "prompt<<${DELIM}"
             echo 'Triage the following GitHub issue and apply the most appropriate labels from the available set.'
             echo
-            echo "**Issue #${NUMBER}: ${TITLE}**"
+            printf '%s\n' "**Issue #${NUMBER}: ${TITLE}**"
             echo
-            echo "${BODY}"
+            printf '%s\n' "${BODY}"
             echo
             echo '**Available labels (comma-separated):**'
-            echo "${LABELS}"
+            printf '%s\n' "${LABELS}"
             echo
             if [ -n "${EXTRA}" ]; then
-              echo "**Additional context:** ${EXTRA}"
+              printf '%s\n' "**Additional context:** ${EXTRA}"
               echo
             fi
             echo "Apply labels to issue #${NUMBER} in ${REPO} using only labels from the available set above. Do not invent new labels. If the issue provides insufficient information to pick a label confidently, apply \"status/needs-triage\" if it exists, otherwise leave it unlabeled."
-            echo 'JULES_PROMPT_EOF'
+            echo "${DELIM}"
           } >> "$GITHUB_OUTPUT"
 
       - name: 'Invoke Jules for issue triage'

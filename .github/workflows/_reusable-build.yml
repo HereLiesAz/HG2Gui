@@ -1,3 +1,19 @@
+# Reusable build/publish workflow. Nothing in THIS repository calls it: since the "Centralize workflow
+# bindings" change the thin caller workflows live in (and are dispatched from) HereLiesAz/workflows,
+# which is why it is kept even though a search of this repo finds no `uses:` of it. Same for the composite
+# actions under .github/actions (android-keystore is used below; play-publish and play-api-token are
+# used by the central Play release flow; verify-android-signature is used below).
+#
+# UPDATE-CHANNEL CONTRACT (audit M-9). The app's in-app updater (AppUpdateChecker / UpdatePolicy.kt)
+# polls the GitHub release tagged `latest-v<major>.<minor>` and installs only
+# `hg2gui-playstore-release-<version>.apk` - a NON-debuggable build that is signed with the
+# release key. A caller that publishes to that channel must therefore pass:
+#   gradle_task:           :composeApp:assemblePlaystoreRelease
+#   release_tag_prefix:    latest                      (tag = latest-v<major>.<minor>)
+#   artifact_path_pattern: composeApp/build/outputs/apk/playstore/release/hg2gui-playstore-release-*.apk
+#   signing_enabled:       true
+# The debug build type is signed with the local debug key and is never signed with the release key
+# (composeApp/build.gradle.kts); the guard step below also refuses a signed debug build outright.
 name: Reusable Build
 
 on:
@@ -47,6 +63,15 @@ on:
         required: false
       KEYSTORE_CHAIN:
         required: false
+      # Arm the android-keystore action's "is this the key we expect" check. Optional only so that
+      # callers can be migrated one at a time: when ALL THREE are unset the check is a no-op and the
+      # run says so. Set at least KEYSTORE_SHA256 in the calling repository's secrets.
+      KEYSTORE_SHA256:
+        required: false
+      KEYSTORE_SHA1:
+        required: false
+      KEYSTORE_OWNER:
+        required: false
       GOOGLE_SERVICES_API_KEY:
         required: false
       PROJECT_ID:
@@ -84,6 +109,18 @@ jobs:
           fi
           echo "ARCORE_API_KEY=$ARCORE_API_KEY" >> local.properties
 
+      # A signed build must be a release build: signing a debug build with the production key
+      # is how debuggable APKs reached the update channel.
+      - name: Refuse signed debug builds
+        if: ${{ inputs.signing_enabled }}
+        env:
+          GRADLE_TASK: ${{ inputs.gradle_task }}
+        run: |
+          if printf '%s' "$GRADLE_TASK" | grep -qi 'debug'; then
+            echo "::error::signing_enabled with a debug task ($GRADLE_TASK): debug builds must not be signed with the release key."
+            exit 1
+          fi
+
       - name: Prepare Android Keystore
         if: ${{ inputs.signing_enabled }}
         id: keystore
@@ -96,6 +133,9 @@ jobs:
           keystore-password: ${{ secrets.KEYSTORE_PASSWORD }}
           key-alias: ${{ secrets.KEY_ALIAS }}
           key-password: ${{ secrets.KEY_PASSWORD }}
+          expected-sha256: ${{ secrets.KEYSTORE_SHA256 }}
+          expected-sha1: ${{ secrets.KEYSTORE_SHA1 }}
+          expected-owner: ${{ secrets.KEYSTORE_OWNER }}
 
       - name: Set up JDK 21
         uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
@@ -120,8 +160,33 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          GRADLE_TASK: ${{ inputs.gradle_task }}
+          EXTRA_GRADLE_ARGS: ${{ inputs.extra_gradle_args }}
         run: |
-          ./gradlew ${{ inputs.gradle_task }} ${{ inputs.extra_gradle_args }} -PversionBuild=$VERSION_BUILD -PversionName=$VERSION_NAME --build-cache
+          # Inputs arrive through the environment, not inline expression interpolation; the
+          # unquoted expansion is deliberate (a task list / argument list is word-split).
+          # shellcheck disable=SC2086
+          ./gradlew $GRADLE_TASK $EXTRA_GRADLE_ARGS -PversionBuild=$VERSION_BUILD -PversionName=$VERSION_NAME --build-cache
+
+      # Prove the APK that was actually produced is signed, and by the key the keystore step
+      # prepared (its SHA-256 output) - Gradle quietly emits an unsigned APK when signing env is
+      # missing. Only the first matching file is inspected; one build task yields one signing identity.
+      - name: Locate built artifact
+        if: ${{ inputs.signing_enabled }}
+        id: built
+        env:
+          PATTERN: ${{ inputs.artifact_path_pattern }}
+        run: |
+          # shellcheck disable=SC2086
+          first="$(ls -1 $PATTERN 2>/dev/null | head -n1 || true)"
+          echo "path=$first" >> "$GITHUB_OUTPUT"
+
+      - name: Verify artifact signature
+        if: ${{ inputs.signing_enabled }}
+        uses: ./.github/actions/verify-android-signature
+        with:
+          artifact: ${{ steps.built.outputs.path }}
+          expected-sha256: ${{ steps.keystore.outputs.sha256 }}
 
       # Only master/main ever gets an auto-bump commit - a feature branch that also bumped its
       # own copy of version.properties independently is exactly what produced a real merge
@@ -143,8 +208,10 @@ jobs:
         if: ${{ success() && inputs.publish_to_release && github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main') }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG_PREFIX: ${{ inputs.release_tag_prefix }}
+          ARTIFACT_PATH_PATTERN: ${{ inputs.artifact_path_pattern }}
         run: |
-          TAG_NAME="${{ inputs.release_tag_prefix }}-v${VERSION_MAJOR}.${VERSION_MINOR}"
+          TAG_NAME="${RELEASE_TAG_PREFIX}-v${VERSION_MAJOR}.${VERSION_MINOR}"
           git fetch origin --tags --force --quiet
           git tag -fa "$TAG_NAME" -m "Automated Release"
           git push origin "refs/tags/$TAG_NAME" --force
@@ -171,7 +238,8 @@ jobs:
           # (--clobber) with whatever just built - an unambiguous, permanent link to "whatever's
           # newest right now" that coexists with the growing version history instead of replacing
           # it.
-          for FILE in ${{ inputs.artifact_path_pattern }}; do
+          # shellcheck disable=SC2086
+          for FILE in $ARTIFACT_PATH_PATTERN; do
             [ -f "$FILE" ] || continue
             gh release upload "$TAG_NAME" "$FILE" --clobber
             BASE="$(basename "$FILE")"

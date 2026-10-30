@@ -45,6 +45,10 @@ object JNI {
     @JvmStatic
     external fun setPtyWindowSize(fd: Int, rows: Int, cols: Int, cellWidth: Int, cellHeight: Int)
 
+    /** Turn on the pty's IUTF8 flag (kernel-side erase of whole multibyte characters); no-op if already set. */
+    @JvmStatic
+    external fun setPtyUTF8Mode(fd: Int)
+
     /**
      * Causes the calling thread to wait for the process associated with the receiver to finish executing.
      *

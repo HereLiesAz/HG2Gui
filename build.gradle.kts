@@ -46,6 +46,16 @@ subprojects {
             baseline = rootProject.file("config/detekt/${name}-baseline.xml")
             parallel = true
         }
+        // One baseline per module, for EVERY detekt task of it. `shared` is Kotlin Multiplatform, so
+        // besides the plain `detekt` task (all source sets) it has per-source-set type-resolution
+        // tasks (detektAndroidMain, detektMetadataCommonMain, ...); two baselines used to exist
+        // (shared-baseline.xml for commonMain, shared-baseline-main.xml for androidMain) but only the
+        // extension-level one was ever read, so androidMain findings were never baselined. They are now
+        // merged into config/detekt/shared-baseline.xml and every task, including the baseline
+        // generators, is pointed at the module's one file explicitly.
+        val moduleBaseline = rootProject.layout.projectDirectory.file("config/detekt/${name}-baseline.xml")
+        tasks.withType(io.gitlab.arturbosch.detekt.Detekt::class.java).configureEach { baseline.set(moduleBaseline) }
+        tasks.withType(io.gitlab.arturbosch.detekt.DetektCreateBaselineTask::class.java).configureEach { baseline.set(moduleBaseline) }
         // shared's type-resolution-aware androidMain task (detekt 1.23.8, the newest release at
         // time of writing) crashes with an internal NullPointerException specifically analyzing
         // DistroManager.kt - traced to detekt's own nullability-inference resolution choking on
@@ -62,10 +72,12 @@ subprojects {
     }
 }
 
-// Rewrites version.properties, so it only runs when explicitly asked for (-PautoIncrement) or on
-// CI (the CI env var, which GitHub Actions sets); a local build never dirties the working tree.
-val autoIncrementEnabled = providers.gradleProperty("autoIncrement").isPresent ||
-    !System.getenv("CI").isNullOrEmpty()
+// Rewrites version.properties (a tracked file), so it only runs when explicitly asked for
+// (-PautoIncrement). It used to run on every CI build too (the CI env var), which dirtied the
+// checkout of every test/lint job for nothing: the release pipeline computes its version up front
+// (printVersionEnv -> -PversionBuild/-PversionName) and commits the bump itself with
+// incrementAndPushVersion, so no ordinary build needs this.
+val autoIncrementEnabled = providers.gradleProperty("autoIncrement").isPresent
 
 val autoIncrementVersion = tasks.register("autoIncrementVersion") {
     onlyIf { autoIncrementEnabled }
@@ -107,8 +119,10 @@ tasks.register("printVersionEnv") {
             val versionName = "$major.$minor.$patch.$build"
             // Mirrors composeApp/build.gradle.kts's own `resolvedVersionCode` exactly — both read
             // legacyVersionCode from version.properties, so they stay in lockstep automatically.
-            // release-play.yml's "Confirm the built versionCode clears Play" step
-            // (and the Play API upload's expected-version-code) both read this VERSION_CODE - a
+            // The Play release pipeline's "Confirm the built versionCode clears Play" step
+            // (release-play.yml - no longer in this repo; it runs from HereLiesAz/workflows, see the
+            // header of .github/workflows/_reusable-build.yml) and the Play API upload's expected-version-code
+            // both read this VERSION_CODE - a
             // build actually invokes `bundleRelease` with no `-PversionBuild` override, so it too
             // resolves versionCode from version.properties, not this script's own $build.
             val legacyVersionCode = props.getProperty("legacyVersionCode", "205").toInt()

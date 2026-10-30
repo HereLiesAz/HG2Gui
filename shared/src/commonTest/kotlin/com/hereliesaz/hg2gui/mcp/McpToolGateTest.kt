@@ -1,6 +1,7 @@
 package com.hereliesaz.hg2gui.mcp
 
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -63,5 +64,46 @@ class McpToolGateTest {
         assertFalse(isMcpProtectedVfsPath("/Downloads/photo.png"))
         // Dotfiles nested below a visible top-level folder are user content, not shell config.
         assertFalse(isMcpProtectedVfsPath("/project/.gitignore"))
+    }
+
+    // --- reads and listings (M-8) --------------------------------------------------------------
+
+    @Test
+    fun secretsAreUnreadable_notJustUnwritable() {
+        assertTrue(isMcpReadProtectedVfsPath("/.ssh/id_ed25519"))
+        assertTrue(isMcpReadProtectedVfsPath("/.bash_history"))
+        assertTrue(isMcpReadProtectedVfsPath("/.hg2gui-env"))
+        assertTrue(isMcpReadProtectedVfsPath("/.ssh"))
+        assertTrue(isMcpReadProtectedVfsPath("/projects/.ssh/config"))
+    }
+
+    @Test
+    fun readProtectionNormalizesTraversal() {
+        assertTrue(isMcpReadProtectedVfsPath("/notes/../.ssh/id_rsa"))
+        assertTrue(isMcpReadProtectedVfsPath("/./.bash_history"))
+        assertTrue(isMcpReadProtectedVfsPath("\\.ssh\\id_rsa"))
+        assertFalse(isMcpReadProtectedVfsPath("/.ssh/../notes.txt"))
+    }
+
+    @Test
+    fun theRootStaysListable_butNotMutable() {
+        // Listing "/" is the way in to everything else; only mutation of the root is refused.
+        assertFalse(isMcpReadProtectedVfsPath("/"))
+        assertFalse(isMcpReadProtectedVfsPath("/notes/.."))
+        assertTrue(isMcpProtectedVfsPath("/"))
+    }
+
+    @Test
+    fun ordinaryContentIsReadable() {
+        assertFalse(isMcpReadProtectedVfsPath("/notes.txt"))
+        assertFalse(isMcpReadProtectedVfsPath("/Downloads/photo.png"))
+        assertFalse(isMcpReadProtectedVfsPath("/project/.gitignore"))
+    }
+
+    @Test
+    fun readAndWriteProtectionAgreeOutsideTheRoot() {
+        listOf("/.bashrc", "/.ssh/authorized_keys", "/notes.txt", "/a/.ssh/x", "/project/.gitignore").forEach { path ->
+            assertEquals(isMcpProtectedVfsPath(path), isMcpReadProtectedVfsPath(path), path)
+        }
     }
 }

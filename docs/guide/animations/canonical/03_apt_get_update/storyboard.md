@@ -8,7 +8,9 @@ Adjacent scenes intentionally duplicate shared boundary frames.
 
 Government-office tableau. An elderly alien sits at a desk. A clerk calmly stamps a birth certificate `AGE: 4`. The alien lifts one ancient hand, looks from the hand to the certificate. The clerk stamps the paper again, harder. Nothing about the alien changes. End on the clerk reaching for an even larger stamp.
 
-**Start:** **MISSING** — `03_apt_get_update_frame_00.png`
+**Start:** `scenes/01/frames/start.png` — source `03_apt_get_update_frame_00.png` (present)
+
+![Scene 01 start](scenes/01/frames/start.png)
 
 **End:** `scenes/01/frames/end.png` — source `03_apt_get_update_frame_01.png` (present)
 
@@ -22,12 +24,18 @@ Cut within same palette to a stripped-down terminal diagram: `apt-get update`. A
 
 ![Scene 02 start](scenes/02/frames/start.png)
 
-**End:** **MISSING** — `03_apt_get_update_frame_02.png`
+**End:** `scenes/02/frames/end.png` — source `03_apt_get_update_frame_02.png` (present)
+
+![Scene 02 end](scenes/02/frames/end.png)
 
 ## Scene 03 — 10:00–15:00
 
 Return to clerk and alien in split-screen with the package diagram. Clerk nods with bureaucratic satisfaction and places a neat `THERE. MUCH BETTER.` label beneath the certificate while the alien and installed package remain exactly as old as before. Hold dryly.
 
-**Start:** **MISSING** — `03_apt_get_update_frame_02.png`
+**Start:** `scenes/03/frames/start.png` — source `03_apt_get_update_frame_02.png` (present)
 
-**End:** **MISSING** — `03_apt_get_update_frame_03.png`
+![Scene 03 start](scenes/03/frames/start.png)
+
+**End:** `scenes/03/frames/end.png` — source `03_apt_get_update_frame_03.png` (present)
+
+![Scene 03 end](scenes/03/frames/end.png)

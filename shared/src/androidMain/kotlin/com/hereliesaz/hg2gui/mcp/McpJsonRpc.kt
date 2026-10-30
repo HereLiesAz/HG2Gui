@@ -7,6 +7,8 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.addJsonObject
+import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
@@ -38,10 +40,16 @@ data class JsonRpcResponse(
     val error: JsonRpcError? = null
 )
 
-/** What a tool call resolved to - success carries its MCP `content`, failure a JSON-RPC error. */
+/**
+ * What a tool call resolved to. A [Success] carries its MCP `content` ([isError] marks a tool that
+ * ran but reports failure, e.g. a command that exited non-zero). A [Failure] is a tool-level
+ * error: MCP wants those delivered as a normal `tools/call` result with `isError: true` so the
+ * model can read the message and recover; only [protocolError] failures (an unknown tool) are
+ * returned as JSON-RPC errors.
+ */
 sealed interface ToolCallResult {
-    data class Success(val content: JsonElement) : ToolCallResult
-    data class Failure(val code: Int, val message: String) : ToolCallResult
+    data class Success(val content: JsonElement, val isError: Boolean = false) : ToolCallResult
+    data class Failure(val code: Int, val message: String, val protocolError: Boolean = false) : ToolCallResult
 }
 
 /** Implemented by McpTools; kept as an interface so McpJsonRpc doesn't need to know about
@@ -63,20 +71,53 @@ object McpJsonRpc {
 
     val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
+    /** One input line, classified: a request to answer, a notification to swallow, or an immediate error reply. */
+    internal sealed interface ParsedLine {
+        data class Call(val request: JsonRpcRequest) : ParsedLine
+        /** A request with no `id` member: JSON-RPC forbids any response to it. */
+        data object Notification : ParsedLine
+        data class Invalid(val response: JsonRpcResponse) : ParsedLine
+    }
+
+    internal fun parseLine(line: String): ParsedLine {
+        val element = try {
+            json.parseToJsonElement(line)
+        } catch (e: Exception) {
+            return ParsedLine.Invalid(JsonRpcResponse(error = JsonRpcError(PARSE_ERROR, "Parse error: ${e.message}")))
+        }
+        val obj = element as? JsonObject
+            ?: return ParsedLine.Invalid(JsonRpcResponse(error = JsonRpcError(INVALID_REQUEST, "Invalid Request: expected a JSON object")))
+        val request = try {
+            json.decodeFromJsonElement(JsonRpcRequest.serializer(), obj)
+        } catch (e: Exception) {
+            return ParsedLine.Invalid(JsonRpcResponse(error = JsonRpcError(INVALID_REQUEST, "Invalid Request: ${e.message}")))
+        }
+        // `notifications/initialized` and friends arrive with no id. Answering them (the old code sent
+        // a "method not found" error) confuses strict clients; they must also never trigger work.
+        return if (!obj.containsKey("id")) ParsedLine.Notification else ParsedLine.Call(request)
+    }
+
     /** Parses one line, dispatches it, and serializes the reply - never throws (other than
      *  coroutine cancellation): a malformed line becomes a Parse error response and a tool that
-     *  throws becomes an Internal error response, same as any other JSON-RPC failure mode. */
-    suspend fun handleLine(line: String, tools: McpToolProvider): String {
-        val request = try {
-            json.decodeFromString(JsonRpcRequest.serializer(), line)
-        } catch (e: Exception) {
-            return json.encodeToString(
-                JsonRpcResponse.serializer(),
-                JsonRpcResponse(error = JsonRpcError(PARSE_ERROR, "Parse error: ${e.message}"))
-            )
+     *  throws becomes an Internal error response, same as any other JSON-RPC failure mode.
+     *  Returns null when the line was a notification and must get no response at all. */
+    suspend fun handleLine(line: String, tools: McpToolProvider): String? {
+        val response = when (val parsed = parseLine(line)) {
+            is ParsedLine.Invalid -> parsed.response
+            ParsedLine.Notification -> return null
+            is ParsedLine.Call -> dispatch(parsed.request, tools)
         }
-        val response = dispatch(request, tools)
         return json.encodeToString(JsonRpcResponse.serializer(), response)
+    }
+
+    /** The `tools/call` result object for [result]: `content` + `isError`. */
+    internal fun toolResult(content: JsonElement, isError: Boolean): JsonObject = buildJsonObject {
+        put("content", content)
+        put("isError", isError)
+    }
+
+    private fun errorText(message: String): JsonElement = buildJsonArray {
+        addJsonObject { put("type", "text"); put("text", message) }
     }
 
     suspend fun dispatch(request: JsonRpcRequest, tools: McpToolProvider): JsonRpcResponse {
@@ -109,14 +150,13 @@ object McpJsonRpc {
                         ToolCallResult.Failure(INTERNAL_ERROR, "Internal error: ${e.message ?: e.javaClass.simpleName}")
                     }
                     when (result) {
-                        is ToolCallResult.Success -> JsonRpcResponse(id = request.id, result = buildJsonObject {
-                            put("content", result.content)
-                            put("isError", false)
-                        })
-                        is ToolCallResult.Failure -> JsonRpcResponse(
-                            id = request.id,
-                            error = JsonRpcError(result.code, result.message)
-                        )
+                        is ToolCallResult.Success -> JsonRpcResponse(id = request.id, result = toolResult(result.content, result.isError))
+                        is ToolCallResult.Failure ->
+                            if (result.protocolError) {
+                                JsonRpcResponse(id = request.id, error = JsonRpcError(result.code, result.message))
+                            } else {
+                                JsonRpcResponse(id = request.id, result = toolResult(errorText(result.message), isError = true))
+                            }
                     }
                 }
             }

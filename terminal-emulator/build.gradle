@@ -6,9 +6,16 @@ plugins {
 android {
     namespace 'com.termux.emulator'
     compileSdk 37
+    // Same NDK the app and CI pin (composeApp/build.gradle.kts, ci.yml): an unpinned library would
+    // build libtermux with whatever NDK the machine happens to default to.
+    ndkVersion '29.0.14206865'
 
     defaultConfig {
         minSdk 24
+        // The app ships arm64-v8a only (composeApp abiFilters); don't build unused ABIs.
+        ndk {
+            abiFilters 'arm64-v8a'
+        }
     }
 
     externalNativeBuild {
@@ -22,4 +29,3 @@ dependencies {
     implementation libs.androidx.annotation
     testImplementation libs.junit
 }
-dependencies { testImplementation libs.junit }

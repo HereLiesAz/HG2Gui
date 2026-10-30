@@ -21,3 +21,5 @@
 # Scratch output from local runs (logs, dumps); tracked .txt files are added explicitly
 /*.log
 /hs_err_pid*.log
+docs/hereliesaz-key.txt
+docs/hereliesaz-pem.txt

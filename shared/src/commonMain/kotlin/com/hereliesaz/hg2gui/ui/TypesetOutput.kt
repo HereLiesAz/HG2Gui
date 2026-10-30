@@ -5,20 +5,24 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import com.hereliesaz.hg2gui.ui.theme.LocalAzphaltType
 
 /*
  * "Output is set, not echoed" (HG2Gui_Reading.dc.html): a terminal draws a grid of characters
@@ -61,6 +65,39 @@ internal fun parseKeyValueTable(text: String): List<KeyValueRow> =
         }.toList()
     }
 
+// Label text sits at this alpha over the page: .55 read at only ~3.3:1 on the default ground.
+private const val TYPESET_LABEL_ALPHA = .72f
+private val TYPESET_LABEL_SIZE = 11.sp
+
+/**
+ * One `LABEL ... value` row. The label keeps its natural width and the value takes the rest (right
+ * aligned, wrapping), so a long value can no longer squeeze the label to nothing; the two are
+ * merged into one accessibility node so a screen reader hears "label, value".
+ */
+@Composable
+private fun TypesetRow(label: String, value: String, ink: Color, modifier: Modifier = Modifier) {
+    Row(
+        modifier.fillMaxWidth().semantics(mergeDescendants = true) {},
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            label.uppercase(),
+            color = ink.copy(alpha = TYPESET_LABEL_ALPHA),
+            style = LocalAzphaltType.current.eyebrow.copy(letterSpacing = 0.18.em)
+        )
+        Spacer(Modifier.width(12.dp))
+        Text(
+            value,
+            color = ink,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold,
+            textAlign = TextAlign.End,
+            style = TextStyle(fontFeatureSettings = "tnum"),
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
 @Composable
 fun KeyValueTable(text: String, ink: Color, modifier: Modifier = Modifier) {
     val rows = remember(text) { parseKeyValueTable(text) }
@@ -68,26 +105,7 @@ fun KeyValueTable(text: String, ink: Color, modifier: Modifier = Modifier) {
     Column(modifier.fillMaxWidth()) {
         Box(Modifier.fillMaxWidth().height(1.dp).background(rule))
         rows.forEach { row ->
-            Row(
-                Modifier.fillMaxWidth().padding(vertical = 9.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    row.label.uppercase(),
-                    color = ink.copy(alpha = .55f),
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = 0.18.em
-                )
-                Text(
-                    row.value,
-                    color = ink,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    textAlign = TextAlign.End,
-                    style = TextStyle(fontFeatureSettings = "tnum")
-                )
-            }
+            TypesetRow(row.label, row.value, ink, Modifier.padding(vertical = 9.dp))
             Box(Modifier.fillMaxWidth().height(1.dp).background(rule))
         }
     }
@@ -193,26 +211,7 @@ fun WideTableRecords(text: String, ink: Color, modifier: Modifier = Modifier) {
             Box(Modifier.fillMaxWidth().height(1.dp).background(rule))
             row.fields.forEach { (label, value) ->
                 if (value.isNotBlank()) {
-                    Row(
-                        Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            label.uppercase(),
-                            color = ink.copy(alpha = .55f),
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            letterSpacing = 0.18.em
-                        )
-                        Text(
-                            value,
-                            color = ink,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            textAlign = TextAlign.End,
-                            style = TextStyle(fontFeatureSettings = "tnum")
-                        )
-                    }
+                    TypesetRow(label, value, ink, Modifier.padding(vertical = 4.dp))
                 }
             }
         }
@@ -220,8 +219,8 @@ fun WideTableRecords(text: String, ink: Color, modifier: Modifier = Modifier) {
         if (rows.size > WIDE_TABLE_ROW_CAP) {
             Text(
                 "and ${rows.size - WIDE_TABLE_ROW_CAP} more rows - see PLAIN TEXT for the rest",
-                color = ink.copy(alpha = .45f),
-                fontSize = 10.sp,
+                color = ink.copy(alpha = TYPESET_LABEL_ALPHA),
+                fontSize = TYPESET_LABEL_SIZE,
                 modifier = Modifier.padding(top = 9.dp)
             )
         }
