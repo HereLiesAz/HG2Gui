@@ -69,9 +69,9 @@ class LongTaskService : Service() {
             startForeground(NOTIFICATION_ID, buildNotification())
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
             // ForegroundServiceStartNotAllowedException / type errors: give up cleanly rather
-            // than crash; callers of launch() already fall back when the start itself is refused.
+            // than crash (an unanswered foreground start is a crash of its own). The task, if
+            // any, is dropped - the start itself was accepted, so launch()'s fallback cannot run.
             Log.w(TAG, "could not enter the foreground", e)
-            if (task != null) tasks[id] = task // let the caller's own fallback path not lose it
             synchronized(lock) {
                 if (task != null) active--
                 stopping = true
@@ -125,7 +125,7 @@ class LongTaskService : Service() {
 
     private fun buildNotification() = NotificationCompat.Builder(this, CHANNEL_ID)
         .setSmallIcon(R.mipmap.ic_launcher)
-        .setContentTitle(if (active > 0) currentTitle ?: getString(R.string.app_name) else getString(R.string.app_name))
+        .setContentTitle((if (active > 0) currentTitle else null) ?: getString(R.string.app_name))
         .setContentText(
             getString(if (active > 0) R.string.background_work_running else R.string.background_command_running)
         )
