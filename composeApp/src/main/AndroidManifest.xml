@@ -38,6 +38,7 @@
 
     <application
         android:allowBackup="false"
+        android:supportsRtl="true"
         android:fullBackupContent="@xml/backup_rules"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:icon="@mipmap/ic_launcher"
@@ -79,7 +80,13 @@
         <activity android:name=".api.Hg2ApiPickerActivity" android:exported="false" android:excludeFromRecents="true" />
         <activity android:name=".api.Hg2ApiDialogActivity" android:exported="false" android:excludeFromRecents="true" android:noHistory="true" />
         <activity android:name=".api.Hg2ApiAuthorityActivity" android:exported="false" android:excludeFromRecents="true" android:noHistory="true" />
-        <activity android:name=".IsolationAuditActivity" android:exported="false" android:excludeFromRecents="true" />
+        <!-- configChanges: rotation/resize must not recreate this screen - recreation re-walks every sandbox and
+             drops the AI audit result (a second tap would re-send the audit). Compose handles the new size itself. -->
+        <activity
+            android:name=".IsolationAuditActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize|screenLayout|smallestScreenSize|density|fontScale|locale|layoutDirection|keyboard|navigation|uiMode"
+            android:exported="false"
+            android:excludeFromRecents="true" />
 
         <activity
             android:name=".TerminalActivity"
@@ -120,7 +127,6 @@
                 <data android:host="*" android:pathPattern=".*\.ini" android:scheme="file" />
                 <data android:host="*" android:pathPattern=".*\.sh" android:scheme="file" />
                 <data android:host="*" android:pathPattern=".*\.log" android:scheme="file" />
-                <data android:host="*" android:pathPattern=".*\.db" android:scheme="file" />
                 <data android:host="*" android:pathPattern=".*\.conf" android:scheme="file" />
                 <data android:host="*" android:pathPattern=".*\.cfg" android:scheme="file" />
                 <data android:host="*" android:pathPattern=".*\.txt" android:scheme="file" />
