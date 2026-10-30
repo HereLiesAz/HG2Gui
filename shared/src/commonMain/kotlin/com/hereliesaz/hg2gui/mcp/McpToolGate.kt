@@ -22,6 +22,27 @@ fun isShellToolGated(toolName: String, shellExecEnabled: Boolean): Boolean =
  * re-checks the canonical (symlink-resolved) path for the same reason.
  */
 fun isMcpProtectedVfsPath(path: String): Boolean {
+    val segments = normalizedSegments(path)
+    if (segments.isEmpty()) return true
+    return isHiddenOrSsh(segments)
+}
+
+/**
+ * True iff an MCP `vfs.read` / `vfs.list` must be refused for the root-absolute vfs [path]. The
+ * same locations [isMcpProtectedVfsPath] protects from mutation hold the secrets reads would leak
+ * (`~/.ssh/id_*`, `~/.bash_history`, the app's own `.hg2gui-*` state), so they are unreadable and
+ * unlistable too - the only difference is the root itself: listing "/" is the entry point to
+ * everything else and stays allowed (its hidden children are filtered out of the listing by the
+ * caller, using this same function on each child's path).
+ */
+fun isMcpReadProtectedVfsPath(path: String): Boolean {
+    val segments = normalizedSegments(path)
+    if (segments.isEmpty()) return false
+    return isHiddenOrSsh(segments)
+}
+
+/** [path] split on '/' and '\\' with "." dropped and ".." applied, so "/a/../.bashrc" is seen as ".bashrc". */
+private fun normalizedSegments(path: String): List<String> {
     val segments = ArrayList<String>()
     for (segment in path.split('/', '\\')) {
         when (segment) {
@@ -30,7 +51,8 @@ fun isMcpProtectedVfsPath(path: String): Boolean {
             else -> segments.add(segment)
         }
     }
-    if (segments.isEmpty()) return true
-    if (segments.first().startsWith(".")) return true
-    return segments.any { it == ".ssh" }
+    return segments
 }
+
+private fun isHiddenOrSsh(segments: List<String>): Boolean =
+    segments.first().startsWith(".") || segments.any { it == ".ssh" }

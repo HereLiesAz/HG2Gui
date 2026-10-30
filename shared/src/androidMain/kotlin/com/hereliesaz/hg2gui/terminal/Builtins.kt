@@ -36,6 +36,14 @@ object Builtins {
         "call", "contacts", "vfs", "edit", "calc"
     )
 
+    /**
+     * True for the builtins that change device state, place calls or read personal data (call,
+     * contacts, brightness, wifi/bluetooth/airplane/flash, `volume set|profile`, edit, `vfs mount`).
+     * TerminalEngine refuses these for background callers (API, MCP, installers) unless a person
+     * answers yes to the exact line; see [BuiltinApproval] for the table.
+     */
+    fun requiresApproval(line: String): Boolean = BuiltinApproval.requiresApproval(line)
+
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     fun run(context: Context, line: String): String {
         val parts = line.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }

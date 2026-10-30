@@ -8,12 +8,12 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import com.hereliesaz.hg2gui.ui.ConfirmDialog
 import com.hereliesaz.hg2gui.ui.HG2GuiTheme
+import com.hereliesaz.hg2gui.ui.applyAzphaltGround
 import com.hereliesaz.hg2gui.ui.editor.EditorScreen
 import android.content.Intent
 import android.net.Uri
@@ -31,7 +31,12 @@ class EditorActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
+        // Window background and status/navigation icon tint from the ground, not the system theme.
+        window.applyAzphaltGround()
         super.onCreate(savedInstanceState)
+        // The same Text-size and fullscreen settings the terminal uses (set in Settings).
+        val uiScale = readUiScale()
+        val fullscreen = readFullscreenPref()
 
         // SYS-1: this Activity is exported (so another app's VIEW/EDIT intent can reach it - see
         // the manifest). Because android:exported="true" lets ANY app start it via an *explicit*
@@ -105,11 +110,14 @@ class EditorActivity : ComponentActivity() {
             val content = editState.content
             val dirty = editState.dirty
             var fileConsent by rememberSaveable { mutableStateOf(!needsFileConsent) }
-            var error by remember { mutableStateOf<String?>(null) }
+            // Saveable: a rotation recreates this Activity, and a failed save's message (or an open
+            // discard prompt) must not vanish with it while the unsaved text is still there.
+            var error by rememberSaveable { mutableStateOf<String?>(null) }
             // SYS-2: dirty existed only to show/hide the Save pill - neither exit path ever
             // consulted it before tearing the Activity down. Both the BACK pill and the system
             // back gesture now route through this instead of finish() directly.
-            var confirmDiscard by remember { mutableStateOf(false) }
+            var confirmDiscard by rememberSaveable { mutableStateOf(false) }
+            var wrap by rememberSaveable { mutableStateOf(true) }
             fun requestBack() {
                 if (dirty) confirmDiscard = true else finish()
             }
@@ -151,7 +159,7 @@ class EditorActivity : ComponentActivity() {
                 error = loadError
             }
 
-            HG2GuiTheme {
+            HG2GuiTheme(scale = uiScale) {
                 EditorScreen(
                     fileName = displayName,
                     content = content,
@@ -196,7 +204,10 @@ class EditorActivity : ComponentActivity() {
                             }
                         }
                     },
-                    onBack = { requestBack() }
+                    onBack = { requestBack() },
+                    fullscreen = fullscreen,
+                    wrap = wrap,
+                    onWrapChange = { wrap = it }
                 )
 
                 if (!fileConsent) {
@@ -210,7 +221,8 @@ class EditorActivity : ComponentActivity() {
                     )
                 }
 
-                if (confirmDiscard) {
+                // `dirty` too: a restored prompt for a buffer that was too big to save has nothing to discard.
+                if (confirmDiscard && dirty) {
                     ConfirmDialog(
                         title = "DISCARD CHANGES?",
                         message = "$displayName has unsaved edits - leaving now throws them away.",
@@ -221,6 +233,7 @@ class EditorActivity : ComponentActivity() {
                 }
             }
         }
+        applyFullscreenPreference(fullscreen)
     }
 
     // The trusted path this instance opened, kept so onSaveInstanceState can carry it across

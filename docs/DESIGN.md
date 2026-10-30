@@ -4,7 +4,7 @@ The visual system is **Azphalt**: printed page-like grounds, ink-forward typogra
 
 Purpose-built surfaces may use the visual language appropriate to their job: file browsing, terminal emulation, Guide reading, Adaptive TUI projection, package/audit inspection, dialogs, status/progress, and Android system affordances do not need to pretend they are all the same object.
 
-Current implementation source of truth lives in `ui/menu/PillMenu.kt`, the relevant screen composables, and shared Azphalt tokens.
+Current implementation source of truth lives in `ui/menu/PillMenu.kt`, `ui/AzphaltPrimitives.kt` (shared chip, touch-target, status-colour, inset and motion helpers; see section 10), the relevant screen composables, and shared Azphalt tokens.
 
 ## 1. Pill menu anchoring
 
@@ -48,7 +48,7 @@ Examples:
 - **Guide** prioritizes readable prose while making real commands directly tappable for command composition.
 - **Adaptive TUI Wrapper** renders menus, tabs, lists, tables, prompts, progress, and panes derived from the running terminal application.
 - **Isolation Audit** groups observed process/file/network/authority activity rather than forcing it into command pills.
-- **Shell presentation** may expose cwd, Git state, exit status, and other prompt semantics as interactive status elements.
+- **Shell presentation** exposes cwd, Git state, exit status, and user@host when known as a status line of small non-interactive tags under the tab strip.
 - **Settings** is a vertically scrollable settings surface whose controls can extend beyond one viewport.
 
 Visual elements, including symbols or icons, are chosen according to clarity and the surface's needs. Their use is not prohibited by a global doctrine.
@@ -73,7 +73,7 @@ Ordinary composed commands still require explicit **RUN**.
 
 Runtime discovery means command/value collections can range from a handful of items to hundreds. Large collections must remain scrollable or otherwise browsable rather than assuming one screen of content.
 
-Text size follows the screen's density needs while preserving usable touch targets. The global Settings text-scale control scales the terminal UI and can make Settings itself taller than the viewport; Settings therefore scrolls vertically.
+Text size follows the screen's density needs while preserving usable touch targets. The global Settings text-scale control (85% to 200%) scales the terminal UI and can make Settings itself taller than the viewport; Settings therefore scrolls vertically. Below 100% the whole UI is drawn at a smaller density, so touch targets are sized with `minTouchSize()` to stay 48dp on the glass.
 
 ## 8. Color and geometry
 
@@ -92,3 +92,24 @@ Native projections must never trap the user inside an incorrect interpretation.
 - Scrollable screens must actually scroll when content exceeds the viewport.
 - Interactive controls must keep meaningful text/semantics even when visual treatment changes.
 - Elevated authority requires explicit foreground confirmation independent of styling.
+- When the user turns animations off, entrance and hand-off flourishes are skipped rather than played at zero length (see Motion in section 10).
+
+## 10. Shared primitives and minimums
+
+Azphalt screens reach for the shared building blocks in `ui/AzphaltPrimitives.kt` instead of re-deriving them:
+
+- **`AzphaltChip`** is the one small button: a capsule with a visible height of 32dp inside a 48dp hit box. A selected chip is filled; an unselected one is a light wash with a visible outline, so state is a change of shape and weight as well as colour, and it is also exposed as the `selected` semantic. Glyph-only or shared-label chips must pass a `contentDescription`. Text below 11sp is raised to 11sp.
+- **`Modifier.minTouch()`** makes an element's hit box at least 48dp square while the drawn content keeps its size (put the gesture modifier before it and the drawing modifiers after). `minTouchSize()` is the 48dp-on-the-glass value when the Text-size setting is below 100%.
+- **`statusColor(StatusKind)`** / `statusColorOn()` give the colour for error, warning, success, info, muted and link text on the current ground, adjusted to at least 4.5:1 contrast. Colour is never the only carrier: write the word ("exit 127", "failed") as well, and keep links underlined.
+- **`Modifier.screenInsets()`** is the one inset policy for every screen root (system bars, display cutout, and by default the keyboard); call it once per root. `Modifier.maxContentWidth()` caps prose and form columns at 640dp on wide windows.
+- **`AzphaltHeading`** is the screen title (upper-cased, exposed to accessibility as a heading). `liveRegionPolite()` and `headingRole()` are the semantics helpers.
+- **Reduced motion**: `AzphaltMotion` follows Android's animator duration scale. `rememberReducedMotion()` is true when it is 0 (for example "Remove animations"); `scaledDelayMs()` scales the `delay()` calls that choreograph motion. Entrance staggers and decorative loops are skipped when it is true.
+
+Minimums for new UI:
+
+- text and labels at least 11sp;
+- touch targets at least 48dp;
+- text contrast at least 4.5:1 against its ground (3:1 for large text and non-text indicators such as borders), using `statusColor` or `readableOn` rather than raw hues;
+- a text label or semantic for anything conveyed only by colour or a glyph.
+
+These minimums are what the shared primitives enforce; individual older screens may not all meet them yet.

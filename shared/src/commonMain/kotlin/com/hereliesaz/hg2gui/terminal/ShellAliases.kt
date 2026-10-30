@@ -29,11 +29,22 @@ object ShellAliases {
         "h" to "history"
     )
 
-    /** Expands a leading alias word in [line] to its full form; a no-op if none matches. */
-    fun expand(line: String): String {
+    /**
+     * Asks the installed runtime whether a real command called [name] exists. The platform layer
+     * (TerminalEngine) installs a probe; until then nothing is considered installed.
+     */
+    var realCommandProbe: (String) -> Boolean = { false }
+
+    /**
+     * Expands a leading alias word in [line] to its full form; a no-op if none matches - and a
+     * no-op when [isRealCommand] says an installed command already has that name, so `gs`
+     * (Ghostscript), `l`, `c`, `h` and the like are never silently replaced by an alias.
+     */
+    fun expand(line: String, isRealCommand: (String) -> Boolean = { realCommandProbe(it) }): String {
         val firstSpace = line.indexOf(' ')
         val head = if (firstSpace == -1) line else line.substring(0, firstSpace)
         val expansion = table[head] ?: return line
+        if (isRealCommand(head)) return line
         val rest = if (firstSpace == -1) "" else line.substring(firstSpace)
         return expansion + rest
     }

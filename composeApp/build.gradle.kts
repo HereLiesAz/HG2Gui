@@ -30,14 +30,59 @@ val releaseKeystoreType = System.getenv("KEYSTORE_TYPE")
 val releaseKeystorePassword = System.getenv("KEYSTORE_PASSWORD")
 val releaseKeyAlias = System.getenv("KEY_ALIAS")
 val releaseKeyPassword = System.getenv("KEY_PASSWORD")
-val releaseRequireSigning = System.getenv("REQUIRE_SIGNING").toBoolean()
 val hasReleaseSigningEnv = !releaseKeystoreFile.isNullOrBlank() && !releaseKeystorePassword.isNullOrBlank() && !releaseKeyAlias.isNullOrBlank() && !releaseKeyPassword.isNullOrBlank()
 
-if (releaseRequireSigning && !hasReleaseSigningEnv) error("REQUIRE_SIGNING is set but one or more of KEYSTORE_FILE / KEYSTORE_PASSWORD / KEY_ALIAS / KEY_PASSWORD is missing.")
+// REQUIRE_SIGNING=true  -> configuring the build without the signing env is an error (as before).
+// REQUIRE_SIGNING=false -> an unsigned release APK is acceptable (local experiments).
+// unset                 -> on CI (the CI env var, which GitHub Actions sets) a task that PACKAGES a
+//                          release (assemble/bundle/package ...Release) fails without the signing env,
+//                          instead of silently producing an unsigned, un-updatable APK; locally it is
+//                          permitted. Test/compile/lint tasks never need the keystore. Checked once the
+//                          task graph is known (see the taskGraph hook below).
+val requireSigningSetting: Boolean? = System.getenv("REQUIRE_SIGNING")?.trim()?.lowercase()?.let {
+    when (it) {
+        "true" -> true
+        "false" -> false
+        else -> null
+    }
+}
+val runningOnCi = !System.getenv("CI").isNullOrEmpty()
+
+if (requireSigningSetting == true && !hasReleaseSigningEnv) error("REQUIRE_SIGNING is set but one or more of KEYSTORE_FILE / KEYSTORE_PASSWORD / KEY_ALIAS / KEY_PASSWORD is missing.")
+
+gradle.taskGraph.whenReady {
+    val packagesRelease = allTasks.any { task ->
+        task.project == project && Regex("^(assemble|bundle|package|publish)(.*)Release$").matches(task.name)
+    }
+    if (packagesRelease && !hasReleaseSigningEnv && requireSigningSetting == null && runningOnCi) {
+        throw GradleException(
+            "Refusing to package a release build without signing: KEYSTORE_FILE / KEYSTORE_PASSWORD / KEY_ALIAS / KEY_PASSWORD " +
+                "are not all set. Set REQUIRE_SIGNING=false to build an unsigned release on purpose."
+        )
+    }
+}
 
 kotlin { compilerOptions { jvmTarget.set(JvmTarget.JVM_21) } }
 
 val generatedLauncherJniDir = layout.buildDirectory.dir("generated/nativeLaunchers/jniLibs")
+
+// The one place the NDK version is pinned: gradle/libs.versions.toml ("ndk"). AGP's ndkVersion and
+// both native-launcher tasks below read it; .github/workflows/ci.yml reads the same toml line.
+val pinnedNdkVersion: String = libs.versions.ndk.get()
+
+// SDK location for the native-launcher tasks, resolved the way AGP resolves it: local.properties
+// `sdk.dir` first (what Android Studio writes, so an IDE-launched build works with no env vars),
+// then ANDROID_HOME / ANDROID_SDK_ROOT. Looked up when a task runs, not at configuration time.
+fun resolveAndroidSdkRoot(): String {
+    val localProps = Properties().apply {
+        val file = rootProject.file("local.properties")
+        if (file.isFile) file.inputStream().use { load(it) }
+    }
+    return localProps.getProperty("sdk.dir")?.takeIf { it.isNotBlank() }
+        ?: System.getenv("ANDROID_HOME")?.takeIf { it.isNotBlank() }
+        ?: System.getenv("ANDROID_SDK_ROOT")?.takeIf { it.isNotBlank() }
+        ?: error("Android SDK not found: set sdk.dir in local.properties, or ANDROID_HOME / ANDROID_SDK_ROOT")
+}
 
 android {
     namespace = "com.hereliesaz.hg2gui"
@@ -76,15 +121,19 @@ android {
         getByName("release") {
             isMinifyEnabled = true
             isShrinkResources = true
+            // Explicit: this is the build the in-app updater distributes (AppUpdateChecker /
+            // UpdatePolicy.kt), and it refuses debuggable APKs.
+            isDebuggable = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             if (hasReleaseSigningEnv) signingConfigs.findByName("release")?.let { signingConfig = it }
         }
         getByName("debug") {
-            // When the CI signing environment is present (merged-build calls assembleDebug with
-            // signing_enabled=true), apply the same release key so AppUpdateChecker can verify
-            // the signer matches the installed app. Without this, the debug APK uses the local
-            // debug keystore and the update checker rejects it as signed by the wrong certificate.
-            if (hasReleaseSigningEnv) signingConfigs.findByName("release")?.let { signingConfig = it }
+            // The debug build type is NEVER signed with the release key. It used to be (so that
+            // AppUpdateChecker's signer comparison passed for CI debug builds), which put a
+            // debuggable, un-minified APK under the production signature on the update channel:
+            // `adb shell run-as` could then read the app's data with no root. Debug builds use the
+            // local debug keystore; the update channel ships assemblePlaystoreRelease output.
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
     flavorDimensions += "default"
@@ -94,7 +143,7 @@ android {
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
     }
-    ndkVersion = "29.0.14206865"
+    ndkVersion = pinnedNdkVersion
     buildToolsVersion = "37.0.0"
 }
 
@@ -105,10 +154,8 @@ fun registerNativeLauncherTask(taskName: String, sourceName: String, outputName:
     outputs.file(output)
 
     doLast {
-        val sdkRoot = System.getenv("ANDROID_SDK_ROOT")
-            ?: System.getenv("ANDROID_HOME")
-            ?: error("ANDROID_SDK_ROOT/ANDROID_HOME is not set")
-        val ndkVersion = "29.0.14206865"
+        val sdkRoot = resolveAndroidSdkRoot()
+        val ndkVersion = pinnedNdkVersion
         val hostTag = when {
             System.getProperty("os.name").startsWith("Windows", ignoreCase = true) -> "windows-x86_64"
             System.getProperty("os.name").startsWith("Mac", ignoreCase = true) ->
@@ -144,10 +191,8 @@ fun registerNativeSharedLibraryTask(taskName: String, sourceName: String, output
     outputs.file(output)
 
     doLast {
-        val sdkRoot = System.getenv("ANDROID_SDK_ROOT")
-            ?: System.getenv("ANDROID_HOME")
-            ?: error("ANDROID_SDK_ROOT/ANDROID_HOME is not set")
-        val ndkVersion = "29.0.14206865"
+        val sdkRoot = resolveAndroidSdkRoot()
+        val ndkVersion = pinnedNdkVersion
         val hostTag = when {
             System.getProperty("os.name").startsWith("Windows", ignoreCase = true) -> "windows-x86_64"
             System.getProperty("os.name").startsWith("Mac", ignoreCase = true) ->
