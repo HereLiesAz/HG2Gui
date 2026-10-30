@@ -12,13 +12,12 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.systemBars
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -30,6 +29,7 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
@@ -49,6 +49,8 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.hereliesaz.hg2gui.ai.AiClient
 import com.hereliesaz.hg2gui.ai.AiReply
 import com.hereliesaz.hg2gui.azp.AzpClient
+import com.hereliesaz.hg2gui.azp.AzpInstallOutcome
+import com.hereliesaz.hg2gui.azp.AzpInstallResult
 import com.hereliesaz.hg2gui.azp.AzpInstaller
 import com.hereliesaz.hg2gui.azp.AzpTrust
 import com.hereliesaz.hg2gui.azp.ScriptInstaller
@@ -80,6 +82,8 @@ import com.hereliesaz.hg2gui.ui.ConfirmDialog
 import com.hereliesaz.hg2gui.ui.EnvironmentScreen
 import com.hereliesaz.hg2gui.ui.HistoryScreen
 import com.hereliesaz.hg2gui.ui.HG2GuiTheme
+import com.hereliesaz.hg2gui.ui.applyAzphaltGround
+import com.hereliesaz.hg2gui.ui.screenInsets
 import com.hereliesaz.hg2gui.ui.JobProgressBar
 import com.hereliesaz.hg2gui.ui.JobProgressBarState
 import com.hereliesaz.hg2gui.ui.McpServerScreen
@@ -109,12 +113,16 @@ import com.hereliesaz.hg2gui.ui.menu.FileBrowser
 import com.hereliesaz.hg2gui.ui.menu.MenuNode
 import com.hereliesaz.hg2gui.ui.menu.PerimeterRevealState
 import com.hereliesaz.hg2gui.ui.menu.PillPerimeterReveal
+import com.hereliesaz.hg2gui.ui.menu.onPage
+import com.hereliesaz.hg2gui.ui.menu.pageBrush
 import com.hereliesaz.hg2gui.ui.ssh.SshFlow
 import com.hereliesaz.hg2gui.ui.terminal.FullScreenTerminalScreen
 import java.io.File
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -143,6 +151,58 @@ internal fun bootstrapDownloadFraction(line: String): Float? =
             (downloaded.toFloat() / totalMb).coerceIn(0f, 1f)
         }
     }
+
+
+/** The composition a Guide tap produces: the pill [tokens] and the free-text [inputText]. */
+internal data class GuideAppend(val tokens: List<String>, val inputText: String)
+
+/**
+ * Appends a command tapped in the Guide reader to what the user is already composing, without
+ * losing any of it. Into an empty segment it becomes the pill token (as a pill pick would); into a
+ * non-empty one it is added after the typed text, space-separated. The chain prefix
+ * (`SessionUiState.composedPrefix`) is never touched by a Guide tap, so it is not an input here.
+ */
+internal fun appendGuideCommand(tokens: List<String>, inputText: String, command: String): GuideAppend {
+    val addition = command.trim()
+    if (addition.isEmpty()) return GuideAppend(tokens, inputText)
+    if (tokens.isEmpty() && inputText.isBlank()) return GuideAppend(listOf(addition), "")
+    val text = if (inputText.isBlank()) addition else inputText.trimEnd() + " " + addition
+    return GuideAppend(tokens, text)
+}
+
+/**
+ * The sentence to show the user when [ScriptInstaller] stopped short of making [name] runnable, or
+ * null when it succeeded. The package's files are kept on disk in every non-null case except
+ * [ScriptInstaller.Result.InvalidDependency], so each message says what was and was not done.
+ */
+internal fun describeScriptResult(name: String, result: ScriptInstaller.Result): String? = when (result) {
+    is ScriptInstaller.Result.Installed -> null
+    is ScriptInstaller.Result.DependencyFailed -> {
+        val reason = result.output.lineSequence().map { it.trim() }.lastOrNull { it.isNotEmpty() }
+        "$name was saved, but installing its dependencies failed" + (reason?.let { ": $it" } ?: ".")
+    }
+    ScriptInstaller.Result.BootstrapMissing ->
+        "$name was saved, but there is no Termux environment to run it in yet. Install the bootstrap, then install it again."
+    ScriptInstaller.Result.Rejected ->
+        "$name was saved, but its command was rejected (missing entry file, or an unsafe or already-used command name)."
+    is ScriptInstaller.Result.InvalidDependency ->
+        "$name was not made runnable: it declares an invalid dependency name (\"${result.name}\"), so nothing was installed."
+    is ScriptInstaller.Result.DependenciesNotConfirmed ->
+        "$name was saved but not made runnable: its dependencies (${result.packages.joinToString(", ")}) were not installed."
+}
+
+/** Why a freshly installed, non-TRUSTED skill is not doing anything yet, for the store banner. */
+internal fun describeUnverifiedSkill(name: String, trust: AzpTrust): String? =
+    if (trust == AzpTrust.TRUSTED) null
+    else "$name is installed, but it is not signed by a trusted key, so the AI will not read it."
+
+/** A question the AZP store is waiting on the user to answer before it goes on. */
+private class AzpPrompt(
+    val title: String,
+    val message: String,
+    val confirmLabel: String,
+    val decision: CompletableDeferred<Boolean>
+)
 
 class TerminalActivity : FragmentActivity() {
 
