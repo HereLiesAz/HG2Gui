@@ -658,9 +658,10 @@ actual class ShellSession private constructor(
                 break
             }
 
+            val timeoutText = if (timeoutMs >= 1000L) (timeoutMs / 1000).toString() + "s" else timeoutMs.toString() + "ms"
             val cancelNote = when (cancelReason) {
                 CANCEL_INTERRUPT -> "[interrupted]"
-                CANCEL_TIMEOUT -> "[timed out after ${if (timeoutMs >= 1000L) "${timeoutMs / 1000}s" else "${timeoutMs}ms"}]"
+                CANCEL_TIMEOUT -> "[timed out after $timeoutText]"
                 CANCEL_DECLINED -> "[cancelled: the prompt was not answered]"
                 else -> null
             }
@@ -679,7 +680,8 @@ actual class ShellSession private constructor(
                         flush(pending, emittedUpTo, pending.length, emulator, onLine)
                     )
                 }
-                drainStderr()
+                // The streams of a shell that was just killed may already be closed.
+                try { drainStderr() } catch (ignored: IOException) {}
                 val note = cancelNote ?: if (shellEnded) "[shell exited - a new one starts with the next command]" else null
                 if (note != null) {
                     appendNote(note)
