@@ -28,6 +28,9 @@ object Hg2ExecEnvironment {
      * exec preload or PRoot temp directory is unavailable: package operations surface that as
      * their error, while interactive session creation (ShellSession.bootstrapBashEnv) catches it
      * and falls back to the bare system shell instead of failing to open a tab.
+     *
+     * [home] becomes `HOME` and `TERMUX__HOME`: it is the user's home directory, never a working
+     * directory. A process's start directory is passed to the spawn call, not through here.
      */
     fun apply(
         context: Context,

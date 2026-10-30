@@ -38,11 +38,19 @@ object ExecutionAuthority {
                 } else {
                     AdbEndpointStore.forgetCommand(context, endpoint)
                 }
-                "$base; hg2_adb_code=\$?; if [ \"\$hg2_adb_code\" -eq 0 ]; then $cleanup; fi; exit \"\$hg2_adb_code\""
+                disconnectCommand(base, cleanup)
             }
             else -> base
         }
     }
+
+    /**
+     * Runs [base] and, only if it succeeded, [cleanup]; the whole sequence lives in a subshell so its
+     * `exit` reports the adb status without ending the persistent session shell it is framed into
+     * (a bare `exit` here used to kill the tab's shell before the end marker was printed).
+     */
+    internal fun disconnectCommand(base: String, cleanup: String): String =
+        "( $base; hg2_adb_code=\$?; if [ \"\$hg2_adb_code\" -eq 0 ]; then $cleanup; fi; exit \"\$hg2_adb_code\" )"
 
     fun adbShellCommand(context: Context, command: String): String =
         adbCommand(context, listOf("shell", "sh", "-c", command))
@@ -86,10 +94,11 @@ object ExecutionAuthority {
         ).firstOrNull(::isExecutableFile)
     }
 
+    // Deliberately system paths only: the app-writable prefix (any package or postinst can write
+    // $PREFIX/bin/su) must never be able to impersonate the root provider and receive "Run as root" commands.
+    @Suppress("UNUSED_PARAMETER")
     private fun findSu(context: Context): File? {
-        val prefix = DistroManager.prefixDir(context)
         return listOf(
-            File(prefix, "bin/su"),
             File("/system/bin/su"),
             File("/system/xbin/su"),
             File("/sbin/su"),
