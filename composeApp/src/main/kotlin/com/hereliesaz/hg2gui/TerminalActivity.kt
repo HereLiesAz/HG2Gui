@@ -71,6 +71,7 @@ import com.hereliesaz.hg2gui.mcp.McpServerService
 import com.hereliesaz.hg2gui.terminal.Builtins
 import com.hereliesaz.hg2gui.terminal.DistroManager
 import com.hereliesaz.hg2gui.terminal.FullScreenPtySession
+import com.hereliesaz.hg2gui.terminal.SemanticCompletionProviders
 import com.hereliesaz.hg2gui.terminal.ShellSession
 import com.hereliesaz.hg2gui.terminal.TerminalEngine
 import com.hereliesaz.hg2gui.terminal.fullScreenCommandOf
@@ -88,6 +89,7 @@ import com.hereliesaz.hg2gui.ui.JobProgressBar
 import com.hereliesaz.hg2gui.ui.JobProgressBarState
 import com.hereliesaz.hg2gui.ui.McpServerScreen
 import com.hereliesaz.hg2gui.ui.SessionUiState
+import com.hereliesaz.hg2gui.ui.ShellStatusProjector
 import com.hereliesaz.hg2gui.ui.SettingsScreen
 import com.hereliesaz.hg2gui.ui.clampFontScalePercent
 import com.hereliesaz.hg2gui.ui.TerminalScreen
@@ -1272,6 +1274,17 @@ class TerminalActivity : FragmentActivity() {
                         onOpenFiles = { openFiles() },
                         onFilesButtonPositioned = { filesOrigin = it },
                         onCrumbPositioned = { id, rect -> crumbRects[id] = rect },
+                        // Feeds the composer's branch / dirty chip. Only the one read-only git status
+                        // question the status line asks is answered; anything else gets nothing.
+                        shellProbe = { cwd, command ->
+                            if (command == ShellStatusProjector.GIT_STATUS_COMMAND) {
+                                withContext(Dispatchers.IO) {
+                                    SemanticCompletionProviders.gitStatusBranch(this@TerminalActivity, cwd)
+                                }
+                            } else {
+                                null
+                            }
+                        },
                         onCopy = { text -> copyToClipboard(text) },
                         onShare = { text ->
                             val intent = Intent(Intent.ACTION_SEND).apply {

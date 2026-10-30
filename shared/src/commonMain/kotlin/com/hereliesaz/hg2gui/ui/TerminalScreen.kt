@@ -328,11 +328,12 @@ fun TerminalScreen(
 
     // After each command (and on a directory change, and when a tab is shown) re-derive the cwd /
     // git branch / dirty / exit status the status line and the completion call work from.
-    LaunchedEffect(active.id, active.cwd, active.running, shellProbe) {
+    val latestProbe by rememberUpdatedState(shellProbe)
+    LaunchedEffect(active.id, active.cwd, active.running) {
         if (active.running) return@LaunchedEffect
         val lastExit = active.buffer.lastOrNull()?.takeIf { !it.isRunning }?.exitCode
         try {
-            active.refreshShellPresentation(lastExit, shellProbe)
+            active.refreshShellPresentation(lastExit, latestProbe)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
