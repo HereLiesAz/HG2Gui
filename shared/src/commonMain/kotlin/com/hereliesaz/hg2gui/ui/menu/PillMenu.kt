@@ -885,7 +885,7 @@ private fun StackPillVisual(
 private const val OFFSCREEN_FRACTION = 1.7f
 private const val SLIDE_CORRECT_MS = 90 // Slide's own top-row correction window
 private const val SLIDE_OVERSHOOT_FRACTION = 0.06f // of a row pitch, past the resting slot
-private const val UNFOLD_STAGGER_MS = 26L // per-row delay, bottom to top
+private const val UNFOLD_STAGGER_MS = 26 // per-row delay, bottom to top
 private const val DROP_START_MULTIPLIER = 1.4f // of a row pitch, above the resting row
 private const val DROP_SHORT_FRACTION = 0.04f // of a row pitch, short of the resting row
 private const val DROP_SETTLE_MS = 60
@@ -1022,14 +1022,14 @@ private class StackEntranceMotion(pose: StackEntrancePose) {
         val restWidthFraction = geometry.restWidthFraction
         when (entrance) {
             StackEntrance.Slide -> playSlide(row, rowCount)
-            StackEntrance.Unfold -> playUnfold(row)
+            StackEntrance.Unfold -> playUnfold(row, rowCount)
             StackEntrance.Drop -> playDrop(pitchPx)
             StackEntrance.Cascade -> playCascade(row, rowCount, pitchPx)
             StackEntrance.Deal -> playDeal(row, rowCount, pitchPx)
             StackEntrance.Split -> playSplit(row, pitchPx, restWidthFraction)
             StackEntrance.Telescope -> playTelescope(row, rowCount, pitchPx)
             StackEntrance.Rally -> playRally(row)
-            StackEntrance.Extend -> playExtend(row)
+            StackEntrance.Extend -> playExtend(row, rowCount)
             // Unroll and Tumble share playCascade's own mechanic at a shorter stagger - they
             // differ only in which edge they hinge on, a StackPillVisual/TransformOrigin concern.
             StackEntrance.Unroll, StackEntrance.Tumble ->
@@ -1055,7 +1055,7 @@ private class StackEntranceMotion(pose: StackEntrancePose) {
         }
     }
 
-    private suspend fun playUnfold(row: Int) {
+    private suspend fun playUnfold(row: Int, rowCount: Int) {
         // Length only, so nothing wobbles. `offset` stays 0 (its resting value) the whole time -
         // the pill is anchored at its own LEFT edge (the end that bleeds offscreen in the real
         // menu) via offsetByFractionOfParent(0), and lenFrac scales the width from that fixed
@@ -1063,7 +1063,7 @@ private class StackEntranceMotion(pose: StackEntrancePose) {
         // make the tip the fixed point and the offscreen edge would travel - invisible, reading
         // as nothing happening.
         lenFrac.snapTo(0f)
-        delay(row * UNFOLD_STAGGER_MS)
+        delay(scaledDelayMs(staggerDelayMs(row, rowCount, UNFOLD_STAGGER_MS)))
         lenFrac.animateTo(1f, tween(Azphalt.UNFOLD_MS, easing = Azphalt.PAGE_EASE))
     }
 
@@ -1088,7 +1088,7 @@ private class StackEntranceMotion(pose: StackEntrancePose) {
         riseY.snapTo(pitchPx) // stacked on the row below
         turn.snapTo(if (row % 2 == 0) -CASCADE_TURN_DEG else CASCADE_TURN_DEG)
         alpha.snapTo(0f) // genuinely hidden - see StackEntrancePose's own doc comment
-        delay(row * stagger.toLong())
+        delay(scaledDelayMs(staggerDelayMs(row, rowCount, stagger)))
         coroutineScope {
             launch { turn.animateTo(0f, tween(duration, easing = LinearEasing)) }
             launch {
@@ -1114,7 +1114,7 @@ private class StackEntranceMotion(pose: StackEntrancePose) {
         offset.snapTo(DEAL_START_X_FRACTION)
         riseY.snapTo(pitchPx * DEAL_START_Y_MULTIPLIER)
         tilt.snapTo(DEAL_TILT_DEG)
-        delay(row * step.toLong())
+        delay(scaledDelayMs(staggerDelayMs(row, rowCount, step)))
         coroutineScope {
             launch { offset.animateTo(0f, tween(step * 2, easing = LinearEasing)) }
             launch { riseY.animateTo(0f, tween(step * 2, easing = LinearEasing)) }
@@ -1145,7 +1145,7 @@ private class StackEntranceMotion(pose: StackEntrancePose) {
             // Drawn out from behind the row below, already at final length.
             riseY.snapTo(pitchPx * row)
             alpha.snapTo(0f) // genuinely hidden - see StackEntrancePose's own doc comment
-            delay(slide + (row - 1) * step.toLong())
+            delay(scaledDelayMs(slide + staggerDelayMs(row - 1, rowCount - 1, step)))
             coroutineScope {
                 launch { riseY.animateTo(0f, tween(step, easing = LinearEasing)) }
                 launch { alpha.animateTo(1f, tween(step, easing = LinearEasing)) }
@@ -1161,7 +1161,7 @@ private class StackEntranceMotion(pose: StackEntrancePose) {
         offset.animateTo(0f, tween(slide, easing = LinearEasing))
     }
 
-    private suspend fun playExtend(row: Int) {
+    private suspend fun playExtend(row: Int, rowCount: Int) {
         // Nothing here ever moves - only lenFrac. Row 0 (the anchor) is already most of the way
         // to its resting width and finishes growing first; every row above it starts from zero
         // and only begins once the anchor's own growth completes, staggered the same 26ms/row
@@ -1169,7 +1169,7 @@ private class StackEntranceMotion(pose: StackEntrancePose) {
         if (row == 0) {
             lenFrac.animateTo(1f, tween(Azphalt.UNFOLD_MS, easing = Azphalt.PAGE_EASE))
         } else {
-            delay(Azphalt.UNFOLD_MS.toLong() + (row - 1) * UNFOLD_STAGGER_MS)
+            delay(scaledDelayMs(Azphalt.UNFOLD_MS + staggerDelayMs(row - 1, rowCount - 1, UNFOLD_STAGGER_MS)))
             lenFrac.animateTo(1f, tween(Azphalt.UNFOLD_MS, easing = Azphalt.PAGE_EASE))
         }
     }
@@ -1334,18 +1334,18 @@ private class ChildEntranceMotion(pose: ChildEntrancePose) {
         val restLift = -pitchPx * absoluteRow
         when (entrance) {
             StackEntrance.Slide -> playSlide(restLift)
-            StackEntrance.Unfold -> playUnfold(localIndex, restLift)
+            StackEntrance.Unfold -> playUnfold(localIndex, rowCount, restLift)
             StackEntrance.Drop -> playDrop(restLift, pitchPx)
-            StackEntrance.Cascade -> playCascade(localIndex, absoluteRow, pitchPx)
+            StackEntrance.Cascade -> playCascade(localIndex, rowCount, absoluteRow, pitchPx)
             // Unroll/Tumble aren't in a child band's own roll pool (see
             // StackEntrance.rollForChildBand's doc comment) - handled here anyway so this `when`
             // stays exhaustive over the whole enum rather than an arbitrary subset of it.
-            StackEntrance.Unroll, StackEntrance.Tumble -> playCascade(localIndex, absoluteRow, pitchPx)
+            StackEntrance.Unroll, StackEntrance.Tumble -> playCascade(localIndex, rowCount, absoluteRow, pitchPx)
             StackEntrance.Deal -> playDeal(localIndex, rowCount, restLift)
             StackEntrance.Split -> playSplit(restLift)
             StackEntrance.Telescope -> playTelescope(localIndex, rowCount, restLift)
             StackEntrance.Rally -> playRally(restLift)
-            StackEntrance.Extend -> playExtend(localIndex, restLift)
+            StackEntrance.Extend -> playExtend(localIndex, rowCount, restLift)
         }
     }
 
@@ -1354,9 +1354,9 @@ private class ChildEntranceMotion(pose: ChildEntrancePose) {
         offset.animateTo(0f, tween(Azphalt.SLIDE_MS, easing = LinearEasing))
     }
 
-    private suspend fun playUnfold(localIndex: Int, restLift: Float) {
+    private suspend fun playUnfold(localIndex: Int, rowCount: Int, restLift: Float) {
         lift.snapTo(restLift)
-        delay(localIndex * UNFOLD_STAGGER_MS)
+        delay(scaledDelayMs(staggerDelayMs(localIndex, rowCount, UNFOLD_STAGGER_MS)))
         lenFrac.animateTo(1f, tween(Azphalt.UNFOLD_MS, easing = Azphalt.PAGE_EASE))
     }
 
@@ -1365,8 +1365,8 @@ private class ChildEntranceMotion(pose: ChildEntrancePose) {
         lift.animateTo(restLift, tween(DROP_SETTLE_MS, easing = LinearEasing))
     }
 
-    private suspend fun playCascade(localIndex: Int, absoluteRow: Int, pitchPx: Float) {
-        delay(localIndex * Azphalt.SWING_MS.toLong())
+    private suspend fun playCascade(localIndex: Int, rowCount: Int, absoluteRow: Int, pitchPx: Float) {
+        delay(scaledDelayMs(staggerDelayMs(localIndex, rowCount, Azphalt.SWING_MS)))
         coroutineScope {
             launch { turn.animateTo(0f, tween(Azphalt.SWING_MS, easing = LinearEasing)) }
             launch {
@@ -1387,7 +1387,7 @@ private class ChildEntranceMotion(pose: ChildEntrancePose) {
 
     private suspend fun playDeal(localIndex: Int, rowCount: Int, restLift: Float) {
         val step = stackInterval(DEAL_STEP_MS, rowCount)
-        delay(localIndex * step.toLong())
+        delay(scaledDelayMs(staggerDelayMs(localIndex, rowCount, step)))
         coroutineScope {
             launch { offset.animateTo(0f, tween(step * 2, easing = LinearEasing)) }
             launch { lift.animateTo(restLift, tween(step * 2, easing = LinearEasing)) }
@@ -1409,7 +1409,7 @@ private class ChildEntranceMotion(pose: ChildEntrancePose) {
         if (localIndex == 0) {
             offset.animateTo(0f, tween(slide, easing = LinearEasing))
         } else {
-            delay(slide + (localIndex - 1) * step.toLong())
+            delay(scaledDelayMs(slide + staggerDelayMs(localIndex - 1, rowCount - 1, step)))
             coroutineScope {
                 launch { lift.animateTo(restLift, tween(step, easing = LinearEasing)) }
                 launch { alpha.animateTo(1f, tween(step, easing = LinearEasing)) }
@@ -1422,12 +1422,12 @@ private class ChildEntranceMotion(pose: ChildEntrancePose) {
         offset.animateTo(0f, tween(Azphalt.SLIDE_MS, easing = LinearEasing))
     }
 
-    private suspend fun playExtend(localIndex: Int, restLift: Float) {
+    private suspend fun playExtend(localIndex: Int, rowCount: Int, restLift: Float) {
         lift.snapTo(restLift)
         if (localIndex == 0) {
             lenFrac.animateTo(1f, tween(Azphalt.UNFOLD_MS, easing = Azphalt.PAGE_EASE))
         } else {
-            delay(Azphalt.UNFOLD_MS.toLong() + (localIndex - 1) * UNFOLD_STAGGER_MS)
+            delay(scaledDelayMs(Azphalt.UNFOLD_MS + staggerDelayMs(localIndex - 1, rowCount - 1, UNFOLD_STAGGER_MS)))
             lenFrac.animateTo(1f, tween(Azphalt.UNFOLD_MS, easing = Azphalt.PAGE_EASE))
         }
     }
@@ -1473,7 +1473,7 @@ private fun ChildPill(
     // stale silently - the entrance would keep the old ordering, arriving in a sequence that no
     // longer matches where the pills actually sit.
     LaunchedEffect(node.id, localIndex) {
-        delay(Azphalt.DROP_MS.toLong())
+        delay(scaledDelayMs(Azphalt.DROP_MS))
         motion.play(entrance, localIndex, rowCount, pitchPx, absoluteRow)
     }
 

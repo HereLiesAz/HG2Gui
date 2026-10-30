@@ -257,14 +257,18 @@ object DistroManager {
      * line, "<target><SEPARATOR><link path>") and they're created here as their own pass, once
      * every real file they might point at already exists.
      */
-    private fun extractBootstrap(zipFile: File, prefix: File, nativeLibraryDir: String) {
-        prefix.mkdirs()
-        val prefixCanonical = prefix.canonicalFile
+    //
+    // [root] is the directory being written (a staging directory); [finalPrefix] is where it will
+    // live once swapped into place. Every ABSOLUTE path baked into the extracted content (script
+    // shebangs, symlink targets, apt.conf) must name [finalPrefix], never [root].
+    internal fun extractBootstrap(zipFile: File, root: File, finalPrefix: File, nativeLibraryDir: String) {
+        root.mkdirs()
+        val prefixCanonical = root.canonicalFile
         // Zip-slip containment, mirroring AzpInstaller: any entry (or SYMLINKS.txt link path)
-        // that canonicalizes outside the prefix aborts the whole bootstrap - bootstrap()'s catch
-        // then wipes the partial prefix.
+        // that canonicalizes outside the root aborts the whole bootstrap - the staging directory
+        // is then discarded and the live prefix is never touched.
         fun contained(name: String): File {
-            val target = File(prefix, name).canonicalFile
+            val target = File(root, name).canonicalFile
             if (target != prefixCanonical && !target.path.startsWith(prefixCanonical.path + File.separator)) {
                 throw IOException("path traversal in bootstrap entry: $name")
             }
@@ -292,7 +296,7 @@ object DistroManager {
                         val outFile = contained(entry.name)
                         outFile.parentFile?.mkdirs()
                         outFile.outputStream().buffered().use { out -> zis.copyTo(out) }
-                        rewriteShebangIfNeeded(outFile, prefix)
+                        rewriteShebangIfNeeded(outFile, finalPrefix)
                     }
                 }
                 zis.closeEntry()
@@ -311,19 +315,19 @@ object DistroManager {
             // symlink's own containing directory, so it needs no rewriting) - this only touches
             // the ones that would otherwise dangle.
             val target = if (rawTarget.startsWith(HARDCODED_TERMUX_PREFIX)) {
-                prefix.absolutePath + rawTarget.removePrefix(HARDCODED_TERMUX_PREFIX)
+                finalPrefix.absolutePath + rawTarget.removePrefix(HARDCODED_TERMUX_PREFIX)
             } else {
                 rawTarget
             }
             val linkPath = line.substring(separatorIndex + SYMLINK_SEPARATOR.length)
-            val linkFile = File(prefix, linkPath)
+            val linkFile = File(root, linkPath)
             // The link itself may already exist (stale from a failed attempt), so canonicalize its
             // parent rather than the link - that check is what matters for where it gets created.
             val linkName = linkFile.name
             if (linkName.isEmpty() || linkName == "." || linkName == "..") {
                 throw IOException("invalid symlink path in $SYMLINKS_ENTRY: $linkPath")
             }
-            val linkParent = (linkFile.parentFile ?: prefix).canonicalFile
+            val linkParent = (linkFile.parentFile ?: root).canonicalFile
             if (linkParent != prefixCanonical && !linkParent.path.startsWith(prefixCanonical.path + File.separator)) {
                 throw IOException("path traversal in $SYMLINKS_ENTRY link path: $linkPath")
             }
@@ -332,14 +336,14 @@ object DistroManager {
             // was there yet, and clears a stale symlink left by a prior failed bootstrap attempt.
             linkFile.delete()
             try {
-                Os.symlink(target, linkFile.absolutePath)
+                Files.createSymbolicLink(linkFile.toPath(), Paths.get(target))
             } catch (e: Exception) {
-                Utils.log(e)
+                logQuietly(e)
             }
         }
-        linkMainRepoKeyring(prefix)
-        linkManifestEntries(prefix, nativeLibraryDir)
-        writeAptConf(prefix)
+        linkMainRepoKeyring(root, finalPrefix)
+        linkManifestEntries(root, nativeLibraryDir)
+        PrefixRuntimeConfig.writeAptConf(root, finalPrefix, nativeLibraryDir)
     }
 
     // Shared by extractBootstrap (fresh install) and repairExecLinks (an existing install whose
@@ -362,9 +366,9 @@ object DistroManager {
                 Files.createLink(linkFile.toPath(), realFile.toPath())
             } catch (e: Exception) {
                 try {
-                    Os.symlink(realFile.absolutePath, linkFile.absolutePath)
+                    Files.createSymbolicLink(linkFile.toPath(), realFile.toPath())
                 } catch (e2: Exception) {
-                    Utils.log(e2)
+                    logQuietly(e2)
                 }
             }
         }
@@ -379,16 +383,16 @@ object DistroManager {
     // own top-level doc comment), so without this, apt has no trusted key for the one repo that
     // matters most and every `apt update`/`pkg update` fails signature verification. Mirrors
     // exactly what SYMLINKS.txt already does for the others, just for the one entry it omits.
-    private fun linkMainRepoKeyring(prefix: File) {
-        val target = File(prefix, "share/termux-keyring/termux-pacman.gpg")
-        if (!target.exists()) return
-        val linkFile = File(prefix, "etc/apt/trusted.gpg.d/termux-pacman.gpg")
+    private fun linkMainRepoKeyring(root: File, finalPrefix: File) {
+        if (!File(root, "share/termux-keyring/termux-pacman.gpg").exists()) return
+        val target = File(finalPrefix, "share/termux-keyring/termux-pacman.gpg")
+        val linkFile = File(root, "etc/apt/trusted.gpg.d/termux-pacman.gpg")
         linkFile.parentFile?.mkdirs()
         linkFile.delete()
         try {
-            Os.symlink(target.absolutePath, linkFile.absolutePath)
+            Files.createSymbolicLink(linkFile.toPath(), target.toPath())
         } catch (e: Exception) {
-            Utils.log(e)
+            logQuietly(e)
         }
     }
 
@@ -412,68 +416,10 @@ object DistroManager {
         if (file.length() < 3) return
         val bytes = file.readBytes()
         if (bytes.size < 2 || bytes[0] != '#'.code.toByte() || bytes[1] != '!'.code.toByte()) return
-        val text = String(bytes, Charsets.UTF_8)
-        if (!text.contains(HARDCODED_TERMUX_PREFIX)) return
-        file.writeBytes(text.replace(HARDCODED_TERMUX_PREFIX, prefix.absolutePath).toByteArray(Charsets.UTF_8))
-    }
-
-    // apt's own Dir::* settings (where it looks for apt.conf.d, sources.list, its package cache,
-    // dpkg's status file, ...) are compiled in as absolute paths against Termux's own package too
-    // - unlike a shebang line, there's no single first-line fix, since these are baked into
-    // apt/libapt-pkg's own binary as C++ string constants apt reads at startup, before it's ever
-    // consulted a config file. What apt *does* still honor from the environment is APT_CONFIG - a
-    // path to a config file it reads before falling back to those compiled-in defaults - so this
-    // writes one, with every Dir:: apt.conf(5) documents pointed at this app's real prefix
-    // instead, and ShellSession points APT_CONFIG at it for every bootstrap-tier command.
-    //
-    // Acquire::https::CaInfo is here for a related but separate reason: the bootstrap zip already
-    // ships a real CA bundle at etc/tls/cert.pem (extracted like any other regular file, no fixup
-    // needed for the file itself), but on a genuine Termux install that bundle only becomes the
-    // thing TLS actually consults once the `ca-certificates` package's own postinst runs `trust
-    // extract` to activate it - a dpkg step this extraction never runs, so the bundle just sits
-    // there unused otherwise. Pointing apt straight at the raw bundle sidesteps needing that
-    // activation step at all.
-    private fun writeAptConf(prefix: File) {
-        val p = prefix.absolutePath
-        val aptConfDir = File(prefix, "etc/apt")
-        aptConfDir.mkdirs()
-
-        // Real Termux only ever runs from a live install apt/dpkg have already been managing -
-        // var/lib/apt and var/cache/apt (and their own "partial" subdirs, where an in-progress
-        // download or list fetch lands before being renamed into place) get created the first
-        // time some package's own postinst or dpkg trigger touches them. This zip is a frozen
-        // snapshot, not a live install, so neither tree exists in it at all - and unlike most of
-        // apt's own Dir::* paths, it won't just mkdir -p these two on demand; a missing "partial"
-        // is a hard Acquire error ("Archives directory ... is missing").
-        File(prefix, "var/cache/apt/archives/partial").mkdirs()
-        File(prefix, "var/lib/apt/lists/partial").mkdirs()
-
-        File(aptConfDir, "apt.conf").writeText(
-            """
-            Dir "$p/";
-            Dir::Etc "$p/etc/apt/";
-            Dir::Etc::sourcelist "$p/etc/apt/sources.list";
-            Dir::Etc::sourceparts "$p/etc/apt/sources.list.d/";
-            Dir::Etc::vendorlist "$p/etc/apt/vendors.list";
-            Dir::Etc::vendorparts "$p/etc/apt/vendors.list.d/";
-            Dir::Etc::main "$p/etc/apt/apt.conf";
-            Dir::Etc::parts "$p/etc/apt/apt.conf.d/";
-            Dir::Etc::preferences "$p/etc/apt/preferences";
-            Dir::Etc::preferencesparts "$p/etc/apt/preferences.d/";
-            Dir::Etc::trusted "$p/etc/apt/trusted.gpg";
-            Dir::Etc::trustedparts "$p/etc/apt/trusted.gpg.d/";
-            Dir::State "$p/var/lib/apt/";
-            Dir::State::lists "$p/var/lib/apt/lists/";
-            Dir::State::status "$p/var/lib/dpkg/status";
-            Dir::Cache "$p/var/cache/apt/";
-            Dir::Cache::archives "$p/var/cache/apt/archives/";
-            Dir::Log "$p/var/log/apt/";
-            Dir::Bin::methods "$p/lib/apt/methods/";
-            Dir::Bin::solvers:: "$p/lib/apt/solvers/";
-            Dir::Bin::dpkg "$p/bin/dpkg";
-            Acquire::https::CaInfo "$p/etc/tls/cert.pem";
-            """.trimIndent()
-        )
+        // Byte-level, not decode/re-encode: a non-UTF-8 script that merely mentions the old prefix
+        // must come through byte-for-byte (see PrefixRewriter).
+        val rewritten = PrefixRewriter.replaceInBytes(bytes, HARDCODED_TERMUX_PREFIX, prefix.absolutePath) ?: return
+        file.writeBytes(rewritten)
     }
 
     private fun makeBinariesExecutable(prefix: File) {

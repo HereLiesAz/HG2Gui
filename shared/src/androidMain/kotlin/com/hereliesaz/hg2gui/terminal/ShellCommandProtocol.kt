@@ -35,7 +35,7 @@ internal object ShellCommandProtocol {
         ShellFamily.FISH -> buildString {
             append("begin\n")
             append(startMarker(startHead, sentinelTail, "\$fish_pid"))
-            append("set -l __hg2gui_cmd ").append(fishQuote(command + "\n")).append('\n')
+            append("set -l __hg2gui_cmd ").append(fishQuote(evalBody(command))).append('\n')
             append("eval \$__hg2gui_cmd\n")
             append("set -l __hg2gui_status \$status\n")
             append("printf '%s%s%d:%s\\n' '").append(sentinelHead).append("' '")
@@ -46,7 +46,7 @@ internal object ShellCommandProtocol {
             val eval = if (family == ShellFamily.ZSH) "eval" else "command eval"
             append("{\n")
             append(startMarker(startHead, sentinelTail, "\"\$\$\""))
-            append("__hg2gui_cmd=").append(posixQuote(command + "\n")).append('\n')
+            append("__hg2gui_cmd=").append(posixQuote(evalBody(command))).append('\n')
             append(eval).append(" \"\$__hg2gui_cmd\"\n")
             append("__hg2gui_status=\$?\n")
             append("printf '%s%s%d:%s\\n' '").append(sentinelHead).append("' '")
@@ -65,6 +65,20 @@ internal object ShellCommandProtocol {
         val trimmed = markerSuffix.trim()
         if (!trimmed.startsWith(":")) return null
         return trimmed.substring(1).toIntOrNull()?.takeIf { it > 1 }
+    }
+
+    /**
+     * The text handed to `eval`: [command] without trailing newlines, then exactly one newline (so
+     * a here-document whose terminator is the command's last line is still terminated). A dangling
+     * odd backslash is doubled first: bash lets an `eval` string that ends in a backslash leak its
+     * pending line-continuation into the *outer* parser, which then reads the next frame's `{` as a
+     * command and fails with a syntax error. Doubled, it is the literal backslash that bash and
+     * dash already print for `echo hi \` at the end of input.
+     */
+    fun evalBody(command: String): String {
+        val body = command.trimEnd('\n', '\r')
+        val trailingBackslashes = body.length - body.trimEnd('\\').length
+        return (if (trailingBackslashes % 2 == 1) "$body\\" else body) + "\n"
     }
 
     /** [value] as one POSIX single-quoted word; the only character needing care is the quote itself. */
