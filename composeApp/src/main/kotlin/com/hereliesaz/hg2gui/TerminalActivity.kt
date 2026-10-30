@@ -345,6 +345,82 @@ class TerminalActivity : FragmentActivity() {
         return keys
     }
 
+    /** What [finishAzpInstall] did: [installed] is null when the user declined (nothing recorded). */
+    private class AzpFinish(val installed: AzpInstallResult?, val scriptCommand: String?, val note: String?)
+
+    /**
+     * The second half of an AZP install, after the archive is verified and extracted: asks the user
+     * before anything unverified takes effect, wires a script package's command onto PATH, and
+     * records the install. Never silent about a partial result - [AzpFinish.note] carries it.
+     *
+     * - A non-TRUSTED script (VALID is only self-signed; UNSIGNED/UNVERIFIABLE prove nothing) asks
+     *   before its command lands on PATH, and every script with `apt` dependencies asks again with
+     *   the exact package names before `pkg install -y` runs (ScriptInstaller declines otherwise).
+     * - A non-TRUSTED skill asks too: it installs, but AzpLibrary only feeds TRUSTED skills to the
+     *   AI prompt, and the dialog says so.
+     * - Declining removes the freshly extracted files (unless that id/version was already
+     *   installed before, whose record still points at them).
+     */
+    private suspend fun finishAzpInstall(
+        listing: AzpListing,
+        install: AzpInstallResult,
+        ask: suspend (title: String, message: String, confirmLabel: String) -> Boolean
+    ): AzpFinish {
+        val script = install.script
+        if (install.trust != AzpTrust.TRUSTED && (script != null || install.kind == "skill")) {
+            val proceed = if (script != null) {
+                ask(
+                    "INSTALL UNVERIFIED PACKAGE?",
+                    "${listing.name} isn't signed by a trusted key. Installing it adds its command to this " +
+                        "device's PATH and may install the packages it declares.",
+                    "INSTALL"
+                )
+            } else {
+                ask(
+                    "INSTALL UNVERIFIED SKILL?",
+                    "${listing.name} isn't signed by a trusted key. It will be installed, but the AI will " +
+                        "not read it unless a trusted version is installed.",
+                    "INSTALL"
+                )
+            }
+            if (!proceed) {
+                withContext(Dispatchers.IO) {
+                    if (!AzpLibrary.isInstalled(this@TerminalActivity, listing.id)) {
+                        AzpInstaller.rootDirOrNull(this@TerminalActivity, listing.id, listing.version)?.deleteRecursively()
+                    }
+                }
+                return AzpFinish(null, null, "Cancelled: ${listing.name} was not installed.")
+            }
+        }
+        var scriptCommand: String? = null
+        var note: String? = null
+        if (script != null) {
+            val result = withContext(Dispatchers.IO) {
+                ScriptInstaller.install(this@TerminalActivity, listing.id, listing.version, script) { packages ->
+                    withContext(Dispatchers.Main) {
+                        ask(
+                            "INSTALL DEPENDENCIES?",
+                            "${listing.name} wants to run \"pkg install -y\" for: ${packages.joinToString(", ")}. " +
+                                "They come from the Termux package repositories and are installed on this device.",
+                            "INSTALL"
+                        )
+                    }
+                }
+            }
+            scriptCommand = (result as? ScriptInstaller.Result.Installed)?.command
+            note = describeScriptResult(listing.name, result)
+        } else if (install.kind == "skill") {
+            note = describeUnverifiedSkill(listing.name, install.trust)
+        }
+        withContext(Dispatchers.IO) {
+            AzpLibrary.record(
+                this@TerminalActivity, listing.id, listing.name, listing.version,
+                install.kind, install.skillIds, install.trust, scriptCommand
+            )
+        }
+        return AzpFinish(install, scriptCommand, note)
+    }
+
     // TerminalActivity is singleTop/intoExisting, so a notification tap while it's already
     // running arrives via onNewIntent, not a fresh onCreate - this is how that reaches the
     // Compose tree to switch screens, since setIntent() alone wouldn't trigger recomposition.
@@ -997,14 +1073,21 @@ class TerminalActivity : FragmentActivity() {
                                             } else {
                                                 outcome.result
                                             }
-                                            finishAzpInstall(listing, install, ::askAzp)?.let { (done, scriptCommand, note) ->
+                                            val finish = finishAzpInstall(listing, install) { title, message, label ->
+                                                askAzp(title, message, label)
+                                            }
+                                            if (finish.installed != null) {
                                                 azpResults = azpResults.map {
                                                     if (it.id == listing.id) {
-                                                        it.copy(installed = true, trust = done.trust.name, scriptCommand = scriptCommand.orEmpty())
+                                                        it.copy(
+                                                            installed = true,
+                                                            trust = finish.installed.trust.name,
+                                                            scriptCommand = finish.scriptCommand.orEmpty()
+                                                        )
                                                     } else it
                                                 }
-                                                azpMessage = note
                                             }
+                                            azpMessage = finish.note
                                         }
                                     }
                                 } catch (e: CancellationException) {
@@ -1079,14 +1162,23 @@ class TerminalActivity : FragmentActivity() {
                             // Opening a root pill reports an empty trail - that is browsing, not
                             // a pick, and must not wipe whatever the user had already typed.
                             if (tokens.isNotEmpty()) {
+                                // Only the pill trail follows the pick: a half-built chain
+                                // (composedPrefix) and typed text are the user's work, not ours.
                                 sessions.firstOrNull { it.ui.id == activeSessionId }?.let { session ->
                                     session.ui.tokens = tokens
-                                    session.ui.composedPrefix = ""
-                                    session.ui.inputText = ""
                                 }
                                 // A finished command goes straight back to the terminal, where
                                 // it now sits in the input for review.
                                 if (complete) screen = Screen.Terminal
+                            }
+                        },
+                        // A command tapped while reading never leaves the Guide: it is appended to
+                        // the composition and the reader confirms "added to input".
+                        onCommandAppended = { command ->
+                            sessions.firstOrNull { it.ui.id == activeSessionId }?.ui?.let { ui ->
+                                val appended = appendGuideCommand(ui.tokens, ui.inputText, command)
+                                ui.tokens = appended.tokens
+                                ui.inputText = appended.inputText
                             }
                         },
                         onBack = { screen = Screen.Terminal },
@@ -1146,16 +1238,13 @@ class TerminalActivity : FragmentActivity() {
                         onOpenFiles = { openFiles() },
                         onFilesButtonPositioned = { filesOrigin = it },
                         onCrumbPositioned = { id, rect -> crumbRects[id] = rect },
-                        onCopy = { text ->
-                            val clipboard = getSystemService(ClipboardManager::class.java)
-                            clipboard?.setPrimaryClip(ClipData.newPlainText("HG2Gui", text))
-                        },
+                        onCopy = { text -> copyToClipboard(text) },
                         onShare = { text ->
                             val intent = Intent(Intent.ACTION_SEND).apply {
                                 type = "text/plain"
                                 putExtra(Intent.EXTRA_TEXT, text)
                             }
-                            startActivity(Intent.createChooser(intent, "Share"))
+                            startActivity(Intent.createChooser(intent, getString(R.string.share_chooser_title)))
                         },
                         onWizard = { wizardId ->
                             val session = sessions.firstOrNull { it.ui.id == activeSessionId }
@@ -1212,7 +1301,9 @@ class TerminalActivity : FragmentActivity() {
                             val session = sessions.first { it.ui.id == sessionId }
                             // W5: recorded regardless of which path this takes below, or whether
                             // the command later succeeds - a shell's own history does the same.
-                            CommandHistoryStore.record(this@TerminalActivity, session.ui.name, line, System.currentTimeMillis())
+                            withContext(Dispatchers.IO) {
+                                CommandHistoryStore.record(this@TerminalActivity, session.ui.name, line, System.currentTimeMillis())
+                            }
                             val fullScreenCommand = fullScreenCommandOf(line)
                             if (fullScreenCommand != null) {
                                 if (!PtyPreference.isEnabled(this@TerminalActivity)) {
@@ -1268,8 +1359,17 @@ class TerminalActivity : FragmentActivity() {
                         }
                     )
 
-                    else -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Loading…")
+                    // The ground's own page colour and text colour, never the window's or the theme
+                    // default: this is the first thing every launch shows (the init work runs behind
+                    // it) and it used to be dark text on the dark window background.
+                    else -> Box(
+                        Modifier
+                            .fillMaxSize()
+                            .background(Azphalt.currentGround.pageBrush())
+                            .screenInsets(fullscreen, ime = false),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(stringResource(R.string.loading), color = Azphalt.currentGround.onPage)
                     }
                 }
 
@@ -1278,19 +1378,19 @@ class TerminalActivity : FragmentActivity() {
                         state = progress,
                         modifier = Modifier
                             .align(Alignment.TopCenter)
+                            // Below the status bar / cutout, not under the clock.
+                            .screenInsets(fullscreen, ime = false)
                             .padding(horizontal = 16.dp, vertical = 8.dp)
                     )
                 }
 
-                azpTrustConfirm?.let { (listing, decision) ->
+                azpPrompt?.let { prompt ->
                     ConfirmDialog(
-                        title = "INSTALL UNVERIFIED PACKAGE?",
-                        message = "${listing.name} isn't signed by a trusted key. Installing it will run " +
-                            "\"pkg install\" for whatever dependencies it declares and add its command to " +
-                            "this device's PATH.",
-                        confirmLabel = "INSTALL",
-                        onConfirm = { decision.complete(true); azpTrustConfirm = null },
-                        onDismiss = { decision.complete(false); azpTrustConfirm = null }
+                        title = prompt.title,
+                        message = prompt.message,
+                        confirmLabel = prompt.confirmLabel,
+                        onConfirm = { prompt.decision.complete(true); azpPrompt = null },
+                        onDismiss = { prompt.decision.complete(false); azpPrompt = null }
                     )
                 }
 
@@ -1417,7 +1517,7 @@ class TerminalActivity : FragmentActivity() {
                                         } catch (ignored: IllegalArgumentException) {
                                             Toast.makeText(
                                                 this@TerminalActivity,
-                                                "Can't share ${file.name} from this location.",
+                                                getString(R.string.toast_share_unavailable_file, file.name),
                                                 Toast.LENGTH_LONG
                                             ).show()
                                             return@launch
@@ -1427,7 +1527,7 @@ class TerminalActivity : FragmentActivity() {
                                             putExtra(Intent.EXTRA_STREAM, uri)
                                             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                                         }
-                                        startActivity(Intent.createChooser(intent, "Share ${file.name}"))
+                                        startActivity(Intent.createChooser(intent, getString(R.string.share_chooser_file_title, file.name)))
                                     }
                                 }
                             },
@@ -1452,12 +1552,12 @@ class TerminalActivity : FragmentActivity() {
                                             putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(uris))
                                             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                                         }
-                                        startActivity(Intent.createChooser(intent, "Share ${uris.size} items"))
+                                        startActivity(Intent.createChooser(intent, getString(R.string.share_chooser_items_title, uris.size)))
                                     }
                                     if (uris.size < paths.size) {
                                         Toast.makeText(
                                             this@TerminalActivity,
-                                            "${paths.size - uris.size} item(s) couldn't be shared from this location.",
+                                            getString(R.string.toast_share_unavailable_items, paths.size - uris.size),
                                             Toast.LENGTH_LONG
                                         ).show()
                                     }
