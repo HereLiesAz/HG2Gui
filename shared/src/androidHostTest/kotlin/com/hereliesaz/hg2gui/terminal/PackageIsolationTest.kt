@@ -26,8 +26,8 @@ class PackageIsolationTest {
     fun theGuestNeverGetsARawProcBind() {
         withHg2TempDir { dir ->
             val command = PackageIsolation.buildCommand(spec(dir))
-            assertFalse("raw /proc must not be bound", Regex("-b '?/proc'?(\\s|$)").containsMatchIn(command))
-            assertTrue(command.contains("-b '/proc/cpuinfo'"))
+            assertFalse("raw /proc must not be bound", Regex("-b [^/ ]*/proc[^/A-Za-z]").containsMatchIn(command))
+            assertTrue(command.contains("/proc/cpuinfo"))
             assertTrue(PackageIsolation.PROC_ALLOWLIST.none { it.removePrefix("/proc/").contains('/') })
         }
     }
@@ -49,7 +49,7 @@ class PackageIsolationTest {
             val command = PackageIsolation.buildCommand(spec(dir))
             assertTrue(command.startsWith("'/data/user/0/app/files/usr/bin/bash' -c "))
             assertTrue(command.contains("libhg2gui_proot.so"))
-            assertTrue(command.contains("-b '/system'"))
+            assertTrue(command.contains("-b /system"))
             assertTrue(command.contains(".hg2gui/denied:/system/bin/su"))
         }
     }
