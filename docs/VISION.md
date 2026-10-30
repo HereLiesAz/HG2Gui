@@ -41,7 +41,7 @@ Typing remains available for open-ended information. Discoverable values can bec
 - [x] Bash, Zsh, and Fish can be selected as persistent shells when installed.
 - [x] Prompt state can project cwd, Git branch/dirty state, last exit status, and user/host where meaningful.
 - [x] Oh My Zsh, Powerlevel10k, Starship, Pure, and similar systems are treated as presentation layers on the actual shell.
-- [x] Structured Git branch projection can open a native branch chooser.
+- [x] Git branch names are offered as Completion Bridge candidates after `git checkout`/`switch`/`branch`/`merge`/`rebase`; the status-line branch tag itself is display only.
 - [x] Cooperative shell metadata channels can supply fresh prompt semantics directly while the real PTY remains authoritative.
 
 ### Adaptive TUI Wrapper
@@ -119,7 +119,7 @@ Implemented:
 - [x] common ADB/root tools stripped or masked inside the guest;
 - [x] version-aware reseeding;
 - [x] dpkg target/dependency-closure seed planning from package ownership metadata, with a safe whole-prefix fallback if selective planning is unavailable or exceeds its bound;
-- [x] explicit host-read/host-write capability policy, with no ambient writable host bind exposed to isolated packages;
+- [x] host-read/host-write policy entries that are recorded but never granted (only `network` has an enforcement point), with no bind of the real HG2Gui home/prefix into isolated packages;
 - [x] per-package ASK / ALLOW ONCE / DENY capability policy;
 - [x] explicit interactive capability-request brokerage; one-shot grants live only in memory and are consumed once, while headless requests fail closed;
 - [x] a network launch gate that refuses to start an isolated package without a one-run network grant;
