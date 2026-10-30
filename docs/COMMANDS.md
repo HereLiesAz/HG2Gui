@@ -56,7 +56,7 @@ Top-level mutating `apt`/`apt-get` operations are translated into this transacti
 - read-only operations (`search`, `show`, `list`, `policy`, …) go to the real apt unchanged;
 - refused with an explanation and nothing run: dry-run flags, `autoremove`/`autopurge`, `build-dep`, `satisfy`, `aptitude` mutations, operands that are not plain package names (versions, releases, paths), and options other than the ones listed above.
 
-This applies to `pkg`/`apt` typed as their own command or as one step of a `;` / `&&` / `||` list. A mutating one behind `sudo`/`env`/`time`, in a pipe, `bash -c`, `$( )` or a control structure is refused (exit 2) because it cannot be journaled. A direct `dpkg` call, and a command word only known at run time (`$tool`, a function, a sourced script), are not covered by the transaction layer.
+This applies to `pkg`/`apt` typed as their own command or as one step of a `;` / `&&` / `||` list. A mutating one behind `sudo`/`env`/`time`, in a pipe, `bash -c`, `$( )` or a control structure is refused (exit 2) because it cannot be journaled. A direct `dpkg` call that would change the installed set is refused as well, by a `dpkg` shim on `PATH` and the `dpkg` shell function: `-i`/`--install`, `-r`/`--remove`, `-P`/`--purge`, `--configure`, `--unpack`, `--triggers-only`, the `--force-*`/`--no-force-*`/`--refuse-*` options, `--set-selections`, `--clear-selections`, `--add-architecture`, `--remove-architecture`, `-A`/`--record-avail`, `--update-avail`, `--merge-avail`, `--clear-avail`, `--forget-old-unavail` and `--command-fd` exit 126 with a message pointing at `pkg install` / `pkg remove`. Read-only actions (`-l`, `-L`, `-S`, `-s`, `-C`, `--print-architecture`, `--get-selections`, `--compare-versions`, …) pass through to the app's dpkg launcher. This holds for `env dpkg`, `$tool` and scripts too, because it is a `PATH` entry; it does not hold for the launcher or `$PREFIX/bin/dpkg` called by absolute path. `dpkg-divert`, `dpkg-trigger`, `update-alternatives` and a real `apt` run from inside a script are not guarded. HG2Gui's own package manager runs the launcher by absolute path and never goes through these shims.
 
 An unterminated quote, `$(` or backtick anywhere in a line is refused before it reaches the shell (exit 2).
 
@@ -100,6 +100,10 @@ The owning manager currently comes from adapters for:
 ### Disable / Enable
 
 Disable keeps the package installed while HG2Gui blocks owned commands. Enable removes that HG2Gui policy flag.
+
+Disable is enforced at two levels. The line planner refuses a disabled package's binary wherever it is written in the line (after `&&`/`;`/`|`, behind `env`/`time`/`sudo`, in `bash -c`, `$( )`, `find -exec`). In addition, for every binary of a disabled package HG2Gui keeps a one-line shim script in a directory beside the prefix (`<app files>/hg2gui-shims`), placed first on `PATH` in every shell it starts (tabs and full-screen sessions). The shim prints `<binary> is disabled (hg2package enable <manager> <package>)` to stderr and exits 126, so the binary is also refused when reached through `$tool`, `$(which tool)`, a shell function, an alias, `env tool`, or a script. The shims are regenerated on disable, enable, remove and purge, on every shell command, and at session start; no shim is created for a binary that an enabled package also provides, and core tools (`sh`, `ls`, `env`, …) are shimmed only if their own package is the one that was disabled.
+
+Not covered: a binary called by absolute path (`$PREFIX/bin/tool`, `/data/…/usr/bin/tool`), or by a program that resets `PATH`. The shims are a policy guard for a user's own shell, not a security boundary.
 
 ### Isolate / Release
 

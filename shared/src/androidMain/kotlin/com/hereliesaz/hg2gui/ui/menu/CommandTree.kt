@@ -58,7 +58,8 @@ object CommandTree {
         "pkg" to listOf("update", "upgrade", "install", "search", "list-installed", "uninstall"),
         "apt" to listOf("update", "upgrade", "install", "search", "list --installed", "remove"),
         "apt-get" to listOf("update", "upgrade", "install", "remove", "autoremove"),
-        "dpkg" to listOf("-l", "-L", "-S", "-i")
+        // Read-only queries only: direct dpkg mutations (-i, -r, ...) are refused (use pkg install / pkg remove).
+        "dpkg" to listOf("-l", "-L", "-S")
     )
 
     // A single category can carry far more names than the fan-out animation is built to show at
@@ -301,27 +302,14 @@ object CommandTree {
      *  by default - picking it just types that literal text and stops there. Every real package
      *  manager here has one hint that actually needs a browsable target instead:
      *  apt/apt-get/pkg's "install" wants a *name* from the repo catalog (apt update's own
-     *  downloaded index); dpkg's "-i" wants a *path* to an already-downloaded .deb, not a
-     *  repo-resolved name, so it gets the same file picker every other shell command's own
-     *  file… child already uses, not the catalog. Shared by [shellLeaf] and [groupByFamily]'s own
+     *  downloaded index). dpkg offers only read-only queries (its install action is refused
+     *  by the dpkg guard; see PrefixRuntimeConfig). Shared by [shellLeaf] and [groupByFamily]'s own
      *  bareHints - a hyphenated family (apt-get/apt-cache/... alongside bare "apt") builds the
      *  bare command's hints separately from its family members, so both call this rather than
      *  only one of them silently missing the special-casing. */
     private fun hintChild(context: Context, fullName: String, hint: String): MenuNode = when {
         fullName in PACKAGE_MANAGER_COMMANDS && hint == "install" ->
             installNode(context, "sh/$fullName/install")
-        // "-i" still has to actually reach the command line as its own token - unlike
-        // FILE_PARAM_COMMANDS' "edit" (where the file *is* the whole rest of the command), dpkg
-        // needs both "-i" and the path after it. Wrapping the picker as this node's own child,
-        // instead of swapping "-i" out for it directly, keeps "-i" emitting normally while still
-        // drilling into the same picker every other file… child uses.
-        fullName == "dpkg" && hint == "-i" ->
-            MenuNode(
-                id = "sh/$fullName/-i",
-                label = "-i",
-                cap = "1",
-                children = listOf(FileBrowser.pickerNode("sh/$fullName/-i/file"))
-            )
         else -> MenuNode("sh/$fullName/$hint", hint)
     }
 
