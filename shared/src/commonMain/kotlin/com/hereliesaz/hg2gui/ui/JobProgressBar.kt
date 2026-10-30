@@ -5,13 +5,23 @@ import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.progressBarRangeInfo
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
 import com.hereliesaz.hg2gui.ui.menu.onPage
@@ -34,7 +44,7 @@ import kotlinx.coroutines.delay
 private const val GROW_MS = 300
 private const val STALL_HOLD_MS = 480L
 private const val DRAIN_MS = 200
-private val BAR_HEIGHT = 3.dp
+private val BAR_HEIGHT = 4.dp
 
 class JobProgressBarState {
     val fill = Animatable(0f)
@@ -57,11 +67,47 @@ class JobProgressBarState {
     }
 }
 
+/**
+ * The fill colour for a progress bar drawn on [page]: the first of Ink, Yellow and White that reads
+ * at the non-text threshold (3:1) against it, so the bar is Ink on the light grounds and Yellow on
+ * the dark ones instead of the old always-Yellow fill (1.11:1 on Mustard).
+ */
+internal fun progressFillOn(page: Color): Color {
+    val candidates = listOf(Azphalt.Ink, Azphalt.Yellow, Azphalt.White)
+    return candidates.firstOrNull { contrastRatio(it, page) >= AzphaltContrast.NON_TEXT }
+        ?: candidates.maxByOrNull { contrastRatio(it, page) }!!
+}
+
+/**
+ * The bar itself. It reports its fill to accessibility as a progress range, and by default pads
+ * itself clear of the status bar and display cutout ([avoidSystemBars]) because callers place it as
+ * an overlay at the very top of the window, outside any screen's own inset handling; pass false if
+ * the parent already pads it.
+ */
 @Composable
-fun JobProgressBar(state: JobProgressBarState, modifier: Modifier = Modifier) {
-    val onPage = Azphalt.currentGround.onPage
+fun JobProgressBar(
+    state: JobProgressBarState,
+    modifier: Modifier = Modifier,
+    avoidSystemBars: Boolean = true,
+    description: String = "Progress"
+) {
+    val ground = Azphalt.currentGround
+    val onPage = ground.onPage
+    val fraction = state.fill.value.coerceIn(0f, 1f)
+    val label = description
     Box(
         modifier
+            .then(
+                if (avoidSystemBars) {
+                    Modifier.windowInsetsPadding(WindowInsets.statusBars.union(WindowInsets.displayCutout))
+                } else {
+                    Modifier
+                }
+            )
+            .semantics {
+                contentDescription = label
+                progressBarRangeInfo = ProgressBarRangeInfo(fraction, 0f..1f)
+            }
             .fillMaxWidth()
             .height(BAR_HEIGHT)
             .clip(RoundedCornerShape(percent = 50))
@@ -70,11 +116,11 @@ fun JobProgressBar(state: JobProgressBarState, modifier: Modifier = Modifier) {
         Box(
             Modifier
                 .fillMaxHeight()
-                .fillMaxWidth(state.fill.value.coerceIn(0f, 1f))
+                .fillMaxWidth(fraction)
                 .clip(RoundedCornerShape(percent = 50))
-                .background(Azphalt.Yellow)
+                .background(progressFillOn(ground.page))
         )
     }
 }
 
-private const val TRACK_ALPHA = 0.12f
+private const val TRACK_ALPHA = 0.18f

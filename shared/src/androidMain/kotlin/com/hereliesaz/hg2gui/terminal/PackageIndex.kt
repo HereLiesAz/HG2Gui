@@ -203,7 +203,10 @@ internal class PackageResolver(private val compareVersions: (String, String, Str
             val forcedRequested = forceRequested && (
                 pkg.name in requestedSet || requested.any { requestedName -> pkg.provides.any { it.name == requestedName } }
             )
-            if (pkg.name in installed && !forcedRequested) return
+            // Already installed at exactly this version: nothing to do. An installed package whose
+            // version does NOT satisfy the relation that led here (a too-old dependency) is planned
+            // at the repository version, i.e. upgraded, instead of failing the whole install.
+            if (installed[pkg.name]?.version == pkg.version && !forcedRequested) return
             if (visiting.putIfAbsent(pkg.name, pkg) != null) return
             installedConflict(pkg)?.let { error("Cannot install ${pkg.name}: $it. HG2Gui will not auto-remove conflicting packages.") }
             plannedConflict(pkg)?.let { error("Cannot install ${pkg.name}: $it") }
