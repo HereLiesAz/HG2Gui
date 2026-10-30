@@ -143,11 +143,14 @@ internal object AptTranslation {
     private val VALUE_OPTIONS = setOf("-o", "-c", "-t", "-a", "--option", "--config-file", "--target-release", "--default-release")
 
     private val TRANSLATED = setOf(
-        "install", "remove", "purge", "update", "upgrade", "dist-upgrade", "full-upgrade", "clean", "autoclean"
+        "install", "reinstall", "remove", "purge", "update", "upgrade", "dist-upgrade", "full-upgrade", "clean", "autoclean"
     )
     private val UNSUPPORTED_MUTATING = setOf(
-        "reinstall", "autoremove", "auto-remove", "autopurge", "build-dep", "satisfy"
+        "autoremove", "auto-remove", "autopurge", "build-dep", "satisfy"
     )
+
+    /** HG2Gui's package manager re-plans an installed package with `pkg install --reinstall`. */
+    private const val REINSTALL_FLAG = "--reinstall"
     private val READ_ONLY = setOf(
         "list", "search", "show", "policy", "depends", "rdepends", "madison", "showpkg", "showsrc",
         "changelog", "help", "source", "download", "check", "stats", "pkgnames", "dump", "dumpavail",
@@ -222,7 +225,8 @@ internal object AptTranslation {
                     if (op.contains("remove") || op.contains("purge")) "Remove packages explicitly: pkg remove <package>." else "Use pkg install <package>."
             )
         }
-        parsed.options.firstOrNull { !flagAllowed(it) }?.let {
+        val reinstallable = op == "install" || op == "reinstall"
+        parsed.options.firstOrNull { !flagAllowed(it) && !(it == REINSTALL_FLAG && reinstallable) }?.let {
             return Plan.Refuse(
                 "apt option '$it' is not supported by HG2Gui's package manager; nothing was run " +
                     "(it would have been ignored and the command run differently from what you typed)."
@@ -251,13 +255,16 @@ internal object AptTranslation {
                     if (bad != null) {
                         Plan.Refuse("'$bad' is not a plain package name (versions, releases and paths are not supported); nothing was run.")
                     } else {
-                        Plan.Translate("pkg $op ${parsed.operands.joinToString(" ")}")
+                        val names = parsed.operands.joinToString(" ")
+                        val asReinstall = op == "reinstall" || REINSTALL_FLAG in parsed.options
+                        Plan.Translate(if (asReinstall) "pkg install $REINSTALL_FLAG $names" else "pkg $op $names")
                     }
                 }
             }
         }
     }
 
+    private val PKG_REINSTALL_FLAGS = setOf("--reinstall", "--force-requested")
     private val PKG_MUTATING_FLAG_OPS = setOf(
         "install", "in", "add", "remove", "rm", "uninstall", "purge", "upgrade", "up", "update", "reinstall"
     )
@@ -277,7 +284,8 @@ internal object AptTranslation {
         flags.firstOrNull { it in DRY_RUN_FLAGS }?.let {
             return "Dry run ($it) is not supported by HG2Gui's package manager; nothing was run."
         }
-        flags.firstOrNull { !flagAllowed(it) }?.let {
+        val installOp = op == "install" || op == "in"
+        flags.firstOrNull { !flagAllowed(it) && !(installOp && it in PKG_REINSTALL_FLAGS) }?.let {
             return "pkg option '$it' is not supported by HG2Gui's package manager; nothing was run " +
                 "(it would have been ignored and the command run differently from what you typed)."
         }

@@ -336,14 +336,12 @@ fun AzpStoreScreen(
                 )
             }
 
-            // Failures are announced, not just drawn: a polite live region around both banners.
-            Column(Modifier.liveRegionPolite()) {
-                if (error != null) {
-                    StatusLine(error)
-                }
-                if (installError != null) {
-                    StatusLine(stringResource(Res.string.azp_install_failed_prefix, installError))
-                }
+            // Failures are announced, not just drawn: each banner is a polite live region.
+            if (error != null) {
+                StatusLine(error)
+            }
+            if (installError != null) {
+                StatusLine(stringResource(Res.string.azp_install_failed_prefix, installError))
             }
 
             when (emptyState) {
@@ -403,7 +401,7 @@ private fun StatusLine(text: String) {
         text,
         color = statusColor(StatusKind.Error),
         style = captionStyle(),
-        modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
+        modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp).liveRegionPolite()
     )
 }
 

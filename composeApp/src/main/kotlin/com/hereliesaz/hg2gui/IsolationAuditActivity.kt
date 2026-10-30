@@ -1,16 +1,15 @@
 package com.hereliesaz.hg2gui
 
+import android.content.Context
 import android.os.Bundle
+import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -24,22 +23,38 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.FragmentActivity
 import com.hereliesaz.hg2gui.ai.AiClient
 import com.hereliesaz.hg2gui.managers.AiSettings
 import com.hereliesaz.hg2gui.terminal.PackageIsolation
 import com.hereliesaz.hg2gui.terminal.PackageLifecycleStore
+import com.hereliesaz.hg2gui.ui.AzphaltChip
+import com.hereliesaz.hg2gui.ui.AzphaltHeading
+import com.hereliesaz.hg2gui.ui.ConfirmDialog
+import com.hereliesaz.hg2gui.ui.FONT_SCALE_MAX_PERCENT
+import com.hereliesaz.hg2gui.ui.FONT_SCALE_MIN_PERCENT
 import com.hereliesaz.hg2gui.ui.HG2GuiTheme
+import com.hereliesaz.hg2gui.ui.StatusKind
+import com.hereliesaz.hg2gui.ui.applyAzphaltGround
+import com.hereliesaz.hg2gui.ui.liveRegionPolite
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
+import com.hereliesaz.hg2gui.ui.menu.onPage
 import com.hereliesaz.hg2gui.ui.menu.pageBrush
+import com.hereliesaz.hg2gui.ui.screenInsets
+import com.hereliesaz.hg2gui.ui.statusColor
 import java.io.File
 import java.nio.file.Files
 import java.text.DateFormat
@@ -48,19 +63,54 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+// The Text-size and fullscreen preferences live in TerminalActivity's SharedPreferences; these
+// names must stay in step with its PREFS_NAME / PREF_FONT_SCALE_PERCENT / PREF_FULLSCREEN so the
+// Editor and the Audit follow the same setting the user picked in Settings.
+private const val UI_PREFS_NAME = "hg2gui_prefs"
+private const val UI_PREF_FONT_SCALE_PERCENT = "font_scale_percent"
+private const val UI_PREF_FULLSCREEN = "fullscreen"
+private const val DEFAULT_FONT_SCALE_PERCENT = 100
+
+/** The Text-size setting as a density multiplier, clamped to the range Settings offers (50%..200%). */
+internal fun uiScaleFromPercent(percent: Int): Float =
+    percent.coerceIn(FONT_SCALE_MIN_PERCENT, FONT_SCALE_MAX_PERCENT) / 100f
+
+/** The user's Text-size setting (1 = 100%), for `HG2GuiTheme(scale = ...)`. */
+internal fun Context.readUiScale(): Float =
+    uiScaleFromPercent(
+        getSharedPreferences(UI_PREFS_NAME, Context.MODE_PRIVATE)
+            .getInt(UI_PREF_FONT_SCALE_PERCENT, DEFAULT_FONT_SCALE_PERCENT)
+    )
+
+/** The user's immersive ("fullscreen") preference. */
+internal fun Context.readFullscreenPref(): Boolean =
+    getSharedPreferences(UI_PREFS_NAME, Context.MODE_PRIVATE).getBoolean(UI_PREF_FULLSCREEN, false)
+
+/** Hides the system bars (swipe to peek) when [fullscreen], the same way the terminal does. */
+internal fun ComponentActivity.applyFullscreen(fullscreen: Boolean) {
+    if (!fullscreen) return
+    val controller = WindowInsetsControllerCompat(window, window.decorView)
+    controller.hide(WindowInsetsCompat.Type.systemBars())
+    controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+}
+
 class IsolationAuditActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
+        window.applyAzphaltGround()
         super.onCreate(savedInstanceState)
+        val fullscreen = readFullscreenPref()
+        val scale = readUiScale()
         setContent {
-            HG2GuiTheme {
-                IsolationAuditScreen(onBack = ::finish)
+            HG2GuiTheme(scale = scale) {
+                IsolationAuditScreen(fullscreen = fullscreen, onBack = ::finish)
             }
         }
+        applyFullscreen(fullscreen)
     }
 }
 
-private data class IsolationAuditEntry(
+internal data class IsolationAuditEntry(
     val packageName: String,
     val managerLabel: String,
     val version: String,
@@ -70,12 +120,18 @@ private data class IsolationAuditEntry(
 )
 
 @Composable
-private fun IsolationAuditScreen(onBack: () -> Unit) {
-    val context = androidx.compose.ui.platform.LocalContext.current
+private fun IsolationAuditScreen(fullscreen: Boolean, onBack: () -> Unit) {
+    val context = LocalContext.current
     var entries by remember { mutableStateOf<List<IsolationAuditEntry>?>(null) }
+    var refreshing by remember { mutableStateOf(false) }
     var refreshToken by remember { mutableIntStateOf(0) }
+    // The Keystore read happens off the main thread, once, rather than on every recomposition.
+    val apiKey by produceState<String?>(initialValue = null, context) {
+        value = withContext(Dispatchers.IO) { AiSettings.apiKey(context) }
+    }
 
     LaunchedEffect(refreshToken) {
+        refreshing = true
         entries = withContext(Dispatchers.IO) {
             PackageLifecycleStore.installed(context)
                 .filter { it.isolated }
@@ -97,14 +153,18 @@ private fun IsolationAuditScreen(onBack: () -> Unit) {
                     )
                 }
         }
+        refreshing = false
     }
 
+    val onPage = Azphalt.currentGround.onPage
+    val muted = statusColor(StatusKind.Muted)
     Column(
         Modifier
             .fillMaxSize()
             .background(Azphalt.currentGround.pageBrush())
+            .screenInsets(fullscreen, ime = false)
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp, vertical = 20.dp),
+            .padding(horizontal = 20.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         Row(
@@ -112,161 +172,190 @@ private fun IsolationAuditScreen(onBack: () -> Unit) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            AuditAction("‹ BACK", onBack)
-            AuditAction("REFRESH") { refreshToken += 1 }
+            AzphaltChip("‹ BACK", onBack, contentDescription = "Back")
+            AzphaltChip(
+                label = if (refreshing) "REFRESHING…" else "REFRESH",
+                onClick = { refreshToken += 1 },
+                enabled = !refreshing,
+                contentDescription = if (refreshing) "Refreshing audits" else "Refresh audits"
+            )
         }
-        Text("ISOLATION AUDIT", color = Azphalt.Ink, fontWeight = FontWeight.Black, fontSize = 24.sp)
+        AzphaltHeading("Isolation audit")
         Text(
             "Latest completed isolated run per package: persisted sandbox diff plus observed runtime activity. " +
                 "Runtime observation is sampled and is not syscall-complete.",
-            color = Azphalt.Ink.copy(alpha = .62f),
-            fontSize = 11.sp,
-            lineHeight = 16.sp
+            color = muted,
+            fontSize = 12.sp,
+            lineHeight = 17.sp
         )
 
         when (val current = entries) {
-            null -> Text("READING AUDITS…", color = Azphalt.Ink.copy(alpha = .55f), fontSize = 10.sp)
-            emptyList<IsolationAuditEntry>() -> Text("No isolated packages.", color = Azphalt.Ink.copy(alpha = .6f))
-            else -> current.forEach { entry -> AuditCard(entry) }
+            null -> Text("READING AUDITS…", color = muted, fontSize = 12.sp, modifier = Modifier.liveRegionPolite())
+            emptyList<IsolationAuditEntry>() -> Text("No isolated packages.", color = onPage, modifier = Modifier.liveRegionPolite())
+            else -> current.forEach { entry -> AuditCard(entry, apiKey) }
         }
         Spacer(Modifier.height(24.dp))
     }
 }
 
 @Composable
-private fun AuditAction(label: String, onClick: () -> Unit) {
-    Box(
-        modifier = Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp).clickable(onClick = onClick),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            label,
-            color = Azphalt.Yellow,
-            fontSize = 9.sp,
-            fontWeight = FontWeight.Black,
-            modifier = Modifier.background(Azphalt.Ink, RoundedCornerShape(999.dp)).padding(horizontal = 14.dp, vertical = 8.dp)
-        )
-    }
-}
-
-@Composable
-private fun AuditCard(entry: IsolationAuditEntry) {
-    val context = androidx.compose.ui.platform.LocalContext.current
+private fun AuditCard(entry: IsolationAuditEntry, apiKey: String?) {
     val scope = rememberCoroutineScope()
-    var aiResult by remember(entry.savedAudit?.timestampMillis) { mutableStateOf<String?>(null) }
-    var aiBusy by remember(entry.savedAudit?.timestampMillis) { mutableStateOf(false) }
+    val stamp = entry.savedAudit?.timestampMillis
+    var aiResult by rememberSaveable(entry.packageName, stamp) { mutableStateOf<String?>(null) }
+    var aiBusy by remember(entry.packageName, stamp) { mutableStateOf(false) }
+    var confirmSend by remember(entry.packageName, stamp) { mutableStateOf(false) }
+    val onPage = Azphalt.currentGround.onPage
+    val muted = statusColor(StatusKind.Muted)
 
     Column(
         Modifier.fillMaxWidth().background(Azphalt.Ink.copy(alpha = .09f), RoundedCornerShape(22.dp)).padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Text(entry.packageName, color = Azphalt.Ink, fontWeight = FontWeight.Black, fontSize = 17.sp)
+        Text(entry.packageName, color = onPage, fontWeight = FontWeight.Black, fontSize = 17.sp)
         Text(
             "${entry.managerLabel} · ${entry.version.ifBlank { "installed" }} · " +
                 "${entry.fileCount} sandbox files · ${formatBytes(entry.bytes)}",
-            color = Azphalt.Ink.copy(alpha = .55f),
-            fontSize = 9.sp
+            color = muted,
+            fontSize = 11.sp
         )
 
         val saved = entry.savedAudit
         if (saved == null) {
-            Text("No completed-run audit yet. Run this isolated package, then refresh.", color = Azphalt.Ink.copy(alpha = .58f), fontSize = 11.sp)
+            Text("No completed-run audit yet. Run this isolated package, then refresh.", color = muted, fontSize = 12.sp)
         } else {
-            Text(
-                "CAPTURED ${formatTimestamp(saved.timestampMillis)}",
-                color = Azphalt.Ink.copy(alpha = .5f),
-                fontWeight = FontWeight.Black,
-                fontSize = 9.sp
-            )
-            SandboxDiff(saved.audit)
-            RuntimeTelemetry(saved.audit.telemetry)
+            SectionLabel("CAPTURED ${formatTimestamp(saved.timestampMillis)}")
+            SandboxDiff(entry.packageName, saved.audit)
+            RuntimeTelemetry(entry.packageName, saved.audit.telemetry)
 
-            val apiKey = AiSettings.apiKey(context)
             if (!apiKey.isNullOrBlank()) {
-                AuditAction(if (aiBusy) "ASKING AI…" else "ASK AI · SEND SUMMARY") {
-                    if (aiBusy) return@AuditAction
-                    aiBusy = true
-                    scope.launch {
-                        aiResult = runCatching {
-                            AiClient.ask(
-                                apiKey = apiKey,
-                                // Placeholder, not the sandbox's real absolute path - the device's
-                                // on-disk layout (user id, package dir) isn't the AI's business.
-                                cwd = "/sandbox",
-                                question = auditInterpretationPrompt(entry)
-                            ).text
-                        }.getOrElse { "AI interpretation failed: ${it.message ?: it.javaClass.simpleName}" }
-                        aiBusy = false
-                    }
-                }
+                AzphaltChip(
+                    label = if (aiBusy) "ASKING AI…" else "ASK AI · SEND SUMMARY",
+                    onClick = { confirmSend = true },
+                    enabled = !aiBusy,
+                    contentDescription = if (aiBusy) "Asking the AI" else "Ask the AI to interpret this audit; shows what will be sent first"
+                )
             }
             aiResult?.let { result ->
-                Text("AI INTERPRETATION", color = Azphalt.Ink.copy(alpha = .5f), fontWeight = FontWeight.Black, fontSize = 9.sp)
-                Text(result, color = Azphalt.Ink.copy(alpha = .82f), fontSize = 11.sp, lineHeight = 16.sp)
+                SectionLabel("AI INTERPRETATION")
+                Text(result, color = onPage, fontSize = 12.sp, lineHeight = 17.sp, modifier = Modifier.liveRegionPolite())
             }
         }
     }
+
+    if (confirmSend && !apiKey.isNullOrBlank()) {
+        ConfirmDialog(
+            title = "SEND AUDIT SUMMARY TO AI?",
+            message = aiDisclosureText(),
+            confirmLabel = "SEND",
+            onConfirm = {
+                confirmSend = false
+                if (aiBusy) return@ConfirmDialog
+                aiBusy = true
+                scope.launch {
+                    aiResult = runCatching {
+                        AiClient.ask(
+                            apiKey = apiKey,
+                            // Placeholder, not the sandbox's real absolute path - the device's
+                            // on-disk layout (user id, package dir) isn't the AI's business.
+                            cwd = "/sandbox",
+                            question = auditInterpretationPrompt(entry)
+                        ).text
+                    }.getOrElse { "AI interpretation failed: ${it.message ?: it.javaClass.simpleName}" }
+                    aiBusy = false
+                }
+            },
+            onDismiss = { confirmSend = false }
+        )
+    }
+}
+
+/** A small caps label above a block of audit rows. Muted, but legible (see [StatusKind.Muted]). */
+@Composable
+private fun SectionLabel(text: String) {
+    Text(text, color = statusColor(StatusKind.Muted), fontWeight = FontWeight.Black, fontSize = 11.sp)
 }
 
 @Composable
-private fun SandboxDiff(audit: PackageIsolation.Audit) {
-    Text(
-        "SANDBOX DIFF · +${audit.created.size}  ~${audit.modified.size}  −${audit.deleted.size}",
-        color = Azphalt.Ink.copy(alpha = .5f),
-        fontWeight = FontWeight.Black,
-        fontSize = 9.sp
-    )
+private fun SandboxDiff(packageName: String, audit: PackageIsolation.Audit) {
+    SectionLabel("SANDBOX DIFF · +${audit.created.size}  ~${audit.modified.size}  −${audit.deleted.size}")
     if (audit.changedCount == 0) {
-        Text("No sandbox filesystem changes observed.", color = Azphalt.Ink.copy(alpha = .62f), fontSize = 10.sp)
+        Text("No sandbox filesystem changes observed.", color = statusColor(StatusKind.Muted), fontSize = 12.sp)
         return
     }
-    AuditRows("+", audit.created)
-    AuditRows("~", audit.modified)
-    AuditRows("−", audit.deleted)
+    AuditRows("$packageName/created", "+", audit.created)
+    AuditRows("$packageName/modified", "~", audit.modified)
+    AuditRows("$packageName/deleted", "−", audit.deleted)
 }
 
 @Composable
-private fun RuntimeTelemetry(telemetry: List<String>) {
-    Text(
-        "RUNTIME · ${telemetry.size} OBSERVATIONS",
-        color = Azphalt.Ink.copy(alpha = .5f),
-        fontWeight = FontWeight.Black,
-        fontSize = 9.sp
-    )
+private fun RuntimeTelemetry(packageName: String, telemetry: List<String>) {
+    SectionLabel("RUNTIME · ${telemetry.size} OBSERVATIONS")
     if (telemetry.isEmpty()) {
-        Text("No sampled runtime activity recorded.", color = Azphalt.Ink.copy(alpha = .62f), fontSize = 10.sp)
+        Text("No sampled runtime activity recorded.", color = statusColor(StatusKind.Muted), fontSize = 12.sp)
         return
     }
     val groups = telemetry.groupBy(::telemetryKind)
     listOf("AUTHORITY", "NETWORK", "PROCESS", "FILES", "OTHER").forEach { kind ->
         val rows = groups[kind].orEmpty()
         if (rows.isNotEmpty()) {
-            Text(kind, color = Azphalt.Ink.copy(alpha = .48f), fontWeight = FontWeight.Black, fontSize = 9.sp)
-            rows.take(MAX_ROWS_PER_SECTION).forEach { row ->
-                Text(telemetryDetail(row), color = Azphalt.Ink.copy(alpha = .82f), fontSize = 10.sp, lineHeight = 14.sp)
-            }
-            if (rows.size > MAX_ROWS_PER_SECTION) {
-                Text("… ${rows.size - MAX_ROWS_PER_SECTION} more", color = Azphalt.Ink.copy(alpha = .52f), fontSize = 9.sp)
-            }
+            SectionLabel(kind)
+            ExpandableRows("$packageName/telemetry/$kind", rows.map(::telemetryDetail))
         }
     }
 }
 
 @Composable
-private fun AuditRows(marker: String, paths: List<String>) {
-    paths.take(MAX_ROWS_PER_SECTION).forEach { path ->
-        Text("$marker $path", color = Azphalt.Ink.copy(alpha = .82f), fontSize = 10.sp, lineHeight = 14.sp)
+private fun AuditRows(stateKey: String, marker: String, paths: List<String>) {
+    ExpandableRows(stateKey, paths.map { "$marker $it" })
+}
+
+/**
+ * [rows] as text, the first [MAX_ROWS_PER_SECTION] at first and [MAX_ROWS_PER_SECTION] more per tap
+ * of the "… N MORE" chip (a sandbox can hold tens of thousands of files, so it opens in steps rather
+ * than composing them all at once). Once past the first page a SHOW LESS chip folds it back.
+ * [stateKey] must be unique per list on the screen; it survives recreation.
+ */
+@Composable
+private fun ExpandableRows(stateKey: String, rows: List<String>) {
+    var shown by rememberSaveable(stateKey) { mutableStateOf(MAX_ROWS_PER_SECTION) }
+    val onPage = Azphalt.currentGround.onPage
+    rows.take(shown).forEach { row ->
+        Text(row, color = onPage, fontSize = 11.sp, lineHeight = 15.sp)
     }
-    if (paths.size > MAX_ROWS_PER_SECTION) {
-        Text("… ${paths.size - MAX_ROWS_PER_SECTION} more", color = Azphalt.Ink.copy(alpha = .52f), fontSize = 9.sp)
+    val remaining = rows.size - shown
+    if (remaining > 0) {
+        AzphaltChip(
+            label = "… $remaining MORE",
+            onClick = { shown = nextVisibleCount(shown, rows.size, MAX_ROWS_PER_SECTION) },
+            contentDescription = "Show more rows, $remaining remaining"
+        )
+    } else if (shown > MAX_ROWS_PER_SECTION) {
+        AzphaltChip("SHOW LESS", { shown = MAX_ROWS_PER_SECTION }, contentDescription = "Show fewer rows")
     }
 }
 
-private fun auditInterpretationPrompt(entry: IsolationAuditEntry): String {
+/** How many rows to show after one "more" tap: [current] plus [step], never past [total]. */
+internal fun nextVisibleCount(current: Int, total: Int, step: Int): Int =
+    minOf(total, current + step).coerceAtLeast(current)
+
+/**
+ * What the confirmation shows before the audit summary leaves the device. It describes exactly what
+ * [auditInterpretationPrompt] builds - keep the two in step (the caps are the same constant).
+ */
+internal fun aiDisclosureText(): String =
+    "This sends a text summary of this package's latest run to Anthropic, using your API key: " +
+        "the package name and version; the sandbox file count and size; how many files were created, " +
+        "modified and deleted; the file names (never the folders) of up to $AI_MAX_ROWS in each of those groups, " +
+        "leaving out any whose path mentions a password, secret, token, key or similar; how many runtime " +
+        "events of each kind were observed; and the protocol and remote port (never the address) of up to " +
+        "$AI_MAX_ROWS network connections. Full paths, command lines and addresses stay on this device."
+
+internal fun auditInterpretationPrompt(entry: IsolationAuditEntry): String {
     val audit = entry.savedAudit?.audit ?: return "No audit exists."
     fun safeRows(rows: List<String>): List<String> = rows
         .filterNot { SENSITIVE_WORDS.containsMatchIn(it) }
-        .take(24)
+        .take(AI_MAX_ROWS)
     return buildString {
         appendLine("Interpret this HG2Gui isolated-package audit. Give a concise risk/behavior summary. Do not propose elevated commands unless explicitly necessary, and remember the runtime sampler is best-effort rather than syscall-complete.")
         appendLine("Package: ${entry.packageName} ${entry.version}")
@@ -283,12 +372,12 @@ private fun auditInterpretationPrompt(entry: IsolationAuditEntry): String {
         audit.telemetry.filter { telemetryKind(it) == "NETWORK" }
             .mapNotNull(::redactedNetworkRow)
             .distinct()
-            .take(24)
+            .take(AI_MAX_ROWS)
             .forEach { appendLine("network: $it") }
     }
 }
 
-private fun telemetryKind(line: String): String = when {
+internal fun telemetryKind(line: String): String = when {
     line.startsWith("authority-attempt:") -> "AUTHORITY"
     line.startsWith("network:") -> "NETWORK"
     line.startsWith("process:") || line.startsWith("root-process:") -> "PROCESS"
@@ -301,7 +390,7 @@ private fun telemetryKind(line: String): String = when {
  * reduced to `<proto> remote port <n>` - the peer's address is withheld, only its port (which
  * says what kind of service was contacted) is kept. Null for a row that doesn't parse.
  */
-private fun redactedNetworkRow(line: String): String? {
+internal fun redactedNetworkRow(line: String): String? {
     val fields = line.removePrefix("network:").split(':')
     val proto = fields.firstOrNull()?.takeIf { it.matches(Regex("[a-z0-9]+")) }
     val remotePort = fields.getOrNull(4)?.toIntOrNull(16)
@@ -316,7 +405,7 @@ private fun formatTimestamp(timestampMillis: Long): String = if (timestampMillis
     DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.MEDIUM).format(Date(timestampMillis))
 }
 
-private fun formatBytes(bytes: Long): String = when {
+internal fun formatBytes(bytes: Long): String = when {
     bytes < 1024L -> "$bytes B"
     bytes < 1024L * 1024L -> "%.1f KiB".format(bytes / 1024.0)
     bytes < 1024L * 1024L * 1024L -> "%.1f MiB".format(bytes / (1024.0 * 1024.0))
@@ -325,3 +414,6 @@ private fun formatBytes(bytes: Long): String = when {
 
 private val SENSITIVE_WORDS = Regex("(?i)(password|passwd|secret|token|api[_-]?key|authorization|bearer|credential|private[_-]?key)")
 private const val MAX_ROWS_PER_SECTION = 40
+
+/** Cap on each list of rows that goes to the AI - and that [aiDisclosureText] promises. */
+internal const val AI_MAX_ROWS = 24

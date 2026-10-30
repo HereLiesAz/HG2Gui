@@ -27,7 +27,10 @@ class AptTranslationTest {
             "apt dist-upgrade" to "pkg upgrade",
             "apt full-upgrade -y" to "pkg upgrade",
             "apt clean" to "pkg clean",
-            "apt-get autoclean" to "pkg clean"
+            "apt-get autoclean" to "pkg clean",
+            "apt install --reinstall git" to "pkg install --reinstall git",
+            "apt reinstall git curl" to "pkg install --reinstall git curl",
+            "apt-get -y --reinstall install git" to "pkg install --reinstall git"
         )
         for ((line, expected) in cases) assertEquals(line, expected, translated(line))
     }
@@ -55,7 +58,7 @@ class AptTranslationTest {
     @Test
     fun flagsThatWouldBeDroppedAreRefused() {
         val cases = listOf(
-            "apt remove --purge foo", "apt install --reinstall foo", "apt install -f foo",
+            "apt remove --purge foo", "apt remove --reinstall foo", "apt upgrade --reinstall", "apt install -f foo",
             "apt install --allow-downgrades foo", "apt upgrade --with-new-pkgs", "apt install -o Foo=bar foo"
         )
         for (line in cases) assertTrue(line, plan(line) is AptTranslation.Plan.Refuse)
@@ -64,7 +67,7 @@ class AptTranslationTest {
     @Test
     fun unsupportedMutatingOperationsAreRefused_includingAutoremove() {
         val cases = listOf(
-            "apt autoremove", "apt-get autoremove -y", "apt autopurge", "apt reinstall foo",
+            "apt autoremove", "apt-get autoremove -y", "apt autopurge",
             "apt build-dep foo", "apt satisfy foo"
         )
         for (line in cases) {
@@ -107,9 +110,9 @@ class AptTranslationTest {
 
     @Test
     fun pkgFlagsThatTheManagerWouldSilentlyDropAreRefused() {
-        val refused = listOf("pkg install -s foo", "pkg install --reinstall foo", "pkg remove --purge foo", "hg2pkg install --dry-run foo")
+        val refused = listOf("pkg install -s foo", "pkg remove --reinstall foo", "pkg remove --purge foo", "hg2pkg install --dry-run foo", "pkg upgrade --force-requested")
         for (line in refused) assertTrue(line, AptTranslation.pkgFlagRefusal(CommandLine.words(line)!!) != null)
-        val fine = listOf("pkg install -y git", "pkg install git curl", "pkg upgrade 'git'", "pkg search -x foo", "pkg list-installed", "pkg update", "ls -s")
+        val fine = listOf("pkg install -y git", "pkg install --reinstall git", "pkg install --force-requested git", "pkg install git curl", "pkg upgrade 'git'", "pkg search -x foo", "pkg list-installed", "pkg update", "ls -s")
         for (line in fine) assertNull(line, AptTranslation.pkgFlagRefusal(CommandLine.words(line)!!))
     }
 

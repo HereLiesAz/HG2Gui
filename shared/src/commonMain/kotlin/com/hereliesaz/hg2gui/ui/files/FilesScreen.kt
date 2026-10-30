@@ -1271,7 +1271,8 @@ private fun OverflowTile(rect: TileRect, count: Int, onClick: () -> Unit) {
                 .height(rect.h.toDp())
                 .clip(AzphaltSurface.note)
                 .background(Azphalt.Ink.copy(alpha = .14f))
-                .clickable(onClick = onClick),
+                .semantics { contentDescription = "Show $count more folders" }
+                .clickable(role = Role.Button, onClick = onClick),
             contentAlignment = Alignment.Center
         ) {
             Text(
@@ -1289,15 +1290,14 @@ private fun ExpandableLevel(depth: Int, openChain: List<VfsEntry>, ctx: LevelCon
     val folders = entries?.filter { it.isDirectory } ?: emptyList()
     val files = entries?.filterNot { it.isDirectory } ?: emptyList()
 
+    val muted = statusColor(StatusKind.Muted)
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         if (folders.isNotEmpty()) {
             if (openEntry == null) {
                 Text(
-                    // .55f, the app-wide "text-muted, eyebrows and captions" tier (style guide "03 -
-                    // Transparency") - the 45% tier is for micro labels inside a pill, which this
-                    // section caption isn't.
-                    "FOLDERS · ${folders.size}", color = Azphalt.currentGround.onPage.copy(alpha = .55f),
-                    fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.18.em
+                    // The muted status tier: the app-wide "text-muted, eyebrows and captions"
+                    // colour, but measured against the ground so it stays >= 4.5:1 on every one.
+                    "FOLDERS · ${folders.size}", color = muted, style = labelTextStyle()
                 )
             }
             FolderBand(folders = folders, openEntry = openEntry, selection = ctx.selection, actions = ctx.entryActionsAt(depth))
@@ -1317,10 +1317,8 @@ private fun ExpandableLevel(depth: Int, openChain: List<VfsEntry>, ctx: LevelCon
         if (files.isNotEmpty()) {
             if (folders.isNotEmpty() || openEntry != null) {
                 Text(
-                    // .55f, the app-wide "text-muted, eyebrows and captions" tier - see the
-                    // FOLDERS caption above for the same reasoning.
-                    "FILES · ${files.size}", color = Azphalt.currentGround.onPage.copy(alpha = .55f),
-                    fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.18.em,
+                    // See the FOLDERS caption above for the colour.
+                    "FILES · ${files.size}", color = muted, style = labelTextStyle(),
                     modifier = Modifier.padding(top = 4.dp)
                 )
             }
@@ -1331,18 +1329,12 @@ private fun ExpandableLevel(depth: Int, openChain: List<VfsEntry>, ctx: LevelCon
 
 @Composable
 private fun EmptyLabel() {
-    Text(
-        "NOTHING HERE", color = Azphalt.currentGround.onPage.copy(alpha = .4f),
-        fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.14.em
-    )
+    StatusLabel("NOTHING HERE")
 }
 
 @Composable
 private fun LoadingLabel() {
-    Text(
-        "LOADING…", color = Azphalt.currentGround.onPage.copy(alpha = .4f),
-        fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.14.em
-    )
+    StatusLabel("LOADING…")
 }
 
 @Composable
@@ -1361,10 +1353,7 @@ private fun FileRows(
         // automatically - never a manual list/grid toggle. The tiles are hue swatches with the
         // file name (see ImageTile): nothing here decodes the images, so these are not thumbnails.
         if (images.size >= 3) {
-            Text(
-                "${images.size} PHOTOS", color = Azphalt.currentGround.onPage.copy(alpha = .5f),
-                fontSize = 8.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.1.em
-            )
+            Text("${images.size} PHOTOS", color = statusColor(StatusKind.Muted), style = labelTextStyle())
             // Plain rows of three square tiles rather than a LazyVerticalGrid in a fixed-height box:
             // the height follows from the width (aspectRatio) instead of a guessed 90dp per row,
             // so no row is clipped or padded and there is no nested scrolling container.
@@ -1389,22 +1378,28 @@ private fun FileRows(
 
 @Composable
 private fun ImageTile(img: VfsEntry, selection: SelectionState, actions: FolderEntryActions, totalBytes: Long?) {
+    val hue = fileHue(img, totalBytes)
+    val isSelected = img.path in selection.selected
     Box(
         Modifier
             .aspectRatio(1f)
             .clip(AzphaltSurface.note)
             // The tile's own hue never changes on selection - only the mark does.
-            .background(fileHue(img, totalBytes))
+            .background(hue)
             .combinedClickable(onClick = { actions.onTap(img) }, onLongClick = { actions.onLongPress(img) })
+            .selectableState(selection.selectMode, isSelected)
     ) {
+        // m-14: Ink or White, whichever reads better on this tile's hue (the size ramp runs from
+        // violet through amber to red); 11sp, the floor of the type scale, two lines then an
+        // ellipsis - it was 7sp, one line, white at 80% on cyan.
         Text(
-            img.name, color = Azphalt.White.copy(alpha = .8f), fontSize = 7.sp,
-            fontWeight = FontWeight.Bold, maxLines = 1,
+            img.name, color = hue.contrastingText(), style = labelTextStyle().copy(fontWeight = FontWeight.Bold),
+            maxLines = 2, overflow = TextOverflow.Ellipsis,
             modifier = Modifier.align(Alignment.BottomStart).padding(6.dp)
         )
         if (selection.selectMode) {
             Box(Modifier.align(Alignment.TopEnd).padding(4.dp)) {
-                SelectMark(img.path in selection.selected, dark = true)
+                SelectMark(isSelected, dark = true)
             }
         }
     }
