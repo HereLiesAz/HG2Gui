@@ -1393,7 +1393,7 @@ private fun ImageTile(img: VfsEntry, selection: SelectionState, actions: FolderE
         // violet through amber to red); 11sp, the floor of the type scale, two lines then an
         // ellipsis - it was 7sp, one line, white at 80% on cyan.
         Text(
-            img.name, color = hue.contrastingText(), style = labelTextStyle().copy(fontWeight = FontWeight.Bold),
+            img.name, color = hue.contrastingText(), style = captionTextStyle().copy(fontWeight = FontWeight.Bold),
             maxLines = 2, overflow = TextOverflow.Ellipsis,
             modifier = Modifier.align(Alignment.BottomStart).padding(6.dp)
         )
@@ -1408,6 +1408,8 @@ private fun ImageTile(img: VfsEntry, selection: SelectionState, actions: FolderE
 @Composable
 private fun FileRow(f: VfsEntry, selection: SelectionState, actions: FolderEntryActions, preview: PreviewContext) {
     val selectedTint = selection.selectMode && f.path in selection.selected
+    val onPage = Azphalt.currentGround.onPage
+    val muted = statusColor(StatusKind.Muted)
     // F3: open widens the shape from a pill into the same "note" surface every other expanding
     // panel on this screen uses - a fully-rounded pill reads oddly once it's tall enough to hold
     // a multi-line preview.
@@ -1424,27 +1426,31 @@ private fun FileRow(f: VfsEntry, selection: SelectionState, actions: FolderEntry
         Row(
             Modifier
                 .fillMaxWidth()
+                .heightIn(min = 48.dp)
                 .combinedClickable(onClick = { actions.onTap(f) }, onLongClick = { actions.onLongPress(f) })
-                .padding(start = 16.dp, end = 8.dp, top = 10.dp, bottom = 10.dp),
+                .selectableState(selection.selectMode, selectedTint)
+                .padding(start = 16.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (selection.selectMode) SelectMark(f.path in selection.selected, dark = false)
+            if (selection.selectMode) SelectMark(selectedTint, dark = false)
+            // M-6: the name column takes whatever the fixed-width actions leave and ellipsizes,
+            // instead of claiming the whole row and squeezing RENAME / SHARE / TRASH to nothing.
+            Column(Modifier.weight(1f)) {
                 // Filenames are literal, not labels - the one place real case survives outside
                 // body copy, same as every other identifier here that names an actual leaf item
                 // rather than a folder/chrome label.
                 Text(
-                    f.name, color = if (selectedTint) Azphalt.Yellow else Azphalt.currentGround.onPage,
-                    fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em, maxLines = 1
+                    f.name, color = if (selectedTint) Azphalt.Yellow else onPage,
+                    style = nameTextStyle(), maxLines = 1, overflow = TextOverflow.Ellipsis
                 )
                 Text(
                     formatFileSize(f.sizeBytes),
-                    color = if (selectedTint) Azphalt.Yellow.copy(alpha = .75f) else Azphalt.currentGround.onPage.copy(alpha = .55f),
-                    fontSize = 9.sp
+                    color = if (selectedTint) Azphalt.Yellow.copy(alpha = .75f) else muted,
+                    style = captionTextStyle()
                 )
             }
-            if (!selection.selectMode) EntryMenu(f, actions.onRename, actions.onDelete, actions.onShare, tint = Azphalt.currentGround.onPage)
+            if (!selection.selectMode) EntryMenu(f, actions.onRename, actions.onDelete, actions.onShare, tint = onPage)
         }
         if (isOpen) FilePreviewPane(f, preview.cache[f.path]) { preview.onOpenFile(f.path) }
     }

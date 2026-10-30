@@ -87,7 +87,7 @@ internal fun Context.readFullscreenPref(): Boolean =
     getSharedPreferences(UI_PREFS_NAME, Context.MODE_PRIVATE).getBoolean(UI_PREF_FULLSCREEN, false)
 
 /** Hides the system bars (swipe to peek) when [fullscreen], the same way the terminal does. */
-internal fun ComponentActivity.applyFullscreen(fullscreen: Boolean) {
+internal fun ComponentActivity.applyFullscreenPreference(fullscreen: Boolean) {
     if (!fullscreen) return
     val controller = WindowInsetsControllerCompat(window, window.decorView)
     controller.hide(WindowInsetsCompat.Type.systemBars())
@@ -106,7 +106,7 @@ class IsolationAuditActivity : FragmentActivity() {
                 IsolationAuditScreen(fullscreen = fullscreen, onBack = ::finish)
             }
         }
-        applyFullscreen(fullscreen)
+        applyFullscreenPreference(fullscreen)
     }
 }
 
@@ -126,7 +126,7 @@ private fun IsolationAuditScreen(fullscreen: Boolean, onBack: () -> Unit) {
     var refreshing by remember { mutableStateOf(false) }
     var refreshToken by remember { mutableIntStateOf(0) }
     // The Keystore read happens off the main thread, once, rather than on every recomposition.
-    val apiKey by produceState<String?>(initialValue = null, context) {
+    val apiKey by produceState<String?>(null, context) {
         value = withContext(Dispatchers.IO) { AiSettings.apiKey(context) }
     }
 
