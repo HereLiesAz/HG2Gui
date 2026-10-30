@@ -1,6 +1,9 @@
 package com.hereliesaz.hg2gui.terminal
 
 import android.content.Context
+import android.os.Build
+import com.hereliesaz.hg2gui.ui.ShellIdentitySource
+import com.hereliesaz.hg2gui.ui.ShellStatusProjector
 import com.hereliesaz.hg2gui.util.collectOutput
 import java.io.File
 
@@ -62,6 +65,28 @@ object SemanticCompletionProviders {
             args = listOf("--no-optional-locks", "status", "--porcelain=v1", "--branch"),
             cwd = cwd
         )
+    }
+
+    @Volatile
+    private var cachedIdentity: String? = null
+
+    /**
+     * The answer to [ShellStatusProjector.IDENTITY_COMMAND] for the terminal's `user@host` tag:
+     * `user` on the first line, `host` on the second, or null when neither could be determined. Blocks
+     * for up to the probe timeout (the bundled `hostname` runs as a process), so call it off the main
+     * thread. The user is Android's own name for this app's uid (what `id -un` prints in the runtime),
+     * then `$USER`, then `user.name`; the host is the bundled `hostname`, then `$HOSTNAME`, then the
+     * device model. It cannot change while the app runs, so the first complete answer is kept.
+     */
+    fun identity(context: Context): String? {
+        cachedIdentity?.let { return it }
+        val hostnameOutput = executable(context, "hostname")?.let { runProbe(context, it, emptyList(), null) }
+        val answer = ShellStatusProjector.formatIdentity(
+            user = ShellIdentitySource.pickUser(android.os.Process.myUid(), System.getenv("USER"), System.getProperty("user.name")),
+            host = ShellIdentitySource.pickHost(hostnameOutput, System.getenv("HOSTNAME"), Build.MODEL)
+        )
+        if (answer != null) cachedIdentity = answer
+        return answer
     }
 
     private fun packageCandidates(context: Context, request: CompletionRequest): List<CompletionCandidate> {

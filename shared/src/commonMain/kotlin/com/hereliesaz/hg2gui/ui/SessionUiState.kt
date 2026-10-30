@@ -99,6 +99,30 @@ class SessionUiState(val id: String, name: String, cwd: String) {
         val forCwd = cwd
         val next = ShellStatusProjector.project(shellPresentation, forCwd, exitCode, probe)
         if (cwd == forCwd && next != shellPresentation) shellPresentation = next
+        resolveIdentityOnce(forCwd, probe)
+    }
+
+    /** True once the user/host question has been asked; it is asked at most once per session. */
+    private var identityAsked = false
+
+    /**
+     * Fills in user and host from [probe], once. They do not change while a session lives, so the
+     * answer is kept in [shellPresentation] and never re-asked, whether or not the probe knew it. A
+     * session whose user or host a caller already supplied (an SSH session) is left alone. Runs after
+     * the git state is shown so a slow answer never delays it.
+     */
+    private suspend fun resolveIdentityOnce(forCwd: String, probe: ShellProbe) {
+        if (identityAsked) return
+        if (shellPresentation.user != null || shellPresentation.host != null) {
+            identityAsked = true
+            return
+        }
+        val identity = ShellStatusProjector.probeIdentity(forCwd, probe)
+        // Reached only when the probe was not cancelled, so a restarted refresh asks again.
+        identityAsked = true
+        if (identity != null && shellPresentation.user == null && shellPresentation.host == null) {
+            shellPresentation = shellPresentation.copy(user = identity.user, host = identity.host)
+        }
     }
 
     /**

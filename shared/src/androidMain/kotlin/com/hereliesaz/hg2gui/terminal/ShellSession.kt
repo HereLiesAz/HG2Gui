@@ -617,6 +617,17 @@ actual class ShellSession private constructor(
                         break
                     }
                     if (!processStillRunning()) {
+                        // The shell exited between the readiness check and now: whatever it wrote
+                        // before dying (and the start marker, if it died at once) is still in the
+                        // pipe and is real output.
+                        try {
+                            while (sout.ready()) {
+                                val n = sout.read(buf)
+                                if (n <= 0) break
+                                pending.append(buf, 0, n)
+                                if (!started) started = discardBeforeStart(pending)
+                            }
+                        } catch (ignored: IOException) {}
                         markDeadIfCurrent(myGeneration)
                         shellEnded = true
                         break
