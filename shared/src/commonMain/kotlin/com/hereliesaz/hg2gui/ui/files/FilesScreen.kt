@@ -1174,6 +1174,14 @@ private fun FolderTile(
                     onLongClick = { actions.onLongPress(entry) }
                 )
                 .selectableState(selection.selectMode, selection.isSelected)
+                // A rod is too thin to carry its name, so it is spoken instead.
+                .then(
+                    if (isOpen || motion.w.value.toDp() > 24.dp) {
+                        Modifier
+                    } else {
+                        Modifier.semantics { contentDescription = "Folder ${entry.name}" }
+                    }
+                )
                 // The open header's content is 48dp tall (56dp minus 4dp top and bottom), so its
                 // RENAME / TRASH actions keep a full-size tap target.
                 .padding(

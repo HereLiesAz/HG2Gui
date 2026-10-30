@@ -241,11 +241,21 @@ The Store manages `.azp` packages separately from Termux/dpkg/pip/pipx/npm/gem l
 
 The MCP server is loopback-only and explicitly started. Its shell execution gate does not grant ADB/root authority because headless elevation remains blocked.
 
+The MCP screen shows the pairing token (tap **SHOW TOKEN** to reveal it) and the matching `adb forward` line, each with a **COPY** button. If Android's notification permission was refused the server stays off and the screen says why, with a shortcut to the app's system settings.
+
 ## Settings
 
 The Settings screen scrolls vertically whenever its contents exceed the viewport, including at larger text scales.
 
-Current settings include display/text controls, PTY behavior, default shell, environment/history navigation, isolation audit, AI settings, and MCP/developer controls.
+Current settings include display/text controls, PTY behavior, default shell, environment/history navigation, isolation audit, AI settings, MCP/developer controls, the automatic update check, motion information, and an About entry (version, licence, privacy policy, source).
+
+- **Text size** runs from 85% to 200%; **Reset to default** returns to 100%. A smaller value saved by an older version is raised to 85% when Settings opens.
+- **Real pseudoterminal** is on by default (PTY). Switch to PIPE only if a tool misbehaves; it applies to new tabs or the next launch.
+- **Default shell** lists only installed shells. If none is installed the row says so instead of offering one.
+- **Update check** can be switched off; when off, HG2Gui never contacts GitHub on its own to look for a newer build.
+- **Motion** follows Android's animation setting (Remove animations in accessibility settings, or the Animator duration scale in developer options); the row reports the current state and opens the system page.
+
+The **AI settings** screen stores the Anthropic API key encrypted (Android Keystore). Tapping the field edits and focuses it; **SHOW KEY** reveals what you pasted. Leaving with an unsaved edit asks first, and a save that could not be persisted is reported rather than shown as saved.
 
 ## Compatibility expectations
 
