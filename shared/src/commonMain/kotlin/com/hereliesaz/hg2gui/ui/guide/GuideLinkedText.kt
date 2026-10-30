@@ -84,7 +84,9 @@ internal fun findCommandHits(text: String, commands: Set<String>): List<GuideCom
         .distinct()
         .sortedByDescending(String::length)
         .forEach { command ->
-            val regex = Regex("(?<![A-Za-z0-9_.-])${Regex.escape(command)}(?![A-Za-z0-9_.-])")
+            // A trailing '.' ends a sentence ("...after chmod.") unless a word character follows it
+            // ("ls.txt"), so it is allowed after the name; a leading '.' never is ("my.ls").
+            val regex = Regex("(?<![A-Za-z0-9_.-])${Regex.escape(command)}(?![A-Za-z0-9_-]|\\.[A-Za-z0-9_])")
             regex.findAll(text).forEach { match ->
                 val range = match.range
                 if ((range.first..range.last).none { occupied[it] }) {
