@@ -1369,7 +1369,7 @@ class TerminalActivity : FragmentActivity() {
                             .screenInsets(fullscreen, ime = false),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(stringResource(R.string.loading), color = Azphalt.currentGround.onPage)
+                        Text(getString(R.string.loading), color = Azphalt.currentGround.onPage)
                     }
                 }
 
@@ -1584,9 +1584,8 @@ class TerminalActivity : FragmentActivity() {
                                     }
                                 }
                             ),
-                            modifier = Modifier.then(
-                                if (fullscreen) Modifier else Modifier.windowInsetsPadding(WindowInsets.systemBars)
-                            )
+                            // FilesScreen applies the system-bar/cutout/keyboard insets to its own root
+                            // (screenInsets); padding here as well doubled the top and bottom margin.
                         )
                         }
                     }
@@ -1621,9 +1620,7 @@ class TerminalActivity : FragmentActivity() {
                             },
                             onCancel = { closePathPicker() },
                             backStep = pathPickerBackStep,
-                            modifier = Modifier.then(
-                                if (fullscreen) Modifier else Modifier.windowInsetsPadding(WindowInsets.systemBars)
-                            )
+                            modifier = Modifier.screenInsets(fullscreen, ime = false)
                         )
                     }
                 }
@@ -1672,6 +1669,8 @@ class TerminalActivity : FragmentActivity() {
     }
 
     override fun onDestroy() {
+        // Nothing of ours is running past this point; release the service/wake lock.
+        LongTaskService.setInteractiveBusy(applicationContext, false)
         fullScreenSession?.kill()
         fullScreenSession = null
         sessions.forEach {
