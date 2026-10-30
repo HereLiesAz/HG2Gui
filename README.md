@@ -7,22 +7,22 @@ Typing remains available whenever the value is genuinely open-ended. When HG2Gui
 ## What it does
 
 - **Touch-first command composition.** Commands, flags, package names, branches, hosts, services, and other discoverable values can be assembled through native controls. Normal command composition does not auto-run; **RUN** is explicit.
-- **The Guide is an input surface.** Commands shown while reading Guide entries are tappable and can be composed into the active terminal session for review. Reading and command composition can interleave without leaving the Guide.
+- **The Guide is an input surface.** Commands shown while reading Guide entries are tappable. Tapping one appends it to the active session's input for review (it never runs by itself) and the Guide stays open, so reading and command composition interleave.
 - **Completion Bridge.** Bash, Zsh, Fish, filesystem, installed-package, Git branch, SSH host, service, and supported command-specific completion sources normalize into one semantic completion model and feed native selection controls.
-- **Shell Adapter.** Bash, Zsh, and Fish sessions expose structured prompt state such as cwd, git branch/dirty state, exit status, and user/host where meaningful. Oh My Zsh, Powerlevel10k, Starship, Pure, and similar systems remain presentation layers on the shell that actually owns the session.
+- **Shell Adapter.** In the ordinary command line, a status line under the tab strip shows the working directory, the Git branch (with a dot when there are uncommitted changes), a non-zero exit status, and user@host when known, refreshed after each command. Prompt frameworks (Oh My Zsh, Powerlevel10k, Starship, Pure, and similar) are detected for full-screen interactive shell sessions, where there is a prompt to read; they remain presentation layers on the shell that actually owns the session. Git branch names are offered as completion candidates after `git checkout`, `switch`, `branch`, `merge` and `rebase`; the status tag itself is display only.
 - **Adaptive TUI Wrapper.** Alternate-screen terminal interfaces can be recognized from live terminal state and projected into native menus, modal layers, checkbox/radio choices, tabs, lists, tables, prompts, confirmation controls, progress/status regions, and multiple panes. The child program remains authoritative, and **RAW** remains available whenever HG2Gui cannot safely model the interaction.
 - **Semantic TUI interaction.** Generated navigation is verified against screen evolution instead of blindly sending a fixed number of keys. When state cannot be reconciled, HG2Gui falls back to the raw terminal.
 - **Real PTY support.** Full-screen and interactive terminal applications run through the vendored Termux terminal emulator/PTY path when PTY mode is enabled.
 - **Live output follows itself.** Active result records keep their newest line in view as output arrives, but only while you are at the bottom: scroll up to read and it stops following, and a **LATEST** chip jumps back. Tap a result for **COPY / RE-RUN / SHARE / EXPAND**; long-press output to select part of it.
 - **Real Termux-derived runtime.** HG2Gui bootstraps a pinned Termux userspace into its own private `$PREFIX`, with Android-safe native executable delivery where required.
 - **Persistent shell selection.** New sessions can use installed Bash, Zsh, or Fish as their configured shell.
-- **Android-safe package transactions.** Mutating package operations run through HG2Gui's transaction layer, including relocation, metadata repair, dependency planning, verified repository/index/package downloads, maintainer-script handling, triggers, alternatives/diversions, rollback, and Android-safe native execution support.
-- **Unified package execution backends.** Package-owned binaries are classified for direct linker execution, PRoot compatibility execution where required by a concrete ELF/runtime case, or private-root isolated execution. Isolation never silently falls back outside its boundary.
+- **Android-safe package transactions.** `pkg` and mutating `apt`/`apt-get` commands run through HG2Gui's transaction layer, including relocation, metadata repair, dependency planning, verified repository/index/package downloads, maintainer-script handling, triggers, alternatives/diversions, rollback, and Android-safe native execution support. This covers `pkg`/`apt` typed as their own command or as one step of a `;` / `&&` / `||` list; a mutating one anywhere HG2Gui cannot route it (behind `sudo`/`env`, in a pipe, `bash -c`, `$( )`, a control structure) is refused instead of reaching the real apt. Direct `dpkg` use and commands whose name is only known at run time (`$tool`, sourced scripts, shell functions) are outside this layer.
+- **Unified package execution backends.** Package-owned binaries are classified for direct linker execution, PRoot compatibility execution where required by a concrete ELF/runtime case, or private-root isolated execution. An isolated package that cannot get its isolation backend fails instead of running unisolated.
 - **Installed-package management.** **Packages** inventories Termux/dpkg, Python `pip`, Python `pipx`, Node `npm`, and RubyGems installations from manager-owned metadata.
 - **Package lifecycle.** Installed packages can expose **Run**, **Update**, **Info**, **Remove**, **Purge** where meaningful, plus HG2Gui-owned **Enable/Disable**, **Reset**, and **Isolate/Release isolation**.
-- **Package isolation.** Isolated packages run inside a private PRoot-backed root with private HOME/XDG state. HG2Gui removes/masks common privilege tools and observes private-root changes plus best-effort process, open-file, socket, and privilege-tool activity.
+- **Package isolation.** Isolated packages run inside a private PRoot-backed root with private HOME/XDG state. HG2Gui removes/masks common privilege tools and observes private-root changes plus best-effort process, open-file, socket, and privilege-tool activity. This is state separation with best-effort observation, not a verified security sandbox: PRoot is a same-UID path translator, network access is not confined (an isolated launch needs a one-run `network` grant, see Capability policy), and the sampled observation is not tamper-proof. An isolated package runs only as its own command or one step of a `;` / `&&` / `||` list; it is refused in a pipe, `bash -c`, `$( )` or a control structure.
 - **Native isolation audit.** Settings includes an Isolation Audit view for inspecting the latest observed activity from isolated packages.
-- **Explicit execution authority.** ADB shell and root are separate foreground-approved authorities. They are never ambient capabilities of normal commands, isolated packages, or headless execution.
+- **Explicit execution authority.** HG2Gui's own routes to ADB shell and root (`hg2auth` in a terminal tab, and the external API's authority request, which shows the requesting app and the exact command) are separate and need a person's approval in the foreground; commands run headlessly through the API, MCP or installers cannot use them. Inside an isolated package `adb`, `su` and similar tools are masked or removed. HG2Gui does not intercept an `su` or `adb` binary you run yourself from the shell; it behaves as in any terminal (a root manager still asks).
 - **Capability-oriented Android API.** Signature-protected external integrations can request typed HG2Gui capabilities including command execution, package operations, pickers with returned results, notifications/dialogs, clipboard, device information, share/open actions, lifecycle operations, and foreground-approved authority requests.
 - **Files and dedicated native surfaces.** File browsing, picking, package/audit management, settings, and other object-oriented tasks are free to use purpose-built native screens rather than being forced into the terminal composer.
 
@@ -69,6 +69,8 @@ Not every package exposes a runnable binary, and not every manager supports the 
 
 Policy and compatibility decisions happen before ordinary shell execution; they are not aliases inside the user's shell.
 
+The engine analyses the whole line first. An unterminated quote, `$(` or backtick is refused before it reaches the shell (exit 2). A disabled package's binary blocks the line wherever it can be statically seen, including behind `env`/`sudo`, in `bash -c` or `$( )`; a command word that is only known at run time (`$tool`) cannot be seen. Background callers (the external API, MCP, installers) carry their own policy: the engine itself refuses `bootstrap`, `vfs mount`, `hg2auth` (except `status`) and package `disable`/`isolate`/`update`/`reset`/`remove` and similar for them, with exit code 126, and asks a person before running `call`, `contacts`, `brightness`, `wifi`, `bluetooth`, `airplane`, `flash`, `edit` or `volume set|profile`. See [Commands](docs/COMMANDS.md).
+
 ## Package compatibility
 
 HG2Gui does **not** assume a Termux `.deb` can simply be unpacked and executed unchanged under another Android application ID. The package/runtime layer includes support for:
@@ -80,7 +82,7 @@ HG2Gui does **not** assume a Termux `.deb` can simply be unpacked and executed u
 - interpreter-aware maintainer-script execution through Android-safe native entry points;
 - dpkg triggers, alternatives, diversions, and explicit `postrm purge` handling;
 - whole-plan transaction recovery/rollback;
-- mirror failover, architecture selection, signed `InRelease` verification, authenticated index SHA-256 verification, and verified package downloads;
+- mirror failover, architecture selection, signed `InRelease` verification against keyrings that are either pinned in the build or recorded after HG2Gui itself installed `termux-keyring` (a key rotation upstream therefore needs an app update to add the new pin), a freshness bound (an `InRelease` without `Valid-Until` older than 180 days is rejected), authenticated index SHA-256 verification, and verified package downloads;
 - ELF inspection and narrowly-scoped PRoot compatibility for binaries that need it.
 
 Compatibility work is driven by observed runtime cases. Arbitrary command failure is not treated as a reason to silently retry under PRoot.
@@ -107,11 +109,11 @@ The Android API receiver is protected by the signature permission:
 
 `com.hereliesaz.hg2gui.permission.API`
 
-It exposes typed actions instead of making an untrusted broadcast string synonymous with terminal execution. ADB/root requests are routed through a foreground approval activity; headless callers do not inherit elevation.
+It exposes typed actions instead of making an untrusted broadcast string synonymous with terminal execution. ADB/root requests are routed through a foreground approval activity that names the requesting app and shows the exact command; dismissing it answers the caller with a denial. Headless callers do not inherit elevation. Each request leaves `request`, `decision` and `result` rows in a bounded (200 rows) app-private audit log, readable through `AUDIT_HISTORY`.
 
 ### Capability policy
 
-Each installed package has an `adb` / `root` / `network` / `host-read` / `host-write` policy: **ASK** (default, refused until you answer), **ALLOW ONCE** (one request, in memory only) or **DENY**. Launching an isolated package needs a one-shot `network` grant. See `hg2package capability` and `capability-request` in [Commands](docs/COMMANDS.md). The API also offers `CAPABILITIES` (schema), `AUDIT_HISTORY` and short-lived metadata channels; `remote` inspects SSH presets; `hg2package snapshot`/`restore` manage restore points.
+Each installed package has an `adb` / `root` / `network` / `host-read` / `host-write` policy: **ASK** (default), **ALLOW ONCE** (one request, in memory only) or **DENY**. Only `network` is enforced: launching an isolated package needs a one-shot `network` grant, and without one the launch is refused. `adb`, `root`, `host-read` and `host-write` are recorded but HG2Gui has no way to hand them to a package, so they are never granted (`capability-request` for them exits 1). See `hg2package capability` and `capability-request` in [Commands](docs/COMMANDS.md). The API also offers `CAPABILITIES` (schema), `AUDIT_HISTORY` and short-lived metadata channels; `remote` inspects SSH presets; `hg2package snapshot`/`restore` manage restore points.
 
 ## Android permissions
 
@@ -121,7 +123,7 @@ HG2Gui is a terminal and file manager, so it declares a broad set; each is used 
 - write system settings: brightness and similar built-ins;
 - all files access: reading and writing shared storage you point it at;
 - install packages: handing an APK to the Android installer for self-update/APK install (Android confirms);
-- network, notifications, foreground service, wake lock: downloads, long-running commands, and their results.
+- network (`INTERNET`), notifications, foreground service, wake lock: downloads and results, and keeping a running command alive. While a command is running in a terminal tab (or a full-screen program is open) HG2Gui runs a foreground service holding a partial wake lock, released when the command ends or after six hours. This is best-effort: Android may refuse to start the service when HG2Gui is already in the background, and the command then runs without that protection.
 
 ## Project structure
 
@@ -153,15 +155,24 @@ Authoritative toolchain values live in Gradle/version files. At this documentati
 - Compose Multiplatform 1.12.1
 - `compileSdk` / `targetSdk` 37
 - `minSdk` 24
-- NDK `29.0.14206865`
+- NDK `29.0.14206865` (pinned once, in `gradle/libs.versions.toml`; the app build and CI both read it from there)
 
 ```bash
 ./gradlew assembleDebug
 ```
 
+The native launchers are compiled with that NDK during the build; the Android SDK is found from `sdk.dir` in `local.properties`, then `ANDROID_HOME` / `ANDROID_SDK_ROOT`.
+
 The bundled Termux-derived binaries and native launchers are `arm64-v8a` only, and the app is restricted to that ABI (`abiFilters`), so it will not install on 32-bit or x86 devices. Provenance, licences and the source offer for `composeApp/src/main/jniLibs` are in its `NOTICE.md`, with checksums in `SHA256SUMS`.
 
-`version.properties` is bumped only on CI or when `-PautoIncrement` is passed. Pull requests run `.github/workflows/ci.yml` (unit tests and detekt).
+`version.properties` is rewritten only when `-PautoIncrement` is passed; the release pipeline computes its version up front and commits the bump itself. `.github/workflows/ci.yml` runs on pull requests and on pushes to any branch except `gh-pages`:
+
+- `test` — `:shared` and `:terminal-emulator` unit tests (blocking) and detekt (non-blocking: it reports but cannot fail the build);
+- `composeapp` — `:composeApp` unit tests and a release Kotlin compile (blocking) and Android lint (non-blocking).
+
+### Updates
+
+The in-app updater checks the GitHub release tagged `latest-v<major>.<minor>` (taken from the installed `versionName`) and offers only `hg2gui-playstore-release-<version>.apk`. It verifies the SHA-256 GitHub reports when there is one, the package name, a `versionCode` that matches the release and is newer than the installed one, and that the signing certificates match the installed app, and it refuses a debuggable APK. Debug builds are signed with the local debug key, so they cannot update through this channel. The release pipeline must publish `assemblePlaystoreRelease` output to that tag; builds from before this change poll `latest-debug-v<major>.<minor>` and install debug APKs. The check runs at most once every six hours when the app starts, can be switched off in Settings, and only notifies: nothing is downloaded until you accept.
 
 CI success proves compilation/tests/static gates represented in the workflow. Android runtime compatibility still requires real-device confirmation for cases that depend on Android linker, ICU, package execution, permissions, ADB, root, or PRoot behavior.
 

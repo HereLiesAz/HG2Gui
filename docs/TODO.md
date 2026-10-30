@@ -40,7 +40,7 @@ This is the active implementation roadmap. Keep it current with feature commits.
   - [x] Same selected-shell contract for full-screen PTY sessions.
   - [x] Oh My Zsh, Powerlevel10k, Starship, Pure, and similar frameworks treated as presentation layers.
   - [x] Structured cwd, Git branch/dirty state, exit status, and user/host projection.
-  - [x] Native Git branch chooser.
+  - [x] Branch names offered as Completion Bridge candidates after `git checkout`/`switch`/`branch`/`merge`/`rebase`; the status-line branch tag is display only (there is no tap-to-choose chooser in the ordinary command line).
   - [x] Cooperative shell metadata can supply fresh semantic prompt state without replacing the PTY as source of truth.
 
 - [x] Package/runtime transaction hardening
@@ -77,9 +77,9 @@ This is the active implementation roadmap. Keep it current with feature commits.
   - [x] ADB/root-like tools stripped or masked inside the guest.
   - [x] dpkg isolation seeding from target + dependency closure + required runtime packages when file ownership is trustworthy.
   - [x] Safe full-prefix seed fallback when selective planning is unavailable or exceeds its bound.
-  - [x] Explicit host-read/host-write capability policy with no ambient writable host bind exposed to isolated packages.
-  - [x] Per-package ASK / ALLOW ONCE / DENY capability policies; one-shot grants are memory-only and consumed once.
-  - [x] Interactive capability-request broker that fails closed for DENY/headless requests.
+  - [x] host-read/host-write policy entries exist but have no enforcement point, so a request for them is never granted; isolated packages get no bind of the real HG2Gui home/prefix.
+  - [x] Per-package ASK / ALLOW ONCE / DENY capability policies; one-shot grants are memory-only and consumed once. Only `network` is enforced; `adb`, `root`, `host-read` and `host-write` are never granted to a package.
+  - [x] Interactive capability-request broker that fails closed for DENY/headless requests; a request for a non-enforceable capability is refused (exit 1).
   - [x] Network launch gate: isolated execution refuses to start without a one-run network grant because unprivileged PRoot cannot truthfully provide an offline Android network namespace.
   - [x] Versioned machine-readable sandbox-definition JSON.
   - [x] Process tree and spawned subprocess sampling.
@@ -94,7 +94,8 @@ The sampler remains best-effort same-UID observation, not kernel audit or syscal
 
 - [x] Execution authority
   - [x] App authority and isolated-package boundary.
-  - [x] Explicit ADB and root authority with foreground confirmation and no headless elevation.
+  - [x] Explicit ADB and root authority with foreground confirmation and no headless elevation. (HG2Gui does not intercept an `su`/`adb` binary the user runs from the shell.)
+  - [x] Background-caller policy enforced in the engine (`ExecutionPolicy`): API, MCP and installer callers are refused bootstrap, `vfs mount`, `hg2auth` (except `status`), package lifecycle actions other than `info`/`snapshot`, and the device-affecting built-ins.
   - [x] Capability-oriented ADB operations for `pm`, `am`, `cmd`, `settings`, `dumpsys`, and `logcat`.
   - [x] Remembered successful ADB endpoints with reconnect and disconnect/revoke controls; pairing secrets are never stored.
   - [x] Per-package capability-policy surface under Authority.
@@ -140,6 +141,10 @@ The sampler remains best-effort same-UID observation, not kernel audit or syscal
   - [ ] Settings → Isolation Audit after an isolated run;
   - [ ] AI audit interpretation redaction/display with a configured API key.
   - [ ] Buffer/pill gesture ownership on constrained portrait layouts and while the command stack is tall/scrolling.
+  - [ ] A long command (`git clone`, `pkg install`) started in a tab survives the app being backgrounded via `LongTaskService` and its wake lock, including the case where Android refuses the service start.
+  - [ ] `bootstrap` over an existing prefix: staged swap, the old prefix kept on a failed attempt, and recovery after process death mid-swap.
+  - [ ] The in-app updater against a published `latest-v<major>.<minor>` release (release APK accepted; debuggable and wrongly-signed APKs rejected).
+  - [ ] The API root/ADB approval dialog: requester name, exact command, and a denial reply when dismissed.
 
 CI success is recorded separately from this device-only checklist; a green JVM/Android build does not prove Android ICU/linker/PRoot/ADB/SSH/runtime gesture behavior.
 

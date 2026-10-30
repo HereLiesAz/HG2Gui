@@ -14,7 +14,8 @@ HG2Gui is a Kotlin Multiplatform project. `:composeApp` contains Android entry p
 - **Android-specific shared Kotlin:** `ShellSession`, `DistroManager`, `TerminalEngine`, package management, execution backends, lifecycle/isolation/authority, Android managers, shell/TUI adapters, and Android-only UI helpers.
 - **`:composeApp`:** Android activities/services/API receivers, resources, build/signing/packaging.
 - **`:terminal-emulator`:** vendored terminal emulator and PTY implementation.
-- **`:termux-shared`:** vendored Termux-compatible Android utilities.
+
+`settings.gradle.kts` includes exactly these three modules (`:composeApp`, `:shared`, `:terminal-emulator`).
 
 ## Coding standards
 
@@ -28,8 +29,9 @@ HG2Gui is a Kotlin Multiplatform project. `:composeApp` contains Android entry p
 - **Adaptive TUI:** the child program remains authoritative. Generated navigation must be reconciled with terminal state and a RAW fallback must remain available.
 - **Packages:** compatibility fixes should address a class of package/runtime assumptions rather than special-casing package names unless the package truly has unique semantics.
 - **Execution backends:** do not turn arbitrary failure into silent PRoot fallback. Compatibility routing must be based on concrete executable/runtime classification.
-- **Authority:** ordinary commands, isolated packages, and headless callers must not inherit ADB/root. Elevated execution remains explicit and foreground-approved.
-- **Isolation:** isolated execution must fail closed when the boundary cannot be established. Observation claims must distinguish best-effort `/proc` sampling from exhaustive kernel/syscall audit.
+- **Authority:** ordinary commands, isolated packages, and headless callers must not inherit ADB/root. Elevated execution remains explicit and foreground-approved. Do not claim more than HG2Gui can enforce: it cannot stop a person running an `su`/`adb` binary from the shell, and only the `network` package capability has an enforcement point.
+- **Isolation:** isolated execution must fail closed when the boundary cannot be established. Describe it as state separation with best-effort observation, not a security sandbox, and distinguish best-effort `/proc` sampling from exhaustive kernel/syscall audit.
+- **Policy lives in the engine:** background callers (API, MCP, installers) are restricted by `ExecutionPolicy` inside `TerminalEngine`, not by string filters in each entry point; new engine verbs that change package, runtime or device state must be added to that policy. Command-line checks only see what is statically visible, so say so where a guarantee depends on one.
 - **External API:** expose typed capabilities and preserve the same lifecycle/isolation/authority rules as in-app requests.
 - **Documentation:** behavior claims must be checked against current code and CI/device evidence before they are retained.
 
@@ -72,7 +74,7 @@ Authoritative versions live in Gradle/version files. At this documentation pass:
 - Compose Multiplatform 1.12.1
 - `compileSdk` / `targetSdk` 37
 - `minSdk` 24
-- NDK `29.0.14206865`
+- NDK `29.0.14206865` (pinned once in `gradle/libs.versions.toml`; `composeApp/build.gradle.kts` and `.github/workflows/ci.yml` both read it from there)
 
 ## Pull requests
 
@@ -87,3 +89,22 @@ Authoritative versions live in Gradle/version files. At this documentation pass:
 ```bash
 ./gradlew assembleDebug
 ```
+
+The native launchers are compiled with the pinned NDK during the build. The Android SDK is found from `sdk.dir` in `local.properties`, then `ANDROID_HOME` / `ANDROID_SDK_ROOT`.
+
+`version.properties` is rewritten only with `-PautoIncrement`; ordinary builds, including CI, leave it alone.
+
+## Continuous integration
+
+`.github/workflows/ci.yml` runs on pull requests and on pushes to any branch except `gh-pages`:
+
+- `test`: `:shared:testAndroidHostTest` and `:terminal-emulator:testDebugUnitTest` (blocking), then detekt (non-blocking: `continue-on-error`, so findings are reported but cannot fail the job);
+- `composeapp`: `:composeApp:testPlaystoreDebugUnitTest` and `:composeApp:compilePlaystoreReleaseKotlin` (blocking), then Android lint (non-blocking, report uploaded as an artifact).
+
+A green run therefore does not mean detekt or lint are clean.
+
+## Releases and the update channel
+
+The in-app updater (`AppUpdateChecker`, `UpdatePolicy.kt`) polls the GitHub release tagged `latest-v<major>.<minor>` and accepts only `hg2gui-playstore-release-<version>.apk`; it rejects a debuggable APK, a different package name, a `versionCode` that is not the advertised one or not newer, and a different signing certificate. The release pipeline must therefore publish `:composeApp:assemblePlaystoreRelease` output, signed with the release key, to that tag (`.github/workflows/_reusable-build.yml` documents the inputs). Debug builds are signed with the local debug key and can never update through this channel. Builds from before this change poll `latest-debug-v<major>.<minor>`.
+
+The publish workflows themselves run from `HereLiesAz/workflows`, not from this repository.
