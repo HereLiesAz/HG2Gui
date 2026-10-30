@@ -1604,68 +1604,57 @@ internal fun invalidNameMessage(name: String): String? = when {
     else -> null
 }
 
+/**
+ * The NEW FOLDER / NEW FILE / RENAME prompt: a labelled card with the field on top and two real
+ * 48dp buttons under it. M-4: the field takes focus the moment the prompt opens (the keyboard
+ * comes up with it), the keyboard's Done key submits, and the prompt sits inside the screen's IME
+ * padding so it is never behind the keyboard. The cancel button says CANCEL (it used to be a
+ * literal "X", one of five unrelated meanings of that glyph).
+ */
 @Composable
-private fun NamePrompt(label: String, name: String, onNameChange: (String) -> Unit, onConfirm: () -> Unit, onCancel: () -> Unit) {
-    Row(
+private fun NamePrompt(
+    label: String,
+    fieldDescription: String,
+    name: String,
+    onNameChange: (String) -> Unit,
+    onConfirm: () -> Unit,
+    onCancel: () -> Unit
+) {
+    val focus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { requestFocusSafely(focus) }
+    val onPage = Azphalt.currentGround.onPage
+    Column(
         Modifier
             .fillMaxWidth()
             .padding(horizontal = 20.dp, vertical = 8.dp)
-            .heightIn(min = 32.dp)
-            .clip(RoundedCornerShape(percent = 50))
-            .background(Azphalt.Ink)
-            .padding(start = 14.dp, end = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
+            .clip(AzphaltSurface.note)
+            .background(Azphalt.Ink.copy(alpha = .10f))
+            .padding(start = 16.dp, end = 8.dp, top = 10.dp, bottom = 2.dp)
     ) {
-        Text(label, color = Azphalt.Yellow.copy(alpha = .7f), fontSize = 8.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.1.em)
+        Text(label, color = statusColor(StatusKind.Muted), style = labelTextStyle())
         BasicTextField(
             value = name,
             onValueChange = onNameChange,
-            modifier = Modifier.weight(1f),
-            textStyle = androidx.compose.ui.text.TextStyle(color = Azphalt.Yellow, fontSize = 12.sp),
-            cursorBrush = SolidColor(Azphalt.Yellow),
-            singleLine = true
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 48.dp)
+                .wrapContentHeight(Alignment.CenterVertically)
+                .focusRequester(focus)
+                .semantics { contentDescription = fieldDescription },
+            textStyle = LocalAzphaltType.current.body.copy(color = onPage),
+            cursorBrush = SolidColor(onPage),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { onConfirm() })
         )
-        Text("OK", color = Azphalt.Yellow, fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.clickable(onClick = onConfirm).padding(horizontal = 8.dp, vertical = 6.dp))
-        Text("X", color = Azphalt.Yellow.copy(alpha = .6f), fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.clickable(onClick = onCancel).padding(horizontal = 8.dp, vertical = 6.dp))
-    }
-}
-
-@Composable
-private fun FilterChip(label: String, active: Boolean, onClick: () -> Unit) {
-    Row(
-        Modifier
-            .clip(RoundedCornerShape(percent = 50))
-            .background(if (active) Azphalt.Ink else Azphalt.Ink.copy(alpha = .10f))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 8.dp)
-    ) {
-        Text(
-            label, color = if (active) Azphalt.Yellow else Azphalt.currentGround.onPage.copy(alpha = .55f),
-            fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.1.em
-        )
-    }
-}
-
-@Composable
-private fun Chip(
-    label: String,
-    modifier: Modifier = Modifier,
-    background: Color = Azphalt.Ink,
-    foreground: Color = Azphalt.Yellow,
-    filled: Boolean = true,
-    clickable: Boolean = true,
-    onClick: () -> Unit = {}
-) {
-    val bg = if (filled) background else Azphalt.Ink.copy(alpha = .14f)
-    val fg = if (filled) foreground else Azphalt.currentGround.onPage.copy(alpha = .55f)
-    Box(
-        modifier
-            .clip(RoundedCornerShape(percent = 50))
-            .background(bg)
-            .then(if (clickable) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(horizontal = 14.dp, vertical = 8.dp)
-    ) {
-        Text(label, color = fg, fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em)
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            AzphaltChip("CANCEL", onClick = onCancel, contentDescription = "Cancel")
+            Spacer(Modifier.width(6.dp))
+            AzphaltChip("OK", onClick = onConfirm, tint = Azphalt.hues[6], contentDescription = "Confirm: ${label.lowercase()}")
+        }
     }
 }
