@@ -170,6 +170,12 @@ internal fun appendGuideCommand(tokens: List<String>, inputText: String, command
     return GuideAppend(tokens, text)
 }
 
+/** Biometric error codes that mean "the user backed out", which must not surface as a failure. */
+internal fun isUserDismissal(errorCode: Int): Boolean =
+    errorCode == BiometricPrompt.ERROR_NEGATIVE_BUTTON ||
+        errorCode == BiometricPrompt.ERROR_USER_CANCELED ||
+        errorCode == BiometricPrompt.ERROR_CANCELED
+
 /**
  * The sentence to show the user when [ScriptInstaller] stopped short of making [name] runnable, or
  * null when it succeeded. The package's files are kept on disk in every non-null case except
@@ -215,10 +221,26 @@ class TerminalActivity : FragmentActivity() {
 
     private enum class Screen { Terminal, Settings, Guide, Files, Mcp, Ai, AiSettings, Azp, FullScreenApp, Environment, History }
 
-    /** Confirms enabling shell.* MCP tools with a biometric prompt before persisting the flag -
-     *  this is the one switch that lets a paired agent run arbitrary commands, so it gets a
-     *  human-present confirmation step, not just a toggle. Disabling never needs this. */
+    /** Confirms enabling shell.* MCP tools with a biometric-or-screen-lock prompt before persisting
+     *  the flag - this is the one switch that lets a paired agent run arbitrary commands, so it
+     *  gets a human-present confirmation step, not just a toggle. Disabling never needs this.
+     *
+     *  The device credential (PIN / pattern / password) is accepted as well as a biometric: with
+     *  the default BIOMETRIC_STRONG-only prompt a device that has only a screen lock could never
+     *  enable shell execution. The credential-capable prompt has no Cancel button of its own (the
+     *  system draws its own), so cancelling is the user's decision, not an error to report. */
     private fun requestEnableShellExec() {
+        // BIOMETRIC_STRONG | DEVICE_CREDENTIAL is unsupported on API 28-29; the weak class plus
+        // the credential is the strongest combination every supported release accepts.
+        val authenticators = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL
+        } else {
+            BiometricManager.Authenticators.BIOMETRIC_WEAK or BiometricManager.Authenticators.DEVICE_CREDENTIAL
+        }
+        if (BiometricManager.from(this).canAuthenticate(authenticators) != BiometricManager.BIOMETRIC_SUCCESS) {
+            Toast.makeText(this, R.string.toast_no_screen_lock, Toast.LENGTH_LONG).show()
+            return
+        }
         val executor = ContextCompat.getMainExecutor(this)
         val prompt = BiometricPrompt(this, executor, object : BiometricPrompt.AuthenticationCallback() {
             override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
@@ -228,15 +250,19 @@ class TerminalActivity : FragmentActivity() {
             // MCP-6: only onAuthenticationSucceeded was ever overridden - on a device with no
             // enrolled biometric (the common case for this to fail on), the prompt errors out
             // immediately and this switch was permanently unreachable with zero feedback that
-            // anything had even been tapped.
+            // anything had even been tapped. A deliberate dismissal is the user's answer, not
+            // a failure, so it stays silent.
             override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                Toast.makeText(this@TerminalActivity, "Couldn't confirm: $errString", Toast.LENGTH_LONG).show()
+                if (isUserDismissal(errorCode)) return
+                Toast.makeText(
+                    this@TerminalActivity, getString(R.string.toast_biometric_failed, errString), Toast.LENGTH_LONG
+                ).show()
             }
         })
         val info = BiometricPrompt.PromptInfo.Builder()
-            .setTitle("Enable shell execution")
-            .setSubtitle("Lets a paired MCP client run real shell commands on this device")
-            .setNegativeButtonText("Cancel")
+            .setTitle(getString(R.string.biometric_title))
+            .setSubtitle(getString(R.string.biometric_subtitle))
+            .setAllowedAuthenticators(authenticators)
             .build()
         prompt.authenticate(info)
     }
@@ -261,6 +287,29 @@ class TerminalActivity : FragmentActivity() {
             return
         }
         ContextCompat.startForegroundService(this, Intent(this, McpServerService::class.java))
+    }
+
+    /** Puts [text] on the clipboard and says so: Android 13+ shows its own preview, but earlier
+     *  releases show nothing, which reads as a tap that did nothing. [sensitive] hides the value
+     *  from the clipboard preview where the platform supports it (pairing tokens). */
+    private fun copyToClipboard(text: String, sensitive: Boolean = false, confirmation: Int = R.string.toast_copied) {
+        val clipboard = getSystemService(ClipboardManager::class.java) ?: return
+        val clip = ClipData.newPlainText("HG2Gui", text)
+        if (sensitive && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            clip.description.extras = android.os.PersistableBundle().apply {
+                putBoolean(android.content.ClipDescription.EXTRA_IS_SENSITIVE, true)
+            }
+        }
+        try {
+            clipboard.setPrimaryClip(clip)
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            // Oversized clip (TransactionTooLargeException) or a locked-down device.
+            Toast.makeText(this, R.string.toast_copy_failed, Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            Toast.makeText(this, confirmation, Toast.LENGTH_SHORT).show()
+        }
     }
 
     private data class InitResult(
@@ -343,6 +392,10 @@ class TerminalActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        // After enableEdgeToEdge() (which sets bar icons from the *system* theme) and before
+        // setContent: paints the window and tints the bar icons from the rolled ground, so a dark
+        // ground does not launch on a light window with unreadable clock/battery icons.
+        window.applyAzphaltGround()
 
         Utils.init(applicationContext)
         McpServerService.ensureInitialized(applicationContext)
@@ -1444,10 +1497,16 @@ class TerminalActivity : FragmentActivity() {
             // whose permission grant needs to kick off work with no further user input.
             LocalBroadcastManager.getInstance(this).sendBroadcast(Intent(ContactManager.ACTION_REFRESH))
         }
-        if (requestCode == PermissionCodes.MCP_NOTIFICATION_REQUEST_PERMISSION && granted) {
-            // Permission was requested asynchronously by startMcpServer(); start the service now
-            // that the user has granted it so the foreground notification is actually visible.
-            ContextCompat.startForegroundService(this, Intent(this, McpServerService::class.java))
+        if (requestCode == PermissionCodes.MCP_NOTIFICATION_REQUEST_PERMISSION) {
+            if (granted) {
+                // Permission was requested asynchronously by startMcpServer(); start the service now
+                // that the user has granted it so the foreground notification is actually visible.
+                ContextCompat.startForegroundService(this, Intent(this, McpServerService::class.java))
+            } else {
+                // The server stays off (it must never run with no visible indicator), and the
+                // toggle used to just do nothing - say why.
+                Toast.makeText(this, R.string.toast_notifications_off, Toast.LENGTH_LONG).show()
+            }
         }
         // Every other builtin's permission request (COMMAND_REQUEST_PERMISSION) is answered by
         // just running the same pill or command again - the system permission dialog itself is

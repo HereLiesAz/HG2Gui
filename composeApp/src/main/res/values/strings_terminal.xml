@@ -20,5 +20,7 @@
     <string name="toast_api_key_saved">API key saved</string>
     <string name="toast_history_cleared">Command history cleared</string>
     <string name="toast_token_copied">Pairing token copied</string>
-    <string name="toast_notifications_off">Notifications are off, so the server runs without a status notification.</string>
+    <string name="toast_notifications_off">The MCP server stays off: allow notifications so its status is always visible, then start it again.</string>
+    <string name="toast_no_screen_lock">Set up a screen lock (PIN, pattern, password or biometric) in the device settings to enable shell execution.</string>
+    <string name="toast_copy_failed">Couldn\'t copy to the clipboard</string>
 </resources>

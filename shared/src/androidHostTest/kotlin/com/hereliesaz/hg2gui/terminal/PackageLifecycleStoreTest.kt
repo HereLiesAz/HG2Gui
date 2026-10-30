@@ -111,7 +111,8 @@ class PackageLifecycleStoreTest {
         link.parentFile.mkdirs()
         Files.createSymbolicLink(link.toPath(), outside.toPath())
         assertFalse(PackageLifecycleStore.isResettablePath(d.home, d.prefix, link))
-        assertFalse(PackageLifecycleStore.isDirectChildOf(File(d.home, ".cache"), link))
+        // The link itself sits directly in .cache; it is the canonical target that disqualifies it.
+        assertTrue(PackageLifecycleStore.isDirectChildOf(File(d.home, ".cache"), link))
     }
 
     @Test
@@ -149,10 +150,11 @@ class PackageLifecycleStoreTest {
     @Test
     fun topLevelOnly_keepsOnlyTheRootsOfWhatWasCreated() {
         assertEquals(
-            listOf("a", "x/y"),
-            PackageLifecycleStore.topLevelOnly(listOf("a/b/c", "a", "a/b", "x/y", "x/y/z", "ab")).filter { it != "ab" }
+            listOf("a", "ab", "x/y"),
+            PackageLifecycleStore.topLevelOnly(listOf("a/b/c", "a", "a/b", "x/y", "x/y/z", "ab"))
         )
-        assertEquals(listOf("ab", "a"), PackageLifecycleStore.topLevelOnly(listOf("a", "ab")).reversed())
+        // "ab" is a sibling of "a", not inside it.
+        assertEquals(listOf("a", "ab"), PackageLifecycleStore.topLevelOnly(listOf("a", "ab")))
         assertEquals(emptyList<String>(), PackageLifecycleStore.topLevelOnly(emptyList()))
     }
 

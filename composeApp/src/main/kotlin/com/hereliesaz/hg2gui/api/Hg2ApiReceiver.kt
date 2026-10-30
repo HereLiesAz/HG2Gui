@@ -273,14 +273,9 @@ class Hg2ApiReceiver : BroadcastReceiver() {
         val command = request.getStringExtra(EXTRA_COMMAND).orEmpty().trim()
         if (authority !in setOf("adb", "root")) return reply(context, request, false, error = "unknown authority")
         if (command.isBlank()) return reply(context, request, false, error = "missing command")
-        // The dialog must show exactly what runs. A command the engine's tokenizer cannot carry
-        // unchanged (over-long, or quoting that does not survive) is refused outright rather than
-        // approximated - see Hg2ApiAuthorityCommand.
-        if (Hg2ApiAuthorityCommand.lossless(authority, command) == null) {
-            return reply(
-                context, request, false,
-                error = "command cannot be shown and run unchanged (longer than $MAX_AUTHORITY_COMMAND_CHARS characters, or mixes quote styles)"
-            )
+        // The dialog shows the whole command, so it has to be bounded.
+        if (authorityCommandOrNull(authority, command) == null) {
+            return reply(context, request, false, error = "command is longer than $MAX_AUTHORITY_COMMAND_CHARS characters")
         }
         val callback = callback(request)
         val caller = Hg2ApiReplies.callerPackageOf(callback)

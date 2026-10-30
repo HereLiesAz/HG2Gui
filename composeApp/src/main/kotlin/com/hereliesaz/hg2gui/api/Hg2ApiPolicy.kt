@@ -39,53 +39,19 @@ private const val ANDROID_10 = 29
 internal const val MAX_AUTHORITY_COMMAND_CHARS = 8_192
 
 /**
- * The `hg2auth ...` line the in-process TerminalEngine parses for an approved root/ADB command,
- * and the exact command text that line yields once the engine has tokenized it.
- *
- * The engine does not take a structured argument: it re-tokenizes the line with a small regex that
- * strips one layer of quotes and re-joins the words with single spaces. Handing it the raw command
- * therefore lets the text that runs differ from the text the approval dialog showed (the old
- * dialog showed `sh -c "cd /x && rm -rf *"`, the engine ran `sh -c cd /x && rm -rf *`).
- * [lossless] closes that gap from this side: it quotes the command so the engine's tokenizer
- * returns it unchanged, and proves that by running a port of the tokenizer over the result. A
- * command that cannot be carried unchanged is refused, never approximated.
- *
- * [engineWords] must stay equivalent to `TerminalEngine.shellWords`. Hg2ApiAuthorityActivity does
- * not rely on that equivalence alone: it also compares the confirmation prompt the engine actually
- * emits against [expectedPrompt] and refuses to answer "y" to anything else.
+ * The command text of an authority (root/ADB) request, ready to show and to run, or null when the
+ * request must be refused: [authority] is not `root`/`adb`, the command is blank, or it is longer
+ * than [MAX_AUTHORITY_COMMAND_CHARS] (the approval dialog shows the whole command, so it has to
+ * be bounded). Surrounding whitespace is trimmed; nothing else is altered - the string returned is
+ * the string shown in the dialog AND the single argument handed to
+ * `TerminalEngine.runApprovedAuthority`, which never re-tokenizes it (the old path built an
+ * `hg2auth root shell <command>` line, and the engine's tokenizer stripped quotes, so the text that
+ * ran differed from the text the dialog showed).
  */
-internal object Hg2ApiAuthorityCommand {
-
-    private val WORD = Regex("""(?:[^\s"']+|"[^"]*"|'[^']*')+""")
-
-    /** Port of TerminalEngine.shellWords: whitespace-split, quotes kept together, ONE layer stripped per quote kind. */
-    fun engineWords(line: String): List<String> = WORD.findAll(line)
-        .map { it.value.trim().removeSurrounding("\"").removeSurrounding("'") }
-        .toList()
-
-    /** The command text the engine would execute for [line]: every word after `hg2auth <authority> shell`, space-joined. */
-    fun effectiveCommand(line: String): String = engineWords(line).drop(3).joinToString(" ").trim()
-
-    /**
-     * `hg2auth <authority> shell <quoted command>` for [command] (trimmed first - the engine trims
-     * too), or null when [authority] is unknown, the command is blank/too long, or no quoting
-     * survives the engine's tokenizer unchanged.
-     */
-    fun lossless(authority: String, command: String): String? {
-        if (authority != "root" && authority != "adb") return null
-        val wanted = command.trim()
-        if (wanted.isEmpty() || wanted.length > MAX_AUTHORITY_COMMAND_CHARS) return null
-        val candidates = listOf("'$wanted'", "\"$wanted\"", wanted)
-        for (candidate in candidates) {
-            val line = "hg2auth $authority shell $candidate"
-            if (effectiveCommand(line) == wanted) return line
-        }
-        return null
-    }
-
-    /** The confirmation prompt TerminalEngine.runAuthority emits before it runs [command] (see TerminalEngine "root"/"adb" shell branches). */
-    fun expectedPrompt(authority: String, command: String): String =
-        if (authority == "root") "Run as root? $command [y/N]" else "Run through ADB shell? $command [y/N]"
+internal fun authorityCommandOrNull(authority: String, command: String): String? {
+    if (authority != "root" && authority != "adb") return null
+    val wanted = command.trim()
+    return wanted.takeIf { it.isNotEmpty() && it.length <= MAX_AUTHORITY_COMMAND_CHARS }
 }
 
 /**

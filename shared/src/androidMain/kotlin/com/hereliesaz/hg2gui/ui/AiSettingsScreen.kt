@@ -99,7 +99,6 @@ fun AiSettingsScreen(
             title = stringResource(Res.string.aisettings_key_title),
             description = stringResource(Res.string.aisettings_key_description)
         ) {
-          Column(Modifier.fillMaxWidth()) {
             val fieldLabel = stringResource(Res.string.aisettings_field_description)
             val empty = draft.isBlank()
             Row(
@@ -183,7 +182,6 @@ fun AiSettingsScreen(
                     modifier = Modifier.padding(top = 8.dp).liveRegionPolite()
                 )
             }
-          }
         }
     }
 

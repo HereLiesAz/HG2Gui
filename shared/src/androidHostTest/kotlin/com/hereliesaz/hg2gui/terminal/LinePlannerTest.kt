@@ -121,7 +121,7 @@ class LinePlannerTest {
     @Test
     fun ordinaryShellLines_goToTheShellExactlyAsTyped() {
         val lines = listOf(
-            "echo hi", "grep x file | sort | uniq -c", "cd x && make && make install", "cat a > b 2>&1", "echo 'a && b'",
+            "echo hi", "grep x file | sort | uniq -c", "cd x && make && make install", "echo a > b 2>&1", "echo 'a && b'",
             "for i in 1 2 3; do echo \$i; done", "x=1", "echo \$(date)", "# just a comment"
         )
         for (line in lines) {

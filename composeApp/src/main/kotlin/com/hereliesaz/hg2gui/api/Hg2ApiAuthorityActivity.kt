@@ -12,6 +12,7 @@ import android.widget.ScrollView
 import android.widget.TextView
 import com.hereliesaz.hg2gui.LongTaskService
 import com.hereliesaz.hg2gui.mcp.CommandOutputAccumulator
+import com.hereliesaz.hg2gui.terminal.AuthorityKind
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -25,10 +26,10 @@ import java.util.concurrent.atomic.AtomicBoolean
  * Foreground approval boundary for API requests that ask for ADB-shell or root authority.
  *
  * What this screen guarantees:
- *  - it shows the command that will run, verbatim and complete, in a scrollable bounded body
- *    (Hg2ApiReceiver already refused any command the engine could not carry unchanged - see
- *    [Hg2ApiAuthorityCommand]) - and RUN only auto-answers the engine's own confirmation prompt when
- *    that prompt names exactly this command;
+ *  - it shows the command that will run, verbatim and complete, in a scrollable bounded body, and
+ *    that same string is handed to `TerminalEngine.runApprovedAuthority` as ONE argument - it is
+ *    never split into words and re-joined, so what the user approved is what `su -c` / `adb shell`
+ *    receives (the old path built an `hg2auth root shell ...` line whose quotes the engine stripped);
  *  - it names the requesting app (the creator of the reply PendingIntent, recorded by the system);
  *  - taps are dropped while another window covers the dialog (filterTouchesWhenObscured);
  *  - the caller always gets a reply: RUN, CANCEL, back, tap-away and leaving the screen (this
@@ -53,8 +54,7 @@ class Hg2ApiAuthorityActivity : Activity() {
         requestId = intent.getStringExtra(Hg2ApiReceiver.EXTRA_REQUEST_ID)
         callerPackage = Hg2ApiReplies.callerPackageOf(Hg2ApiReplies.callbackOf(intent))
             ?: intent.getStringExtra(Hg2ApiReceiver.EXTRA_CALLER_PACKAGE)
-        val line = Hg2ApiAuthorityCommand.lossless(authority, command)
-        if (line == null) {
+        if (authorityCommandOrNull(authority, command) == null) {
             deny("invalid authority request")
             return
         }
@@ -62,7 +62,7 @@ class Hg2ApiAuthorityActivity : Activity() {
         val built = AlertDialog.Builder(this)
             .setTitle(if (authority == "root") "RUN AS ROOT?" else "RUN THROUGH ADB SHELL?")
             .setView(buildBody())
-            .setPositiveButton("RUN") { _, _ -> approve(line) }
+            .setPositiveButton("RUN") { _, _ -> approve() }
             .setNegativeButton("CANCEL") { _, _ -> deny("authority request denied") }
             .setOnCancelListener { deny("authority request denied") }
             .create()
@@ -112,11 +112,11 @@ class Hg2ApiAuthorityActivity : Activity() {
         return if (label != null && label != pkg) "Requested by: $label ($pkg)" else "Requested by: $pkg"
     }
 
-    private fun approve(line: String) {
+    private fun approve() {
         if (!decided.compareAndSet(false, true)) return
         val appContext = applicationContext
         val callback = Hg2ApiReplies.callbackOf(intent)
-        val request = Request(authority, command, line, callback, requestId, callerPackage)
+        val request = Request(authority, command, callback, requestId, callerPackage)
         audit(appContext, request, phase = Hg2ApiAuditStore.PHASE_DECISION, success = true, error = null)
         // Run independent of this screen. The activity is noHistory and finishes the moment the user
         // leaves it; an approved root/ADB command must not die with it. The foreground service keeps
@@ -134,7 +134,7 @@ class Hg2ApiAuthorityActivity : Activity() {
             return
         }
         val appContext = applicationContext
-        val request = Request(authority, command, "", Hg2ApiReplies.callbackOf(intent), requestId, callerPackage)
+        val request = Request(authority, command, Hg2ApiReplies.callbackOf(intent), requestId, callerPackage)
         audit(appContext, request, phase = Hg2ApiAuditStore.PHASE_DECISION, success = false, error = reason)
         Hg2ApiReplies.send(appContext, request.callback, RESULT_TYPE, success = false, error = reason)
         audit(appContext, request, phase = Hg2ApiAuditStore.PHASE_RESULT, success = false, error = reason)
@@ -160,7 +160,6 @@ class Hg2ApiAuthorityActivity : Activity() {
     private class Request(
         val authority: String,
         val command: String,
-        val line: String,
         val callback: PendingIntent?,
         val requestId: String?,
         val callerPackage: String?
@@ -193,48 +192,24 @@ class Hg2ApiAuthorityActivity : Activity() {
             )
         }
 
-        /**
-         * Executes the approved command and replies. The engine asks its own confirmation before
-         * running (`Run as root? <command> [y/N]`); that is answered "y" only when the prompt names
-         * exactly the command the user approved. Any other prompt - including a confirmation for a
-         * different command string - is answered "" and the run is reported as refused.
-         */
+        /** Executes the approved command (exactly the string the dialog showed) and replies. */
         private suspend fun runApproved(context: Context, request: Request) {
-            val engine = interactiveEngine(context)
+            val engine = approvedAuthorityEngine(context)
             val output = CommandOutputAccumulator(MAX_OUTPUT)
             var exitCode: Int? = null
-            var refusedMismatch = false
-            val expected = Hg2ApiAuthorityCommand.expectedPrompt(request.authority, request.command).trim()
             try {
-                engine.run(
-                    request.line,
-                    onNeedInput = { prompt ->
-                        val t = prompt.trim()
-                        when {
-                            t == expected -> "y"
-                            // hg2auth's own confirmation for some OTHER command text: never auto-accept.
-                            t.startsWith("Run as root?", ignoreCase = true) ||
-                                t.startsWith("Run through ADB shell?", ignoreCase = true) -> {
-                                refusedMismatch = true
-                                ""
-                            }
-                            // A nested interactive program's own prompt: no human is answering it here.
-                            else -> ""
-                        }
-                    },
+                engine.runApprovedAuthority(
+                    kind = if (request.authority == "root") AuthorityKind.ROOT else AuthorityKind.ADB,
+                    command = request.command,
                     onExit = { exitCode = it },
                     onStyledOutput = { output.markFinalSnapshot() }
                 ).collect { chunk -> output.add(chunk) }
-                if (refusedMismatch) {
-                    reportResult(context, request, success = false, data = null, error = "refused: the command the engine prepared differs from the one approved")
-                } else {
-                    reportResult(
-                        context, request,
-                        success = exitCode == 0,
-                        data = JSONObject().put("output", output.text()).put("exitCode", exitCode).toString(),
-                        error = if (exitCode == 0) null else "elevated command exited with ${exitCode ?: -1}"
-                    )
-                }
+                reportResult(
+                    context, request,
+                    success = exitCode == 0,
+                    data = JSONObject().put("output", output.text()).put("exitCode", exitCode).toString(),
+                    error = if (exitCode == 0) null else "elevated command exited with ${exitCode ?: -1}"
+                )
             } catch (e: CancellationException) {
                 throw e
             } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
