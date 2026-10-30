@@ -51,39 +51,70 @@ object AzpClient {
             }
         }
 
+    /** [downloadResult] flattened to the legacy contract: the archive bytes, or null on any
+     *  failure (a refused id, an HTTP error, an oversized body, a dropped connection). */
+    suspend fun download(id: String, version: String): ByteArray? =
+        (downloadResult(id, version) as? AzpDownloadOutcome.Downloaded)?.bytes
+
     /** Downloads the raw `.azp` (a ZIP archive) for the given package/version. Free packages
-     *  only - paid packages need a Bearer entitlement HG2Gui does not yet implement. */
-    suspend fun download(id: String, version: String): ByteArray? = withContext(Dispatchers.IO) {
+     *  only - paid packages need a Bearer entitlement HG2Gui does not yet implement. Never
+     *  throws (except cancellation): every failure is an [AzpDownloadOutcome.Failed] whose
+     *  [AzpFailure.message] says what went wrong. */
+    suspend fun downloadResult(id: String, version: String): AzpDownloadOutcome = withContext(Dispatchers.IO) {
         // id/version come from search results (untrusted) - never let them add path segments
         // or query strings to the request, and refuse the same values AzpInstaller would.
-        if (!isValidAzpPathSegment(id) || !isValidAzpPathSegment(version)) return@withContext null
+        if (!isValidAzpPathSegment(id) || !isValidAzpPathSegment(version)) {
+            return@withContext AzpDownloadOutcome.Failed(
+                AzpFailure(AzpFailureKind.INVALID_PACKAGE, "Invalid package id or version: $id / $version")
+            )
+        }
         val url = REPOSITORY_BASE.toHttpUrl().newBuilder()
             .addPathSegment("packages").addPathSegment(id)
             .addPathSegment("versions").addPathSegment(version)
             .addPathSegment("download")
             .build()
         val request = Request.Builder().url(url).get().build()
-        http.newCall(request).execute().use { resp ->
-            if (!resp.isSuccessful) return@withContext null
-            val body = resp.body
-            if (body.contentLength() > MAX_DOWNLOAD_BYTES) return@withContext null
-            // Streamed with a hard cap rather than body.bytes(), which would buffer an unbounded
-            // (or lying-Content-Length) response entirely into memory.
-            val out = java.io.ByteArrayOutputStream()
-            body.byteStream().use { input ->
-                val buffer = ByteArray(8192)
-                var total = 0L
-                while (true) {
-                    val n = input.read(buffer)
-                    if (n < 0) break
-                    total += n
-                    if (total > MAX_DOWNLOAD_BYTES) return@withContext null
-                    out.write(buffer, 0, n)
+        try {
+            http.newCall(request).execute().use { resp ->
+                if (!resp.isSuccessful) {
+                    return@withContext AzpDownloadOutcome.Failed(
+                        AzpFailure(AzpFailureKind.DOWNLOAD_HTTP, describeDownloadHttpFailure(resp.code))
+                    )
                 }
+                val body = resp.body
+                if (body.contentLength() > MAX_DOWNLOAD_BYTES) return@withContext tooLarge()
+                // Streamed with a hard cap rather than body.bytes(), which would buffer an unbounded
+                // (or lying-Content-Length) response entirely into memory.
+                val out = java.io.ByteArrayOutputStream()
+                body.byteStream().use { input ->
+                    val buffer = ByteArray(8192)
+                    var total = 0L
+                    while (true) {
+                        val n = input.read(buffer)
+                        if (n < 0) break
+                        total += n
+                        if (total > MAX_DOWNLOAD_BYTES) return@withContext tooLarge()
+                        out.write(buffer, 0, n)
+                    }
+                }
+                AzpDownloadOutcome.Downloaded(out.toByteArray())
             }
-            out.toByteArray()
+        } catch (e: java.io.IOException) {
+            AzpDownloadOutcome.Failed(
+                AzpFailure(
+                    AzpFailureKind.DOWNLOAD_NETWORK,
+                    "Could not download the package (${e.message ?: e.javaClass.simpleName})."
+                )
+            )
         }
     }
+
+    private fun tooLarge() = AzpDownloadOutcome.Failed(
+        AzpFailure(
+            AzpFailureKind.DOWNLOAD_TOO_LARGE,
+            "The package is larger than the ${MAX_DOWNLOAD_BYTES / (1024 * 1024)} MB download limit."
+        )
+    )
 
     /** The registry's trust anchor - `signingKeys`, used to tell a [AzpTrust.TRUSTED] package
      *  from one that's merely internally-consistent ([AzpTrust.VALID]). */

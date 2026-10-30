@@ -34,9 +34,7 @@ object AzpLibrary {
             // No stored trust means this record predates signature verification - that's
             // UNCHECKED, a distinct (unknown) state, not the positive claim UNSIGNED makes
             // ("checked, and there was no signature.json").
-            val trust = p.getString("$id.trust", null)?.let {
-                runCatching { AzpTrust.valueOf(it) }.getOrDefault(AzpTrust.UNCHECKED)
-            } ?: AzpTrust.UNCHECKED
+            val trust = AzpTrust.fromStored(p.getString("$id.trust", null))
             AzpInstalled(id, name, version, kind, trust)
         }.sortedBy { it.name }
     }
@@ -88,7 +86,12 @@ object AzpLibrary {
     }
 
     /** Reads every installed skill package's SKILL.md files back off disk, as (skillId, text)
-     *  pairs, truncated to a total character budget so AiClient's system prompt stays bounded. */
+     *  pairs, truncated to a total character budget so AiClient's system prompt stays bounded.
+     *
+     *  Only packages whose recorded trust [AzpTrust.reachesAiPrompt] (today: [AzpTrust.TRUSTED])
+     *  are read. These texts become instructions inside the AI system prompt, so an unsigned,
+     *  self-signed, unverifiable or legacy-unchecked skill is skipped here even though it stays
+     *  installed - prompt injection through a third-party package is the threat. */
     fun installedSkillTexts(context: Context): List<Pair<String, String>> {
         val p = prefs(context)
         val ids = p.getStringSet(KEY_IDS, emptySet()).orEmpty()
@@ -97,6 +100,7 @@ object AzpLibrary {
         for (id in ids) {
             if (remaining <= 0) break
             if (p.getString("$id.kind", "asset") != "skill") continue
+            if (!AzpTrust.fromStored(p.getString("$id.trust", null)).reachesAiPrompt) continue
             val version = p.getString("$id.version", "") ?: continue
             val skillIds = p.getString("$id.skillIds", "")?.split(",")?.filter { it.isNotBlank() } ?: continue
             val root = AzpInstaller.rootDirOrNull(context, id, version) ?: continue

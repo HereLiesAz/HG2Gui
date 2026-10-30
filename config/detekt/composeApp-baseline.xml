@@ -12,7 +12,7 @@
     <ID>MagicNumber:McpServerService.kt$McpServerService.Companion$24</ID>
     <ID>MagicNumber:TerminalActivity.kt$TerminalActivity$100</ID>
     <ID>MaxLineLength:TerminalActivity.kt$TerminalActivity$startService(Intent(this@TerminalActivity, McpServerService::class.java).apply { action = McpServerService.ACTION_STOP })</ID>
-    <ID>ReturnCount:McpServerService.kt$McpServerService$private suspend fun handleClient(client: Socket, expectedToken: String)</ID>
+    <ID>ReturnCount:McpServerService.kt$McpServerService$private suspend fun serveClient(client: Socket, expectedToken: String, authenticated: AtomicBoolean)</ID>
     <ID>SwallowedException:EditorActivity.kt$EditorActivity$e: OutOfMemoryError</ID>
     <ID>SwallowedException:McpServerService.kt$McpServerService$e: Exception</ID>
     <ID>SwallowedException:TerminalActivity.kt$TerminalActivity$e: Exception</ID>

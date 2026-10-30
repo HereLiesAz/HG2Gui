@@ -1,7 +1,6 @@
 package com.hereliesaz.hg2gui.terminal
 
 import android.content.Context
-import android.util.AtomicFile
 import java.io.File
 
 /**
@@ -36,9 +35,15 @@ object IsolationSeedPlanner {
         context: Context,
         pkg: PackageLifecycleStore.InstalledPackage,
         packageBase: File
+    ): Plan = prepare(DistroManager.prefixDir(context), pkg, packageBase)
+
+    /** Context-free core of [prepare]; [prefix] is the host prefix. */
+    internal fun prepare(
+        prefix: File,
+        pkg: PackageLifecycleStore.InstalledPackage,
+        packageBase: File
     ): Plan {
         if (pkg.manager != "pkg") return Plan(null, emptyList(), 0, "installed-prefix-copy")
-        val prefix = DistroManager.prefixDir(context)
         val metadata = DpkgCatalog.installedMetadata(prefix)
         if (pkg.name !in metadata) return Plan(null, emptyList(), 0, "installed-prefix-copy")
 
@@ -53,6 +58,11 @@ object IsolationSeedPlanner {
                     listFile.forEachLine { raw ->
                         val source = raw.trim()
                         if (source.isBlank() || !source.startsWith(prefix.absolutePath + "/")) return@forEachLine
+                        // The manifest is consumed one path per line by a shell `read` loop and each
+                        // path is re-rooted under the guest prefix: a newline would split an entry, and
+                        // a ".." segment would let a crafted .list entry copy outside the guest prefix.
+                        if ('\n' in source || '\r' in source) return@forEachLine
+                        if (source.split('/').any { it == ".." || it == "." }) return@forEachLine
                         val file = File(source)
                         if (!file.exists() || file.isDirectory || source in paths) return@forEachLine
                         if (paths.size >= MAX_FILES) {
@@ -72,15 +82,7 @@ object IsolationSeedPlanner {
         val manifest = File(File(packageBase, DIRECTORY), MANIFEST)
         manifest.parentFile?.mkdirs()
         val payload = paths.joinToString(separator = "\n", postfix = "\n").toByteArray(Charsets.UTF_8)
-        val atomic = AtomicFile(manifest)
-        val stream = atomic.startWrite()
-        try {
-            stream.write(payload)
-            atomic.finishWrite(stream)
-        } catch (error: Exception) {
-            atomic.failWrite(stream)
-            throw error
-        }
+        AtomicFiles.write(manifest, payload)
         return Plan(manifest, packages, paths.size, "dependency-closure-manifest")
     }
 

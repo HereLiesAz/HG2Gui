@@ -29,4 +29,22 @@ class CommandHistoryStoreTest {
         roundTrip("\\\\\\t\\n")
         roundTrip("ends with \\")
     }
+
+    private fun line(ts: Long, session: String, command: String) =
+        "$ts\t${CommandHistoryStore.escape(session)}\t${CommandHistoryStore.escape(command)}"
+
+    @Test
+    fun withoutEntryDropsOnlyTheMatchingLine() {
+        val lines = listOf(line(1, "main", "ls"), line(2, "main", "pwd"), line(2, "session 2", "pwd"))
+        val kept = CommandHistoryStore.withoutEntry(lines, CommandHistoryEntry(2, "main", "pwd"))
+        assertEquals(listOf(lines[0], lines[2]), kept)
+    }
+
+    @Test
+    fun withoutEntryMatchesEscapedCommandsAndKeepsGarbageLines() {
+        val tricky = line(5, "main", "echo a\tb\\n")
+        val lines = listOf("not a valid line", tricky)
+        val kept = CommandHistoryStore.withoutEntry(lines, CommandHistoryEntry(5, "main", "echo a\tb\\n"))
+        assertEquals(listOf("not a valid line"), kept)
+    }
 }

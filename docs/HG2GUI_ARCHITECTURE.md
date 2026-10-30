@@ -162,9 +162,9 @@ Arbitrary runtime failure is not a signal to retry silently under PRoot.
 
 `PackageIsolation` creates a private root under HG2Gui app storage with private HOME/XDG state and version-aware seeding.
 
-The real HG2Gui home/prefix are not bind-mounted into the guest. Common privilege tools are removed from the guest prefix and common host `su` paths are masked.
+The real HG2Gui home/prefix are not bind-mounted into the guest. Common privilege tools are removed from the guest prefix and common host `su` paths are masked. The guest sees host `/system` and `/apex` and a short allow-list of static `/proc` files; raw `/proc` is not bound.
 
-Isolation fails closed if its backend cannot be established.
+Isolation fails closed if its backend cannot be established. It is state separation with best-effort observation, not a verified security sandbox: PRoot is a same-UID path translator and network access is not confined. An isolated package runs only as its own command or one step of a `;` / `&&` / `||` list and is refused in pipes, `bash -c`, `$( )` and control structures. Launching one needs a one-run `network` grant, the only package capability HG2Gui can enforce.
 
 ### Observability
 
@@ -176,7 +176,7 @@ HG2Gui combines private-root before/after metadata with best-effort same-UID `/p
 - ADB/root-like privilege attempts;
 - private-root created/modified/deleted paths.
 
-This is not exhaustive kernel/syscall audit. Short-lived activity can escape sampling.
+The sampler runs outside the guest and writes its log outside the guest root. This is not exhaustive kernel/syscall audit and is not tamper-proof. Short-lived activity can escape sampling.
 
 `IsolationAuditActivity` provides a dedicated native **Settings → Isolation audit** view for isolated-package telemetry and sandbox state.
 
@@ -186,7 +186,7 @@ This is not exhaustive kernel/syscall audit. Short-lived activity can escape sam
 
 ADB support uses an installed executable client and Android's normal pairing/connect authorization. Root support uses an executable `su` provider and remains subject to the device's root manager.
 
-Elevated requests require foreground approval. Headless execution cannot elevate.
+Elevated requests require foreground approval. Headless execution cannot elevate: background callers are given an `ExecutionPolicy` and the engine itself refuses `hg2auth` (except `status`), `bootstrap`, `vfs mount`, package lifecycle actions other than `info`/`snapshot`, and the device-affecting built-ins (exit code 126). HG2Gui does not intercept an `su` or `adb` binary the user runs from the shell.
 
 ## External Android API
 
@@ -198,7 +198,9 @@ com.hereliesaz.hg2gui.permission.API
 
 Typed actions cover command execution, package operations, pickers with returned results, notifications/dialogs, clipboard, device information, share/open, lifecycle operations, and authority requests.
 
-`Hg2ApiAuthorityActivity` brokers ADB/root requests in the foreground so an external integration cannot turn background access into ambient elevation.
+`Hg2ApiAuthorityActivity` brokers ADB/root requests in the foreground so an external integration cannot turn background access into ambient elevation. It names the requesting app and shows the exact command, and dismissing it answers the caller with a denial. Each request writes `request`, `decision` and `result` rows to a bounded app-private audit log.
+
+API commands run in `LongTaskService`, a foreground service with a partial wake lock. The same service is held up while any terminal tab has a command running (`setInteractiveBusy`; wake lock capped at six hours), so a long build survives the app being backgrounded. Android may refuse the service start from the background, in which case the command runs without that protection.
 
 ## Native surfaces
 
@@ -230,7 +232,7 @@ Availability of a stronger capability at one layer does not automatically flow i
 
 ## Verification
 
-CI verifies the compile/test/static-analysis gates represented in the workflow. Android-specific behavior can still fail on device because of ICU regex rules, linker/native execution policy, package runtime behavior, permissions, ADB/root, or PRoot.
+CI verifies the compile/test/static-analysis gates represented in the workflow: unit tests and the `composeApp` release compile are blocking; detekt and Android lint are non-blocking. Android-specific behavior can still fail on device because of ICU regex rules, linker/native execution policy, package runtime behavior, permissions, ADB/root, or PRoot.
 
 A green CI run therefore does not close an explicitly on-device verification item by itself.
 
@@ -240,9 +242,9 @@ A green CI run therefore does not close an explicitly on-device verification ite
 2. Mutating apt operations do not bypass HG2Gui package transactions.
 3. Compatibility fallback remains evidence-based.
 4. Disabled package binaries are blocked before shell execution.
-5. Isolated packages fail closed.
-6. Isolated packages do not inherit ADB/root tools.
-7. Elevated ADB/root execution is foreground-approved.
+5. Isolated packages fail closed, and run only as their own command or one step of a `;` / `&&` / `||` list.
+6. Isolated packages have ADB/root tools removed or masked.
+7. HG2Gui's own routes to elevated ADB/root execution are foreground-approved.
 8. Headless callers cannot elevate.
 9. Adaptive TUI wrapping preserves RAW fallback and verifies generated navigation.
 10. Guide command taps compose rather than auto-run.

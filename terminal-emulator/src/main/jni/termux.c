@@ -16,11 +16,61 @@
 # define LACKS_PTSNAME_R
 #endif
 
+/* Throws a RuntimeException unless an exception is already pending (e.g. OutOfMemoryError from
+ * GetStringUTFChars): calling ThrowNew on top of a pending exception is forbidden by JNI. */
 static int throw_runtime_exception(JNIEnv* env, char const* message)
 {
+    if ((*env)->ExceptionCheck(env)) return -1;
     jclass exClass = (*env)->FindClass(env, "java/lang/RuntimeException");
+    if (exClass == NULL) return -1; /* NoClassDefFoundError is pending */
     (*env)->ThrowNew(env, exClass, message);
+    (*env)->DeleteLocalRef(env, exClass);
     return -1;
+}
+
+/* Frees a NULL-terminated array of malloc'ed strings and the array itself. */
+static void free_string_array(char** array)
+{
+    if (!array) return;
+    for (char** tmp = array; *tmp; ++tmp) free(*tmp);
+    free(array);
+}
+
+/* Copies a Java String[] into a calloc'ed, NULL-terminated char* array. On failure nothing is
+ * leaked, a Java exception is pending and NULL is returned. */
+static char** copy_string_array(JNIEnv* env, jobjectArray array, jsize size, char const* what)
+{
+    char** copy = (char**) calloc((size_t) size + 1, sizeof(char*));
+    if (!copy) {
+        throw_runtime_exception(env, "calloc() for string array failed");
+        return NULL;
+    }
+    for (jsize i = 0; i < size; ++i) {
+        jstring java_string = (jstring) (*env)->GetObjectArrayElement(env, array, i);
+        if (!java_string) {
+            /* Either a null element or a pending ArrayIndexOutOfBoundsException. */
+            throw_runtime_exception(env, what);
+            free_string_array(copy);
+            return NULL;
+        }
+        char const* utf8 = (*env)->GetStringUTFChars(env, java_string, NULL);
+        if (!utf8) {
+            (*env)->DeleteLocalRef(env, java_string);
+            throw_runtime_exception(env, what); /* no-op when OutOfMemoryError is already pending */
+            free_string_array(copy);
+            return NULL;
+        }
+        copy[i] = strdup(utf8);
+        (*env)->ReleaseStringUTFChars(env, java_string, utf8);
+        /* Don't accumulate one local reference per element (the table is small). */
+        (*env)->DeleteLocalRef(env, java_string);
+        if (!copy[i]) {
+            throw_runtime_exception(env, "strdup() failed");
+            free_string_array(copy);
+            return NULL;
+        }
+    }
+    return copy;
 }
 
 static int create_subprocess(JNIEnv* env,
@@ -133,51 +183,48 @@ JNIEXPORT jint JNICALL Java_com_termux_terminal_JNI_createSubprocess(
     jsize size = args ? (*env)->GetArrayLength(env, args) : 0;
     char** argv = NULL;
     if (size > 0) {
-        argv = (char**) malloc((size + 1) * sizeof(char*));
-        if (!argv) return throw_runtime_exception(env, "Couldn't allocate argv array");
-        for (int i = 0; i < size; ++i) {
-            jstring arg_java_string = (jstring) (*env)->GetObjectArrayElement(env, args, i);
-            char const* arg_utf8 = (*env)->GetStringUTFChars(env, arg_java_string, NULL);
-            if (!arg_utf8) return throw_runtime_exception(env, "GetStringUTFChars() failed for argv");
-            argv[i] = strdup(arg_utf8);
-            (*env)->ReleaseStringUTFChars(env, arg_java_string, arg_utf8);
-        }
-        argv[size] = NULL;
+        argv = copy_string_array(env, args, size, "GetStringUTFChars() failed for argv");
+        if (!argv) return -1;
     }
 
     size = envVars ? (*env)->GetArrayLength(env, envVars) : 0;
     char** envp = NULL;
     if (size > 0) {
-        envp = (char**) malloc((size + 1) * sizeof(char *));
-        if (!envp) return throw_runtime_exception(env, "malloc() for envp array failed");
-        for (int i = 0; i < size; ++i) {
-            jstring env_java_string = (jstring) (*env)->GetObjectArrayElement(env, envVars, i);
-            char const* env_utf8 = (*env)->GetStringUTFChars(env, env_java_string, 0);
-            if (!env_utf8) return throw_runtime_exception(env, "GetStringUTFChars() failed for env");
-            envp[i] = strdup(env_utf8);
-            (*env)->ReleaseStringUTFChars(env, env_java_string, env_utf8);
+        envp = copy_string_array(env, envVars, size, "GetStringUTFChars() failed for env");
+        if (!envp) {
+            free_string_array(argv);
+            return -1;
         }
-        envp[size] = NULL;
     }
 
     int procId = 0;
+    int ptm = -1;
     char const* cmd_cwd = (*env)->GetStringUTFChars(env, cwd, NULL);
-    char const* cmd_utf8 = (*env)->GetStringUTFChars(env, cmd, NULL);
-    int ptm = create_subprocess(env, cmd_utf8, cmd_cwd, argv, envp, &procId, rows, columns, cell_width, cell_height);
-    (*env)->ReleaseStringUTFChars(env, cwd, cmd_cwd);
-    (*env)->ReleaseStringUTFChars(env, cmd, cmd_utf8);
-
-    if (argv) {
-        for (char** tmp = argv; *tmp; ++tmp) free(*tmp);
-        free(argv);
+    char const* cmd_utf8 = cmd_cwd ? (*env)->GetStringUTFChars(env, cmd, NULL) : NULL;
+    if (cmd_cwd && cmd_utf8) {
+        ptm = create_subprocess(env, cmd_utf8, cmd_cwd, argv, envp, &procId, rows, columns, cell_width, cell_height);
+    } else {
+        throw_runtime_exception(env, "GetStringUTFChars() failed for cmd/cwd");
     }
-    if (envp) {
-        for (char** tmp = envp; *tmp; ++tmp) free(*tmp);
-        free(envp);
+    /* Release*Chars are among the few JNI calls that are legal with an exception pending. */
+    if (cmd_cwd) (*env)->ReleaseStringUTFChars(env, cwd, cmd_cwd);
+    if (cmd_utf8) (*env)->ReleaseStringUTFChars(env, cmd, cmd_utf8);
+
+    free_string_array(argv);
+    free_string_array(envp);
+
+    /* create_subprocess() throws a Java exception on every failure path; GetPrimitiveArrayCritical
+     * must not be called with one pending, so bail out before touching the array. */
+    if (ptm < 0 || (*env)->ExceptionCheck(env)) {
+        if (ptm >= 0) close(ptm);
+        return -1;
     }
 
     int* pProcId = (int*) (*env)->GetPrimitiveArrayCritical(env, processIdArray, NULL);
-    if (!pProcId) return throw_runtime_exception(env, "JNI call GetPrimitiveArrayCritical(processIdArray, &isCopy) failed");
+    if (!pProcId) {
+        close(ptm);
+        return throw_runtime_exception(env, "JNI call GetPrimitiveArrayCritical(processIdArray, &isCopy) failed");
+    }
 
     *pProcId = procId;
     (*env)->ReleasePrimitiveArrayCritical(env, processIdArray, pProcId, 0);

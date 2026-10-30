@@ -11,8 +11,14 @@ import java.nio.ByteOrder
  *
  * DIRECT_LINKER is the normal HG2Gui/Termux path and relies on the HG2Gui exec preload for
  * dynamically-linked ELF files installed under app data. PROOT_COMPAT keeps the host prefix/home
- * visible but executes through the same PRoot engine used by isolation. PROOT_ISOLATED is a hard
- * boundary: an isolated package is never downgraded to either non-isolated backend.
+ * visible but executes through the same PRoot engine used by isolation. PROOT_ISOLATED gives the
+ * package its own HOME/prefix/XDG state and observes what it touches; an isolated package is never
+ * silently downgraded to either non-isolated backend (TerminalEngine fails the launch instead).
+ *
+ * This is state separation with best-effort observation, not a security sandbox: PRoot is ptrace
+ * path translation rather than a chroot, `/proc` and `/system` are bound into the guest, the
+ * network is not confined, and the audit log is written by the guest itself. Do not describe it
+ * as a hard boundary.
  */
 object PackageExecutionBackend {
     enum class Backend {

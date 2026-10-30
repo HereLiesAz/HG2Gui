@@ -19,23 +19,65 @@ object MaintainerScriptStore {
     private val SHELLS = setOf("sh", "bash", "dash")
     private const val OLD_PREFIX = "/data/data/com.termux/files/usr"
 
+    /**
+     * Where the store reads and writes. [launcher] is the APK-installed trampoline every entry
+     * points at - its path changes on every APK update, which is why entries are re-validated by
+     * [migrateInstalled] rather than trusted once created. Production code uses [layout]; host
+     * tests build one over temp directories.
+     */
+    internal class Layout(val infoDir: File, val launcher: File, val prefix: File)
+
+    private fun layout(context: Context) = Layout(infoDir(context), launcher(context), DistroManager.prefixDir(context))
+
+    /**
+     * Brings every maintainer-script entry in dpkg's info directory to the current form:
+     *  - a plain script file written by dpkg is converted to body + trampoline link;
+     *  - a trampoline link that points at a DIFFERENT (or no longer existing) launcher path is
+     *    re-pointed at the current one. Entries are absolute symlinks into `nativeLibraryDir`, which
+     *    Android re-randomises on every APK update, so without this a direct `dpkg` run after an
+     *    update would hit dangling `postinst`/`prerm` links. Only links that have a sibling
+     *    `.hg2body` are treated as ours; any other symlink is left alone.
+     */
     fun migrateInstalled(context: Context) {
-        val infoDir = infoDir(context)
-        val launcher = launcher(context)
-        if (!infoDir.isDirectory || !launcher.canExecute()) return
+        migrateInstalled(layout(context))
+    }
+
+    internal fun migrateInstalled(layout: Layout): Int {
+        val infoDir = layout.infoDir
+        val launcher = layout.launcher
+        if (!infoDir.isDirectory || !launcher.canExecute()) return 0
+        var changed = 0
         infoDir.listFiles().orEmpty().forEach { entry ->
             val scriptName = entry.name.substringAfterLast('.', missingDelimiterValue = "")
             if (scriptName !in SCRIPT_NAMES) return@forEach
-            if (Files.isSymbolicLink(entry.toPath())) return@forEach
+            if (Files.isSymbolicLink(entry.toPath())) {
+                if (healLink(entry, launcher)) changed++
+                return@forEach
+            }
             if (!entry.isFile) return@forEach
-            normalizeBody(context, entry)
+            normalizeBody(layout.prefix, entry)
             requireShellCompatible(entry)
             installAtomic(entry, entry, launcher)
+            changed++
         }
+        return changed
+    }
+
+    /** Re-points [entry] at [launcher] if it is one of our trampoline links and currently differs. */
+    private fun healLink(entry: File, launcher: File): Boolean {
+        if (!bodyFile(entry).isFile) return false
+        val current = runCatching { Files.readSymbolicLink(entry.toPath()).toString() }.getOrNull()
+        if (current == launcher.absolutePath && entry.exists()) return false
+        linkAtomic(entry, launcher)
+        return true
     }
 
     fun stage(context: Context, packageName: String, destinationDir: File) {
-        val info = infoDir(context)
+        stage(layout(context), packageName, destinationDir)
+    }
+
+    internal fun stage(layout: Layout, packageName: String, destinationDir: File) {
+        val info = layout.infoDir
         destinationDir.mkdirs()
         SCRIPT_NAMES.forEach { scriptName ->
             val entry = File(info, "$packageName.$scriptName")
@@ -52,31 +94,40 @@ object MaintainerScriptStore {
     }
 
     fun restore(context: Context, packageName: String, scriptsDir: File) {
+        restore(layout(context), packageName, scriptsDir)
+    }
+
+    internal fun restore(layout: Layout, packageName: String, scriptsDir: File) {
         if (!scriptsDir.isDirectory) return
-        val info = infoDir(context)
-        val launcher = launcher(context)
+        val launcher = layout.launcher
         require(launcher.canExecute()) { "HG2Gui maintainer-script trampoline is unavailable" }
-        info.mkdirs()
+        layout.infoDir.mkdirs()
         SCRIPT_NAMES.forEach { scriptName ->
             val source = File(scriptsDir, scriptName)
             if (!source.isFile) return@forEach
-            normalizeBody(context, source)
+            normalizeBody(layout.prefix, source)
             requireShellCompatible(source)
-            installAtomic(source, File(info, "$packageName.$scriptName"), launcher)
+            installAtomic(source, File(layout.infoDir, "$packageName.$scriptName"), launcher)
         }
     }
 
     fun removeEntries(context: Context, packageName: String) {
-        val info = infoDir(context)
+        removeEntries(layout(context), packageName)
+    }
+
+    internal fun removeEntries(layout: Layout, packageName: String) {
         SCRIPT_NAMES.forEach { scriptName ->
-            val entry = File(info, "$packageName.$scriptName")
+            val entry = File(layout.infoDir, "$packageName.$scriptName")
             Files.deleteIfExists(entry.toPath())
             Files.deleteIfExists(bodyFile(entry).toPath())
         }
     }
 
-    fun hasEntry(context: Context, packageName: String, scriptName: String): Boolean {
-        val entry = File(infoDir(context), "$packageName.$scriptName")
+    fun hasEntry(context: Context, packageName: String, scriptName: String): Boolean =
+        hasEntry(layout(context), packageName, scriptName)
+
+    internal fun hasEntry(layout: Layout, packageName: String, scriptName: String): Boolean {
+        val entry = File(layout.infoDir, "$packageName.$scriptName")
         return Files.exists(entry.toPath(), LinkOption.NOFOLLOW_LINKS) || bodyFile(entry).exists()
     }
 
@@ -89,7 +140,11 @@ object MaintainerScriptStore {
             bodyTemp.copyTo(body, overwrite = true)
             bodyTemp.delete()
         }
+        linkAtomic(entry, launcher)
+    }
 
+    /** Replaces [entry] with a symlink to [launcher] without ever leaving it missing. */
+    private fun linkAtomic(entry: File, launcher: File) {
         val linkTemp = File(entry.parentFile, entry.name + ".hg2link")
         Files.deleteIfExists(linkTemp.toPath())
         Files.createSymbolicLink(linkTemp.toPath(), launcher.toPath())
@@ -105,12 +160,10 @@ object MaintainerScriptStore {
         }
     }
 
-    private fun normalizeBody(context: Context, file: File) {
-        val bytes = runCatching { file.readBytes() }.getOrNull() ?: return
-        if (bytes.any { it == 0.toByte() }) return
-        val text = runCatching { bytes.toString(Charsets.UTF_8) }.getOrNull() ?: return
-        if (!text.contains(OLD_PREFIX)) return
-        file.writeText(text.replace(OLD_PREFIX, DistroManager.prefixDir(context).absolutePath))
+    private fun normalizeBody(prefix: File, file: File) {
+        // Byte-level (see PrefixRewriter): re-encoding through UTF-8 would corrupt a non-UTF-8
+        // script that merely mentions the old Termux prefix.
+        PrefixRewriter.rewriteFile(file, OLD_PREFIX, prefix.absolutePath)
     }
 
     private fun requireShellCompatible(file: File) {
