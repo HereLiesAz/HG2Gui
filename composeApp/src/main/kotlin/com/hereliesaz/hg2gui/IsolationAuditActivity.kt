@@ -71,7 +71,7 @@ private const val UI_PREF_FONT_SCALE_PERCENT = "font_scale_percent"
 private const val UI_PREF_FULLSCREEN = "fullscreen"
 private const val DEFAULT_FONT_SCALE_PERCENT = 100
 
-/** The Text-size setting as a density multiplier, clamped to the range Settings offers (50%..200%). */
+/** The Text-size setting as a density multiplier, clamped to the range Settings offers (85%..200%). */
 internal fun uiScaleFromPercent(percent: Int): Float =
     percent.coerceIn(FONT_SCALE_MIN_PERCENT, FONT_SCALE_MAX_PERCENT) / 100f
 

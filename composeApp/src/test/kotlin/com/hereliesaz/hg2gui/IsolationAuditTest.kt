@@ -74,7 +74,7 @@ class IsolationAuditTest {
     fun uiScaleFollowsTheSettingAndIsClamped() {
         assertEquals(1f, uiScaleFromPercent(100), 0f)
         assertEquals(1.5f, uiScaleFromPercent(150), 0f)
-        assertEquals(0.5f, uiScaleFromPercent(10), 0f)
+        assertEquals(0.85f, uiScaleFromPercent(10), 0f)
         assertEquals(2f, uiScaleFromPercent(900), 0f)
     }
 
