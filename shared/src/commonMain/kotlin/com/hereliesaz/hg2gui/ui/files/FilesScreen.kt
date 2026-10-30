@@ -1562,26 +1562,34 @@ private fun ColumnScope.RecentSearches(recent: List<String>, onSelect: (String) 
 @Composable
 private fun ColumnScope.SearchResults(results: List<VfsSearchResult>, onOpen: (VfsSearchResult) -> Unit) {
     if (results.isEmpty()) {
-        Text(
-            "NOTHING", color = Azphalt.currentGround.onPage.copy(alpha = .4f),
-            fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.1.em,
-            modifier = Modifier.padding(start = 20.dp, top = 20.dp)
-        )
+        StatusLabel("NO MATCHES", Modifier.padding(start = 20.dp, top = 20.dp))
         return
     }
+    val muted = statusColor(StatusKind.Muted)
     LazyColumn(
         Modifier.fillMaxWidth().weight(1f).padding(horizontal = 20.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
         items(results, key = { it.entry.path }) { r ->
             Column(
-                Modifier.fillMaxWidth().clickable { onOpen(r) }.padding(vertical = 10.dp)
+                Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 48.dp)
+                    .clickable(
+                        onClickLabel = if (r.entry.isDirectory) "Open folder ${r.entry.name}" else "Open ${r.entry.name}",
+                        role = Role.Button
+                    ) { onOpen(r) }
+                    .padding(vertical = 10.dp)
             ) {
                 Text(
                     r.entry.name + if (r.entry.isDirectory) "/" else "",
-                    color = Azphalt.currentGround.onPage, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold
+                    color = Azphalt.currentGround.onPage, style = nameTextStyle(),
+                    maxLines = 1, overflow = TextOverflow.Ellipsis
                 )
-                Text(r.parentPath, color = Azphalt.currentGround.onPage.copy(alpha = .5f), fontSize = 10.sp)
+                Text(
+                    r.parentPath, color = muted, style = captionTextStyle(),
+                    maxLines = 1, overflow = TextOverflow.Ellipsis
+                )
             }
             Box(Modifier.fillMaxWidth().height(1.dp).background(Azphalt.Ink.copy(alpha = .12f)))
         }
