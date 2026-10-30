@@ -104,8 +104,11 @@ private const val FONT_SCALE_STEP_PERCENT = 10
 private const val PRIVACY_POLICY_URL = "https://github.com/HereLiesAz/HG2Gui/blob/HEAD/docs/PRIVACY_POLICY.md"
 private const val SOURCE_URL = "https://github.com/HereLiesAz/HG2Gui"
 
-/** [percent] forced into [FONT_SCALE_MIN_PERCENT]..[FONT_SCALE_MAX_PERCENT]. */
-internal fun clampFontScalePercent(percent: Int): Int = percent.coerceIn(FONT_SCALE_MIN_PERCENT, FONT_SCALE_MAX_PERCENT)
+/**
+ * [percent] forced into [FONT_SCALE_MIN_PERCENT]..[FONT_SCALE_MAX_PERCENT]. Public so the Activity
+ * can apply it to the stored value when it reads the preference, before Settings is ever opened.
+ */
+fun clampFontScalePercent(percent: Int): Int = percent.coerceIn(FONT_SCALE_MIN_PERCENT, FONT_SCALE_MAX_PERCENT)
 
 /** One stepper press: [direction] is -1 or +1 step; the result is always inside the allowed range. */
 internal fun steppedFontScalePercent(current: Int, direction: Int): Int =
