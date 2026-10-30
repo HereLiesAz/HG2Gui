@@ -978,9 +978,10 @@ class TerminalActivity : FragmentActivity() {
                                 // believed when the store reports the key (or its removal) was
                                 // persisted - the in-memory copy and the screen change must not
                                 // outrun what is actually on disk.
-                                val result = withContext(Dispatchers.IO) { AiSettings.saveApiKey(this@TerminalActivity, newKey) }
+                                val trimmedKey = newKey?.trim()?.takeIf { it.isNotEmpty() }
+                                val result = withContext(Dispatchers.IO) { AiSettings.saveApiKey(this@TerminalActivity, trimmedKey) }
                                 if (result.persisted) {
-                                    aiApiKey = newKey?.trim()?.takeIf { it.isNotEmpty() }
+                                    aiApiKey = trimmedKey
                                     screen = aiSettingsCameFrom
                                 } else {
                                     aiKeySaveFailed = true

@@ -49,6 +49,21 @@ object SemanticCompletionProviders {
             .toList()
     }
 
+    /**
+     * `git status --porcelain=v1 --branch` for the terminal's branch/dirty status chip: the raw
+     * output, or null when git is not installed, [cwd] is not inside a repository, or the probe
+     * timed out. Read-only (`--no-optional-locks` keeps it from touching the index).
+     */
+    fun gitStatusBranch(context: Context, cwd: String?): String? {
+        val git = executable(context, "git") ?: return null
+        return runProbe(
+            context = context,
+            executable = git,
+            args = listOf("--no-optional-locks", "status", "--porcelain=v1", "--branch"),
+            cwd = cwd
+        )
+    }
+
     private fun packageCandidates(context: Context, request: CompletionRequest): List<CompletionCandidate> {
         val words = request.beforeCursor.trimStart().split(Regex("\\s+")).filter(String::isNotBlank)
         val verb = words.firstOrNull()?.substringAfterLast('/')?.lowercase() ?: return emptyList()
