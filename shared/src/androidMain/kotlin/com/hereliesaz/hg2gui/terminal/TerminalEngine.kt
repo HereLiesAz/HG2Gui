@@ -224,7 +224,13 @@ class TerminalEngine(
     // ---------------------------------------------------------------------------------------
 
     private suspend fun execute(line: String, io: Io, effective: ExecutionPolicy): Int? {
-        val plan = LinePlanner.plan(line, Builtins.NAMES) { name -> PackageLifecycleStore.ownerOfBinary(context, name) }
+        // One scan-state check per line (it stats several install roots), however many commands
+        // the line contains.
+        val installedNow by lazy { PackageLifecycleStore.installed(context) }
+        val plan = LinePlanner.plan(line, Builtins.NAMES) { name ->
+            val bare = name.substringAfterLast('/')
+            installedNow.firstOrNull { bare in it.binaries }
+        }
         return when (plan) {
             is LinePlanner.Plan.Refuse -> {
                 io.emit(plan.message)

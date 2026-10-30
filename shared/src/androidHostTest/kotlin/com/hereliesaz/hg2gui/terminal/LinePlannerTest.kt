@@ -140,6 +140,14 @@ class LinePlannerTest {
         assertEquals(LinePlanner.StepKind.ENGINE, steps("bootstrap").single().kind)
         assertEquals(LinePlanner.StepKind.ENGINE, steps("download http://x/y").single().kind)
         assertEquals(LinePlanner.StepKind.ENGINE, steps("remote scan").single().kind)
+        // Engine-only verbs and builtins take the rest of the line as their own arguments, as before.
+        val urlStep = steps("download http://x/y?a=1&b=2").single()
+        assertEquals(LinePlanner.StepKind.ENGINE, urlStep.kind)
+        assertEquals("download http://x/y?a=1&b=2", urlStep.text)
+        assertEquals(LinePlanner.StepKind.BUILTIN, steps("calc 2*(3+4)").single().kind)
+        assertEquals("calc 2*(3+4)", steps("calc 2*(3+4)").single().text)
+        assertEquals(LinePlanner.StepKind.BUILTIN, steps("calc \"2+3").single().kind)
+        assertEquals(LinePlanner.StepKind.ENGINE, steps("hg2auth root shell sh -c 'a && b'").single().kind)
         // Not the command word: plain arguments, or behind a pipe, so they stay shell text.
         assertTrue(plan("echo calc") is LinePlanner.Plan.Shell)
         assertTrue(plan("echo hi | calc") is LinePlanner.Plan.Shell)
@@ -151,6 +159,13 @@ class LinePlannerTest {
         assertEquals(2, r.exitCode)
         assertTrue(r.message.contains("Unterminated"))
         assertTrue(plan("cat <<EOF\nit's") !is LinePlanner.Plan.Refuse)
+    }
+
+    @Test
+    fun engineVerbsOwnedByADisabledPackage_stillHonourDisable() {
+        val disabledCalc = listOf(pkg("calcpkg", "calc", disabled = true))
+        val plan = LinePlanner.plan("calc 1+1", builtins) { name -> disabledCalc.firstOrNull { name in it.binaries } }
+        assertTrue(plan is LinePlanner.Plan.Refuse)
     }
 
     @Test

@@ -360,12 +360,32 @@ internal object LinePlanner {
     private val ENGINE_VERBS = setOf("bootstrap", "download", "hg2download", "remote", "hg2auth", "hg2package", "pkg", "hg2pkg", "apt", "apt-get")
     private val NO_OWNER_LOOKUP = setOf("hg2package", "hg2auth", "remote")
 
+    /**
+     * Verbs that exist only inside HG2Gui and take the *rest of the line as their own arguments*
+     * (`download http://x/y?a=1&b=2`, `hg2auth root shell a && b`, `calc 2*(3+4)`). They are never
+     * shell commands, so the line is not tokenised as shell: it goes to them whole, as it always did.
+     * pkg/apt are deliberately not here - they can be mistaken for real shell commands and are
+     * analysed like any other line.
+     */
+    private val WHOLE_LINE_VERBS = setOf("bootstrap", "download", "hg2download", "remote", "hg2auth", "hg2package")
+
     fun plan(
         rawLine: String,
         builtinNames: Set<String>,
         ownerOf: (String) -> PackageLifecycleStore.InstalledPackage?
     ): Plan {
         val line = rawLine.trim()
+
+        val firstToken = line.split(Regex("\\s+"), limit = 2).first()
+        if (firstToken in WHOLE_LINE_VERBS || firstToken in builtinNames) {
+            val owner = if (firstToken in NO_OWNER_LOOKUP) null else ownerOf(firstToken)
+            if (owner?.disabled == true) return Plan.Refuse(disabledMessage(owner), ExecutionPolicy.DENIED_EXIT_CODE)
+            val words = CommandLine.words(line) ?: line.split(Regex("\\s+"))
+            val isVfsMount = firstToken == "vfs" && words.getOrNull(1) == "mount"
+            val kind = if (firstToken in WHOLE_LINE_VERBS || isVfsMount) StepKind.ENGINE else StepKind.BUILTIN
+            return Plan.Steps(listOf(Step(CommandLine.Connector.NONE, line, words, kind, owner, firstToken)))
+        }
+
         val parsed = CommandLine.parse(line)
         if (parsed.unterminated && !parsed.hasHeredoc) {
             return Plan.Refuse("Unterminated quote or substitution - nothing was run.", 2)

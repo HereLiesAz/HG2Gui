@@ -477,172 +477,184 @@ fun FilesScreen(
         return
     }
 
+    // M-4: one inset policy for the whole screen - system bars (unless the fullscreen preference
+    // hides them), display cutout and the on-screen keyboard - so the NEW FOLDER / RENAME prompt
+    // and the bottom bar ride above the keyboard instead of hiding behind it. M-14: the column is
+    // capped at a readable width on tablets, with the page colour still full-bleed behind it.
+    // `screenInsets` consumes the insets the caller's own padding already took, so nothing is
+    // counted twice.
     Column(
         modifier
             .fillMaxSize()
             .background(Azphalt.currentGround.pageBrush())
-            .then(if (fullscreen) Modifier else Modifier.windowInsetsPadding(WindowInsets.systemBars))
+            .screenInsets(fullscreen = fullscreen)
+            .maxContentWidth()
     ) {
+        val muted = statusColor(StatusKind.Muted)
         // --- Header --------------------------------------------------------------------
         // Dropped in from above the top edge as one unit, rather than appearing in place.
         Column(Modifier.offset(y = (-90).dp * (1f - chromeIn.value))) {
         Row(
-            Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 18.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 10.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (selectMode) {
-                Chip("‹ ${selected.size} SELECTED", onClick = { selectMode = false; selected = emptySet() })
+                AzphaltChip(
+                    "‹ ${selected.size} SELECTED",
+                    onClick = { selectMode = false; selected = emptySet() },
+                    contentDescription = "${selected.size} selected. Tap to leave selection mode."
+                )
             } else {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Chip("‹ CLOSE", onClick = onBack)
-                    // Drops in alongside the rest of the header, but only once there is
-                    // somewhere to go up to - the root level has no parent of its own.
-                    if (openChain.isNotEmpty()) {
-                        Chip("…", background = Azphalt.Yellow, foreground = Azphalt.Ink, onClick = { openChain = openChain.dropLast(1) })
-                    }
+                AzphaltChip("‹ CLOSE", onClick = onBack, contentDescription = "Close files")
+                // Drops in alongside the rest of the header, but only once there is
+                // somewhere to go up to - the root level has no parent of its own.
+                if (openChain.isNotEmpty()) {
+                    AzphaltChip(
+                        "‹ UP", onClick = { openChain = openChain.dropLast(1) },
+                        tint = Azphalt.Yellow, contentDescription = "Up one folder"
+                    )
                 }
-                // "Here" is wherever the chain has actually drilled to - the deepest open level's
-                // own listing, not a sum across every depth (a folder's contents don't also sit
-                // beside it at the level above).
-                Chip("${entriesAt(openChain.size)?.size ?: 0} THINGS HERE", filled = false, clickable = false)
+            }
+            // "Here" is wherever the chain has actually drilled to - the deepest open level's
+            // own listing, not a sum across every depth (a folder's contents don't also sit
+            // beside it at the level above). n-7: null means that listing hasn't come back yet,
+            // which is "LOADING", not "0 THINGS HERE".
+            if (!selectMode) {
+                val here = entriesAt(openChain.size)
+                Text(
+                    if (here == null) "LOADING…" else "${here.size} THINGS HERE",
+                    color = muted, style = labelTextStyle(), textAlign = TextAlign.End,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
             }
         }
 
-        // --- Search / sort row ------------------------------------------------------------
+        // --- Search row ---------------------------------------------------------------------
         if (!selectMode) {
-            Row(
-                Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
+            if (searchActive) {
                 Row(
                     Modifier
-                        .weight(if (searchActive) 1f else 0.001f, fill = searchActive)
-                        .clip(RoundedCornerShape(percent = 50))
+                        .fillMaxWidth()
+                        .padding(start = 20.dp, end = 20.dp, top = 6.dp)
+                        .heightIn(min = 48.dp)
+                        .clip(AzphaltSurface.capsule)
                         .background(Azphalt.Ink.copy(alpha = .10f))
-                        .clickable(enabled = !searchActive) { searchActive = true }
-                        .padding(start = 14.dp, end = 10.dp, top = 8.dp, bottom = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        .padding(start = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (searchActive) {
-                        BasicTextField(
-                            value = searchQuery,
-                            onValueChange = { searchQuery = it; screen = if (it.isBlank()) FMScreen.Browse else FMScreen.Search },
-                            modifier = Modifier.weight(1f),
-                            textStyle = androidx.compose.ui.text.TextStyle(
-                                color = Azphalt.currentGround.onPage, fontSize = 13.sp, fontWeight = FontWeight.SemiBold
-                            ),
-                            cursorBrush = SolidColor(Azphalt.currentGround.onPage),
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                            keyboardActions = KeyboardActions(onSearch = { recordSearch(searchQuery) })
-                        )
-                        Text(
-                            "✕", color = Azphalt.currentGround.onPage.copy(alpha = .6f), fontSize = 13.sp,
-                            modifier = Modifier.clickable {
-                                searchActive = false; searchQuery = ""; screen = FMScreen.Browse
+                    BasicTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it; screen = if (it.isBlank()) FMScreen.Browse else FMScreen.Search },
+                        modifier = Modifier
+                            .weight(1f)
+                            .focusRequester(searchFocus)
+                            .semantics { contentDescription = "Search files" },
+                        textStyle = nameTextStyle().copy(color = Azphalt.currentGround.onPage),
+                        cursorBrush = SolidColor(Azphalt.currentGround.onPage),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                        keyboardActions = KeyboardActions(onSearch = { recordSearch(searchQuery) }),
+                        decorationBox = { inner ->
+                            Box(contentAlignment = Alignment.CenterStart) {
+                                if (searchQuery.isEmpty()) {
+                                    Text("SEARCH FILES", color = muted, style = labelTextStyle())
+                                }
+                                inner()
                             }
-                        )
-                    } else {
-                        Text(
-                            "SEARCH", color = Azphalt.currentGround.onPage.copy(alpha = .55f),
-                            fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.1.em
-                        )
-                    }
+                        }
+                    )
+                    // Its own word and shape ("✕" = close this search); the entry actions say
+                    // TRASH and the trash tab says DELETE FOREVER, so no two actions share a glyph.
+                    RowAction(
+                        "✕", "Close search", Azphalt.currentGround.onPage,
+                        { searchActive = false; searchQuery = ""; screen = FMScreen.Browse }
+                    )
                 }
-                if (!searchActive) {
-                    Row(
-                        Modifier
-                            .clip(RoundedCornerShape(percent = 50))
-                            .background(Azphalt.Ink.copy(alpha = .10f))
-                            .clickable { sortMode = if (sortMode == SortMode.NAME) SortMode.NEWEST else SortMode.NAME }
-                            .padding(horizontal = 14.dp, vertical = 8.dp)
-                    ) {
-                        Text(
-                            "${sortMode.label.uppercase()} ▾", color = Azphalt.currentGround.onPage.copy(alpha = .55f),
-                            fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.1.em
-                        )
-                    }
-                    Row(
-                        Modifier
-                            .clip(RoundedCornerShape(percent = 50))
-                            .background(Azphalt.Ink.copy(alpha = .10f))
-                            .clickable { screen = FMScreen.Storage }
-                            .padding(horizontal = 14.dp, vertical = 8.dp)
-                    ) {
-                        Text(
-                            "STORAGE ›", color = Azphalt.currentGround.onPage.copy(alpha = .55f),
-                            fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.1.em
-                        )
-                    }
+            } else {
+                // Navigation, not filtering: where to look (search, the storage report, which
+                // root). Scrolls rather than wraps, like the filter row beneath.
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(start = 20.dp, end = 20.dp, top = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    AzphaltChip("SEARCH", onClick = { searchActive = true }, contentDescription = "Search files")
+                    AzphaltChip("STORAGE ›", onClick = { screen = FMScreen.Storage }, contentDescription = "Open the storage report")
                     // DEV-STORAGE-1: not gated on `deviceStorage.granted` - tapping it without
                     // the permission yet is exactly what should kick off asking for it, same as
-                    // every other permission-backed builtin in this app (see Builtins.kt).
-                    Row(
-                        Modifier
-                            .clip(RoundedCornerShape(percent = 50))
-                            .background(if (deviceStorage.active) Azphalt.Yellow else Azphalt.Ink.copy(alpha = .10f))
-                            .clickable { deviceStorage.onToggle() }
-                            .padding(horizontal = 14.dp, vertical = 8.dp)
-                    ) {
-                        Text(
-                            if (deviceStorage.active) "DEVICE" else "SANDBOX",
-                            color = if (deviceStorage.active) Azphalt.Ink else Azphalt.currentGround.onPage.copy(alpha = .55f),
-                            fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.1.em
-                        )
-                    }
+                    // every other permission-backed builtin in this app (see Builtins.kt). The
+                    // label names the current root (a toggle state, not a verb) and the spoken
+                    // description names what a tap does.
+                    AzphaltChip(
+                        if (deviceStorage.active) "ROOT: DEVICE" else "ROOT: SANDBOX",
+                        onClick = { deviceStorage.onToggle() },
+                        selected = deviceStorage.active,
+                        tint = Azphalt.Yellow,
+                        contentDescription = if (deviceStorage.active) {
+                            "Showing device storage. Tap to switch back to the app sandbox."
+                        } else {
+                            "Showing the app sandbox. Tap to switch to device storage."
+                        }
+                    )
                 }
             }
         }
 
-        // --- Filter row --------------------------------------------------------------------
-        // Its own row rather than folded into the search/sort one above - a folder listing on a
-        // phone is narrow enough that three more chips there would start wrapping or crowding
-        // the search well. Horizontally scrollable so a later filter never has to fight the
-        // ones already here for room.
+        // --- View row (sort + filters) -----------------------------------------------------
+        // Its own row rather than folded into the one above - a folder listing on a phone is
+        // narrow enough that this many chips there would start wrapping or crowding it.
+        // Horizontally scrollable so a later filter never has to fight the ones already here for
+        // room. Sort is two explicit options (a radio pair) rather than one chip that silently
+        // flips; the kind/age chips say they cycle and announce which value they are on.
         if (!selectMode && !searchActive) {
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .padding(start = 20.dp, end = 20.dp, top = 8.dp)
+                    .padding(start = 20.dp, end = 20.dp)
                     .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                FilterChip(
-                    kindFilter.label.uppercase(), active = kindFilter != KindFilter.ALL,
-                    onClick = {
-                        val values = KindFilter.entries
-                        kindFilter = values[(kindFilter.ordinal + 1) % values.size]
-                    }
+                Text("SORT", color = muted, style = labelTextStyle())
+                SortMode.entries.forEach { mode ->
+                    AzphaltChip(
+                        mode.label.uppercase(), onClick = { sortMode = mode },
+                        selected = sortMode == mode, role = Role.RadioButton,
+                        contentDescription = "Sort by ${mode.label.lowercase()}"
+                    )
+                }
+                val nextKind = KindFilter.entries[(kindFilter.ordinal + 1) % KindFilter.entries.size]
+                AzphaltChip(
+                    "SHOW: ${kindFilter.label.uppercase()}",
+                    onClick = { kindFilter = nextKind },
+                    selected = kindFilter != KindFilter.ALL,
+                    contentDescription = "Show ${kindFilter.label.lowercase()}. Tap to change to ${nextKind.label.lowercase()}."
                 )
-                FilterChip(
-                    recencyFilter.label.uppercase(), active = recencyFilter != RecencyFilter.ANY,
-                    onClick = {
-                        val values = RecencyFilter.entries
-                        recencyFilter = values[(recencyFilter.ordinal + 1) % values.size]
-                    }
+                val nextRecency = RecencyFilter.entries[(recencyFilter.ordinal + 1) % RecencyFilter.entries.size]
+                AzphaltChip(
+                    "WHEN: ${recencyFilter.label.uppercase()}",
+                    onClick = { recencyFilter = nextRecency },
+                    selected = recencyFilter != RecencyFilter.ANY,
+                    contentDescription = "Modified ${recencyFilter.label.lowercase()}. Tap to change to ${nextRecency.label.lowercase()}."
                 )
-                FilterChip("HIDDEN", active = showHidden, onClick = { showHidden = !showHidden })
+                AzphaltChip(
+                    "HIDDEN FILES", onClick = { showHidden = !showHidden },
+                    selected = showHidden,
+                    contentDescription = "Show hidden files: ${if (showHidden) "on" else "off"}"
+                )
             }
         }
         }
 
         // VFS-13: the one place a failed file operation becomes visible instead of vanishing
-        // silently - tap to dismiss, same as any other transient chip in this screen.
+        // silently - a live region (announced without moving focus), tap to dismiss.
         opError?.let { message ->
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(start = 20.dp, end = 20.dp, top = 8.dp)
-                    .clip(RoundedCornerShape(percent = 50))
-                    .background(Azphalt.hues[6])
-                    .clickable { opError = null }
-                    .padding(horizontal = 16.dp, vertical = 10.dp)
-            ) {
-                Text(message, color = Azphalt.White, fontSize = 10.sp, fontWeight = FontWeight.ExtraBold)
-            }
+            ErrorBanner(message, { opError = null }, Modifier.padding(start = 20.dp, end = 20.dp, top = 8.dp))
         }
 
         // --- Content ------------------------------------------------------------------------
