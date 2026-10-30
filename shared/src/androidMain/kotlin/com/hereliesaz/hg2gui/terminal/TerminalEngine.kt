@@ -484,11 +484,11 @@ class TerminalEngine(
     private fun streamThroughShell(command: String, io: Io): Int {
         prepareShell()
         return shell.stream(
-        command,
-        onLine = { output -> runBlocking { io.snapshot(output) } },
-        onNeedInput = { prompt -> runBlocking { io.onNeedInput(prompt) } },
-        onStderrLine = io.onStderr,
-        onStyledLine = io.onStyled
+            command,
+            onLine = { output -> runBlocking { io.snapshot(output) } },
+            onNeedInput = { prompt -> runBlocking { io.onNeedInput(prompt) } },
+            onStderrLine = io.onStderr,
+            onStyledLine = io.onStyled
         )
     }
 
