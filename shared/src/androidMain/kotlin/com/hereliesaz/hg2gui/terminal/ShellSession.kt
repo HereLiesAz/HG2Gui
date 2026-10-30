@@ -45,7 +45,23 @@ actual class ShellSession private constructor(
         private const val START_HEAD = "__HG2GUI_SOC_"
         private const val NATIVE_BASH = "libbin_bash.so"
         private const val DEFAULT_SHELL = "/system/bin/sh"
-        private const val TIMEOUT_MS = 15_000L
+        // How long a command may stay silent before the transcript gets a transient "still running"
+        // notice. It is only a notice: silence never kills a command (a quiet compile step, a big
+        // `curl -s`, an idle `ssh`).
+        private const val QUIET_NOTICE_MS = 15_000L
+        // Pipe-mode cancellation: nothing to signal for this long means the shell itself is the
+        // blocked party (a builtin `read`); SIGTERM is upgraded to SIGKILL after the second figure;
+        // past the third the shell is discarded and a new one starts with the next command.
+        private const val CANCEL_NO_CHILD_MS = 300L
+        private const val CANCEL_KILL_AFTER_MS = 1_500L
+        private const val CANCEL_ABANDON_AFTER_MS = 4_000L
+        private const val CANCEL_STEP_MS = 100L
+        private const val CANCEL_NONE = 0
+        private const val CANCEL_INTERRUPT = 1
+        private const val CANCEL_DECLINED = 2
+        private const val CANCEL_TIMEOUT = 3
+        private const val EXIT_INTERRUPTED = 130
+        private const val EXIT_TIMED_OUT = 124
         private const val STARTUP_PROBE_MS = 300L
         private const val PROMPT_IDLE_MS = 400L
         private const val INTR_BYTE = 0x03
@@ -172,27 +188,56 @@ actual class ShellSession private constructor(
     private val sentinel = SENTINEL_HEAD + sentinelTail
     private val startMarker = START_HEAD + sentinelTail
 
+    // The child's handles. They are only ever replaced under this object's monitor (startChild,
+    // restartChild, killChild, close) but are read without it by stream() on IO threads and by
+    // isAlive on any thread, hence @Volatile (audit n-6). interrupt() no longer touches any of
+    // them: it only raises a flag that the running stream() acts on, so there is nothing for it
+    // to race with.
+    @Volatile
     private var process: Process? = null
+    @Volatile
     private var ptyFd: Int = -1
     // The one owner of the pty fd: stdin/stdout wrap this same FileDescriptor object, and closing
     // it through Os.close invalidates it for them too, so nothing closes the raw int twice (a
     // second close could hit an unrelated fd that reused the number).
+    @Volatile
     private var ptyDescriptor: FileDescriptor? = null
+    @Volatile
     private var ptyPid: Int = -1
     // Set once the waiter thread has reaped the pty child; its pid may then be reused by an
-    // unrelated process and must not be signalled.
-    private val ptyReaped = AtomicBoolean(false)
+    // unrelated process and must not be signalled. One instance per child, so the waiter of a
+    // replaced child can never mark its successor reaped.
+    @Volatile
+    private var ptyReaped: AtomicBoolean = AtomicBoolean(true)
+    @Volatile
     private var stdin: BufferedWriter? = null
+    @Volatile
     private var stdout: BufferedReader? = null
+    @Volatile
     private var stderr: BufferedReader? = null
+    // The shell's own pid, read from the start marker of the first command; -1 until then. Pipe
+    // mode needs it to find the shell's foreground children, which Process cannot tell it on API 24.
+    @Volatile
+    private var shellPid: Int = -1
     private val alive = AtomicBoolean(false)
     private val generation = AtomicInteger(0)
+    // True while a stream() call owns the shell; commands are strictly one at a time.
+    private val running = AtomicBoolean(false)
+    // Raised by interrupt(), consumed by the stream() that is running.
+    @Volatile
+    private var interruptRequested = false
+    @Volatile
+    private var closed = false
+
+    /** Silence longer than this makes a running command show a "still running" notice. Tests shorten it. */
+    @Volatile
+    internal var quietNoticeMs: Long = QUIET_NOTICE_MS
 
     @Volatile
     private var _workingDirectory: String = home?.absolutePath ?: "/"
 
     actual val workingDirectory: String get() = _workingDirectory
-    actual val isAlive: Boolean get() = alive.get() && processStillRunning()
+    actual val isAlive: Boolean get() = !closed && alive.get() && processStillRunning()
 
     constructor(home: File?) : this(home, arrayOf(DEFAULT_SHELL), emptyMap())
     constructor(home: File?, shellPath: String) : this(home, arrayOf(shellPath), emptyMap())
@@ -207,8 +252,10 @@ actual class ShellSession private constructor(
         if (generation.get() == myGeneration) alive.set(false)
     }
 
+    @Synchronized
     @Suppress("TooGenericExceptionCaught")
     private fun startChild(home: File?, command: Array<String>, extraEnv: Map<String, String>) {
+        shellPid = -1
         try {
             if (usePty) startPty(home, command, extraEnv) else startPipe(home, command, extraEnv)
             alive.set(true)
@@ -219,15 +266,38 @@ actual class ShellSession private constructor(
         }
     }
 
+    /**
+     * Replaces a dead (or abandoned) child with a fresh one and resets the per-shell state (cwd;
+     * the environment and shell functions are gone with the old process). False when the session
+     * is closed or the new child could not be started.
+     */
+    @Synchronized
+    private fun restartChild(): Boolean {
+        if (closed) return false
+        generation.incrementAndGet()
+        alive.set(false)
+        try { stdin?.close() } catch (ignored: IOException) {}
+        try { stdout?.close() } catch (ignored: IOException) {}
+        try { stderr?.close() } catch (ignored: IOException) {}
+        killChild()
+        process = null
+        stdin = null
+        stdout = null
+        stderr = null
+        _workingDirectory = home?.absolutePath ?: "/"
+        startChild(home, command, extraEnv)
+        return alive.get() && !closed
+    }
+
     private fun startPipe(home: File?, command: Array<String>, extraEnv: Map<String, String>) {
         val builder = ProcessBuilder(*command)
         if (home != null && home.isDirectory) builder.directory(home)
         if (extraEnv.isNotEmpty()) builder.environment().putAll(extraEnv)
         val p = builder.start()
-        process = p
         stdin = BufferedWriter(OutputStreamWriter(p.outputStream))
         stdout = BufferedReader(InputStreamReader(p.inputStream))
         stderr = BufferedReader(InputStreamReader(p.errorStream))
+        process = p
     }
 
     private fun startPty(home: File?, command: Array<String>, extraEnv: Map<String, String>) {
@@ -239,17 +309,21 @@ actual class ShellSession private constructor(
             PTY_ROWS, PTY_COLUMNS, PTY_CELL_WIDTH, PTY_CELL_HEIGHT
         )
         if (fd < 0) throw IOException("createSubprocess() failed to open a pty")
+        val childPid = pid[0]
+        val reaped = AtomicBoolean(false)
+        val childGeneration = generation.get()
         ptyFd = fd
-        ptyPid = pid[0]
-        ptyReaped.set(false)
+        ptyPid = childPid
+        ptyReaped = reaped
         val wrapped = wrapFileDescriptor(fd)
         ptyDescriptor = wrapped
         stdin = BufferedWriter(OutputStreamWriter(FileOutputStream(wrapped)))
         stdout = BufferedReader(InputStreamReader(FileInputStream(wrapped)))
-        thread(name = "ShellSession-pty-waiter[pid=$ptyPid]") {
-            JNI.waitFor(ptyPid)
-            ptyReaped.set(true)
-            alive.set(false)
+        thread(name = "ShellSession-pty-waiter[pid=$childPid]") {
+            JNI.waitFor(childPid)
+            reaped.set(true)
+            // A replaced child's waiter must not mark its successor dead.
+            if (generation.get() == childGeneration) alive.set(false)
         }
     }
 
@@ -269,8 +343,9 @@ actual class ShellSession private constructor(
 
     private fun processStillRunning(): Boolean {
         if (usePty) return alive.get()
+        val p = process ?: return false
         return try {
-            process?.exitValue()
+            p.exitValue()
             false
         } catch (stillRunning: IllegalThreadStateException) {
             true
@@ -285,48 +360,126 @@ actual class ShellSession private constructor(
             onLine = { line -> output = line },
             onNeedInput = { null },
             onStderrLine = { line -> stderrOutput = line },
-            onStyledLine = {}
+            onStyledLine = {},
+            timeoutMs = 0L
         )
         return ShellSessionResult(output, exitCode, _workingDirectory, stderrOutput)
     }
 
+    /**
+     * Runs [command] in the long-lived shell and reports its output through the callbacks (each
+     * [onLine] call is the whole transcript so far and supersedes the previous one).
+     *
+     * - A shell that has died (EOF, crash, `exit`, killed) is restarted here, with a "[shell
+     *   restarted]" line at the top of the transcript; the tab never stays stuck.
+     * - Silence is not a failure: after [quietNoticeMs] without output a transient "[still
+     *   running ...]" line is appended to the snapshot (and dropped again by the next one) and
+     *   the call keeps waiting. A command stops only through [interrupt], a prompt that
+     *   [onNeedInput] declined (null) and that stayed silent for a quiet period, or the opt-in
+     *   [timeoutMs] cap (> 0) for headless callers. Stopping cancels the command, not the shell.
+     * - One command at a time: a second concurrent call is refused with -1.
+     *
+     * Returns the command's exit status, 130 for an interrupted or declined-prompt command, 124
+     * for [timeoutMs], and -1 when the shell ended mid-command or could not be (re)started.
+     */
+    @Suppress("LongMethod", "CyclomaticComplexMethod")
     actual fun stream(
         command: String,
         onLine: (line: String) -> Unit,
         onNeedInput: (prompt: String) -> String?,
         onStderrLine: (line: String) -> Unit,
-        onStyledLine: (lines: List<List<StyledSpan>>) -> Unit
+        onStyledLine: (lines: List<List<StyledSpan>>) -> Unit,
+        timeoutMs: Long
     ): Int {
-        if (!isAlive) {
+        if (closed) {
             onLine("shell is not running")
             return -1
         }
+        if (!running.compareAndSet(false, true)) {
+            onLine("another command is still running in this shell")
+            return -1
+        }
+        interruptRequested = false
+        try {
+            return runCommand(command, onLine, onNeedInput, onStderrLine, onStyledLine, timeoutMs)
+        } finally {
+            interruptRequested = false
+            running.set(false)
+        }
+    }
 
-        var exitCode = -1
+    @Suppress("LongMethod", "CyclomaticComplexMethod", "ComplexCondition")
+    private fun runCommand(
+        command: String,
+        onLine: (line: String) -> Unit,
+        onNeedInput: (prompt: String) -> String?,
+        onStderrLine: (line: String) -> Unit,
+        onStyledLine: (lines: List<List<StyledSpan>>) -> Unit,
+        timeoutMs: Long
+    ): Int {
+        val emulator = TerminalEmulator(DummyTerminalOutput(), 120, 24, 10, 10, 1000, null)
+        val stderrEmulator = TerminalEmulator(DummyTerminalOutput(), 120, 24, 10, 10, 1000, null)
+
+        if (!isAlive) {
+            if (!restartChild()) {
+                onLine("shell is not running: it exited and could not be restarted")
+                return -1
+            }
+            // Part of the transcript (not a separate emission) so the command's own output,
+            // which supersedes each snapshot, keeps the line.
+            safeAppend(emulator, "[shell restarted]\r\n".toByteArray())
+            onLine(emulator.transcriptText())
+        }
+
         val myGeneration = generation.get()
+        val quietMs = quietNoticeMs.coerceAtLeast(1L)
+        val pending = StringBuilder()
+        var emittedUpTo = 0
+        val pendingErr = StringBuilder()
+        var emittedUpToErr = 0
+        val errBuf = CharArray(4096)
+        val buf = CharArray(4096)
+        var exitCode = -1
+        var completed = false // the end marker arrived and the final transcript was emitted
+        var shellEnded = false // EOF / process exit / close() before the end marker
+        // PTY mode echoes the framed input (and the shell prompt) back on the same stream as
+        // real output; nothing is real output until the start marker arrives. Pipes don't echo,
+        // but print the start marker line too, so it must be consumed in both modes.
+        var started = false
+        var cancelReason = CANCEL_NONE
+        var cancelAt = 0L
+        var nextCancelStepAt = 0L
+        val startedAt = System.currentTimeMillis()
+        var lastDataAt = startedAt
+        var lastProgressAt = startedAt
+        var nextNoticeAt = startedAt + quietMs
+        var noticeVisible = false
+        var promptOffered = false
+        var promptDeclined = false
 
         try {
             val sin = stdin ?: throw IOException("stdin is null")
             val sout = stdout ?: throw IOException("stdout is null")
             val serr = stderr
-            val emulator = TerminalEmulator(DummyTerminalOutput(), 120, 24, 10, 10, 1000, null)
-            val stderrEmulator = TerminalEmulator(DummyTerminalOutput(), 120, 24, 10, 10, 1000, null)
+            // The shell's descendants as they were before this command: background jobs of earlier
+            // commands, which an interrupt of this one must not kill. Taken while the shell is idle.
+            val preexisting: Set<Int> =
+                if (!usePty && shellPid > 1) ShellProcessTree.descendants(shellPid) else emptySet()
 
             sin.write(ShellCommandProtocol.frame(shellFamily, command, START_HEAD, SENTINEL_HEAD, sentinelTail))
             sin.flush()
 
-            val pending = StringBuilder()
-            var emittedUpTo = 0
-            val pendingErr = StringBuilder()
-            var emittedUpToErr = 0
-            val errBuf = CharArray(4096)
-            var deadline = System.currentTimeMillis() + TIMEOUT_MS
-            var lastDataAt = System.currentTimeMillis()
-            var promptOfferedForThisStall = false
-            val buf = CharArray(4096)
-            // PTY mode echoes the framed input (and the shell prompt) back on the same stream as
-            // real output; nothing is real output until the start marker arrives. Pipes don't echo.
-            var started = false // pipes print the start marker line too; it must be consumed in both modes
+            // Output or stderr arrived or an answer was sent: the command is alive. Drops the
+            // transient notice by re-emitting the plain transcript.
+            fun noteProgress() {
+                val now = System.currentTimeMillis()
+                lastProgressAt = now
+                nextNoticeAt = now + quietMs
+                if (noticeVisible) {
+                    noticeVisible = false
+                    onLine(emulator.transcriptText())
+                }
+            }
 
             fun drainStderr() {
                 if (serr == null) return
@@ -334,9 +487,8 @@ actual class ShellSession private constructor(
                     val n = serr.read(errBuf)
                     if (n > 0) {
                         pendingErr.append(errBuf, 0, n)
-                        // A command that only reports progress on stderr is still making
-                        // progress; don't time it out as if it were silent.
-                        deadline = System.currentTimeMillis() + TIMEOUT_MS
+                        // A command that only reports progress on stderr is still making progress.
+                        noteProgress()
                     }
                 }
                 if (pendingErr.length <= emittedUpToErr) return
@@ -346,35 +498,85 @@ actual class ShellSession private constructor(
                 )
             }
 
+            // Starts cancelling the command (never the shell, unless that proves impossible).
+            fun beginCancel(reason: Int) {
+                if (cancelAt != 0L) return
+                cancelAt = System.currentTimeMillis()
+                cancelReason = reason
+                if (usePty) {
+                    try {
+                        sin.write(INTR_BYTE)
+                        sin.flush()
+                    } catch (ignored: IOException) {}
+                }
+            }
+
+            // Pipe mode: signals the command's processes until the shell reports the command's
+            // end marker. True when that did not work and the shell has to be discarded.
+            fun advanceCancel(): Boolean {
+                val now = System.currentTimeMillis()
+                val elapsed = now - cancelAt
+                if (elapsed > CANCEL_ABANDON_AFTER_MS) return true
+                if (now < nextCancelStepAt) return false
+                nextCancelStepAt = now + CANCEL_STEP_MS
+                val pid = shellPid
+                if (!started || pid <= 1) return false
+                val targets = ShellProcessTree.descendants(pid) - preexisting
+                // Nothing to signal: the shell itself is the blocked party (a builtin `read`).
+                if (targets.isEmpty()) return elapsed > CANCEL_NO_CHILD_MS
+                ShellProcessTree.signal(targets, if (elapsed < CANCEL_KILL_AFTER_MS) "TERM" else "KILL")
+                return false
+            }
+
             while (true) {
                 drainStderr()
 
-                if (System.currentTimeMillis() > deadline) {
-                    val bytes = "\r\n[timed out after ${TIMEOUT_MS / 1000}s]".toByteArray()
-                    safeAppend(emulator, bytes)
-                    onLine(emulator.transcriptText())
-                    if (generation.get() == myGeneration) {
-                        alive.set(false)
-                        killChild()
-                        try { stdin?.close() } catch (ignored: IOException) {}
-                        try { stdout?.close() } catch (ignored: IOException) {}
-                        try { stderr?.close() } catch (ignored: IOException) {}
-                    }
+                if (closed) {
+                    shellEnded = true
                     break
+                }
+
+                val now = System.currentTimeMillis()
+                if (cancelAt == 0L) {
+                    if (interruptRequested) {
+                        beginCancel(CANCEL_INTERRUPT)
+                    } else if (timeoutMs > 0 && now - startedAt > timeoutMs) {
+                        beginCancel(CANCEL_TIMEOUT)
+                    } else if (promptDeclined && now - lastDataAt >= quietMs) {
+                        beginCancel(CANCEL_DECLINED)
+                    } else if (now >= nextNoticeAt) {
+                        val shown = emulator.transcriptText()
+                        val secs = (now - lastProgressAt) / 1000
+                        onLine((if (shown.isEmpty()) "" else "$shown\n") + "[still running - no output for ${secs}s]")
+                        noticeVisible = true
+                        nextNoticeAt = now + quietMs
+                    }
+                }
+                if (cancelAt != 0L) {
+                    // The pty's line discipline turns the ^C into a SIGINT for the foreground
+                    // job; whatever the shell prints afterwards is discarded before the next
+                    // command's start marker.
+                    if (usePty) break
+                    if (advanceCancel()) {
+                        abandonShell(myGeneration)
+                        break
+                    }
                 }
 
                 if (sout.ready()) {
                     val n = sout.read(buf)
                     if (n == -1) {
                         markDeadIfCurrent(myGeneration)
+                        shellEnded = true
                         break
                     }
                     if (n > 0) {
                         pending.append(buf, 0, n)
                         if (!started) started = discardBeforeStart(pending)
                         lastDataAt = System.currentTimeMillis()
-                        promptOfferedForThisStall = false
-                        deadline = System.currentTimeMillis() + TIMEOUT_MS
+                        promptOffered = false
+                        promptDeclined = false
+                        noteProgress()
                     }
                 } else {
                     val marker = pending.indexOf(sentinel, emittedUpTo)
@@ -384,10 +586,10 @@ actual class ShellSession private constructor(
                     val stalledText = if (pending.length > emittedUpTo) pending.substring(emittedUpTo) else ""
                     val isTransientStatus = ShellAliases.looksLikeTransientStatus(stalledText)
 
-                    if (started && !promptOfferedForThisStall && marker < 0 && tailIsUnterminated &&
+                    if (started && cancelAt == 0L && !promptOffered && marker < 0 && tailIsUnterminated &&
                         !isTransientStatus && idleMs > PROMPT_IDLE_MS
                     ) {
-                        promptOfferedForThisStall = true
+                        promptOffered = true
                         emittedUpTo = trimConsumedPrefix(
                             pending,
                             flush(pending, emittedUpTo, pending.length, emulator, onLine)
@@ -399,7 +601,12 @@ actual class ShellSession private constructor(
                             sin.write("\n")
                             sin.flush()
                             lastDataAt = System.currentTimeMillis()
-                            deadline = System.currentTimeMillis() + TIMEOUT_MS
+                            noteProgress()
+                        } else {
+                            // Nobody can answer. The command may just be printing a partial line
+                            // and thinking, so it gets a quiet period of grace before it is
+                            // cancelled (it was killed after 15 s of silence before).
+                            promptDeclined = true
                         }
                     }
 
@@ -411,6 +618,7 @@ actual class ShellSession private constructor(
                     }
                     if (!processStillRunning()) {
                         markDeadIfCurrent(myGeneration)
+                        shellEnded = true
                         break
                     }
                     continue
@@ -446,18 +654,54 @@ actual class ShellSession private constructor(
                 drainStderr()
                 onLine(emulator.transcriptText())
                 onStyledLine(emulator.styledTranscript())
+                completed = true
                 break
+            }
+
+            if (!completed) {
+                // Left the loop without the end marker: cancelled, or the shell ended. Everything
+                // read so far is real output (including what the end-marker hold-back kept back).
+                if (started) {
+                    emittedUpTo = trimConsumedPrefix(
+                        pending,
+                        flush(pending, emittedUpTo, pending.length, emulator, onLine)
+                    )
+                }
+                drainStderr()
+                val note = when {
+                    cancelReason == CANCEL_INTERRUPT -> "[interrupted]"
+                    cancelReason == CANCEL_TIMEOUT -> "[timed out after ${timeoutMs / 1000}s]"
+                    cancelReason == CANCEL_DECLINED -> "[cancelled: the prompt was not answered]"
+                    shellEnded -> "[shell exited - a new one starts with the next command]"
+                    else -> null
+                }
+                if (note != null) {
+                    val lead = if (emulator.getCursorCol() == 0) "" else "\r\n"
+                    safeAppend(emulator, (lead + note).toByteArray())
+                }
+                onLine(emulator.transcriptText())
+                onStyledLine(emulator.styledTranscript())
+            }
+            if (cancelReason != CANCEL_NONE && exitCode != 0) {
+                exitCode = if (cancelReason == CANCEL_TIMEOUT) EXIT_TIMED_OUT else EXIT_INTERRUPTED
             }
         } catch (e: IOException) {
             markDeadIfCurrent(myGeneration)
-            onLine("shell died: ${e.message}")
+            val lead = if (emulator.getCursorCol() == 0) "" else "\r\n"
+            safeAppend(emulator, (lead + "shell died: ${e.message}").toByteArray())
+            onLine(emulator.transcriptText())
+            onStyledLine(emulator.styledTranscript())
             return -1
         }
 
         return exitCode
     }
 
-    /** Drops everything up to and including the start marker's line; true once it has been seen. */
+    /**
+     * Drops everything up to and including the start marker's line; true once it has been seen.
+     * The marker line ends with `:<shell pid>`, which is remembered for [interrupt] to find the
+     * shell's foreground children.
+     */
     private fun discardBeforeStart(pending: StringBuilder): Boolean {
         val at = pending.indexOf(startMarker)
         if (at < 0) {
@@ -471,6 +715,7 @@ actual class ShellSession private constructor(
             pending.delete(0, at)
             return false
         }
+        ShellCommandProtocol.parseShellPid(pending.substring(at + startMarker.length, eol))?.let { shellPid = it }
         pending.delete(0, eol + 1)
         return true
     }
@@ -518,34 +763,27 @@ actual class ShellSession private constructor(
         } else text
     }
 
+    /**
+     * Asks the running [stream] call to stop its command; a no-op when nothing is running. The
+     * stream loop does the work on its own thread (so this is safe from the UI thread and never
+     * races the child's streams): the pty tier gets a Ctrl-C, the pipe tier a SIGTERM (then
+     * SIGKILL) to the shell's foreground children found through /proc, so the shell survives with
+     * its working directory and environment. Only if the shell still has not reported the
+     * command's end after a few seconds, or has no child to signal (it is blocked in a builtin
+     * `read`), is it discarded - the next command starts a fresh one. The stream returns 130.
+     */
     actual fun interrupt() {
-        if (usePty) {
-            try {
-                stdin?.write(INTR_BYTE)
-                stdin?.flush()
-            } catch (ignored: IOException) {}
-            return
-        }
-        if (!isAlive) return
-        generation.incrementAndGet()
-        try { stdin?.close() } catch (ignored: IOException) {}
-        try { stdout?.close() } catch (ignored: IOException) {}
-        try { stderr?.close() } catch (ignored: IOException) {}
-        process?.destroyForcibly()
-        process = null
-        stdin = null
-        stdout = null
-        stderr = null
-        try {
-            startPipe(home, command, extraEnv)
-            _workingDirectory = home?.absolutePath ?: "/"
-            alive.set(true)
-        } catch (ignored: IOException) {
-            alive.set(false)
-        }
+        if (!running.get()) return
+        interruptRequested = true
     }
 
     actual fun close() {
+        closeChild()
+    }
+
+    @Synchronized
+    private fun closeChild() {
+        closed = true
         alive.set(false)
         try {
             stdin?.let {
@@ -559,12 +797,21 @@ actual class ShellSession private constructor(
         killChild()
     }
 
+    /** Discards the shell of [expectedGeneration] (unless it was already replaced); the next command restarts it. */
+    @Synchronized
+    private fun abandonShell(expectedGeneration: Int) {
+        if (generation.get() != expectedGeneration) return
+        alive.set(false)
+        killChild()
+    }
+
     @Synchronized
     private fun killChild() {
         if (usePty) {
-            if (ptyPid > 0 && !ptyReaped.get()) {
+            val pid = ptyPid
+            if (pid > 0 && !ptyReaped.get()) {
                 try {
-                    Os.kill(ptyPid, OsConstants.SIGKILL)
+                    Os.kill(pid, OsConstants.SIGKILL)
                 } catch (ignored: ErrnoException) {}
             }
             ptyDescriptor?.let { descriptor ->
@@ -575,7 +822,81 @@ actual class ShellSession private constructor(
             ptyDescriptor = null
             ptyFd = -1
         } else {
-            process?.destroy()
+            // The shell's children first: killing only the shell would orphan a silent `sleep`.
+            val pid = shellPid
+            if (pid > 1 && processStillRunning()) {
+                ShellProcessTree.signal(ShellProcessTree.descendants(pid), "KILL")
+            }
+            process?.destroyForcibly()
+        }
+    }
+}
+
+/**
+ * Finds and signals the descendants of a pid through /proc. Best effort by design: every failure
+ * (no /proc, a process that vanished, no permission) yields "nothing found" or "nothing signalled",
+ * never an exception. Signals go through `kill` in a short-lived `sh` rather than android.system.Os
+ * so the same code runs in host-JVM tests.
+ */
+internal object ShellProcessTree {
+    /** The parent pid from the text of a `/proc/<pid>/stat`: `pid (comm) state ppid ...`, where comm may hold spaces and parentheses. */
+    fun parentOf(stat: String): Int? {
+        val closeParen = stat.lastIndexOf(')')
+        if (closeParen < 0) return null
+        val fields = stat.substring(closeParen + 1).trim().split(' ')
+        return fields.getOrNull(1)?.toIntOrNull()
+    }
+
+    /** Every transitive child of [rootPid] (not [rootPid] itself), by a snapshot scan of [procRoot]. */
+    fun descendants(rootPid: Int, procRoot: File = File("/proc")): Set<Int> {
+        if (rootPid <= 1) return emptySet()
+        val entries = try { procRoot.listFiles() } catch (ignored: SecurityException) { null } ?: return emptySet()
+        val childrenOf = HashMap<Int, MutableList<Int>>()
+        for (entry in entries) {
+            val pid = entry.name.toIntOrNull() ?: continue
+            val stat = try {
+                FileInputStream(File(entry, "stat")).use { String(it.readBytes(), Charsets.ISO_8859_1) }
+            } catch (ignored: IOException) {
+                continue
+            }
+            val parent = parentOf(stat) ?: continue
+            childrenOf.getOrPut(parent) { mutableListOf() }.add(pid)
+        }
+        val found = LinkedHashSet<Int>()
+        val queue = ArrayList<Int>()
+        queue.add(rootPid)
+        var index = 0
+        while (index < queue.size) {
+            val next = queue[index]
+            index++
+            for (child in childrenOf[next].orEmpty()) {
+                if (found.add(child)) queue.add(child)
+            }
+        }
+        return found
+    }
+
+    /** Sends SIG[signal] (`TERM`, `KILL`) to every pid in [pids] above 1. */
+    @Suppress("TooGenericExceptionCaught")
+    fun signal(pids: Collection<Int>, signal: String) {
+        val targets = pids.filter { it > 1 }
+        if (targets.isEmpty()) return
+        try {
+            val sh = if (File("/system/bin/sh").canExecute()) "/system/bin/sh" else "/bin/sh"
+            val command = ArrayList<String>()
+            command.add(sh)
+            command.add("-c")
+            command.add("kill -$signal \"\$@\" >/dev/null 2>&1")
+            command.add("hg2gui-kill")
+            targets.forEach { command.add(it.toString()) }
+            val process = ProcessBuilder(command).redirectErrorStream(true).start()
+            try { process.outputStream.close() } catch (ignored: IOException) {}
+            try { process.inputStream.use { it.readBytes() } } catch (ignored: IOException) {}
+            process.waitFor()
+        } catch (ignored: IOException) {
+        } catch (ignored: RuntimeException) {
+        } catch (e: InterruptedException) {
+            Thread.currentThread().interrupt()
         }
     }
 }
