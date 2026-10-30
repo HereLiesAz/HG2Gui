@@ -95,12 +95,11 @@ fun AiSettingsScreen(
         fullscreen = fullscreen,
         onBack = { if (dirty) confirmDiscard = true else onBack() }
     ) {
-        Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp)) {
-            SettingRowHeader(
-                title = stringResource(Res.string.aisettings_key_title),
-                description = stringResource(Res.string.aisettings_key_description)
-            )
-
+        SettingRow(
+            title = stringResource(Res.string.aisettings_key_title),
+            description = stringResource(Res.string.aisettings_key_description)
+        ) {
+          Column(Modifier.fillMaxWidth()) {
             val fieldLabel = stringResource(Res.string.aisettings_field_description)
             val empty = draft.isBlank()
             Row(
@@ -184,6 +183,7 @@ fun AiSettingsScreen(
                     modifier = Modifier.padding(top = 8.dp).liveRegionPolite()
                 )
             }
+          }
         }
     }
 
@@ -203,14 +203,3 @@ fun AiSettingsScreen(
 }
 
 private const val PLACEHOLDER_ALPHA = 0.7f
-
-/** A setting's title (a heading) and its muted explanation, for a row whose control is custom. */
-@Composable
-private fun SettingRowHeader(title: String, description: String) {
-    androidx.compose.material3.Text(
-        title.uppercase(),
-        color = com.hereliesaz.hg2gui.ui.menu.run { Azphalt.currentGround.onPageColor() },
-        style = com.hereliesaz.hg2gui.ui.theme.LocalAzphaltType.current.capsule,
-        modifier = Modifier.headingRole()
-    )
-}
