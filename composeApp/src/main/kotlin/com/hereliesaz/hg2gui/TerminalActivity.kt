@@ -89,6 +89,7 @@ import com.hereliesaz.hg2gui.ui.JobProgressBarState
 import com.hereliesaz.hg2gui.ui.McpServerScreen
 import com.hereliesaz.hg2gui.ui.SessionUiState
 import com.hereliesaz.hg2gui.ui.SettingsScreen
+import com.hereliesaz.hg2gui.ui.clampFontScalePercent
 import com.hereliesaz.hg2gui.ui.TerminalScreen
 import com.hereliesaz.hg2gui.ui.WorkflowFlow
 import com.hereliesaz.hg2gui.ui.ai.AiChatScreen
@@ -518,6 +519,11 @@ class TerminalActivity : FragmentActivity() {
             // The outcome of the last install/remove (a failure reason, or a note such as "not
             // trusted, so the AI will not read it"). Shown in the same banner as azpError.
             var azpMessage by remember { mutableStateOf<String?>(null) }
+            // Why the last install attempt failed (network, digest, signature, a thrown exception);
+            // shown separately from azpMessage's notes and cleared when a new attempt starts.
+            var azpInstallError by remember { mutableStateOf<String?>(null) }
+            // Packages already on the device, so the store lists them before (or without) a search.
+            var azpInstalled by remember { mutableStateOf<List<AzpListing>>(emptyList()) }
             // Cancelled before every new search starts (see onSearch below) so a stale response
             // from an earlier query/kind can never land after a newer one and silently overwrite
             // it - AzpStoreScreen already gates its own kind chips/search field on !azpBusy, but
@@ -528,6 +534,19 @@ class TerminalActivity : FragmentActivity() {
             // an executable onto PATH or hand text to the AI pauses on this and waits for a tap -
             // see askAzp below and the install flow in the store screen's onInstall.
             var azpPrompt by remember { mutableStateOf<AzpPrompt?>(null) }
+            suspend fun reloadAzpInstalled() {
+                azpInstalled = withContext(Dispatchers.IO) {
+                    AzpLibrary.installed(this@TerminalActivity).map { inst ->
+                        AzpListing(
+                            id = inst.id, name = inst.name, author = "", description = "",
+                            version = inst.version, kind = inst.kind, installed = true,
+                            trust = inst.trust.name,
+                            scriptCommand = AzpLibrary.scriptCommand(this@TerminalActivity, inst.id).orEmpty()
+                        )
+                    }
+                }
+            }
+            LaunchedEffect(screen) { if (screen == Screen.Azp) reloadAzpInstalled() }
             suspend fun askAzp(title: String, message: String, confirmLabel: String): Boolean {
                 val decision = CompletableDeferred<Boolean>()
                 azpPrompt = AzpPrompt(title, message, confirmLabel, decision)
@@ -751,7 +770,7 @@ class TerminalActivity : FragmentActivity() {
                         engine = builtEngine,
                         tree = builtTree,
                         fullscreen = prefs.getBoolean(PREF_FULLSCREEN, false),
-                        fontScalePercent = prefs.getInt(PREF_FONT_SCALE_PERCENT, 100),
+                        fontScalePercent = clampFontScalePercent(prefs.getInt(PREF_FONT_SCALE_PERCENT, 100)),
                         usePty = PtyPreference.isEnabled(this@TerminalActivity)
                     )
                 }
@@ -1025,6 +1044,11 @@ class TerminalActivity : FragmentActivity() {
                         // One banner carries both a search failure and the last install/remove
                         // outcome; the install/remove message is the more recent action.
                         error = azpMessage ?: azpError,
+                        installError = azpInstallError,
+                        installed = azpInstalled,
+                        // finishAzpInstall already asks (with the package's real trust) before a
+                        // skill or script is wired in; the store's own prompt would ask twice.
+                        needsInstallConfirmation = { false },
                         installingId = azpInstallingId,
                         onSearch = { query, kind ->
                             azpBusy = true
@@ -1058,6 +1082,7 @@ class TerminalActivity : FragmentActivity() {
                         onInstall = { listing ->
                             azpInstallingId = listing.id
                             azpMessage = null
+                            azpInstallError = null
                             scope.launch {
                                 try {
                                     val trustedKeys = azpTrustedKeys()
@@ -1067,7 +1092,7 @@ class TerminalActivity : FragmentActivity() {
                                         this@TerminalActivity, listing.id, listing.version, trustedKeys.orEmpty()
                                     )) {
                                         is AzpInstallOutcome.Failed ->
-                                            azpMessage = "Couldn't install ${listing.name}: ${outcome.failure.message}"
+                                            azpInstallError = "Couldn't install ${listing.name}: ${outcome.failure.message}"
                                         is AzpInstallOutcome.Installed -> {
                                             // A failed key fetch (trustedKeys == null) can only ever have
                                             // checked a package against zero keys - VALID under those
@@ -1093,6 +1118,7 @@ class TerminalActivity : FragmentActivity() {
                                                 }
                                             }
                                             azpMessage = finish.note
+                                            reloadAzpInstalled()
                                         }
                                     }
                                 } catch (e: CancellationException) {
@@ -1100,7 +1126,7 @@ class TerminalActivity : FragmentActivity() {
                                 } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
                                     // A dropped connection or a malformed archive/manifest must
                                     // not crash the app - and must not be silent either.
-                                    azpMessage = "Couldn't install ${listing.name}: ${e.message ?: e.javaClass.simpleName}"
+                                    azpInstallError = "Couldn't install ${listing.name}: ${e.message ?: e.javaClass.simpleName}"
                                 } finally {
                                     azpInstallingId = null
                                 }
@@ -1127,6 +1153,7 @@ class TerminalActivity : FragmentActivity() {
                                         azpResults = azpResults.map {
                                             if (it.id == listing.id) it.copy(installed = false, trust = "", scriptCommand = "") else it
                                         }
+                                        reloadAzpInstalled()
                                         if (failure != null) {
                                             azpMessage = "Removed ${listing.name}, but some of its files could not be cleaned up: " +
                                                 (failure.message ?: failure.javaClass.simpleName)
@@ -1358,6 +1385,7 @@ class TerminalActivity : FragmentActivity() {
 
                     screen == Screen.FullScreenApp && fullScreenSession != null -> FullScreenTerminalScreen(
                         holder = fullScreenSession!!,
+                        fullscreen = fullscreen,
                         onExit = {
                             fullScreenSession?.kill()
                             fullScreenSession = null
@@ -1382,6 +1410,8 @@ class TerminalActivity : FragmentActivity() {
                 bootstrapProgress?.let { progress ->
                     JobProgressBar(
                         state = progress,
+                        // Already padded below by screenInsets in the modifier.
+                        avoidSystemBars = false,
                         modifier = Modifier
                             .align(Alignment.TopCenter)
                             // Below the status bar / cutout, not under the clock.
