@@ -3,8 +3,12 @@ package com.hereliesaz.hg2gui.mcp
 import android.content.Context
 import com.hereliesaz.hg2gui.managers.VfsManager
 import com.hereliesaz.hg2gui.terminal.TerminalEngine
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.JsonArray
@@ -36,6 +40,16 @@ private fun textContent(text: String): JsonArray = buildJsonArray {
 internal const val MAX_SHELL_OUTPUT_CHARS = 256 * 1024
 
 /**
+ * Overall time limit of one `shell.exec` call. The shell no longer kills a command for being
+ * silent, and a headless caller has nobody to press interrupt, so this watchdog is what stops a
+ * hung command from holding the call (and the shared shell) forever.
+ */
+internal const val DEFAULT_SHELL_EXEC_TIMEOUT_MS = 120_000L
+
+/** After the watchdog interrupts, how long the call waits for the command to finish before it gives up on the output. */
+internal const val SHELL_EXEC_INTERRUPT_GRACE_MS = 10_000L
+
+/**
  * `shell.exec`'s tool result: [output], then a trailing `exit code: N` line when the exit code is
  * known. A non-zero code marks the result `isError` so the agent can tell failure from success
  * (it used to see only the last chunk of text and never the code). Pure, see McpToolsTest.
@@ -61,7 +75,8 @@ internal fun shellExecResult(output: String, exitCode: Int?, truncated: Boolean)
 class McpTools(
     private val context: Context,
     private val shellExecEnabled: StateFlow<Boolean>,
-    private val shellEngine: TerminalEngine
+    private val shellEngine: TerminalEngine,
+    private val shellExecTimeoutMs: Long = DEFAULT_SHELL_EXEC_TIMEOUT_MS
 ) : McpToolProvider {
 
     private data class ToolSpec(
@@ -255,8 +270,11 @@ class McpTools(
             // command triggers (ssh/sudo/etc.). TerminalEngine.run's onNeedInput must return a
             // String, not the null ShellSession.exec() uses inline to mean "leave it stalled" -
             // an empty answer is the closest equivalent this API can express; most confirmation
-            // prompts will reject it, and the idle-gap timeout reclaims control either way rather
-            // than hanging forever.
+            // prompts will reject it. Silence does NOT end a command in the shell (it only shows
+            // a "still running" notice), so control comes back through the watchdog below: after
+            // shellExecTimeoutMs it interrupts the command (the shell survives for the next call),
+            // and if the command still has not finished a grace period later the call stops
+            // waiting for it.
             // The engine's flow has two shapes - the whole cumulative terminal transcript per
             // emission (shell commands) or one new line per emission (pkg, download, builtins) -
             // and CommandOutputAccumulator reassembles both into the full output. The exit code is
@@ -265,14 +283,37 @@ class McpTools(
             shellMutex.withLock {
                 val output = CommandOutputAccumulator(MAX_SHELL_OUTPUT_CHARS + 1)
                 var exitCode: Int? = null
-                shellEngine.run(
-                    command,
-                    onNeedInput = { "" },
-                    onExit = { exitCode = it },
-                    onStyledOutput = { output.markFinalSnapshot() }
-                ).collect { chunk -> output.add(chunk) }
-                val text = output.text()
-                shellExecResult(text.take(MAX_SHELL_OUTPUT_CHARS), exitCode, truncated = text.length > MAX_SHELL_OUTPUT_CHARS)
+                var timedOut = false
+                withTimeoutOrNull(shellExecTimeoutMs + SHELL_EXEC_INTERRUPT_GRACE_MS) {
+                    coroutineScope {
+                        val watchdog = launch {
+                            delay(shellExecTimeoutMs)
+                            timedOut = true
+                            shellEngine.interrupt()
+                        }
+                        try {
+                            shellEngine.run(
+                                command,
+                                onNeedInput = { "" },
+                                onExit = { exitCode = it },
+                                onStyledOutput = { output.markFinalSnapshot() }
+                            ).collect { chunk -> output.add(chunk) }
+                        } finally {
+                            watchdog.cancel()
+                        }
+                    }
+                }
+                val limitNote = if (timedOut) {
+                    "\n[stopped: shell.exec time limit of ${shellExecTimeoutMs / 1000}s reached]"
+                } else {
+                    ""
+                }
+                val text = output.text() + limitNote
+                shellExecResult(
+                    text.take(MAX_SHELL_OUTPUT_CHARS),
+                    exitCode ?: if (timedOut) 124 else null,
+                    truncated = text.length > MAX_SHELL_OUTPUT_CHARS
+                )
             }
         }
     )

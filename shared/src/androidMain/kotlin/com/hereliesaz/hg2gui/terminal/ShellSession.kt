@@ -850,7 +850,12 @@ internal object ShellProcessTree {
     /** Every transitive child of [rootPid] (not [rootPid] itself), by a snapshot scan of [procRoot]. */
     fun descendants(rootPid: Int, procRoot: File = File("/proc")): Set<Int> {
         if (rootPid <= 1) return emptySet()
-        val entries = try { procRoot.listFiles() } catch (ignored: SecurityException) { null } ?: return emptySet()
+        val entries: Array<File>? = try {
+            procRoot.listFiles()
+        } catch (ignored: SecurityException) {
+            null
+        }
+        if (entries == null) return emptySet()
         val childrenOf = HashMap<Int, MutableList<Int>>()
         for (entry in entries) {
             val pid = entry.name.toIntOrNull() ?: continue
