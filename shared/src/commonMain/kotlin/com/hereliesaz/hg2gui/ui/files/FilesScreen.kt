@@ -1477,57 +1477,60 @@ private fun FilePreviewPane(entry: VfsEntry, preview: FilePreview?, onOpenInEdit
             preview == null -> LoadingLabel()
             preview.text == null -> {
                 val kind = entry.name.substringAfterLast('.', "THIS").uppercase()
-                Text(
-                    if (preview.truncated) "TOO LARGE TO PREVIEW" else "CAN'T PREVIEW $kind",
-                    color = Azphalt.currentGround.onPage.copy(alpha = .5f), fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.12.em
-                )
+                StatusLabel(if (preview.truncated) "TOO LARGE TO PREVIEW" else "CAN'T PREVIEW $kind")
             }
             preview.isMarkdown -> MarkdownPreview(preview.text, onPage, onPage)
             preview.styled.isNotEmpty() -> preview.styled.forEach { line ->
-                Text(buildStyledLine(line, onPage), fontSize = 10.sp, fontFamily = FontFamily.Monospace)
+                Text(buildStyledLine(line, onPage), fontSize = PREVIEW_MONO_SP, fontFamily = FontFamily.Monospace)
             }
-            else -> Text(preview.text, color = Azphalt.currentGround.onPage, fontSize = 10.sp, fontFamily = FontFamily.Monospace)
+            else -> Text(preview.text, color = onPage, fontSize = PREVIEW_MONO_SP, fontFamily = FontFamily.Monospace)
         }
-        Text(
-            "OPEN IN EDITOR", color = Azphalt.currentGround.onPage.copy(alpha = .7f), fontSize = 8.sp, fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(top = 8.dp).clickable(onClick = onOpenInEditor)
+        // The only route from a preview to actually editing the file: a real 48dp chip, not 8sp
+        // text with no padding.
+        AzphaltChip(
+            "OPEN IN EDITOR", onClick = onOpenInEditor,
+            modifier = Modifier.padding(top = 4.dp),
+            contentDescription = "Open ${entry.name} in the editor"
         )
     }
 }
 
+/** Preview text is monospace code, not a UI label, so it is not on the Azphalt scale; it still
+ *  respects the 11sp floor. */
+private val PREVIEW_MONO_SP = 12.sp
+
+/**
+ * The round mark at the edge of a row in selection mode. Purely visual: the row itself carries the
+ * `selected` state and spoken "Selected" / "Not selected" (see [selectableState]), so the mark's
+ * checkmark glyph is hidden from accessibility rather than read out as "check mark".
+ */
 @Composable
-private fun SelectMark(selected: Boolean, dark: Boolean) {
+private fun SelectMark(isChecked: Boolean, dark: Boolean) {
     Box(
         Modifier
-            .size(16.dp)
+            .size(20.dp)
+            .clearAndSetSemantics { }
             .clip(RoundedCornerShape(percent = 50))
-            .background(if (selected) Azphalt.Yellow else (if (dark) Azphalt.White.copy(alpha = .25f) else Azphalt.Ink.copy(alpha = .2f))),
+            .background(if (isChecked) Azphalt.Yellow else (if (dark) Azphalt.White.copy(alpha = .25f) else Azphalt.Ink.copy(alpha = .2f))),
         contentAlignment = Alignment.Center
     ) {
-        if (selected) Text("✓", color = Azphalt.Ink, fontSize = 9.sp, fontWeight = FontWeight.Black)
+        if (isChecked) Text("✓", color = Azphalt.Ink, fontSize = 13.sp, fontWeight = FontWeight.Black)
     }
 }
 
 @Composable
 private fun EntryMenu(entry: VfsEntry, onRename: (VfsEntry) -> Unit, onDelete: (VfsEntry) -> Unit, onShare: (VfsEntry) -> Unit, tint: Color) {
-    // UI-7: these Text labels had no padding at all - well under the 48dp minimum touch target,
-    // and with only 10dp between them, an imprecise tap intended for RENAME/SHARE could land on
-    // the destructive × instead. Each gets its own invisible 48x48dp centered tap zone, the same
-    // minWidth+minHeight pairing SessionTabs/ModifierKeys already use for a single-glyph target -
-    // that alone also restores real separation between them without changing the visible spacing.
-    val tapZone = Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
-    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        Box(tapZone.clickable { onRename(entry) }, contentAlignment = Alignment.Center) {
-            Text("RENAME", color = tint.copy(alpha = .7f), fontSize = 8.sp, fontWeight = FontWeight.Bold)
-        }
+    // UI-7: these labels used to have no padding at all - well under the 48dp minimum touch
+    // target - so an imprecise tap intended for RENAME/SHARE could land on the destructive one.
+    // Each is a [RowAction]: a 48x48dp minimum hit box, and a spoken description that names the
+    // item. M-11: the destructive one says what it does (TRASH: it moves to the trash, restorable
+    // for 30 days) instead of a bare "×" that also meant "close search" and "delete forever".
+    Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+        RowAction("RENAME", "Rename ${entry.name}", tint, { onRename(entry) })
         if (!entry.isDirectory) {
-            Box(tapZone.clickable { onShare(entry) }, contentAlignment = Alignment.Center) {
-                Text("SHARE", color = tint.copy(alpha = .7f), fontSize = 8.sp, fontWeight = FontWeight.Bold)
-            }
+            RowAction("SHARE", "Share ${entry.name}", tint, { onShare(entry) })
         }
-        Box(tapZone.clickable { onDelete(entry) }, contentAlignment = Alignment.Center) {
-            Text("×", color = tint.copy(alpha = .85f), fontSize = 13.sp)
-        }
+        RowAction("TRASH", "Move ${entry.name} to the trash", tint, { onDelete(entry) })
     }
 }
 
@@ -1535,32 +1538,20 @@ private fun EntryMenu(entry: VfsEntry, onRename: (VfsEntry) -> Unit, onDelete: (
 private fun ColumnScope.RecentSearches(recent: List<String>, onSelect: (String) -> Unit) {
     Column(Modifier.fillMaxWidth().weight(1f).padding(horizontal = 20.dp, vertical = 12.dp)) {
         if (recent.isEmpty()) {
-            Text(
-                "TYPE TO SEARCH", color = Azphalt.currentGround.onPage.copy(alpha = .4f),
-                fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.1.em
-            )
+            StatusLabel("TYPE TO SEARCH")
         } else {
-            Text(
-                // .55f, the app-wide "text-muted, eyebrows and captions" tier.
-                "RECENT SEARCHES", color = Azphalt.currentGround.onPage.copy(alpha = .55f),
-                fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.18.em
-            )
-            Spacer(Modifier.height(8.dp))
+            Text("RECENT SEARCHES", color = statusColor(StatusKind.Muted), style = labelTextStyle())
+            Spacer(Modifier.height(4.dp))
             Row(
                 Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 recent.forEach { q ->
                     key(q) {
-                        Row(
-                            Modifier
-                                .clip(RoundedCornerShape(percent = 50))
-                                .background(Azphalt.Ink.copy(alpha = .10f))
-                                .clickable { onSelect(q) }
-                                .padding(horizontal = 14.dp, vertical = 8.dp)
-                        ) {
-                            Text(q, color = Azphalt.currentGround.onPage.copy(alpha = .7f), fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                        }
+                        AzphaltChip(
+                            q, onClick = { onSelect(q) },
+                            contentDescription = "Search again for $q"
+                        )
                     }
                 }
             }

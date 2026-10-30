@@ -135,7 +135,7 @@
         </activity>
 
         <service android:name=".LongTaskService" android:exported="false" android:foregroundServiceType="specialUse">
-            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="Finishes a user-started app update download or a same-signature HG2Gui API command" />
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="Finishes a user-started app update download, a same-signature HG2Gui API command, or keeps a user-started terminal command running while the app is in the background" />
         </service>
         <service android:name=".mcp.McpServerService" android:exported="false" android:foregroundServiceType="specialUse">
             <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="Loopback MCP server for on-device AI agent pairing, user-started" />
