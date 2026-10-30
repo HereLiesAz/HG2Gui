@@ -1203,31 +1203,62 @@ private fun FolderTileContent(
     isOpen: Boolean,
     width: Dp,
     selection: FolderTileSelection,
-    actions: FolderEntryActions
+    actions: FolderEntryActions,
+    hue: Color
 ) {
+    val isSelectedTint = selection.selectMode && selection.isSelected
+    // m-14: whichever of Ink/White reads better on this folder's own hue (a selected tile is Ink,
+    // so it gets the house yellow) - never a fixed White, which fails on amber, cyan, green...
+    val textColor = if (isSelectedTint) Azphalt.Yellow else hue.contrastingText()
     if (isOpen) {
-        val isSelectedTint = selection.selectMode && selection.isSelected
         Row(
             Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            // M-6: the name takes what the fixed-width actions leave and ellipsizes.
+            Row(
+                Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 if (selection.selectMode) SelectMark(selection.isSelected, dark = true)
                 Text(
-                    entry.name.uppercase(), color = if (isSelectedTint) Azphalt.Yellow else Azphalt.White,
-                    fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.06.em, maxLines = 1
+                    entry.name.uppercase(), color = textColor,
+                    style = LocalAzphaltType.current.chip,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
                 )
             }
-            if (!selection.selectMode) EntryMenu(entry, actions.onRename, actions.onDelete, actions.onShare, tint = Azphalt.White)
+            if (!selection.selectMode) EntryMenu(entry, actions.onRename, actions.onDelete, actions.onShare, tint = textColor)
         }
     } else if (width > 24.dp) {
-        Text(
-            entry.name.uppercase(), color = Azphalt.White, fontSize = 8.sp,
-            fontWeight = FontWeight.ExtraBold, letterSpacing = 0.06.em, maxLines = 2
-        )
+        Box(Modifier.fillMaxSize()) {
+            // Closed tiles are ~100dp squares: three lines at the 11sp floor, then an ellipsis,
+            // rather than a name clipped mid-word at two lines of 8sp.
+            Text(
+                entry.name.uppercase(), color = textColor, style = labelTextStyle(),
+                maxLines = 3, overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.align(Alignment.BottomStart)
+            )
+            if (selection.selectMode) {
+                Box(Modifier.align(Alignment.TopEnd)) { SelectMark(selection.isSelected, dark = true) }
+            }
+        }
     }
 }
+
+/** In selection mode a row/tile is a selectable item: expose `selected` and a spoken state, so the
+ *  checkmark (a drawn glyph) is never the only carrier of "this one is picked". */
+private fun Modifier.selectableState(selectMode: Boolean, isSelected: Boolean): Modifier =
+    if (!selectMode) {
+        this
+    } else {
+        this.semantics {
+            this.selected = isSelected
+            stateDescription = if (isSelected) "Selected" else "Not selected"
+        }
+    }
 
 @Composable
 private fun OverflowTile(rect: TileRect, count: Int, onClick: () -> Unit) {
