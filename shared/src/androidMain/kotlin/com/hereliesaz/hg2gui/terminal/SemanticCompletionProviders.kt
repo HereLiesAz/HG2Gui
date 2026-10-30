@@ -8,6 +8,10 @@ import java.io.File
  * Completion sources whose values come from HG2Gui/runtime state rather than a shell's generic
  * completion engine. They are intentionally narrow and data-driven: if a value cannot be
  * enumerated safely, this provider returns nothing and leaves free-form input available.
+ *
+ * Candidates carry raw values (branch names, hosts, package names); the typed word is matched in
+ * its unquoted form ([CompletionRequest.tokenValue]) and quoting for insertion is applied once, by
+ * [CompletionNormalizer.merge].
  */
 object SemanticCompletionProviders {
     private const val TIMEOUT_MS = 1_500L
@@ -57,7 +61,7 @@ object SemanticCompletionProviders {
         val prefix = DistroManager.prefixDir(context)
         return DpkgCatalog.installedVersions(prefix).entries
             .asSequence()
-            .filter { (name, _) -> name.startsWith(request.tokenPrefix, ignoreCase = true) }
+            .filter { (name, _) -> name.startsWith(request.tokenValue, ignoreCase = true) }
             .sortedBy { it.key.lowercase() }
             .take(MAX_CANDIDATES)
             .map { (name, version) ->
@@ -80,7 +84,7 @@ object SemanticCompletionProviders {
 
         return gitBranches(context, request.cwd)
             .asSequence()
-            .filter { it.startsWith(request.tokenPrefix, ignoreCase = true) }
+            .filter { it.startsWith(request.tokenValue, ignoreCase = true) }
             .map { branch ->
                 CompletionCandidate(
                     value = branch,
@@ -108,7 +112,7 @@ object SemanticCompletionProviders {
         return output.lineSequence()
             .map(String::trim)
             .filter(String::isNotBlank)
-            .filter { it.startsWith(request.tokenPrefix, ignoreCase = true) }
+            .filter { it.startsWith(request.tokenValue, ignoreCase = true) }
             .distinct()
             .sorted()
             .take(MAX_CANDIDATES)
@@ -136,7 +140,9 @@ object SemanticCompletionProviders {
         collectKnownHosts(File(home, ".ssh/known_hosts"), hosts)
 
         return hosts.asSequence()
-            .filter { it.startsWith(request.tokenPrefix, ignoreCase = true) }
+            // A "host" starting with '-' would be read by ssh/scp as an option (-oProxyCommand=...).
+            .filter { !it.startsWith("-") }
+            .filter { it.startsWith(request.tokenValue, ignoreCase = true) }
             .sorted()
             .take(MAX_CANDIDATES)
             .map { host ->
@@ -170,7 +176,7 @@ object SemanticCompletionProviders {
             ?: return emptyList()
         return services.asSequence()
             .map(File::getName)
-            .filter { it.startsWith(request.tokenPrefix, ignoreCase = true) }
+            .filter { it.startsWith(request.tokenValue, ignoreCase = true) }
             .distinct()
             .sorted()
             .take(MAX_CANDIDATES)
@@ -233,10 +239,11 @@ object SemanticCompletionProviders {
         // A Termux-built git needs the same prefix/linker/exec-interceptor environment as any
         // other Termux binary HG2Gui launches, or it fails to resolve its libraries and helpers.
         runCatching { Hg2ExecEnvironment.apply(context, builder.environment()) }
-        builder.redirectErrorStream(true)
+        // stderr stays separate (collectOutput drains and discards it) and a non-zero exit is a
+        // failed probe: otherwise "fatal: not a git repository" is parsed as a list of branches.
         val process = builder.start()
         // Drained while waiting, so a repository with many refs can't fill the pipe and time out.
-        process.collectOutput(TIMEOUT_MS, MAX_OUTPUT_BYTES)?.stdout?.toString(Charsets.UTF_8)
+        process.collectOutput(TIMEOUT_MS, MAX_OUTPUT_BYTES)?.textIfExit()
     } catch (_: Exception) {
         null
     }
