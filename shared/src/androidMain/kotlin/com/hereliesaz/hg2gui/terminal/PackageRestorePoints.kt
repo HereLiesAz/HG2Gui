@@ -1,8 +1,6 @@
 package com.hereliesaz.hg2gui.terminal
 
 import android.content.Context
-import android.util.AtomicFile
-import android.util.Base64
 import java.io.File
 import java.nio.file.Files
 import java.util.UUID
@@ -15,6 +13,7 @@ object PackageRestorePoints {
     private const val MAX_POINTS_PER_PACKAGE = 3
     private const val MAX_FILES = 20_000
     private const val MAX_BYTES = 512L * 1024L * 1024L
+    private const val MIN_FREE_BYTES = 8L * 1024L * 1024L
 
     data class RestorePoint(
         val id: String,
@@ -42,8 +41,37 @@ object PackageRestorePoints {
         val preview = PackageLifecycleStore.previewReset(context, pkg)
         val targets = preview.paths.map(::File).filter { it.exists() }
         require(targets.isNotEmpty()) { "No managed runtime state exists to snapshot for ${pkg.name}." }
+        return createPoint(
+            parent = packageDirectory(context, pkg),
+            targets = targets,
+            packageVersion = pkg.version,
+            isolated = pkg.isolated,
+            isAllowed = { isAllowedTarget(context, pkg, it) }
+        )
+    }
 
-        val parent = packageDirectory(context, pkg).apply { mkdirs() }
+    /**
+     * Snapshots [targets] into a new restore point under [parent]. Every target must pass
+     * [isAllowed] (re-checked here, after canonicalisation, rather than trusting the caller's
+     * list), the snapshot must fit the file/byte limits AND the free space of the volume, and the
+     * point only becomes visible through one final rename, so a failure never leaves a half-written
+     * point behind.
+     */
+    internal fun createPoint(
+        parent: File,
+        targets: List<File>,
+        packageVersion: String,
+        isolated: Boolean,
+        isAllowed: (File) -> Boolean,
+        usableSpace: (File) -> Long = { it.usableSpace }
+    ): RestorePoint {
+        parent.mkdirs()
+        val estimated = targets.sumOf { FileTrees.sizeNoFollow(it) }
+        val available = usableSpace(parent)
+        require(available >= estimated + estimated / 10 + MIN_FREE_BYTES) {
+            "Not enough free storage for a restore point (need about ${estimated / (1024 * 1024)} MiB, " +
+                "${available / (1024 * 1024)} MiB available)."
+        }
         val id = "${System.currentTimeMillis().toString(36)}-${UUID.randomUUID().toString().take(8)}"
         val temporary = File(parent, ".$id.tmp")
         val final = File(parent, id)
@@ -55,7 +83,7 @@ object PackageRestorePoints {
         try {
             val data = File(temporary, DATA).apply { mkdirs() }
             targets.forEachIndexed { index, target ->
-                require(isAllowedTarget(context, pkg, target)) { "Refusing unmanaged snapshot target: ${target.absolutePath}" }
+                require(isAllowed(target)) { "Refusing unmanaged snapshot target: ${target.absolutePath}" }
                 val destination = File(data, index.toString())
                 val copied = copyTree(target, destination) { size ->
                     files++
@@ -67,7 +95,7 @@ object PackageRestorePoints {
             }
             writeManifest(
                 File(temporary, MANIFEST),
-                Manifest(System.currentTimeMillis(), pkg.version, pkg.isolated, entries)
+                Manifest(System.currentTimeMillis(), packageVersion, isolated, entries)
             )
             require(temporary.renameTo(final)) { "Could not commit restore point." }
         } catch (error: Exception) {
@@ -75,24 +103,42 @@ object PackageRestorePoints {
             throw error
         }
 
-        prune(context, pkg)
+        prune(parent)
         return readPoint(final) ?: error("Restore point was committed but could not be read.")
     }
 
     fun list(context: Context, pkg: PackageLifecycleStore.InstalledPackage): List<RestorePoint> =
-        packageDirectory(context, pkg).listFiles().orEmpty()
+        listPoints(packageDirectory(context, pkg))
+
+    internal fun listPoints(parent: File): List<RestorePoint> =
+        parent.listFiles().orEmpty()
             .asSequence()
             .filter { it.isDirectory && !it.name.startsWith('.') }
             .mapNotNull(::readPoint)
             .sortedByDescending { it.timestampMillis }
             .toList()
 
-    fun restore(context: Context, pkg: PackageLifecycleStore.InstalledPackage, id: String): RestoreResult {
+    fun restore(context: Context, pkg: PackageLifecycleStore.InstalledPackage, id: String): RestoreResult =
+        restorePoint(packageDirectory(context, pkg), id, pkg.name, pkg.isolated) { isAllowedTarget(context, pkg, it) }
+
+    /**
+     * Restores restore point [id] from [parent]. Each target is swapped in as: copy to a staging
+     * sibling, move the live path aside, move the staged copy into place, delete the old copy. If
+     * the install step fails the original is moved back, so a failed restore never leaves the
+     * target deleted (the old code deleted it BEFORE the staged copy was in place).
+     */
+    internal fun restorePoint(
+        parent: File,
+        id: String,
+        packageName: String,
+        isolated: Boolean,
+        isAllowed: (File) -> Boolean
+    ): RestoreResult {
         require(SAFE_ID.matches(id)) { "Invalid restore-point id." }
-        val point = File(packageDirectory(context, pkg), id)
+        val point = File(parent, id)
         val manifest = readManifest(File(point, MANIFEST)) ?: error("Restore point '$id' is missing or corrupt.")
-        require(manifest.isolated == pkg.isolated) {
-            "Restore point isolation mode no longer matches ${pkg.name}; restore it in the same isolation mode."
+        require(manifest.isolated == isolated) {
+            "Restore point isolation mode no longer matches $packageName; restore it in the same isolation mode."
         }
 
         var restoredPaths = 0
@@ -101,17 +147,25 @@ object PackageRestorePoints {
         manifest.entries.forEach { entry ->
             val source = File(File(point, DATA), entry.index.toString())
             val target = File(entry.target)
-            if (!source.exists() || !isAllowedTarget(context, pkg, target)) {
+            if (!source.exists() || !isAllowed(target)) {
                 failed += entry.target
                 return@forEach
             }
-            val staging = File(target.parentFile, ".${target.name}.hg2restore-${id.takeLast(8)}")
+            val suffix = id.takeLast(8)
+            val staging = File(target.parentFile, ".${target.name}.hg2restore-$suffix")
+            val aside = File(target.parentFile, ".${target.name}.hg2aside-$suffix")
             try {
                 deleteTree(staging)
+                deleteTree(aside)
                 copyTree(source, staging) { }
-                deleteTree(target)
                 target.parentFile?.mkdirs()
-                require(staging.renameTo(target)) { "Could not install restored path" }
+                val hadTarget = target.exists() || Files.isSymbolicLink(target.toPath())
+                if (hadTarget) require(target.renameTo(aside)) { "Could not move the current path aside" }
+                if (!staging.renameTo(target)) {
+                    if (hadTarget) aside.renameTo(target)
+                    error("Could not install restored path")
+                }
+                deleteTree(aside)
                 restoredPaths++
                 restoredBytes += entry.bytes
             } catch (_: Exception) {
@@ -122,9 +176,12 @@ object PackageRestorePoints {
         return RestoreResult(restoredPaths, restoredBytes, failed)
     }
 
-    fun delete(context: Context, pkg: PackageLifecycleStore.InstalledPackage, id: String): Boolean {
+    fun delete(context: Context, pkg: PackageLifecycleStore.InstalledPackage, id: String): Boolean =
+        deletePoint(packageDirectory(context, pkg), id)
+
+    internal fun deletePoint(parent: File, id: String): Boolean {
         if (!SAFE_ID.matches(id)) return false
-        val point = File(packageDirectory(context, pkg), id)
+        val point = File(parent, id)
         return !point.exists() || deleteTree(point)
     }
 
@@ -151,15 +208,7 @@ object PackageRestorePoints {
                     .append(encode(entry.target)).append('\n')
             }
         }.toByteArray(Charsets.UTF_8)
-        val atomic = AtomicFile(file)
-        val stream = atomic.startWrite()
-        try {
-            stream.write(text)
-            atomic.finishWrite(stream)
-        } catch (error: Exception) {
-            atomic.failWrite(stream)
-            throw error
-        }
+        AtomicFiles.write(file, text)
     }
 
     private fun readManifest(file: File): Manifest? = runCatching {
@@ -208,29 +257,50 @@ object PackageRestorePoints {
         return childrenDeleted && file.delete()
     }
 
-    private fun isAllowedTarget(context: Context, pkg: PackageLifecycleStore.InstalledPackage, file: File): Boolean {
+    private fun isAllowedTarget(context: Context, pkg: PackageLifecycleStore.InstalledPackage, file: File): Boolean =
+        isAllowedTarget(
+            file = file,
+            isolated = pkg.isolated,
+            isolationBase = if (pkg.isolated) PackageIsolation.root(context, pkg).parentFile else null,
+            home = DistroManager.homeDir(context),
+            prefix = DistroManager.prefixDir(context)
+        )
+
+    /**
+     * Whether [file] (canonicalised, so `..` and symlinks cannot smuggle a path out) is something a
+     * restore point may snapshot or overwrite: the package's isolation directory itself when
+     * [isolated], otherwise strictly INSIDE the home directory or the prefix's var/{cache,log,tmp}.
+     * Pure; see PackageRestorePointsTest.
+     */
+    internal fun isAllowedTarget(
+        file: File,
+        isolated: Boolean,
+        isolationBase: File?,
+        home: File,
+        prefix: File
+    ): Boolean {
         val target = runCatching { file.canonicalPath }.getOrNull() ?: return false
-        if (pkg.isolated) {
-            val base = PackageIsolation.root(context, pkg).parentFile?.canonicalPath ?: return false
+        if (isolated) {
+            val base = runCatching { isolationBase?.canonicalPath }.getOrNull() ?: return false
             return target == base
         }
-        val home = runCatching { DistroManager.homeDir(context).canonicalPath }.getOrNull() ?: return false
-        val prefix = runCatching { DistroManager.prefixDir(context).canonicalPath }.getOrNull() ?: return false
-        return target.startsWith("$home/") ||
-            target.startsWith("$prefix/var/cache/") ||
-            target.startsWith("$prefix/var/log/") ||
-            target.startsWith("$prefix/var/tmp/")
+        val homePath = runCatching { home.canonicalPath }.getOrNull() ?: return false
+        val prefixPath = runCatching { prefix.canonicalPath }.getOrNull() ?: return false
+        return target.startsWith("$homePath/") ||
+            target.startsWith("$prefixPath/var/cache/") ||
+            target.startsWith("$prefixPath/var/log/") ||
+            target.startsWith("$prefixPath/var/tmp/")
     }
 
-    private fun prune(context: Context, pkg: PackageLifecycleStore.InstalledPackage) {
-        list(context, pkg).drop(MAX_POINTS_PER_PACKAGE).forEach { delete(context, pkg, it.id) }
+    private fun prune(parent: File) {
+        listPoints(parent).drop(MAX_POINTS_PER_PACKAGE).forEach { deletePoint(parent, it.id) }
     }
 
     private fun packageDirectory(context: Context, pkg: PackageLifecycleStore.InstalledPackage): File =
         File(File(context.filesDir, DIRECTORY), safeKey(pkg.key))
 
-    private fun encode(value: String): String = Base64.encodeToString(value.toByteArray(Charsets.UTF_8), Base64.NO_WRAP)
-    private fun decode(value: String): String = String(Base64.decode(value, Base64.DEFAULT), Charsets.UTF_8)
+    private fun encode(value: String): String = PlainBase64.encodeString(value)
+    private fun decode(value: String): String = PlainBase64.decodeString(value)
     private fun safeKey(value: String): String = value.replace(Regex("[^A-Za-z0-9._-]"), "_")
     private val SAFE_ID = Regex("[a-z0-9-]{4,64}")
 }

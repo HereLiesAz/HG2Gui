@@ -5,6 +5,7 @@ import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
@@ -13,6 +14,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -26,7 +28,9 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.hereliesaz.hg2gui.ui.AzphaltMotion
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /*
@@ -56,9 +60,13 @@ import kotlinx.coroutines.launch
  */
 
 private val LEG_EASE = CubicBezierEasing(0f, .9f, .1f, 1f)
-private const val LEG_MS = 260
-private const val FLOOD_MS = 420
-private const val SET_MS = 90
+// Shortened from 260 / 420 / 90 (about 1.3 s for the legs alone) to about 1.0 s: a page reveal that
+// the user triggers on every visit to Files should not make them wait. A tap anywhere on the reveal
+// skips the rest (see PerimeterRevealState.skip), and it is skipped outright when animations are
+// off in system settings.
+private const val LEG_MS = 200
+private const val FLOOD_MS = 320
+private const val SET_MS = 70
 private val MIN_THICKNESS = 34.dp
 
 // How close to the literal screen edge the break-free flight lands - keeps the pill's own
@@ -85,6 +93,62 @@ class PerimeterRevealState {
     // per-line wipe, since the wrapped content here is a whole screen, not a list of lines.
     val setWipe = Animatable(1f)
 
+    /** True while [open] or [close] is playing - the window in which [skip] does anything. */
+    var running: Boolean by mutableStateOf(false)
+        private set
+
+    private var skipRequested: Boolean by mutableStateOf(false)
+
+    /**
+     * Cuts the running [open] / [close] short: the animation jumps to its end state and the
+     * suspended call returns. A no-op when nothing is playing. Wired to a tap on the reveal by
+     * [PillPerimeterReveal].
+     */
+    fun skip() {
+        if (running) skipRequested = true
+    }
+
+    /** Runs [sequence] until it finishes or [skip] is called; true when it finished by itself. */
+    private suspend fun playSkippable(sequence: suspend () -> Unit): Boolean {
+        skipRequested = false
+        running = true
+        try {
+            return coroutineScope {
+                val job = launch { sequence() }
+                val watcher = launch {
+                    snapshotFlow { skipRequested }.first { it }
+                    job.cancel()
+                }
+                job.join()
+                watcher.cancel()
+                !job.isCancelled
+            }
+        } finally {
+            running = false
+        }
+    }
+
+    /** Jumps every animatable to the fully-open frame. */
+    private suspend fun settleOpen() {
+        breakFree.active = false
+        breakFree.width.snapTo(1f)
+        breakFree.offsetX.snapTo(0f)
+        breakFree.offsetY.snapTo(0f)
+        breakFree.tilt.snapTo(0f)
+        listOf(bottomLeg, rightLeg, topLeg, leftLeg, flood, setWipe).forEach { it.snapTo(1f) }
+    }
+
+    /** Jumps every animatable to the closed frame and deactivates the reveal. */
+    private suspend fun settleClosed() {
+        breakFree.width.snapTo(1f)
+        breakFree.offsetX.snapTo(0f)
+        breakFree.offsetY.snapTo(0f)
+        breakFree.tilt.snapTo(0f)
+        listOf(bottomLeg, rightLeg, topLeg, leftLeg, flood, setWipe).forEach { it.snapTo(0f) }
+        breakFree.active = false
+        active = false
+    }
+
     /**
      * Beats 1-3 (stretch, break free, fall) via [BreakFreeState.run], then the perimeter legs +
      * flood, then beat 4. [fullWidthPx]/[fullHeightPx]/[defaultBaseWidthPx] come from the
@@ -101,15 +165,19 @@ class PerimeterRevealState {
         // half-drawn frame for the next one to inherit.
         listOf(bottomLeg, rightLeg, topLeg, leftLeg, flood, setWipe).forEach { it.snapTo(0f) }
         val geometry = geometry(fullWidthPx, fullHeightPx, defaultBaseWidthPx, minThicknessPx)
-        breakFree.run(geometry.baseWidthPx, geometry.flightPx, geometry.floorPx)
-        bottomLeg.animateTo(1f, tween(LEG_MS, easing = LEG_EASE))
-        rightLeg.animateTo(1f, tween(LEG_MS, easing = LEG_EASE))
-        topLeg.animateTo(1f, tween(LEG_MS, easing = LEG_EASE))
-        coroutineScope {
-            launch { leftLeg.animateTo(1f, tween(LEG_MS, easing = LEG_EASE)) }
-            launch { flood.animateTo(1f, tween(FLOOD_MS, easing = LEG_EASE)) }
+        // Animations off: no choreography at all, just the finished page.
+        val finished = !AzphaltMotion.reduced && playSkippable {
+            breakFree.run(geometry.baseWidthPx, geometry.flightPx, geometry.floorPx)
+            bottomLeg.animateTo(1f, tween(LEG_MS, easing = LEG_EASE))
+            rightLeg.animateTo(1f, tween(LEG_MS, easing = LEG_EASE))
+            topLeg.animateTo(1f, tween(LEG_MS, easing = LEG_EASE))
+            coroutineScope {
+                launch { leftLeg.animateTo(1f, tween(LEG_MS, easing = LEG_EASE)) }
+                launch { flood.animateTo(1f, tween(FLOOD_MS, easing = LEG_EASE)) }
+            }
+            setWipe.animateTo(1f, tween(SET_MS, easing = LEG_EASE))
         }
-        setWipe.animateTo(1f, tween(SET_MS, easing = LEG_EASE))
+        if (!finished) settleOpen()
     }
 
     /** The exact reverse: beat 4 first, then perimeter+flood retreat, then beats 3-1 backwards. */
@@ -118,6 +186,14 @@ class PerimeterRevealState {
         // cancelled open() otherwise leaves an arbitrary leg short, and close() would retreat
         // whatever partial frame that left rather than the intended fully-drawn one.
         listOf(bottomLeg, rightLeg, topLeg, leftLeg, flood).forEach { it.snapTo(1f) }
+        val geometry = geometry(fullWidthPx, fullHeightPx, defaultBaseWidthPx, minThicknessPx)
+        val finished = !AzphaltMotion.reduced && playSkippable {
+            closeSequence(geometry)
+        }
+        if (!finished) settleClosed()
+    }
+
+    private suspend fun closeSequence(geometry: PerimeterBreakFreeGeometry) {
         // Left at 0 (content hidden) through the rest of the closing sequence below - the frame
         // itself is retreating anyway, so there's nothing to "gate" by leaving it hidden; forcing
         // it back to 1 here used to pop content instantly back into view mid-close.
@@ -129,7 +205,6 @@ class PerimeterRevealState {
         topLeg.animateTo(0f, tween(LEG_MS, easing = LEG_EASE))
         rightLeg.animateTo(0f, tween(LEG_MS, easing = LEG_EASE))
         bottomLeg.animateTo(0f, tween(LEG_MS, easing = LEG_EASE))
-        val geometry = geometry(fullWidthPx, fullHeightPx, defaultBaseWidthPx, minThicknessPx)
         breakFree.reverse(geometry.baseWidthPx, geometry.flightPx, geometry.floorPx)
         active = false
     }
@@ -300,6 +375,17 @@ fun PillPerimeterReveal(state: PerimeterRevealState, hue: Color, content: @Compo
                         }
                     }
                 }
+            }
+
+            // While a reveal is playing, a tap anywhere skips to its end. This sheet is on top of
+            // everything the reveal draws, so it also swallows the tap (nothing underneath acts on
+            // it); it disappears the moment the sequence finishes or is skipped.
+            if (state.running) {
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .pointerInput(state) { detectTapGestures(onTap = { state.skip() }) }
+                )
             }
         }
     }

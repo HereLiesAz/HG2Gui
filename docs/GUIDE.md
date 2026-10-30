@@ -4,8 +4,10 @@ Every entry in HG2Gui's in-app Guide — a real command paired with an invented,
 tone-not-fiction definition (`ui/guide/GuideContent.kt`). The Guide adds flavor, never a false
 claim about what a command actually does. This file is a flat export for reference; the app's
 own reader (`ui/guide/GuideReaderScreen.kt`) is the canonical source, wipes each entry in on
-open, and renders each entry's optional "Animation candidate" scene and trailing editorial
-note as their own blocks rather than inline prose.
+open, and renders each entry's trailing editorial note as its own block rather than inline
+prose. An entry's optional "Animation candidate" scene is production-brief copy for the people
+animating the Guide, not reader content: the reader hides it unless its `showProductionNotes`
+flag is on, and no screen in the app currently turns that flag on.
 
 ## Chapter 1 — Standard Input
 

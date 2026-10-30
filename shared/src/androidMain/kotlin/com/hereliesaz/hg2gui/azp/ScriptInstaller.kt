@@ -20,6 +20,13 @@ import java.io.File
  * what runs. Requires a Termux bootstrap to already be installed (see [DistroManager.isInstalled])
  * - there is no OS package manager, and nothing to install a package's dependencies with, until
  * the user has bootstrapped one.
+ *
+ * Dependency names come straight from the package manifest, so they are untrusted input to
+ * `pkg install -y`: each must match the Debian/Termux package-name grammar ([isValidPackageName])
+ * - in particular a name beginning with `-` would be read by `pkg` as an option - and the list is
+ * only ever installed after the caller's `confirmDependencies` hook has been shown the exact
+ * names and said yes. The default hook declines, so a caller that never wired one cannot
+ * silently run `pkg install -y` for a stranger's list.
  */
 object ScriptInstaller {
 
@@ -39,13 +46,27 @@ object ScriptInstaller {
          *  wrapper. These checks all run before dependency installation, so nothing is
          *  installed, written or executed. */
         object Rejected : Result()
+        /** A declared `apt` dependency is not a valid package name (see [isValidPackageName]),
+         *  or the list is implausibly long; [name] is the first offender. Nothing was installed. */
+        data class InvalidDependency(val name: String) : Result()
+        /** The caller's `confirmDependencies` hook declined (or none was supplied): [packages] is
+         *  the validated list that would have been `pkg install -y`ed. Nothing was installed or
+         *  written. */
+        data class DependenciesNotConfirmed(val packages: List<String>) : Result()
     }
 
+    /**
+     * @param confirmDependencies asked once, with the validated `apt` dependency names, before
+     * any `pkg install -y` runs (never asked when there are none). Returning false aborts with
+     * [Result.DependenciesNotConfirmed]. Defaults to declining: installing packages from a
+     * manifest is a decision for the user, not a default.
+     */
     suspend fun install(
         context: Context,
         id: String,
         version: String,
         script: ScriptDto,
+        confirmDependencies: suspend (List<String>) -> Boolean = { false },
     ): Result {
         if (!DistroManager.isInstalled(context)) return Result.BootstrapMissing
 
@@ -76,12 +97,17 @@ object ScriptInstaller {
             return Result.Rejected
         }
 
+        val aptPackages = script.dependencies["apt"].orEmpty()
+        firstInvalidDependency(aptPackages)?.let { return Result.InvalidDependency(it) }
+        if (aptPackages.isNotEmpty() && !confirmDependencies(aptPackages.distinct())) {
+            return Result.DependenciesNotConfirmed(aptPackages.distinct())
+        }
+
         val engine = TerminalEngine(context)
         try {
-            val aptPackages = script.dependencies["apt"].orEmpty()
             if (aptPackages.isNotEmpty()) {
                 val (output, exitCode) = engine.runToCompletion(
-                    "pkg install -y " + aptPackages.joinToString(" ") { it.shellQuoted() }
+                    "pkg install -y " + aptPackages.distinct().joinToString(" ") { it.shellQuoted() }
                 )
                 if (exitCode != 0) return Result.DependencyFailed(output)
             }
@@ -167,6 +193,23 @@ private val SAFE_COMMAND_NAME = Regex("^[A-Za-z0-9._][A-Za-z0-9._-]{0,63}$")
  *  as [commandNameFor]; [DistroManager]'s profile writer applies the same rule. */
 internal fun isSafeCommandName(name: String): Boolean =
     name != "." && name != ".." && SAFE_COMMAND_NAME.matches(name)
+
+private val PACKAGE_NAME = Regex("^[a-z0-9][a-z0-9+.-]*$")
+private const val MAX_DEPENDENCIES = 32
+private const val MAX_PACKAGE_NAME_LENGTH = 100
+
+/** True iff [name] is a plausible Debian/Termux package name: lowercase letters, digits and
+ *  `+ - .`, starting with a letter or digit (so never an option such as `-oAPT::...`), at most
+ *  100 characters. Pure for the same testability reason as [commandNameFor]. */
+internal fun isValidPackageName(name: String): Boolean =
+    name.length <= MAX_PACKAGE_NAME_LENGTH && PACKAGE_NAME.matches(name)
+
+/** The first entry of [names] that [isValidPackageName] refuses (or a note that the list is too
+ *  long), or null when the whole list is acceptable to hand to `pkg install`. */
+internal fun firstInvalidDependency(names: List<String>): String? {
+    if (names.size > MAX_DEPENDENCIES) return "more than $MAX_DEPENDENCIES dependencies"
+    return names.firstOrNull { !isValidPackageName(it) }
+}
 
 /** Single-quotes [this] for safe interpolation into a generated shell wrapper, escaping any
  *  embedded single quote the POSIX-shell way (`'\''`). Pure and Context-free for the same

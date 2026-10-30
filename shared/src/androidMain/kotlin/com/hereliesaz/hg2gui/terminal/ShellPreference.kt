@@ -19,13 +19,35 @@ object ShellPreference {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(KEY_DEFAULT, shell).apply()
     }
 
-    fun available(context: Context): List<String> = buildList {
+    /**
+     * The shells that can actually be launched right now, bash first. Empty when none is
+     * executable: it used to fall back to `[BASH]`, which made the Settings picker offer (and
+     * highlight) a shell that was not installed. Callers show an explicit "no shell" state instead.
+     */
+    fun available(context: Context): List<String> {
         val nativeBash = File(context.applicationInfo.nativeLibraryDir, "libbin_bash.so")
-        if (nativeBash.canExecute()) add(BASH)
         val bin = File(DistroManager.prefixDir(context), "bin")
-        if (File(bin, ZSH).canExecute()) add(ZSH)
-        if (File(bin, FISH).canExecute()) add(FISH)
-    }.ifEmpty { listOf(BASH) }
+        return availableFrom(
+            bash = nativeBash.canExecute(),
+            zsh = File(bin, ZSH).canExecute(),
+            fish = File(bin, FISH).canExecute()
+        )
+    }
+
+    /** The pure part of [available]: which of the known shells are present, in picker order. */
+    internal fun availableFrom(bash: Boolean, zsh: Boolean, fish: Boolean): List<String> = buildList {
+        if (bash) add(BASH)
+        if (zsh) add(ZSH)
+        if (fish) add(FISH)
+    }
+
+    /**
+     * The shell the picker should show as chosen: the stored one when it is still installed,
+     * otherwise the first available shell (what a new session falls back to), or null when
+     * nothing is installed. [selected] alone can name a shell that has since been removed.
+     */
+    internal fun effectiveSelection(stored: String, available: List<String>): String? =
+        stored.takeIf { it in available } ?: available.firstOrNull()
 
     fun executable(context: Context, shell: String): File? = when (shell) {
         BASH -> File(context.applicationInfo.nativeLibraryDir, "libbin_bash.so").takeIf(File::canExecute)

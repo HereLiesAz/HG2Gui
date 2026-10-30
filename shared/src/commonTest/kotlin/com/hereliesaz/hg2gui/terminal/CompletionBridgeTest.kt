@@ -61,4 +61,76 @@ class CompletionBridgeTest {
         assertEquals("sw", request.tokenPrefix)
         assertTrue(request.beforeCursor.endsWith("sw"))
     }
+
+    @Test
+    fun tokenPrefixAndTokenValueFollowQuotingNotJustSpaces() {
+        val escaped = CompletionRequest("cat My\\ Fi")
+        assertEquals("My\\ Fi", escaped.tokenPrefix)
+        assertEquals("My Fi", escaped.tokenValue)
+
+        val quoted = CompletionRequest("cat \"My Fi")
+        assertEquals("\"My Fi", quoted.tokenPrefix)
+        assertEquals("My Fi", quoted.tokenValue)
+
+        assertEquals("fo", CompletionRequest("ls\tfo").tokenPrefix)
+    }
+
+    @Test
+    fun isCommandPositionIgnoresLeadingWhitespaceAndEscapedSpaces() {
+        assertTrue(CompletionRequest("  gi").isCommandPosition)
+        assertTrue(CompletionRequest("My\\ Scr").isCommandPosition)
+        assertFalse(CompletionRequest("git sw").isCommandPosition)
+        assertFalse(CompletionRequest("git\tsw").isCommandPosition)
+    }
+
+    @Test
+    fun mergeQuotesEveryDefaultInsertTextExactlyOnce() {
+        val hostile = listOf("a b", "x;y", "\$(id)", "`id`", "q'uote", "plain")
+        val once = CompletionNormalizer.merge(hostile.map { CompletionCandidate(it) })
+        val twice = CompletionNormalizer.merge(once)
+        assertEquals(once.map { it.insertText }.toSet(), twice.map { it.insertText }.toSet())
+        val byValue = once.associateBy { it.value }
+        for (name in hostile) assertEquals(CompletionWords.quote(name), byValue.getValue(name).insertText, name)
+        // The label shown to the user stays the raw name.
+        assertEquals("a b", byValue.getValue("a b").label)
+    }
+
+    @Test
+    fun mergeLeavesAProviderSuppliedInsertTextAlone() {
+        val merged = CompletionNormalizer.merge(listOf(CompletionCandidate(value = "home", insertText = "\$HOME/")))
+        assertEquals("\$HOME/", merged.single().insertText)
+    }
+
+    @Test
+    fun parsedShellOutputIsQuotedByMerge() {
+        val parsed = CompletionNormalizer.parseBash("My File.txt\nplain\n\$(id)\n")
+        val merged = CompletionNormalizer.merge(parsed)
+        assertEquals(
+            setOf("My\\ File.txt", "plain", "\\\$\\(id\\)"),
+            merged.map { it.insertText }.toSet()
+        )
+    }
+
+    @Test
+    fun filterMatchesAnEscapedTypedWordAgainstRawValues() {
+        val request = CompletionRequest("cat My\\ Fi")
+        val merged = CompletionNormalizer.merge(
+            listOf(CompletionCandidate("My File.txt"), CompletionCandidate("My Other"), CompletionCandidate("Mine"))
+        )
+        assertEquals(listOf("My File.txt"), CompletionNormalizer.filterFor(request, merged).map { it.value })
+    }
+
+    @Test
+    fun filterMatchesAQuotedTypedWordAgainstRawValues() {
+        val request = CompletionRequest("cat \"My Fi")
+        val merged = CompletionNormalizer.merge(listOf(CompletionCandidate("My File.txt"), CompletionCandidate("Mine")))
+        assertEquals(listOf("My File.txt"), CompletionNormalizer.filterFor(request, merged).map { it.value })
+    }
+
+    @Test
+    fun optionLookalikeFileNamesAreOfferedWithADotSlashUntilTheUserTypesTheDash() {
+        assertEquals("./-rf", CompletionNormalizer.guardOptionLookalike("-rf", ""))
+        assertEquals("-rf", CompletionNormalizer.guardOptionLookalike("-rf", "-"))
+        assertEquals("notes", CompletionNormalizer.guardOptionLookalike("notes", ""))
+    }
 }

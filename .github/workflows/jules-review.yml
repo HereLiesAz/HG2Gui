@@ -1,3 +1,6 @@
+# workflow_call only: no workflow in this repository calls it. The callers moved to HereLiesAz/workflows
+# (central execution, see the header of _reusable-build.yml), which `uses:` this file by path; it is
+# kept here rather than deleted because that reference cannot be checked from this repo.
 name: '🔎 Jules Review'
 
 on:
@@ -36,17 +39,22 @@ jobs:
           BODY: '${{ github.event.pull_request.body || github.event.issue.body }}'
           EXTRA: '${{ inputs.additional_context }}'
         run: |-
+          # A random, unguessable heredoc delimiter: with the old fixed `JULES_PROMPT_EOF`, a PR body
+          # containing a line equal to it ended the value early and let the rest of the body write
+          # arbitrary `name=value` step outputs. Attacker-controlled text goes through printf '%s\n'
+          # (echo would swallow a body that happens to look like an option such as `-n`).
+          DELIM="JULES_PROMPT_$(cat /proc/sys/kernel/random/uuid)"
           {
-            echo 'prompt<<JULES_PROMPT_EOF'
+            echo "prompt<<${DELIM}"
             echo "Please review pull request #${NUMBER} in ${REPO}."
             echo
-            echo "**Title:** ${TITLE}"
+            printf '%s\n' "**Title:** ${TITLE}"
             echo
             echo '**Description:**'
-            echo "${BODY}"
+            printf '%s\n' "${BODY}"
             echo
             if [ -n "${EXTRA}" ]; then
-              echo "**Additional context from requester:** ${EXTRA}"
+              printf '%s\n' "**Additional context from requester:** ${EXTRA}"
               echo
             fi
             echo 'Review the diff for:'
@@ -56,7 +64,7 @@ jobs:
             echo '- Opportunities for simplification or reuse'
             echo
             echo 'Post your findings as a review comment on the PR. If you find fixable issues, open a follow-up PR with the corrections rather than blocking the review.'
-            echo 'JULES_PROMPT_EOF'
+            echo "${DELIM}"
           } >> "$GITHUB_OUTPUT"
 
       - name: 'Invoke Jules for PR review'

@@ -67,3 +67,19 @@ private const val ROW_CAP = 6
 /** Per-row interval, halved past six rows so a tall stack never runs long. */
 fun stackInterval(base: Int, rowCount: Int): Int =
     if (rowCount > ROW_CAP) base / 2 else base
+
+/** Most time, in ms, a whole stack may spend purely waiting for its stagger. */
+const val STAGGER_TOTAL_CAP_MS = 600
+
+/**
+ * The start delay for row [index] of [rowCount], [perRowMs] apart, with the whole wait capped at
+ * [STAGGER_TOTAL_CAP_MS]: past that, the per-row gap shrinks so the last row still begins within
+ * the cap instead of the 30th pill of a long list arriving seconds late. Wrap the result in
+ * `scaledDelayMs(...)` before handing it to `delay()` so the system animator scale applies.
+ */
+fun staggerDelayMs(index: Int, rowCount: Int, perRowMs: Int): Long {
+    if (index <= 0 || rowCount <= 1) return 0L
+    val gaps = rowCount - 1
+    val perRow = if (perRowMs * gaps > STAGGER_TOTAL_CAP_MS) STAGGER_TOTAL_CAP_MS / gaps else perRowMs
+    return (index.coerceAtMost(gaps) * perRow).toLong()
+}

@@ -12,13 +12,12 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.systemBars
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -30,6 +29,7 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
@@ -49,6 +49,8 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.hereliesaz.hg2gui.ai.AiClient
 import com.hereliesaz.hg2gui.ai.AiReply
 import com.hereliesaz.hg2gui.azp.AzpClient
+import com.hereliesaz.hg2gui.azp.AzpInstallOutcome
+import com.hereliesaz.hg2gui.azp.AzpInstallResult
 import com.hereliesaz.hg2gui.azp.AzpInstaller
 import com.hereliesaz.hg2gui.azp.AzpTrust
 import com.hereliesaz.hg2gui.azp.ScriptInstaller
@@ -69,6 +71,7 @@ import com.hereliesaz.hg2gui.mcp.McpServerService
 import com.hereliesaz.hg2gui.terminal.Builtins
 import com.hereliesaz.hg2gui.terminal.DistroManager
 import com.hereliesaz.hg2gui.terminal.FullScreenPtySession
+import com.hereliesaz.hg2gui.terminal.SemanticCompletionProviders
 import com.hereliesaz.hg2gui.terminal.ShellSession
 import com.hereliesaz.hg2gui.terminal.TerminalEngine
 import com.hereliesaz.hg2gui.terminal.fullScreenCommandOf
@@ -80,11 +83,15 @@ import com.hereliesaz.hg2gui.ui.ConfirmDialog
 import com.hereliesaz.hg2gui.ui.EnvironmentScreen
 import com.hereliesaz.hg2gui.ui.HistoryScreen
 import com.hereliesaz.hg2gui.ui.HG2GuiTheme
+import com.hereliesaz.hg2gui.ui.applyAzphaltGround
+import com.hereliesaz.hg2gui.ui.screenInsets
 import com.hereliesaz.hg2gui.ui.JobProgressBar
 import com.hereliesaz.hg2gui.ui.JobProgressBarState
 import com.hereliesaz.hg2gui.ui.McpServerScreen
 import com.hereliesaz.hg2gui.ui.SessionUiState
+import com.hereliesaz.hg2gui.ui.ShellStatusProjector
 import com.hereliesaz.hg2gui.ui.SettingsScreen
+import com.hereliesaz.hg2gui.ui.clampFontScalePercent
 import com.hereliesaz.hg2gui.ui.TerminalScreen
 import com.hereliesaz.hg2gui.ui.WorkflowFlow
 import com.hereliesaz.hg2gui.ui.ai.AiChatScreen
@@ -109,12 +116,16 @@ import com.hereliesaz.hg2gui.ui.menu.FileBrowser
 import com.hereliesaz.hg2gui.ui.menu.MenuNode
 import com.hereliesaz.hg2gui.ui.menu.PerimeterRevealState
 import com.hereliesaz.hg2gui.ui.menu.PillPerimeterReveal
+import com.hereliesaz.hg2gui.ui.menu.onPage
+import com.hereliesaz.hg2gui.ui.menu.pageBrush
 import com.hereliesaz.hg2gui.ui.ssh.SshFlow
 import com.hereliesaz.hg2gui.ui.terminal.FullScreenTerminalScreen
 import java.io.File
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -144,6 +155,64 @@ internal fun bootstrapDownloadFraction(line: String): Float? =
         }
     }
 
+
+/** The composition a Guide tap produces: the pill [tokens] and the free-text [inputText]. */
+internal data class GuideAppend(val tokens: List<String>, val inputText: String)
+
+/**
+ * Appends a command tapped in the Guide reader to what the user is already composing, without
+ * losing any of it. Into an empty segment it becomes the pill token (as a pill pick would); into a
+ * non-empty one it is added after the typed text, space-separated. The chain prefix
+ * (`SessionUiState.composedPrefix`) is never touched by a Guide tap, so it is not an input here.
+ */
+internal fun appendGuideCommand(tokens: List<String>, inputText: String, command: String): GuideAppend {
+    val addition = command.trim()
+    if (addition.isEmpty()) return GuideAppend(tokens, inputText)
+    if (tokens.isEmpty() && inputText.isBlank()) return GuideAppend(listOf(addition), "")
+    val text = if (inputText.isBlank()) addition else inputText.trimEnd() + " " + addition
+    return GuideAppend(tokens, text)
+}
+
+/** Biometric error codes that mean "the user backed out", which must not surface as a failure. */
+internal fun isUserDismissal(errorCode: Int): Boolean =
+    errorCode == BiometricPrompt.ERROR_NEGATIVE_BUTTON ||
+        errorCode == BiometricPrompt.ERROR_USER_CANCELED ||
+        errorCode == BiometricPrompt.ERROR_CANCELED
+
+/**
+ * The sentence to show the user when [ScriptInstaller] stopped short of making [name] runnable, or
+ * null when it succeeded. The package's files are kept on disk in every non-null case except
+ * [ScriptInstaller.Result.InvalidDependency], so each message says what was and was not done.
+ */
+internal fun describeScriptResult(name: String, result: ScriptInstaller.Result): String? = when (result) {
+    is ScriptInstaller.Result.Installed -> null
+    is ScriptInstaller.Result.DependencyFailed -> {
+        val reason = result.output.lineSequence().map { it.trim() }.lastOrNull { it.isNotEmpty() }
+        "$name was saved, but installing its dependencies failed" + (reason?.let { ": $it" } ?: ".")
+    }
+    ScriptInstaller.Result.BootstrapMissing ->
+        "$name was saved, but there is no Termux environment to run it in yet. Install the bootstrap, then install it again."
+    ScriptInstaller.Result.Rejected ->
+        "$name was saved, but its command was rejected (missing entry file, or an unsafe or already-used command name)."
+    is ScriptInstaller.Result.InvalidDependency ->
+        "$name was not made runnable: it declares an invalid dependency name (\"${result.name}\"), so nothing was installed."
+    is ScriptInstaller.Result.DependenciesNotConfirmed ->
+        "$name was saved but not made runnable: its dependencies (${result.packages.joinToString(", ")}) were not installed."
+}
+
+/** Why a freshly installed, non-TRUSTED skill is not doing anything yet, for the store banner. */
+internal fun describeUnverifiedSkill(name: String, trust: AzpTrust): String? =
+    if (trust == AzpTrust.TRUSTED) null
+    else "$name is installed, but it is not signed by a trusted key, so the AI will not read it."
+
+/** A question the AZP store is waiting on the user to answer before it goes on. */
+private class AzpPrompt(
+    val title: String,
+    val message: String,
+    val confirmLabel: String,
+    val decision: CompletableDeferred<Boolean>
+)
+
 class TerminalActivity : FragmentActivity() {
 
     private var sessions by mutableStateOf(listOf<TerminalSession>())
@@ -155,10 +224,26 @@ class TerminalActivity : FragmentActivity() {
 
     private enum class Screen { Terminal, Settings, Guide, Files, Mcp, Ai, AiSettings, Azp, FullScreenApp, Environment, History }
 
-    /** Confirms enabling shell.* MCP tools with a biometric prompt before persisting the flag -
-     *  this is the one switch that lets a paired agent run arbitrary commands, so it gets a
-     *  human-present confirmation step, not just a toggle. Disabling never needs this. */
+    /** Confirms enabling shell.* MCP tools with a biometric-or-screen-lock prompt before persisting
+     *  the flag - this is the one switch that lets a paired agent run arbitrary commands, so it
+     *  gets a human-present confirmation step, not just a toggle. Disabling never needs this.
+     *
+     *  The device credential (PIN / pattern / password) is accepted as well as a biometric: with
+     *  the default BIOMETRIC_STRONG-only prompt a device that has only a screen lock could never
+     *  enable shell execution. The credential-capable prompt has no Cancel button of its own (the
+     *  system draws its own), so cancelling is the user's decision, not an error to report. */
     private fun requestEnableShellExec() {
+        // BIOMETRIC_STRONG | DEVICE_CREDENTIAL is unsupported on API 28-29; the weak class plus
+        // the credential is the strongest combination every supported release accepts.
+        val authenticators = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL
+        } else {
+            BiometricManager.Authenticators.BIOMETRIC_WEAK or BiometricManager.Authenticators.DEVICE_CREDENTIAL
+        }
+        if (BiometricManager.from(this).canAuthenticate(authenticators) != BiometricManager.BIOMETRIC_SUCCESS) {
+            Toast.makeText(this, R.string.toast_no_screen_lock, Toast.LENGTH_LONG).show()
+            return
+        }
         val executor = ContextCompat.getMainExecutor(this)
         val prompt = BiometricPrompt(this, executor, object : BiometricPrompt.AuthenticationCallback() {
             override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
@@ -168,15 +253,19 @@ class TerminalActivity : FragmentActivity() {
             // MCP-6: only onAuthenticationSucceeded was ever overridden - on a device with no
             // enrolled biometric (the common case for this to fail on), the prompt errors out
             // immediately and this switch was permanently unreachable with zero feedback that
-            // anything had even been tapped.
+            // anything had even been tapped. A deliberate dismissal is the user's answer, not
+            // a failure, so it stays silent.
             override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                Toast.makeText(this@TerminalActivity, "Couldn't confirm: $errString", Toast.LENGTH_LONG).show()
+                if (isUserDismissal(errorCode)) return
+                Toast.makeText(
+                    this@TerminalActivity, getString(R.string.toast_biometric_failed, errString), Toast.LENGTH_LONG
+                ).show()
             }
         })
         val info = BiometricPrompt.PromptInfo.Builder()
-            .setTitle("Enable shell execution")
-            .setSubtitle("Lets a paired MCP client run real shell commands on this device")
-            .setNegativeButtonText("Cancel")
+            .setTitle(getString(R.string.biometric_title))
+            .setSubtitle(getString(R.string.biometric_subtitle))
+            .setAllowedAuthenticators(authenticators)
             .build()
         prompt.authenticate(info)
     }
@@ -191,6 +280,7 @@ class TerminalActivity : FragmentActivity() {
      *  granted in onRequestPermissionsResult) — starting it first and then requesting the permission
      *  means the service runs with no visible indicator if the user hasn't answered yet. */
     private fun startMcpServer() {
+        mcpNotificationsDenied = false
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
         ) {
@@ -201,6 +291,29 @@ class TerminalActivity : FragmentActivity() {
             return
         }
         ContextCompat.startForegroundService(this, Intent(this, McpServerService::class.java))
+    }
+
+    /** Puts [text] on the clipboard and says so: Android 13+ shows its own preview, but earlier
+     *  releases show nothing, which reads as a tap that did nothing. [sensitive] hides the value
+     *  from the clipboard preview where the platform supports it (pairing tokens). */
+    private fun copyToClipboard(text: String, sensitive: Boolean = false, confirmation: Int = R.string.toast_copied) {
+        val clipboard = getSystemService(ClipboardManager::class.java) ?: return
+        val clip = ClipData.newPlainText("HG2Gui", text)
+        if (sensitive && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            clip.description.extras = android.os.PersistableBundle().apply {
+                putBoolean(android.content.ClipDescription.EXTRA_IS_SENSITIVE, true)
+            }
+        }
+        try {
+            clipboard.setPrimaryClip(clip)
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            // Oversized clip (TransactionTooLargeException) or a locked-down device.
+            Toast.makeText(this, R.string.toast_copy_failed, Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            Toast.makeText(this, confirmation, Toast.LENGTH_SHORT).show()
+        }
     }
 
     private data class InitResult(
@@ -236,6 +349,82 @@ class TerminalActivity : FragmentActivity() {
         return keys
     }
 
+    /** What [finishAzpInstall] did: [installed] is null when the user declined (nothing recorded). */
+    private class AzpFinish(val installed: AzpInstallResult?, val scriptCommand: String?, val note: String?)
+
+    /**
+     * The second half of an AZP install, after the archive is verified and extracted: asks the user
+     * before anything unverified takes effect, wires a script package's command onto PATH, and
+     * records the install. Never silent about a partial result - [AzpFinish.note] carries it.
+     *
+     * - A non-TRUSTED script (VALID is only self-signed; UNSIGNED/UNVERIFIABLE prove nothing) asks
+     *   before its command lands on PATH, and every script with `apt` dependencies asks again with
+     *   the exact package names before `pkg install -y` runs (ScriptInstaller declines otherwise).
+     * - A non-TRUSTED skill asks too: it installs, but AzpLibrary only feeds TRUSTED skills to the
+     *   AI prompt, and the dialog says so.
+     * - Declining removes the freshly extracted files (unless that id/version was already
+     *   installed before, whose record still points at them).
+     */
+    private suspend fun finishAzpInstall(
+        listing: AzpListing,
+        install: AzpInstallResult,
+        ask: suspend (title: String, message: String, confirmLabel: String) -> Boolean
+    ): AzpFinish {
+        val script = install.script
+        if (install.trust != AzpTrust.TRUSTED && (script != null || install.kind == "skill")) {
+            val proceed = if (script != null) {
+                ask(
+                    "INSTALL UNVERIFIED PACKAGE?",
+                    "${listing.name} isn't signed by a trusted key. Installing it adds its command to this " +
+                        "device's PATH and may install the packages it declares.",
+                    "INSTALL"
+                )
+            } else {
+                ask(
+                    "INSTALL UNVERIFIED SKILL?",
+                    "${listing.name} isn't signed by a trusted key. It will be installed, but the AI will " +
+                        "not read it unless a trusted version is installed.",
+                    "INSTALL"
+                )
+            }
+            if (!proceed) {
+                withContext(Dispatchers.IO) {
+                    if (!AzpLibrary.isInstalled(this@TerminalActivity, listing.id)) {
+                        AzpInstaller.rootDirOrNull(this@TerminalActivity, listing.id, listing.version)?.deleteRecursively()
+                    }
+                }
+                return AzpFinish(null, null, "Cancelled: ${listing.name} was not installed.")
+            }
+        }
+        var scriptCommand: String? = null
+        var note: String? = null
+        if (script != null) {
+            val result = withContext(Dispatchers.IO) {
+                ScriptInstaller.install(this@TerminalActivity, listing.id, listing.version, script) { packages ->
+                    withContext(Dispatchers.Main) {
+                        ask(
+                            "INSTALL DEPENDENCIES?",
+                            "${listing.name} wants to run \"pkg install -y\" for: ${packages.joinToString(", ")}. " +
+                                "They come from the Termux package repositories and are installed on this device.",
+                            "INSTALL"
+                        )
+                    }
+                }
+            }
+            scriptCommand = (result as? ScriptInstaller.Result.Installed)?.command
+            note = describeScriptResult(listing.name, result)
+        } else if (install.kind == "skill") {
+            note = describeUnverifiedSkill(listing.name, install.trust)
+        }
+        withContext(Dispatchers.IO) {
+            AzpLibrary.record(
+                this@TerminalActivity, listing.id, listing.name, listing.version,
+                install.kind, install.skillIds, install.trust, scriptCommand
+            )
+        }
+        return AzpFinish(install, scriptCommand, note)
+    }
+
     // TerminalActivity is singleTop/intoExisting, so a notification tap while it's already
     // running arrives via onNewIntent, not a fresh onCreate - this is how that reaches the
     // Compose tree to switch screens, since setIntent() alone wouldn't trigger recomposition.
@@ -258,6 +447,10 @@ class TerminalActivity : FragmentActivity() {
     // permission, so onResume can tell "it's now possible to switch" apart from "and the tap
     // that got us here actually wanted to."
     private var deviceStoragePendingActivation = false
+
+    // Set when the POST_NOTIFICATIONS request for the MCP server was refused, so the MCP screen can
+    // say why the toggle did nothing; cleared by the next start attempt that gets through.
+    private var mcpNotificationsDenied by mutableStateOf(false)
 
     // S1: set right before screen = Screen.FullScreenApp (onRun's dispatch below); torn
     // down (session.kill()) on every exit path - back gesture, the ✕ pill, or the child
@@ -283,6 +476,10 @@ class TerminalActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        // After enableEdgeToEdge() (which sets bar icons from the *system* theme) and before
+        // setContent: paints the window and tints the bar icons from the rolled ground, so a dark
+        // ground does not launch on a light window with unreadable clock/battery icons.
+        window.applyAzphaltGround()
 
         Utils.init(applicationContext)
         McpServerService.ensureInitialized(applicationContext)
@@ -309,23 +506,54 @@ class TerminalActivity : FragmentActivity() {
             var fullscreen by remember { mutableStateOf(false) }
             var fontScalePercent by remember { mutableStateOf(100) }
             var usePty by remember { mutableStateOf(false) }
-            var aiApiKey by remember { mutableStateOf(AiSettings.apiKey(this@TerminalActivity)) }
+            // Read off the main thread: AiSettings opens the Keystore-backed store, real I/O.
+            var aiApiKey by remember { mutableStateOf<String?>(null) }
+            LaunchedEffect(Unit) {
+                aiApiKey = withContext(Dispatchers.IO) { AiSettings.apiKey(this@TerminalActivity) }
+            }
             var aiMessages by remember { mutableStateOf<List<AiMessage>>(emptyList()) }
             var aiBusy by remember { mutableStateOf(false) }
+            // The last AI-key save did not reach disk (secure store unavailable); drives the error line.
+            var aiKeySaveFailed by remember { mutableStateOf(false) }
             var azpResults by remember { mutableStateOf<List<AzpListing>>(emptyList()) }
             var azpBusy by remember { mutableStateOf(false) }
             var azpError by remember { mutableStateOf<String?>(null) }
+            // The outcome of the last install/remove (a failure reason, or a note such as "not
+            // trusted, so the AI will not read it"). Shown in the same banner as azpError.
+            var azpMessage by remember { mutableStateOf<String?>(null) }
+            // Why the last install attempt failed (network, digest, signature, a thrown exception);
+            // shown separately from azpMessage's notes and cleared when a new attempt starts.
+            var azpInstallError by remember { mutableStateOf<String?>(null) }
+            // Packages already on the device, so the store lists them before (or without) a search.
+            var azpInstalled by remember { mutableStateOf<List<AzpListing>>(emptyList()) }
             // Cancelled before every new search starts (see onSearch below) so a stale response
             // from an earlier query/kind can never land after a newer one and silently overwrite
             // it - AzpStoreScreen already gates its own kind chips/search field on !azpBusy, but
             // this is what actually makes overlapping requests impossible rather than just unlikely.
             var azpSearchJob by remember { mutableStateOf<Job?>(null) }
             var azpInstallingId by remember { mutableStateOf<String?>(null) }
-            // AZP-2: a script package's dependency/wrapper step (ScriptInstaller.install, which
-            // can run `pkg install -y` unconfirmed) only proceeds without asking first when the
-            // signature is TRUSTED - anything else (VALID self-signed, and most saliently UNSIGNED, since only
-            // a corrupted signature was ever rejected outright) pauses on this and waits for a tap.
-            var azpTrustConfirm by remember { mutableStateOf<Pair<AzpListing, CompletableDeferred<Boolean>>?>(null) }
+            // AZP-2: anything that would run `pkg install -y` for a stranger's dependency list, wire
+            // an executable onto PATH or hand text to the AI pauses on this and waits for a tap -
+            // see askAzp below and the install flow in the store screen's onInstall.
+            var azpPrompt by remember { mutableStateOf<AzpPrompt?>(null) }
+            suspend fun reloadAzpInstalled() {
+                azpInstalled = withContext(Dispatchers.IO) {
+                    AzpLibrary.installed(this@TerminalActivity).map { inst ->
+                        AzpListing(
+                            id = inst.id, name = inst.name, author = "", description = "",
+                            version = inst.version, kind = inst.kind, installed = true,
+                            trust = inst.trust.name,
+                            scriptCommand = AzpLibrary.scriptCommand(this@TerminalActivity, inst.id).orEmpty()
+                        )
+                    }
+                }
+            }
+            LaunchedEffect(screen) { if (screen == Screen.Azp) reloadAzpInstalled() }
+            suspend fun askAzp(title: String, message: String, confirmLabel: String): Boolean {
+                val decision = CompletableDeferred<Boolean>()
+                azpPrompt = AzpPrompt(title, message, confirmLabel, decision)
+                return decision.await()
+            }
             // UX-4: closing a tab with a command actually running kills that process mid-run with
             // no warning today - this pauses on a tap first; a tab that's just sitting idle still
             // closes immediately, same as before.
@@ -333,6 +561,8 @@ class TerminalActivity : FragmentActivity() {
             // W5: cleared every time History opens so a stale search from a previous visit
             // doesn't linger; see CommandHistoryStore's own doc comment for the log itself.
             var historyQuery by remember { mutableStateOf("") }
+            // Bumped after a delete/clear so the History screen re-reads the log.
+            var historyReload by remember { mutableStateOf(0) }
             var confirmKillFullScreen by remember { mutableStateOf(false) }
             fun closeSession(closing: TerminalSession) {
                 val remaining = sessions.filterNot { it.ui.id == closing.ui.id }
@@ -542,7 +772,7 @@ class TerminalActivity : FragmentActivity() {
                         engine = builtEngine,
                         tree = builtTree,
                         fullscreen = prefs.getBoolean(PREF_FULLSCREEN, false),
-                        fontScalePercent = prefs.getInt(PREF_FONT_SCALE_PERCENT, 100),
+                        fontScalePercent = clampFontScalePercent(prefs.getInt(PREF_FONT_SCALE_PERCENT, 100)),
                         usePty = PtyPreference.isEnabled(this@TerminalActivity)
                     )
                 }
@@ -605,6 +835,18 @@ class TerminalActivity : FragmentActivity() {
                 applyFullscreen(fullscreen)
             }
 
+            // M-12: while any tab has a command running (or a full-screen program is open) the
+            // process is held up by LongTaskService - a foreground service with a partial wake
+            // lock - so Android does not freeze or phantom-kill a running build or `pkg install`
+            // once the app is backgrounded. Reports every change; the service stops itself when
+            // this goes false. A refused start (app already in the background) just leaves the
+            // command running unprotected, as it always did.
+            LaunchedEffect(Unit) {
+                snapshotFlow { sessions.any { it.ui.running } || fullScreenSession != null }
+                    .distinctUntilChanged()
+                    .collect { busy -> LongTaskService.setInteractiveBusy(applicationContext, busy) }
+            }
+
             // UI-1/UI-2/UI-3: nothing in the app previously intercepted system back or the
             // edge-swipe gesture, so either one closed the whole app - or, once each screen's own
             // BACK pill was checked here too, whichever secondary screen was open - from any depth
@@ -665,29 +907,32 @@ class TerminalActivity : FragmentActivity() {
                     screen == Screen.Environment -> {
                         // Both reads hit disk (bootstrapBashEnv probes the prefix, the history
                         // search reads and parses the whole log) - run on IO, never in composition.
-                        // null = still loading, so a slow probe doesn't flash "not installed".
+                        // null = still loading: the screen draws its chrome and a "reading" line
+                        // rather than a blank page, and never flashes "not installed" early.
                         val bootstrap by produceState<Pair<Boolean, Map<String, String>>?>(null) {
                             value = withContext(Dispatchers.IO) {
                                 ShellSession.bootstrapBashEnv(this@TerminalActivity, null)
                                     .let { (it != null) to it?.second.orEmpty() }
                             }
                         }
-                        bootstrap?.let { (installed, env) ->
-                            EnvironmentScreen(
-                                installed = installed,
-                                env = env,
-                                onBack = { screen = Screen.Settings },
-                                fullscreen = fullscreen
-                            )
-                        }
+                        EnvironmentScreen(
+                            installed = bootstrap?.first ?: false,
+                            env = bootstrap?.second.orEmpty(),
+                            onBack = { screen = Screen.Settings },
+                            fullscreen = fullscreen,
+                            loading = bootstrap == null
+                        )
                     }
 
                     screen == Screen.History -> {
-                        val historyEntries by produceState(emptyList<CommandHistoryEntry>(), historyQuery) {
+                        // null until the first read returns, so the screen says "loading" instead of
+                        // flashing "No commands recorded yet." A later re-read (new query, a delete)
+                        // keeps showing the previous list until the new one lands.
+                        val historyEntries by produceState<List<CommandHistoryEntry>?>(null, historyQuery, historyReload) {
                             value = withContext(Dispatchers.IO) { CommandHistoryStore.search(this@TerminalActivity, historyQuery) }
                         }
                         HistoryScreen(
-                            entries = historyEntries,
+                            entries = historyEntries.orEmpty(),
                             query = historyQuery,
                             onQueryChange = { historyQuery = it },
                             onSelect = { command ->
@@ -702,19 +947,50 @@ class TerminalActivity : FragmentActivity() {
                             },
                             onBack = { screen = Screen.Settings },
                             fullscreen = fullscreen,
-                            nowMillis = System.currentTimeMillis()
+                            nowMillis = System.currentTimeMillis(),
+                            loading = historyEntries == null,
+                            onDelete = { entry ->
+                                scope.launch {
+                                    withContext(Dispatchers.IO) { CommandHistoryStore.delete(this@TerminalActivity, entry) }
+                                    historyReload++
+                                }
+                            },
+                            onClear = {
+                                scope.launch {
+                                    val cleared = withContext(Dispatchers.IO) { CommandHistoryStore.clear(this@TerminalActivity) }
+                                    historyReload++
+                                    if (cleared) {
+                                        Toast.makeText(this@TerminalActivity, R.string.toast_history_cleared, Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        Toast.makeText(this@TerminalActivity, R.string.toast_history_clear_failed, Toast.LENGTH_LONG).show()
+                                    }
+                                }
+                            }
                         )
                     }
 
                     screen == Screen.AiSettings -> AiSettingsScreen(
                         fullscreen = fullscreen,
                         apiKey = aiApiKey,
+                        saveFailed = aiKeySaveFailed,
                         onSave = { newKey ->
-                            aiApiKey = newKey
-                            AiSettings.setApiKey(this@TerminalActivity, newKey)
-                            screen = aiSettingsCameFrom
+                            aiKeySaveFailed = false
+                            scope.launch {
+                                // Keystore I/O stays off the main thread, and "saved" is only
+                                // believed when the store reports the key (or its removal) was
+                                // persisted - the in-memory copy and the screen change must not
+                                // outrun what is actually on disk.
+                                val trimmedKey = newKey?.trim()?.takeIf { it.isNotEmpty() }
+                                val result = withContext(Dispatchers.IO) { AiSettings.saveApiKey(this@TerminalActivity, trimmedKey) }
+                                if (result.persisted) {
+                                    aiApiKey = trimmedKey
+                                    screen = aiSettingsCameFrom
+                                } else {
+                                    aiKeySaveFailed = true
+                                }
+                            }
                         },
-                        onBack = { screen = aiSettingsCameFrom }
+                        onBack = { aiKeySaveFailed = false; screen = aiSettingsCameFrom }
                     )
 
                     screen == Screen.Ai -> AiChatScreen(
@@ -768,10 +1044,18 @@ class TerminalActivity : FragmentActivity() {
                         fullscreen = fullscreen,
                         results = azpResults,
                         busy = azpBusy,
-                        error = azpError,
+                        // One banner carries both a search failure and the last install/remove
+                        // outcome; the install/remove message is the more recent action.
+                        error = azpMessage ?: azpError,
+                        installError = azpInstallError,
+                        installed = azpInstalled,
+                        // finishAzpInstall already asks (with the package's real trust) before a
+                        // skill or script is wired in; the store's own prompt would ask twice.
+                        needsInstallConfirmation = { false },
                         installingId = azpInstallingId,
                         onSearch = { query, kind ->
                             azpBusy = true
+                            azpMessage = null
                             azpSearchJob?.cancel()
                             azpSearchJob = scope.launch {
                                 val response = try {
@@ -800,82 +1084,87 @@ class TerminalActivity : FragmentActivity() {
                         },
                         onInstall = { listing ->
                             azpInstallingId = listing.id
+                            azpMessage = null
+                            azpInstallError = null
                             scope.launch {
-                                val trustedKeys = azpTrustedKeys()
-                                val result = try {
-                                    val rawInstall = withContext(Dispatchers.IO) {
-                                        val bytes = AzpClient.download(listing.id, listing.version) ?: return@withContext null
-                                        AzpInstaller.install(
-                                            this@TerminalActivity, listing.id, listing.version, bytes, trustedKeys.orEmpty()
-                                        )
-                                    }
-                                    // A failed key fetch (trustedKeys == null) can only ever have
-                                    // checked a package against zero keys - VALID under those
-                                    // conditions means "the check couldn't rule anything in or
-                                    // out," not "confirmed internally consistent."
-                                    val install = if (trustedKeys == null && rawInstall?.trust == AzpTrust.VALID) {
-                                        rawInstall.copy(trust = AzpTrust.UNVERIFIABLE)
-                                    } else {
-                                        rawInstall
-                                    }
-                                    if (install == null) {
-                                        null
-                                    } else {
-                                        // Only a TRUSTED signature (a registry-vouched-for signer)
-                                        // proceeds unconfirmed. VALID only means internally
-                                        // consistent - anyone can self-sign - so it, UNSIGNED and
-                                        // anything else pause here for an explicit tap before
-                                        // running the dependency install and wiring an executable
-                                        // onto PATH.
-                                        val scriptCommand = install.script?.let { script ->
-                                            val proceed = install.trust == AzpTrust.TRUSTED ||
-                                                run {
-                                                    val decision = CompletableDeferred<Boolean>()
-                                                    azpTrustConfirm = listing to decision
-                                                    decision.await()
+                                try {
+                                    val trustedKeys = azpTrustedKeys()
+                                    // Typed outcome: a failure says which check refused the package
+                                    // (network, digest, signature, ...) instead of leaving a silent INSTALL.
+                                    when (val outcome = AzpInstaller.downloadAndInstall(
+                                        this@TerminalActivity, listing.id, listing.version, trustedKeys.orEmpty()
+                                    )) {
+                                        is AzpInstallOutcome.Failed ->
+                                            azpInstallError = "Couldn't install ${listing.name}: ${outcome.failure.message}"
+                                        is AzpInstallOutcome.Installed -> {
+                                            // A failed key fetch (trustedKeys == null) can only ever have
+                                            // checked a package against zero keys - VALID under those
+                                            // conditions means "the check couldn't rule anything in or
+                                            // out," not "confirmed internally consistent."
+                                            val install = if (trustedKeys == null && outcome.result.trust == AzpTrust.VALID) {
+                                                outcome.result.copy(trust = AzpTrust.UNVERIFIABLE)
+                                            } else {
+                                                outcome.result
+                                            }
+                                            val finish = finishAzpInstall(listing, install) { title, message, label ->
+                                                askAzp(title, message, label)
+                                            }
+                                            if (finish.installed != null) {
+                                                azpResults = azpResults.map {
+                                                    if (it.id == listing.id) {
+                                                        it.copy(
+                                                            installed = true,
+                                                            trust = finish.installed.trust.name,
+                                                            scriptCommand = finish.scriptCommand.orEmpty()
+                                                        )
+                                                    } else it
                                                 }
-                                            if (proceed) {
-                                                val outcome = withContext(Dispatchers.IO) {
-                                                    ScriptInstaller.install(this@TerminalActivity, listing.id, listing.version, script)
-                                                }
-                                                (outcome as? ScriptInstaller.Result.Installed)?.command
-                                            } else null
+                                            }
+                                            azpMessage = finish.note
+                                            reloadAzpInstalled()
                                         }
-                                        withContext(Dispatchers.IO) {
-                                            AzpLibrary.record(
-                                                this@TerminalActivity, listing.id, listing.name, listing.version,
-                                                install.kind, install.skillIds, install.trust, scriptCommand
-                                            )
-                                        }
-                                        install to scriptCommand
                                     }
-                                } catch (e: Exception) {
+                                } catch (e: CancellationException) {
+                                    throw e
+                                } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
                                     // A dropped connection or a malformed archive/manifest must
-                                    // not crash the app - the row just stays on INSTALL.
-                                    null
+                                    // not crash the app - and must not be silent either.
+                                    azpInstallError = "Couldn't install ${listing.name}: ${e.message ?: e.javaClass.simpleName}"
+                                } finally {
+                                    azpInstallingId = null
                                 }
-                                if (result != null) {
-                                    val (install, scriptCommand) = result
-                                    azpResults = azpResults.map {
-                                        if (it.id == listing.id) {
-                                            it.copy(installed = true, trust = install.trust.name, scriptCommand = scriptCommand.orEmpty())
-                                        } else it
-                                    }
-                                }
-                                azpInstallingId = null
                             }
                         },
                         onBack = { screen = Screen.Terminal },
                         onUninstall = { listing ->
                             azpInstallingId = listing.id
+                            azpMessage = null
                             scope.launch {
-                                withContext(Dispatchers.IO) {
-                                    runCatching { ScriptInstaller.uninstall(this@TerminalActivity, listing.id) }
+                                try {
+                                    val failure = withContext(Dispatchers.IO) {
+                                        runCatching { ScriptInstaller.uninstall(this@TerminalActivity, listing.id) }.exceptionOrNull()
+                                    }
+                                    // The record is the truth: uninstall() removes it last, so a
+                                    // package still recorded was not (fully) removed.
+                                    val stillInstalled = withContext(Dispatchers.IO) {
+                                        AzpLibrary.isInstalled(this@TerminalActivity, listing.id)
+                                    }
+                                    if (stillInstalled) {
+                                        azpMessage = "Couldn't remove ${listing.name}" +
+                                            (failure?.message?.let { ": $it" } ?: ".")
+                                    } else {
+                                        azpResults = azpResults.map {
+                                            if (it.id == listing.id) it.copy(installed = false, trust = "", scriptCommand = "") else it
+                                        }
+                                        reloadAzpInstalled()
+                                        if (failure != null) {
+                                            azpMessage = "Removed ${listing.name}, but some of its files could not be cleaned up: " +
+                                                (failure.message ?: failure.javaClass.simpleName)
+                                        }
+                                    }
+                                } finally {
+                                    azpInstallingId = null
                                 }
-                                azpResults = azpResults.map {
-                                    if (it.id == listing.id) it.copy(installed = false, trust = "", scriptCommand = "") else it
-                                }
-                                azpInstallingId = null
                             }
                         }
                     )
@@ -897,7 +1186,8 @@ class TerminalActivity : FragmentActivity() {
                             },
                             onRequestShellExec = { requestEnableShellExec() },
                             onDisableShellExec = { McpServerService.setShellExecEnabled(this@TerminalActivity, false) },
-                            onBack = { screen = Screen.Settings }
+                            onBack = { screen = Screen.Settings },
+                            notificationsDenied = mcpNotificationsDenied
                         )
                     }
 
@@ -908,14 +1198,23 @@ class TerminalActivity : FragmentActivity() {
                             // Opening a root pill reports an empty trail - that is browsing, not
                             // a pick, and must not wipe whatever the user had already typed.
                             if (tokens.isNotEmpty()) {
+                                // Only the pill trail follows the pick: a half-built chain
+                                // (composedPrefix) and typed text are the user's work, not ours.
                                 sessions.firstOrNull { it.ui.id == activeSessionId }?.let { session ->
                                     session.ui.tokens = tokens
-                                    session.ui.composedPrefix = ""
-                                    session.ui.inputText = ""
                                 }
                                 // A finished command goes straight back to the terminal, where
                                 // it now sits in the input for review.
                                 if (complete) screen = Screen.Terminal
+                            }
+                        },
+                        // A command tapped while reading never leaves the Guide: it is appended to
+                        // the composition and the reader confirms "added to input".
+                        onCommandAppended = { command ->
+                            sessions.firstOrNull { it.ui.id == activeSessionId }?.ui?.let { ui ->
+                                val appended = appendGuideCommand(ui.tokens, ui.inputText, command)
+                                ui.tokens = appended.tokens
+                                ui.inputText = appended.inputText
                             }
                         },
                         onBack = { screen = Screen.Terminal },
@@ -975,16 +1274,24 @@ class TerminalActivity : FragmentActivity() {
                         onOpenFiles = { openFiles() },
                         onFilesButtonPositioned = { filesOrigin = it },
                         onCrumbPositioned = { id, rect -> crumbRects[id] = rect },
-                        onCopy = { text ->
-                            val clipboard = getSystemService(ClipboardManager::class.java)
-                            clipboard?.setPrimaryClip(ClipData.newPlainText("HG2Gui", text))
+                        // Feeds the composer's branch / dirty chip. Only the one read-only git status
+                        // question the status line asks is answered; anything else gets nothing.
+                        shellProbe = { cwd, command ->
+                            if (command == ShellStatusProjector.GIT_STATUS_COMMAND) {
+                                withContext(Dispatchers.IO) {
+                                    SemanticCompletionProviders.gitStatusBranch(this@TerminalActivity, cwd)
+                                }
+                            } else {
+                                null
+                            }
                         },
+                        onCopy = { text -> copyToClipboard(text) },
                         onShare = { text ->
                             val intent = Intent(Intent.ACTION_SEND).apply {
                                 type = "text/plain"
                                 putExtra(Intent.EXTRA_TEXT, text)
                             }
-                            startActivity(Intent.createChooser(intent, "Share"))
+                            startActivity(Intent.createChooser(intent, getString(R.string.share_chooser_title)))
                         },
                         onWizard = { wizardId ->
                             val session = sessions.firstOrNull { it.ui.id == activeSessionId }
@@ -1041,7 +1348,9 @@ class TerminalActivity : FragmentActivity() {
                             val session = sessions.first { it.ui.id == sessionId }
                             // W5: recorded regardless of which path this takes below, or whether
                             // the command later succeeds - a shell's own history does the same.
-                            CommandHistoryStore.record(this@TerminalActivity, session.ui.name, line, System.currentTimeMillis())
+                            withContext(Dispatchers.IO) {
+                                CommandHistoryStore.record(this@TerminalActivity, session.ui.name, line, System.currentTimeMillis())
+                            }
                             val fullScreenCommand = fullScreenCommandOf(line)
                             if (fullScreenCommand != null) {
                                 if (!PtyPreference.isEnabled(this@TerminalActivity)) {
@@ -1090,6 +1399,7 @@ class TerminalActivity : FragmentActivity() {
 
                     screen == Screen.FullScreenApp && fullScreenSession != null -> FullScreenTerminalScreen(
                         holder = fullScreenSession!!,
+                        fullscreen = fullscreen,
                         onExit = {
                             fullScreenSession?.kill()
                             fullScreenSession = null
@@ -1097,29 +1407,40 @@ class TerminalActivity : FragmentActivity() {
                         }
                     )
 
-                    else -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Loading…")
+                    // The ground's own page colour and text colour, never the window's or the theme
+                    // default: this is the first thing every launch shows (the init work runs behind
+                    // it) and it used to be dark text on the dark window background.
+                    else -> Box(
+                        Modifier
+                            .fillMaxSize()
+                            .background(Azphalt.currentGround.pageBrush())
+                            .screenInsets(fullscreen, ime = false),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(getString(R.string.loading), color = Azphalt.currentGround.onPage)
                     }
                 }
 
                 bootstrapProgress?.let { progress ->
                     JobProgressBar(
                         state = progress,
+                        // Already padded below by screenInsets in the modifier.
+                        avoidSystemBars = false,
                         modifier = Modifier
                             .align(Alignment.TopCenter)
+                            // Below the status bar / cutout, not under the clock.
+                            .screenInsets(fullscreen, ime = false)
                             .padding(horizontal = 16.dp, vertical = 8.dp)
                     )
                 }
 
-                azpTrustConfirm?.let { (listing, decision) ->
+                azpPrompt?.let { prompt ->
                     ConfirmDialog(
-                        title = "INSTALL UNVERIFIED PACKAGE?",
-                        message = "${listing.name} isn't signed by a trusted key. Installing it will run " +
-                            "\"pkg install\" for whatever dependencies it declares and add its command to " +
-                            "this device's PATH.",
-                        confirmLabel = "INSTALL",
-                        onConfirm = { decision.complete(true); azpTrustConfirm = null },
-                        onDismiss = { decision.complete(false); azpTrustConfirm = null }
+                        title = prompt.title,
+                        message = prompt.message,
+                        confirmLabel = prompt.confirmLabel,
+                        onConfirm = { prompt.decision.complete(true); azpPrompt = null },
+                        onDismiss = { prompt.decision.complete(false); azpPrompt = null }
                     )
                 }
 
@@ -1246,7 +1567,7 @@ class TerminalActivity : FragmentActivity() {
                                         } catch (ignored: IllegalArgumentException) {
                                             Toast.makeText(
                                                 this@TerminalActivity,
-                                                "Can't share ${file.name} from this location.",
+                                                getString(R.string.toast_share_unavailable_file, file.name),
                                                 Toast.LENGTH_LONG
                                             ).show()
                                             return@launch
@@ -1256,7 +1577,7 @@ class TerminalActivity : FragmentActivity() {
                                             putExtra(Intent.EXTRA_STREAM, uri)
                                             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                                         }
-                                        startActivity(Intent.createChooser(intent, "Share ${file.name}"))
+                                        startActivity(Intent.createChooser(intent, getString(R.string.share_chooser_file_title, file.name)))
                                     }
                                 }
                             },
@@ -1281,12 +1602,12 @@ class TerminalActivity : FragmentActivity() {
                                             putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(uris))
                                             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                                         }
-                                        startActivity(Intent.createChooser(intent, "Share ${uris.size} items"))
+                                        startActivity(Intent.createChooser(intent, getString(R.string.share_chooser_items_title, uris.size)))
                                     }
                                     if (uris.size < paths.size) {
                                         Toast.makeText(
                                             this@TerminalActivity,
-                                            "${paths.size - uris.size} item(s) couldn't be shared from this location.",
+                                            getString(R.string.toast_share_unavailable_items, paths.size - uris.size),
                                             Toast.LENGTH_LONG
                                         ).show()
                                     }
@@ -1313,9 +1634,8 @@ class TerminalActivity : FragmentActivity() {
                                     }
                                 }
                             ),
-                            modifier = Modifier.then(
-                                if (fullscreen) Modifier else Modifier.windowInsetsPadding(WindowInsets.systemBars)
-                            )
+                            // FilesScreen applies the system-bar/cutout/keyboard insets to its own root
+                            // (screenInsets); padding here as well doubled the top and bottom margin.
                         )
                         }
                     }
@@ -1350,9 +1670,7 @@ class TerminalActivity : FragmentActivity() {
                             },
                             onCancel = { closePathPicker() },
                             backStep = pathPickerBackStep,
-                            modifier = Modifier.then(
-                                if (fullscreen) Modifier else Modifier.windowInsetsPadding(WindowInsets.systemBars)
-                            )
+                            modifier = Modifier.screenInsets(fullscreen, ime = false)
                         )
                     }
                 }
@@ -1384,10 +1702,15 @@ class TerminalActivity : FragmentActivity() {
             // whose permission grant needs to kick off work with no further user input.
             LocalBroadcastManager.getInstance(this).sendBroadcast(Intent(ContactManager.ACTION_REFRESH))
         }
-        if (requestCode == PermissionCodes.MCP_NOTIFICATION_REQUEST_PERMISSION && granted) {
-            // Permission was requested asynchronously by startMcpServer(); start the service now
-            // that the user has granted it so the foreground notification is actually visible.
-            ContextCompat.startForegroundService(this, Intent(this, McpServerService::class.java))
+        if (requestCode == PermissionCodes.MCP_NOTIFICATION_REQUEST_PERMISSION) {
+            mcpNotificationsDenied = !granted
+            if (granted) {
+                // Permission was requested asynchronously by startMcpServer(); start the service now
+                // that the user has granted it so the foreground notification is actually visible.
+                ContextCompat.startForegroundService(this, Intent(this, McpServerService::class.java))
+            }
+            // Refused: the server stays off (it must never run with no visible indicator) and the
+            // MCP screen explains why via notificationsDenied.
         }
         // Every other builtin's permission request (COMMAND_REQUEST_PERMISSION) is answered by
         // just running the same pill or command again - the system permission dialog itself is
@@ -1395,6 +1718,8 @@ class TerminalActivity : FragmentActivity() {
     }
 
     override fun onDestroy() {
+        // Nothing of ours is running past this point; release the service/wake lock.
+        LongTaskService.setInteractiveBusy(applicationContext, false)
         fullScreenSession?.kill()
         fullScreenSession = null
         sessions.forEach {

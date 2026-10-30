@@ -1,6 +1,6 @@
 # Privacy Policy
 
-Last updated: 2026-10-16
+Last updated: 2026-10-30
 
 Thank you for using HG2Gui ("the Project"). This Privacy Policy explains what information the Project may collect, how that information may be used, and the choices you have about the collection and use of your information.
 
@@ -18,6 +18,12 @@ HG2Gui is designed to work locally on your device. By default, the Project does 
 
 - Device and Environment Information: When run on your device, HG2Gui may read information required for operation (for example, filesystem paths you point it at, OS version, or device model) only insofar as it is necessary to perform its functions.
 - Command / Usage Output: Logs, error messages, and command output are produced locally. These are not sent anywhere unless you explicitly share them (for example, pasting into an issue, sending to a third-party, or opting into telemetry).
+- Data kept on the device: HG2Gui keeps some data in its app-private storage so features work across sessions. None of it is sent to the maintainers.
+  - Command history: every command you run is appended, as typed, to a history log that is kept across restarts and capped at the newest 2,000 entries. Because it is stored as typed, avoid putting secrets on a command line. You can delete single entries or use **Clear history** on the History screen.
+  - Trash: files you delete in the Files screen move to a trash folder and are removed for good after 30 days, or sooner if you empty the trash.
+  - Isolation audits: the latest observed activity of each isolated package.
+  - API audit log: the latest 200 request, decision and result rows for calls from other apps. Commands are stored as a short digest and length, not verbatim; only a root/ADB command you approved is kept, as a bounded preview.
+  - Remembered ADB endpoints (host and port only; pairing codes are never stored), your Anthropic API key (encrypted, see 5a), and your settings and SSH presets.
 
 4. Optional Telemetry or Crash Reporting
 
@@ -34,14 +40,15 @@ HG2Gui may include or rely on third-party open-source libraries and tools. These
 
 5a. Network Requests This App Makes
 
-None of these happen passively or in the background without you taking the corresponding action first:
+Apart from the first-launch runtime download and the update check described first, none of these happen passively or in the background without you taking the corresponding action first:
 
+- Update check (automatic): when the app starts, HG2Gui asks the GitHub API (`api.github.com`, release `latest-v<major>.<minor>` of `HereLiesAz/HG2Gui`) whether a newer build exists, at most once every six hours. The request names the release series of your installed version (its `<major>.<minor>`) in the URL and sends the user agent `HG2Gui-update-checker`; it carries no account or device identifier beyond what any HTTPS request to GitHub reveals, such as your IP address. It only notifies you; the APK is downloaded from GitHub only if you accept. You can switch this check off in **Settings → Update check**; when off, HG2Gui does not contact GitHub on its own to look for updates.
 - Termux bootstrap download: on first launch (or when you run `bootstrap` by hand), the app downloads the real Termux bootstrap archive from GitHub Releases (`github.com/termux/termux-packages`) to give you a real shell.
-- Package management: `apt`/`apt-get`/`pkg` talk to Termux's own package mirror (`packages-cf.termux.dev`) exactly as they would in the official Termux app, whenever you run an update/install/search yourself.
+- Package management: `pkg` talks to Termux's package mirrors (`packages.termux.dev`, `packages-cf.termux.dev`, `mirror.accum.se` and `ftp.agdsn.de`), trying them in turn, and `apt`/`apt-get` use the repository configured in the runtime (by default `packages-cf.termux.dev`), exactly as in the official Termux app, whenever you run an update/install/search yourself.
 - The Store (azphalt.store): the **Store** pill's search and install actions talk to the `azphalt.store` package registry. Nothing here runs without an explicit search or install tap.
 - AI chat: only if you've set an API key in Settings → AI SETTINGS, the **AI** pill's chat sends your typed question to the Anthropic API to get a suggested command. No key, no requests. The key itself is stored locally on-device in encrypted storage (`EncryptedSharedPreferences`, backed by the Android Keystore; a key saved by an older version in plain `SharedPreferences` is moved into it once and the plain copy deleted) and is never sent anywhere but Anthropic's API.
-- Isolation audit "Ask AI": with the same API key set, **Settings → Isolation audit → ASK AI · SEND SUMMARY** sends a text summary of that one isolated package's latest run to the Anthropic API for interpretation: package name, manager and version, the sandbox file paths created/modified/deleted, and the observed process, open-file, network and authority-attempt telemetry. The sandbox's real on-device path is replaced by a placeholder. It happens only when you tap that button, per package.
-- MCP server: if you start it from Settings → MCP SERVER, it listens on `127.0.0.1` only (loopback) — it never accepts a connection from the network, only from this same device.
+- Isolation audit "Ask AI": with the same API key set, **Settings → Isolation audit → ASK AI · SEND SUMMARY** sends a text summary of that one isolated package's latest run to the Anthropic API for interpretation. A confirmation dialog lists what is sent before anything leaves the device: the package name and version; the sandbox file count and size; how many files were created, modified and deleted; the file names only (never the folders) of up to 24 in each of those groups, leaving out any whose path mentions a password, secret, token, key or similar; how many runtime events of each kind were observed; and the protocol and remote port (never the address) of up to 24 network connections. Full paths, command lines and addresses stay on the device. It happens only when you confirm, per package.
+- MCP server: if you start it from Settings → MCP SERVER, it listens on `127.0.0.1` only (loopback) — it never accepts a connection from the network, only from this same device, and only from a client that presents the pairing token shown on that screen.
 - Any other shell command you run (`curl`, `wget`, `ssh`, `git`, …) talks to whatever you point it at, exactly like it would in a real terminal — the app itself isn't a party to that traffic.
 
 5b. Android Permissions
@@ -55,8 +62,8 @@ HG2Gui declares the permissions below. None is used to collect data for the main
 - Modify system settings (`WRITE_SETTINGS`): brightness and similar system-setting built-ins; you grant it on a dedicated Android screen.
 - All files access (`MANAGE_EXTERNAL_STORAGE`, plus legacy `READ_EXTERNAL_STORAGE`/`WRITE_EXTERNAL_STORAGE` on older Android): a terminal and file manager must read and write the files you point it at in shared storage.
 - Install packages (`REQUEST_INSTALL_PACKAGES`): lets HG2Gui hand an APK to the Android installer when you choose to update the app or install an APK; Android still asks you to confirm.
-- Network (`INTERNET`, `ACCESS_NETWORK_STATE`, `CHANGE_NETWORK_STATE`): the requests listed in section 5a and network-state built-ins.
-- Notifications, foreground service, wake lock, vibrate (`POST_NOTIFICATIONS`, `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_SPECIAL_USE`, `WAKE_LOCK`, `VIBRATE`): keep long commands running and report their results.
+- Network (`INTERNET`): the requests listed in section 5a.
+- Notifications, foreground service, wake lock (`POST_NOTIFICATIONS`, `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_SPECIAL_USE`, `WAKE_LOCK`): report results and update notices, and keep a command alive. While a command is running in a terminal tab (or a full-screen program is open), and while an API command or update download is running, HG2Gui runs a foreground service that holds a partial wake lock, released when the work ends or after six hours. This is best-effort: Android may refuse to start the service when the app is already in the background.
 
 6. Sharing Data (User Actions)
 

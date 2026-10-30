@@ -2,18 +2,20 @@ package com.hereliesaz.hg2gui.terminal
 
 import android.content.Context
 import android.os.Build
-import android.system.Os
 import com.hereliesaz.hg2gui.util.Utils
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.sync.withLock
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.nio.file.Files
+import java.nio.file.Paths
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 
@@ -82,6 +84,9 @@ object DistroManager {
     // back to wiping the prefix and re-downloading the whole multi-megabyte archive from scratch.
     fun isInstalled(context: Context): Boolean {
         val usrDir = prefixDir(context)
+        // A crash between "old prefix moved aside" and "staged prefix moved in" (see
+        // BootstrapStaging) leaves no usr/ at all; put the previous one back before judging.
+        BootstrapStaging.recoverInterruptedSwap(usrDir, BootstrapStaging.backupDir(context))
         if (!usrDir.isDirectory || !File(usrDir, "bin").isDirectory) return false
         val bash = File(usrDir, "bin/bash")
         if (bash.canExecute()) return true
@@ -103,17 +108,51 @@ object DistroManager {
         val prefix = prefixDir(context)
         if (!prefix.isDirectory) return
         linkManifestEntries(prefix, context.applicationInfo.nativeLibraryDir)
+        // The wrapper profile and apt.conf embed the (equally per-install) launcher paths.
+        runCatching { PrefixRuntimeConfig.writeAptConf(prefix, prefix, context.applicationInfo.nativeLibraryDir) }
     }
 
+    /**
+     * Downloads, verifies and installs the pinned bootstrap.
+     *
+     * The archive is extracted into a staging directory, verified, and swapped over the live
+     * prefix atomically (see [BootstrapStaging]); the previous prefix is kept until the new one is
+     * in place. A failure at any step - offline, SHA mismatch, full storage - therefore leaves an
+     * existing installation exactly as it was. Holds [Hg2PackageManager.PACKAGE_OPERATION_LOCK]
+     * for the whole run so no `pkg` operation can mutate the prefix while it is being replaced.
+     * A successful run REPLACES the prefix: packages installed on top of the previous bootstrap
+     * are not carried over (the home directory is untouched).
+     */
     fun bootstrap(context: Context, client: OkHttpClient): Flow<String> = flow {
         val arch = bootstrapArch()
         if (arch == null) {
             emit("Error: no Termux bootstrap is published for this device's ABI (${Build.SUPPORTED_ABIS.joinToString()}).")
             return@flow
         }
+        Hg2PackageManager.PACKAGE_OPERATION_LOCK.withLock {
+            runBootstrap(context, client, arch) { emit(it) }
+        }
+    }.flowOn(Dispatchers.IO)
 
+    private suspend fun runBootstrap(
+        context: Context,
+        client: OkHttpClient,
+        arch: String,
+        emit: suspend (String) -> Unit
+    ) {
         val url = "$BOOTSTRAP_BASE_URL/bootstrap-$arch.zip"
         emit("Starting bootstrap process...")
+
+        val prefix = prefixDir(context)
+        val staging = BootstrapStaging.stagingDir(context)
+        val backup = BootstrapStaging.backupDir(context)
+        BootstrapStaging.recoverInterruptedSwap(prefix, backup)
+
+        // Journals describe the prefix we are about to replace; roll them back first so a failed
+        // bootstrap leaves a consistent old prefix, then drop whatever is left after a swap.
+        runCatching { PackageTransactionJournal.recoverAbandoned(context) }
+            .getOrDefault(emptyList())
+            .forEach { emit(it) }
 
         val destFile = File(context.cacheDir, BOOTSTRAP_FILE)
         if (destFile.exists()) destFile.delete()
@@ -124,9 +163,9 @@ object DistroManager {
             val request = Request.Builder().url(url).build()
             val digest = java.security.MessageDigest.getInstance("SHA-256")
             client.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) throw Exception("Download failed: HTTP ${response.code}")
+                if (!response.isSuccessful) throw IOException("Download failed: HTTP ${response.code}")
 
-                val body = response.body ?: throw Exception("Empty response body")
+                val body = response.body
                 val totalBytes = body.contentLength()
                 var downloadedBytes = 0L
 
@@ -156,27 +195,62 @@ object DistroManager {
 
             emit("Download complete. Extracting...")
 
-            val prefix = prefixDir(context)
-            extractBootstrap(destFile, prefix, context.applicationInfo.nativeLibraryDir)
+            val hadPrefix = prefix.exists()
+            installBootstrapArchive(destFile, prefix, staging, backup, context.applicationInfo.nativeLibraryDir)
+            runCatching { PackageTransactionJournal.discardAll(context) }
             homeDir(context).mkdirs()
 
-            emit("Extraction complete. Fixing permissions...")
-            makeBinariesExecutable(prefix)
-
+            emit(
+                if (hadPrefix) "Extraction complete. The previous installation was replaced."
+                else "Extraction complete."
+            )
             emit("Bootstrap successful! You can now use 'apt', 'pkg', and real coreutils.")
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            // UX-6: isInstalled() is existence-only (prefix/ and prefix/bin/ both exist) - and
-            // extractBootstrap() creates prefix/bin/ the moment its first file lands, long before
-            // the archive finishes. A failure partway through (storage full, backgrounded,
-            // corrupted archive) used to leave exactly that directory behind: "installed" forever,
-            // with no retry, same as AzpInstaller already rolls back a partial install to avoid.
-            prefixDir(context).deleteRecursively()
+            // Nothing here touches the live prefix: extraction happened in `staging`, and the swap
+            // restores the old prefix itself if it cannot complete. An existing installation
+            // therefore survives a failed attempt untouched.
             emit("Error during bootstrap: ${e.message}")
-            Utils.log(e)
+            if (prefix.isDirectory) emit("The existing installation was left untouched.")
+            logQuietly(e)
         } finally {
             if (destFile.exists()) destFile.delete()
+            FileTrees.deleteRecursivelyNoFollow(staging)
         }
-    }.flowOn(Dispatchers.IO)
+    }
+
+    /**
+     * Extracts [zipFile] into [staging], verifies it, and atomically swaps it over [prefix]
+     * (keeping the old one in [backup] until the swap succeeds). Throws on any failure with
+     * [prefix] untouched. Internal for host tests; [requireExecutableBash] is false only there.
+     */
+    internal fun installBootstrapArchive(
+        zipFile: File,
+        prefix: File,
+        staging: File,
+        backup: File,
+        nativeLibraryDir: String,
+        requireExecutableBash: Boolean = true
+    ) {
+        if (staging.exists() && !FileTrees.deleteRecursivelyNoFollow(staging)) {
+            throw IOException("Cannot clear stale staging directory ${staging.path}")
+        }
+        try {
+            extractBootstrap(zipFile, staging, prefix, nativeLibraryDir)
+            makeBinariesExecutable(staging)
+            BootstrapStaging.verify(staging, requireExecutableBash)
+            BootstrapStaging.swapIntoPlace(prefix, staging, backup)
+        } catch (t: Throwable) {
+            FileTrees.deleteRecursivelyNoFollow(staging)
+            throw t
+        }
+    }
+
+    private fun logQuietly(e: Throwable) {
+        // Utils.log goes through android.util.Log, which is unavailable under host unit tests.
+        runCatching { Utils.log(e) }
+    }
 
     /**
      * Extracts a Termux bootstrap zip into [prefix]. Regular files unpack directly, except for
@@ -188,14 +262,18 @@ object DistroManager {
      * line, "<target><SEPARATOR><link path>") and they're created here as their own pass, once
      * every real file they might point at already exists.
      */
-    private fun extractBootstrap(zipFile: File, prefix: File, nativeLibraryDir: String) {
-        prefix.mkdirs()
-        val prefixCanonical = prefix.canonicalFile
+    //
+    // [root] is the directory being written (a staging directory); [finalPrefix] is where it will
+    // live once swapped into place. Every ABSOLUTE path baked into the extracted content (script
+    // shebangs, symlink targets, apt.conf) must name [finalPrefix], never [root].
+    internal fun extractBootstrap(zipFile: File, root: File, finalPrefix: File, nativeLibraryDir: String) {
+        root.mkdirs()
+        val prefixCanonical = root.canonicalFile
         // Zip-slip containment, mirroring AzpInstaller: any entry (or SYMLINKS.txt link path)
-        // that canonicalizes outside the prefix aborts the whole bootstrap - bootstrap()'s catch
-        // then wipes the partial prefix.
+        // that canonicalizes outside the root aborts the whole bootstrap - the staging directory
+        // is then discarded and the live prefix is never touched.
         fun contained(name: String): File {
-            val target = File(prefix, name).canonicalFile
+            val target = File(root, name).canonicalFile
             if (target != prefixCanonical && !target.path.startsWith(prefixCanonical.path + File.separator)) {
                 throw IOException("path traversal in bootstrap entry: $name")
             }
@@ -223,7 +301,7 @@ object DistroManager {
                         val outFile = contained(entry.name)
                         outFile.parentFile?.mkdirs()
                         outFile.outputStream().buffered().use { out -> zis.copyTo(out) }
-                        rewriteShebangIfNeeded(outFile, prefix)
+                        rewriteShebangIfNeeded(outFile, finalPrefix)
                     }
                 }
                 zis.closeEntry()
@@ -242,19 +320,19 @@ object DistroManager {
             // symlink's own containing directory, so it needs no rewriting) - this only touches
             // the ones that would otherwise dangle.
             val target = if (rawTarget.startsWith(HARDCODED_TERMUX_PREFIX)) {
-                prefix.absolutePath + rawTarget.removePrefix(HARDCODED_TERMUX_PREFIX)
+                finalPrefix.absolutePath + rawTarget.removePrefix(HARDCODED_TERMUX_PREFIX)
             } else {
                 rawTarget
             }
             val linkPath = line.substring(separatorIndex + SYMLINK_SEPARATOR.length)
-            val linkFile = File(prefix, linkPath)
+            val linkFile = File(root, linkPath)
             // The link itself may already exist (stale from a failed attempt), so canonicalize its
             // parent rather than the link - that check is what matters for where it gets created.
             val linkName = linkFile.name
             if (linkName.isEmpty() || linkName == "." || linkName == "..") {
                 throw IOException("invalid symlink path in $SYMLINKS_ENTRY: $linkPath")
             }
-            val linkParent = (linkFile.parentFile ?: prefix).canonicalFile
+            val linkParent = (linkFile.parentFile ?: root).canonicalFile
             if (linkParent != prefixCanonical && !linkParent.path.startsWith(prefixCanonical.path + File.separator)) {
                 throw IOException("path traversal in $SYMLINKS_ENTRY link path: $linkPath")
             }
@@ -263,14 +341,14 @@ object DistroManager {
             // was there yet, and clears a stale symlink left by a prior failed bootstrap attempt.
             linkFile.delete()
             try {
-                Os.symlink(target, linkFile.absolutePath)
+                Files.createSymbolicLink(linkFile.toPath(), Paths.get(target))
             } catch (e: Exception) {
-                Utils.log(e)
+                logQuietly(e)
             }
         }
-        linkMainRepoKeyring(prefix)
-        linkManifestEntries(prefix, nativeLibraryDir)
-        writeAptConf(prefix)
+        linkMainRepoKeyring(root, finalPrefix)
+        linkManifestEntries(root, nativeLibraryDir)
+        PrefixRuntimeConfig.writeAptConf(root, finalPrefix, nativeLibraryDir)
     }
 
     // Shared by extractBootstrap (fresh install) and repairExecLinks (an existing install whose
@@ -293,9 +371,9 @@ object DistroManager {
                 Files.createLink(linkFile.toPath(), realFile.toPath())
             } catch (e: Exception) {
                 try {
-                    Os.symlink(realFile.absolutePath, linkFile.absolutePath)
+                    Files.createSymbolicLink(linkFile.toPath(), realFile.toPath())
                 } catch (e2: Exception) {
-                    Utils.log(e2)
+                    logQuietly(e2)
                 }
             }
         }
@@ -310,16 +388,16 @@ object DistroManager {
     // own top-level doc comment), so without this, apt has no trusted key for the one repo that
     // matters most and every `apt update`/`pkg update` fails signature verification. Mirrors
     // exactly what SYMLINKS.txt already does for the others, just for the one entry it omits.
-    private fun linkMainRepoKeyring(prefix: File) {
-        val target = File(prefix, "share/termux-keyring/termux-pacman.gpg")
-        if (!target.exists()) return
-        val linkFile = File(prefix, "etc/apt/trusted.gpg.d/termux-pacman.gpg")
+    private fun linkMainRepoKeyring(root: File, finalPrefix: File) {
+        if (!File(root, "share/termux-keyring/termux-pacman.gpg").exists()) return
+        val target = File(finalPrefix, "share/termux-keyring/termux-pacman.gpg")
+        val linkFile = File(root, "etc/apt/trusted.gpg.d/termux-pacman.gpg")
         linkFile.parentFile?.mkdirs()
         linkFile.delete()
         try {
-            Os.symlink(target.absolutePath, linkFile.absolutePath)
+            Files.createSymbolicLink(linkFile.toPath(), target.toPath())
         } catch (e: Exception) {
-            Utils.log(e)
+            logQuietly(e)
         }
     }
 
@@ -343,68 +421,10 @@ object DistroManager {
         if (file.length() < 3) return
         val bytes = file.readBytes()
         if (bytes.size < 2 || bytes[0] != '#'.code.toByte() || bytes[1] != '!'.code.toByte()) return
-        val text = String(bytes, Charsets.UTF_8)
-        if (!text.contains(HARDCODED_TERMUX_PREFIX)) return
-        file.writeBytes(text.replace(HARDCODED_TERMUX_PREFIX, prefix.absolutePath).toByteArray(Charsets.UTF_8))
-    }
-
-    // apt's own Dir::* settings (where it looks for apt.conf.d, sources.list, its package cache,
-    // dpkg's status file, ...) are compiled in as absolute paths against Termux's own package too
-    // - unlike a shebang line, there's no single first-line fix, since these are baked into
-    // apt/libapt-pkg's own binary as C++ string constants apt reads at startup, before it's ever
-    // consulted a config file. What apt *does* still honor from the environment is APT_CONFIG - a
-    // path to a config file it reads before falling back to those compiled-in defaults - so this
-    // writes one, with every Dir:: apt.conf(5) documents pointed at this app's real prefix
-    // instead, and ShellSession points APT_CONFIG at it for every bootstrap-tier command.
-    //
-    // Acquire::https::CaInfo is here for a related but separate reason: the bootstrap zip already
-    // ships a real CA bundle at etc/tls/cert.pem (extracted like any other regular file, no fixup
-    // needed for the file itself), but on a genuine Termux install that bundle only becomes the
-    // thing TLS actually consults once the `ca-certificates` package's own postinst runs `trust
-    // extract` to activate it - a dpkg step this extraction never runs, so the bundle just sits
-    // there unused otherwise. Pointing apt straight at the raw bundle sidesteps needing that
-    // activation step at all.
-    private fun writeAptConf(prefix: File) {
-        val p = prefix.absolutePath
-        val aptConfDir = File(prefix, "etc/apt")
-        aptConfDir.mkdirs()
-
-        // Real Termux only ever runs from a live install apt/dpkg have already been managing -
-        // var/lib/apt and var/cache/apt (and their own "partial" subdirs, where an in-progress
-        // download or list fetch lands before being renamed into place) get created the first
-        // time some package's own postinst or dpkg trigger touches them. This zip is a frozen
-        // snapshot, not a live install, so neither tree exists in it at all - and unlike most of
-        // apt's own Dir::* paths, it won't just mkdir -p these two on demand; a missing "partial"
-        // is a hard Acquire error ("Archives directory ... is missing").
-        File(prefix, "var/cache/apt/archives/partial").mkdirs()
-        File(prefix, "var/lib/apt/lists/partial").mkdirs()
-
-        File(aptConfDir, "apt.conf").writeText(
-            """
-            Dir "$p/";
-            Dir::Etc "$p/etc/apt/";
-            Dir::Etc::sourcelist "$p/etc/apt/sources.list";
-            Dir::Etc::sourceparts "$p/etc/apt/sources.list.d/";
-            Dir::Etc::vendorlist "$p/etc/apt/vendors.list";
-            Dir::Etc::vendorparts "$p/etc/apt/vendors.list.d/";
-            Dir::Etc::main "$p/etc/apt/apt.conf";
-            Dir::Etc::parts "$p/etc/apt/apt.conf.d/";
-            Dir::Etc::preferences "$p/etc/apt/preferences";
-            Dir::Etc::preferencesparts "$p/etc/apt/preferences.d/";
-            Dir::Etc::trusted "$p/etc/apt/trusted.gpg";
-            Dir::Etc::trustedparts "$p/etc/apt/trusted.gpg.d/";
-            Dir::State "$p/var/lib/apt/";
-            Dir::State::lists "$p/var/lib/apt/lists/";
-            Dir::State::status "$p/var/lib/dpkg/status";
-            Dir::Cache "$p/var/cache/apt/";
-            Dir::Cache::archives "$p/var/cache/apt/archives/";
-            Dir::Log "$p/var/log/apt/";
-            Dir::Bin::methods "$p/lib/apt/methods/";
-            Dir::Bin::solvers:: "$p/lib/apt/solvers/";
-            Dir::Bin::dpkg "$p/bin/dpkg";
-            Acquire::https::CaInfo "$p/etc/tls/cert.pem";
-            """.trimIndent()
-        )
+        // Byte-level, not decode/re-encode: a non-UTF-8 script that merely mentions the old prefix
+        // must come through byte-for-byte (see PrefixRewriter).
+        val rewritten = PrefixRewriter.replaceInBytes(bytes, HARDCODED_TERMUX_PREFIX, prefix.absolutePath) ?: return
+        file.writeBytes(rewritten)
     }
 
     private fun makeBinariesExecutable(prefix: File) {
@@ -442,65 +462,8 @@ object DistroManager {
             file.writeText(shebang + script.body)
             file.setExecutable(true)
         }
-        writeScriptWrapperProfile(prefix, homeDir(context))
-    }
-
-    private const val WRAPPER_SCRIPT_NAME = ".hg2gui-script-wrappers.sh"
-
-    // Android's write-xor-execute policy (see BootstrapManifest's own doc comment) only exempts
-    // files the OS itself installed as a native lib - real ELF binaries flattened into jniLibs/.
-    // `pkg`, `apt-key`, and ~77 others the upstream bootstrap ships as plain bash scripts were
-    // never eligible for that trick (a text file can't pass as a native library), so bash's own
-    // exec of one - directly typed, or via its own "read the #! line, exec the interpreter"
-    // fallback when the kernel can't run the script as-is - can come back "Permission denied"
-    // for the interpreter it names, even though that same interpreter runs fine launched
-    // directly. `source`ing the script's own content inside a subshell instead sidesteps this
-    // entirely: a subshell is a plain fork() with no execve() involved at all, so nothing here
-    // depends on whichever OS-level restriction is actually in play - and running inside a
-    // subshell, not the interactive shell itself, keeps a script's own `set -e`/`exit` from
-    // touching the session that ran it. Regenerated (overwritten, not appended) on every launch
-    // so a bootstrap upgrade's added/removed scripts stay in sync - written to its own file, only
-    // ever sourced from .bash_profile, so a user's own dotfile customizations are never touched
-    // once that first line exists. Covers commands typed directly into this interactive shell
-    // only - a real ELF program (apt, dpkg) shelling out to one of these scripts itself still
-    // goes through the OS's own execve(), unaffected by a bash function defined in this shell.
-    private fun writeScriptWrapperProfile(prefix: File, home: File) {
-        val binDir = File(prefix, "bin")
-        val scriptNames = binDir.listFiles { f -> f.isFile && !Files.isSymbolicLink(f.toPath()) && !isElf(f) }
-            ?.map { it.name }
-            // Each name becomes a bash function definition sourced on every login - a file in
-            // bin/ named e.g. "x;rm -rf ~" must never reach that profile as code.
-            ?.filter { com.hereliesaz.hg2gui.azp.isSafeCommandName(it) }
-            ?.sorted()
-            .orEmpty()
-
-        val wrapperFile = File(home, WRAPPER_SCRIPT_NAME)
-        if (scriptNames.isEmpty()) {
-            wrapperFile.delete()
-            return
-        }
-        wrapperFile.writeText(buildString {
-            appendLine("# Auto-generated by HG2Gui - regenerated on every launch, do not edit.")
-            for (name in scriptNames) {
-                appendLine("$name() ( source \"\$PREFIX/bin/\"'$name' \"\$@\" )")
-            }
-        })
-
-        val profile = File(home, ".bash_profile")
-        if (!profile.exists()) {
-            profile.writeText("[ -f \"\$HOME/$WRAPPER_SCRIPT_NAME\" ] && . \"\$HOME/$WRAPPER_SCRIPT_NAME\"\n")
-        }
-    }
-
-    private fun isElf(file: File): Boolean = try {
-        file.inputStream().use { input ->
-            val magic = ByteArray(4)
-            input.read(magic) == 4 &&
-                magic[0].toInt() == 0x7f && magic[1] == 'E'.code.toByte() &&
-                magic[2] == 'L'.code.toByte() && magic[3] == 'F'.code.toByte()
-        }
-    } catch (e: IOException) {
-        false
+        // Same writer TermuxRuntimeRepair uses on every launch - one content, one implementation.
+        PrefixRuntimeConfig.writeScriptWrappers(prefix, homeDir(context), context.applicationInfo.nativeLibraryDir)
     }
 
     // Self-scoped, read-only recon for a domain YOU name - your own domain, or one you have a

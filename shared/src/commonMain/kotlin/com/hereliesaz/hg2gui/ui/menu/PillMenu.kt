@@ -14,6 +14,7 @@ import androidx.compose.animation.core.keyframes
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.rememberSplineBasedDecay
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.FlingBehavior
@@ -21,7 +22,11 @@ import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.ScrollScope
 import androidx.compose.foundation.gestures.rememberScrollableState
 import androidx.compose.foundation.gestures.scrollable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.indication
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -34,7 +39,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -43,19 +47,21 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.em
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.hereliesaz.hg2gui.ui.contrastRatio
+import com.hereliesaz.hg2gui.ui.rememberReducedMotion
+import com.hereliesaz.hg2gui.ui.scaledDelayMs
+import com.hereliesaz.hg2gui.ui.theme.LocalAzphaltType
 import kotlin.math.roundToInt
 
 /*
@@ -200,18 +206,17 @@ fun Azphalt.Ground.pageBrush(): Brush = SolidColor(page)
 
 // House rule: text (and any glyph carrying meaning - an icon, an end-cap) always reads as the
 // opposite of whatever it sits on, never a fixed color assumed to work against every background.
-// Mustard is light enough for Ink text, but four of the six grounds in Azphalt.grounds (Maroon,
-// Navy, Teal, and near enough Cerulean) are dark - Ink text hardcoded against those disappears.
-// The 0.35 luminance split is the same rough light/dark line sRGB relative luminance conventionally
-// uses for a black-vs-white text choice (WCAG's own "which of black/white contrasts more" cutoffs
-// straddle this range); exact value only matters near the boundary, where either color still reads.
-private const val LEGIBLE_LUMINANCE_SPLIT = 0.35f
+// The choice is made by measurement, not by a luminance cutoff: of Ink and White, whichever has the
+// higher WCAG contrast ratio against the background wins. (The old fixed 0.35 luminance split sat
+// well above the true break-even of about 0.20, so every background between the two - cyan, green,
+// gray, orange, teal - got White at 2.8-3.3:1 where Ink would have given 5.2-6.3:1.)
 
-/** The one of [Azphalt.Ink] / [Azphalt.White] that actually contrasts with this background,
- *  instead of a color assumed to work against every ground/hue this sits on. Not used for a pill's
- *  own selected state (ink bg + yellow fg) - that pairing is a fixed UI signal, not "text on an
- *  arbitrary background," and stays exactly as designed regardless of ground or hue. */
-fun Color.contrastingText(): Color = if (luminance() > LEGIBLE_LUMINANCE_SPLIT) Azphalt.Ink else Azphalt.White
+/** The one of [Azphalt.Ink] / [Azphalt.White] with the higher WCAG contrast ratio against this
+ *  background, instead of a color assumed to work against every ground/hue this sits on. Not used
+ *  for a pill's own selected state (ink bg + yellow fg) - that pairing is a fixed UI signal, not
+ *  "text on an arbitrary background," and stays exactly as designed regardless of ground or hue. */
+fun Color.contrastingText(): Color =
+    if (contrastRatio(this, Azphalt.Ink) >= contrastRatio(this, Azphalt.White)) Azphalt.Ink else Azphalt.White
 
 /** The page ground's own text color - [Color.contrastingText] applied to [Azphalt.Ground.page] -
  *  for the many places text/icons sit directly on the rotating page background (or a background
@@ -219,18 +224,41 @@ fun Color.contrastingText(): Color = if (luminance() > LEGIBLE_LUMINANCE_SPLIT) 
  *  fixed hue. */
 val Azphalt.Ground.onPage: Color get() = page.contrastingText()
 
-private val PILL_HEIGHT = 17.dp
-private val ROW_PITCH = 20.dp
-// Android's own accessibility minimum tap target - PILL_HEIGHT (17dp) is well under it, and rows
-// are only ROW_PITCH (20dp) apart besides. Pill pads its *clickable* region out to this without
-// touching PILL_HEIGHT itself - see the comment on Pill's own wrapping Box.
-private val PILL_TOUCH_TARGET = 48.dp
+/**
+ * The geometry of the command pills, in dp, public so the layout that hosts the stack (see
+ * FluidTerminalWorkspace) sizes its region from the same numbers instead of its own copies.
+ */
+object PillMetrics {
+    /** Height of the drawn capsule. */
+    val Height: Dp = 32.dp
+
+    /** Distance between consecutive rows of a stack. Equal to [TouchTarget], so two rows' hit
+     *  boxes tile exactly: no overlap, and no gap a thumb can fall into. */
+    val RowPitch: Dp = 48.dp
+
+    /** The pill's hit box height: Android's minimum interactive size. */
+    val TouchTarget: Dp = 48.dp
+
+    /** Pill widths are fractions of min(available width, this), so on a tablet or in a wide
+     *  window the stack keeps its phone-sized proportions instead of stretching across the screen. */
+    val MaxReferenceWidth: Dp = 480.dp
+}
+
+private val PILL_HEIGHT = PillMetrics.Height
+private val ROW_PITCH = PillMetrics.RowPitch
+// Android's own accessibility minimum tap target. Pill pads its *clickable* region out to this
+// (centred on the PILL_HEIGHT capsule) and ROW_PITCH equals it, so the boxes of adjacent rows
+// touch but never overlap.
+private val PILL_TOUCH_TARGET = PillMetrics.TouchTarget
 private val OVERHANG = 62.dp
 // Negative Arrangement.spacedBy for TrailRow - each crumb's left edge tucks this far under the
 // crumb before it. A quarter of TrailCrumb's own 56dp floor width: enough to read as a deliberate
 // overlap (the "each crumb overlapped by the one before it" fan) without hiding a short crumb
 // like `ls` entirely behind its neighbor.
 private val TRAIL_OVERLAP = (-14).dp
+// Every width fraction below is a fraction of the *reference width* - min(available width,
+// PillMetrics.MaxReferenceWidth) - not of the raw screen width, so a tablet or a wide window keeps
+// the phone-sized stack (see widthByRef / insetStartByRef).
 private const val HOST_WIDTH = 0.66f
 // HostPill's own right edge lands at exactly HOST_WIDTH * HOST_RIGHT_EDGE of the full width (see
 // the comment on that math below) - which, since HostPill is HOST_WIDTH wide, also happens to be
@@ -239,10 +267,14 @@ private const val HOST_WIDTH = 0.66f
 // "...MANAGEMENT" fragment, not a deliberate bleed. Raised to 0.55 so most host labels stay
 // legible; still bleeds some off the left edge, matching the house style used everywhere else in
 // this menu (OVERHANG, the root stack's own absoluteBleed), just no longer past the point of
-// losing the label's own meaning.
-private const val HOST_RIGHT_EDGE = 0.55f
+// losing the label's own meaning. Raised again to 0.80 now that labels are 13sp rather than 6sp: at
+// the old 0.55 a label like "PACKAGE MANAGEMENT" would have run off the left edge at the host's
+// resting spot (right edge: 0.80 * HOST_WIDTH = about 53% of the reference width).
+private const val HOST_RIGHT_EDGE = 0.80f
 private const val CHILD_LEFT = 0.30f
-private const val CHILD_WIDTH = 0.34f
+// Child bands were 34% of the width, sized for 6sp labels; 13sp labels need roughly twice that to
+// show a typical option name ("--human-readable") before it ellipsizes.
+private const val CHILD_WIDTH = 0.58f
 // Menu Style Guide rule 01 (4%-per-row width variation, "so the stack reads as a stack") is
 // applied only to StackPill's own resting width below, via ROOT_WIDTH_STEP / rootWidthFraction -
 // never to HostPill. HostPill's constraint propagation (offsetByFractionOfParent / fillMaxWidth /
@@ -250,7 +282,7 @@ private const val CHILD_WIDTH = 0.34f
 // prior PRs (#91/#92, and the HOST_RIGHT_EDGE value itself once more since); every line of
 // HostPill is left exactly as it was, so this variation can never touch that math. It's safe to
 // vary StackPill alone because of how offsetByFractionOfParent composes with fillMaxWidth:
-// StackPill's fillMaxWidth(fraction) modifier runs *first*, narrowing the constraints handed to
+// StackPill's widthByRef(fraction) modifier (the reference-width twin of fillMaxWidth(fraction)) runs *first*, narrowing the constraints handed to
 // offsetByFractionOfParent, so with offset 0f (the resting, non-leaving state) a pill's right edge
 // simply lands at `fraction` of the full screen width - changing that one fillMaxWidth fraction
 // per row is the entire effect, with nothing downstream (absoluteBleed only extends the *left*
@@ -269,7 +301,7 @@ private fun rootWidthFraction(row: Int): Float {
 // Same "so the stack reads as a stack" cycling rootWidthFraction gives the root stack, scaled to
 // CHILD_WIDTH's own narrower range - a child band is a stack too, and was the one place still
 // rendering every pill at one identical width instead of varying by row.
-private const val CHILD_WIDTH_STEP = 0.02f
+private const val CHILD_WIDTH_STEP = 0.03f
 private fun childWidthFraction(localIndex: Int): Float {
     val stepsDown = intArrayOf(0, 1, 2, 1, 2)[localIndex % 5]
     return CHILD_WIDTH - CHILD_WIDTH_STEP * stepsDown
@@ -493,7 +525,7 @@ fun PillMenu(
         tokens = emptyList()
         onRun(tokens, false)
         scope.launch {
-            delay(Azphalt.SLIDE_MS.toLong())
+            delay(scaledDelayMs(Azphalt.SLIDE_MS))
             trail = emptyList()
             phase = Phase.Open(node.id)
         }
@@ -509,7 +541,7 @@ fun PillMenu(
                     resetKey = rootArrivalToken
                 )
 
-                Box(Modifier.fillMaxSize().padding(bottom = 12.dp).then(stackScroll.modifier)) {
+                Box(Modifier.fillMaxSize().padding(bottom = 4.dp).then(stackScroll.modifier)) {
                     roots.forEachIndexed { i, node ->
                         // Roots aren't always a fixed static list - a contextual entry like the
                         // suggestions host can appear or disappear between recompositions - so
@@ -598,11 +630,11 @@ fun PillMenu(
                                         // has reported its position - unlike every other wizard,
                                         // which fires immediately below.
                                         scope.launch {
-                                            delay((Azphalt.DROP_MS + Azphalt.SWING_MS).toLong())
+                                            delay(scaledDelayMs(Azphalt.DROP_MS + Azphalt.SWING_MS))
                                             trail = trail + child
                                             // One extra beat so the new crumb actually gets laid
                                             // out and reports its position before onWizard reads it.
-                                            delay(32)
+                                            delay(scaledDelayMs(32))
                                             onWizard(child.wizardId)
                                         }
                                     } else {
@@ -617,7 +649,7 @@ fun PillMenu(
                                             // to settle, before swapping the band for its children -
                                             // so the next cascade always starts after the hand-off is
                                             // visible, never on top of it.
-                                            delay((Azphalt.DROP_MS + Azphalt.SWING_MS).toLong())
+                                            delay(scaledDelayMs(Azphalt.DROP_MS + Azphalt.SWING_MS))
                                             trail = trail + child
                                         }
                                     }
@@ -692,7 +724,9 @@ private fun StackPill(
     // Not destructured (detekt caps that at 3 components) - read straight off the bundle instead.
     val leaving = phase.leaving
     val isHost = phase.isHost
-    val entering = phase.entering
+    // Animations off (system "Remove animations"): arrive already at rest instead of playing an
+    // entrance that would just be cut to zero length - and with no wobble to follow it.
+    val entering = phase.entering && !rememberReducedMotion()
     val aligned = phase.aligned
     val restWidthFraction = if (isHost) HOST_WIDTH else rootWidthFraction(row)
     val target = when {
@@ -804,6 +838,8 @@ private fun StackPillVisual(
             // next, not yet picked.
             selected = (ctx.leaving && ctx.isHost) || (ctx.aligned && !ctx.leaving),
             touchTargetHeight = ROW_PITCH,
+            onClick = onClick,
+            enabled = !ctx.leaving,
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 // The row-varied width is only for pills staying in the browsing stack - the one
@@ -811,7 +847,7 @@ private fun StackPillVisual(
                 // HostPill renders once this phase completes, or `target`'s offset below (derived
                 // assuming HOST_WIDTH) lands the wrong row's right edge somewhere other than
                 // HOST_RIGHT_EDGE and then visibly pops into place the instant HostPill takes over.
-                .fillMaxWidth(ctx.restWidthFraction * motion.lenFrac.value)
+                .widthByRef(ctx.restWidthFraction * motion.lenFrac.value)
                 .offsetByFractionOfParent(motion.offset.value)
                 .absoluteBleed(OVERHANG)
                 .graphicsLayer {
@@ -837,7 +873,6 @@ private fun StackPillVisual(
                     translationY = ctx.restLift + motion.riseY.value + ctx.scrollOffsetPx
                     alpha = motion.alpha.value
                 }
-                .clickable(enabled = !ctx.leaving, onClick = onClick)
         )
     }
 }
@@ -852,7 +887,7 @@ private fun StackPillVisual(
 private const val OFFSCREEN_FRACTION = 1.7f
 private const val SLIDE_CORRECT_MS = 90 // Slide's own top-row correction window
 private const val SLIDE_OVERSHOOT_FRACTION = 0.06f // of a row pitch, past the resting slot
-private const val UNFOLD_STAGGER_MS = 26L // per-row delay, bottom to top
+private const val UNFOLD_STAGGER_MS = 26 // per-row delay, bottom to top
 private const val DROP_START_MULTIPLIER = 1.4f // of a row pitch, above the resting row
 private const val DROP_SHORT_FRACTION = 0.04f // of a row pitch, short of the resting row
 private const val DROP_SETTLE_MS = 60
@@ -989,14 +1024,14 @@ private class StackEntranceMotion(pose: StackEntrancePose) {
         val restWidthFraction = geometry.restWidthFraction
         when (entrance) {
             StackEntrance.Slide -> playSlide(row, rowCount)
-            StackEntrance.Unfold -> playUnfold(row)
+            StackEntrance.Unfold -> playUnfold(row, rowCount)
             StackEntrance.Drop -> playDrop(pitchPx)
             StackEntrance.Cascade -> playCascade(row, rowCount, pitchPx)
             StackEntrance.Deal -> playDeal(row, rowCount, pitchPx)
             StackEntrance.Split -> playSplit(row, pitchPx, restWidthFraction)
             StackEntrance.Telescope -> playTelescope(row, rowCount, pitchPx)
             StackEntrance.Rally -> playRally(row)
-            StackEntrance.Extend -> playExtend(row)
+            StackEntrance.Extend -> playExtend(row, rowCount)
             // Unroll and Tumble share playCascade's own mechanic at a shorter stagger - they
             // differ only in which edge they hinge on, a StackPillVisual/TransformOrigin concern.
             StackEntrance.Unroll, StackEntrance.Tumble ->
@@ -1022,7 +1057,7 @@ private class StackEntranceMotion(pose: StackEntrancePose) {
         }
     }
 
-    private suspend fun playUnfold(row: Int) {
+    private suspend fun playUnfold(row: Int, rowCount: Int) {
         // Length only, so nothing wobbles. `offset` stays 0 (its resting value) the whole time -
         // the pill is anchored at its own LEFT edge (the end that bleeds offscreen in the real
         // menu) via offsetByFractionOfParent(0), and lenFrac scales the width from that fixed
@@ -1030,7 +1065,7 @@ private class StackEntranceMotion(pose: StackEntrancePose) {
         // make the tip the fixed point and the offscreen edge would travel - invisible, reading
         // as nothing happening.
         lenFrac.snapTo(0f)
-        delay(row * UNFOLD_STAGGER_MS)
+        delay(scaledDelayMs(staggerDelayMs(row, rowCount, UNFOLD_STAGGER_MS)))
         lenFrac.animateTo(1f, tween(Azphalt.UNFOLD_MS, easing = Azphalt.PAGE_EASE))
     }
 
@@ -1055,7 +1090,7 @@ private class StackEntranceMotion(pose: StackEntrancePose) {
         riseY.snapTo(pitchPx) // stacked on the row below
         turn.snapTo(if (row % 2 == 0) -CASCADE_TURN_DEG else CASCADE_TURN_DEG)
         alpha.snapTo(0f) // genuinely hidden - see StackEntrancePose's own doc comment
-        delay(row * stagger.toLong())
+        delay(scaledDelayMs(staggerDelayMs(row, rowCount, stagger)))
         coroutineScope {
             launch { turn.animateTo(0f, tween(duration, easing = LinearEasing)) }
             launch {
@@ -1081,7 +1116,7 @@ private class StackEntranceMotion(pose: StackEntrancePose) {
         offset.snapTo(DEAL_START_X_FRACTION)
         riseY.snapTo(pitchPx * DEAL_START_Y_MULTIPLIER)
         tilt.snapTo(DEAL_TILT_DEG)
-        delay(row * step.toLong())
+        delay(scaledDelayMs(staggerDelayMs(row, rowCount, step)))
         coroutineScope {
             launch { offset.animateTo(0f, tween(step * 2, easing = LinearEasing)) }
             launch { riseY.animateTo(0f, tween(step * 2, easing = LinearEasing)) }
@@ -1112,7 +1147,7 @@ private class StackEntranceMotion(pose: StackEntrancePose) {
             // Drawn out from behind the row below, already at final length.
             riseY.snapTo(pitchPx * row)
             alpha.snapTo(0f) // genuinely hidden - see StackEntrancePose's own doc comment
-            delay(slide + (row - 1) * step.toLong())
+            delay(scaledDelayMs(slide + staggerDelayMs(row - 1, rowCount - 1, step)))
             coroutineScope {
                 launch { riseY.animateTo(0f, tween(step, easing = LinearEasing)) }
                 launch { alpha.animateTo(1f, tween(step, easing = LinearEasing)) }
@@ -1128,7 +1163,7 @@ private class StackEntranceMotion(pose: StackEntrancePose) {
         offset.animateTo(0f, tween(slide, easing = LinearEasing))
     }
 
-    private suspend fun playExtend(row: Int) {
+    private suspend fun playExtend(row: Int, rowCount: Int) {
         // Nothing here ever moves - only lenFrac. Row 0 (the anchor) is already most of the way
         // to its resting width and finishes growing first; every row above it starts from zero
         // and only begins once the anchor's own growth completes, staggered the same 26ms/row
@@ -1136,7 +1171,7 @@ private class StackEntranceMotion(pose: StackEntrancePose) {
         if (row == 0) {
             lenFrac.animateTo(1f, tween(Azphalt.UNFOLD_MS, easing = Azphalt.PAGE_EASE))
         } else {
-            delay(Azphalt.UNFOLD_MS.toLong() + (row - 1) * UNFOLD_STAGGER_MS)
+            delay(scaledDelayMs(Azphalt.UNFOLD_MS + staggerDelayMs(row - 1, rowCount - 1, UNFOLD_STAGGER_MS)))
             lenFrac.animateTo(1f, tween(Azphalt.UNFOLD_MS, easing = Azphalt.PAGE_EASE))
         }
     }
@@ -1162,9 +1197,10 @@ private fun HostPill(node: MenuNode, rowsBelow: Int, onClick: () -> Unit) {
             hue = Azphalt.hueOf(node.id),
             selected = true,
             touchTargetHeight = ROW_PITCH,
+            onClick = onClick,
             modifier = Modifier
                 .align(Alignment.BottomStart)
-                .fillMaxWidth(HOST_WIDTH)
+                .widthByRef(HOST_WIDTH)
                 .offsetByFractionOfParent(HOST_RIGHT_EDGE - 1f)
                 .absoluteBleed(OVERHANG)
                 .graphicsLayer {
@@ -1172,7 +1208,6 @@ private fun HostPill(node: MenuNode, rowsBelow: Int, onClick: () -> Unit) {
                     rotationZ = sway.value
                     translationY = drop.value * density
                 }
-                .clickable(onClick = onClick)
         )
     }
 }
@@ -1204,30 +1239,61 @@ private fun ChildBand(
         rowMax = (BAND_BASE_ROW + children.size - 1).coerceAtLeast(BAND_BASE_ROW)
     )
 
-    Box(Modifier.fillMaxSize().then(stackScroll.modifier)) {
+    // Pills that first appear after the band's arrival has finished (scrolled into the composed
+    // window later) skip the entrance and simply sit at rest - their stagger slot is long past.
+    var arrived by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        delay(scaledDelayMs(CHILD_ARRIVAL_WINDOW_MS))
+        arrived = true
+    }
+    val density = LocalDensity.current
+    val pitchPx = with(density) { ROW_PITCH.toPx() }
+
+    BoxWithConstraints(Modifier.fillMaxSize().then(stackScroll.modifier)) {
+        // A discovered category (a PATH scan) can hold hundreds of entries, and every pill carries
+        // nine Animatables and two effects. Compose only the rows on screen plus a few either side;
+        // the scroll bounds above still use the full count, so scrolling reaches them all. A band
+        // small enough to fit anyway composes everything, exactly as before.
+        val windowed = children.size > CHILD_EAGER_LIMIT && pitchPx > 0f
+        val firstRow = if (windowed) (stackScroll.offsetPx / pitchPx).toInt() - 1 - CHILD_WINDOW_BUFFER_ROWS else 0
+        val lastRow = if (windowed) {
+            ((with(density) { maxHeight.toPx() } + stackScroll.offsetPx) / pitchPx).toInt() + 1 + CHILD_WINDOW_BUFFER_ROWS
+        } else {
+            Int.MAX_VALUE
+        }
         children.forEachIndexed { idx, child ->
-            key(child.id) {
-                val isSelected = child.id == selected
-                ChildPill(
-                    node = child,
-                    position = ChildPillPosition(idx, children.size, stackScroll.offsetPx),
-                    entrance = entrance,
-                    phase = ChildPillPhase(
-                        leaving = selected != null && !isSelected,
-                        droppingOut = isSelected,
-                        alignedRow = stackScroll.alignedRow
-                    ),
-                    onClick = {
-                        if (selected == null) {
-                            selected = child.id
-                            onPick(child)
+            val isSelected = child.id == selected
+            if (!windowed || isSelected || (BAND_BASE_ROW + idx) in firstRow..lastRow) {
+                key(child.id) {
+                    ChildPill(
+                        node = child,
+                        position = ChildPillPosition(idx, children.size, stackScroll.offsetPx),
+                        entrance = entrance,
+                        animateIn = !arrived,
+                        phase = ChildPillPhase(
+                            leaving = selected != null && !isSelected,
+                            droppingOut = isSelected,
+                            alignedRow = stackScroll.alignedRow
+                        ),
+                        onClick = {
+                            if (selected == null) {
+                                selected = child.id
+                                onPick(child)
+                            }
                         }
-                    }
-                )
+                    )
+                }
             }
         }
     }
 }
+
+// How long after a band appears its entrance choreography can still be running: the host hand-off
+// (DROP_MS), the stagger budget, and the longest single move (UNFOLD_MS) with slack.
+private const val CHILD_ARRIVAL_WINDOW_MS = 2000
+// Bands up to this many children compose every pill; bigger ones compose a window of rows.
+private const val CHILD_EAGER_LIMIT = 16
+private const val CHILD_WINDOW_BUFFER_ROWS = 3
 
 /** A [ChildEntranceMotion]'s six Animatables, as plain values - see [initialChildPoseFor]. Unlike
  *  [StackEntrancePose], [lift] is the pill's absolute translationY (this band's own BAND_BASE_ROW
@@ -1301,18 +1367,18 @@ private class ChildEntranceMotion(pose: ChildEntrancePose) {
         val restLift = -pitchPx * absoluteRow
         when (entrance) {
             StackEntrance.Slide -> playSlide(restLift)
-            StackEntrance.Unfold -> playUnfold(localIndex, restLift)
+            StackEntrance.Unfold -> playUnfold(localIndex, rowCount, restLift)
             StackEntrance.Drop -> playDrop(restLift, pitchPx)
-            StackEntrance.Cascade -> playCascade(localIndex, absoluteRow, pitchPx)
+            StackEntrance.Cascade -> playCascade(localIndex, rowCount, absoluteRow, pitchPx)
             // Unroll/Tumble aren't in a child band's own roll pool (see
             // StackEntrance.rollForChildBand's doc comment) - handled here anyway so this `when`
             // stays exhaustive over the whole enum rather than an arbitrary subset of it.
-            StackEntrance.Unroll, StackEntrance.Tumble -> playCascade(localIndex, absoluteRow, pitchPx)
+            StackEntrance.Unroll, StackEntrance.Tumble -> playCascade(localIndex, rowCount, absoluteRow, pitchPx)
             StackEntrance.Deal -> playDeal(localIndex, rowCount, restLift)
             StackEntrance.Split -> playSplit(restLift)
             StackEntrance.Telescope -> playTelescope(localIndex, rowCount, restLift)
             StackEntrance.Rally -> playRally(restLift)
-            StackEntrance.Extend -> playExtend(localIndex, restLift)
+            StackEntrance.Extend -> playExtend(localIndex, rowCount, restLift)
         }
     }
 
@@ -1321,9 +1387,9 @@ private class ChildEntranceMotion(pose: ChildEntrancePose) {
         offset.animateTo(0f, tween(Azphalt.SLIDE_MS, easing = LinearEasing))
     }
 
-    private suspend fun playUnfold(localIndex: Int, restLift: Float) {
+    private suspend fun playUnfold(localIndex: Int, rowCount: Int, restLift: Float) {
         lift.snapTo(restLift)
-        delay(localIndex * UNFOLD_STAGGER_MS)
+        delay(scaledDelayMs(staggerDelayMs(localIndex, rowCount, UNFOLD_STAGGER_MS)))
         lenFrac.animateTo(1f, tween(Azphalt.UNFOLD_MS, easing = Azphalt.PAGE_EASE))
     }
 
@@ -1332,8 +1398,8 @@ private class ChildEntranceMotion(pose: ChildEntrancePose) {
         lift.animateTo(restLift, tween(DROP_SETTLE_MS, easing = LinearEasing))
     }
 
-    private suspend fun playCascade(localIndex: Int, absoluteRow: Int, pitchPx: Float) {
-        delay(localIndex * Azphalt.SWING_MS.toLong())
+    private suspend fun playCascade(localIndex: Int, rowCount: Int, absoluteRow: Int, pitchPx: Float) {
+        delay(scaledDelayMs(staggerDelayMs(localIndex, rowCount, Azphalt.SWING_MS)))
         coroutineScope {
             launch { turn.animateTo(0f, tween(Azphalt.SWING_MS, easing = LinearEasing)) }
             launch {
@@ -1354,7 +1420,7 @@ private class ChildEntranceMotion(pose: ChildEntrancePose) {
 
     private suspend fun playDeal(localIndex: Int, rowCount: Int, restLift: Float) {
         val step = stackInterval(DEAL_STEP_MS, rowCount)
-        delay(localIndex * step.toLong())
+        delay(scaledDelayMs(staggerDelayMs(localIndex, rowCount, step)))
         coroutineScope {
             launch { offset.animateTo(0f, tween(step * 2, easing = LinearEasing)) }
             launch { lift.animateTo(restLift, tween(step * 2, easing = LinearEasing)) }
@@ -1376,7 +1442,7 @@ private class ChildEntranceMotion(pose: ChildEntrancePose) {
         if (localIndex == 0) {
             offset.animateTo(0f, tween(slide, easing = LinearEasing))
         } else {
-            delay(slide + (localIndex - 1) * step.toLong())
+            delay(scaledDelayMs(slide + staggerDelayMs(localIndex - 1, rowCount - 1, step)))
             coroutineScope {
                 launch { lift.animateTo(restLift, tween(step, easing = LinearEasing)) }
                 launch { alpha.animateTo(1f, tween(step, easing = LinearEasing)) }
@@ -1389,12 +1455,12 @@ private class ChildEntranceMotion(pose: ChildEntrancePose) {
         offset.animateTo(0f, tween(Azphalt.SLIDE_MS, easing = LinearEasing))
     }
 
-    private suspend fun playExtend(localIndex: Int, restLift: Float) {
+    private suspend fun playExtend(localIndex: Int, rowCount: Int, restLift: Float) {
         lift.snapTo(restLift)
         if (localIndex == 0) {
             lenFrac.animateTo(1f, tween(Azphalt.UNFOLD_MS, easing = Azphalt.PAGE_EASE))
         } else {
-            delay(Azphalt.UNFOLD_MS.toLong() + (localIndex - 1) * UNFOLD_STAGGER_MS)
+            delay(scaledDelayMs(Azphalt.UNFOLD_MS + staggerDelayMs(localIndex - 1, rowCount - 1, UNFOLD_STAGGER_MS)))
             lenFrac.animateTo(1f, tween(Azphalt.UNFOLD_MS, easing = Azphalt.PAGE_EASE))
         }
     }
@@ -1413,6 +1479,7 @@ private fun ChildPill(
     node: MenuNode,
     position: ChildPillPosition,
     entrance: StackEntrance,
+    animateIn: Boolean,
     phase: ChildPillPhase,
     onClick: () -> Unit
 ) {
@@ -1428,7 +1495,20 @@ private fun ChildPill(
     val absoluteRow = BAND_BASE_ROW + localIndex
     val aligned = absoluteRow == alignedRow && !leaving && !droppingOut
 
-    val motion = remember(node.id) { ChildEntranceMotion(initialChildPoseFor(entrance, localIndex, absoluteRow, pitchPx)) }
+    // Decided once, when this pill is first composed: a pill that arrives with its band plays the
+    // rolled entrance; one that scrolls into the composed window later, or any pill while
+    // animations are off, is simply placed at rest.
+    val reducedMotion = rememberReducedMotion()
+    val playEntrance = remember(node.id) { animateIn && !reducedMotion }
+    val motion = remember(node.id) {
+        ChildEntranceMotion(
+            if (playEntrance) {
+                initialChildPoseFor(entrance, localIndex, absoluteRow, pitchPx)
+            } else {
+                ChildEntrancePose(lift = -pitchPx * absoluteRow)
+            }
+        )
+    }
     val leaveOffset = remember(node.id) { Animatable(0f) }
     val scale = remember(node.id) { Animatable(1f) }
     // Only while leaving - a single child turns/grows alone, not with a pile, so it has nothing
@@ -1440,8 +1520,12 @@ private fun ChildPill(
     // stale silently - the entrance would keep the old ordering, arriving in a sequence that no
     // longer matches where the pills actually sit.
     LaunchedEffect(node.id, localIndex) {
-        delay(Azphalt.DROP_MS.toLong())
-        motion.play(entrance, localIndex, rowCount, pitchPx, absoluteRow)
+        if (playEntrance) {
+            delay(scaledDelayMs(Azphalt.DROP_MS))
+            motion.play(entrance, localIndex, rowCount, pitchPx, absoluteRow)
+        } else {
+            motion.lift.snapTo(-pitchPx * absoluteRow)
+        }
     }
 
     // A newly-chosen pill drops to the shared bottom row and grows a little as it settles there;
@@ -1509,9 +1593,10 @@ private fun ChildPillVisual(ctx: ChildPillVisualContext, motion: ChildPillMotion
             // Same "ink means primed" treatment StackPill gives its own row-0-aligned pill.
             selected = ctx.aligned,
             touchTargetHeight = ROW_PITCH,
+            onClick = onClick,
             modifier = Modifier
                 .align(Alignment.BottomStart)
-                .fillMaxWidth(childWidthFraction(ctx.localIndex) * motion.entrance.lenFrac.value)
+                .widthByRef(childWidthFraction(ctx.localIndex) * motion.entrance.lenFrac.value)
                 .offsetByFractionOfParent(CHILD_LEFT + motion.leaveOffset.value + motion.entrance.offset.value)
                 .graphicsLayer {
                     transformOrigin = when (ctx.entrance) {
@@ -1528,7 +1613,6 @@ private fun ChildPillVisual(ctx: ChildPillVisualContext, motion: ChildPillMotion
                     scaleY = motion.scale.value
                     alpha = motion.entrance.alpha.value
                 }
-                .clickable(onClick = onClick)
         )
     }
 }
@@ -1548,11 +1632,16 @@ private fun TrailRow(
     onCrumbPositioned: (id: String, rect: Rect) -> Unit = { _, _ -> }
 ) {
     if (trail.isEmpty()) return
+    // With 13sp labels a long trail no longer fits in the space right of the host, so the row
+    // scrolls sideways (kept at its end, where the newest crumb is) instead of running off-screen.
+    val trailScroll = rememberScrollState()
+    LaunchedEffect(trailScroll.maxValue) { trailScroll.scrollTo(trailScroll.maxValue) }
     Box(Modifier.fillMaxSize()) {
         Row(
             Modifier
                 .align(Alignment.BottomStart)
-                .offsetByFractionOfParent(TRAIL_LEFT_OF_FULL),
+                .insetStartByRef(TRAIL_LEFT_OF_FULL)
+                .horizontalScroll(trailScroll),
             // Negative spacing overlaps each crumb into the one after it, like a fanned hand of
             // cards - the same shingled read as the rest of this menu's overlaps/bleeds. A plain
             // Row draws later children over earlier ones, which would read backwards for a trail
@@ -1596,8 +1685,9 @@ private fun TrailCrumb(
         // than everything around it. Anchored BottomStart so a short crumb's floor padding falls
         // after its label, keeping the shingled trail's overlap landing on real crumb content
         // instead of an empty margin ahead of it.
-        anchor = Alignment.BottomStart,
+        anchor = Alignment.CenterStart,
         stretch = false,
+        onClick = onClick,
         // Guarantees real trailing space behind every crumb's own label/cap, long or short - see
         // extraEndPadding's own doc comment on Pill() for why a floor-width crumb's padding alone
         // isn't enough once a label's content outgrows that floor.
@@ -1605,11 +1695,26 @@ private fun TrailCrumb(
         modifier = Modifier
             .defaultMinSize(minWidth = 56.dp)
             .zIndex(zIndex)
-            .clickable(onClick = onClick)
             .onGloballyPositioned { onPositioned(it.boundsInRoot()) }
     )
 }
 
+// Pill text colours, computed once: contrastingText() is two WCAG ratios and a Pill recomposes on
+// every frame of an unfold.
+private val HUE_TEXT: List<Color> by lazy { Azphalt.hues.map { it.contrastingText() } }
+private val CAP_TEXT: List<Color> by lazy { Azphalt.caps.map { it.contrastingText() } }
+
+private val PILL_CAP_HEIGHT = 20.dp
+private val PILL_CAP_MIN_WIDTH = 20.dp
+
+/**
+ * One pill: a [PillMetrics.Height] capsule with its label and optional end-cap anchored at the
+ * right, centred vertically inside a [touchTargetHeight] hit box. Label and cap sizes come from the
+ * `pill` / `pillCap` tokens of [LocalAzphaltType]; text colour is whichever of Ink/White has the
+ * higher contrast against the fill. [onClick] (when given) is handled on the whole hit box, with
+ * the press indication clipped to the capsule rather than the rectangle.
+ */
+@Suppress("LongParameterList")
 @Composable
 internal fun Pill(
     label: String,
@@ -1617,71 +1722,66 @@ internal fun Pill(
     hue: Int,
     selected: Boolean,
     modifier: Modifier = Modifier,
-    // Every stack pill (StackPill/HostPill/ChildPill) is sized via fillMaxWidth(fraction) against
-    // a fraction of the screen, then bled further left by absoluteBleed. [stretch] (below) makes
-    // the visible capsule actually fill that whole box - the *label* still sits at the box's own
-    // right edge, the one fixed point DESIGN.md's "anchored by its right end" means, via
-    // horizontalArrangement below; [anchor] only still matters for TrailCrumb, the one caller
-    // that passes stretch=false, where BottomStart puts its 56dp floor-padding after a short
-    // label instead of before it.
-    anchor: Alignment = Alignment.BottomEnd,
+    // Fires on a tap anywhere in the pill's hit box. Null for a pill whose caller handles input.
+    onClick: (() -> Unit)? = null,
+    enabled: Boolean = true,
+    // Which end of the hit box the capsule hugs. Centre-vertical so the 48dp target extends equally
+    // above and below the 32dp capsule. Right end for a stack pill, left for a trail crumb: the
+    // Start/End half is what DESIGN.md's "anchored by its right end" means for the stack, and keeps
+    // a crumb's 56dp floor-padding after its label instead of before it.
+    anchor: Alignment = Alignment.CenterEnd,
     // True for every pill fanned out in a stack (StackPill/HostPill/ChildPill): the visible
-    // capsule fills [modifier]'s own width - the fraction-of-screen-width box described above -
-    // instead of shrinking to the label, so a stack's row-to-row width variation (or a child
-    // band's uniform one) actually shows up as the capsule's own bled-left length, per DESIGN.md
-    // rule 1, rather than being swallowed by a label-sized capsule floating inside an invisible
-    // wider box. False only for TrailCrumb, the one pill sized by its own content - a Row of
-    // those can't all stretch to fill their shared row without fighting each other for width.
+    // capsule fills [modifier]'s own width - the fraction-of-reference-width box described at
+    // widthByRef - instead of shrinking to the label, so a stack's row-to-row width variation
+    // actually shows up as the capsule's own bled-left length, per DESIGN.md rule 1. False only for
+    // TrailCrumb, the one pill sized by its own content.
     stretch: Boolean = true,
-    // The accessibility-minimum default, overridden by every row-stacked pill - see the comment
-    // where this is actually consumed, on why a row-stacked pill can't safely use the default.
+    // The hit box height. Every row-stacked pill passes ROW_PITCH, which is the same 48dp, so the
+    // hit boxes of consecutive rows tile without overlapping.
     touchTargetHeight: Dp = PILL_TOUCH_TARGET,
-    // Zero for every pill except TrailCrumb, which passes -TRAIL_OVERLAP here: a short crumb's
-    // own floor-padding already keeps a shingled neighbor's overlap off its label (see [anchor]'s
-    // own comment), but a crumb whose label is long enough to fill or exceed that 56dp floor has
-    // no such buffer - the next crumb's overlap would land squarely on this one's own trailing
-    // glyphs otherwise. Padding the content out by at least the overlap amount guarantees real,
-    // opaque space back there for every crumb, long or short, so the overlap zone can never reach
-    // actual text - independent of which crumb z-order happens to paint on top.
+    // Zero for every pill except TrailCrumb, which passes -TRAIL_OVERLAP here: a crumb whose label
+    // outgrows the 56dp floor has no padding buffer, so the next crumb's overlap would land on its
+    // trailing glyphs. Padding the content out by the overlap amount guarantees real, opaque space
+    // back there for every crumb, long or short.
     extraEndPadding: Dp = 0.dp
 ) {
+    val type = LocalAzphaltType.current
     val bg = if (selected) Azphalt.Ink else Azphalt.hues[hue]
     val capBg = if (selected) Azphalt.Yellow else Azphalt.caps[hue]
     // Selected is a fixed ink-bg/yellow-fg UI signal, not "text on an arbitrary background" - it
-    // keeps its own fixed pairing. Unselected sits on this pill's own hue/cap, which - unlike the
-    // page ground - never rotates, but still spans light (amber, tan) to dark (violet, teal), so a
-    // fixed White reads fine on most of them and nearly vanishes on the lightest few.
-    val fg = if (selected) Azphalt.Yellow else bg.contrastingText()
-    val capFg = if (selected) Azphalt.Ink else capBg.contrastingText()
+    // keeps its own fixed pairing. Unselected sits on this pill's own hue/cap, which never rotates
+    // but spans light (amber, tan) to dark (violet, teal): the text is whichever of Ink/White
+    // measures better on that exact fill (see contrastingText), not a fixed White.
+    val fg = if (selected) Azphalt.Yellow else HUE_TEXT[hue]
+    val capFg = if (selected) Azphalt.Ink else CAP_TEXT[hue]
     // Local copy so the semantics block below reads the parameter, not its own
     // SemanticsPropertyReceiver.selected property of the same name.
     val isSelected = selected
+    val interaction = remember { MutableInteractionSource() }
 
-    // [modifier] carries this pill's real geometry - offsetByFractionOfParent / absoluteBleed /
-    // the lift-and-scroll graphicsLayer - and ends in the clickable that fires onClick, all sized
-    // against the pill's own footprint. PILL_HEIGHT (17dp) is a deliberate Menu Style Guide
-    // constant the width-variation and row-pitch math elsewhere in this file depends on staying
-    // exact, so it can't simply grow to Android's PILL_TOUCH_TARGET (48dp) minimum. Instead this
-    // outer Box pads out the *clickable* region to [touchTargetHeight] while the Row painted below
-    // stays exactly PILL_HEIGHT tall - the same "invisible larger tap zone around a small visible
-    // element" pattern GuideReaderScreen's Chip (UI-7) uses. The padding is pinned to the bottom
-    // edge (defaultMinSize + a Bottom* anchor) rather than split evenly above and below: every
-    // pill here is itself bottom-anchored (aligned to a Bottom* row position, then lifted into its
-    // row by translationY), so bottom-anchoring the touch target too means the extra height only
-    // ever extends upward, toward the next row up - never nudging the visible pill's own on-screen
-    // position by even a pixel, but eating into that next row's own space by however much the
-    // target overshoots PILL_HEIGHT. [touchTargetHeight] is a real, enforced bound on that
-    // overshoot, not a "should be fine" hope: a row-stacked pill (StackPill/HostPill/ChildPill)
-    // passes ROW_PITCH itself here, capping the touch target at exactly the gap to the next row so
-    // two rows' tap zones can never overlap - PILL_TOUCH_TARGET's full 48dp would reach 31dp past
-    // a 17dp pill into rows *above* it, and since later-declared rows paint (and hit-test) on top
-    // of earlier ones, a lower row's oversized target would silently steal taps aimed at whatever
-    // pill actually sits under the user's finger higher up the stack. TrailCrumb - a single
-    // horizontal row, not lifted into a stack of its own - keeps the full accessibility-minimum
-    // default since it has no neighboring row to overlap. [anchor]'s Start/End half is the
-    // separate, horizontal half of this same alignment - see the comment on that parameter.
+    // [modifier] carries this pill's real geometry - width, offset / bleed, and the lift-and-scroll
+    // graphicsLayer. The click handler is applied after it, so it is hit-tested in the lifted,
+    // transformed position. The outer Box is [touchTargetHeight] tall while the Row painted inside
+    // is PILL_HEIGHT, centred: an invisible larger tap zone around a smaller visible element.
+    // Because a stack's rows are ROW_PITCH (== the hit box height) apart, no tap can land in two
+    // rows and none falls between them.
     Box(
-        modifier.defaultMinSize(minHeight = touchTargetHeight),
+        modifier
+            .defaultMinSize(minHeight = touchTargetHeight)
+            .then(
+                if (onClick != null) {
+                    // indication = null: the default ripple would paint the whole hit rectangle; the
+                    // capsule draws its own, clipped, below from the same interaction source.
+                    Modifier.clickable(
+                        interactionSource = interaction,
+                        indication = null,
+                        enabled = enabled,
+                        onClick = onClick
+                    )
+                } else {
+                    Modifier
+                }
+            ),
         contentAlignment = anchor
     ) {
         Row(
@@ -1698,7 +1798,8 @@ internal fun Pill(
                 }
                 .clip(RoundedCornerShape(percent = 50))
                 .background(bg)
-                .padding(start = 12.dp, end = 6.dp + extraEndPadding),
+                .indication(interaction, LocalIndication.current)
+                .padding(start = 14.dp, end = 8.dp + extraEndPadding),
             verticalAlignment = Alignment.CenterVertically,
             // "Label and end-cap sit together at the right end of the pill, in that order, 9px
             // apart" - the style guide's own literal gap value.
@@ -1707,38 +1808,33 @@ internal fun Pill(
             Text(
                 text = label.uppercase(),
                 color = fg,
-                fontSize = 6.sp,
-                // Text() with no `style` inherits LocalTextStyle - MaterialTheme's own
-                // ProvideTextStyle(typography.bodyLarge), whose lineHeight is a fixed 24.sp. An
-                // overridden fontSize alone doesn't touch that: the merged style keeps the
-                // inherited 24.sp line box around a 6sp glyph, and both this Row and the cap Box
-                // below clip to their own much shorter fixed height, cutting most of the glyph
-                // away. Matching lineHeight to fontSize is what actually fixes it, not the clip.
-                lineHeight = 6.sp,
-                fontWeight = FontWeight.ExtraBold,
-                letterSpacing = 0.09.em,
+                // The style carries fontSize, lineHeight, weight and tracking together. The explicit
+                // lineHeight matters: without one the Text inherits the theme's fixed 24sp line box,
+                // which the fixed-height Row would clip.
+                style = type.pill,
                 maxLines = 1,
-                textAlign = TextAlign.End
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.End,
+                // weight(fill = false) lets a long label ellipsize before it squeezes the cap out;
+                // it is only valid in a bounded Row (a stretched stack pill). A crumb's Row sits in
+                // a horizontal scroller, where a weighted child would be measured at zero width.
+                modifier = if (stretch) Modifier.weight(1f, fill = false) else Modifier
             )
             if (cap != null) {
                 Box(
                     Modifier
-                        .height(10.dp)
-                        .defaultMinSize(minWidth = 12.dp)
+                        .height(PILL_CAP_HEIGHT)
+                        .defaultMinSize(minWidth = PILL_CAP_MIN_WIDTH)
                         .clip(RoundedCornerShape(percent = 50))
                         .background(capBg)
-                        .padding(horizontal = 4.dp),
+                        .padding(horizontal = 6.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = cap.uppercase(),
                         color = capFg,
-                        fontSize = 5.sp,
-                        // Same inherited-lineHeight bug as the label above, worse here since this
-                        // Box is only 10dp tall - the inherited 24.sp line box left only the very
-                        // top sliver of the cap's own glyphs inside that clip.
-                        lineHeight = 5.sp,
-                        fontWeight = FontWeight.ExtraBold
+                        style = type.pillCap,
+                        maxLines = 1
                     )
                 }
             }
@@ -1746,15 +1842,41 @@ internal fun Pill(
     }
 }
 
-private fun Modifier.offsetByFractionOfParent(fraction: Float) = layout { measurable, constraints ->
-    val placeable = measurable.measure(constraints)
-    layout(placeable.width, placeable.height) {
-        placeable.placeRelative((constraints.maxWidth * fraction).toInt(), 0)
-    }
+/**
+ * Sizes this element to [fraction] of the *reference width* - min(available width,
+ * [PillMetrics.MaxReferenceWidth]) - instead of `fillMaxWidth(fraction)`'s fraction of the whole
+ * screen. On a phone the two are identical; on a tablet or a wide window the pills keep their
+ * phone proportions rather than spanning 800dp. Like `fillMaxWidth(fraction)` it forces a tight
+ * width, so the offset / bleed modifiers after it still see the pill's own width as their maximum.
+ */
+private fun Modifier.widthByRef(fraction: Float) = layout { measurable, constraints ->
+    val maxPx = if (constraints.hasBoundedWidth) constraints.maxWidth else Int.MAX_VALUE
+    val refPx = minOf(maxPx, PillMetrics.MaxReferenceWidth.roundToPx())
+    val width = (refPx * fraction).roundToInt().coerceIn(constraints.minWidth, constraints.maxWidth)
+    val placeable = measurable.measure(constraints.copy(minWidth = width, maxWidth = width))
+    layout(placeable.width, placeable.height) { placeable.placeRelative(0, 0) }
+}
+
+/** Places this element [fraction] of the reference width in from the start edge (see
+ *  [widthByRef]), and measures it with only the width that is left of that inset. */
+private fun Modifier.insetStartByRef(fraction: Float) = layout { measurable, constraints ->
+    val maxPx = if (constraints.hasBoundedWidth) constraints.maxWidth else Int.MAX_VALUE
+    val refPx = minOf(maxPx, PillMetrics.MaxReferenceWidth.roundToPx())
+    val inset = (refPx * fraction).roundToInt().coerceAtLeast(0)
+    val remaining = if (constraints.hasBoundedWidth) (constraints.maxWidth - inset).coerceAtLeast(0) else constraints.maxWidth
+    val placeable = measurable.measure(constraints.copy(minWidth = 0, maxWidth = remaining))
+    layout(placeable.width, placeable.height) { placeable.placeRelative(inset, 0) }
 }
 
 private fun Modifier.absoluteBleed(by: Dp) = layout { measurable, constraints ->
     val extra = by.roundToPx()
     val placeable = measurable.measure(constraints.copy(maxWidth = constraints.maxWidth + extra))
     layout(placeable.width - extra, placeable.height) { placeable.placeRelative(-extra, 0) }
+}
+
+private fun Modifier.offsetByFractionOfParent(fraction: Float) = layout { measurable, constraints ->
+    val placeable = measurable.measure(constraints)
+    layout(placeable.width, placeable.height) {
+        placeable.placeRelative((constraints.maxWidth * fraction).toInt(), 0)
+    }
 }

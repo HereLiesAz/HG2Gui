@@ -57,6 +57,15 @@ object VfsManager {
     // still has somewhere real to browse/create into before that finishes.
     private fun sandboxDir(context: Context): File = DistroManager.homeDir(context).apply { mkdirs() }
 
+    /**
+     * A view pinned to the private sandbox ([DistroManager.homeDir]) that ignores [setDeviceStorageMode],
+     * [cd] and every other piece of this object's global state. For callers that are not the Files UI
+     * and must never follow it - the MCP server above all, whose tools are documented as an
+     * "app-private sandboxed filesystem" and would otherwise start reading and writing all of
+     * shared storage as soon as the user opened Files in device-storage mode.
+     */
+    fun sandbox(context: Context): VfsSandbox = VfsSandbox(sandboxDir(context))
+
     fun isDeviceStorageActive(): Boolean = deviceStorageMode
 
     fun isDeviceStorageAvailable(context: Context): Boolean = StorageAccessManager.hasFullAccess(context)

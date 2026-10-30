@@ -1,14 +1,18 @@
 package com.hereliesaz.hg2gui.ui
 
+import android.content.ActivityNotFoundException
+import android.content.Context
 import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -16,21 +20,99 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import com.hereliesaz.hg2gui.managers.UpdateCheckPreference
 import com.hereliesaz.hg2gui.terminal.ShellPreference
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
 import com.hereliesaz.hg2gui.ui.menu.onPage
 import com.hereliesaz.hg2gui.ui.menu.pageBrush
+import com.hereliesaz.hg2gui.ui.theme.AzphaltSurface
+import com.hereliesaz.hg2gui.ui.theme.LocalAzphaltType
+import hg2gui.shared.generated.resources.Res
+import hg2gui.shared.generated.resources.settings_about_description
+import hg2gui.shared.generated.resources.settings_about_licences
+import hg2gui.shared.generated.resources.settings_about_licences_description
+import hg2gui.shared.generated.resources.settings_about_privacy
+import hg2gui.shared.generated.resources.settings_about_privacy_description
+import hg2gui.shared.generated.resources.settings_about_title
+import hg2gui.shared.generated.resources.settings_ai_button
+import hg2gui.shared.generated.resources.settings_ai_button_description
+import hg2gui.shared.generated.resources.settings_ai_description
+import hg2gui.shared.generated.resources.settings_ai_title
+import hg2gui.shared.generated.resources.settings_back
+import hg2gui.shared.generated.resources.settings_back_description
+import hg2gui.shared.generated.resources.settings_developer_button
+import hg2gui.shared.generated.resources.settings_developer_button_description
+import hg2gui.shared.generated.resources.settings_developer_description
+import hg2gui.shared.generated.resources.settings_developer_title
+import hg2gui.shared.generated.resources.settings_environment_button
+import hg2gui.shared.generated.resources.settings_environment_button_description
+import hg2gui.shared.generated.resources.settings_environment_description
+import hg2gui.shared.generated.resources.settings_environment_title
+import hg2gui.shared.generated.resources.settings_fullscreen_description_off
+import hg2gui.shared.generated.resources.settings_fullscreen_description_on
+import hg2gui.shared.generated.resources.settings_fullscreen_option_fullscreen
+import hg2gui.shared.generated.resources.settings_fullscreen_option_safe_area
+import hg2gui.shared.generated.resources.settings_fullscreen_title
+import hg2gui.shared.generated.resources.settings_history_button
+import hg2gui.shared.generated.resources.settings_history_button_description
+import hg2gui.shared.generated.resources.settings_history_description
+import hg2gui.shared.generated.resources.settings_history_title
+import hg2gui.shared.generated.resources.settings_isolation_button
+import hg2gui.shared.generated.resources.settings_isolation_button_description
+import hg2gui.shared.generated.resources.settings_isolation_description
+import hg2gui.shared.generated.resources.settings_isolation_title
+import hg2gui.shared.generated.resources.settings_motion_button
+import hg2gui.shared.generated.resources.settings_motion_description_off
+import hg2gui.shared.generated.resources.settings_motion_description_on
+import hg2gui.shared.generated.resources.settings_motion_title
+import hg2gui.shared.generated.resources.settings_option_off
+import hg2gui.shared.generated.resources.settings_option_on
+import hg2gui.shared.generated.resources.settings_pty_description
+import hg2gui.shared.generated.resources.settings_pty_option_pipe
+import hg2gui.shared.generated.resources.settings_pty_option_pty
+import hg2gui.shared.generated.resources.settings_pty_title
+import hg2gui.shared.generated.resources.settings_shell_description
+import hg2gui.shared.generated.resources.settings_shell_none
+import hg2gui.shared.generated.resources.settings_shell_title
+import hg2gui.shared.generated.resources.settings_text_size_decrease
+import hg2gui.shared.generated.resources.settings_text_size_description
+import hg2gui.shared.generated.resources.settings_text_size_increase
+import hg2gui.shared.generated.resources.settings_text_size_reset
+import hg2gui.shared.generated.resources.settings_text_size_title
+import hg2gui.shared.generated.resources.settings_title
+import hg2gui.shared.generated.resources.settings_updates_description_off
+import hg2gui.shared.generated.resources.settings_updates_description_on
+import hg2gui.shared.generated.resources.settings_updates_title
+import org.jetbrains.compose.resources.stringResource
 
-/** Bounds match the range the reporter cared about testing: half size to double. */
-const val FONT_SCALE_MIN_PERCENT = 50
+/**
+ * Bounds of the Text-size setting. The floor is 85%: below that the pill labels and chip text
+ * drop under 10sp on the glass and the touch targets shrink with them, which the old 50% floor
+ * allowed with no way back short of finding the stepper again. A stored value from before the
+ * change is pulled up to the floor when Settings opens (see [clampFontScalePercent]).
+ */
+const val FONT_SCALE_MIN_PERCENT = 85
 const val FONT_SCALE_MAX_PERCENT = 200
+const val FONT_SCALE_DEFAULT_PERCENT = 100
 private const val FONT_SCALE_STEP_PERCENT = 10
+
+private const val PRIVACY_POLICY_URL = "https://github.com/HereLiesAz/HG2Gui/blob/HEAD/docs/PRIVACY_POLICY.md"
+private const val SOURCE_URL = "https://github.com/HereLiesAz/HG2Gui"
+
+/**
+ * [percent] forced into [FONT_SCALE_MIN_PERCENT]..[FONT_SCALE_MAX_PERCENT]. Public so the Activity
+ * can apply it to the stored value when it reads the preference, before Settings is ever opened.
+ */
+fun clampFontScalePercent(percent: Int): Int = percent.coerceIn(FONT_SCALE_MIN_PERCENT, FONT_SCALE_MAX_PERCENT)
+
+/** One stepper press: [direction] is -1 or +1 step; the result is always inside the allowed range. */
+internal fun steppedFontScalePercent(current: Int, direction: Int): Int =
+    clampFontScalePercent(current + direction * FONT_SCALE_STEP_PERCENT)
 
 @Composable
 fun SettingsScreen(
@@ -48,103 +130,92 @@ fun SettingsScreen(
 ) {
     val context = LocalContext.current
     val availableShells = remember { ShellPreference.available(context) }
-    var selectedShell by remember { mutableStateOf(ShellPreference.selected(context)) }
+    var storedShell by remember { mutableStateOf(ShellPreference.selected(context)) }
+    val shownShell = ShellPreference.effectiveSelection(storedShell, availableShells)
+    var autoUpdateCheck by remember { mutableStateOf(UpdateCheckPreference.isEnabled(context)) }
+    val versionName = remember { appVersionName(context) }
 
-    Column(
-        Modifier
-            .fillMaxSize()
-            .background(Azphalt.currentGround.pageBrush())
-            .then(if (fullscreen) Modifier else Modifier.windowInsetsPadding(WindowInsets.systemBars))
-            .verticalScroll(rememberScrollState())
-    ) {
-        Row(
-            Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 18.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                Modifier
-                    .clip(RoundedCornerShape(percent = 50))
-                    .background(Azphalt.Ink)
-                    .clickable(onClick = onBack)
-                    .padding(horizontal = 14.dp, vertical = 7.dp)
-            ) {
-                Text(
-                    "‹ BACK", color = Azphalt.Yellow,
-                    fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em
-                )
-            }
-        }
+    // A value saved before the 85% floor existed (down to 50%) would leave the UI at an unusable
+    // size with the "-" button disabled; lift it to the floor as soon as Settings is shown.
+    LaunchedEffect(fontScalePercent) {
+        val clamped = clampFontScalePercent(fontScalePercent)
+        if (clamped != fontScalePercent) onFontScalePercentChange(clamped)
+    }
 
-        Eyebrow("Settings")
-
+    SettingsPage(title = stringResource(Res.string.settings_title), fullscreen = fullscreen, onBack = onBack) {
+        val fullscreenTitle = stringResource(Res.string.settings_fullscreen_title)
         SettingRow(
-            title = "Fullscreen",
+            title = fullscreenTitle,
             description = if (fullscreen)
-                "Status and navigation bars are hidden. Swipe from an edge to reveal them."
+                stringResource(Res.string.settings_fullscreen_description_on)
             else
-                "Status and navigation bars stay visible; content is kept clear of them."
+                stringResource(Res.string.settings_fullscreen_description_off)
         ) {
             SegmentedToggle(
-                leftLabel = "SAFE AREA",
-                rightLabel = "FULLSCREEN",
+                groupLabel = fullscreenTitle,
+                leftLabel = stringResource(Res.string.settings_fullscreen_option_safe_area),
+                rightLabel = stringResource(Res.string.settings_fullscreen_option_fullscreen),
                 rightSelected = fullscreen,
                 onSelectRight = onFullscreenChange
             )
         }
 
         SettingRow(
-            title = "Text size",
-            description = "Scales the whole terminal UI — pills included — not just the text."
+            title = stringResource(Res.string.settings_text_size_title),
+            description = stringResource(Res.string.settings_text_size_description)
         ) {
-            Stepper(
-                value = fontScalePercent,
-                min = FONT_SCALE_MIN_PERCENT,
-                max = FONT_SCALE_MAX_PERCENT,
-                step = FONT_SCALE_STEP_PERCENT,
-                label = { "$it%" },
-                onChange = onFontScalePercentChange
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Stepper(
+                    value = fontScalePercent,
+                    min = FONT_SCALE_MIN_PERCENT,
+                    max = FONT_SCALE_MAX_PERCENT,
+                    label = { "$it%" },
+                    decreaseDescription = stringResource(Res.string.settings_text_size_decrease),
+                    increaseDescription = stringResource(Res.string.settings_text_size_increase),
+                    onChange = { direction -> onFontScalePercentChange(steppedFontScalePercent(fontScalePercent, direction)) }
+                )
+                if (fontScalePercent != FONT_SCALE_DEFAULT_PERCENT) {
+                    AzphaltChip(
+                        label = stringResource(Res.string.settings_text_size_reset),
+                        onClick = { onFontScalePercentChange(FONT_SCALE_DEFAULT_PERCENT) }
+                    )
+                }
+            }
         }
 
-        SettingRow(
-            title = "Real pseudoterminal",
-            description = "Experimental. Runs commands over the app's own native pty bridge " +
-                "instead of a plain pipe, so full-screen tools (vim, top, less, an interactive " +
-                "REPL) can actually draw a screen instead of breaking. Takes effect for a new tab " +
-                "or the next app launch, not the one you're in."
-        ) {
+        val ptyTitle = stringResource(Res.string.settings_pty_title)
+        SettingRow(title = ptyTitle, description = stringResource(Res.string.settings_pty_description)) {
             SegmentedToggle(
-                leftLabel = "PIPE",
-                rightLabel = "PTY",
+                groupLabel = ptyTitle,
+                leftLabel = stringResource(Res.string.settings_pty_option_pipe),
+                rightLabel = stringResource(Res.string.settings_pty_option_pty),
                 rightSelected = usePty,
                 onSelectRight = onUsePtyChange
             )
         }
 
-        SettingRow(
-            title = "Default shell",
-            description = "The interactive shell used for new HG2Gui sessions. Only installed shells are shown. " +
-                "Changing it does not replace the shell in an already-running tab."
-        ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                availableShells.forEach { shell ->
-                    val selected = selectedShell == shell
-                    Box(
-                        Modifier
-                            .clip(RoundedCornerShape(percent = 50))
-                            .background(if (selected) Azphalt.Ink else Azphalt.Ink.copy(alpha = .14f))
-                            .clickable {
+        val shellTitle = stringResource(Res.string.settings_shell_title)
+        SettingRow(title = shellTitle, description = stringResource(Res.string.settings_shell_description)) {
+            if (availableShells.isEmpty()) {
+                // No shell is executable: say so rather than offering one that cannot start.
+                Text(
+                    stringResource(Res.string.settings_shell_none),
+                    color = statusColor(StatusKind.Warning),
+                    style = settingDescriptionStyle(),
+                    modifier = Modifier.liveRegionPolite()
+                )
+            } else {
+                Row(Modifier.selectableGroup(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    availableShells.forEach { shell ->
+                        AzphaltChip(
+                            label = shell,
+                            onClick = {
                                 ShellPreference.setSelected(context, shell)
-                                selectedShell = shell
-                            }
-                            .padding(horizontal = 16.dp, vertical = 9.dp)
-                    ) {
-                        Text(
-                            shell.uppercase(),
-                            color = if (selected) Azphalt.Yellow else Azphalt.Ink.copy(alpha = .55f),
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            letterSpacing = 0.09.em
+                                storedShell = shell
+                            },
+                            selected = shell == shownShell,
+                            role = Role.RadioButton,
+                            contentDescription = "$shellTitle: $shell"
                         )
                     }
                 }
@@ -152,195 +223,270 @@ fun SettingsScreen(
         }
 
         SettingRow(
-            title = "Environment",
-            description = "The PATH and env vars every command actually runs under - the same " +
-                "map ShellSession builds fresh for each bootstrap-tier session. Read-only."
+            title = stringResource(Res.string.settings_environment_title),
+            description = stringResource(Res.string.settings_environment_description)
         ) {
-            Box(
-                Modifier
-                    .clip(RoundedCornerShape(percent = 50))
-                    .background(Azphalt.Ink)
-                    .clickable(onClick = onOpenEnvironment)
-                    .padding(horizontal = 16.dp, vertical = 9.dp)
-            ) {
-                Text(
-                    "VIEW ENVIRONMENT ›", color = Azphalt.Yellow,
-                    fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em
-                )
-            }
+            AzphaltChip(
+                label = stringResource(Res.string.settings_environment_button),
+                onClick = onOpenEnvironment,
+                contentDescription = stringResource(Res.string.settings_environment_button_description)
+            )
         }
 
         SettingRow(
-            title = "History",
-            description = "Every command run in any tab, searchable - not just the current " +
-                "tab's own up/down-arrow recall."
+            title = stringResource(Res.string.settings_history_title),
+            description = stringResource(Res.string.settings_history_description)
         ) {
-            Box(
-                Modifier
-                    .clip(RoundedCornerShape(percent = 50))
-                    .background(Azphalt.Ink)
-                    .clickable(onClick = onOpenHistory)
-                    .padding(horizontal = 16.dp, vertical = 9.dp)
-            ) {
-                Text(
-                    "SEARCH HISTORY ›", color = Azphalt.Yellow,
-                    fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em
-                )
-            }
+            AzphaltChip(
+                label = stringResource(Res.string.settings_history_button),
+                onClick = onOpenHistory,
+                contentDescription = stringResource(Res.string.settings_history_button_description)
+            )
         }
 
         SettingRow(
-            title = "Isolation audit",
-            description = "Inspect the latest observed process, file, network, and authority activity from packages running inside HG2Gui isolation."
+            title = stringResource(Res.string.settings_isolation_title),
+            description = stringResource(Res.string.settings_isolation_description)
         ) {
-            Box(
-                Modifier
-                    .clip(RoundedCornerShape(percent = 50))
-                    .background(Azphalt.Ink)
-                    .clickable {
-                        context.startActivity(
-                            Intent().setClassName(
-                                context.packageName,
-                                "${context.packageName}.IsolationAuditActivity"
-                            )
+            AzphaltChip(
+                label = stringResource(Res.string.settings_isolation_button),
+                onClick = {
+                    context.startActivity(
+                        Intent().setClassName(
+                            context.packageName,
+                            "${context.packageName}.IsolationAuditActivity"
                         )
-                    }
-                    .padding(horizontal = 16.dp, vertical = 9.dp)
-            ) {
-                Text(
-                    "VIEW ISOLATION AUDIT ›", color = Azphalt.Yellow,
-                    fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em
-                )
-            }
+                    )
+                },
+                contentDescription = stringResource(Res.string.settings_isolation_button_description)
+            )
         }
 
         SettingRow(
-            title = "AI",
-            description = "The API key AI command search/chat uses to suggest shell commands. " +
-                "Off until a key is set."
+            title = stringResource(Res.string.settings_ai_title),
+            description = stringResource(Res.string.settings_ai_description)
         ) {
-            Box(
-                Modifier
-                    .clip(RoundedCornerShape(percent = 50))
-                    .background(Azphalt.Ink)
-                    .clickable(onClick = onOpenAiSettings)
-                    .padding(horizontal = 16.dp, vertical = 9.dp)
-            ) {
-                Text(
-                    "AI SETTINGS ›", color = Azphalt.Yellow,
-                    fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em
-                )
-            }
+            AzphaltChip(
+                label = stringResource(Res.string.settings_ai_button),
+                onClick = onOpenAiSettings,
+                contentDescription = stringResource(Res.string.settings_ai_button_description)
+            )
         }
 
         SettingRow(
-            title = "Developer",
-            description = "A loopback-only MCP server a paired AI agent can connect to, and the " +
-                "biometric-gated switch that lets it run real shell commands."
+            title = stringResource(Res.string.settings_developer_title),
+            description = stringResource(Res.string.settings_developer_description)
         ) {
-            Box(
-                Modifier
-                    .clip(RoundedCornerShape(percent = 50))
-                    .background(Azphalt.Ink)
-                    .clickable(onClick = onOpenMcpServer)
-                    .padding(horizontal = 16.dp, vertical = 9.dp)
-            ) {
-                Text(
-                    "MCP SERVER ›", color = Azphalt.Yellow,
-                    fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em
+            AzphaltChip(
+                label = stringResource(Res.string.settings_developer_button),
+                onClick = onOpenMcpServer,
+                contentDescription = stringResource(Res.string.settings_developer_button_description)
+            )
+        }
+
+        val updatesTitle = stringResource(Res.string.settings_updates_title)
+        SettingRow(
+            title = updatesTitle,
+            description = if (autoUpdateCheck)
+                stringResource(Res.string.settings_updates_description_on)
+            else
+                stringResource(Res.string.settings_updates_description_off)
+        ) {
+            SegmentedToggle(
+                groupLabel = updatesTitle,
+                leftLabel = stringResource(Res.string.settings_option_off),
+                rightLabel = stringResource(Res.string.settings_option_on),
+                rightSelected = autoUpdateCheck,
+                onSelectRight = { enabled ->
+                    autoUpdateCheck = enabled
+                    UpdateCheckPreference.setEnabled(context, enabled)
+                }
+            )
+        }
+
+        // HG2Gui has no in-app motion switch of its own: it follows Android's animator scale
+        // (see AzphaltMotion), so this row reports the state and points at the system setting.
+        SettingRow(
+            title = stringResource(Res.string.settings_motion_title),
+            description = if (rememberReducedMotion())
+                stringResource(Res.string.settings_motion_description_off)
+            else
+                stringResource(Res.string.settings_motion_description_on)
+        ) {
+            AzphaltChip(
+                label = stringResource(Res.string.settings_motion_button),
+                onClick = { startActivitySafely(context, Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
+            )
+        }
+
+        SettingRow(
+            title = stringResource(Res.string.settings_about_title),
+            description = stringResource(Res.string.settings_about_description, versionName)
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                AzphaltChip(
+                    label = stringResource(Res.string.settings_about_privacy),
+                    onClick = { startActivitySafely(context, Intent(Intent.ACTION_VIEW, Uri.parse(PRIVACY_POLICY_URL))) },
+                    contentDescription = stringResource(Res.string.settings_about_privacy_description)
+                )
+                AzphaltChip(
+                    label = stringResource(Res.string.settings_about_licences),
+                    onClick = { startActivitySafely(context, Intent(Intent.ACTION_VIEW, Uri.parse(SOURCE_URL))) },
+                    contentDescription = stringResource(Res.string.settings_about_licences_description)
                 )
             }
         }
     }
 }
 
+/** The installed versionName, or "" when it cannot be read. */
+@Suppress("DEPRECATION")
+private fun appVersionName(context: Context): String =
+    runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }
+        .getOrNull()
+        .orEmpty()
+
+/** Starts [intent], doing nothing when no installed app can handle it (no browser, no settings app). */
+private fun startActivitySafely(context: Context, intent: Intent) {
+    try {
+        context.startActivity(intent)
+    } catch (_: ActivityNotFoundException) {
+        // Nothing can open it on this device; there is no better fallback than staying put.
+    }
+}
+
+/**
+ * The frame every settings-style screen shares (Settings, AI settings, MCP server): the ground
+ * page, system-bar / cutout / keyboard insets, a column capped at a readable width, a back chip
+ * with a real 48dp hit box, an [AzphaltHeading] title and a vertical scroll. Scrolling is part of
+ * the contract - at a large Text-size setting, in landscape, or with the keyboard up, the last row
+ * must stay reachable.
+ */
 @Composable
-private fun SettingRow(title: String, description: String, control: @Composable () -> Unit) {
+internal fun SettingsPage(
+    title: String,
+    fullscreen: Boolean,
+    onBack: () -> Unit,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(Azphalt.currentGround.pageBrush())
+            .screenInsets(fullscreen)
+    ) {
+        Column(
+            Modifier
+                .fillMaxHeight()
+                .maxContentWidth()
+                .verticalScroll(rememberScrollState())
+        ) {
+            Row(
+                Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                AzphaltChip(
+                    label = stringResource(Res.string.settings_back),
+                    onClick = onBack,
+                    contentDescription = stringResource(Res.string.settings_back_description)
+                )
+            }
+            AzphaltHeading(title, Modifier.padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 8.dp))
+            content()
+        }
+    }
+}
+
+/** Body text of a setting's explanation: the type scale's body face at caption size. */
+@Composable
+internal fun settingDescriptionStyle(): TextStyle =
+    LocalAzphaltType.current.body.copy(fontSize = 13.sp, lineHeight = 18.sp)
+
+@Composable
+internal fun SettingRow(title: String, description: String, control: @Composable () -> Unit) {
     Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp)) {
         Text(
-            title.uppercase(), color = Azphalt.currentGround.onPage,
-            fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em
+            title.uppercase(),
+            color = Azphalt.currentGround.onPage,
+            style = LocalAzphaltType.current.capsule,
+            modifier = Modifier.headingRole()
         )
         Text(
-            description, color = Azphalt.currentGround.onPage.copy(alpha = .55f),
-            fontSize = 11.sp, lineHeight = 15.sp,
-            modifier = Modifier.padding(top = 4.dp, bottom = 10.dp)
+            description,
+            color = statusColor(StatusKind.Muted),
+            style = settingDescriptionStyle(),
+            modifier = Modifier.padding(top = 4.dp, bottom = 6.dp)
         )
         control()
     }
 }
 
+/**
+ * Two mutually exclusive options as radio chips. The chosen one is filled and the other outlined
+ * (shape and weight, not hue alone), and each is announced as "<group>, <option>, radio button,
+ * selected / not selected".
+ */
 @Composable
-private fun SegmentedToggle(
+internal fun SegmentedToggle(
+    groupLabel: String,
     leftLabel: String,
     rightLabel: String,
     rightSelected: Boolean,
     onSelectRight: (Boolean) -> Unit
 ) {
     Row(
-        Modifier
-            .clip(RoundedCornerShape(percent = 50))
-            .background(Azphalt.Ink.copy(alpha = .14f))
-            .padding(3.dp)
+        Modifier.selectableGroup(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        listOf(leftLabel to false, rightLabel to true).forEach { (label, selected) ->
-            val on = selected == rightSelected
-            Box(
-                Modifier
-                    .clip(RoundedCornerShape(percent = 50))
-                    .background(if (on) Azphalt.Ink else Color.Transparent)
-                    .clickable { onSelectRight(selected) }
-                    .padding(horizontal = 16.dp, vertical = 9.dp)
-            ) {
-                Text(
-                    label, color = if (on) Azphalt.Yellow else Azphalt.currentGround.onPage.copy(alpha = .55f),
-                    fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.09.em
-                )
-            }
+        listOf(leftLabel to false, rightLabel to true).forEach { (label, value) ->
+            AzphaltChip(
+                label = label,
+                onClick = { onSelectRight(value) },
+                selected = value == rightSelected,
+                role = Role.RadioButton,
+                contentDescription = "$groupLabel: $label"
+            )
         }
     }
 }
 
+/**
+ * "-" [value] "+" with spoken labels for both glyph buttons. [onChange] receives the direction
+ * (-1 or +1); the caller applies its own step and range. The value is a polite live region, so a
+ * screen reader announces each new percentage.
+ */
 @Composable
 private fun Stepper(
     value: Int,
     min: Int,
     max: Int,
-    step: Int,
     label: (Int) -> String,
+    decreaseDescription: String,
+    increaseDescription: String,
     onChange: (Int) -> Unit
 ) {
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        StepperButton("−", enabled = value > min) { onChange((value - step).coerceAtLeast(min)) }
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        AzphaltChip(
+            label = "−",
+            onClick = { onChange(-1) },
+            enabled = value > min,
+            contentDescription = decreaseDescription
+        )
         Box(
             Modifier
-                .clip(RoundedCornerShape(percent = 50))
+                .liveRegionPolite()
+                .clip(AzphaltSurface.capsule)
                 .background(Azphalt.Ink)
-                .padding(horizontal = 18.dp, vertical = 9.dp)
+                .padding(horizontal = 18.dp, vertical = 6.dp)
         ) {
-            Text(
-                label(value), color = Azphalt.Yellow,
-                fontSize = 12.sp, fontWeight = FontWeight.Black
-            )
+            Text(label(value), color = Azphalt.Yellow, style = LocalAzphaltType.current.chip)
         }
-        StepperButton("+", enabled = value < max) { onChange((value + step).coerceAtMost(max)) }
-    }
-}
-
-@Composable
-private fun StepperButton(symbol: String, enabled: Boolean, onClick: () -> Unit) {
-    Box(
-        Modifier
-            .size(34.dp)
-            .clip(RoundedCornerShape(percent = 50))
-            .background(if (enabled) Azphalt.hues[6] else Azphalt.Ink.copy(alpha = .14f))
-            .clickable(enabled = enabled, onClick = onClick),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            symbol,
-            color = if (enabled) Azphalt.White else Azphalt.currentGround.onPage.copy(alpha = .55f),
-            fontSize = 16.sp, fontWeight = FontWeight.Black
+        AzphaltChip(
+            label = "+",
+            onClick = { onChange(1) },
+            enabled = value < max,
+            contentDescription = increaseDescription
         )
     }
 }

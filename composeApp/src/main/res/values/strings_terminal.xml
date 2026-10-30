@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Strings owned by TerminalActivity / LongTaskService. Kept apart from strings.xml so concurrent
+     edits to either file never collide. -->
+<resources>
+    <string name="background_work_running">Working in the background…</string>
+    <string name="background_command_running">A command is running — tap to return to it</string>
+    <string name="loading">Loading…</string>
+    <string name="share_chooser_title">Share</string>
+    <string name="share_chooser_file_title">Share %1$s</string>
+    <string name="share_chooser_items_title">Share %1$d items</string>
+    <string name="toast_copied">Copied to clipboard</string>
+    <string name="toast_share_unavailable_file">Can\'t share %1$s from this location.</string>
+    <string name="toast_share_unavailable_items">%1$d item(s) couldn\'t be shared from this location.</string>
+    <string name="toast_biometric_failed">Couldn\'t confirm: %1$s</string>
+    <string name="biometric_title">Enable shell execution</string>
+    <string name="biometric_subtitle">Lets a paired MCP client run real shell commands on this device</string>
+    <string name="toast_history_cleared">Command history cleared</string>
+    <string name="toast_no_screen_lock">Set up a screen lock (PIN, pattern, password or biometric) in the device settings to enable shell execution.</string>
+    <string name="toast_copy_failed">Couldn\'t copy to the clipboard</string>
+    <string name="toast_history_clear_failed">Couldn\'t clear the command history</string>
+</resources>
