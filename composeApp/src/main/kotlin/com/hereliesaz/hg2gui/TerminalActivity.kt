@@ -1274,15 +1274,18 @@ class TerminalActivity : FragmentActivity() {
                         onOpenFiles = { openFiles() },
                         onFilesButtonPositioned = { filesOrigin = it },
                         onCrumbPositioned = { id, rect -> crumbRects[id] = rect },
-                        // Feeds the composer's branch / dirty chip. Only the one read-only git status
-                        // question the status line asks is answered; anything else gets nothing.
+                        // Feeds the composer's status line. Only the two read-only questions it asks
+                        // are answered (git status, and user/host once per session); anything else
+                        // gets nothing. Both run off the main thread.
                         shellProbe = { cwd, command ->
-                            if (command == ShellStatusProjector.GIT_STATUS_COMMAND) {
-                                withContext(Dispatchers.IO) {
+                            when (command) {
+                                ShellStatusProjector.GIT_STATUS_COMMAND -> withContext(Dispatchers.IO) {
                                     SemanticCompletionProviders.gitStatusBranch(this@TerminalActivity, cwd)
                                 }
-                            } else {
-                                null
+                                ShellStatusProjector.IDENTITY_COMMAND -> withContext(Dispatchers.IO) {
+                                    SemanticCompletionProviders.identity(this@TerminalActivity)
+                                }
+                                else -> null
                             }
                         },
                         onCopy = { text -> copyToClipboard(text) },

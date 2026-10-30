@@ -10,7 +10,7 @@ import org.json.JSONObject
  * `procExposed`) so a reader never mistakes it for a verified security boundary.
  */
 object PackageIsolationDefinition {
-    const val SCHEMA_VERSION = 4
+    const val SCHEMA_VERSION = 5
 
     fun json(context: Context, pkg: PackageLifecycleStore.InstalledPackage): String {
         val dependencyClosure = if (pkg.manager == "pkg") {
@@ -31,8 +31,9 @@ object PackageIsolationDefinition {
                 .put("version", pkg.version))
             .put("boundary", JSONObject()
                 .put("strength", "state-separation-best-effort")
-                .put("procExposed", true)
-                .put("note", "PRoot is ptrace path translation, not a chroot; /proc and /system are bound into the guest and the guest writes its own audit log"))
+                .put("procExposed", false)
+                .put("procFilesBound", JSONArray(PackageIsolation.PROC_ALLOWLIST))
+                .put("note", "PRoot is ptrace path translation, not a chroot; /system, /apex and a short allow-list of static /proc files (not the raw /proc) are bound into the guest, and the audit log is written by a host-side watcher outside the guest root"))
             .put("execution", JSONObject()
                 .put("backend", "PROOT_ISOLATED")
                 .put("failClosed", true)
