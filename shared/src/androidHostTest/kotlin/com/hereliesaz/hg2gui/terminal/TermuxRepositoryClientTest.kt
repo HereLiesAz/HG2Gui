@@ -212,7 +212,7 @@ class TermuxRepositoryClientTest {
 
     @Test
     fun aPresentValidUntil_replacesTheMaxAgeBound() {
-        val release = "Date: Sun, 16 Aug 2026 12:00:00 UTC\nValid-Until: Sun, 16 Aug 2027 12:00:00 UTC\nSHA256:\n abc 1 main/x"
+        val release = "Date: Sun, 16 Aug 2026 12:00:00 UTC\nValid-Until: Mon, 16 Aug 2027 12:00:00 UTC\nSHA256:\n abc 1 main/x"
         assertEquals(aug16, checkReleaseFreshness(release, aug16 + 300 * day, null, maxAgeWithoutValidUntilMillis = 180 * day))
     }
 
