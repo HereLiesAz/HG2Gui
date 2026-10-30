@@ -70,8 +70,8 @@ object PackageLifecycleStore {
     private var installedCache: InstalledCache? = null
 
     /**
-     * Every installed package across the supported managers. TerminalEngine calls this (via
-     * [ownerOfBinary]) for every command line, so the full scan is cached and reused until the
+     * Every installed package across the supported managers. TerminalEngine calls this once
+     * per command line (on an IO thread, never the UI thread), so the full scan is cached and reused until the
      * dpkg status file or one of the other managers' install roots changes, or a disabled/
      * isolated flag is flipped through this store.
      */

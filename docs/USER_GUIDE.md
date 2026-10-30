@@ -237,6 +237,8 @@ The AI surface can propose commands and return them to the terminal for review. 
 
 The Store manages `.azp` packages separately from Termux/dpkg/pip/pipx/npm/gem lifecycle inventory.
 
+Search by name or pick a kind (each kind chip is a filter); before a search the list says how to start, and an empty answer says "No packages found". Packages already installed are listed above the results so they can be removed without searching. Installing a **skill** first asks you to confirm, because a skill's text becomes part of the AI chat's instructions and its signature can only be checked after download. A failed install shows its reason above the list.
+
 ## MCP
 
 The MCP server is loopback-only and explicitly started. Its shell execution gate does not grant ADB/root authority because headless elevation remains blocked.
