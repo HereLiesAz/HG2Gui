@@ -17,6 +17,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -31,6 +32,8 @@ import java.net.ServerSocket
 import java.net.Socket
 import java.security.MessageDigest
 import java.security.SecureRandom
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * `MessageDigest.isEqual` is specified to run in time independent of where the two arrays first
@@ -74,6 +77,12 @@ private const val SOCKET_READ_TIMEOUT_MS = 15_000
 // would otherwise buffer unbounded in memory, on the same pre-auth path, before the token is
 // ever checked.
 private const val MAX_LINE_CHARS = 1 shl 16
+// m-7: the read timeout above is per read(), so a connection trickling one byte every 14 s never
+// trips it. Authentication therefore also gets a hard wall-clock budget per connection.
+private const val AUTH_DEADLINE_MS = 10_000L
+// Connections are served concurrently (a stalled or hostile one can no longer hold the only slot),
+// but bounded so the loopback port cannot be used to exhaust threads.
+private const val MAX_CONCURRENT_CLIENTS = 4
 
 /**
  * A loopback-only JSON-RPC 2.0 server (newline-delimited, matching MCP's own stdio framing) an
@@ -81,6 +90,8 @@ private const val MAX_LINE_CHARS = 1 shl 16
  * enabled, its real shell - see McpJsonRpc/McpTools for the protocol and tool surface, and
  * McpServerScreen for the UI this is started/stopped from. Foreground so the socket survives
  * backgrounding while running; started only by explicit user action, never on its own.
+ * Up to [MAX_CONCURRENT_CLIENTS] connections are served at once; each must present the pairing
+ * token within [AUTH_DEADLINE_MS] of connecting or it is dropped.
  */
 class McpServerService : Service() {
 
@@ -135,10 +146,11 @@ class McpServerService : Service() {
 
     private val scope = CoroutineScope(Dispatchers.IO + Job())
     @Volatile private var serverSocket: ServerSocket? = null
-    // MCP-4: stopServer() only ever closed the listening socket, never the one client actually
-    // connected at the time - its in-flight readLine() could still resolve and dispatch one more
-    // tool call after the user had already tapped off.
-    @Volatile private var currentClient: Socket? = null
+    // MCP-4: stopServer() only ever closed the listening socket, never the clients actually
+    // connected at the time - an in-flight readLine() could still resolve and dispatch one more
+    // tool call after the user had already tapped off. Every live connection is tracked here so
+    // stopServer() can close them all.
+    private val clients: MutableSet<Socket> = ConcurrentHashMap.newKeySet()
     @Volatile private var engine: TerminalEngine? = null
     @Volatile private var tools: McpTools? = null
 
@@ -202,18 +214,26 @@ class McpServerService : Service() {
                     } catch (e: Exception) {
                         break
                     }
-                    currentClient = client
-                    try {
-                        // One bad client (a malformed line, a timeout) must only cost that one
-                        // connection - letting it escape here used to fall into the outer catch
-                        // below, which tears the whole server down as though the bind itself had
-                        // failed.
-                        handleClient(client, generatedToken)
-                    } catch (e: Exception) {
-                        // Already logged nothing, intentionally - a client-triggered exception
-                        // isn't an operator error worth surfacing, just a connection to drop.
-                    } finally {
-                        currentClient = null
+                    if (clients.size >= MAX_CONCURRENT_CLIENTS) {
+                        closeQuietly(client)
+                        continue
+                    }
+                    clients.add(client)
+                    // Served concurrently: a silent or slow connection used to hold the single
+                    // accept-loop slot (up to ~11 days with a byte every 14 s), locking the real
+                    // agent out.
+                    scope.launch {
+                        try {
+                            // One bad client (a malformed line, a timeout) must only cost that one
+                            // connection - letting it escape would be treated as a server failure.
+                            handleClient(client, generatedToken)
+                        } catch (e: Exception) {
+                            // Already logged nothing, intentionally - a client-triggered exception
+                            // isn't an operator error worth surfacing, just a connection to drop.
+                        } finally {
+                            clients.remove(client)
+                            closeQuietly(client)
+                        }
                     }
                 }
             } catch (e: Exception) {
@@ -234,13 +254,34 @@ class McpServerService : Service() {
         }
     }
 
-    /** One client at a time for v1: the accept loop above calls this inline rather than
-     *  launching it concurrently, so a second connection simply queues at the OS accept backlog
-     *  until this one closes. */
+    private fun closeQuietly(socket: Socket) {
+        try {
+            socket.close()
+        } catch (e: Exception) {
+            // Already closed - nothing to clean up.
+        }
+    }
+
+    /** Serves one connection (the accept loop launches one of these per client, up to
+     *  [MAX_CONCURRENT_CLIENTS] at once). */
     private suspend fun handleClient(client: Socket, expectedToken: String) {
-        // A connection that never sends anything - the whole point of MCP-2 - now times out
-        // instead of blocking the single-client accept loop forever.
+        // A connection that never sends anything - the whole point of MCP-2 - times out per read,
+        // and the watchdog below caps the total time it may spend before authenticating.
         client.soTimeout = SOCKET_READ_TIMEOUT_MS
+        val authenticated = AtomicBoolean(false)
+        val watchdog = scope.launch {
+            delay(AUTH_DEADLINE_MS)
+            // Closing the socket is what unblocks the pending read() with an exception.
+            if (!authenticated.get()) closeQuietly(client)
+        }
+        try {
+            serveClient(client, expectedToken, authenticated)
+        } finally {
+            watchdog.cancel()
+        }
+    }
+
+    private suspend fun serveClient(client: Socket, expectedToken: String, authenticated: AtomicBoolean) {
         client.use { socket ->
             val reader = BufferedReader(InputStreamReader(socket.getInputStream()))
             val writer = OutputStreamWriter(socket.getOutputStream())
@@ -261,6 +302,7 @@ class McpServerService : Service() {
                 writer.flush()
                 return
             }
+            authenticated.set(true)
             writer.write("{\"authorized\":true}\n")
             writer.flush()
             // The read timeout only exists to drop a client that never authenticates. A paired
@@ -271,7 +313,8 @@ class McpServerService : Service() {
             while (isRunning.value) {
                 val line = reader.readLineBounded(MAX_LINE_CHARS) ?: break
                 if (line.isBlank()) continue
-                val response = McpJsonRpc.handleLine(line, currentTools)
+                // null = a JSON-RPC notification, which must not be answered.
+                val response = McpJsonRpc.handleLine(line, currentTools) ?: continue
                 writer.write(response)
                 writer.write("\n")
                 writer.flush()
@@ -289,12 +332,8 @@ class McpServerService : Service() {
             // Already closed or never opened - nothing to clean up.
         }
         serverSocket = null
-        try {
-            currentClient?.close()
-        } catch (e: Exception) {
-            // Already closed - nothing to clean up.
-        }
-        currentClient = null
+        clients.toList().forEach { closeQuietly(it) }
+        clients.clear()
         engine?.destroy()
         engine = null
         tools = null

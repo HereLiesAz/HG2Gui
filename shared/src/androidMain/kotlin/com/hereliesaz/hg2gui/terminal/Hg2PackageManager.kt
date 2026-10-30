@@ -19,7 +19,6 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.util.ArrayDeque
 import java.util.Locale
-import java.util.zip.GZIPInputStream
 
 class Hg2PackageManager(
     private val context: Context,
@@ -27,7 +26,13 @@ class Hg2PackageManager(
     private val downloader: Hg2Downloader
 ) {
     private val prefix = DistroManager.prefixDir(context)
+    // Re-creatable material only (downloaded .debs, extraction work dirs): safe for the OS or the
+    // user to clear at any time.
     private val cacheDir = File(context.cacheDir, "hg2-packages").apply { mkdirs() }
+    // Material a transaction depends on while it runs - the staged copies of installed maintainer
+    // scripts and the externalized scripts of packages about to be installed. Kept out of cacheDir
+    // so "Clear cache" / low-storage eviction cannot delete the only copy mid-operation.
+    private val stagingDir = File(context.noBackupFilesDir, "hg2-package-staging").apply { mkdirs() }
     private val stateDir = File(prefix, "var/lib/hg2pkg").apply { mkdirs() }
     private val packagesFile = File(stateDir, "Packages")
     private val dpkgLauncher = File(context.applicationInfo.nativeLibraryDir, "libhg2gui_dpkg.so")
@@ -35,6 +40,7 @@ class Hg2PackageManager(
     private val bash = File(prefix, "bin/bash")
     private val dpkgInfoDir = File(prefix, "var/lib/dpkg/info")
     private val repository = TermuxRepositoryClient(context, client)
+    private val resolver = PackageResolver { candidate, operator, wanted -> dpkgVersionCompare(candidate, operator, wanted) }
     private var activeMirror: String? = null
 
     data class Relation(
@@ -61,7 +67,7 @@ class Hg2PackageManager(
         val description: String
     )
 
-    private data class Installed(
+    internal data class Installed(
         val name: String,
         val version: String,
         val provides: List<Relation> = emptyList(),
@@ -77,6 +83,18 @@ class Hg2PackageManager(
 
     fun handles(line: String): Boolean = words(line).firstOrNull() in setOf("pkg", "hg2pkg")
 
+    /**
+     * Runs one `pkg` command line. Entry points relevant to callers:
+     *  - `pkg install <name…>` installs missing packages; names already installed are a no-op.
+     *  - `pkg install --reinstall <name…>` re-plans and re-installs the named packages even when
+     *    the installed version already satisfies them (the force-requested path).
+     *  - `pkg upgrade` upgrades every installed package that has a newer version in the index;
+     *    `pkg upgrade <name…>` does so for just the named, installed packages and reports "Already
+     *    up to date" when there is nothing newer. This is the command a lifecycle "Update" of a
+     *    pkg-managed package must use - plain `pkg install <name>` is a silent no-op for an
+     *    installed package.
+     * Unknown `-`/`--` options are rejected instead of silently dropped.
+     */
     fun run(line: String): Flow<String> = channelFlow {
         val output: suspend (String) -> Unit = { send(it) }
         val args = words(line).drop(1)
@@ -85,14 +103,17 @@ class Hg2PackageManager(
         // corrupt the prefix.
         PACKAGE_OPERATION_LOCK.withLock {
             when (args.firstOrNull()) {
-                "install", "in" -> install(requirePackages(args, "install"), forceRequested = false, emit = output)
+                "install", "in" -> {
+                    val parsed = PkgArgs.parse("install", args.drop(1))
+                    install(requirePackages(parsed, "install"), forceRequested = parsed.reinstall, emit = output)
+                }
                 "update" -> updateIndex(output)
-                "upgrade", "up" -> upgrade(output)
-                "remove", "rm", "uninstall" -> remove(requirePackages(args, "remove"), purge = false, emit = output)
-                "purge" -> remove(requirePackages(args, "purge"), purge = true, emit = output)
+                "upgrade", "up" -> upgrade(requirePackagesOptional(PkgArgs.parse("upgrade", args.drop(1))), output)
+                "remove", "rm", "uninstall" -> remove(requirePackages(PkgArgs.parse("remove", args.drop(1)), "remove"), purge = false, emit = output)
+                "purge" -> remove(requirePackages(PkgArgs.parse("purge", args.drop(1)), "purge"), purge = true, emit = output)
                 "clean" -> clean(output)
                 "search" -> search(args.drop(1).joinToString(" "), output)
-                "show", "info" -> show(requirePackages(args, "show"), output)
+                "show", "info" -> show(requirePackages(PkgArgs.parse("show", args.drop(1)), "show"), output)
                 "list-installed" -> {
                     val installed = readInstalled().values.sortedBy { it.name }
                     send(if (installed.isEmpty()) "No installed packages recorded by dpkg." else installed.joinToString("\n") { "${it.name} ${it.version}" })
@@ -107,27 +128,47 @@ class Hg2PackageManager(
         val removable = cacheDir.listFiles().orEmpty().filter {
             it.isFile && (it.extension == "deb" || it.name.endsWith(".part")) ||
                 it.isDirectory && (it.name.startsWith("prepare-") || it.name.startsWith("scripts-") || it.name.startsWith("installed-scripts-"))
-        }
-        removable.forEach { if (it.isDirectory) it.deleteRecursively() else it.delete() }
+        } + staleStagingEntries()
+        removable.forEach { if (it.isDirectory) FileTrees.deleteRecursivelyNoFollow(it) else it.delete() }
         emit("Removed ${removable.size} cached package item${if (removable.size == 1) "" else "s"}.")
     }
 
-    private fun requirePackages(args: List<String>, operation: String): List<String> {
-        val packages = args.drop(1).filterNot { it.startsWith("-") }
-        if (packages.isEmpty()) error("usage: pkg $operation <package> [package…]")
-        return packages
+    /**
+     * Staging directories left by an earlier, interrupted operation. Only called while holding
+     * [PACKAGE_OPERATION_LOCK], when no operation of this process can be using them; the journal
+     * (recovered first) is what restores their content after a crash, not these copies.
+     */
+    private fun staleStagingEntries(): List<File> = stagingDir.listFiles().orEmpty().filter {
+        it.isDirectory && (it.name.startsWith("scripts-") || it.name.startsWith("installed-scripts-"))
     }
 
-    private suspend fun upgrade(emit: suspend (String) -> Unit) {
+    private fun requirePackages(parsed: PkgArgs.Parsed, operation: String): List<String> {
+        if (parsed.packages.isEmpty()) error("usage: pkg $operation <package> [package…]")
+        return parsed.packages
+    }
+
+    private fun requirePackagesOptional(parsed: PkgArgs.Parsed): List<String> = parsed.packages
+
+    /**
+     * Upgrades installed packages that have a newer version in the freshly authenticated index:
+     * every installed package when [names] is empty, otherwise just [names] (which must be
+     * installed). Upgrading is a forced re-plan of exactly the out-of-date packages.
+     */
+    private suspend fun upgrade(names: List<String>, emit: suspend (String) -> Unit) {
         updateIndex(emit)
         val available = parsePackages(packagesFile.readText()).associateBy { it.name }
         val installed = readInstalled()
-        val upgrades = installed.values.mapNotNull { current ->
+        val targets = if (names.isEmpty()) {
+            installed.values.toList()
+        } else {
+            names.map { installed[it] ?: error("Package '$it' is not installed; use: pkg install $it") }
+        }
+        val upgrades = targets.mapNotNull { current ->
             val candidate = available[current.name] ?: return@mapNotNull null
             candidate.takeIf { isVersionLessThan(current.version, candidate.version) }
         }
         if (upgrades.isEmpty()) {
-            emit("All installed packages are up to date.")
+            emit(if (names.isEmpty()) "All installed packages are up to date." else "Already up to date: ${names.joinToString(" ")}")
             return
         }
         emit("Upgrading ${upgrades.size} package${if (upgrades.size == 1) "" else "s"}:")
@@ -170,6 +211,7 @@ class Hg2PackageManager(
 
     private suspend fun remove(names: List<String>, purge: Boolean, emit: suspend (String) -> Unit) {
         recoverInterruptedTransactions(emit)
+        staleStagingEntries().forEach { FileTrees.deleteRecursivelyNoFollow(it) }
         MaintainerScriptStore.migrateInstalled(context)
         val installed = readInstalled()
         val present = names.filter { it in installed }
@@ -194,7 +236,7 @@ class Hg2PackageManager(
                         runDpkg(listOf("--no-triggers", "--purge", name), emit)
                         runMaintainerScript(File(oldScripts, "postrm"), name, installed.getValue(name).version, listOf("purge"), emit)
                     }
-                    oldScripts.deleteRecursively()
+                    FileTrees.deleteRecursivelyNoFollow(oldScripts)
                 } catch (t: Throwable) {
                     restoreInstalledScripts(name, oldScripts)
                     throw t
@@ -210,11 +252,12 @@ class Hg2PackageManager(
 
     private suspend fun install(requested: List<String>, forceRequested: Boolean, emit: suspend (String) -> Unit) {
         recoverInterruptedTransactions(emit)
+        staleStagingEntries().forEach { FileTrees.deleteRecursivelyNoFollow(it) }
         MaintainerScriptStore.migrateInstalled(context)
         ensureIndex(emit)
         val available = parsePackages(packagesFile.readText()).associateBy { it.name }
         val installed = readInstalled()
-        val plan = resolve(requested, available, installed, forceRequested)
+        val plan = resolver.resolve(requested, available, installed, forceRequested)
         if (plan.isEmpty()) {
             emit("Already satisfied: ${requested.joinToString(" ")}")
             return
@@ -260,6 +303,9 @@ class Hg2PackageManager(
         } catch (t: Throwable) {
             throw rollbackFailure("package installation", transaction, t, emit)
         }
+        // termux-keyring arrived through an authenticated index, so its keyring files may now
+        // extend the repository trust root (see TermuxRepositoryClient).
+        if (plan.any { it.name == "termux-keyring" }) runCatching { repository.recordKeyringProvenance() }
         emit("Installed: ${requested.joinToString(" ")}")
     }
 
@@ -321,7 +367,7 @@ class Hg2PackageManager(
             assertDpkgHasNoMaintainerScripts(pkg.name)
             runDpkg(listOf("--no-triggers", "--configure", pkg.name), emit)
             installStoredScripts(pkg.name, prepared.scriptsDir)
-            oldScripts.deleteRecursively()
+            FileTrees.deleteRecursivelyNoFollow(oldScripts)
         } catch (t: Throwable) {
             restoreInstalledScripts(pkg.name, oldScripts)
             throw t
@@ -338,9 +384,9 @@ class Hg2PackageManager(
         val safeStem = "${pkg.name}_${pkg.version}_${pkg.architecture}".replace(Regex("[^A-Za-z0-9._-]"), "_")
         val workDir = File(cacheDir, "prepare-$safeStem")
         val patched = File(cacheDir, "$safeStem.hg2.deb")
-        val scriptsDir = File(cacheDir, "scripts-$safeStem")
-        workDir.deleteRecursively()
-        scriptsDir.deleteRecursively()
+        val scriptsDir = File(stagingDir, "scripts-$safeStem")
+        FileTrees.deleteRecursivelyNoFollow(workDir)
+        FileTrees.deleteRecursivelyNoFollow(scriptsDir)
         patched.delete()
         workDir.mkdirs()
         scriptsDir.mkdirs()
@@ -367,7 +413,7 @@ class Hg2PackageManager(
 
         runTool(listOf(dpkgDeb.absolutePath, "-b", workDir.absolutePath, patched.absolutePath), "dpkg-deb build")
         if (!patched.isFile || patched.length() == 0L) error("Failed to rebuild ${pkg.name}")
-        workDir.deleteRecursively()
+        FileTrees.deleteRecursivelyNoFollow(workDir)
         return PreparedPackage(pkg, patched, scriptsDir)
     }
 
@@ -392,7 +438,7 @@ class Hg2PackageManager(
 
     private fun stageInstalledScripts(packageName: String): File {
         val safeName = packageName.replace(Regex("[^A-Za-z0-9._+-]"), "_")
-        val dir = File(cacheDir, "installed-scripts-$safeName-${System.nanoTime()}")
+        val dir = File(stagingDir, "installed-scripts-$safeName-${System.nanoTime()}")
         MaintainerScriptStore.stage(context, packageName, dir)
         assertDpkgHasNoMaintainerScripts(packageName)
         return dir
@@ -404,7 +450,7 @@ class Hg2PackageManager(
 
     private fun installStoredScripts(packageName: String, scriptsDir: File) {
         MaintainerScriptStore.restore(context, packageName, scriptsDir)
-        scriptsDir.deleteRecursively()
+        FileTrees.deleteRecursivelyNoFollow(scriptsDir)
     }
 
     private fun moveFileVerified(source: File, destination: File, label: String) {
@@ -528,25 +574,15 @@ class Hg2PackageManager(
         val debianDir = File(workDir, "DEBIAN")
         var rewritten = 0
 
+        // Byte-level rewrites (PrefixRewriter): conffiles/md5sums can name files with non-UTF-8
+        // bytes, which a decode/re-encode round trip would corrupt.
         val conffiles = File(debianDir, "conffiles")
-        if (conffiles.isFile) {
-            val text = conffiles.readText()
-            val updated = text.replace(OLD_PREFIX, "")
-            if (updated != text) {
-                conffiles.writeText(updated)
-                rewritten++
-            }
-        }
+        if (conffiles.isFile && PrefixRewriter.rewriteFile(conffiles, listOf(OLD_PREFIX to ""))) rewritten++
 
         val md5sums = File(debianDir, "md5sums")
         if (md5sums.isFile) {
-            val text = md5sums.readText()
             val oldRelativePrefix = OLD_PREFIX.trimStart('/') + "/"
-            val updated = text.replace(oldRelativePrefix, "").replace(OLD_PREFIX, "")
-            if (updated != text) {
-                md5sums.writeText(updated)
-                rewritten++
-            }
+            if (PrefixRewriter.rewriteFile(md5sums, listOf(oldRelativePrefix to "", OLD_PREFIX to ""))) rewritten++
         }
 
         return rewritten
@@ -557,16 +593,14 @@ class Hg2PackageManager(
         return file.parentFile == debianDir && file.name in setOf("conffiles", "md5sums")
     }
 
+    /**
+     * Rewrites the old Termux prefix to ours inside a text file, byte-for-byte otherwise. Binary
+     * files (any NUL byte) and unreadable files are left alone; a non-UTF-8 text file that
+     * mentions the prefix keeps its other bytes intact.
+     */
     private fun rewriteTextPrefix(file: File): Boolean {
         if (Files.isSymbolicLink(file.toPath())) return false
-        val bytes = runCatching { file.readBytes() }.getOrNull() ?: return false
-        if (bytes.any { it == 0.toByte() }) return false
-        val text = runCatching { bytes.toString(Charsets.UTF_8) }.getOrNull() ?: return false
-        if (!text.contains(OLD_PREFIX)) return false
-        return runCatching {
-            file.writeText(text.replace(OLD_PREFIX, prefix.absolutePath))
-            true
-        }.getOrDefault(false)
+        return PrefixRewriter.rewriteFile(file, OLD_PREFIX, prefix.absolutePath)
     }
 
     private fun runTool(command: List<String>, label: String) {
@@ -587,15 +621,9 @@ class Hg2PackageManager(
         val architecture = packageArchitecture()
         emit("Authenticating Termux package index for $architecture…")
         val authenticated = repository.fetchAuthenticatedIndex(architecture, stateDir)
-        val tmp = File(stateDir, "Packages.tmp")
-        GZIPInputStream(authenticated.packagesGz.inputStream()).bufferedReader().use { reader ->
-            tmp.writer().use { writer -> reader.copyTo(writer) }
-        }
-        if (!tmp.renameTo(packagesFile)) {
-            tmp.copyTo(packagesFile, overwrite = true)
-            tmp.delete()
-        }
-        repository.markIndexAuthenticated(architecture, authenticated)
+        // Promote + authenticity marker as one step under the repository lock (a concurrently
+        // constructed client must never observe the new index without its marker).
+        repository.installAuthenticatedIndex(architecture, authenticated)
         activeMirror = authenticated.mirror
         emit("Authenticated repository: ${authenticated.mirror}")
         emit("HG2Gui package index ready: ${parsePackages(packagesFile.readText()).size} packages.")
@@ -605,153 +633,20 @@ class Hg2PackageManager(
         if (!packagesFile.isFile || packagesFile.length() == 0L) updateIndex(emit)
     }
 
-    private fun resolve(
-        requested: List<String>,
-        available: Map<String, PackageRecord>,
-        installed: Map<String, Installed>,
-        forceRequested: Boolean
-    ): List<PackageRecord> {
-        val requestedSet = requested.toSet()
-        val visiting = HashMap<String, PackageRecord>()
-        val planned = LinkedHashMap<String, PackageRecord>()
-        val providers = buildMap<String, MutableList<PackageRecord>> {
-            available.values.forEach { pkg ->
-                pkg.provides.forEach { provided -> getOrPut(provided.name) { mutableListOf() }.add(pkg) }
-            }
-        }
-
-        fun installedSatisfies(relation: Relation): Boolean = installed.values.any { item ->
-            if (item.name == relation.name && versionSatisfies(item.version, relation)) return@any true
-            item.provides.any { provided -> provided.name == relation.name && providedVersionSatisfies(provided, relation) }
-        }
-
-        fun plannedSatisfies(relation: Relation): Boolean = planned.values.any { item ->
-            if (item.name == relation.name && versionSatisfies(item.version, relation)) return@any true
-            item.provides.any { provided -> provided.name == relation.name && providedVersionSatisfies(provided, relation) }
-        }
-
-        // A package still on the DFS stack is part of a dependency cycle (A -> B -> A). It will be
-        // planned once its own walk unwinds, and dpkg configures cycles together, so it counts as
-        // satisfied-in-plan rather than as an unsatisfiable relation.
-        fun visitingSatisfies(relation: Relation): Boolean = visiting.values.any { item ->
-            if (item.name == relation.name && versionSatisfies(item.version, relation)) return@any true
-            item.provides.any { provided -> provided.name == relation.name && providedVersionSatisfies(provided, relation) }
-        }
-
-        fun candidateFor(relation: Relation): PackageRecord? {
-            val exact = available[relation.name]
-            if (exact != null && versionSatisfies(exact.version, relation)) return exact
-            return providers[relation.name].orEmpty().firstOrNull { provider ->
-                provider.provides.any { it.name == relation.name && providedVersionSatisfies(it, relation) }
-            }
-        }
-
-        fun installedConflict(pkg: PackageRecord): String? {
-            val relations = pkg.conflicts + pkg.breaks
-            for (relation in relations) {
-                val hit = installed.values.firstOrNull { item ->
-                    item.name != pkg.name && (
-                        (item.name == relation.name && versionSatisfies(item.version, relation)) ||
-                            item.provides.any { it.name == relation.name && providedVersionSatisfies(it, relation) }
-                        )
-                }
-                if (hit != null) return "${pkg.name} ${if (relation in pkg.breaks) "breaks" else "conflicts with"} installed ${hit.name} (${relation})"
-            }
-            for (item in installed.values) {
-                if (item.name == pkg.name) continue
-                val reverse = (item.conflicts + item.breaks).firstOrNull { relation ->
-                    (pkg.name == relation.name && versionSatisfies(pkg.version, relation)) ||
-                        pkg.provides.any { it.name == relation.name && providedVersionSatisfies(it, relation) }
-                }
-                if (reverse != null) return "installed ${item.name} conflicts with/breaks ${pkg.name} (${reverse})"
-            }
-            return null
-        }
-
-        fun plannedConflict(pkg: PackageRecord): String? {
-            for (other in planned.values) {
-                if (other.name == pkg.name) continue
-                val forward = (pkg.conflicts + pkg.breaks).firstOrNull { relation ->
-                    (other.name == relation.name && versionSatisfies(other.version, relation)) ||
-                        other.provides.any { it.name == relation.name && providedVersionSatisfies(it, relation) }
-                }
-                if (forward != null) return "${pkg.name} conflicts with/breaks planned ${other.name} ($forward)"
-                val reverse = (other.conflicts + other.breaks).firstOrNull { relation ->
-                    (pkg.name == relation.name && versionSatisfies(pkg.version, relation)) ||
-                        pkg.provides.any { it.name == relation.name && providedVersionSatisfies(it, relation) }
-                }
-                if (reverse != null) return "planned ${other.name} conflicts with/breaks ${pkg.name} ($reverse)"
-            }
-            return null
-        }
-
-        lateinit var visitPackage: (PackageRecord) -> Unit
-
-        fun visitRelation(alternatives: List<Relation>, owner: String, kind: String) {
-            if (alternatives.any(::installedSatisfies) || alternatives.any(::plannedSatisfies) || alternatives.any(::visitingSatisfies)) return
-            val candidate = alternatives.firstNotNullOfOrNull(::candidateFor)
-                ?: error("$owner $kind unavailable alternative: ${alternatives.joinToString(" | ")}")
-            visitPackage(candidate)
-            if (!alternatives.any(::installedSatisfies) && !alternatives.any(::plannedSatisfies) && !alternatives.any(::visitingSatisfies)) {
-                error("$owner $kind was not satisfied after planning: ${alternatives.joinToString(" | ")}")
-            }
-        }
-
-        visitPackage = fun(pkg: PackageRecord) {
-            if (pkg.name in planned) return
-            val forcedRequested = forceRequested && (
-                pkg.name in requestedSet || requested.any { requestedName -> pkg.provides.any { it.name == requestedName } }
-            )
-            if (pkg.name in installed && !forcedRequested) return
-            if (visiting.putIfAbsent(pkg.name, pkg) != null) return
-            installedConflict(pkg)?.let { error("Cannot install ${pkg.name}: $it. HG2Gui will not auto-remove conflicting packages.") }
-            plannedConflict(pkg)?.let { error("Cannot install ${pkg.name}: $it") }
-            pkg.preDepends.forEach { visitRelation(it, pkg.name, "pre-depends on") }
-            pkg.depends.forEach { visitRelation(it, pkg.name, "depends on") }
-            visiting.remove(pkg.name)
-            planned[pkg.name] = pkg
-        }
-
-        fun visitRequested(name: String) {
-            val relation = Relation(name.substringBefore(':'))
-            if (installedSatisfies(relation) && !forceRequested) return
-            val pkg = candidateFor(relation) ?: error("Package or provider '$name' was not found in the Termux repository")
-            visitPackage(pkg)
-        }
-
-        requested.forEach(::visitRequested)
-        return planned.values.toList()
-    }
-
-    private fun versionSatisfies(candidateVersion: String, relation: Relation): Boolean {
-        val op = relation.operator ?: return true
-        val wanted = relation.version ?: return true
+    private fun dpkgVersionCompare(candidate: String, operator: String, wanted: String): Boolean {
         if (!dpkgLauncher.canExecute()) return false
-        val process = ProcessBuilder(dpkgLauncher.absolutePath, "--compare-versions", candidateVersion, op, wanted)
+        val process = ProcessBuilder(dpkgLauncher.absolutePath, "--compare-versions", candidate, operator, wanted)
             .directory(prefix)
             .redirectErrorStream(true)
             .apply { applyPackageEnvironment(environment()) }
             .start()
         process.inputStream.close()
         return process.waitFor() == 0
-    }
-
-    private fun providedVersionSatisfies(provided: Relation, requested: Relation): Boolean {
-        if (requested.operator == null) return true
-        val providedVersion = provided.version ?: return false
-        return versionSatisfies(providedVersion, requested)
     }
 
     private fun isVersionLessThan(installed: String, available: String): Boolean {
         if (installed == available) return false
-        if (!dpkgLauncher.canExecute()) return false
-        val process = ProcessBuilder(dpkgLauncher.absolutePath, "--compare-versions", installed, "lt", available)
-            .directory(prefix)
-            .redirectErrorStream(true)
-            .apply { applyPackageEnvironment(environment()) }
-            .start()
-        process.inputStream.close()
-        return process.waitFor() == 0
+        return dpkgVersionCompare(installed, "lt", available)
     }
 
     private suspend fun runPendingTriggers(emit: suspend (String) -> Unit) {
@@ -824,77 +719,10 @@ class Hg2PackageManager(
     private fun readInstalled(): Map<String, Installed> {
         val status = File(prefix, "var/lib/dpkg/status")
         if (!status.isFile) return emptyMap()
-        return status.readText().split("\n\n").mapNotNull { paragraph ->
-            val fields = parseParagraph(paragraph)
-            val name = fields["Package"] ?: return@mapNotNull null
-            if (fields["Status"] != "install ok installed") return@mapNotNull null
-            Installed(
-                name = name,
-                version = fields["Version"].orEmpty(),
-                provides = parseRelationList(fields["Provides"].orEmpty()),
-                conflicts = parseRelationList(fields["Conflicts"].orEmpty()),
-                breaks = parseRelationList(fields["Breaks"].orEmpty())
-            )
-        }.associateBy { it.name }
+        return DebControl.parseInstalled(status.readText())
     }
 
-    private fun parsePackages(text: String): List<PackageRecord> = text.split("\n\n").mapNotNull { paragraph ->
-        val fields = parseParagraph(paragraph)
-        val name = fields["Package"] ?: return@mapNotNull null
-        val filename = fields["Filename"] ?: return@mapNotNull null
-        PackageRecord(
-            name = name,
-            version = fields["Version"].orEmpty(),
-            architecture = fields["Architecture"].orEmpty(),
-            filename = filename,
-            sha256 = fields["SHA256"].orEmpty(),
-            size = fields["Size"]?.toLongOrNull() ?: 0L,
-            preDepends = parseRelationGroups(fields["Pre-Depends"].orEmpty()),
-            depends = parseRelationGroups(fields["Depends"].orEmpty()),
-            provides = parseRelationList(fields["Provides"].orEmpty()),
-            conflicts = parseRelationList(fields["Conflicts"].orEmpty()),
-            breaks = parseRelationList(fields["Breaks"].orEmpty()),
-            replaces = parseRelationList(fields["Replaces"].orEmpty()),
-            description = fields["Description"].orEmpty()
-        )
-    }
-
-    private fun parseParagraph(paragraph: String): Map<String, String> {
-        val fields = LinkedHashMap<String, String>()
-        var current: String? = null
-        for (line in paragraph.lineSequence()) {
-            if (line.startsWith(' ') && current != null) {
-                fields[current] = fields.getValue(current) + "\n" + line.trim()
-                continue
-            }
-            val i = line.indexOf(':')
-            if (i <= 0) continue
-            current = line.substring(0, i)
-            fields[current] = line.substring(i + 1).trim()
-        }
-        return fields
-    }
-
-    private fun parseRelationGroups(raw: String): List<List<Relation>> {
-        if (raw.isBlank()) return emptyList()
-        return raw.split(',').mapNotNull { clause ->
-            clause.split('|').mapNotNull(::parseRelation).takeIf { it.isNotEmpty() }
-        }
-    }
-
-    private fun parseRelationList(raw: String): List<Relation> =
-        if (raw.isBlank()) emptyList() else raw.split(',').mapNotNull(::parseRelation)
-
-    private fun parseRelation(raw: String): Relation? {
-        val withoutRestrictions = raw.replace(ARCH_RESTRICTION, "").replace(PROFILE_RESTRICTION, "").trim()
-        val name = withoutRestrictions.substringBefore(' ').substringBefore(':').trim().takeIf(String::isNotBlank) ?: return null
-        val match = VERSION_RELATION.find(withoutRestrictions)
-        return Relation(
-            name = name,
-            operator = match?.groupValues?.getOrNull(1)?.takeIf(String::isNotBlank),
-            version = match?.groupValues?.getOrNull(2)?.trim()?.takeIf(String::isNotBlank)
-        )
-    }
+    private fun parsePackages(text: String): List<PackageRecord> = DebControl.parsePackages(text)
 
     private fun formatRelations(groups: List<List<Relation>>): String =
         groups.joinToString(", ") { it.joinToString(" | ") }
@@ -925,9 +753,6 @@ class Hg2PackageManager(
         private const val OLD_PREFIX = "/data/data/com.termux/files/usr"
         private const val DPKG_ERROR_TAIL_LINES = 40
         private val MAINTAINER_SCRIPTS = listOf("preinst", "postinst", "prerm", "postrm")
-        private val VERSION_RELATION = Regex("\\((<<|<=|=|>=|>>)\\s*([^)]+)\\)")
-        private val ARCH_RESTRICTION = Regex("\\[[^]]*]")
-        private val PROFILE_RESTRICTION = Regex("<[^>]*>")
-        private const val USAGE = "HG2Gui package manager\nusage: pkg <install|update|upgrade|remove|purge|search|show|list-installed|clean> …"
+        private const val USAGE = "HG2Gui package manager\nusage: pkg <install [--reinstall]|update|upgrade [package…]|remove|purge|search|show|list-installed|clean> …"
     }
 }
