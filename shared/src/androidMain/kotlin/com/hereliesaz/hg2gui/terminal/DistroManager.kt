@@ -2,18 +2,20 @@ package com.hereliesaz.hg2gui.terminal
 
 import android.content.Context
 import android.os.Build
-import android.system.Os
 import com.hereliesaz.hg2gui.util.Utils
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.sync.withLock
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.nio.file.Files
+import java.nio.file.Paths
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 
@@ -82,6 +84,9 @@ object DistroManager {
     // back to wiping the prefix and re-downloading the whole multi-megabyte archive from scratch.
     fun isInstalled(context: Context): Boolean {
         val usrDir = prefixDir(context)
+        // A crash between "old prefix moved aside" and "staged prefix moved in" (see
+        // BootstrapStaging) leaves no usr/ at all; put the previous one back before judging.
+        BootstrapStaging.recoverInterruptedSwap(usrDir, BootstrapStaging.backupDir(context))
         if (!usrDir.isDirectory || !File(usrDir, "bin").isDirectory) return false
         val bash = File(usrDir, "bin/bash")
         if (bash.canExecute()) return true
@@ -103,17 +108,51 @@ object DistroManager {
         val prefix = prefixDir(context)
         if (!prefix.isDirectory) return
         linkManifestEntries(prefix, context.applicationInfo.nativeLibraryDir)
+        // The wrapper profile and apt.conf embed the (equally per-install) launcher paths.
+        runCatching { PrefixRuntimeConfig.writeAptConf(prefix, prefix, context.applicationInfo.nativeLibraryDir) }
     }
 
+    /**
+     * Downloads, verifies and installs the pinned bootstrap.
+     *
+     * The archive is extracted into a staging directory, verified, and swapped over the live
+     * prefix atomically (see [BootstrapStaging]); the previous prefix is kept until the new one is
+     * in place. A failure at any step - offline, SHA mismatch, full storage - therefore leaves an
+     * existing installation exactly as it was. Holds [Hg2PackageManager.PACKAGE_OPERATION_LOCK]
+     * for the whole run so no `pkg` operation can mutate the prefix while it is being replaced.
+     * A successful run REPLACES the prefix: packages installed on top of the previous bootstrap
+     * are not carried over (the home directory is untouched).
+     */
     fun bootstrap(context: Context, client: OkHttpClient): Flow<String> = flow {
         val arch = bootstrapArch()
         if (arch == null) {
             emit("Error: no Termux bootstrap is published for this device's ABI (${Build.SUPPORTED_ABIS.joinToString()}).")
             return@flow
         }
+        Hg2PackageManager.PACKAGE_OPERATION_LOCK.withLock {
+            runBootstrap(context, client, arch) { emit(it) }
+        }
+    }.flowOn(Dispatchers.IO)
 
+    private suspend fun runBootstrap(
+        context: Context,
+        client: OkHttpClient,
+        arch: String,
+        emit: suspend (String) -> Unit
+    ) {
         val url = "$BOOTSTRAP_BASE_URL/bootstrap-$arch.zip"
         emit("Starting bootstrap process...")
+
+        val prefix = prefixDir(context)
+        val staging = BootstrapStaging.stagingDir(context)
+        val backup = BootstrapStaging.backupDir(context)
+        BootstrapStaging.recoverInterruptedSwap(prefix, backup)
+
+        // Journals describe the prefix we are about to replace; roll them back first so a failed
+        // bootstrap leaves a consistent old prefix, then drop whatever is left after a swap.
+        runCatching { PackageTransactionJournal.recoverAbandoned(context) }
+            .getOrDefault(emptyList())
+            .forEach { emit(it) }
 
         val destFile = File(context.cacheDir, BOOTSTRAP_FILE)
         if (destFile.exists()) destFile.delete()
@@ -124,9 +163,9 @@ object DistroManager {
             val request = Request.Builder().url(url).build()
             val digest = java.security.MessageDigest.getInstance("SHA-256")
             client.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) throw Exception("Download failed: HTTP ${response.code}")
+                if (!response.isSuccessful) throw IOException("Download failed: HTTP ${response.code}")
 
-                val body = response.body ?: throw Exception("Empty response body")
+                val body = response.body
                 val totalBytes = body.contentLength()
                 var downloadedBytes = 0L
 
@@ -156,27 +195,57 @@ object DistroManager {
 
             emit("Download complete. Extracting...")
 
-            val prefix = prefixDir(context)
-            extractBootstrap(destFile, prefix, context.applicationInfo.nativeLibraryDir)
+            val hadPrefix = prefix.exists()
+            installBootstrapArchive(destFile, prefix, staging, backup, context.applicationInfo.nativeLibraryDir)
+            runCatching { PackageTransactionJournal.discardAll(context) }
             homeDir(context).mkdirs()
 
-            emit("Extraction complete. Fixing permissions...")
-            makeBinariesExecutable(prefix)
-
+            emit(
+                if (hadPrefix) "Extraction complete. The previous installation was replaced."
+                else "Extraction complete."
+            )
             emit("Bootstrap successful! You can now use 'apt', 'pkg', and real coreutils.")
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            // UX-6: isInstalled() is existence-only (prefix/ and prefix/bin/ both exist) - and
-            // extractBootstrap() creates prefix/bin/ the moment its first file lands, long before
-            // the archive finishes. A failure partway through (storage full, backgrounded,
-            // corrupted archive) used to leave exactly that directory behind: "installed" forever,
-            // with no retry, same as AzpInstaller already rolls back a partial install to avoid.
-            prefixDir(context).deleteRecursively()
+            // Nothing here touches the live prefix: extraction happened in `staging`, and the swap
+            // restores the old prefix itself if it cannot complete. An existing installation
+            // therefore survives a failed attempt untouched.
             emit("Error during bootstrap: ${e.message}")
-            Utils.log(e)
+            if (prefix.isDirectory) emit("The existing installation was left untouched.")
+            logQuietly(e)
         } finally {
             if (destFile.exists()) destFile.delete()
+            FileTrees.deleteRecursivelyNoFollow(staging)
         }
-    }.flowOn(Dispatchers.IO)
+    }
+
+    /**
+     * Extracts [zipFile] into [staging], verifies it, and atomically swaps it over [prefix]
+     * (keeping the old one in [backup] until the swap succeeds). Throws on any failure with
+     * [prefix] untouched. Internal for host tests; [requireExecutableBash] is false only there.
+     */
+    internal fun installBootstrapArchive(
+        zipFile: File,
+        prefix: File,
+        staging: File,
+        backup: File,
+        nativeLibraryDir: String,
+        requireExecutableBash: Boolean = true
+    ) {
+        if (staging.exists() && !FileTrees.deleteRecursivelyNoFollow(staging)) {
+            throw IOException("Cannot clear stale staging directory ${staging.path}")
+        }
+        extractBootstrap(zipFile, staging, prefix, nativeLibraryDir)
+        makeBinariesExecutable(staging)
+        BootstrapStaging.verify(staging, requireExecutableBash)
+        BootstrapStaging.swapIntoPlace(prefix, staging, backup)
+    }
+
+    private fun logQuietly(e: Throwable) {
+        // Utils.log goes through android.util.Log, which is unavailable under host unit tests.
+        runCatching { Utils.log(e) }
+    }
 
     /**
      * Extracts a Termux bootstrap zip into [prefix]. Regular files unpack directly, except for

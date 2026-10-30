@@ -14,6 +14,7 @@ import androidx.compose.animation.core.keyframes
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.rememberSplineBasedDecay
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.FlingBehavior
@@ -21,7 +22,11 @@ import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.ScrollScope
 import androidx.compose.foundation.gestures.rememberScrollableState
 import androidx.compose.foundation.gestures.scrollable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.indication
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -34,7 +39,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -43,19 +47,22 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.em
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.hereliesaz.hg2gui.ui.AzphaltMotion
+import com.hereliesaz.hg2gui.ui.contrastRatio
+import com.hereliesaz.hg2gui.ui.rememberReducedMotion
+import com.hereliesaz.hg2gui.ui.scaledDelayMs
+import com.hereliesaz.hg2gui.ui.theme.LocalAzphaltType
 import kotlin.math.roundToInt
 
 /*
@@ -200,18 +207,17 @@ fun Azphalt.Ground.pageBrush(): Brush = SolidColor(page)
 
 // House rule: text (and any glyph carrying meaning - an icon, an end-cap) always reads as the
 // opposite of whatever it sits on, never a fixed color assumed to work against every background.
-// Mustard is light enough for Ink text, but four of the six grounds in Azphalt.grounds (Maroon,
-// Navy, Teal, and near enough Cerulean) are dark - Ink text hardcoded against those disappears.
-// The 0.35 luminance split is the same rough light/dark line sRGB relative luminance conventionally
-// uses for a black-vs-white text choice (WCAG's own "which of black/white contrasts more" cutoffs
-// straddle this range); exact value only matters near the boundary, where either color still reads.
-private const val LEGIBLE_LUMINANCE_SPLIT = 0.35f
+// The choice is made by measurement, not by a luminance cutoff: of Ink and White, whichever has the
+// higher WCAG contrast ratio against the background wins. (The old fixed 0.35 luminance split sat
+// well above the true break-even of about 0.20, so every background between the two - cyan, green,
+// gray, orange, teal - got White at 2.8-3.3:1 where Ink would have given 5.2-6.3:1.)
 
-/** The one of [Azphalt.Ink] / [Azphalt.White] that actually contrasts with this background,
- *  instead of a color assumed to work against every ground/hue this sits on. Not used for a pill's
- *  own selected state (ink bg + yellow fg) - that pairing is a fixed UI signal, not "text on an
- *  arbitrary background," and stays exactly as designed regardless of ground or hue. */
-fun Color.contrastingText(): Color = if (luminance() > LEGIBLE_LUMINANCE_SPLIT) Azphalt.Ink else Azphalt.White
+/** The one of [Azphalt.Ink] / [Azphalt.White] with the higher WCAG contrast ratio against this
+ *  background, instead of a color assumed to work against every ground/hue this sits on. Not used
+ *  for a pill's own selected state (ink bg + yellow fg) - that pairing is a fixed UI signal, not
+ *  "text on an arbitrary background," and stays exactly as designed regardless of ground or hue. */
+fun Color.contrastingText(): Color =
+    if (contrastRatio(this, Azphalt.Ink) >= contrastRatio(this, Azphalt.White)) Azphalt.Ink else Azphalt.White
 
 /** The page ground's own text color - [Color.contrastingText] applied to [Azphalt.Ground.page] -
  *  for the many places text/icons sit directly on the rotating page background (or a background
@@ -219,18 +225,41 @@ fun Color.contrastingText(): Color = if (luminance() > LEGIBLE_LUMINANCE_SPLIT) 
  *  fixed hue. */
 val Azphalt.Ground.onPage: Color get() = page.contrastingText()
 
-private val PILL_HEIGHT = 17.dp
-private val ROW_PITCH = 20.dp
-// Android's own accessibility minimum tap target - PILL_HEIGHT (17dp) is well under it, and rows
-// are only ROW_PITCH (20dp) apart besides. Pill pads its *clickable* region out to this without
-// touching PILL_HEIGHT itself - see the comment on Pill's own wrapping Box.
-private val PILL_TOUCH_TARGET = 48.dp
+/**
+ * The geometry of the command pills, in dp, public so the layout that hosts the stack (see
+ * FluidTerminalWorkspace) sizes its region from the same numbers instead of its own copies.
+ */
+object PillMetrics {
+    /** Height of the drawn capsule. */
+    val Height: Dp = 32.dp
+
+    /** Distance between consecutive rows of a stack. Equal to [TouchTarget], so two rows' hit
+     *  boxes tile exactly: no overlap, and no gap a thumb can fall into. */
+    val RowPitch: Dp = 48.dp
+
+    /** The pill's hit box height: Android's minimum interactive size. */
+    val TouchTarget: Dp = 48.dp
+
+    /** Pill widths are fractions of min(available width, this), so on a tablet or in a wide
+     *  window the stack keeps its phone-sized proportions instead of stretching across the screen. */
+    val MaxReferenceWidth: Dp = 480.dp
+}
+
+private val PILL_HEIGHT = PillMetrics.Height
+private val ROW_PITCH = PillMetrics.RowPitch
+// Android's own accessibility minimum tap target. Pill pads its *clickable* region out to this
+// (centred on the PILL_HEIGHT capsule) and ROW_PITCH equals it, so the boxes of adjacent rows
+// touch but never overlap.
+private val PILL_TOUCH_TARGET = PillMetrics.TouchTarget
 private val OVERHANG = 62.dp
 // Negative Arrangement.spacedBy for TrailRow - each crumb's left edge tucks this far under the
 // crumb before it. A quarter of TrailCrumb's own 56dp floor width: enough to read as a deliberate
 // overlap (the "each crumb overlapped by the one before it" fan) without hiding a short crumb
 // like `ls` entirely behind its neighbor.
 private val TRAIL_OVERLAP = (-14).dp
+// Every width fraction below is a fraction of the *reference width* - min(available width,
+// PillMetrics.MaxReferenceWidth) - not of the raw screen width, so a tablet or a wide window keeps
+// the phone-sized stack (see widthByRef / insetStartByRef).
 private const val HOST_WIDTH = 0.66f
 // HostPill's own right edge lands at exactly HOST_WIDTH * HOST_RIGHT_EDGE of the full width (see
 // the comment on that math below) - which, since HostPill is HOST_WIDTH wide, also happens to be
@@ -239,10 +268,14 @@ private const val HOST_WIDTH = 0.66f
 // "...MANAGEMENT" fragment, not a deliberate bleed. Raised to 0.55 so most host labels stay
 // legible; still bleeds some off the left edge, matching the house style used everywhere else in
 // this menu (OVERHANG, the root stack's own absoluteBleed), just no longer past the point of
-// losing the label's own meaning.
-private const val HOST_RIGHT_EDGE = 0.55f
+// losing the label's own meaning. Raised again to 0.80 now that labels are 13sp rather than 6sp: at
+// the old 0.55 a label like "PACKAGE MANAGEMENT" would have run off the left edge at the host's
+// resting spot (right edge: 0.80 * HOST_WIDTH = about 53% of the reference width).
+private const val HOST_RIGHT_EDGE = 0.80f
 private const val CHILD_LEFT = 0.30f
-private const val CHILD_WIDTH = 0.34f
+// Child bands were 34% of the width, sized for 6sp labels; 13sp labels need roughly twice that to
+// show a typical option name ("--human-readable") before it ellipsizes.
+private const val CHILD_WIDTH = 0.58f
 // Menu Style Guide rule 01 (4%-per-row width variation, "so the stack reads as a stack") is
 // applied only to StackPill's own resting width below, via ROOT_WIDTH_STEP / rootWidthFraction -
 // never to HostPill. HostPill's constraint propagation (offsetByFractionOfParent / fillMaxWidth /
@@ -269,7 +302,7 @@ private fun rootWidthFraction(row: Int): Float {
 // Same "so the stack reads as a stack" cycling rootWidthFraction gives the root stack, scaled to
 // CHILD_WIDTH's own narrower range - a child band is a stack too, and was the one place still
 // rendering every pill at one identical width instead of varying by row.
-private const val CHILD_WIDTH_STEP = 0.02f
+private const val CHILD_WIDTH_STEP = 0.03f
 private fun childWidthFraction(localIndex: Int): Float {
     val stepsDown = intArrayOf(0, 1, 2, 1, 2)[localIndex % 5]
     return CHILD_WIDTH - CHILD_WIDTH_STEP * stepsDown
@@ -493,7 +526,7 @@ fun PillMenu(
         tokens = emptyList()
         onRun(tokens, false)
         scope.launch {
-            delay(Azphalt.SLIDE_MS.toLong())
+            delay(scaledDelayMs(Azphalt.SLIDE_MS))
             trail = emptyList()
             phase = Phase.Open(node.id)
         }
@@ -509,7 +542,7 @@ fun PillMenu(
                     resetKey = rootArrivalToken
                 )
 
-                Box(Modifier.fillMaxSize().padding(bottom = 12.dp).then(stackScroll.modifier)) {
+                Box(Modifier.fillMaxSize().padding(bottom = 4.dp).then(stackScroll.modifier)) {
                     roots.forEachIndexed { i, node ->
                         // Roots aren't always a fixed static list - a contextual entry like the
                         // suggestions host can appear or disappear between recompositions - so
@@ -598,11 +631,11 @@ fun PillMenu(
                                         // has reported its position - unlike every other wizard,
                                         // which fires immediately below.
                                         scope.launch {
-                                            delay((Azphalt.DROP_MS + Azphalt.SWING_MS).toLong())
+                                            delay(scaledDelayMs(Azphalt.DROP_MS + Azphalt.SWING_MS))
                                             trail = trail + child
                                             // One extra beat so the new crumb actually gets laid
                                             // out and reports its position before onWizard reads it.
-                                            delay(32)
+                                            delay(scaledDelayMs(32))
                                             onWizard(child.wizardId)
                                         }
                                     } else {
@@ -617,7 +650,7 @@ fun PillMenu(
                                             // to settle, before swapping the band for its children -
                                             // so the next cascade always starts after the hand-off is
                                             // visible, never on top of it.
-                                            delay((Azphalt.DROP_MS + Azphalt.SWING_MS).toLong())
+                                            delay(scaledDelayMs(Azphalt.DROP_MS + Azphalt.SWING_MS))
                                             trail = trail + child
                                         }
                                     }
