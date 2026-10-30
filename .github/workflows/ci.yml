@@ -29,24 +29,79 @@ jobs:
           cache: gradle
 
       # ubuntu-latest ships the Android SDK (ANDROID_HOME); make sure the exact platform,
-      # build-tools and NDK this build pins are present.
+      # build-tools and NDK this build pins are present. The NDK version is read from the one
+      # place it is pinned (gradle/libs.versions.toml) instead of being repeated here.
       - name: Install Android SDK components
         run: |
+          NDK_VERSION="$(sed -nE 's/^ndk *= *"([^"]+)".*/\1/p' gradle/libs.versions.toml)"
+          test -n "$NDK_VERSION" || { echo "::error::no ndk version in gradle/libs.versions.toml"; exit 1; }
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
-            "platforms;android-37.0" "build-tools;37.0.0" "ndk;29.0.14206865"
+            "platforms;android-37.0" "build-tools;37.0.0" "ndk;${NDK_VERSION}"
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # CI sets CI=true, which would let autoIncrementVersion rewrite version.properties on this
-      # throwaway checkout; harmless here (nothing is committed), and it keeps tasks identical to
-      # the release build.
-      - name: Unit tests
+      # version.properties is only rewritten with -PautoIncrement now, so these jobs no longer dirty the checkout.
+      - name: Unit tests (shared, terminal-emulator)
         run: ./gradlew :shared:testAndroidHostTest :terminal-emulator:testDebugUnitTest --build-cache
 
-      # :composeApp:detekt was already failing before this workflow existed (its baseline covers only
-      # a fraction of the module), so it reports without blocking until the baseline is regenerated.
+      # Static analysis stays NON-blocking. The merged config/detekt baselines are now wired to every
+      # detekt task of each module, but nothing here could run detekt to prove the result is clean, and a
+      # gate that fails on an unmeasured backlog would just get disabled. To make it blocking: run
+      # `./gradlew detektBaseline` once, commit the regenerated config/detekt/*-baseline.xml, confirm
+      # `./gradlew detekt` passes locally, then delete the next line.
       - name: Static analysis (non-blocking)
         continue-on-error: true
         run: ./gradlew detekt --build-cache
+
+  # composeApp (the app module: API receiver, MCP service, updater, manifest) was never built or
+  # tested by CI: the job above only covers :shared and :terminal-emulator. Its preBuild compiles the
+  # native launchers with the pinned NDK, so this job needs the same SDK/NDK setup.
+  composeapp:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Install Android SDK components
+        run: |
+          NDK_VERSION="$(sed -nE 's/^ndk *= *"([^"]+)".*/\1/p' gradle/libs.versions.toml)"
+          test -n "$NDK_VERSION" || { echo "::error::no ndk version in gradle/libs.versions.toml"; exit 1; }
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+            "platforms;android-37.0" "build-tools;37.0.0" "ndk;${NDK_VERSION}"
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Unit tests (composeApp)
+        run: ./gradlew :composeApp:testPlaystoreDebugUnitTest --build-cache
+
+      # Compiles the app module as a release (R8 is not run; this is the Kotlin/Java compile). Release
+      # compile, not assemble: no signing is needed, and it is the variant the update channel ships.
+      - name: Compile composeApp (release)
+        run: ./gradlew :composeApp:compilePlaystoreReleaseKotlin --build-cache
+
+      # Android lint reports without blocking: composeApp has no lint baseline and lint was never
+      # run in CI before, so the first runs will surface an unmeasured backlog. Promote it to blocking
+      # (drop continue-on-error) after generating a baseline or clearing the findings.
+      - name: Android lint (non-blocking)
+        continue-on-error: true
+        run: ./gradlew :composeApp:lintPlaystoreRelease --build-cache
+
+      - name: Upload lint report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: composeapp-lint-report
+          path: composeApp/build/reports/lint-results-*.*
+          if-no-files-found: ignore

@@ -163,6 +163,7 @@ class LinePlannerTest {
     @Test
     fun dynamicCommandWords_areNotGuessedAt() {
         assertTrue(plan("\$TOOL install foo") is LinePlanner.Plan.Shell)
-        assertTrue(plan("\$(which offtool)") !is LinePlanner.Plan.Refuse || plan("\$(which offtool)") is LinePlanner.Plan.Refuse)
+        // The name appears only as an argument of `which`, so nothing runs it.
+        assertTrue(plan("\$(which offtool)") is LinePlanner.Plan.Shell)
     }
 }

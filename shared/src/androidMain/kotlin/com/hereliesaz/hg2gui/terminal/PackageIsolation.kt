@@ -244,7 +244,7 @@ object PackageIsolation {
         "truncated=0",
         "hg2_log() {",
         "  local safe",
-        "  safe=\"\$(printf '%s' \"\$1\" | tr -c '[:print:]' '?')\"",
+        "  safe=\"\$(printf '%s' \"\$1\" | tr '\\000-\\037\\177' '?')\"",
         "  safe=\"\${safe:0:$MAX_TELEMETRY_ROW_CHARS}\"",
         "  grep -Fqx -- \"\$safe\" \"\$audit\" 2>/dev/null && return",
         "  if [ \"\$count\" -ge \"\$((limit - 1))\" ]; then",

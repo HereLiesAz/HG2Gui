@@ -1,3 +1,6 @@
+# workflow_call only: no workflow in this repository calls it. The callers moved to HereLiesAz/workflows
+# (central execution, see the header of _reusable-build.yml), which `uses:` this file by path; it is
+# kept here rather than deleted because that reference cannot be checked from this repo.
 name: '🔀 Jules Triage'
 
 on:
