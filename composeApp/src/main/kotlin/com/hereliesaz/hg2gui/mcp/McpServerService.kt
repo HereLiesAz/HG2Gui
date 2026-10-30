@@ -12,6 +12,7 @@ import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import androidx.core.content.edit
 import com.hereliesaz.hg2gui.TerminalActivity
+import com.hereliesaz.hg2gui.terminal.ExecutionPolicy
 import com.hereliesaz.hg2gui.terminal.TerminalEngine
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -190,7 +191,9 @@ class McpServerService : Service() {
         val myGeneration = ++generation
 
         val generatedToken = generateToken()
-        val builtEngine = TerminalEngine(applicationContext)
+        // The engine's headless MCP policy: a paired agent may not bootstrap, mount, change package
+        // lifecycle or request root/ADB authority, whatever the shell.exec toggle allows.
+        val builtEngine = TerminalEngine(applicationContext, policy = ExecutionPolicy.MCP)
         engine = builtEngine
         tools = McpTools(applicationContext, shellExecEnabled, builtEngine)
 

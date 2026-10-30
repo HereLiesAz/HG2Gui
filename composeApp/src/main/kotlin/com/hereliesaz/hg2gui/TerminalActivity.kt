@@ -422,23 +422,34 @@ class TerminalActivity : FragmentActivity() {
             var fullscreen by remember { mutableStateOf(false) }
             var fontScalePercent by remember { mutableStateOf(100) }
             var usePty by remember { mutableStateOf(false) }
-            var aiApiKey by remember { mutableStateOf(AiSettings.apiKey(this@TerminalActivity)) }
+            // Read off the main thread: AiSettings opens the Keystore-backed store, real I/O.
+            var aiApiKey by remember { mutableStateOf<String?>(null) }
+            LaunchedEffect(Unit) {
+                aiApiKey = withContext(Dispatchers.IO) { AiSettings.apiKey(this@TerminalActivity) }
+            }
             var aiMessages by remember { mutableStateOf<List<AiMessage>>(emptyList()) }
             var aiBusy by remember { mutableStateOf(false) }
             var azpResults by remember { mutableStateOf<List<AzpListing>>(emptyList()) }
             var azpBusy by remember { mutableStateOf(false) }
             var azpError by remember { mutableStateOf<String?>(null) }
+            // The outcome of the last install/remove (a failure reason, or a note such as "not
+            // trusted, so the AI will not read it"). Shown in the same banner as azpError.
+            var azpMessage by remember { mutableStateOf<String?>(null) }
             // Cancelled before every new search starts (see onSearch below) so a stale response
             // from an earlier query/kind can never land after a newer one and silently overwrite
             // it - AzpStoreScreen already gates its own kind chips/search field on !azpBusy, but
             // this is what actually makes overlapping requests impossible rather than just unlikely.
             var azpSearchJob by remember { mutableStateOf<Job?>(null) }
             var azpInstallingId by remember { mutableStateOf<String?>(null) }
-            // AZP-2: a script package's dependency/wrapper step (ScriptInstaller.install, which
-            // can run `pkg install -y` unconfirmed) only proceeds without asking first when the
-            // signature is TRUSTED - anything else (VALID self-signed, and most saliently UNSIGNED, since only
-            // a corrupted signature was ever rejected outright) pauses on this and waits for a tap.
-            var azpTrustConfirm by remember { mutableStateOf<Pair<AzpListing, CompletableDeferred<Boolean>>?>(null) }
+            // AZP-2: anything that would run `pkg install -y` for a stranger's dependency list, wire
+            // an executable onto PATH or hand text to the AI pauses on this and waits for a tap -
+            // see askAzp below and the install flow in the store screen's onInstall.
+            var azpPrompt by remember { mutableStateOf<AzpPrompt?>(null) }
+            suspend fun askAzp(title: String, message: String, confirmLabel: String): Boolean {
+                val decision = CompletableDeferred<Boolean>()
+                azpPrompt = AzpPrompt(title, message, confirmLabel, decision)
+                return decision.await()
+            }
             // UX-4: closing a tab with a command actually running kills that process mid-run with
             // no warning today - this pauses on a tap first; a tab that's just sitting idle still
             // closes immediately, same as before.
@@ -446,6 +457,8 @@ class TerminalActivity : FragmentActivity() {
             // W5: cleared every time History opens so a stale search from a previous visit
             // doesn't linger; see CommandHistoryStore's own doc comment for the log itself.
             var historyQuery by remember { mutableStateOf("") }
+            // Bumped after a delete/clear so the History screen re-reads the log.
+            var historyReload by remember { mutableStateOf(0) }
             var confirmKillFullScreen by remember { mutableStateOf(false) }
             fun closeSession(closing: TerminalSession) {
                 val remaining = sessions.filterNot { it.ui.id == closing.ui.id }
@@ -716,6 +729,18 @@ class TerminalActivity : FragmentActivity() {
 
             LaunchedEffect(fullscreen) {
                 applyFullscreen(fullscreen)
+            }
+
+            // M-12: while any tab has a command running (or a full-screen program is open) the
+            // process is held up by LongTaskService - a foreground service with a partial wake
+            // lock - so Android does not freeze or phantom-kill a running build or `pkg install`
+            // once the app is backgrounded. Reports every change; the service stops itself when
+            // this goes false. A refused start (app already in the background) just leaves the
+            // command running unprotected, as it always did.
+            LaunchedEffect(Unit) {
+                snapshotFlow { sessions.any { it.ui.running } || fullScreenSession != null }
+                    .distinctUntilChanged()
+                    .collect { busy -> LongTaskService.setInteractiveBusy(applicationContext, busy) }
             }
 
             // UI-1/UI-2/UI-3: nothing in the app previously intercepted system back or the

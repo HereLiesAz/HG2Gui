@@ -41,64 +41,32 @@ class Hg2ApiPolicyTest {
         assertTrue(clipboardReadPossible(sdkInt = 35, appInForeground = true))
     }
 
-    // --- approval text vs executed text (M-11) -----------------------------------------------
+    // --- authority request validation (M-11) --------------------------------------------------
 
     @Test
-    fun rawCommandLosesItsQuotesInTheEngine_theBugThisGuards() {
-        // The old activity built "hg2auth root shell $command". The engine's tokenizer strips the
-        // quotes, so the text it runs is NOT what the dialog showed.
-        val command = "sh -c \"cd /data/x && rm -rf *\""
-        val naive = "hg2auth root shell $command"
-        assertEquals("sh -c cd /data/x && rm -rf *", Hg2ApiAuthorityCommand.effectiveCommand(naive))
-        assertNotEquals(command, Hg2ApiAuthorityCommand.effectiveCommand(naive))
+    fun authorityCommand_isReturnedUnchangedApartFromOuterWhitespace() {
+        // Quotes, spacing and metacharacters inside the command must survive byte for byte: this is the
+        // string the dialog shows and the one argument the engine runs.
+        val command = "sh -c \"cd /data/x && rm -rf *\"  ; echo 'it''s'"
+        assertEquals(command, authorityCommandOrNull("root", command))
+        assertEquals(command, authorityCommandOrNull("adb", "  $command \n"))
+        assertEquals("pm list packages", authorityCommandOrNull("adb", "pm list packages"))
     }
 
     @Test
-    fun lossless_carriesTheCommandUnchanged() {
-        listOf(
-            "sh -c \"cd /data/x && rm -rf *\"",
-            "pm list packages",
-            "echo it's",
-            "a  b",
-            "echo \"unterminated",
-        ).forEach { command ->
-            val line = Hg2ApiAuthorityCommand.lossless("root", command)
-            assertEquals(command, line?.let(Hg2ApiAuthorityCommand::effectiveCommand))
-        }
+    fun authorityCommand_refusesUnknownAuthorityBlankAndOverlong() {
+        assertNull(authorityCommandOrNull("sudo", "id"))
+        assertNull(authorityCommandOrNull("", "id"))
+        assertNull(authorityCommandOrNull("ROOT", "id")) // callers lower-case first
+        assertNull(authorityCommandOrNull("root", ""))
+        assertNull(authorityCommandOrNull("root", "  \n\t "))
+        assertNull(authorityCommandOrNull("root", "x".repeat(MAX_AUTHORITY_COMMAND_CHARS + 1)))
     }
 
     @Test
-    fun lossless_exactLines() {
-        assertEquals(
-            "hg2auth root shell 'sh -c \"cd /data/x && rm -rf *\"'",
-            Hg2ApiAuthorityCommand.lossless("root", "sh -c \"cd /data/x && rm -rf *\"")
-        )
-        assertEquals("hg2auth adb shell \"echo it's\"", Hg2ApiAuthorityCommand.lossless("adb", "echo it's"))
-        // Surrounding whitespace is trimmed, like the engine does.
-        assertEquals("hg2auth root shell 'id'", Hg2ApiAuthorityCommand.lossless("root", "  id  "))
-    }
-
-    @Test
-    fun lossless_refusesWhatItCannotCarry() {
-        // Mixed quote styles with unquoted spaces survive no wrapping.
-        assertNull(Hg2ApiAuthorityCommand.lossless("root", "echo \"x y\" it's"))
-        assertNull(Hg2ApiAuthorityCommand.lossless("root", ""))
-        assertNull(Hg2ApiAuthorityCommand.lossless("root", "   "))
-        assertNull(Hg2ApiAuthorityCommand.lossless("root", "x".repeat(MAX_AUTHORITY_COMMAND_CHARS + 1)))
-        assertNull(Hg2ApiAuthorityCommand.lossless("sudo", "id"))
-        assertNull(Hg2ApiAuthorityCommand.lossless("", "id"))
-    }
-
-    @Test
-    fun lossless_acceptsTheLongestAllowedCommand() {
+    fun authorityCommand_acceptsTheLongestAllowed() {
         val command = "x".repeat(MAX_AUTHORITY_COMMAND_CHARS)
-        assertEquals(command, Hg2ApiAuthorityCommand.lossless("root", command)?.let(Hg2ApiAuthorityCommand::effectiveCommand))
-    }
-
-    @Test
-    fun expectedPrompt_matchesTheEnginesConfirmationText() {
-        assertEquals("Run as root? id [y/N]", Hg2ApiAuthorityCommand.expectedPrompt("root", "id"))
-        assertEquals("Run through ADB shell? pm list packages [y/N]", Hg2ApiAuthorityCommand.expectedPrompt("adb", "pm list packages"))
+        assertEquals(command, authorityCommandOrNull("root", command))
     }
 
     // --- background-denied commands (M-2, defence in depth) ----------------------------------

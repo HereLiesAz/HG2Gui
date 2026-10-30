@@ -73,7 +73,7 @@ class CommandLineTest {
             "echo \$(tool a)" to listOf("tool", "echo"),
             "echo `tool a`" to listOf("tool", "echo"),
             "cat <(tool a)" to listOf("tool", "cat"),
-            "find . -exec tool {} \;" to listOf("find", "tool"),
+            "find . -exec tool {} \\;" to listOf("find", "tool"),
             "/data/x/usr/bin/tool --v" to listOf("tool"),
             "(cd x && tool)" to listOf("cd", "tool"),
             "if true; then tool; fi" to listOf("true", "tool"),
@@ -90,7 +90,7 @@ class CommandLineTest {
         assertEquals(listOf("echo"), names("echo tool"))
         assertEquals(listOf("echo"), names("echo 'a && tool'"))
         assertEquals(listOf("echo"), names("echo hi # && tool"))
-        assertEquals(listOf("echo"), names("echo a\;tool"))
+        assertEquals(listOf("echo"), names("echo a\\;tool"))
     }
 
     @Test

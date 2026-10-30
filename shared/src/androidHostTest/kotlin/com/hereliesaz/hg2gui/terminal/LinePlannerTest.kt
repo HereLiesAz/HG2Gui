@@ -32,7 +32,7 @@ class LinePlannerTest {
             "offtool", "offtool --x", "/data/x/usr/bin/offtool", "cd x && offtool", "true; offtool", "false || offtool",
             "ls | offtool", "env offtool", "env FOO=1 offtool", "time offtool", "sudo offtool", "nohup offtool &",
             "bash -c offtool", "sh -c 'cd x && offtool'", "echo \$(offtool)", "echo `offtool`",
-            "find . -exec offtool {} \;", "xargs offtool", "FOO=1 offtool", "eval offtool", "if true; then offtool; fi",
+            "find . -exec offtool {} \\;", "xargs offtool", "FOO=1 offtool", "eval offtool", "if true; then offtool; fi",
             "(offtool)", "off"
         )
         for (line in lines) {
@@ -69,7 +69,7 @@ class LinePlannerTest {
     @Test
     fun isolatedPackage_isRefusedWhereItCouldEscapeItsSandbox() {
         val lines = listOf(
-            "ls | boxed", "boxed | cat", "bash -c boxed", "echo \$(boxed)", "echo `boxed`", "find . -exec boxed {} \;",
+            "ls | boxed", "boxed | cat", "bash -c boxed", "echo \$(boxed)", "echo `boxed`", "find . -exec boxed {} \\;",
             "eval boxed", "if true; then boxed; fi", "(boxed)", "boxed &", "cat <(boxed)"
         )
         for (line in lines) {
