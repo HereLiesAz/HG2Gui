@@ -11,16 +11,11 @@
     <string name="toast_copied">Copied to clipboard</string>
     <string name="toast_share_unavailable_file">Can\'t share %1$s from this location.</string>
     <string name="toast_share_unavailable_items">%1$d item(s) couldn\'t be shared from this location.</string>
-    <string name="toast_guide_added">Added \"%1$s\" to the command line</string>
     <string name="toast_biometric_failed">Couldn\'t confirm: %1$s</string>
     <string name="biometric_title">Enable shell execution</string>
     <string name="biometric_subtitle">Lets a paired MCP client run real shell commands on this device</string>
-    <string name="biometric_cancel">Cancel</string>
-    <string name="toast_api_key_not_saved">Couldn\'t save the API key: this device\'s secure storage is unavailable.</string>
-    <string name="toast_api_key_saved">API key saved</string>
     <string name="toast_history_cleared">Command history cleared</string>
-    <string name="toast_token_copied">Pairing token copied</string>
-    <string name="toast_notifications_off">The MCP server stays off: allow notifications so its status is always visible, then start it again.</string>
     <string name="toast_no_screen_lock">Set up a screen lock (PIN, pattern, password or biometric) in the device settings to enable shell execution.</string>
     <string name="toast_copy_failed">Couldn\'t copy to the clipboard</string>
+    <string name="toast_history_clear_failed">Couldn\'t clear the command history</string>
 </resources>

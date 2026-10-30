@@ -476,9 +476,13 @@ fun FilesScreen(
             ),
             onBack = { screen = FMScreen.Browse },
             fullscreen = fullscreen,
+            // m-4: "SEE LARGEST FILES" jumps to the LARGEST tab by itself; this re-reads the
+            // stats and trash first so that list is current, not whatever was loaded on entry.
+            onFreeUpSpace = { refresh() },
             errorMessage = opError,
             onErrorDismiss = { opError = null },
-            modifier = modifier
+            modifier = modifier,
+            nowMillis = nowMillis
         )
         return
     }
@@ -1164,15 +1168,21 @@ private fun FolderTile(
                 .height(motion.h.value.toDp())
                 .graphicsLayer { scaleX = motion.scale.value; scaleY = motion.scale.value }
                 .clip(folderTileShape(isOpen, motion.w.value.toDp()))
-                .background(if (isOpen && selection.selectMode && selection.isSelected) Azphalt.Ink else hue)
+                .background(if (selection.selectMode && selection.isSelected) Azphalt.Ink else hue)
                 .combinedClickable(
                     onClick = { actions.onTap(entry) },
                     onLongClick = { actions.onLongPress(entry) }
                 )
-                .padding(if (isOpen) 14.dp else 6.dp),
+                .selectableState(selection.selectMode, selection.isSelected)
+                // The open header's content is 48dp tall (56dp minus 4dp top and bottom), so its
+                // RENAME / TRASH actions keep a full-size tap target.
+                .padding(
+                    horizontal = if (isOpen) 14.dp else 6.dp,
+                    vertical = if (isOpen) 4.dp else 6.dp
+                ),
             contentAlignment = if (isOpen) Alignment.CenterStart else Alignment.BottomStart
         ) {
-            FolderTileContent(entry, isOpen, motion.w.value.toDp(), selection, actions)
+            FolderTileContent(entry, isOpen, motion.w.value.toDp(), selection, actions, hue)
         }
     }
 }

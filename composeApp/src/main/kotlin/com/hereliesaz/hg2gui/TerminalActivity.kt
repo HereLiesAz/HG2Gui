@@ -277,6 +277,7 @@ class TerminalActivity : FragmentActivity() {
      *  granted in onRequestPermissionsResult) — starting it first and then requesting the permission
      *  means the service runs with no visible indicator if the user hasn't answered yet. */
     private fun startMcpServer() {
+        mcpNotificationsDenied = false
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
         ) {
@@ -444,6 +445,10 @@ class TerminalActivity : FragmentActivity() {
     // that got us here actually wanted to."
     private var deviceStoragePendingActivation = false
 
+    // Set when the POST_NOTIFICATIONS request for the MCP server was refused, so the MCP screen can
+    // say why the toggle did nothing; cleared by the next start attempt that gets through.
+    private var mcpNotificationsDenied by mutableStateOf(false)
+
     // S1: set right before screen = Screen.FullScreenApp (onRun's dispatch below); torn
     // down (session.kill()) on every exit path - back gesture, the ✕ pill, or the child
     // process finishing on its own - so a killed/finished pty never lingers. Activity-level
@@ -505,6 +510,8 @@ class TerminalActivity : FragmentActivity() {
             }
             var aiMessages by remember { mutableStateOf<List<AiMessage>>(emptyList()) }
             var aiBusy by remember { mutableStateOf(false) }
+            // The last AI-key save did not reach disk (secure store unavailable); drives the error line.
+            var aiKeySaveFailed by remember { mutableStateOf(false) }
             var azpResults by remember { mutableStateOf<List<AzpListing>>(emptyList()) }
             var azpBusy by remember { mutableStateOf(false) }
             var azpError by remember { mutableStateOf<String?>(null) }
@@ -944,26 +951,24 @@ class TerminalActivity : FragmentActivity() {
                     screen == Screen.AiSettings -> AiSettingsScreen(
                         fullscreen = fullscreen,
                         apiKey = aiApiKey,
+                        saveFailed = aiKeySaveFailed,
                         onSave = { newKey ->
-                            val wanted = newKey?.trim()?.takeIf { it.isNotEmpty() }
+                            aiKeySaveFailed = false
                             scope.launch {
-                                // Keystore I/O stays off the main thread. setApiKey gives up
-                                // silently when the secure store cannot be opened, so "saved" is
-                                // only believed once the key reads back - the in-memory copy and
-                                // the screen change must not outrun what is actually on disk.
-                                val persisted = withContext(Dispatchers.IO) {
-                                    AiSettings.setApiKey(this@TerminalActivity, wanted)
-                                    AiSettings.apiKey(this@TerminalActivity) == wanted
-                                }
-                                if (persisted) {
-                                    aiApiKey = wanted
+                                // Keystore I/O stays off the main thread, and "saved" is only
+                                // believed when the store reports the key (or its removal) was
+                                // persisted - the in-memory copy and the screen change must not
+                                // outrun what is actually on disk.
+                                val result = withContext(Dispatchers.IO) { AiSettings.saveApiKey(this@TerminalActivity, newKey) }
+                                if (result.persisted) {
+                                    aiApiKey = newKey?.trim()?.takeIf { it.isNotEmpty() }
                                     screen = aiSettingsCameFrom
                                 } else {
-                                    Toast.makeText(this@TerminalActivity, R.string.toast_api_key_not_saved, Toast.LENGTH_LONG).show()
+                                    aiKeySaveFailed = true
                                 }
                             }
                         },
-                        onBack = { screen = aiSettingsCameFrom }
+                        onBack = { aiKeySaveFailed = false; screen = aiSettingsCameFrom }
                     )
 
                     screen == Screen.Ai -> AiChatScreen(
@@ -1151,7 +1156,8 @@ class TerminalActivity : FragmentActivity() {
                             },
                             onRequestShellExec = { requestEnableShellExec() },
                             onDisableShellExec = { McpServerService.setShellExecEnabled(this@TerminalActivity, false) },
-                            onBack = { screen = Screen.Settings }
+                            onBack = { screen = Screen.Settings },
+                            notificationsDenied = mcpNotificationsDenied
                         )
                     }
 
@@ -1653,15 +1659,14 @@ class TerminalActivity : FragmentActivity() {
             LocalBroadcastManager.getInstance(this).sendBroadcast(Intent(ContactManager.ACTION_REFRESH))
         }
         if (requestCode == PermissionCodes.MCP_NOTIFICATION_REQUEST_PERMISSION) {
+            mcpNotificationsDenied = !granted
             if (granted) {
                 // Permission was requested asynchronously by startMcpServer(); start the service now
                 // that the user has granted it so the foreground notification is actually visible.
                 ContextCompat.startForegroundService(this, Intent(this, McpServerService::class.java))
-            } else {
-                // The server stays off (it must never run with no visible indicator), and the
-                // toggle used to just do nothing - say why.
-                Toast.makeText(this, R.string.toast_notifications_off, Toast.LENGTH_LONG).show()
             }
+            // Refused: the server stays off (it must never run with no visible indicator) and the
+            // MCP screen explains why via notificationsDenied.
         }
         // Every other builtin's permission request (COMMAND_REQUEST_PERMISSION) is answered by
         // just running the same pill or command again - the system permission dialog itself is
