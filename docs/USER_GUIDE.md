@@ -55,6 +55,10 @@ For normal interactive shells, HG2Gui can project:
 
 The raw prompt remains available.
 
+In the ordinary command line the same status appears under the tab strip after each command: the working directory, `GIT <branch>` (with a dot when there are uncommitted changes) and a non-zero exit status.
+
+The key row under the command line has sticky **CTRL** and **ALT**: tap one, then type a letter. CTRL supports C (stop the running command, or clear the line), D, H, J, N, P, U and W; ALT supports `.` (last argument of the previous command) and U/L/C (case of the last word). **ESC** cancels the current pick; **TAB** completes. Long-press a session tab to rename it.
+
 ### Adaptive TUI Wrapper
 
 When an application takes over the terminal as a screen-oriented interface, HG2Gui can recognize the live terminal state and replace the character-grid presentation with native controls when it has enough confidence.
