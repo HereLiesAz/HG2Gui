@@ -4,7 +4,6 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class ShellSessionTest {
@@ -177,27 +176,11 @@ class ShellSessionTest {
         assertTrue(finalOutput.contains("got:yes"), "expected the supplied answer to reach the running command: $finalOutput")
     }
 
-    @Test
-    fun decliningToAnswerTearsDownTheSessionInsteadOfDesyncingIt() {
-        val s = requireShell()
-        var promptOffered = false
-        s.stream(
-            "printf 'Continue? [y/N] '; read ans; echo \"got:\$ans\"",
-            onLine = { },
-            onNeedInput = { promptOffered = true; null }
-        )
-        assertTrue(promptOffered, "expected the stall to still be offered even with no answer available")
-        assertFalse(
-            s.isAlive,
-            "a declined/timed-out prompt must tear the session down; leaving it alive but abandoned " +
-                "mid-read means the next command silently gets consumed as the old prompt's answer"
-        )
-
-        var nextOutput = ""
-        val exitCode = s.stream("echo next", onLine = { nextOutput = it }, onNeedInput = { null })
-        assertEquals(-1, exitCode, "a torn-down session must not silently swallow the next command")
-        assertTrue(nextOutput.contains("shell is not running"))
-    }
+    // decliningToAnswerTearsDownTheSessionInsteadOfDesyncingIt moved to
+    // androidHostTest/.../ShellSessionRecoveryTest.kt as decliningAPromptCancelsTheCommandAndTheNextOneRuns:
+    // a declined prompt now cancels only that command (the shell is restarted if it was the thing
+    // blocked) instead of leaving the session dead, and the test needs the shortened quiet period
+    // only that source set can set.
 
     @Test
     fun interruptStopsAHangingCommandAndKeepsTheSessionUsable() {
