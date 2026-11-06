@@ -11,6 +11,17 @@ Frames 00–11 are clean redraws of the existing stills `cat_01.png`–`cat_12.p
 3. For frames 00–11 also attach the original still named in the heading. It sets the composition; do not copy its label.
 4. Paste the **style block**, then the frame prompt. The frame prompts never mention files, cut numbers or production terms; keep it that way.
 
+## Generated frames
+
+Approved renders are in `docs/` as `cat_tangent_frame_NN.png` (1254×1254), with the character reference as `cat_tangent_character_sheet.png`.
+
+| Frames | Status |
+|---|---|
+| 00, 01, 02 | Generated, not yet committed. |
+| 03–21 | Committed. |
+
+Frame 13 is the cuneiform tablet. Frame 19 is the second render; the first had a broken centre column.
+
 ## Colour per frame
 
 The existing stills change background colour from beat to beat, so these prompts do too. This differs from the canonical entries, which use one colour throughout. To use one colour for the whole tangent instead, replace each background with it; the compositions do not depend on the colour.
