@@ -19,6 +19,10 @@ buildscript {
                     if (requested.name == "jackson-core" || requested.name == "jackson-databind") useVersion("2.22.3")
                 "org.bitbucket.b_c" -> if (requested.name == "jose4j") useVersion("0.9.7")
                 "org.apache.commons" -> if (requested.name == "commons-lang3") useVersion("3.21.0")
+                // GHSA-xxph-c9ww-hj94 (CompactHashMap/CompactHashSet deserialization): fixed in 33.7.2.
+                "com.google.guava" -> if (requested.name == "guava") {
+                    useVersion(if (requested.version.orEmpty().endsWith("-android")) "33.7.2-android" else "33.7.2-jre")
+                }
             }
         }
     }
