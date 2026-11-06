@@ -40,7 +40,7 @@ class AnimationDocumentationTest(unittest.TestCase):
                     for name in ("README.md", "script.md", "shots.md", "prompt.md"):
                         self.assertTrue((clip / name).is_file(), str(clip / name))
                     total += 1
-        self.assertEqual(total, 173)
+        self.assertEqual(total, 182)
 
     def test_guide_indexes_have_no_broken_local_links(self) -> None:
         paths = [GUIDE / "CLIP_PRODUCTION_INDEX.md", GUIDE / "ANIMATION_TODO.md"]
@@ -77,11 +77,17 @@ class AnimationDocumentationTest(unittest.TestCase):
         for animation in self.manifest["tangent_animations"]:
             for scene in animation["scenes"]:
                 frames = scene["storyboard"]
-                self.assertIn(frames["start"]["status"], PRESENT)
+                clip = ROOT / animation["folder"] / "clips" / f"{int(scene['scene']):02d}"
+                if frames["start"]["status"] == "missing":
+                    # Beats added after the source stills were made (cat 13-21) have no art yet.
+                    self.assertEqual(frames["start"]["semantics"], "source_tangent_start_not_supplied")
+                    self.assertIsNone(frames["start"]["local"])
+                    self.assertFalse((clip / "start.png").exists())
+                else:
+                    self.assertIn(frames["start"]["status"], PRESENT)
+                    self.assertTrue((clip / "start.png").is_file())
                 self.assertEqual(frames["end"]["status"], "unresolved")
                 self.assertIsNone(frames["end"]["local"])
-                clip = ROOT / animation["folder"] / "clips" / f"{int(scene['scene']):02d}"
-                self.assertTrue((clip / "start.png").is_file())
                 self.assertFalse((clip / "end.png").exists())
 
     def test_legacy_prompts_do_not_impose_unverified_timing(self) -> None:
@@ -190,7 +196,7 @@ class AnimationDocumentationTest(unittest.TestCase):
                     clip = folder / "clips" / f"{int(scene['scene']):02d}"
                     paths.extend(clip / name for name in ("README.md", "script.md", "shots.md", "prompt.md"))
         before = {path: hashlib.sha256(path.read_bytes()).digest() for path in paths}
-        self.assertEqual(builder.build()[0], 173)
+        self.assertEqual(builder.build()[0], 182)
         for path, digest in before.items():
             self.assertEqual(hashlib.sha256(path.read_bytes()).digest(), digest, str(path))
 

@@ -2,14 +2,14 @@
 
 Source: `docs/guide/MANIFEST.json`. Generated review of the original cut-sheet declarations, existing source stills and per-clip START/END roles.
 
-**Warning:** The 42 tangent START images are original screenshots with visible `Start:` labels, **not clean production frames**. All 42 tangent END frames are unverified.
+**Warning:** The 42 tangent START images are original screenshots with visible `Start:` labels, **not clean production frames**. All 51 tangent END frames are unverified.
 
 | Group | Animations | Clips | Boundary positions | Source images | Absent/unresolved |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | Canonical | 35 | 117 | 234 | 10 | 224 |
-| Tangents | 4 | 42 | 84 | 42 | 42 |
+| Tangents | 4 | 51 | 102 | 42 | 60 |
 | Legacy | 3 | 14 | 28 | 28 | 0 |
-| **Total** | **42** | **173** | **346** | **80** | **266** |
+| **Total** | **42** | **182** | **364** | **80** | **284** |
 
 Canonical unique named frame files: **6/152**. Canonical neighboring cuts share the identical bytes for common boundaries.
 
@@ -589,6 +589,15 @@ Do not mark an item complete without inspecting the actual asset. A file name al
 | [10](animations/tangents/23_cat_theological_mechanical_history/clips/10/README.md) | ✅ `cat_10.png` (annotated) | ⬜ not supplied — unresolved |
 | [11](animations/tangents/23_cat_theological_mechanical_history/clips/11/README.md) | ✅ `cat_11.png` (annotated) | ⬜ not supplied — unresolved |
 | [12](animations/tangents/23_cat_theological_mechanical_history/clips/12/README.md) | ✅ `cat_12.png` (annotated) | ⬜ not supplied — unresolved |
+| [13](animations/tangents/23_cat_theological_mechanical_history/clips/13/README.md) | ⬜ `cat_13.png` — missing | ⬜ not supplied — unresolved |
+| [14](animations/tangents/23_cat_theological_mechanical_history/clips/14/README.md) | ⬜ `cat_14.png` — missing | ⬜ not supplied — unresolved |
+| [15](animations/tangents/23_cat_theological_mechanical_history/clips/15/README.md) | ⬜ `cat_15.png` — missing | ⬜ not supplied — unresolved |
+| [16](animations/tangents/23_cat_theological_mechanical_history/clips/16/README.md) | ⬜ `cat_16.png` — missing | ⬜ not supplied — unresolved |
+| [17](animations/tangents/23_cat_theological_mechanical_history/clips/17/README.md) | ⬜ `cat_17.png` — missing | ⬜ not supplied — unresolved |
+| [18](animations/tangents/23_cat_theological_mechanical_history/clips/18/README.md) | ⬜ `cat_18.png` — missing | ⬜ not supplied — unresolved |
+| [19](animations/tangents/23_cat_theological_mechanical_history/clips/19/README.md) | ⬜ `cat_19.png` — missing | ⬜ not supplied — unresolved |
+| [20](animations/tangents/23_cat_theological_mechanical_history/clips/20/README.md) | ⬜ `cat_20.png` — missing | ⬜ not supplied — unresolved |
+| [21](animations/tangents/23_cat_theological_mechanical_history/clips/21/README.md) | ⬜ `cat_21.png` — missing | ⬜ not supplied — unresolved |
 
 - [ ] Clip 01 END: no declared image
 - [ ] Clip 02 END: no declared image
@@ -602,6 +611,24 @@ Do not mark an item complete without inspecting the actual asset. A file name al
 - [ ] Clip 10 END: no declared image
 - [ ] Clip 11 END: no declared image
 - [ ] Clip 12 END: no declared image
+- [ ] Clip 13 START: cat_13.png
+- [ ] Clip 13 END: no declared image
+- [ ] Clip 14 START: cat_14.png
+- [ ] Clip 14 END: no declared image
+- [ ] Clip 15 START: cat_15.png
+- [ ] Clip 15 END: no declared image
+- [ ] Clip 16 START: cat_16.png
+- [ ] Clip 16 END: no declared image
+- [ ] Clip 17 START: cat_17.png
+- [ ] Clip 17 END: no declared image
+- [ ] Clip 18 START: cat_18.png
+- [ ] Clip 18 END: no declared image
+- [ ] Clip 19 START: cat_19.png
+- [ ] Clip 19 END: no declared image
+- [ ] Clip 20 START: cat_20.png
+- [ ] Clip 20 END: no declared image
+- [ ] Clip 21 START: cat_21.png
+- [ ] Clip 21 END: no declared image
 
 ### 34_mv_elevator_incident — incomplete
 

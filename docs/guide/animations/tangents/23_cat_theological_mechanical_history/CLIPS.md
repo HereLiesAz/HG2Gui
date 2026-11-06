@@ -16,3 +16,12 @@
 | [10](clips/10/README.md) | [START](clips/10/start.png) → — | [script](clips/10/script.md) | [shots](clips/10/shots.md) | [prompt](clips/10/prompt.md) |
 | [11](clips/11/README.md) | [START](clips/11/start.png) → — | [script](clips/11/script.md) | [shots](clips/11/shots.md) | [prompt](clips/11/prompt.md) |
 | [12](clips/12/README.md) | [START](clips/12/start.png) → — | [script](clips/12/script.md) | [shots](clips/12/shots.md) | [prompt](clips/12/prompt.md) |
+| [13](clips/13/README.md) | — → — | [script](clips/13/script.md) | [shots](clips/13/shots.md) | [prompt](clips/13/prompt.md) |
+| [14](clips/14/README.md) | — → — | [script](clips/14/script.md) | [shots](clips/14/shots.md) | [prompt](clips/14/prompt.md) |
+| [15](clips/15/README.md) | — → — | [script](clips/15/script.md) | [shots](clips/15/shots.md) | [prompt](clips/15/prompt.md) |
+| [16](clips/16/README.md) | — → — | [script](clips/16/script.md) | [shots](clips/16/shots.md) | [prompt](clips/16/prompt.md) |
+| [17](clips/17/README.md) | — → — | [script](clips/17/script.md) | [shots](clips/17/shots.md) | [prompt](clips/17/prompt.md) |
+| [18](clips/18/README.md) | — → — | [script](clips/18/script.md) | [shots](clips/18/shots.md) | [prompt](clips/18/prompt.md) |
+| [19](clips/19/README.md) | — → — | [script](clips/19/script.md) | [shots](clips/19/shots.md) | [prompt](clips/19/prompt.md) |
+| [20](clips/20/README.md) | — → — | [script](clips/20/script.md) | [shots](clips/20/shots.md) | [prompt](clips/20/prompt.md) |
+| [21](clips/21/README.md) | — → — | [script](clips/21/script.md) | [shots](clips/21/shots.md) | [prompt](clips/21/prompt.md) |

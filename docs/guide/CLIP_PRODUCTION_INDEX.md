@@ -46,7 +46,7 @@ Each clip folder contains its own `shots.md`, `script.md`, `prompt.md`, and avai
 
 ## tangents
 
-- [23_cat_theological_mechanical_history](animations/tangents/23_cat_theological_mechanical_history/CLIPS.md) — 12 clips
+- [23_cat_theological_mechanical_history](animations/tangents/23_cat_theological_mechanical_history/CLIPS.md) — 21 clips
 - [34_mv_elevator_incident](animations/tangents/34_mv_elevator_incident/CLIPS.md) — 12 clips
 - [02_pkg_install_small_empire_of_dependencies](animations/tangents/02_pkg_install_small_empire_of_dependencies/CLIPS.md) — 12 clips
 - [22_find_cartographical_disaster](animations/tangents/22_find_cartographical_disaster/CLIPS.md) — 6 clips
