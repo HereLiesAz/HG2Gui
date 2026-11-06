@@ -48,17 +48,21 @@ class CatTangentPackTest(unittest.TestCase):
         self.assertEqual(len(self.parts), 7)
         for part in self.parts:
             prompt = self.prompt(part)
-            self.assertIn("one continuous 15-second animation in 3 consecutive beats", prompt, part)
+            self.assertIn("15 seconds, one continuous generation of 3 consecutive 5-second beats", prompt, part)
             self.assertIn("Exactly 1:1 square", prompt, part)
-            self.assertIn("NO header, NO tabs", prompt, part)
+            self.assertIn("No header, tabs", prompt, part)
             self.assertNotIn("2.35", prompt, part)
+
+    def test_every_prompt_fits_seedances_4000_character_limit(self):
+        for part in self.parts:
+            self.assertLessEqual(len(self.prompt(part)), 4000, part)
 
     def test_every_cut_is_in_exactly_one_part_in_order(self):
         beats = self.mod.parse_beats()
         self.assertEqual(len(beats), 21)
         seen = []
         for part in self.parts:
-            seen += [t for t in re.findall(r"Story beat: (.+)", self.prompt(part))]
+            seen += [t for t in re.findall(r"Story: (.+)", self.prompt(part))]
         self.assertEqual(seen, [beats[n] for n in range(1, 22)])
 
     def test_each_part_has_four_boundary_frames_and_the_character_sheet_all_tagged(self):
@@ -92,7 +96,6 @@ class CatTangentPackTest(unittest.TestCase):
         frames = self.mod.parse_frames()
         self.assertEqual(sorted(frames), list(range(22)))
         self.assertIn("(#D9A12B)", frames[12].background.upper())
-        self.assertIn(frames[13].composition, self.prompt(self.parts[4]))
         self.assertIn("cuneiform", frames[13].composition)
 
 
@@ -111,7 +114,8 @@ class PerPartZipTest(unittest.TestCase):
                     self.assertLessEqual(len(images), 9, path.name)
                     self.assertEqual(len(images), 5, path.name)
                     prompt = next(zf.read(n).decode("utf-8") for n in names if n.endswith("/prompt.txt"))
-                    self.assertIn("one continuous 15-second animation", prompt, path.name)
+                    self.assertIn("15 seconds, one continuous generation", prompt, path.name)
+                    self.assertLessEqual(len(prompt), 4000, path.name)
                     self.assertTrue(any(n.endswith("/README.txt") for n in names), path.name)
 
 

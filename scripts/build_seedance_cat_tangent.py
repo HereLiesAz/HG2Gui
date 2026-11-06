@@ -25,7 +25,6 @@ Standard library only. The zip is reproducible (fixed timestamps, stable order).
 from __future__ import annotations
 
 import argparse
-import importlib.util
 import re
 import sys
 import zipfile
@@ -47,30 +46,32 @@ PALETTE = (
 TITLE = "CAT — A BRIEF THEOLOGICAL AND MECHANICAL HISTORY"
 
 
-def _load_pack_module():
-    spec = importlib.util.spec_from_file_location("build_seedance_packs", REPO / "scripts/build_seedance_packs.py")
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = module
-    spec.loader.exec_module(module)
-    return module
+MAX_PROMPT = 4000  # Seedance 2.0 rejects prompts longer than this many characters
 
+FORMAT = (
+    "FORMAT: Exactly 1:1 square, {seconds} seconds, one continuous generation of {beats} consecutive {cut}-second beats. "
+    "Every moment has ONE flat background colour edge to edge, matching the reference image for that moment; where "
+    "neighbouring references differ, change colour with one hard flat wipe, never a fade or gradient. No header, tabs, "
+    "title, border, frame, letterbox, captions, timestamps or any text; marks on tablets or signs are decorative shapes. "
+    "No narration, voice or dialogue."
+)
 
-PACKS = _load_pack_module()
+STYLE = (
+    "STYLE: Flat 2D screen-printed cut-paper pictogram in the visual language of the 2005 Hitchhiker's Guide graphics: "
+    "economical geometric silhouettes, bold negative space, matte colour, slightly imperfect printed edges, dry deadpan "
+    "staging. Opaque flat cutouts only: no gradients, gloss, shadows, 3D, depth of field or photorealism. Motion is crisp "
+    "and mostly linear: slides, pivots, flips, flat pans and zooms; no camera shake, soft dissolves or bouncy easing. "
+    "Palette: cream, navy-black, brick red, mustard, plus each beat's background colour."
+)
 
-FORMAT = """\
-FORMAT AND FRAME
-- Exactly 1:1 square for the whole generation. {seconds} seconds, one continuous generation made of {beats} consecutive {cut}-second beats.
-- Every moment has ONE single flat background colour filling the entire square, edge to edge, exactly the colour of the reference image for that moment. Where two neighbouring reference images differ in background colour, the background changes by one hard flat colour wipe during the beat, never a gradient, fade or dissolve. No second background band, no strips, no vignette, no panel.
-- NO header, NO tabs, NO title, NO banner, NO border, NO frame, NO letterboxing, NO mattes, NO window controls, NO interface chrome, NO timestamps, NO shot numbers, NO production labels, NO subtitles or captions. The animation is only the artwork on the flat background.
-- No text anywhere. The marks on the clay tablet and the symbols on Egyptian-style signs are decorative shapes that carry no message.
-- No narrator, no voice-over and no spoken dialogue."""
-
-CONTINUITY = """\
-CONTINUITY
-- The cat is always the same character: a flat cream cutout with a round head, two small triangular ears, thin cream whiskers, tiny dark dot eyes and a small dark nose. Where a reference image shows a black cat, keep that cat exactly as drawn there. Silhouette, proportions, colour placement, prop geometry and scale never drift from the references.
-- Each beat starts exactly on its opening reference image and ends exactly on its closing reference image, which is also the opening image of the next beat. Animate the shortest clear flat transformation from one image to the next, then hold the closing composition for the last 0.4 seconds.
-- The beats join with no visible seam: no fade-in, no fade-out, no cut to black, no title card, no transition graphics.
-- Do not invent dialogue, captions, labels or story events beyond the scene description and script."""
+CONTINUITY = (
+    "CONTINUITY: The cat is one character throughout: flat cream cutout, round head, two small triangular ears, thin "
+    "whiskers, tiny dark dot eyes and nose. Where a reference shows a black cat, keep it exactly as drawn. Props, "
+    "silhouettes, colours and scale never drift from the references. Each beat starts exactly on its opening reference "
+    "and ends exactly on its closing reference (also the next beat's opening) by the shortest clear flat transformation, "
+    "then holds that composition for the last 0.4 seconds. No fades, cuts to black, title cards or transition graphics. "
+    "Invent no events beyond the beats."
+)
 
 
 @dataclass
@@ -140,43 +141,37 @@ def frame_file(index: int) -> Path:
 
 def build_prompt(part: Part) -> str:
     beats = len(part.beats)
-    lines = [
-        f"{TITLE} — part {part.number} of 7: one continuous {part.seconds}-second animation in {beats} consecutive beats.",
-        "",
-        FORMAT.format(seconds=part.seconds, beats=beats, cut=CUT_SECONDS),
-        "",
-        PACKS.STYLE_BLOCK.format(palette=PALETTE),
-        "",
-        CONTINUITY,
-        "",
-        "REFERENCE IMAGES (uploaded in this order)",
-    ]
     last_image = len(part.frames)
+    lines = [
+        f"{TITLE}, part {part.number} of 7.",
+        FORMAT.format(seconds=part.seconds, beats=beats, cut=CUT_SECONDS),
+        STYLE,
+        CONTINUITY,
+        "REFERENCE IMAGES (upload in this order):",
+    ]
     for position, frame in enumerate(part.frames, start=1):
-        at = f"{(position - 1) * CUT_SECONDS}s"
+        at = (position - 1) * CUT_SECONDS
         if position == 1:
-            role = f"OPENING FRAME: the exact composition at {at}. Begin exactly on it."
+            role = f"opening frame at {at}s, begin exactly on it"
         elif position == last_image:
-            role = f"CLOSING FRAME: the exact composition at {at}. Finish exactly on it and hold."
+            role = f"closing frame at {at}s, finish exactly on it and hold"
         else:
-            role = f"the exact composition at {at} (the end of beat {position - 1} and the start of beat {position})."
-        lines.append(f"- @Image{position}: {role} {frame.composition}")
+            role = f"exact composition at {at}s (end of beat {position - 1}, start of beat {position})"
+        lines.append(f"@Image{position}: {role}; background {frame.background}.")
     lines.append(
-        f"- @Image{last_image + 1}: CHARACTER AND PROP REFERENCE, not a frame: the cat in four poses (sitting, hanging "
-        "upside down, lying on its back, walking in profile) and a small crown, an armchair and an open box. Match the "
-        "cat's design to it. It carries no text."
+        f"@Image{last_image + 1}: character and prop sheet (cat in four poses, a crown, an armchair, a box), "
+        "not a frame; match the cat to it. No text."
     )
-    lines += ["", "SCENE DESCRIPTION (complete, in order)"]
+    lines.append("BEATS:")
     for position, cut in enumerate(sorted(part.beats), start=1):
-        start, end = (position - 1) * CUT_SECONDS, position * CUT_SECONDS
-        lines += [
-            f"Beat {position} of {beats} — {start}s–{end}s",
-            f"Move from @Image{position} to @Image{position + 1}. Story beat: {part.beats[cut]}",
-            "",
-        ]
-    lines.append("SCRIPT FOR THIS PART (verbatim from the Guide; context only, never spoken, shown or written on screen)")
-    lines += [part.beats[cut] for cut in sorted(part.beats)]
-    return "\n".join(lines).rstrip() + "\n"
+        lines.append(
+            f"Beat {position} ({(position - 1) * CUT_SECONDS}-{position * CUT_SECONDS}s): @Image{position} to "
+            f"@Image{position + 1}. Story: {part.beats[cut]}"
+        )
+    text = "\n".join(lines) + "\n"
+    if len(text) > MAX_PROMPT:
+        raise ValueError(f"part {part.number}: prompt is {len(text)} characters, over the {MAX_PROMPT} limit")
+    return text
 
 
 def build_readme(parts: list[Part], prompt_sizes: dict[int, int]) -> str:
@@ -191,8 +186,7 @@ def build_readme(parts: list[Part], prompt_sizes: dict[int, int]) -> str:
         "",
         "SETTINGS (every part)",
         "  Aspect ratio: 1:1        Duration: 15 seconds        No header, tabs or chrome.",
-        "  The prompt-length limit is not stated in the sources I found; if Seedance rejects a prompt, trim the VISUAL",
-        "  DESIGN section first and keep the reference roles, scene description and script.",
+        "  Seedance 2.0 allows at most 4,000 characters per prompt; every prompt here is under that (the build fails if not).",
         "",
         "HOW TO USE (each part_* folder)",
         "  1. Upload the images in references/ in file-name order, so @Image1 ... @Image5 match the prompt.",
@@ -205,7 +199,7 @@ def build_readme(parts: list[Part], prompt_sizes: dict[int, int]) -> str:
     for part in parts:
         lines.append(
             f"  {part.folder:28} {part.seconds}s  frames {part.frames[0].index:02d}-{part.frames[-1].index:02d}  "
-            f"{prompt_sizes[part.number]} characters"
+            f"{prompt_sizes[part.number]} of 4000 characters"
         )
     lines += [
         "",
@@ -254,7 +248,7 @@ def build_part_readme(part: Part, prompt_chars: int) -> str:
         "",
         "SETTINGS",
         "  Aspect ratio: 1:1        Duration: 15 seconds        No header, tabs or chrome.",
-        f"  Images: {len(part.frames) + 1} (Seedance 2.0 takes at most 9).   Prompt: {prompt_chars} characters.",
+        f"  Images: {len(part.frames) + 1} (Seedance 2.0 takes at most 9).   Prompt: {prompt_chars} of 4000 characters.",
         "",
         "HOW TO USE",
         "  1. Upload the images in references/ in file-name order, so @Image1 ... @Image5 match the prompt.",
