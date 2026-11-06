@@ -17,7 +17,8 @@ Approved renders are in `docs/` as `cat_tangent_frame_NN.png` (1254×1254), with
 
 | Frames | Status |
 |---|---|
-| 00–21 | All committed. |
+| 00–19 | Committed. |
+| 20, 21 | The committed renders show an ordinary collapse. They predate the new final line ("Rome fell in exactly the way that cats don't") and need re-rendering from the prompts below. |
 
 Frame 13 is the cuneiform tablet. Frame 19 is the second render; the first had a broken centre column.
 
@@ -193,17 +194,17 @@ Flat crimson (#993B49) background. A grand Roman colonnade across the lower two 
 ~~~
 
 ### Frame 20 — start of cut 21 · "but when it did, Rome fell in exactly the way that cats don't."
-New. Background crimson. The same colonnade, mid-collapse.
+New. Background crimson. The colonnade has tipped over and is mid-fall, turning onto its back. Redone for the new final line; the first render showed an ordinary collapse.
 
 ~~~text
-Flat crimson (#993B49) background. The same colonnade collapsing: the columns lean at different angles, the pediment slips sideways, column drums slide out of place, with simple flat cream dust clouds. The mustard sun is unchanged. The cream cat sits in front, unmoved.
+Flat crimson (#993B49) background. The same Roman colonnade from the previous frame, with its five thick cream columns, flat beam and triangular pediment all still joined as one piece, has tipped over and is tumbling through the air, turned about two thirds of the way upside down: the pediment points down and to one side, the columns angle up and away like legs. It is high in the picture, well above the ground line. A few flat cream dust puffs trail from it. The flat mustard sun is unchanged. Below, on the ground at the lower centre, the small cream cat sits upright on all four feet, looking up at it, unmoved.
 ~~~
 
 ### Frame 21 — end of cut 21 (final hold)
-New. Background crimson.
+New. Background crimson. Redone for the new final line.
 
 ~~~text
-Flat crimson (#993B49) background. The colonnade has fallen: column drums and blocks lie sprawled across the ground and the pediment lies flat on its back, tipped over. Flat cream dust has settled. The only upright thing in the picture is the cream cat, sitting neatly on its feet on top of the rubble, facing us. The mustard sun is unchanged.
+Flat crimson (#993B49) background. The same Roman colonnade has landed completely upside down, on its back, still in one piece: the triangular pediment lies flat against the ground at the bottom, the beam sits on top of it, and the five thick cream columns point straight up into the air like the legs of an overturned animal, with their bases and steps at the top. A few flat cream dust puffs have settled around it. The flat mustard sun is unchanged. Beside it, on the ground, the small cream cat sits upright on all four feet, facing us, unmoved.
 ~~~
 
 ## Notes
