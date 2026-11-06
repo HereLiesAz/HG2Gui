@@ -4,8 +4,8 @@
 
 Narration beat, verbatim from the original tangent cut map:
 
-but when it did, it definitely didn't land like the cats.
+but when it did, Rome fell in exactly the way that cats don't.
 
 ## Corresponding original script excerpt
 
-… but when it did, it definitely didn't land like the cats.
+… but when it did, Rome fell in exactly the way that cats don't.

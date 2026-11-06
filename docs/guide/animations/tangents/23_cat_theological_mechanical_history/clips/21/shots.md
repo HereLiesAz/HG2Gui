@@ -12,7 +12,7 @@ No source image exists for this beat (`cat_21.png` is not supplied). Begin on th
 
 ## END shot
 
-Unapproved END boundary: show the conclusion of the documented beat without inventing unscripted events — but when it did, it definitely didn't land like the cats.
+Unapproved END boundary: show the conclusion of the documented beat without inventing unscripted events — but when it did, Rome fell in exactly the way that cats don't.
 
 **END** — NO IMAGE
 

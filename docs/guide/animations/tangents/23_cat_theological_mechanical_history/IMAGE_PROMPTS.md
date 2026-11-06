@@ -17,7 +17,8 @@ Approved renders are in `docs/` as `cat_tangent_frame_NN.png` (1254×1254), with
 
 | Frames | Status |
 |---|---|
-| 00–21 | All committed. |
+| 00–20 | Committed. |
+| 21 | The committed render shows the cat sitting on the rubble. It predates the new final line and needs re-rendering from the prompt below: the cat floats up and away, upside down. |
 
 Frame 13 is the cuneiform tablet. Frame 19 is the second render; the first had a broken centre column.
 
@@ -192,7 +193,7 @@ New. Background crimson. Keep this colonnade design identical in frames 19–21.
 Flat crimson (#993B49) background. A grand Roman colonnade across the lower two thirds: five thick cream columns beneath a flat beam and a triangular pediment, perfectly intact and symmetrical. A flat mustard sun sits low behind it. A small cream cat sits upright on its feet in front of the columns.
 ~~~
 
-### Frame 20 — start of cut 21 · "but when it did, it definitely didn't land like the cats."
+### Frame 20 — start of cut 21 · "but when it did, Rome fell in exactly the way that cats don't."
 New. Background crimson. The same colonnade, mid-collapse.
 
 ~~~text
@@ -200,10 +201,10 @@ Flat crimson (#993B49) background. The same colonnade collapsing: the columns le
 ~~~
 
 ### Frame 21 — end of cut 21 (final hold)
-New. Background crimson.
+New. Background crimson. Redone for the new final line: Rome has fallen the way cats don't, and the cat does the opposite of falling.
 
 ~~~text
-Flat crimson (#993B49) background. The colonnade has fallen: column drums and blocks lie sprawled across the ground and the pediment lies flat on its back, tipped over. Flat cream dust has settled. The only upright thing in the picture is the cream cat, sitting neatly on its feet on top of the rubble, facing us. The mustard sun is unchanged.
+Flat crimson (#993B49) background. The colonnade has fallen: column drums and blocks lie sprawled across the ground and the pediment lies flat on its back, tipped over, with flat cream dust settled around it. The flat mustard sun is unchanged. The small cream cat is no longer on the rubble: it floats up and away, upside down, with its feet pointing up and its head pointing down, drifting toward the upper right of the picture, small against the crimson, its tail trailing below it. It is calm and unbothered. Nothing else.
 ~~~
 
 ## Notes
