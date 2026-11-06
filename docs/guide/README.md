@@ -19,6 +19,8 @@ Each animation preserves its existing source material and storyboard, with a [pr
 
 `python3 scripts/build_seedance_packs.py --out <dir>` builds one zip per canonical animation for Dreamina Seedance 2.5: the whole animation as a single 1:1, headerless generation (not 5-second clips), with a `prompt.txt` (format and visual design specs, reference-image roles, the full scene description, the complete script), a `README.txt` and every reference image for that animation in upload order. It reads this guide's `animation.md` files and the boundary frames in `docs/`, and never edits them. Re-run it when frames are added. `scripts/tests/test_build_seedance_packs.py` checks that every pack is faithful to its sources.
 
+The cat tangent is 105 s, longer than one generation, so `python3 scripts/build_seedance_cat_tangent.py --out <dir>` builds it as seven 15-second parts (three cuts each) that share boundary frames; see its [frame chain](animations/tangents/23_cat_theological_mechanical_history/FRAME_CHAIN.md). `scripts/tests/test_build_seedance_cat_tangent.py` checks that pack.
+
 ## Visual material
 
 Original labeled tangent screenshots are preserved. Missing clean frames are documented in `ANIMATION_TODO.md`; they are not invented.
