@@ -38,6 +38,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.FragmentActivity
 import com.hereliesaz.hg2gui.ai.AiClient
+import com.hereliesaz.hg2gui.ai.AiConfig
 import com.hereliesaz.hg2gui.managers.AiSettings
 import com.hereliesaz.hg2gui.terminal.PackageIsolation
 import com.hereliesaz.hg2gui.terminal.PackageLifecycleStore
@@ -126,9 +127,15 @@ private fun IsolationAuditScreen(fullscreen: Boolean, onBack: () -> Unit) {
     var refreshing by remember { mutableStateOf(false) }
     var refreshToken by remember { mutableIntStateOf(0) }
     // The Keystore read happens off the main thread, once, rather than on every recomposition.
-    val apiKey by produceState<String?>(null, context) {
-        value = withContext(Dispatchers.IO) { AiSettings.apiKey(context) }
+    // The provider choice and that provider's stored key, read together so they always agree.
+    val aiState by produceState<Pair<AiConfig, String?>?>(null, context) {
+        value = withContext(Dispatchers.IO) {
+            val config = AiSettings.config(context)
+            config to AiSettings.apiKey(context, config.provider)
+        }
     }
+    val aiConfig = aiState?.first ?: AiConfig()
+    val apiKey = aiState?.second
 
     LaunchedEffect(refreshToken) {
         refreshing = true
@@ -192,14 +199,15 @@ private fun IsolationAuditScreen(fullscreen: Boolean, onBack: () -> Unit) {
         when (val current = entries) {
             null -> Text("READING AUDITS…", color = muted, fontSize = 12.sp, modifier = Modifier.liveRegionPolite())
             emptyList<IsolationAuditEntry>() -> Text("No isolated packages.", color = onPage, modifier = Modifier.liveRegionPolite())
-            else -> current.forEach { entry -> AuditCard(entry, apiKey) }
+            else -> current.forEach { entry -> AuditCard(entry, apiKey, aiConfig, aiState != null) }
         }
         Spacer(Modifier.height(24.dp))
     }
 }
 
 @Composable
-private fun AuditCard(entry: IsolationAuditEntry, apiKey: String?) {
+private fun AuditCard(entry: IsolationAuditEntry, apiKey: String?, aiConfig: AiConfig, aiLoaded: Boolean) {
+    val aiReady = aiLoaded && aiConfig.isReady(apiKey)
     val scope = rememberCoroutineScope()
     val stamp = entry.savedAudit?.timestampMillis
     var aiResult by rememberSaveable(entry.packageName, stamp) { mutableStateOf<String?>(null) }
@@ -228,7 +236,7 @@ private fun AuditCard(entry: IsolationAuditEntry, apiKey: String?) {
             SandboxDiff(entry.packageName, saved.audit)
             RuntimeTelemetry(entry.packageName, saved.audit.telemetry)
 
-            if (!apiKey.isNullOrBlank()) {
+            if (aiReady) {
                 AzphaltChip(
                     label = if (aiBusy) "ASKING AI…" else "ASK AI · SEND SUMMARY",
                     onClick = { confirmSend = true },
@@ -243,10 +251,10 @@ private fun AuditCard(entry: IsolationAuditEntry, apiKey: String?) {
         }
     }
 
-    if (confirmSend && !apiKey.isNullOrBlank()) {
+    if (confirmSend && aiReady) {
         ConfirmDialog(
             title = "SEND AUDIT SUMMARY TO AI?",
-            message = aiDisclosureText(),
+            message = aiDisclosureText(aiConfig.provider.label),
             confirmLabel = "SEND",
             onConfirm = {
                 confirmSend = false
@@ -255,11 +263,12 @@ private fun AuditCard(entry: IsolationAuditEntry, apiKey: String?) {
                 scope.launch {
                     aiResult = runCatching {
                         AiClient.ask(
-                            apiKey = apiKey,
+                            apiKey = apiKey.orEmpty(),
                             // Placeholder, not the sandbox's real absolute path - the device's
                             // on-disk layout (user id, package dir) isn't the AI's business.
                             cwd = "/sandbox",
-                            question = auditInterpretationPrompt(entry)
+                            question = auditInterpretationPrompt(entry),
+                            config = aiConfig
                         ).text
                     }.getOrElse { "AI interpretation failed: ${it.message ?: it.javaClass.simpleName}" }
                     aiBusy = false
@@ -343,8 +352,8 @@ internal fun nextVisibleCount(current: Int, total: Int, step: Int): Int =
  * What the confirmation shows before the audit summary leaves the device. It describes exactly what
  * [auditInterpretationPrompt] builds - keep the two in step (the caps are the same constant).
  */
-internal fun aiDisclosureText(): String =
-    "This sends a text summary of this package's latest run to Anthropic, using your API key: " +
+internal fun aiDisclosureText(providerLabel: String = "Anthropic"): String =
+    "This sends a text summary of this package's latest run to $providerLabel, using your API key: " +
         "the package name and version; the sandbox file count and size; how many files were created, " +
         "modified and deleted; the file names (never the folders) of up to $AI_MAX_ROWS in each of those groups, " +
         "leaving out any whose path mentions a password, secret, token, key or similar; how many runtime " +

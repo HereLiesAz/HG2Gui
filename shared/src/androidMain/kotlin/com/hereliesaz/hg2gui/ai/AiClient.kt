@@ -7,6 +7,11 @@ import com.anthropic.models.messages.MessageCreateParams
 import com.anthropic.models.messages.OutputConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import java.util.concurrent.TimeUnit
 
 /** [parts] is a flag-by-flag "what each part does" breakdown, present only for command replies. */
 data class AiReply(
@@ -35,6 +40,10 @@ internal const val AI_MODEL_ID = "claude-opus-5-5"
 class AiModelRejectedException(message: String, val statusCode: Int, cause: Throwable? = null) :
     Exception(message, cause)
 
+/** A non-Anthropic provider answered with an error (or an unreadable reply); [message] is user-presentable. */
+class AiHttpException(val statusCode: Int, val provider: AiProvider, detail: String?) :
+    Exception("${provider.label} answered HTTP $statusCode" + (detail?.takeIf { it.isNotBlank() }?.let { ": $it" } ?: ""))
+
 /**
  * True when an API failure with HTTP [statusCode] and error text [detail] means "this model id is
  * not usable" rather than a problem with the request or the key: a 404 (the API's answer for an
@@ -48,9 +57,9 @@ internal fun isModelRejection(statusCode: Int, detail: String?): Boolean = when 
 }
 
 /** The sentence shown when [model] is rejected; keeps the API's own [detail] for diagnosis. */
-internal fun modelRejectionMessage(model: String, detail: String?): String =
-    "The AI model \"$model\" was rejected by the Anthropic API (it may be retired or unavailable " +
-        "to this API key). Update HG2Gui, or check your account's model access." +
+internal fun modelRejectionMessage(model: String, detail: String?, provider: AiProvider = AiProvider.ANTHROPIC): String =
+    "The AI model \"$model\" was rejected by the ${provider.label} API (it may be retired or unavailable " +
+        "to this API key). Change the model in AI settings, or check your account's model access." +
         (detail?.takeIf { it.isNotBlank() }?.let { " API said: $it" } ?: "")
 
 /**
@@ -80,16 +89,22 @@ object AiClient {
         cwd: String,
         question: String,
         skills: List<Pair<String, String>> = emptyList(),
+        config: AiConfig = AiConfig(),
     ): AiReply = withContext(Dispatchers.IO) {
-        val client = clientFor(apiKey)
+        config.problem(apiKey)?.let { throw IllegalStateException(it) }
         var system = SYSTEM_PROMPT.replace("{cwd}", cwd)
         if (skills.isNotEmpty()) {
             system += "\n\nThe user has installed the following skills from the azphalt store. " +
                 "Use them as reference when relevant:\n" +
                 skills.joinToString("\n\n") { (id, text) -> "## Skill: $id\n$text" }
         }
+        if (config.provider != AiProvider.ANTHROPIC) {
+            return@withContext parse(askOverHttp(config, apiKey, system, question))
+        }
+        val model = config.effectiveModel
+        val client = clientFor(apiKey)
         val params = MessageCreateParams.builder()
-            .model(AI_MODEL_ID)
+            .model(model)
             .maxTokens(2048L)
             .system(system)
             .outputConfig(OutputConfig.builder().effort(OutputConfig.Effort.LOW).build())
@@ -104,12 +119,53 @@ object AiClient {
             // explains badly; every other API failure (401, 429, 5xx, ...) is rethrown unchanged.
             val status = e.statusCode()
             if (isModelRejection(status, e.message)) {
-                throw AiModelRejectedException(modelRejectionMessage(AI_MODEL_ID, e.message), status, e)
+                throw AiModelRejectedException(modelRejectionMessage(model, e.message), status, e)
             }
             throw e
         }
 
         parse(raw)
+    }
+
+    // OpenAI, Gemini, Ollama and custom endpoints share one OkHttp client (and so one connection pool).
+    // Redirects are never followed: an API endpoint has no reason to redirect, and following one
+    // (above all an https -> http downgrade) would resend the key header to wherever it points.
+    private val http: OkHttpClient by lazy {
+        OkHttpClient.Builder()
+            .callTimeout(90, TimeUnit.SECONDS)
+            .followRedirects(false)
+            .followSslRedirects(false)
+            .build()
+    }
+
+    private val JSON_MEDIA = "application/json".toMediaType()
+
+    /** One request to a non-Anthropic provider; returns the model's raw text. [config] is already validated. */
+    private fun askOverHttp(config: AiConfig, apiKey: String, system: String, question: String): String {
+        val baseUrl = checkNotNull(config.effectiveBaseUrl)
+        val model = config.effectiveModel
+        val gemini = config.provider == AiProvider.GEMINI
+        val url = if (gemini) GeminiProtocol.endpoint(baseUrl, model) else OpenAiChatProtocol.endpoint(baseUrl)
+        val body = if (gemini) GeminiProtocol.requestBody(system, question) else OpenAiChatProtocol.requestBody(model, system, question)
+        val request = Request.Builder().url(url).apply {
+            // Keys travel in a header, never the URL, so they cannot end up in a logged request line.
+            if (gemini) header("x-goog-api-key", apiKey)
+            else if (apiKey.isNotBlank()) header("Authorization", "Bearer $apiKey")
+        }.post(body.toRequestBody(JSON_MEDIA)).build()
+
+        http.newCall(request).execute().use { response ->
+            val text = response.body.string()
+            if (!response.isSuccessful) {
+                val detail = (if (gemini) GeminiProtocol.errorDetail(text) else OpenAiChatProtocol.errorDetail(text))
+                    ?: text.take(200).ifBlank { null }
+                if (isModelRejection(response.code, detail)) {
+                    throw AiModelRejectedException(modelRejectionMessage(model, detail, config.provider), response.code)
+                }
+                throw AiHttpException(response.code, config.provider, detail)
+            }
+            return (if (gemini) GeminiProtocol.extractText(text) else OpenAiChatProtocol.extractText(text))
+                ?: throw AiHttpException(response.code, config.provider, "the reply had no text")
+        }
     }
 
     internal fun parse(raw: String): AiReply {

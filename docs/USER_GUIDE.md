@@ -192,7 +192,7 @@ This is not complete kernel syscall tracing and is not tamper-proof. Very short-
 
 Open **Settings → Isolation audit** to inspect latest observed activity for isolated packages. The view groups authority attempts, network observations, processes, and file observations and shows current sandbox size/state.
 
-If you have saved an Anthropic API key, **ASK AI · SEND SUMMARY** sends a summary of that package's latest run to Anthropic for interpretation, after a confirmation that lists what goes: the package name and version, the sandbox file count and size, how many files were created, modified and deleted, the file names only (never folders) of up to 24 in each group (any whose path mentions a password, secret, token, key or similar is left out), a count of observed events per kind, and the protocol and remote port (never the address) of up to 24 network connections. Full paths, command lines and addresses stay on your device. Nothing is sent unless you confirm.
+If an AI provider is set up in AI settings, **ASK AI · SEND SUMMARY** sends a summary of that package's latest run to that provider for interpretation, after a confirmation that names it and lists what goes: the package name and version, the sandbox file count and size, how many files were created, modified and deleted, the file names only (never folders) of up to 24 in each group (any whose path mentions a password, secret, token, key or similar is left out), a count of observed events per kind, and the protocol and remote port (never the address) of up to 24 network connections. Full paths, command lines and addresses stay on your device. Nothing is sent unless you confirm.
 
 ## Execution authority
 
@@ -281,7 +281,7 @@ Current settings include display/text controls, PTY behavior, default shell, env
 - **Update check** can be switched off. While on, HG2Gui checks GitHub for a newer release when the app starts, at most once every six hours, and only notifies you; nothing is downloaded until you accept. When off, HG2Gui never contacts GitHub on its own to look for a newer build.
 - **Motion** follows Android's animation setting (Remove animations in accessibility settings, or the Animator duration scale in developer options); the row reports the current state and opens the system page.
 
-The **AI settings** screen stores the Anthropic API key encrypted (Android Keystore). Tapping the field edits and focuses it; **SHOW KEY** reveals what you pasted. Leaving with an unsaved edit asks first, and a save that could not be persisted is reported rather than shown as saved.
+The **AI settings** screen chooses the provider (Anthropic, OpenAI, Gemini, Ollama on this device, or a custom OpenAI-compatible endpoint), its model and, where it is yours to set, its endpoint. Each provider keeps its own API key, stored encrypted (Android Keystore); Ollama needs none. A key is never sent over plain http except to this device or a private network. Tapping the key field edits and focuses it; **SHOW KEY** reveals what you pasted. Leaving with an unsaved edit asks first, and a save that could not be persisted is reported rather than shown as saved.
 
 ## Compatibility expectations
 

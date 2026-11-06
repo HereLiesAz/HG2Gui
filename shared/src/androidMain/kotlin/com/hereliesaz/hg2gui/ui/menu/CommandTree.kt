@@ -4,6 +4,7 @@ import android.content.Context
 import com.hereliesaz.hg2gui.managers.OsContextStore
 import com.hereliesaz.hg2gui.managers.SshPresets
 import com.hereliesaz.hg2gui.managers.WorkflowStore
+import com.hereliesaz.hg2gui.terminal.AiCliCatalog
 import com.hereliesaz.hg2gui.terminal.AptCatalog
 import com.hereliesaz.hg2gui.terminal.DistroManager
 import com.hereliesaz.hg2gui.terminal.DpkgCatalog
@@ -33,7 +34,9 @@ object CommandTree {
         "volume" to listOf("get", "set media", "profile"),
         "brightness" to listOf("auto", "50", "100"),
         "contacts" to listOf("ls", "add", "about", "edit", "rm"),
-        "vfs" to listOf("ls", "pwd", "cd", "mkdir", "touch", "cat", "rm", "mv", "cp", "mount")
+        "vfs" to listOf("ls", "pwd", "cd", "mkdir", "touch", "cat", "rm", "mv", "cp", "mount"),
+        // Engine verb (not a builtin): offered under the AI pill, see aiRoot().
+        "aicli" to (listOf("list") + AiCliCatalog.ALL.flatMap { listOf("install ${it.id}", "remove ${it.id}") })
     )
 
     /** Built-ins whose argument is a file, not a literal choice - they get a file… picker child. */
@@ -42,7 +45,7 @@ object CommandTree {
     /** Command names whose invocation can plausibly change what's installed / on PATH - the only
      *  ones worth re-scanning [from] for afterward. Reuses the same package-manager binaries
      *  SHELL_HINTS already special-cases below, rather than inventing a second list. */
-    val PACKAGE_MANAGER_COMMANDS = setOf("pkg", "apt", "apt-get", "dpkg")
+    val PACKAGE_MANAGER_COMMANDS = setOf("pkg", "apt", "apt-get", "dpkg", "aicli")
 
     /** Curated flag hints for the handful of real shell binaries worth hand-picking for; every
      *  other binary discovered on PATH still gets a plain file… child and can take whatever
@@ -208,7 +211,9 @@ object CommandTree {
         label = "AI",
         emitsToken = false,
         children = listOf(
-            MenuNode(id = "ai/chat", label = "chat…", cap = "open", emitsToken = false, wizardId = "ai-chat")
+            MenuNode(id = "ai/chat", label = "chat…", cap = "open", emitsToken = false, wizardId = "ai-chat"),
+            // `aicli install claude` etc.: builds the line like any other command pill.
+            node("aicli")
         )
     )
 

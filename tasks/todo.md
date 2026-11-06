@@ -1,36 +1,34 @@
 # AI providers + installable AI CLIs
 
-Status: PLAN — awaiting approval. Nothing below is implemented.
+Status: implemented in PR #297 (one PR, as decided). Decisions: Claude Code and OpenAI Codex are in the
+catalogue; no stored key is passed to any CLI.
 
 ## Facts (from source)
-- One backend: Anthropic SDK in `ai/AiClient.kt`, fixed model `AI_MODEL_ID`, key in `AiSettings` (encrypted prefs, single `api_key`).
-- UI: `ui/AiSettingsScreen.kt` (key entry). `AiReply`/`parse()` contract is provider-neutral and stays.
-- Package install path: `Hg2PackageManager` (Termux `.deb`), `ScriptInstaller` (azp `pkg install -y` deps).
-- Script execution on Android needs wrapper functions or the exec preload (see PR #296).
+- One backend before: Anthropic SDK in `ai/AiClient.kt`, fixed model `AI_MODEL_ID`, single `api_key`.
+- `AiReply`/`parse()` is provider-neutral and unchanged.
+- Package install path: `Hg2PackageManager` (Termux `.deb`); script execution needs wrappers or the exec preload.
 
 ## Part 1 — Provider choice
-- [ ] `AiProvider` enum + `AiBackend` interface (`ask(system, user) -> raw text`) in `ai/`.
-- [ ] Move current SDK call behind `AnthropicBackend` unchanged (model-rejection handling kept).
-- [ ] `OpenAiCompatBackend` over OkHttp (already a dependency): OpenAI, Ollama, OpenRouter, Groq, any `baseUrl`.
-- [ ] `GeminiBackend` over OkHttp (`generateContent`).
-- [ ] `AiSettings`: per-provider key, selected provider, model, baseUrl. Migrate existing `api_key` → Anthropic.
-- [ ] `AiSettingsScreen`: provider picker, key, model, base URL (custom/Ollama).
-- [ ] `AiClient.ask` dispatches on provider; `parse()` untouched.
-- [ ] Host tests: request building and response extraction per backend (pure, no network), settings migration.
+- [x] `AiProvider` / `AiConfig` (`ai/AiProvider.kt`): Anthropic, OpenAI, Gemini, Ollama (local), Custom (OpenAI-compatible).
+- [x] `OpenAiChatProtocol` / `GeminiProtocol` (`ai/AiProtocols.kt`): pure request build + reply parse.
+- [x] `AiClient.ask(..., config)` dispatches; Anthropic path unchanged. Keys travel in headers only.
+- [x] `AiSettings`: per-provider key (Anthropic keeps `api_key`), provider/model/endpoint in plain prefs.
+- [x] `AiSettingsScreen`: provider chips, model, endpoint (editable providers), key (keyed providers), one Save.
+- [x] Never send a key over cleartext http to a non-local host; `10.example.com` is not a private address.
+- [x] Isolation audit disclosure names the chosen provider; privacy policy and docs updated.
 
-## Part 2 — Installable AI CLIs
-- [ ] Catalogue (`AiCliCatalog`): id, label, install recipe, binary, runtime deps.
-  - pkg: `ollama`; node: `@google/gemini-cli`, `@anthropic-ai/claude-code`, `@openai/codex`; pip: `llm`, `aider-chat`.
-- [ ] Installer: ensure runtime (`nodejs`/`python` via engine `pkg install`), then run npm/pip through the shell.
-- [ ] After any npm/pip global install: regenerate script wrappers (`PrefixRuntimeConfig.writeScriptWrappers`) and rehash so the new bins run despite W^X.
-- [ ] Menu entry (CommandTree) "AI CLIs": install / run / remove, using the existing command-tree conventions.
-- [ ] Per-CLI key: export the stored provider key as the env var that CLI expects, only for that CLI's process.
-- [ ] Host tests: catalogue validity (names pass package-name grammar), recipe → command lines.
+## Part 2 — Installable AI CLIs (`aicli`)
+- [x] `AiCliCatalog`: ollama and codex (Termux packages), gemini (npm), claude (npm, pinned 2.1.112).
+- [x] Engine verb `aicli [list|install|remove]`; headless callers may only list.
+- [x] Rewrites script wrappers and rehashes after an install so the tool runs in the same tab.
+- [x] AI pill entry (`aicli install claude` etc.) and package-mutation classification.
+- [ ] On-device check of gemini and claude installs (not possible from CI).
+
+## Verification
+- Standalone (Kotlin 2.4 compiler + JUnit): `AiProtocolsTest`, `AiConfigTest`, `AiCliCatalogTest` — 33 tests pass.
+- CI task `:shared:testAndroidHostTest` and compile of `:composeApp`: see PR.
 
 ## Open risks
-- Several of these CLIs ship native/arch-specific binaries that may not run on Android/Bionic; each needs an on-device check before it is listed. Unverified ones stay out of the catalogue.
-- No Android SDK in the CI sandbox I work in: compile and host tests cannot be run here; PR CI is the check.
-- Keys exported into CLI processes widen where secrets travel; needs your yes per CLI.
-
-## Review
-(to fill after implementation)
+- Claude Code 2.1.112 is the last JavaScript-only release (7 months old; 2.1.113+ is a native binary with no Android build).
+- Gemini and Claude Code installs have not been run on a device.
+- Model defaults for OpenAI (`gpt-5`) and Gemini (`gemini-2.5-pro`) are editable defaults, not guarantees.

@@ -42,6 +42,16 @@ class ExecutionPolicy private constructor(
             (if (action == "enable") " (or while HG2Gui is on screen)." else ".")
     }
 
+    /**
+     * Null when `aicli <subcommand>` may run. Installing or removing a tool is software installation,
+     * so a headless caller may only list.
+     */
+    fun aiCliDenial(subcommand: String?): String? {
+        if (!headless) return null
+        if (subcommand == null || subcommand == "list") return null
+        return "aicli $subcommand is not available from $label; run it from a terminal tab."
+    }
+
     /** `bootstrap` replaces the whole runtime prefix. */
     fun bootstrapDenial(): String? =
         if (headless) "bootstrap is not available from $label; run it from a terminal tab." else null
@@ -370,8 +380,8 @@ internal object LinePlanner {
         class Steps(val steps: List<Step>) : Plan()
     }
 
-    private val ENGINE_VERBS = setOf("bootstrap", "download", "hg2download", "remote", "hg2auth", "hg2package", "pkg", "hg2pkg", "apt", "apt-get")
-    private val NO_OWNER_LOOKUP = setOf("hg2package", "hg2auth", "remote")
+    private val ENGINE_VERBS = setOf("bootstrap", "download", "hg2download", "remote", "hg2auth", "hg2package", "pkg", "hg2pkg", "apt", "apt-get", "aicli")
+    private val NO_OWNER_LOOKUP = setOf("hg2package", "hg2auth", "remote", "aicli")
 
     /**
      * Verbs that exist only inside HG2Gui and take the *rest of the line as their own arguments*

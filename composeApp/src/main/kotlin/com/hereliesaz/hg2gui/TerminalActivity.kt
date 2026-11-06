@@ -47,6 +47,8 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.hereliesaz.hg2gui.ai.AiClient
+import com.hereliesaz.hg2gui.ai.AiConfig
+import com.hereliesaz.hg2gui.ai.AiProvider
 import com.hereliesaz.hg2gui.ai.AiReply
 import com.hereliesaz.hg2gui.azp.AzpClient
 import com.hereliesaz.hg2gui.azp.AzpInstallOutcome
@@ -507,10 +509,19 @@ class TerminalActivity : FragmentActivity() {
             var fontScalePercent by remember { mutableStateOf(100) }
             var usePty by remember { mutableStateOf(false) }
             // Read off the main thread: AiSettings opens the Keystore-backed store, real I/O.
-            var aiApiKey by remember { mutableStateOf<String?>(null) }
+            var aiConfig by remember { mutableStateOf(AiConfig()) }
+            // Every provider's stored key: each keeps its own, and the settings screen switches between them.
+            var aiKeys by remember { mutableStateOf<Map<AiProvider, String?>>(emptyMap()) }
             LaunchedEffect(Unit) {
-                aiApiKey = withContext(Dispatchers.IO) { AiSettings.apiKey(this@TerminalActivity) }
+                val (loadedConfig, loadedKeys) = withContext(Dispatchers.IO) {
+                    AiSettings.config(this@TerminalActivity) to
+                        AiProvider.entries.associateWith { AiSettings.apiKey(this@TerminalActivity, it) }
+                }
+                aiConfig = loadedConfig
+                aiKeys = loadedKeys
             }
+            // The SELECTED provider's key.
+            val aiApiKey: String? = aiKeys[aiConfig.provider]
             var aiMessages by remember { mutableStateOf<List<AiMessage>>(emptyList()) }
             var aiBusy by remember { mutableStateOf(false) }
             // The last AI-key save did not reach disk (secure store unavailable); drives the error line.
@@ -971,19 +982,27 @@ class TerminalActivity : FragmentActivity() {
 
                     screen == Screen.AiSettings -> AiSettingsScreen(
                         fullscreen = fullscreen,
-                        apiKey = aiApiKey,
+                        config = aiConfig,
+                        apiKeys = aiKeys,
                         saveFailed = aiKeySaveFailed,
-                        onSave = { newKey ->
+                        onSave = { newConfig, newKey ->
                             aiKeySaveFailed = false
                             scope.launch {
                                 // Keystore I/O stays off the main thread, and "saved" is only
                                 // believed when the store reports the key (or its removal) was
                                 // persisted - the in-memory copy and the screen change must not
-                                // outrun what is actually on disk.
+                                // outrun what is actually on disk. A keyless provider (Ollama)
+                                // has no key to persist, so a broken secure store does not fail it.
                                 val trimmedKey = newKey?.trim()?.takeIf { it.isNotEmpty() }
-                                val result = withContext(Dispatchers.IO) { AiSettings.saveApiKey(this@TerminalActivity, trimmedKey) }
-                                if (result.persisted) {
-                                    aiApiKey = trimmedKey
+                                val persisted = withContext(Dispatchers.IO) {
+                                    val configSaved = AiSettings.saveConfig(this@TerminalActivity, newConfig)
+                                    val keySaved = !newConfig.provider.needsKey ||
+                                        AiSettings.saveApiKey(this@TerminalActivity, newConfig.provider, trimmedKey).persisted
+                                    configSaved && keySaved
+                                }
+                                if (persisted) {
+                                    aiConfig = newConfig
+                                    if (newConfig.provider.needsKey) aiKeys = aiKeys + (newConfig.provider to trimmedKey)
                                     screen = aiSettingsCameFrom
                                 } else {
                                     aiKeySaveFailed = true
@@ -996,12 +1015,12 @@ class TerminalActivity : FragmentActivity() {
                     screen == Screen.Ai -> AiChatScreen(
                         fullscreen = fullscreen,
                         messages = aiMessages,
-                        apiKeyConfigured = !aiApiKey.isNullOrBlank(),
+                        apiKeyConfigured = aiConfig.isReady(aiApiKey),
                         busy = aiBusy,
                         onAsk = { question ->
                             val key = aiApiKey
                             val session = sessions.firstOrNull { it.ui.id == activeSessionId }
-                            if (key != null && session != null) {
+                            if (session != null && aiConfig.isReady(key)) {
                                 aiMessages = aiMessages + AiMessage(fromUser = true, text = question)
                                 aiBusy = true
                                 scope.launch {
@@ -1009,7 +1028,7 @@ class TerminalActivity : FragmentActivity() {
                                         val skills = withContext(Dispatchers.IO) {
                                             AzpLibrary.installedSkillTexts(this@TerminalActivity)
                                         }
-                                        AiClient.ask(key, session.ui.cwd, question, skills)
+                                        AiClient.ask(key.orEmpty(), session.ui.cwd, question, skills, aiConfig)
                                     } catch (e: Exception) {
                                         AiReply(text = "error: ${e.message}", command = null)
                                     }
@@ -1022,8 +1041,7 @@ class TerminalActivity : FragmentActivity() {
                                 // Used to be a silent no-op - the question just vanished.
                                 aiMessages = aiMessages + AiMessage(fromUser = true, text = question) + AiMessage(
                                     fromUser = false,
-                                    text = if (key.isNullOrBlank()) "No API key is set - add one in AI settings first."
-                                    else "No terminal session is open to ask about.",
+                                    text = aiConfig.problem(key) ?: "No terminal session is open to ask about.",
                                     command = null
                                 )
                             }

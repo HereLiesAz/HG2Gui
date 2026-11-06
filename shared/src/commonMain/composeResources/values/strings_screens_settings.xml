@@ -59,9 +59,16 @@
     <string name="settings_about_licences">Source and licences</string>
     <string name="settings_about_licences_description">Open the source code and licences</string>
     <string name="aisettings_title">AI settings</string>
+    <string name="aisettings_provider_title">Provider</string>
+    <string name="aisettings_provider_description">Which service answers the AI command-search chat and Isolation audit’s Ask AI. Each provider keeps its own key, model and address. Ollama runs on this device or your network and needs no key.</string>
+    <string name="aisettings_model_title">Model</string>
+    <string name="aisettings_model_description">The model to ask. Leave blank for the default (%1$s). Change it if the provider retires or renames it.</string>
+    <string name="aisettings_endpoint_title">Endpoint</string>
+    <string name="aisettings_endpoint_description">The server’s base address, for example https://api.example.com/v1. A key is only ever sent over https, except to this device or a private network.</string>
+    <string name="aisettings_endpoint_placeholder">https://host/v1</string>
     <string name="aisettings_key_title">API key</string>
-    <string name="aisettings_key_description">An Anthropic API key, used only for the AI command-search chat and for Isolation audit’s Ask AI, which sends a summary of that package’s sandbox changes and observed activity to Anthropic when you tap it. Stored encrypted on this device (Android Keystore).</string>
-    <string name="aisettings_field_description">Anthropic API key</string>
+    <string name="aisettings_key_description">The chosen provider’s API key, used only for the AI command-search chat and for Isolation audit’s Ask AI, which sends a summary of that package’s sandbox changes and observed activity to that provider when you tap it. Stored encrypted on this device (Android Keystore).</string>
+    <string name="aisettings_field_description">API key</string>
     <string name="aisettings_field_placeholder">Paste your API key</string>
     <string name="aisettings_field_empty">Not set — tap to add</string>
     <string name="aisettings_field_masked">•••• Key set — tap to edit</string>
@@ -70,7 +77,7 @@
     <string name="aisettings_hide_key">Hide key</string>
     <string name="aisettings_save_failed">Error: the key could not be saved. This device’s secure storage is unavailable, so the key would be lost when HG2Gui closes. Try again, or restart the app.</string>
     <string name="aisettings_discard_title">Discard changes?</string>
-    <string name="aisettings_discard_message">Your edit to the API key has not been saved. Leaving now discards it.</string>
+    <string name="aisettings_discard_message">Your changes to the AI settings have not been saved. Leaving now discards them.</string>
     <string name="aisettings_discard_confirm">Discard</string>
     <string name="aisettings_discard_cancel">Keep editing</string>
     <string name="mcp_title">MCP server</string>
@@ -102,7 +109,7 @@
     <string name="aichat_title">AI</string>
     <string name="aichat_back">‹ Back</string>
     <string name="aichat_back_description">Back</string>
-    <string name="aichat_needs_key">Add an Anthropic API key in Settings → AI first.</string>
+    <string name="aichat_needs_key">Choose an AI provider and add its key in Settings → AI first.</string>
     <string name="aichat_settings">AI settings ›</string>
     <string name="aichat_settings_description">Open AI settings</string>
     <string name="aichat_empty">Describe what you want to do and the AI suggests a shell command. Nothing runs until you have reviewed it and pressed RUN.</string>

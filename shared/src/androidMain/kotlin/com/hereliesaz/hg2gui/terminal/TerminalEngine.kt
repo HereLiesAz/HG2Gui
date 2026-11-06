@@ -387,6 +387,8 @@ class TerminalEngine(
 
             "hg2package" -> return guarded("package lifecycle", io) { runPackageLifecycle(text, io, effective) }
 
+            "aicli" -> return guarded("aicli", io) { runAiCli(words, io, effective) }
+
             "pkg", "hg2pkg", "apt", "apt-get" -> {
                 val packageLine: String? = if (step.verb == "apt" || step.verb == "apt-get") {
                     when (val plan = AptTranslation.plan(words)) {
@@ -435,6 +437,74 @@ class TerminalEngine(
             }
         }
         return runOwnedOrShell(step, io)
+    }
+
+    /** True when [cli]'s executable is in the prefix's `bin/` (a symlink counts, even a dangling one). */
+    private fun aiCliInstalled(cli: AiCliCatalog.Cli): Boolean {
+        val binary = File(DistroManager.prefixDir(context), "bin/${cli.command}")
+        return binary.exists() || java.nio.file.Files.isSymbolicLink(binary.toPath())
+    }
+
+    /**
+     * `aicli [list]`, `aicli install <id>`, `aicli remove <id>`. Package steps go through the same
+     * journaled `pkg` path as a typed `pkg install`; the npm step runs in the user's shell, so it is
+     * visible and cancellable like any other command. Afterwards the script wrappers are rewritten and
+     * the shell's command-location cache dropped, so a freshly installed tool runs in this very tab.
+     */
+    private suspend fun runAiCli(words: List<String>, io: Io, effective: ExecutionPolicy): Int {
+        val sub = words.getOrNull(1)
+        effective.aiCliDenial(sub)?.let { io.emit(it); return ExecutionPolicy.DENIED_EXIT_CODE }
+        when (sub) {
+            null, "list" -> {
+                io.emit(AiCliCatalog.listing { aiCliInstalled(it) })
+                return 0
+            }
+            "install", "remove" -> {
+                val cli = words.getOrNull(2)?.let(AiCliCatalog::find)
+                if (cli == null) {
+                    io.emit("usage: aicli $sub <${AiCliCatalog.ids()}>")
+                    return 2
+                }
+                if (!DistroManager.isInstalled(context)) {
+                    io.emit("No Termux bootstrap is installed yet; run 'bootstrap' first.")
+                    return 1
+                }
+                val installing = sub == "install"
+                io.emit("${cli.label}: ${cli.note}")
+                val plan = if (installing) AiCliCatalog.installPlan(cli) else AiCliCatalog.removePlan(cli)
+                for (step in plan) {
+                    when (step) {
+                        is AiCliCatalog.Step.Pkg ->
+                            packages.run("pkg ${step.op} ${step.names.joinToString(" ")}").collect { io.emit(it) }
+                        is AiCliCatalog.Step.Shell -> {
+                            val code = runShellLine(step.line, io)
+                            if (code != 0) {
+                                io.emit("aicli: '${step.line}' exited with $code; stopped.")
+                                return code
+                            }
+                        }
+                    }
+                }
+                // Same writer the launch repair uses; then drop bash's cached command locations.
+                DistroManager.ensureBundledScripts(context)
+                try {
+                    if (shell.isAlive) shell.stream("hash -r", onLine = {})
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    // Best effort: a failed rehash only delays the new command showing up in this tab.
+                }
+                io.emit(
+                    if (installing) "${cli.label} installed. Run it with: ${cli.command}"
+                    else "${cli.label} removed."
+                )
+                return 0
+            }
+            else -> {
+                io.emit("usage: aicli [list] | install <${AiCliCatalog.ids()}> | remove <${AiCliCatalog.ids()}>")
+                return 2
+            }
+        }
     }
 
     private suspend fun dispatchBuiltin(step: LinePlanner.Step, io: Io, effective: ExecutionPolicy): Int? {

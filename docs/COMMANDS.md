@@ -64,6 +64,26 @@ Supported transaction work includes repository verification, download reuse/resu
 
 Repository trust: the index is accepted only if its signed `InRelease` verifies against a Termux keyring that is pinned in the build or was recorded after HG2Gui itself installed `termux-keyring`; an `InRelease` older than the last accepted one, or one with no `Valid-Until` older than 180 days, is rejected. An upstream key rotation therefore needs an HG2Gui update to add the new pin.
 
+## AI command-line tools
+
+### `aicli [list]` / `aicli install <id>` / `aicli remove <id>`
+
+Installs AI command-line tools into the Termux prefix. `aicli list` shows each tool and whether it is installed. Tools:
+
+| id | tool | installed with |
+|---|---|---|
+| `ollama` | Ollama (local models) | `pkg install ollama` |
+| `codex` | OpenAI Codex CLI | `pkg install codex` |
+| `gemini` | Google Gemini CLI | `pkg install nodejs-lts`, then `npm install -g @google/gemini-cli` |
+| `agy` | Antigravity CLI (community build) | `pkg install nodejs-lts`, then `npm install -g @bash0816/agy-termux@1.4.12` |
+| `claude` | Claude Code | `pkg install nodejs-lts`, then `npm install -g @anthropic-ai/claude-code@2.1.112` |
+
+Antigravity CLI (`agy`) is Google's, but Google ships no Termux or npm install for it. The only Android route is the community package `@bash0816/agy-termux`, which is not Google's: it downloads Google's `linux_arm64` release from GitHub and patches it, bundles a prebuilt native shim, and can update itself from a config file on its `main` branch. It is pinned to 1.4.12 here. Install it only if you accept running that package.
+
+Claude Code is pinned to 2.1.112, the last release that is a JavaScript file Node can run: from 2.1.113 the npm package ships a native binary chosen by a postinstall step that has no Android build. It is older than the current release. The Gemini, Antigravity and Claude Code installs have not been run on a device; `ollama` and `codex` are packages in the Termux repository.
+
+Package steps go through the same journaled `pkg` path as a typed `pkg install`; the npm step runs in your shell. Afterwards the script wrappers are rewritten and the shell's command cache is cleared, so the tool runs in the same tab. `remove` removes the tool only, never the Node runtime. Headless callers (the API, MCP) may only `list`. No stored provider key is passed to any of these tools. The AI pill's **aicli** entry builds these lines.
+
 ## Installed-package lifecycle
 
 ### `hg2package <action> <manager> <package>`
@@ -263,7 +283,7 @@ It needs a saved SSH preset and an SSH client; it is available headless.
 
 The observation layer is best-effort same-UID `/proc` sampling (from a watcher outside the guest, which writes its log outside the guest root) plus private-root before/after filesystem metadata. It is not complete kernel syscall tracing and is not tamper-proof.
 
-**ASK AI · SEND SUMMARY** (needs a saved Anthropic API key and a confirmation that lists what is sent) sends: the package name and version; the sandbox file count and size; how many files were created, modified and deleted; the base file names (never folders) of up to 24 in each group, leaving out any whose path mentions a password, secret, token, key or similar; a count of observed events per kind; and the protocol and remote port (never the address) of up to 24 network connections. Full paths, command lines and addresses stay on the device.
+**ASK AI · SEND SUMMARY** (needs a configured AI provider and a confirmation that names it and lists what is sent) sends: the package name and version; the sandbox file count and size; how many files were created, modified and deleted; the base file names (never folders) of up to 24 in each group, leaving out any whose path mentions a password, secret, token, key or similar; a count of observed events per kind; and the protocol and remote port (never the address) of up to 24 network connections. Full paths, command lines and addresses stay on the device.
 
 ## External Android API
 
