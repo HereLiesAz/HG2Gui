@@ -11,6 +11,16 @@ Frames 00–11 are clean redraws of the existing stills `cat_01.png`–`cat_12.p
 3. For frames 00–11 also attach the original still named in the heading. It sets the composition; do not copy its label.
 4. Paste the **style block**, then the frame prompt. The frame prompts never mention files, cut numbers or production terms; keep it that way.
 
+## Generated frames
+
+Approved renders are in `docs/` as `cat_tangent_frame_NN.png` (1254×1254), with the character reference as `cat_tangent_character_sheet.png`.
+
+| Frames | Status |
+|---|---|
+| 00–21 | All committed. |
+
+Frame 13 is the cuneiform tablet. Frame 19 is the second render; the first had a broken centre column.
+
 ## Colour per frame
 
 The existing stills change background colour from beat to beat, so these prompts do too. This differs from the canonical entries, which use one colour throughout. To use one colour for the whole tangent instead, replace each background with it; the compositions do not depend on the colour.
@@ -137,7 +147,7 @@ Flat mustard (#D9A12B) background. At the centre, a perfectly square open-topped
 New. Background deep teal.
 
 ~~~text
-Flat deep teal (#0A3042) background. At the left, the cream cat in side silhouette laid over a grid of small cream squares, as if being measured. At the right, a clay-coloured tablet marked with neat rows of short parallel claw-scratch lines, abstract, with no legible characters. One brick-red three-pronged scratch crosses the tablet's corner.
+Flat deep teal (#0A3042) background. At the left, the cream cat in side silhouette laid over a grid of small cream squares, as if being measured. At the right, a clay-coloured tablet marked with neat rows of cuneiform wedge characters in navy-black, as if it were a written language. One brick-red three-pronged claw scratch crosses the tablet's corner.
 ~~~
 
 ### Frame 14 — start of cut 15 · "Greece's arm chair cats gave rise to arm-chair philosophers."
@@ -199,5 +209,5 @@ Flat crimson (#993B49) background. The colonnade has fallen: column drums and bl
 ## Notes
 
 - Frames 12–21 are new compositions chosen from the narration. Reword any of them freely; the chain only needs each frame to be one calm, stable picture.
-- No frame contains readable text: the Persian scratches and Egyptian glyphs are abstract on purpose, so the generator has nothing to misspell.
+- No frame contains readable text. The Persian cuneiform (frame 13) and the Egyptian glyphs are decorative marks that carry no message, so the generator has nothing to misspell.
 - The original `cat_NN.png` stills stay in `docs/` untouched. The new images, once approved, would replace the labelled starts as the boundary frames.
