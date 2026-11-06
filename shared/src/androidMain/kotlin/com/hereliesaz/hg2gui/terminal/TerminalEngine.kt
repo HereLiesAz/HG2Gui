@@ -355,6 +355,12 @@ class TerminalEngine(
                 effective.bootstrapDenial()?.let { io.emit(it); return ExecutionPolicy.DENIED_EXIT_CODE }
                 return guarded("bootstrap", io) {
                     DistroManager.bootstrap(context, client).collect { io.emit(it) }
+                    // Before the new login shell exists: it reads ~/.bash_profile exactly once, at
+                    // startup. Without the script-wrapper profile in place by then, `pkg`/`apt-key`/…
+                    // are never defined as functions and bash falls back to exec'ing the scripts,
+                    // which Android refuses ("bad interpreter: Permission denied"). A no-op when the
+                    // bootstrap failed and left no prefix.
+                    DistroManager.ensureBundledScripts(context)
                     val old = shell
                     shell = ShellSession.forAndroid(home, context)
                     pendingBackendNotice = shell.fallbackNoticeOrNull()
