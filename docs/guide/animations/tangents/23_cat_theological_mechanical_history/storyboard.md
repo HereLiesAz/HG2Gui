@@ -99,3 +99,75 @@ Computing shortened concatenate to `cat`; Unix writes file contents in sequence.
 **START:** [source screenshot](scenes/12/frames/start.png) — `cat_12.png` (labeled; needs artwork extraction)
 
 **END:** **UNSUPPLIED**. See [shot specification](clips/12/shots.md).
+
+## Clip 13
+
+Curiously, the computer age isn't the first time this has happened. The last great cat religion began in ancient Egypt: geometry, to find the most perfectly shaped box that cats like to sit in.
+
+**START:** **MISSING** — `cat_13.png` (no source image supplied). See [shot specification](clips/13/shots.md).
+
+**END:** **UNSUPPLIED**. See [shot specification](clips/13/shots.md).
+
+## Clip 14
+
+Persia's mathematics found the area of a cat, and led to a complex written language based on cat scratches.
+
+**START:** **MISSING** — `cat_14.png` (no source image supplied). See [shot specification](clips/14/shots.md).
+
+**END:** **UNSUPPLIED**. See [shot specification](clips/14/shots.md).
+
+## Clip 15
+
+Greece's arm chair cats gave rise to arm-chair philosophers.
+
+**START:** **MISSING** — `cat_15.png` (no source image supplied). See [shot specification](clips/15/shots.md).
+
+**END:** **UNSUPPLIED**. See [shot specification](clips/15/shots.md).
+
+## Clip 16
+
+Science was born as the cat religion fueled Rome's pursuit of a new, invisible geometry called physics, to explain why cats always land on their feet.
+
+**START:** **MISSING** — `cat_16.png` (no source image supplied). See [shot specification](clips/16/shots.md).
+
+**END:** **UNSUPPLIED**. See [shot specification](clips/16/shots.md).
+
+## Clip 17
+
+The machine went on for thousands of years, driven by tangential concatenation.
+
+**START:** **MISSING** — `cat_17.png` (no source image supplied). See [shot specification](clips/17/shots.md).
+
+**END:** **UNSUPPLIED**. See [shot specification](clips/17/shots.md).
+
+## Clip 18
+
+Concatenation: con- means 'with', cat means cat, -nation means all of them. "With all of the cats."
+
+**START:** **MISSING** — `cat_18.png` (no source image supplied). See [shot specification](clips/18/shots.md).
+
+**END:** **UNSUPPLIED**. See [shot specification](clips/18/shots.md).
+
+## Clip 19
+
+For all their discoveries, Rome ironically failed to discover the true reason cats land on their feet: landing anywhere else can kill you.
+
+**START:** **MISSING** — `cat_19.png` (no source image supplied). See [shot specification](clips/19/shots.md).
+
+**END:** **UNSUPPLIED**. See [shot specification](clips/19/shots.md).
+
+## Clip 20
+
+Rome didn't fall in a day,
+
+**START:** **MISSING** — `cat_20.png` (no source image supplied). See [shot specification](clips/20/shots.md).
+
+**END:** **UNSUPPLIED**. See [shot specification](clips/20/shots.md).
+
+## Clip 21
+
+but when it did, it definitely didn't land like the cats.
+
+**START:** **MISSING** — `cat_21.png` (no source image supplied). See [shot specification](clips/21/shots.md).
+
+**END:** **UNSUPPLIED**. See [shot specification](clips/21/shots.md).

@@ -33,7 +33,7 @@ Adjacent scenes may intentionally contain duplicate copies of the same boundary 
 
 Canonical START/END filenames come directly from `HG2Gui_animation_5s_cut_sheet_v2.md`. If a declared image does not actually exist in the repository, its `frames/README.md`, the animation `storyboard.md`, and `MANIFEST.json` record the absence. No replacement frame is invented.
 
-Tangent cut-map PNGs visibly include a `Start:` overlay. Each is stored as that cut's labeled START source screenshot, not as its END or the next clip's START. All 42 tangent END images remain unverified; the annotated sources need clean artwork extraction.
+Tangent cut-map PNGs visibly include a `Start:` overlay. Each is stored as that cut's labeled START source screenshot, not as its END or the next clip's START. All 51 tangent END images remain unverified; the annotated sources need clean artwork extraction.
 
 Legacy `ls`, `echo`, and `ls_tangent` clip sets already provide explicit `_start` and `_end` files per scene; those are copied directly into each scene's `frames/` folder.
 
@@ -42,7 +42,7 @@ Legacy `ls`, `echo`, and `ls_tangent` clip sets already provide explicit `_start
 - Canonical animations: **35**
 - Canonical scenes: **117**
 - Tangent animations: **4**
-- Tangent scenes: **42**
+- Tangent scenes: **51**
 - Legacy/incomplete animation groups: **3**
 - Legacy scenes: **14**
 - Project-wide files copied: **63**
@@ -51,7 +51,7 @@ Legacy `ls`, `echo`, and `ls_tangent` clip sets already provide explicit `_start
 ## Storyboard boundary coverage
 
 - Canonical: **10 / 234** source-image positions; **224** missing; **0** ambiguous; **0** unresolved.
-- Tangents: **42 / 84** labeled START screenshots available; **42** END images unresolved.
+- Tangents: **42 / 102** source-image positions (labeled START screenshots); **9** START images missing (cat 13–21); **51** END images unresolved.
 - Legacy: **28 / 28** explicit source image positions; written source narration absent.
 
 `MANIFEST.json` records provenance, source semantics, and exact storyboard coverage.

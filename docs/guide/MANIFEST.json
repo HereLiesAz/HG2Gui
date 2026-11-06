@@ -460,10 +460,10 @@
   },
   "boundary_verification": {
     "animations": 42,
-    "scenes": 173,
-    "boundary_slots": 346,
+    "scenes": 182,
+    "boundary_slots": 364,
     "materialized": 80,
-    "missing_or_unresolved": 266
+    "missing_or_unresolved": 284
   },
   "canonical_animations": [
     {
@@ -4508,12 +4508,12 @@
     },
     "tangents": {
       "animations": 4,
-      "scenes": 42,
-      "boundary_slots": 84,
+      "scenes": 51,
+      "boundary_slots": 102,
       "materialized": 42,
-      "missing": 0,
+      "missing": 9,
       "ambiguous": 0,
-      "unresolved": 42
+      "unresolved": 51
     },
     "legacy": {
       "animations": 3,
@@ -4927,6 +4927,240 @@
             }
           },
           "text": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/12/scene.md"
+        },
+        {
+          "frame": "cat_13.png",
+          "narration": "Curiously, the computer age isn't the first time this has happened. The last great cat religion began in ancient Egypt: geometry, to find the most perfectly shaped box that cats like to sit in.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 13,
+          "storyboard": {
+            "end": {
+              "role": "end",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "cat_13.png",
+              "status": "missing",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_start_not_supplied"
+            }
+          },
+          "text": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/13/scene.md"
+        },
+        {
+          "frame": "cat_14.png",
+          "narration": "Persia's mathematics found the area of a cat, and led to a complex written language based on cat scratches.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 14,
+          "storyboard": {
+            "end": {
+              "role": "end",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "cat_14.png",
+              "status": "missing",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_start_not_supplied"
+            }
+          },
+          "text": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/14/scene.md"
+        },
+        {
+          "frame": "cat_15.png",
+          "narration": "Greece's arm chair cats gave rise to arm-chair philosophers.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 15,
+          "storyboard": {
+            "end": {
+              "role": "end",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "cat_15.png",
+              "status": "missing",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_start_not_supplied"
+            }
+          },
+          "text": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/15/scene.md"
+        },
+        {
+          "frame": "cat_16.png",
+          "narration": "Science was born as the cat religion fueled Rome's pursuit of a new, invisible geometry called physics, to explain why cats always land on their feet.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 16,
+          "storyboard": {
+            "end": {
+              "role": "end",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "cat_16.png",
+              "status": "missing",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_start_not_supplied"
+            }
+          },
+          "text": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/16/scene.md"
+        },
+        {
+          "frame": "cat_17.png",
+          "narration": "The machine went on for thousands of years, driven by tangential concatenation.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 17,
+          "storyboard": {
+            "end": {
+              "role": "end",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "cat_17.png",
+              "status": "missing",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_start_not_supplied"
+            }
+          },
+          "text": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/17/scene.md"
+        },
+        {
+          "frame": "cat_18.png",
+          "narration": "Concatenation: con- means 'with', cat means cat, -nation means all of them. \"With all of the cats.\"",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 18,
+          "storyboard": {
+            "end": {
+              "role": "end",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "cat_18.png",
+              "status": "missing",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_start_not_supplied"
+            }
+          },
+          "text": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/18/scene.md"
+        },
+        {
+          "frame": "cat_19.png",
+          "narration": "For all their discoveries, Rome ironically failed to discover the true reason cats land on their feet: landing anywhere else can kill you.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 19,
+          "storyboard": {
+            "end": {
+              "role": "end",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "cat_19.png",
+              "status": "missing",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_start_not_supplied"
+            }
+          },
+          "text": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/19/scene.md"
+        },
+        {
+          "frame": "cat_20.png",
+          "narration": "Rome didn't fall in a day,",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 20,
+          "storyboard": {
+            "end": {
+              "role": "end",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "cat_20.png",
+              "status": "missing",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_start_not_supplied"
+            }
+          },
+          "text": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/20/scene.md"
+        },
+        {
+          "frame": "cat_21.png",
+          "narration": "but when it did, it definitely didn't land like the cats.",
+          "references_missing": [],
+          "references_present": [],
+          "scene": 21,
+          "storyboard": {
+            "end": {
+              "role": "end",
+              "expected": null,
+              "status": "unresolved",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_end_not_supplied"
+            },
+            "start": {
+              "role": "start",
+              "expected": "cat_21.png",
+              "status": "missing",
+              "local": null,
+              "sources": [],
+              "semantics": "source_tangent_start_not_supplied"
+            }
+          },
+          "text": "docs/guide/animations/tangents/23_cat_theological_mechanical_history/scenes/21/scene.md"
         }
       ],
       "source_script": "docs/script (1).md",
