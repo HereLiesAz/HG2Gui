@@ -96,5 +96,24 @@ class CatTangentPackTest(unittest.TestCase):
         self.assertIn("cuneiform", frames[13].composition)
 
 
+class PerPartZipTest(unittest.TestCase):
+    def test_per_part_zips_are_self_contained_and_within_nine_images(self):
+        mod = load()
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp)
+            self.assertEqual(mod.main(["--out", str(out), "--per-part"]), 0)
+            zips = sorted(out.glob("cat_tangent_part_*.zip"))
+            self.assertEqual(len(zips), 7)
+            for path in zips:
+                with zipfile.ZipFile(path) as zf:
+                    names = zf.namelist()
+                    images = [n for n in names if "/references/" in n]
+                    self.assertLessEqual(len(images), 9, path.name)
+                    self.assertEqual(len(images), 5, path.name)
+                    prompt = next(zf.read(n).decode("utf-8") for n in names if n.endswith("/prompt.txt"))
+                    self.assertIn("one continuous 15-second animation", prompt, path.name)
+                    self.assertTrue(any(n.endswith("/README.txt") for n in names), path.name)
+
+
 if __name__ == "__main__":
     unittest.main()
