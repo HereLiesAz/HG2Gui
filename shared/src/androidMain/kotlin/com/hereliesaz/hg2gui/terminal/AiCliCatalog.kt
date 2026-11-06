@@ -7,6 +7,11 @@ package com.hereliesaz.hg2gui.terminal
  * Each entry was checked against the real registries rather than assumed:
  *  - `ollama` and `codex` are packages in the Termux repository (`pkg install`).
  *  - `gemini` is `@google/gemini-cli`, a pure-JavaScript bundle (`bin: bundle/gemini.js`).
+ *  - `agy` is Google's Antigravity CLI. Google ships no Termux or npm install for it; the only Android
+ *    route found is the community package `@bash0816/agy-termux` (single maintainer, GPL-3.0). It fetches
+ *    Google's `linux_arm64` release from GitHub and patches it, bundles a prebuilt `sigsys_shim.so`, and has
+ *    an update path driven by a config file on its `main` branch. It is pinned to an exact version here and
+ *    labelled as a community build; replace it with an official route as soon as one exists.
  *  - `claude` is `@anthropic-ai/claude-code`. From 2.1.113 on the package ships a native binary
  *    chosen by a postinstall step that has no Android (bionic) build, so it is pinned to 2.1.112,
  *    the last release whose `bin` is a JavaScript file Node can run.
@@ -54,6 +59,13 @@ internal object AiCliCatalog {
             id = "gemini", label = "Gemini CLI", command = "gemini", source = Source.NPM,
             packageName = "@google/gemini-cli", runtime = listOf("nodejs-lts"),
             note = "Google's Gemini agent (pure JavaScript). Not yet run on a device."
+        ),
+        Cli(
+            id = "agy", label = "Antigravity CLI (community build)", command = "agy", source = Source.NPM,
+            packageName = "@bash0816/agy-termux", version = "1.4.12", runtime = listOf("nodejs-lts"),
+            note = "Google's Antigravity CLI, repackaged for Termux by a community maintainer, not by Google. " +
+                "Pinned to 1.4.12, but that package downloads and patches Google's release binary from GitHub, " +
+                "ships a prebuilt native shim, and can update itself. Not yet run on a device."
         ),
         Cli(
             id = "claude", label = "Claude Code", command = "claude", source = Source.NPM,

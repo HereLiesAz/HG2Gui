@@ -16,7 +16,7 @@ class AiCliCatalogTest {
 
     @Test
     fun theRequestedToolsAreListed() {
-        for (id in listOf("claude", "codex", "gemini", "ollama")) assertNotNull(id, AiCliCatalog.find(id))
+        for (id in listOf("claude", "codex", "gemini", "ollama", "agy")) assertNotNull(id, AiCliCatalog.find(id))
         assertNull(AiCliCatalog.find("nonsense"))
         assertNull(AiCliCatalog.find("claude; rm -rf ~"))
     }
@@ -63,6 +63,19 @@ class AiCliCatalogTest {
         val shell = AiCliCatalog.installPlan(cli).last() as AiCliCatalog.Step.Shell
         assertEquals("npm install -g --no-audit --no-fund @anthropic-ai/claude-code@2.1.112", shell.line)
         assertTrue("the note must say why it is pinned", cli.note.contains("2.1.112"))
+    }
+
+    @Test
+    fun antigravity_isALabelledCommunityBuild_pinnedToAnExactVersion() {
+        val cli = AiCliCatalog.find("agy")!!
+        assertEquals("agy", cli.command)
+        assertEquals("@bash0816/agy-termux", cli.packageName)
+        assertEquals("1.4.12", cli.version)
+        assertTrue("the label must say it is not Google's build", cli.label.contains("community", ignoreCase = true))
+        assertTrue(cli.note.contains("not by Google"))
+        assertTrue(cli.note.contains("update itself"))
+        val shell = AiCliCatalog.installPlan(cli).last() as AiCliCatalog.Step.Shell
+        assertEquals("npm install -g --no-audit --no-fund @bash0816/agy-termux@1.4.12", shell.line)
     }
 
     @Test

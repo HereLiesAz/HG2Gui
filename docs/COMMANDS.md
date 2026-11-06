@@ -75,9 +75,12 @@ Installs AI command-line tools into the Termux prefix. `aicli list` shows each t
 | `ollama` | Ollama (local models) | `pkg install ollama` |
 | `codex` | OpenAI Codex CLI | `pkg install codex` |
 | `gemini` | Google Gemini CLI | `pkg install nodejs-lts`, then `npm install -g @google/gemini-cli` |
+| `agy` | Antigravity CLI (community build) | `pkg install nodejs-lts`, then `npm install -g @bash0816/agy-termux@1.4.12` |
 | `claude` | Claude Code | `pkg install nodejs-lts`, then `npm install -g @anthropic-ai/claude-code@2.1.112` |
 
-Claude Code is pinned to 2.1.112, the last release that is a JavaScript file Node can run: from 2.1.113 the npm package ships a native binary chosen by a postinstall step that has no Android build. It is older than the current release. The Gemini and Claude Code installs have not been run on a device; `ollama` and `codex` are packages in the Termux repository.
+Antigravity CLI (`agy`) is Google's, but Google ships no Termux or npm install for it. The only Android route is the community package `@bash0816/agy-termux`, which is not Google's: it downloads Google's `linux_arm64` release from GitHub and patches it, bundles a prebuilt native shim, and can update itself from a config file on its `main` branch. It is pinned to 1.4.12 here. Install it only if you accept running that package.
+
+Claude Code is pinned to 2.1.112, the last release that is a JavaScript file Node can run: from 2.1.113 the npm package ships a native binary chosen by a postinstall step that has no Android build. It is older than the current release. The Gemini, Antigravity and Claude Code installs have not been run on a device; `ollama` and `codex` are packages in the Termux repository.
 
 Package steps go through the same journaled `pkg` path as a typed `pkg install`; the npm step runs in your shell. Afterwards the script wrappers are rewritten and the shell's command cache is cleared, so the tool runs in the same tab. `remove` removes the tool only, never the Node runtime. Headless callers (the API, MCP) may only `list`. No stored provider key is passed to any of these tools. The AI pill's **aicli** entry builds these lines.
 
