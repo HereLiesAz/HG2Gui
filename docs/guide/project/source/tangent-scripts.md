@@ -43,7 +43,7 @@ The machine went on for thousands of years, driven by tangential concatenationâ€
 
 For all their scientific discoveries, Rome ironically failed to discover the true reason cats land on their feet; landing anywhere else can kill you.
 
-Rome didn't fall in a day, but when it did, it definitely didn't land like the cats.
+Rome didn't fall in a day, but when it did, Rome fell in exactly the way that cats don't.
 
 ## Cut map
 
@@ -69,7 +69,7 @@ Rome didn't fall in a day, but when it did, it definitely didn't land like the c
 | 18 | `cat_18.png` | Concatenation: con- means 'with', cat means cat, -nation means all of them. "With all of the cats." |
 | 19 | `cat_19.png` | For all their discoveries, Rome ironically failed to discover the true reason cats land on their feet: landing anywhere else can kill you. |
 | 20 | `cat_20.png` | Rome didn't fall in a day, |
-| 21 | `cat_21.png` | but when it did, it definitely didn't land like the cats. |
+| 21 | `cat_21.png` | but when it did, Rome fell in exactly the way that cats don't. |
 
 ---
 

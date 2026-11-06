@@ -192,7 +192,7 @@ New. Background crimson. Keep this colonnade design identical in frames 19–21.
 Flat crimson (#993B49) background. A grand Roman colonnade across the lower two thirds: five thick cream columns beneath a flat beam and a triangular pediment, perfectly intact and symmetrical. A flat mustard sun sits low behind it. A small cream cat sits upright on its feet in front of the columns.
 ~~~
 
-### Frame 20 — start of cut 21 · "but when it did, it definitely didn't land like the cats."
+### Frame 20 — start of cut 21 · "but when it did, Rome fell in exactly the way that cats don't."
 New. Background crimson. The same colonnade, mid-collapse.
 
 ~~~text

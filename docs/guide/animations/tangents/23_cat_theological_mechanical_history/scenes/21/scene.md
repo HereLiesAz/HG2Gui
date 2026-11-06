@@ -4,4 +4,4 @@
 
 **END image:** not supplied by the source cut map
 
-**Narration beat:** but when it did, it definitely didn't land like the cats.
+**Narration beat:** but when it did, Rome fell in exactly the way that cats don't.

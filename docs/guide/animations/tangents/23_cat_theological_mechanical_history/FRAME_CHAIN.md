@@ -26,7 +26,7 @@ This file is hand-kept. The generated `CLIPS.md`, `storyboard.md` and the per-cl
 | 18 | [frame 17](../../../../cat_tangent_frame_17.png) | [frame 18](../../../../cat_tangent_frame_18.png) | [clips/18](clips/18/README.md) | Concatenation: con- means 'with', cat means cat, -nation means all of them. "With all of the cats." |
 | 19 | [frame 18](../../../../cat_tangent_frame_18.png) | [frame 19](../../../../cat_tangent_frame_19.png) | [clips/19](clips/19/README.md) | For all their discoveries, Rome ironically failed to discover the true reason cats land on their feet: landing anywhere else can kill you. |
 | 20 | [frame 19](../../../../cat_tangent_frame_19.png) | [frame 20](../../../../cat_tangent_frame_20.png) | [clips/20](clips/20/README.md) | Rome didn't fall in a day, |
-| 21 | [frame 20](../../../../cat_tangent_frame_20.png) | [frame 21](../../../../cat_tangent_frame_21.png) | [clips/21](clips/21/README.md) | but when it did, it definitely didn't land like the cats. |
+| 21 | [frame 20](../../../../cat_tangent_frame_20.png) | [frame 21](../../../../cat_tangent_frame_21.png) | [clips/21](clips/21/README.md) | but when it did, Rome fell in exactly the way that cats don't. |
 
 ## Seedance
 

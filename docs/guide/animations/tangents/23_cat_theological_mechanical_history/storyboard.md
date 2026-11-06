@@ -166,7 +166,7 @@ Rome didn't fall in a day,
 
 ## Clip 21
 
-but when it did, it definitely didn't land like the cats.
+but when it did, Rome fell in exactly the way that cats don't.
 
 **START:** **MISSING** — `cat_21.png` (no source image supplied). See [shot specification](clips/21/shots.md).
 
