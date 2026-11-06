@@ -17,8 +17,7 @@ Approved renders are in `docs/` as `cat_tangent_frame_NN.png` (1254×1254), with
 
 | Frames | Status |
 |---|---|
-| 02 | Generated, not yet committed. |
-| 00, 01, 03–21 | Committed. |
+| 00–21 | All committed. |
 
 Frame 13 is the cuneiform tablet. Frame 19 is the second render; the first had a broken centre column.
 
