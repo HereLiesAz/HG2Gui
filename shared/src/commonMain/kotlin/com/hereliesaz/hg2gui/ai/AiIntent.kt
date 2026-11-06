@@ -31,7 +31,7 @@ object AiIntentAnalyzer {
                 command = normalized,
                 consequences = lifecycleConsequences(second)
             )
-            first in setOf("pkg", "apt", "apt-get", "dpkg", "pip", "pipx", "npm", "gem") &&
+            first in setOf("pkg", "apt", "apt-get", "dpkg", "pip", "pipx", "npm", "gem", "aicli") &&
                 words.any { it in PACKAGE_MUTATIONS } -> AiIntent(
                 kind = AiIntentKind.PACKAGE_MUTATION,
                 command = normalized,

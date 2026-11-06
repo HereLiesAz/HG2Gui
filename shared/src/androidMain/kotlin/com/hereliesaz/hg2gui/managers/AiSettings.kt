@@ -6,14 +6,22 @@ import android.util.Log
 import androidx.core.content.edit
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import com.hereliesaz.hg2gui.ai.AiConfig
+import com.hereliesaz.hg2gui.ai.AiProvider
 
 private const val PREFS_NAME = "hg2gui_ai_settings"
 private const val SECURE_PREFS_NAME = "hg2gui_ai_settings_secure"
 private const val KEY_API_KEY = "api_key"
+private const val PREF_PROVIDER = "provider"
+private const val PREF_MODEL = "model"
+private const val PREF_BASE_URL = "base_url"
 private const val TAG = "hg2gui"
 
 /**
- * The user-supplied Anthropic API key backing AI command search/chat, kept in
+ * The AI provider choice and the user-supplied API key for it, backing AI command search/chat. Keys
+ * are kept per provider (Anthropic's under the original `api_key` name, so an existing install keeps
+ * working); [apiKey]/[saveApiKey] act on the SELECTED provider. Provider, model and endpoint are not
+ * secret and live in the plain preferences file. Keys are kept in
  * [EncryptedSharedPreferences] (AES-256 values, keyset wrapped by an Android Keystore master key).
  * The other app settings (SSH key paths, MCP pairing token) still use plain SharedPreferences.
  *
@@ -75,11 +83,36 @@ object AiSettings {
         plain.edit(commit = true) { remove(KEY_API_KEY) }
     }
 
-    fun apiKey(context: Context): String? {
+    /** The secure-store name of [provider]'s key; Anthropic keeps the pre-multi-provider name. */
+    internal fun keyName(provider: AiProvider): String =
+        if (provider == AiProvider.ANTHROPIC) KEY_API_KEY else "${KEY_API_KEY}_${provider.id}"
+
+    /** The provider, model and endpoint currently selected (blank model/endpoint = provider default). */
+    fun config(context: Context): AiConfig {
+        val plain = plainPrefs(context)
+        return AiConfig(
+            provider = AiProvider.fromId(plain.getString(PREF_PROVIDER, null)),
+            model = plain.getString(PREF_MODEL, null).orEmpty(),
+            baseUrl = plain.getString(PREF_BASE_URL, null).orEmpty()
+        )
+    }
+
+    /** Stores the selection (model and endpoint trimmed; blank means "use the default"). False when the write did not land. */
+    fun saveConfig(context: Context, config: AiConfig): Boolean = plainPrefs(context).edit()
+        .putString(PREF_PROVIDER, config.provider.id)
+        .putString(PREF_MODEL, config.model.trim())
+        .putString(PREF_BASE_URL, config.baseUrl.trim())
+        .commit()
+
+    /** The SELECTED provider's stored key. */
+    fun apiKey(context: Context): String? = apiKey(context, config(context).provider)
+
+    /** [provider]'s stored key, or null when none is set (or the secure store is unreadable). */
+    fun apiKey(context: Context, provider: AiProvider): String? {
         val secure = securePrefs(context) ?: return null
         migrateLegacy(context, secure)
         return try {
-            secure.getString(KEY_API_KEY, null)?.ifBlank { null }
+            secure.getString(keyName(provider), null)?.ifBlank { null }
         } catch (e: Exception) {
             Log.w(TAG, "AI key unreadable", e)
             null
@@ -118,17 +151,22 @@ object AiSettings {
      * Stores [apiKey] (trimmed; blank removes it) and reports whether it was really persisted, so
      * the UI can say so instead of showing "saved" for a key that is gone after a restart.
      */
-    fun saveApiKey(context: Context, apiKey: String?): SaveResult {
+    fun saveApiKey(context: Context, apiKey: String?): SaveResult =
+        saveApiKey(context, config(context).provider, apiKey)
+
+    /** [saveApiKey] for an explicit [provider] rather than the selected one. */
+    fun saveApiKey(context: Context, provider: AiProvider, apiKey: String?): SaveResult {
         val key = apiKey?.trim()
         val blank = key.isNullOrEmpty()
+        val name = keyName(provider)
         val secure = securePrefs(context)
             ?: return SaveResult.of(storeOpen = false, committed = false, blank = blank)
         val committed = secure.edit().apply {
-            if (blank) remove(KEY_API_KEY) else putString(KEY_API_KEY, key)
+            if (blank) remove(name) else putString(name, key)
         }.commit()
         // A key set before migration ran must not linger in plain text - but only drop the plain
         // copy once the encrypted write has landed.
-        if (committed) plainPrefs(context).edit(commit = true) { remove(KEY_API_KEY) }
+        if (committed && provider == AiProvider.ANTHROPIC) plainPrefs(context).edit(commit = true) { remove(KEY_API_KEY) }
         return SaveResult.of(storeOpen = true, committed = committed, blank = blank)
     }
 

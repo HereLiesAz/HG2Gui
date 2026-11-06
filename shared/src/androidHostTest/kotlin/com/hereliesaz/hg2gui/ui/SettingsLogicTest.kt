@@ -1,5 +1,7 @@
 package com.hereliesaz.hg2gui.ui
 
+import com.hereliesaz.hg2gui.ai.AiConfig
+import com.hereliesaz.hg2gui.ai.AiProvider
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -64,5 +66,21 @@ class SettingsLogicTest {
         assertTrue(isApiKeyDraftDirty("sk-ant-abc", "sk-ant-abd"))
         assertTrue(isApiKeyDraftDirty(null, "sk-ant-abc"))
         assertTrue(isApiKeyDraftDirty("sk-ant-abc", ""))
+    }
+
+    @Test
+    fun aiSettingsAreCleanWhenNothingChanged_ignoringWhitespace() {
+        val saved = AiConfig(AiProvider.OPENAI, model = "gpt-5", baseUrl = "")
+        assertFalse(isAiSettingsDirty(saved, "k", AiConfig(AiProvider.OPENAI, " gpt-5 ", "  "), "k "))
+        assertFalse(isAiSettingsDirty(AiConfig(), null, AiConfig(), ""))
+    }
+
+    @Test
+    fun changingProviderModelEndpointOrKeyMakesAiSettingsDirty() {
+        val saved = AiConfig(AiProvider.OPENAI, model = "gpt-5", baseUrl = "")
+        assertTrue(isAiSettingsDirty(saved, "k", AiConfig(AiProvider.GEMINI, "gpt-5", ""), "k"))
+        assertTrue(isAiSettingsDirty(saved, "k", AiConfig(AiProvider.OPENAI, "other", ""), "k"))
+        assertTrue(isAiSettingsDirty(saved, "k", AiConfig(AiProvider.OPENAI, "gpt-5", "https://x.test/v1"), "k"))
+        assertTrue(isAiSettingsDirty(saved, "k", AiConfig(AiProvider.OPENAI, "gpt-5", ""), "k2"))
     }
 }
