@@ -2,7 +2,7 @@
 
 ## START shot
 
-Resume precisely from the preceding clip's final tableau: End on the bottom process staring at the clipboard.
+Resume precisely from the preceding clip's final tableau: End on all six, scattered across the hill, every one of them king.
 
 **START** — NO IMAGE
 
@@ -12,7 +12,7 @@ Resume precisely from the preceding clip's final tableau: End on the bottom proc
 
 ## END shot
 
-End with all rows racing upward in CPU use.
+End with a new king at the summit and the other players glancing sideways at one another.
 
 **END** — NO IMAGE
 

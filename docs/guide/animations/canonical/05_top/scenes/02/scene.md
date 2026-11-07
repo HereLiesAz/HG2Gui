@@ -1,6 +1,6 @@
 ## Cut 02 — 05:00–10:00
 
-The bottom process begins literally shovelling little CPU blocks into itself; its percentage climbs and its row moves upward. The other processes notice and imitate it. The leaderboard becomes frantic but remains cleanly diagrammatic. End with all rows racing upward in CPU use.
+Challengers run in from every side toward the summit. The king there shoves each one back down the hill. Twice, a challenger gets through: the king tumbles down the slope, and the challenger takes the spot and raises both arms. Elsewhere on the hill, players hear cheering from places they cannot see and look puzzled. End with a new king at the summit and the other players glancing sideways at one another.
 
 ### Ready-to-paste generation prompt
 
@@ -30,11 +30,11 @@ CONTINUITY / EDITING
 
 SEQUENCE-SPECIFIC LOCK
 Guide tab 1: TOP
-Guide tab 2: PERFORMANCE
+Guide tab 2: KING OF THE HILL
 Palette lock: mustard, dark teal, mint green, vermilion, dusty lavender
 
 CUT 02 OF 03 — 05:00–10:00
-The bottom process begins literally shovelling little CPU blocks into itself; its percentage climbs and its row moves upward. The other processes notice and imitate it. The leaderboard becomes frantic but remains cleanly diagrammatic. End with all rows racing upward in CPU use.
+Challengers run in from every side toward the summit. The king there shoves each one back down the hill. Twice, a challenger gets through: the king tumbles down the slope, and the challenger takes the spot and raises both arms. Elsewhere on the hill, players hear cheering from places they cannot see and look puzzled. End with a new king at the summit and the other players glancing sideways at one another.
 ```
 
 ---
@@ -47,4 +47,4 @@ The bottom process begins literally shovelling little CPU blocks into itself; it
 
 **END:** `05_top_frame_02.png`
 
-The bottom process begins literally shovelling little CPU blocks into itself; its percentage climbs and its row moves upward. The other processes notice and imitate it. The leaderboard becomes frantic but remains cleanly diagrammatic. End with all rows racing upward in CPU use.
+Challengers run in from every side toward the summit. The king there shoves each one back down the hill. Twice, a challenger gets through: the king tumbles down the slope, and the challenger takes the spot and raises both arms. Elsewhere on the hill, players hear cheering from places they cannot see and look puzzled. End with a new king at the summit and the other players glancing sideways at one another.

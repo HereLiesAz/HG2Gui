@@ -2,7 +2,7 @@
 
 ## START shot
 
-Resume precisely from the preceding clip's final tableau: End with all rows racing upward in CPU use.
+Resume precisely from the preceding clip's final tableau: End with a new king at the summit and the other players glancing sideways at one another.
 
 **START** — NO IMAGE
 
@@ -12,7 +12,7 @@ Resume precisely from the preceding clip's final tableau: End with all rows raci
 
 ## END shot
 
-Hold on the trophy beside a completely unusable system.
+Hold on the king, arms still raised, with five players looking up.
 
 **END** — NO IMAGE
 

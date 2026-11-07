@@ -4,14 +4,14 @@
 
 Visual action, verbatim from the revised 5-second cut sheet:
 
-One process hits `99%` and receives a tiny trophy. Confetti appears for half a second; simultaneously the entire terminal freezes rigid. A boardroom stamp descends over the frozen picture: `RECORD QUARTER`. Hold on the trophy beside a completely unusable system.
+Thin lines of sight run from each player to the other players they can see. Most see only one or two, but every line also reaches the player at the summit, who alone can see everyone. A single crown settles on that player. The other five slowly lower their arms. Hold on the king, arms still raised, with five players looking up.
 
 ## Corresponding original script excerpt
 
-One reaches 99%.
+Thin lines of sight run from each player to the others they can see. Every player can see the one at the summit. Only the one at the summit can see everyone.
 
-A little trophy appears.
+A single crown settles on the summit player.
 
-The terminal freezes.
+The five others slowly lower their arms.
 
-The Board records a record quarter.
+Hold.

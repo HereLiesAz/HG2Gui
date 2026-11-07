@@ -8,15 +8,15 @@ Create the specified animation as a flat, matte screen-printed cut-paper pictogr
 Render EXACTLY 1:1 square; single background dark teal `#073D43`.
 
 SEQUENCE: top; CLIP 02; 5 seconds · 05:00–10:00.
-START: Resume precisely from the preceding clip's final tableau: End on the bottom process staring at the clipboard.
-END: End with all rows racing upward in CPU use.
+START: Resume precisely from the preceding clip's final tableau: End on all six, scattered across the hill, every one of them king.
+END: End with a new king at the summit and the other players glancing sideways at one another.
 
 MOTION DIRECTOR'S TIMING
-0.0–2.4s: The bottom process begins literally shovelling little CPU blocks into itself; its percentage climbs and its row moves upward. The other processes notice and imitate it.
-2.4–4.6s: The leaderboard becomes frantic but remains cleanly diagrammatic. End with all rows racing upward in CPU use.
+0.0–2.4s: Challengers run in from every side toward the summit. The king there shoves each one back down the hill. Twice, a challenger gets through: the king tumbles down the slope, and the challenger takes the spot and raises both arms.
+2.4–4.6s: Elsewhere on the hill, players hear cheering from places they cannot see and look puzzled. End with a new king at the summit and the other players glancing sideways at one another.
 4.6–5.0s: Hold the exact finishing composition, no additional changes.
 
-EXACT STORY ACTION / WORDS: The bottom process begins literally shovelling little CPU blocks into itself; its percentage climbs and its row moves upward. The other processes notice and imitate it. The leaderboard becomes frantic but remains cleanly diagrammatic. End with all rows racing upward in CPU use.
+EXACT STORY ACTION / WORDS: Challengers run in from every side toward the summit. The king there shoves each one back down the hill. Twice, a challenger gets through: the king tumbles down the slope, and the challenger takes the spot and raises both arms. Elsewhere on the hill, players hear cheering from places they cannot see and look puzzled. End with a new king at the summit and the other players glancing sideways at one another.
 
 A REQUIRED BOUNDARY IS MISSING: these written shots are production requirements, not fabricated files. Final matched video generation must wait for approved boundary art.
 ~~~

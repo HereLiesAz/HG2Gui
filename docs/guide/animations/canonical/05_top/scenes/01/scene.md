@@ -1,6 +1,6 @@
 ## Cut 01 — 00:00–05:00
 
-A flat process leaderboard appears under the header `SORT: %CPU`: `sensible_process 2%`, `useful_process 1%`, `idle_process 0%`. A large clipboard labeled `PERFORMANCE REVIEW` slides in from frame right. The bottom process notices it. End on the bottom process staring at the clipboard.
+A flat dusty-lavender hill rises from the dark teal ground. Six small players appear one at a time, each in a different place: the foot of the hill, a ditch, behind a tree, halfway up, on a rock, and the summit. Each throws both arms into the air. End on all six, scattered across the hill, every one of them king.
 
 ### Ready-to-paste generation prompt
 
@@ -30,11 +30,11 @@ CONTINUITY / EDITING
 
 SEQUENCE-SPECIFIC LOCK
 Guide tab 1: TOP
-Guide tab 2: PERFORMANCE
+Guide tab 2: KING OF THE HILL
 Palette lock: mustard, dark teal, mint green, vermilion, dusty lavender
 
 CUT 01 OF 03 — 00:00–05:00
-A flat process leaderboard appears under the header `SORT: %CPU`: `sensible_process 2%`, `useful_process 1%`, `idle_process 0%`. A large clipboard labeled `PERFORMANCE REVIEW` slides in from frame right. The bottom process notices it. End on the bottom process staring at the clipboard.
+A flat dusty-lavender hill rises from the dark teal ground. Six small players appear one at a time, each in a different place: the foot of the hill, a ditch, behind a tree, halfway up, on a rock, and the summit. Each throws both arms into the air. End on all six, scattered across the hill, every one of them king.
 ```
 
 ---
@@ -47,4 +47,4 @@ A flat process leaderboard appears under the header `SORT: %CPU`: `sensible_proc
 
 **END:** `05_top_frame_01.png`
 
-A flat process leaderboard appears under the header `SORT: %CPU`: `sensible_process 2%`, `useful_process 1%`, `idle_process 0%`. A large clipboard labeled `PERFORMANCE REVIEW` slides in from frame right. The bottom process notices it. End on the bottom process staring at the clipboard.
+A flat dusty-lavender hill rises from the dark teal ground. Six small players appear one at a time, each in a different place: the foot of the hill, a ditch, behind a tree, halfway up, on a rock, and the summit. Each throws both arms into the air. End on all six, scattered across the hill, every one of them king.

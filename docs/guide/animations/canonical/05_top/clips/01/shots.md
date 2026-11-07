@@ -2,7 +2,7 @@
 
 ## START shot
 
-Opening composition: A flat process leaderboard appears under the header `SORT: %CPU`: `sensible_process 2%`, `useful_process 1%`, `idle_process 0%`.
+Opening composition: A flat dusty-lavender hill rises from the dark teal ground.
 
 **START** — NO IMAGE
 
@@ -12,7 +12,7 @@ Opening composition: A flat process leaderboard appears under the header `SORT: 
 
 ## END shot
 
-End on the bottom process staring at the clipboard.
+End on all six, scattered across the hill, every one of them king.
 
 **END** — NO IMAGE
 
