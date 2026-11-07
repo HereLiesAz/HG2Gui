@@ -18,3 +18,9 @@
 - `05_top`: my first two cast designs (identical bean figures, then generic cream people) were rejected because they did not look like the Guide. The project's own frames in `docs/guide/project/references/shared/` already define the cast and style: tall paper-cut figures in uniforms, a woman with a megaphone, a big green bear in a blue coat, sound arcs and dashed arrows.
 - Rule: before designing characters or props for any entry, open the existing reference frames and take the cast, proportions, palette and diagram language from them.
 - Rule: when the user states a staging rule (here, "the camera must move, and we never see all the players"), treat it as part of the joke, not a detail. It changed the frames, the camera plan and the animation text.
+
+## The user's own story beats any concept of mine
+
+- `kill`: I kept the guide's post-office concept and added a French clerk and a repainted sign; the user said it was "not very h2g2" and gave their own story (God executed a command; the French almost executed it; Nietzsche had an idea; the signal killed a little too well). That was the concept.
+- Rule: when the user adds a requirement to an existing scene, ask what the Guide's voice would do with it, which usually means a creation-myth or bureaucratic-history register, not a visual gag bolted onto the old scene. If unsure, offer one line of voice, not a full rewrite.
+- Rule: the Guide's recurring joke is a short, deadpan history of how a word or command came to mean what it does. Start there.

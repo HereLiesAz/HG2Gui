@@ -2,7 +2,7 @@
 
 ## START shot
 
-Resume precisely from the preceding clip's final tableau: End with the clerk noticing a distant black envelope.
+Resume precisely from the preceding clip's final tableau: End on the machine running, the piles growing, and a crowd of small figures at the bottom of the frame beginning to look up.
 
 **START** — NO IMAGE
 
@@ -12,7 +12,7 @@ Resume precisely from the preceding clip's final tableau: End with the clerk not
 
 ## END shot
 
-End with one hand just about to touch it.
+End on the raised finger.
 
 **END** — NO IMAGE
 

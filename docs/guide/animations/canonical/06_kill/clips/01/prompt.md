@@ -8,15 +8,15 @@ Create the specified animation as a flat, matte screen-printed cut-paper pictogr
 Render EXACTLY 1:1 square; single background midnight blue `#111D38`.
 
 SEQUENCE: kill; CLIP 01; 5 seconds · 00:00–05:00.
-START: Opening composition: A miniature post office labeled `kill`.
-END: End with the clerk noticing a distant black envelope.
+START: Opening composition: A midnight-blue void.
+END: End on the machine running, the piles growing, and a crowd of small figures at the bottom of the frame beginning to look up.
 
 MOTION DIRECTOR'S TIMING
-0.0–2.4s: A miniature post office labeled `kill`. A clerk sorts envelopes into slots. Show three envelopes in succession, each cleanly readable: `TERM — REQUEST TO TERMINATE`, `HUP — HANGUP`, `STOP — DON'T MOVE`.
-2.4–4.6s: Each slides to a different chute. End with the clerk noticing a distant black envelope.
+0.0–2.4s: A midnight-blue void. A hand the size of a continent descends and presses one large mustard key. A small machine below begins to turn, and things start to pile up beside it: files, jars, gears, a conveyor feeding it.
+2.4–4.6s: End on the machine running, the piles growing, and a crowd of small figures at the bottom of the frame beginning to look up.
 4.6–5.0s: Hold the exact finishing composition, no additional changes.
 
-EXACT STORY ACTION / WORDS: A miniature post office labeled `kill`. A clerk sorts envelopes into slots. Show three envelopes in succession, each cleanly readable: `TERM — REQUEST TO TERMINATE`, `HUP — HANGUP`, `STOP — DON'T MOVE`. Each slides to a different chute. End with the clerk noticing a distant black envelope.
+EXACT STORY ACTION / WORDS: A midnight-blue void. A hand the size of a continent descends and presses one large mustard key. A small machine below begins to turn, and things start to pile up beside it: files, jars, gears, a conveyor feeding it. End on the machine running, the piles growing, and a crowd of small figures at the bottom of the frame beginning to look up.
 
 A REQUIRED BOUNDARY IS MISSING: these written shots are production requirements, not fabricated files. Final matched video generation must wait for approved boundary art.
 ~~~

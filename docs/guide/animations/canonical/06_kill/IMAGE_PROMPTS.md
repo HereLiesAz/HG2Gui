@@ -1,50 +1,60 @@
 # 06_kill — image prompts
 
-Four boundary frames for the three cuts of `06_kill` (15 seconds), plus one model sheet. Frame `NN` is the START of cut `NN+1`; the same image is the END of cut `NN`. Frame 03 is the end of the last cut.
+Four boundary frames for the three cuts of `06_kill` (15 seconds), plus two model sheets. Frame `NN` is the START of cut `NN+1`; the same image is the END of cut `NN`. Frame 03 is the end of the last cut.
 
-Next in order after `05_top`. The concept is the guide's own and is kept as written: a post office sorts signals, one envelope cannot be refused, and everything else becomes terrifyingly cooperative. What is new is how it is drawn: from the project's existing Guide frames, with simple frames, short words and a planned camera.
-
-## What the existing Guide frames teach
-
-- **People are tall, elegant paper-cut figures**, with real proportions, a simple profile face, a tunic, a belt, trousers and boots, in a uniform and a cap. The clerk should look like the uniformed functionaries in `docs/guide/project/references/shared/` (`ls_clip_01_start.png`, `echo_clip_03_start.png`).
-- **Plain staging.** Two to four things per frame, large, on one flat colour field with a little paper grain, and a few heavy props (a door, a filing cabinet, a table).
-- **Diagram language.** Dashed arrows, sound arcs, and meaning carried by objects, not lettering.
+This replaces the earlier post-office version of the scene. The story is the project owner's; the cast and style come from the project's existing Guide frames in `docs/guide/project/references/shared/` (the `echo_clip_*`, `ls_clip_*` and `ls_tangent_clip_*` frames).
 
 ## The story, in plain words
 
-`kill` sends a signal to a process. Most signals only ask: terminate, hang up, stop, carry on. A process may catch them and reconsider its afternoon. One signal, `SIGKILL`, cannot be caught or ignored.
+In the beginning, God executed a command. As the process continued, files were saved, memories were stored, computations were powered and resources were consumed, and people began to wonder whether the command had gone on long enough. They tried to turn it off. They asked God, politely, to knock it off. God caught the request and carried on.
 
-In the film this is a tiny post office. A clerk sorts envelopes, each a request: TERM (please terminate), HUP (hangup), STOP (don't move). Each goes to its chute and may be politely declined. At the far end of the bench sits a black envelope, KILL, which cannot be refused. The clerk approaches it with great procedural caution, using tongs. The moment he touches it, every other envelope in the room snaps into perfect, obedient order. Nothing explodes and nobody is hurt. It is just terrifying administrative cooperation, and the clerk looks mildly pleased with the improved workflow.
+The French were about to execute the command when they remembered that this was how God had started it in the first place. This gave Friedrich Nietzsche an idea. A signal was sent to `kill`. This, it did, a little too well.
+
+The joke leans on one word: *execute* means both to run something and to put it to death. God started the command by executing it, so the French cannot execute it without confusing the two. The signal that finally works is the one that cannot be caught or ignored, `SIGKILL`.
+
+## What the existing Guide frames teach
+
+- **People are tall, elegant paper-cut figures**, with real proportions, simple profile faces, uniforms, belts, caps and boots.
+- **Plain staging.** Two to four things per frame, large, on one flat colour field with a little paper grain.
+- **Diagram language.** Dashed arrows and sound arcs carry meaning, not lettering.
+
+## No lettering at all
+
+Nothing in this scene is written down: the keys are blank, the envelope is plain black, and nobody holds a sign. Image generators misspell text, and this scene does not need any.
 
 ## The cast and set
 
-- **The Clerk.** A tall thin man in the Guide's uniform: a black-red belted tunic, a cream shirt collar, a flat cap with a mustard band, black-red trousers and mustard boots. Profile face, a slightly tired expression. He never emotes.
-- **The envelopes.** Cream rectangles with a flap, each with a coloured band and one short word in a heavy sans: **TERM** (muted cyan band), **HUP** (mustard band), **STOP** (black-red band). Each also has two or three thin lines of illegible small print. These are the only readable words in the scene, apart from the sign.
-- **The black envelope.** Matte black with a thick black-red stamp that reads **KILL**. It always sits on a small cream cushion, so it does not vanish into the midnight blue background.
-- **The set.** A long cream bench with a mustard top, a wall of pigeonholes behind it, three muted-cyan chutes in a row at the left, and a small hanging sign that reads **kill** in lowercase. At the far right end of the bench, a warning lamp over the cushion: a mustard lamp with a flat mustard cone of light.
+- **The Hand.** A giant flat cream hand coming down from the top edge, out of a black-red sleeve with a mustard cufflink, index finger extended. Only the hand and wrist are ever seen. It never moves except to press the first key and, at the end, to go limp.
+- **The first key.** A large blank mustard computer key on a muted-cyan plinth.
+- **The second key.** A smaller blank black-red key on its own small plinth, to the right of the first.
+- **The machine.** A small round mustard machine with a big muted-cyan cogwheel on its side, a short chimney, a few small cream windows and a conveyor belt feeding it. Beside it: piles of cream folders (the files), muted-cyan jars (the memories) and mustard gears.
+- **The crowd.** Five small figures in the Guide's uniform: black-red belted tunics, flat caps, black-red trousers, mustard boots. One steps forward holding his cap to his chest.
+- **The French.** Two men in black-red berets, cream shirts with black-red horizontal stripes, black-red trousers and mustard boots. Small moustaches.
+- **Nietzsche.** A tall man in a long black-red coat with a high cream collar, his hair brushed back and an enormous cream walrus moustache. He holds a plain black envelope.
+- **The black envelope.** A plain matte black envelope, no text.
 
 ## Camera plan
 
-The camera moves, as the cut descriptions say.
+The camera moves with each cut.
 
-- **Cut 1 (0–5 s):** fixed on the left half of the bench: the clerk, the chutes, the envelopes. At the end, a slow ease to the right begins as the clerk turns his head.
-- **Cut 2 (5–10 s):** a slow pan right along the bench to the far end. The black envelope, the cushion and the lamp slide into the centre of the picture, and the clerk walks in from the left with a pair of long tongs.
-- **Cut 3 (10–15 s):** a slow pull back to a wide view of the whole room, which reveals every other envelope now lined up in perfect rows.
+- **Cut 1 (0–5 s):** starts close on the Hand and the first key, then pulls back and tilts down to reveal the machine and the crowd far below.
+- **Cut 2 (5–10 s):** a slow push in on the crowd, then a pan right to the French beside the second key, then back to the centre for Nietzsche's raised finger.
+- **Cut 3 (10–15 s):** tilts up with the black envelope as it rises to the Hand, then settles on a wide view of the stopped machine.
 
 ## Where everything is, in each frame
 
 | Frame | View | What is in it |
 |---|---|---|
-| 00 | left half | The Clerk at the bench, a TERM envelope in his hand over the left chute. HUP and STOP envelopes in a tray beside him. Three chutes, the pigeonholes, the hanging sign. No black envelope in view. |
-| 01 | left half, camera easing right | Three envelopes have gone down three chutes. The Clerk has stopped, his head turned right. At the far edge, small and distant, the black envelope on its cushion under the lamp. |
-| 02 | far right end, close | The black envelope and cushion large in the centre under the lamp's cone of light. The Clerk reaches in from the left with long tongs, the tips a finger's width above the envelope. Nobody else. |
-| 03 | wide | The whole room. Every envelope, tray and chute aligned in perfect rows and columns, edges square. The black envelope on its cushion under the lamp at the right. The Clerk stands with his hands behind his back, mildly pleased. |
+| 00 | close, top | The Hand with its finger a finger's width above the first key. Nothing else; empty midnight blue. |
+| 01 | wide | The Hand at the top edge with the key pressed flat. Below, the machine turning, its cog mid-turn, the piles of folders, jars and gears growing beside it, the conveyor feeding it. At the bottom, the five uniformed figures with their faces tilted up. |
+| 02 | medium, lower | The five figures in a loose crowd; one at the front with his cap held to his chest. At the right, the two French men reaching toward the second key and frozen. At the centre, Nietzsche stands with one finger raised. The machine runs in the background. The first key and the Hand at the top edge. |
+| 03 | wide | The machine stopped: the cog still, the conveyor idle, the windows dark. The Hand hangs limp, fingers dangling. The crowd looks up. Nietzsche stands at the centre, mildly surprised, a thin dashed cream line from his hand rising toward the Hand. |
 
 ## Motion plan, for the video generation
 
-- **Cut 1 (0–5 s).** The Clerk takes envelopes from the tray one at a time and posts each into its chute: TERM, HUP, STOP. Each slides down its chute and disappears. The camera is almost still. In the last second the Clerk stops, turns his head to the right, and the camera begins to ease right.
-- **Cut 2 (5–10 s).** The camera pans right along the bench. The black envelope under the lamp slides into the centre of the picture. The Clerk walks into frame from the left, slowly, carrying a long pair of tongs, and stops with the tips just above the envelope. Hold the last half second.
-- **Cut 3 (10–15 s).** The tongs touch the envelope. At once, in a single flat movement, every other envelope, tray and chute snaps into perfect alignment. The camera pulls back to show the whole room in rows. No explosion, no violence. The Clerk straightens up, puts his hands behind his back, and a very small smile appears. Hold.
+- **Cut 1 (0–5 s).** The Hand descends and presses the first key. The key clicks down. Below, the machine starts to turn, the conveyor starts to feed it, and files, jars and gears begin to pile up beside it. The camera pulls back and tilts down. At the end, the small figures at the bottom tilt their faces up.
+- **Cut 2 (5–10 s).** One figure steps forward, cap in hand, and bows politely, with a dashed cream arrow rising from him toward the Hand. The Hand does not move. The camera pans right: the two French men approach the second key, reach for it, glance up at the first key, and freeze. The camera returns to the centre and Nietzsche steps forward and raises one finger.
+- **Cut 3 (10–15 s).** Nietzsche slides the black envelope into a slot on the plinth and a thin dashed cream line carries it up to the Hand as the camera tilts up. The Hand goes limp. The machine stops, then the conveyor, then the windows go dark one by one. No explosion. The camera settles wide. Hold on Nietzsche, mildly surprised, under the hanging Hand.
 
 ## Colours
 
@@ -54,75 +64,86 @@ Background for the whole animation: midnight blue `#111D38`, from this entry's g
 
 1. Start one new ChatGPT conversation. Attach the three style references from `docs/guide/project/references/shared/`: `ls_clip_01_start.png` (the man at the door), `echo_clip_03_start.png` (the bear and the men) and `echo_clip_01_start.png` (the megaphone woman). Say: "These are the Guide's own animation frames. Match this exact style: flat paper-cut figures with real proportions, simple profile faces, uniforms and boots, a flat colour field, a little paper grain. Do not copy their content."
 2. Paste the **opening message** once, and wait for the reply.
-3. Generate the **model sheet** and check it before going on.
-4. For every frame, attach the model sheet and the previous approved frame (none for frame 00), paste the style block, then the frame prompt.
-5. Save the sheet as `docs/06_kill_sheet.png` and the frames as `docs/06_kill_frame_00.png` to `docs/06_kill_frame_03.png`.
+3. Generate **model sheet A** (the people) and **model sheet B** (the props, attach sheet A). Check both before going on.
+4. For every frame, attach both sheets and the previous approved frame (none for frame 00), paste the style block, then the frame prompt.
+5. Save the sheets as `docs/06_kill_sheet_a.png` and `docs/06_kill_sheet_b.png` and the frames as `docs/06_kill_frame_00.png` to `docs/06_kill_frame_03.png`.
 
-## Opening message (paste once, before the model sheet)
+## Opening message (paste once, before the model sheets)
 
 ~~~text
-I am going to ask you for one character and prop model sheet and then four consecutive frames of one short animated scene. Here is the story, so you know what each picture is for.
+I am going to ask you for two model sheets and then four consecutive frames of one short animated scene. Here is the story, so you know what each picture is for.
 
-It is a tiny post office. A clerk sorts envelopes, each one a polite request: TERM asks someone to stop, HUP asks them to hang up, STOP tells them not to move. Each goes down its own chute and can be politely declined. At the far end of the bench sits one black envelope, KILL, which cannot be refused. The clerk approaches it very carefully with a pair of long tongs. The moment he touches it, every other envelope in the room snaps into perfect, obedient order. Nothing explodes and nobody is hurt: it is terrifying administrative cooperation, and the clerk looks mildly pleased with the improved workflow.
+In the beginning, God executed a command. It kept running, and files and memories piled up and resources were used, and people began to wonder whether it had gone on long enough. They asked God, politely, to stop. God ignored them. Two Frenchmen were about to execute the command, which can also mean to put it to death, when they remembered that executing it was how God had started it in the first place. A tall man with an enormous moustache, Friedrich Nietzsche, had an idea. He posted a black envelope up to God. The command stopped, and then everything else did, a little too well.
 
-The camera moves: it starts on the left half of the bench, pans right to the black envelope, then pulls back to show the whole room.
+In the pictures, God is only a giant hand coming down from the top of the picture. The command is a small round machine. Nothing in any picture is written: no letters, no numbers, no signs, no labels.
+
+The camera moves between frames: it starts close on the hand, pulls back and tilts down to the machine and a small crowd, pushes in on the crowd, then tilts up to the hand and settles on a wide view.
 
 Keep everything calm, flat and deadpan. Nobody acts for the camera.
 
-The clerk is in the style of the attached Guide frames: a tall thin man, flat paper-cut, real proportions, simple profile face, in a black-red belted tunic with a cream collar, a flat cap with a mustard band, black-red trousers and mustard boots. The envelopes are cream with a flap and a coloured band and one short word in a heavy sans-serif, spelled exactly: TERM with a muted-cyan band, HUP with a mustard band, STOP with a black-red band, and each with two or three thin lines of illegible small print. The black envelope is matte black with a thick black-red stamp that reads exactly KILL, and it always sits on a small cream cushion. Keep each design identical in every image.
+The characters are in the style of the attached Guide frames: flat paper-cut figures with real proportions and simple profile faces. The hand is cream, from a black-red sleeve with a mustard cufflink. The crowd are five men in black-red belted tunics, flat caps, black-red trousers and mustard boots. The two Frenchmen wear black-red berets, cream shirts with black-red horizontal stripes, black-red trousers, mustard boots and small moustaches. Nietzsche is tall, in a long black-red coat with a high cream collar, hair brushed back, with an enormous cream walrus moustache. Keep each design identical in every image.
 
 Reply "ready" and wait for the first request.
 ~~~
 
-## Style block (paste before the sheet and every frame prompt)
+## Style block (paste before every sheet and frame prompt)
 
 ~~~text
-Square image, 1:1. One single flat midnight blue (#111D38) background fills the whole square edge to edge, with a very light paper grain. Flat 2D paper-cut illustration in the style of the attached Guide frames: tall elegant figures with real proportions, simple profile faces, solid flat colour shapes, slightly imperfect printed edges, large areas of empty space. No gradients, no gloss, no drop shadows, no 3D shading, no photographic detail. Only these colours besides the background: mustard, black-red, cream, muted cyan. The only lettering allowed is the short words named in the prompt, in a heavy sans-serif, spelled exactly as given, and nothing else. Deadpan, calm and absurd, shown with complete seriousness.
+Square image, 1:1. One single flat midnight blue (#111D38) background fills the whole square edge to edge, with a very light paper grain. Flat 2D paper-cut illustration in the style of the attached Guide frames: tall elegant figures with real proportions, simple profile faces, solid flat colour shapes, slightly imperfect printed edges, large areas of empty space. No gradients, no gloss, no drop shadows, no 3D shading, no photographic detail. Only these colours besides the background: mustard, black-red, cream, muted cyan. No text, no letters, no numbers, no labels, no signs, no border, no frame. Deadpan, calm and absurd, shown with complete seriousness.
 ~~~
 
-## Model sheet
+## Model sheets
+
+### Model sheet A — the people
 
 ~~~text
-A model sheet on the flat midnight blue background. Top row: the clerk, a tall thin man in a black-red belted tunic with a cream collar, a flat cap with a mustard band, black-red trousers and mustard boots, in four poses, left to right: standing in profile with a cream envelope in his hand; walking carrying a long pair of tongs; reaching forward with the tongs held out at arm's length; standing with his hands behind his back and a very small smile. Bottom row: four envelopes laid out side by side, each cream with a flap and thin lines of illegible small print: one with a muted-cyan band and the word TERM; one with a mustard band and the word HUP; one with a black-red band and the word STOP; and, on a small cream cushion, a matte black envelope with a thick black-red stamp that reads KILL. Nothing else.
+A character model sheet on the flat midnight blue background. One row of four full-length characters standing side by side in profile, facing slightly to the right, evenly spaced, in the style of the attached Guide frames. From left to right: a man in a black-red belted tunic, a flat cap, black-red trousers and mustard boots, holding his cap to his chest; two Frenchmen standing together, both in black-red berets, cream shirts with black-red horizontal stripes, black-red trousers, mustard boots and small moustaches, one with his hand reaching forward; a tall thin man in a long black-red coat with a high cream collar, hair brushed back, with an enormous cream walrus moustache, one finger raised, a plain black envelope in his other hand. Nothing else. No text.
+~~~
+
+### Model sheet B — the props (attach sheet A)
+
+~~~text
+A prop model sheet on the flat midnight blue background, in the same flat paper-cut style as the attached sheet. Top row, three items: a giant flat cream hand and wrist coming out of a black-red sleeve with a mustard cufflink, the index finger extended; a large blank mustard computer key on a muted-cyan plinth; a smaller blank black-red key on a smaller muted-cyan plinth. Bottom row, three items: a small round mustard machine with a big muted-cyan cogwheel on its side, a short chimney, a few small cream windows and a conveyor belt feeding it; beside it a pile of cream folders, a row of muted-cyan jars and a heap of mustard gears; and a plain matte black envelope. No text on anything.
 ~~~
 
 ## Frames
 
-### Frame 00 — start of cut 01 · "A tiny post office marked `kill` sorts envelopes."
+### Frame 00 — start of cut 01 · "A midnight-blue void. A hand the size of a continent presses a single large key."
 
-Attach the model sheet.
+Attach both model sheets.
 
 ~~~text
-The left half of a tiny post office, drawn flat. A long cream bench with a mustard top runs across the picture. Behind it, a wall of small cream pigeonholes and a small hanging sign that reads kill in lowercase. At the left of the bench, three muted-cyan chutes in a row. The clerk from the attached sheet stands at the bench in profile, holding one cream envelope with a muted-cyan band and the word TERM above the left chute. Beside him on the bench, a small tray holds an envelope with a mustard band and the word HUP and an envelope with a black-red band and the word STOP. No black envelope in view. Nothing else.
+Close view. A giant flat cream hand and wrist comes down from the top edge of the picture out of a black-red sleeve with a mustard cufflink, its index finger extended and pointing straight down. A finger's width below the fingertip, a large blank mustard computer key sits on a muted-cyan plinth at the bottom centre. Nothing else in the picture: empty midnight blue all around. No text.
 ~~~
 
-### Frame 01 — end of cut 01 / start of cut 02 · "End with the clerk noticing a distant black envelope."
+### Frame 01 — end of cut 01 / start of cut 02 · "A small machine begins to turn … the piles growing, and a crowd of small figures … beginning to look up."
 
-Attach the model sheet and frame 00.
+Attach both model sheets and frame 00.
 
 ~~~text
-The same left half of the post office, the camera easing slightly to the right. The three muted-cyan chutes now each have an envelope sliding into them. The clerk has stopped, his hands empty, and his head is turned to the right, looking along the bench. At the far right edge of the picture, small and distant, a matte black envelope sits on a small cream cushion under a small mustard lamp. Nothing else.
+Wide view, the camera pulled back and tilted down. At the top edge, the giant cream hand with its finger pressing the large blank mustard key down flat on its plinth. Far below, the small round mustard machine with the muted-cyan cog on its side is turning, a conveyor belt feeding it, with a pile of cream folders, a row of muted-cyan jars and a heap of mustard gears growing beside it. At the very bottom, five small men in black-red belted tunics and flat caps stand with their faces tilted up. Nothing else. No text.
 ~~~
 
-### Frame 02 — end of cut 02 / start of cut 03 · "End with one hand just about to touch it."
+### Frame 02 — end of cut 02 / start of cut 03 · "End on the raised finger."
 
-Attach the model sheet and frame 01.
+Attach both model sheets and frame 01.
 
 ~~~text
-Close view of the far right end of the same bench, the camera having panned along it. The matte black envelope with its thick black-red KILL stamp sits on its small cream cushion in the centre of the picture, under a mustard warning lamp that casts a flat mustard cone of light on it. From the left the clerk reaches in, in profile, holding a long pair of tongs at arm's length, the tips a finger's width above the envelope. Nothing else in the picture.
+Medium view of the lower part of the same scene. The five small men in black-red tunics stand in a loose crowd, one at the front with his flat cap held to his chest. At the right, two Frenchmen in black-red berets and striped shirts reach toward a smaller blank black-red key on its small plinth and have frozen with their hands out, looking up. At the centre, a tall man in a long black-red coat with a high cream collar and an enormous cream walrus moustache stands in profile with one finger raised. Behind them the small mustard machine still runs. At the very top edge, the large mustard key and the bottom of the giant cream hand. Nothing else. No text.
 ~~~
 
-### Frame 03 — end of cut 03 · "Every other envelope … snaps into perfect obedient alignment … the clerk looking mildly pleased."
+### Frame 03 — end of cut 03 · "The hand goes limp. The machine stops … Hold."
 
-Attach the model sheet and frame 02.
+Attach both model sheets and frame 02.
 
 ~~~text
-Wide view of the whole post office, the camera pulled back. Every envelope in the room is now lined up in perfect rows and columns with square edges on the bench and across the pigeonhole wall, and the three chutes stand perfectly straight. At the right, the matte black KILL envelope on its cream cushion under the mustard lamp, the tongs resting beside it. At the centre, the clerk stands in profile with his hands behind his back and a very small smile. Nothing else.
+Wide view. The small round mustard machine is stopped: the cog is still, the conveyor is idle and its small windows are dark. At the top edge, the giant cream hand hangs limp, its fingers dangling. The five small men in black-red tunics and the two Frenchmen stand in a loose crowd with their faces tilted up. At the centre, the tall man in the long black-red coat with the enormous cream moustache stands in profile looking mildly surprised, his hand lowered, and a thin dashed cream line fades upward from his hand toward the hanging hand. Nothing else. No text.
 ~~~
 
 ## Notes
 
-- **Words:** only TERM, HUP, STOP, KILL and the lowercase sign kill, spelled exactly. The guide's longer lines (`TERM — REQUEST TO TERMINATE` and so on) are deliberately drawn as small illegible print: image generators misspell long text. If a short word still fails after three tries, stop and ask the project owner; the guide's own advice is to leave a clean area and add the exact words afterwards.
-- **The black envelope** must stay visible against the dark background: it always has the cream cushion under it. Reject a frame where it vanishes.
-- **Content versus defect:** when a frame departs on content (a different sign, an extra drawer), show it to the project owner rather than rejecting it. Reject only defects: wrong colour, non-flat background, broken shapes, misspelled words, wrong envelope count.
-- **Invented by me, because the guide does not say:** the clerk's design, the cushion, the tongs, the pigeonholes, the lamp and its cone of light, the frame positions and the camera plan beyond "pans a little" and "hold". Reword freely.
+- **No lettering.** Reject any frame with letters, numbers, signs or labels. The keys and the envelope are blank on purpose.
+- **Counting:** frame 01 has five small men; frame 02 has five men, two Frenchmen and Nietzsche; frame 03 has the same eight. Reject a frame that drops or duplicates someone.
+- **If frame 02 is crowded,** make it in two passes: first Nietzsche with his finger raised and the crowd, then add the two Frenchmen and the second key.
+- **Content versus defect:** when a frame departs on content (a different moustache, an extra jar), show it to the project owner rather than rejecting it. Reject only defects: wrong colour, non-flat background, broken shapes, stray text, wrong count.
+- **Invented by me, because the story does not say:** the Hand as God, the keys, the machine and its piles, the five-man crowd, the Frenchmen's striped shirts, Nietzsche's coat and moustache, the black envelope, the camera plan and the frame positions. Reword freely.

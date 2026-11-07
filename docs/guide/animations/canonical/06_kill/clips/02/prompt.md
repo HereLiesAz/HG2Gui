@@ -8,15 +8,15 @@ Create the specified animation as a flat, matte screen-printed cut-paper pictogr
 Render EXACTLY 1:1 square; single background midnight blue `#111D38`.
 
 SEQUENCE: kill; CLIP 02; 5 seconds · 05:00–10:00.
-START: Resume precisely from the preceding clip's final tableau: End with the clerk noticing a distant black envelope.
-END: End with one hand just about to touch it.
+START: Resume precisely from the preceding clip's final tableau: End on the machine running, the piles growing, and a crowd of small figures at the bottom of the frame beginning to look up.
+END: End on the raised finger.
 
 MOTION DIRECTOR'S TIMING
-0.0–2.4s: Camera pans a little along the sorting bench to reveal the black envelope alone under a warning lamp: `KILL — CANNOT BE REFUSED`. The clerk approaches it with exaggerated procedural caution, using tongs or a tiny cart, never emoting.
-2.4–4.6s: End with one hand just about to touch it.
+0.0–2.4s: The small figures gather, and one steps forward, hat in hand, to ask politely. The hand does not move. Two figures in berets approach a second, smaller red key, reach for it, and stop when they see the first.
+2.4–4.6s: A man with a magnificent moustache steps forward and raises one finger. End on the raised finger.
 4.6–5.0s: Hold the exact finishing composition, no additional changes.
 
-EXACT STORY ACTION / WORDS: Camera pans a little along the sorting bench to reveal the black envelope alone under a warning lamp: `KILL — CANNOT BE REFUSED`. The clerk approaches it with exaggerated procedural caution, using tongs or a tiny cart, never emoting. End with one hand just about to touch it.
+EXACT STORY ACTION / WORDS: The small figures gather, and one steps forward, hat in hand, to ask politely. The hand does not move. Two figures in berets approach a second, smaller red key, reach for it, and stop when they see the first. A man with a magnificent moustache steps forward and raises one finger. End on the raised finger.
 
 A REQUIRED BOUNDARY IS MISSING: these written shots are production requirements, not fabricated files. Final matched video generation must wait for approved boundary art.
 ~~~

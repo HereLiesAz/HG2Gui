@@ -4,16 +4,14 @@
 
 Visual action, verbatim from the revised 5-second cut sheet:
 
-A miniature post office labeled `kill`. A clerk sorts envelopes into slots. Show three envelopes in succession, each cleanly readable: `TERM — REQUEST TO TERMINATE`, `HUP — HANGUP`, `STOP — DON'T MOVE`. Each slides to a different chute. End with the clerk noticing a distant black envelope.
+A midnight-blue void. A hand the size of a continent descends and presses one large mustard key. A small machine below begins to turn, and things start to pile up beside it: files, jars, gears, a conveyor feeding it. End on the machine running, the piles growing, and a crowd of small figures at the bottom of the frame beginning to look up.
 
 ## Corresponding original script excerpt
 
-A tiny post office marked `kill` sorts envelopes.
+A midnight-blue void.
 
-One says:
+A hand the size of a continent presses a single large key.
 
-`TERM — Request to terminate.`
+Below, a small machine begins to turn.
 
-Another says:
-
-`HUP — Hangup.`
+Files pile up beside it. So do jars, and gears. A conveyor feeds it. It does not slow down.

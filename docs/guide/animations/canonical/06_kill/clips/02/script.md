@@ -4,14 +4,12 @@
 
 Visual action, verbatim from the revised 5-second cut sheet:
 
-Camera pans a little along the sorting bench to reveal the black envelope alone under a warning lamp: `KILL — CANNOT BE REFUSED`. The clerk approaches it with exaggerated procedural caution, using tongs or a tiny cart, never emoting. End with one hand just about to touch it.
+The small figures gather, and one steps forward, hat in hand, to ask politely. The hand does not move. Two figures in berets approach a second, smaller red key, reach for it, and stop when they see the first. A man with a magnificent moustache steps forward and raises one finger. End on the raised finger.
 
 ## Corresponding original script excerpt
 
-Another says:
+A crowd of small figures looks up. One steps forward, hat in hand, and asks politely. The hand does not move.
 
-`STOP — Don't move.`
+Two figures in berets approach a second key. They reach for it, and stop when they see the first.
 
-At the far end sits a black envelope stamped:
-
-`KILL — CANNOT BE REFUSED`
+A man with a magnificent moustache raises one finger.

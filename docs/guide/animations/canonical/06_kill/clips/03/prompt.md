@@ -8,15 +8,15 @@ Create the specified animation as a flat, matte screen-printed cut-paper pictogr
 Render EXACTLY 1:1 square; single background midnight blue `#111D38`.
 
 SEQUENCE: kill; CLIP 03; 5 seconds · 10:00–15:00.
-START: Resume precisely from the preceding clip's final tableau: End with one hand just about to touch it.
-END: Hold on the clerk looking mildly pleased with improved workflow.
+START: Resume precisely from the preceding clip's final tableau: End on the raised finger.
+END: Hold on the moustached man, mildly surprised, under a perfectly still hand.
 
 MOTION DIRECTOR'S TIMING
-0.0–2.4s: The instant the clerk touches the black envelope, every other envelope, chute, parcel and waiting process snaps into perfect obedient alignment. No explosion. No violence.
-2.4–4.6s: Just terrifying administrative cooperation. Hold on the clerk looking mildly pleased with improved workflow.
+0.0–2.4s: The moustached man slides a black envelope into a slot and it rises to the hand. The hand goes limp.
+2.4–4.6s: The machine stops, then the conveyors, then the lights, one by one. No explosion. Hold on the moustached man, mildly surprised, under a perfectly still hand.
 4.6–5.0s: Hold the exact finishing composition, no additional changes.
 
-EXACT STORY ACTION / WORDS: The instant the clerk touches the black envelope, every other envelope, chute, parcel and waiting process snaps into perfect obedient alignment. No explosion. No violence. Just terrifying administrative cooperation. Hold on the clerk looking mildly pleased with improved workflow.
+EXACT STORY ACTION / WORDS: The moustached man slides a black envelope into a slot and it rises to the hand. The hand goes limp. The machine stops, then the conveyors, then the lights, one by one. No explosion. Hold on the moustached man, mildly surprised, under a perfectly still hand.
 
 A REQUIRED BOUNDARY IS MISSING: these written shots are production requirements, not fabricated files. Final matched video generation must wait for approved boundary art.
 ~~~

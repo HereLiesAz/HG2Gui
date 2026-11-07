@@ -79,7 +79,7 @@ class SeedancePackTest(unittest.TestCase):
                 self.assertIn(text, prompt, f"{folder}: {text[:40]}")
 
     def test_images_are_byte_identical_to_repo_sources_and_every_one_is_tagged(self):
-        expected = {"01_pwd": 6, "02_pkg_install": 5, "03_apt_get_update": 4}
+        expected = {"01_pwd": 6, "02_pkg_install": 5, "03_apt_get_update": 4, "04_nano": 4, "05_top": 4}
         repo_hashes = {hashlib.md5(p.read_bytes()).hexdigest() for p in (ROOT / "docs").rglob("*.png")}
         for folder in self.folders():
             with zipfile.ZipFile(self.out / f"{folder}_seedance2.5.zip") as zf:

@@ -1,6 +1,6 @@
 ## Cut 01 — 00:00–05:00
 
-A miniature post office labeled `kill`. A clerk sorts envelopes into slots. Show three envelopes in succession, each cleanly readable: `TERM — REQUEST TO TERMINATE`, `HUP — HANGUP`, `STOP — DON'T MOVE`. Each slides to a different chute. End with the clerk noticing a distant black envelope.
+A midnight-blue void. A hand the size of a continent descends and presses one large mustard key. A small machine below begins to turn, and things start to pile up beside it: files, jars, gears, a conveyor feeding it. End on the machine running, the piles growing, and a crowd of small figures at the bottom of the frame beginning to look up.
 
 ### Ready-to-paste generation prompt
 
@@ -34,7 +34,7 @@ Guide tab 2: SIGNALS
 Palette lock: mustard, midnight blue, black-red, cream, muted cyan
 
 CUT 01 OF 03 — 00:00–05:00
-A miniature post office labeled `kill`. A clerk sorts envelopes into slots. Show three envelopes in succession, each cleanly readable: `TERM — REQUEST TO TERMINATE`, `HUP — HANGUP`, `STOP — DON'T MOVE`. Each slides to a different chute. End with the clerk noticing a distant black envelope.
+A midnight-blue void. A hand the size of a continent descends and presses one large mustard key. A small machine below begins to turn, and things start to pile up beside it: files, jars, gears, a conveyor feeding it. End on the machine running, the piles growing, and a crowd of small figures at the bottom of the frame beginning to look up.
 ```
 
 ---
@@ -47,4 +47,4 @@ A miniature post office labeled `kill`. A clerk sorts envelopes into slots. Show
 
 **END:** `06_kill_frame_01.png`
 
-A miniature post office labeled `kill`. A clerk sorts envelopes into slots. Show three envelopes in succession, each cleanly readable: `TERM — REQUEST TO TERMINATE`, `HUP — HANGUP`, `STOP — DON'T MOVE`. Each slides to a different chute. End with the clerk noticing a distant black envelope.
+A midnight-blue void. A hand the size of a continent descends and presses one large mustard key. A small machine below begins to turn, and things start to pile up beside it: files, jars, gears, a conveyor feeding it. End on the machine running, the piles growing, and a crowd of small figures at the bottom of the frame beginning to look up.

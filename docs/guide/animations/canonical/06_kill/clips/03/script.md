@@ -4,10 +4,12 @@
 
 Visual action, verbatim from the revised 5-second cut sheet:
 
-The instant the clerk touches the black envelope, every other envelope, chute, parcel and waiting process snaps into perfect obedient alignment. No explosion. No violence. Just terrifying administrative cooperation. Hold on the clerk looking mildly pleased with improved workflow.
+The moustached man slides a black envelope into a slot and it rises to the hand. The hand goes limp. The machine stops, then the conveyors, then the lights, one by one. No explosion. Hold on the moustached man, mildly surprised, under a perfectly still hand.
 
 ## Corresponding original script excerpt
 
-The clerk reaches for it.
+He posts a black envelope up to the hand.
 
-Every other envelope in the room becomes extremely cooperative.
+The hand goes limp. The machine stops, and then the lights, and then everything else.
+
+Hold.

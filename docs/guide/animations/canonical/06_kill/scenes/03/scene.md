@@ -1,6 +1,6 @@
 ## Cut 03 — 10:00–15:00
 
-The instant the clerk touches the black envelope, every other envelope, chute, parcel and waiting process snaps into perfect obedient alignment. No explosion. No violence. Just terrifying administrative cooperation. Hold on the clerk looking mildly pleased with improved workflow.
+The moustached man slides a black envelope into a slot and it rises to the hand. The hand goes limp. The machine stops, then the conveyors, then the lights, one by one. No explosion. Hold on the moustached man, mildly surprised, under a perfectly still hand.
 
 ### Ready-to-paste generation prompt
 
@@ -34,7 +34,7 @@ Guide tab 2: SIGNALS
 Palette lock: mustard, midnight blue, black-red, cream, muted cyan
 
 CUT 03 OF 03 — 10:00–15:00
-The instant the clerk touches the black envelope, every other envelope, chute, parcel and waiting process snaps into perfect obedient alignment. No explosion. No violence. Just terrifying administrative cooperation. Hold on the clerk looking mildly pleased with improved workflow.
+The moustached man slides a black envelope into a slot and it rises to the hand. The hand goes limp. The machine stops, then the conveyors, then the lights, one by one. No explosion. Hold on the moustached man, mildly surprised, under a perfectly still hand.
 ```
 
 ---
@@ -47,4 +47,4 @@ The instant the clerk touches the black envelope, every other envelope, chute, p
 
 **END:** `06_kill_frame_03.png`
 
-The instant the clerk touches the black envelope, every other envelope, chute, parcel and waiting process snaps into perfect obedient alignment. No explosion. No violence. Just terrifying administrative cooperation. Hold on the clerk looking mildly pleased with improved workflow.
+The moustached man slides a black envelope into a slot and it rises to the hand. The hand goes limp. The machine stops, then the conveyors, then the lights, one by one. No explosion. Hold on the moustached man, mildly surprised, under a perfectly still hand.

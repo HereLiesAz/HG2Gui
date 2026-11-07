@@ -2,7 +2,7 @@
 
 ## START shot
 
-Opening composition: A miniature post office labeled `kill`.
+Opening composition: A midnight-blue void.
 
 **START** — NO IMAGE
 
@@ -12,7 +12,7 @@ Opening composition: A miniature post office labeled `kill`.
 
 ## END shot
 
-End with the clerk noticing a distant black envelope.
+End on the machine running, the piles growing, and a crowd of small figures at the bottom of the frame beginning to look up.
 
 **END** — NO IMAGE
 

@@ -1442,27 +1442,25 @@ The camera completes its circle. Thin lines of sight run from each player to the
 
 ## Source animation sequence
 
-A tiny post office marked `kill` sorts envelopes.
+A midnight-blue void.
 
-One says:
+A hand the size of a continent presses a single large key.
 
-`TERM — Request to terminate.`
+Below, a small machine begins to turn.
 
-Another says:
+Files pile up beside it. So do jars, and gears. A conveyor feeds it. It does not slow down.
 
-`HUP — Hangup.`
+A crowd of small figures looks up. One steps forward, hat in hand, and asks politely. The hand does not move.
 
-Another says:
+Two figures in berets approach a second key. They reach for it, and stop when they see the first.
 
-`STOP — Don't move.`
+A man with a magnificent moustache raises one finger.
 
-At the far end sits a black envelope stamped:
+He posts a black envelope up to the hand.
 
-`KILL — CANNOT BE REFUSED`
+The hand goes limp. The machine stops, and then the lights, and then everything else.
 
-The clerk reaches for it.
-
-Every other envelope in the room becomes extremely cooperative.
+Hold.
 
 ## Sequence lock
 
@@ -1525,25 +1523,25 @@ EDITING
 
 **Used as:** Cut 01 START
 
-A miniature post office labeled `kill`. A clerk sorts envelopes into slots.
+A midnight-blue void with a hand the size of a continent about to press one large mustard key.
 
 ### Frame 01 — `06_kill_frame_01.png`
 
 **Used as:** Cut 01 END / Cut 02 START
 
-The clerk noticing a distant black envelope.
+The machine running, the piles growing, and a crowd of small figures beginning to look up.
 
 ### Frame 02 — `06_kill_frame_02.png`
 
 **Used as:** Cut 02 END / Cut 03 START
 
-One hand just about to touch it.
+The moustached man with one finger raised, the small figures and the two keys behind him.
 
 ### Frame 03 — `06_kill_frame_03.png`
 
 **Used as:** Cut 03 END
 
-The clerk looking mildly pleased with improved workflow.
+The moustached man, mildly surprised, under a perfectly still hand, with the machine stopped.
 
 ## Cut 01 — 00:00–05:00
 
@@ -1551,7 +1549,7 @@ The clerk looking mildly pleased with improved workflow.
 
 **END:** `06_kill_frame_01.png`
 
-A miniature post office labeled `kill`. A clerk sorts envelopes into slots. Show three envelopes in succession, each cleanly readable: `TERM — REQUEST TO TERMINATE`, `HUP — HANGUP`, `STOP — DON'T MOVE`. Each slides to a different chute. End with the clerk noticing a distant black envelope.
+A midnight-blue void. A hand the size of a continent descends and presses one large mustard key. A small machine below begins to turn, and things start to pile up beside it: files, jars, gears, a conveyor feeding it. End on the machine running, the piles growing, and a crowd of small figures at the bottom of the frame beginning to look up.
 
 ### Ready-to-paste video generation prompt
 
@@ -1591,7 +1589,7 @@ START FRAME: 06_kill_frame_00.png
 END FRAME: 06_kill_frame_01.png
 
 CUT 01 OF 03 — 00:00–05:00
-A miniature post office labeled `kill`. A clerk sorts envelopes into slots. Show three envelopes in succession, each cleanly readable: `TERM — REQUEST TO TERMINATE`, `HUP — HANGUP`, `STOP — DON'T MOVE`. Each slides to a different chute. End with the clerk noticing a distant black envelope.
+A midnight-blue void. A hand the size of a continent descends and presses one large mustard key. A small machine below begins to turn, and things start to pile up beside it: files, jars, gears, a conveyor feeding it. End on the machine running, the piles growing, and a crowd of small figures at the bottom of the frame beginning to look up.
 ```
 
 ## Cut 02 — 05:00–10:00
@@ -1600,7 +1598,7 @@ A miniature post office labeled `kill`. A clerk sorts envelopes into slots. Show
 
 **END:** `06_kill_frame_02.png`
 
-Camera pans a little along the sorting bench to reveal the black envelope alone under a warning lamp: `KILL — CANNOT BE REFUSED`. The clerk approaches it with exaggerated procedural caution, using tongs or a tiny cart, never emoting. End with one hand just about to touch it.
+The small figures gather, and one steps forward, hat in hand, to ask politely. The hand does not move. Two figures in berets approach a second, smaller red key, reach for it, and stop when they see the first. A man with a magnificent moustache steps forward and raises one finger. End on the raised finger.
 
 ### Ready-to-paste video generation prompt
 
@@ -1640,7 +1638,7 @@ START FRAME: 06_kill_frame_01.png
 END FRAME: 06_kill_frame_02.png
 
 CUT 02 OF 03 — 05:00–10:00
-Camera pans a little along the sorting bench to reveal the black envelope alone under a warning lamp: `KILL — CANNOT BE REFUSED`. The clerk approaches it with exaggerated procedural caution, using tongs or a tiny cart, never emoting. End with one hand just about to touch it.
+The small figures gather, and one steps forward, hat in hand, to ask politely. The hand does not move. Two figures in berets approach a second, smaller red key, reach for it, and stop when they see the first. A man with a magnificent moustache steps forward and raises one finger. End on the raised finger.
 ```
 
 ## Cut 03 — 10:00–15:00
@@ -1649,7 +1647,7 @@ Camera pans a little along the sorting bench to reveal the black envelope alone 
 
 **END:** `06_kill_frame_03.png`
 
-The instant the clerk touches the black envelope, every other envelope, chute, parcel and waiting process snaps into perfect obedient alignment. No explosion. No violence. Just terrifying administrative cooperation. Hold on the clerk looking mildly pleased with improved workflow.
+The moustached man slides a black envelope into a slot and it rises to the hand. The hand goes limp. The machine stops, then the conveyors, then the lights, one by one. No explosion. Hold on the moustached man, mildly surprised, under a perfectly still hand.
 
 ### Ready-to-paste video generation prompt
 
@@ -1689,7 +1687,7 @@ START FRAME: 06_kill_frame_02.png
 END FRAME: 06_kill_frame_03.png
 
 CUT 03 OF 03 — 10:00–15:00
-The instant the clerk touches the black envelope, every other envelope, chute, parcel and waiting process snaps into perfect obedient alignment. No explosion. No violence. Just terrifying administrative cooperation. Hold on the clerk looking mildly pleased with improved workflow.
+The moustached man slides a black envelope into a slot and it rises to the hand. The hand goes limp. The machine stops, then the conveyors, then the lights, one by one. No explosion. Hold on the moustached man, mildly surprised, under a perfectly still hand.
 ```
 
 
