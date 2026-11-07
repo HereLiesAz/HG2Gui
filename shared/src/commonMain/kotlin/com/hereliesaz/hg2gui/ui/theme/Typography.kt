@@ -11,17 +11,19 @@ import androidx.compose.ui.unit.sp
 import hg2gui.shared.generated.resources.Res
 import hg2gui.shared.generated.resources.azrienoch_black
 import hg2gui.shared.generated.resources.azrienoch_extrabold
+import hg2gui.shared.generated.resources.azrienoch_regular
 import hg2gui.shared.generated.resources.azrienoch_semibold
 import org.jetbrains.compose.resources.Font
 
 /**
- * Azrienoch (hereliesaz/azrienoch, SIL OFL 1.1), a variable font derived from Jost. The three
- * weights below are static instances of its variable build at wght 600/800/900, wdth 100,
+ * Azrienoch (hereliesaz/azrienoch, SIL OFL 1.1), a variable font derived from Jost. The four
+ * weights below are static instances of its variable build at wght 400/600/800/900, wdth 100,
  * SERF 0, GRAD 0, so they behave the same on every Android version (variable-font axes need
  * API 26). Glyphs Azrienoch lacks fall back to the system font per character.
  */
 @Composable
 fun azrienochFontFamily() = FontFamily(
+    Font(Res.font.azrienoch_regular, FontWeight.Normal),
     Font(Res.font.azrienoch_black, FontWeight.Black),
     Font(Res.font.azrienoch_semibold, FontWeight.SemiBold),
     Font(Res.font.azrienoch_extrabold, FontWeight.ExtraBold)
