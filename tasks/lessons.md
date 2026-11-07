@@ -26,3 +26,5 @@
 - Rule: the Guide's recurring joke is a short, deadpan history of how a word or command came to mean what it does. Start there.
 
 - `kill` again: after the user gave their script I padded it with SIGTERM and SIGKILL lines because the Guide's entries usually end on a technical statement. The user said that choked the whole thing. Rule: when the user supplies the text of an entry, use it as given. Do not add technical landing lines, explanations or tails of my own. The only thing I may add is a one-line lead if the entry format needs one, and I must say so.
+
+- `kill` cast: I reused the Guide's uniformed men for the crowd. The user said they do not even like those, and that the book is science fiction. Rule: a new entry gets a new cast. Never lift characters from earlier entries or from the reference frames; take only flat-colour, paper-cut treatment. When the source is science fiction, the crowd is made of odd beings, not uniformed men.
