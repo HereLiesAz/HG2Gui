@@ -518,25 +518,15 @@ Sends a signal to a process.
 
 In the beginning, God executed a command.
 
-As the process continued, files were saved, memories were stored, computations were powered and resources were consumed, and people began to wonder whether the command had gone on long enough.
+As the process continued, files were saved, memories were stored, computations were powered, resources consumed, people began to wonder if maybe the command had gone on long enough, and tried to turn it off.
 
-They tried to turn it off.
+People asked God politely to knock it off.
 
-They asked God, politely, to knock it off.
+The French were about to execute the command when they remembered that's how God started the command in the first place.
 
-With no signal specified, kill normally sends SIGTERM, a request to terminate that a process may catch and handle. God caught it and carried on.
-
-The French were about to execute the command when they remembered that this was how God had started it in the first place.
-
-This gave Friedrich Nietzsche an idea.
-
-A signal was sent to kill.
+But that gave Friedrich Nietzsche an idea, and a signal was sent to kill.
 
 This, it did, a little too well.
-
-The signal was SIGKILL, which cannot be caught or ignored. This was considered a feature.
-
-Most signals are more polite. Some ask a process to stop, continue, reload, or otherwise reconsider its afternoon.
 
 **Animation candidate**
 

@@ -24,3 +24,5 @@
 - `kill`: I kept the guide's post-office concept and added a French clerk and a repainted sign; the user said it was "not very h2g2" and gave their own story (God executed a command; the French almost executed it; Nietzsche had an idea; the signal killed a little too well). That was the concept.
 - Rule: when the user adds a requirement to an existing scene, ask what the Guide's voice would do with it, which usually means a creation-myth or bureaucratic-history register, not a visual gag bolted onto the old scene. If unsure, offer one line of voice, not a full rewrite.
 - Rule: the Guide's recurring joke is a short, deadpan history of how a word or command came to mean what it does. Start there.
+
+- `kill` again: after the user gave their script I padded it with SIGTERM and SIGKILL lines because the Guide's entries usually end on a technical statement. The user said that choked the whole thing. Rule: when the user supplies the text of an entry, use it as given. Do not add technical landing lines, explanations or tails of my own. The only thing I may add is a one-line lead if the entry format needs one, and I must say so.

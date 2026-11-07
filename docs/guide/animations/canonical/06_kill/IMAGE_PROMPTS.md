@@ -6,11 +6,11 @@ This replaces the earlier post-office version of the scene. The story is the pro
 
 ## The story, in plain words
 
-In the beginning, God executed a command. As the process continued, files were saved, memories were stored, computations were powered and resources were consumed, and people began to wonder whether the command had gone on long enough. They tried to turn it off. They asked God, politely, to knock it off. God caught the request and carried on.
+In the beginning, God executed a command. As the process continued, files were saved, memories were stored, computations were powered, resources consumed, people began to wonder if maybe the command had gone on long enough, and tried to turn it off. People asked God politely to knock it off.
 
-The French were about to execute the command when they remembered that this was how God had started it in the first place. This gave Friedrich Nietzsche an idea. A signal was sent to `kill`. This, it did, a little too well.
+The French were about to execute the command when they remembered that's how God started the command in the first place. But that gave Friedrich Nietzsche an idea, and a signal was sent to kill. This, it did, a little too well.
 
-The joke leans on one word: *execute* means both to run something and to put it to death. God started the command by executing it, so the French cannot execute it without confusing the two. The signal that finally works is the one that cannot be caught or ignored, `SIGKILL`.
+The joke leans on one word: *execute* means both to run something and to put it to death. God started the command by executing it, so the French cannot execute it without confusing the two.
 
 ## What the existing Guide frames teach
 
