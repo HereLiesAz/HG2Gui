@@ -29,4 +29,4 @@
 
 - `kill` cast: I reused the Guide's uniformed men for the crowd. The user said they do not even like those, and that the book is science fiction. Rule: a new entry gets a new cast. Never lift characters from earlier entries or from the reference frames; take only flat-colour, paper-cut treatment. When the source is science fiction, the crowd is made of odd beings, not uniformed men.
 
-- Aesthetic: the target is flat vector illustration (clean geometric shapes, solid fills, crisp edges, no texture). I kept writing "paper-cut", "paper grain" and "printed edges" into prompts after the user said that was wrong. Rule: never write paper-cut, cut-paper, paper grain or printed-edge in an image prompt; say flat vector.
+- Aesthetic: the target is minimalistic flat vector with simplified realism (believable proportions reduced to a few clean shapes, solid fills, crisp edges, no texture). I kept writing "paper-cut", "paper grain" and "printed edges" into prompts after the user said that was wrong. Rule: never write paper-cut, cut-paper, paper grain or printed-edge in an image prompt; say flat vector.

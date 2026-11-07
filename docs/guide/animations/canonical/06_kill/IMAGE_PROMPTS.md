@@ -14,7 +14,7 @@ The joke leans on one word: *execute* means both to run something and to put it 
 
 ## Look
 
-- **Flat vector illustration**: clean geometric shapes, solid colour fills, crisp edges, no texture, no grain. Like a diagram from a very old, slightly smug science-fiction encyclopedia.
+- **Minimalistic flat vector, simplified realism**: believable proportions, anatomy and perspective reduced to a few clean shapes, solid colour fills, crisp edges, no texture, no grain. Like a diagram from a very old, slightly smug science-fiction encyclopedia.
 - **No characters are borrowed** from other entries or from the project's reference frames. The people in this scene are new, and they are not people: this is science fiction, so the crowd is made of different beings.
 - **Few shapes per frame.** Every being is one simple silhouette that survives at thumbnail size.
 
@@ -86,7 +86,7 @@ The camera moves between frames: it starts close on the hand, pulls back and til
 
 Keep everything calm, flat and deadpan. Nobody acts for the camera.
 
-The style is flat vector illustration: clean geometric shapes, solid colour fills and crisp edges, like a diagram from a very old and slightly smug science-fiction encyclopedia. Every being is one simple silhouette. Keep each design identical in every image.
+The style is minimalistic flat vector with simplified realism: believable proportions, anatomy and perspective reduced to a few clean shapes, solid colour fills and crisp edges, like a diagram from a very old and slightly smug science-fiction encyclopedia. Every being is one simple silhouette. Keep each design identical in every image.
 
 Reply "ready" and wait for the first request.
 ~~~
@@ -94,7 +94,7 @@ Reply "ready" and wait for the first request.
 ## Style block (paste before every sheet and frame prompt)
 
 ~~~text
-Square image, 1:1. One single flat midnight blue (#111D38) background fills the whole square edge to edge, with no texture and no grain. Flat 2D vector illustration: clean geometric shapes, solid flat colour fills, crisp clean edges, large areas of empty space, like a diagram from a very old and slightly smug science-fiction encyclopedia. No gradients, no gloss, no drop shadows, no 3D shading, no photographic detail. Only these colours besides the background: mustard, black-red, cream, muted cyan. No text, no letters, no numbers, no labels, no signs, no border, no frame. Deadpan, calm and absurd, shown with complete seriousness.
+Square image, 1:1. One single flat midnight blue (#111D38) background fills the whole square edge to edge, with no texture and no grain. Minimalistic flat vector illustration with simplified realism: believable proportions, anatomy and perspective reduced to a few clean shapes, solid flat colour fills, crisp clean edges, large areas of empty space, like a diagram from a very old and slightly smug science-fiction encyclopedia. No gradients, no gloss, no drop shadows, no 3D shading, no photographic detail. Only these colours besides the background: mustard, black-red, cream, muted cyan. No text, no letters, no numbers, no labels, no signs, no border, no frame. Deadpan, calm and absurd, shown with complete seriousness.
 ~~~
 
 ## Model sheets
@@ -108,13 +108,13 @@ A character model sheet on the flat midnight blue background. One row of four di
 ### Model sheet B — the Pair and Nietzsche (attach sheet A)
 
 ~~~text
-A character model sheet on the flat midnight blue background, in the same flat vector style as the attached sheet. A row of three characters standing side by side, evenly spaced. On the left, two identical tall, thin cream beings standing close together, each with a round head and long arms, one of them reaching a hand forward. On the right, one tall thin human man in profile, in a long black-red coat with a high cream collar, hair brushed back, with an enormous cream walrus moustache wider than his shoulders, one finger raised and a plain black envelope in his other hand. Nothing else. No text.
+A character model sheet on the flat midnight blue background, in the same minimalistic flat vector style as the attached sheet. A row of three characters standing side by side, evenly spaced. On the left, two identical tall, thin cream beings standing close together, each with a round head and long arms, one of them reaching a hand forward. On the right, one tall thin human man in profile, in a long black-red coat with a high cream collar, hair brushed back, with an enormous cream walrus moustache wider than his shoulders, one finger raised and a plain black envelope in his other hand. Nothing else. No text.
 ~~~
 
 ### Model sheet C — the props (attach sheets A and B)
 
 ~~~text
-A prop model sheet on the flat midnight blue background, in the same flat vector style as the attached sheets. Top row, three items: a giant flat cream hand and wrist coming out of a black-red sleeve with a mustard cufflink, the index finger extended; a large blank mustard computer key on a muted-cyan plinth; a smaller blank black-red key on a smaller muted-cyan plinth. Bottom row, three items: a tiny flat cream planetoid, a curved horizon with a small round mustard machine standing on it, with a big muted-cyan cogwheel on its side, a short chimney, a few small cream windows and a conveyor belt feeding it, and beside it a pile of cream folders, a row of muted-cyan jars and a heap of mustard gears; and a plain matte black envelope. No text on anything.
+A prop model sheet on the flat midnight blue background, in the same minimalistic flat vector style as the attached sheets. Top row, three items: a giant flat cream hand and wrist coming out of a black-red sleeve with a mustard cufflink, the index finger extended; a large blank mustard computer key on a muted-cyan plinth; a smaller blank black-red key on a smaller muted-cyan plinth. Bottom row, three items: a tiny flat cream planetoid, a curved horizon with a small round mustard machine standing on it, with a big muted-cyan cogwheel on its side, a short chimney, a few small cream windows and a conveyor belt feeding it, and beside it a pile of cream folders, a row of muted-cyan jars and a heap of mustard gears; and a plain matte black envelope. No text on anything.
 ~~~
 
 ## Frames
