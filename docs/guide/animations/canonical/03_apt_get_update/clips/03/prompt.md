@@ -3,7 +3,7 @@
 **Inputs:** START artwork absent → END artwork absent · [Script](script.md) · [Shot descriptions](shots.md)
 
 ~~~text
-Create the specified animation as a flat, matte screen-printed cut-paper pictogram, with economically drawn figures, crisp mechanical motion, dramatic negative space and utterly deadpan staging. Use the supplied start and end images as literal visual constraints when they exist, retaining all recurring body proportions, silhouettes, clothing, prop identities, scale, palette and camera positions. No invented narrators, subtitles, extra signs, modern HUD, gradients, glossy rendering, 3D, camera shake, fades, letterboxes, borders, production labels, Guide tabs, or title card. The app supplies its own chrome. Only show in-world text specifically required by the scene.
+Create the specified animation as a minimalistic flat vector illustration with simplified realism, with economically drawn figures, crisp mechanical motion, dramatic negative space and utterly deadpan staging. Use the supplied start and end images as literal visual constraints when they exist, retaining all recurring body proportions, silhouettes, clothing, prop identities, scale, palette and camera positions. No invented narrators, subtitles, extra signs, modern HUD, gradients, glossy rendering, 3D, camera shake, fades, letterboxes, borders, production labels, Guide tabs, or title card. The app supplies its own chrome. Only show in-world text specifically required by the scene.
 
 Render EXACTLY 1:1 square; single background powder blue `#7EA6B7`.
 

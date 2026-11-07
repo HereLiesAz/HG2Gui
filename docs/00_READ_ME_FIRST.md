@@ -35,7 +35,7 @@ Use the supplied movie screenshots as the primary visual references.
 The desired visual language is:
 
 - flat 2D animation;
-- screen-printed / cut-paper / pictogram character;
+- minimalistic flat vector character with simplified realism;
 - strong simplified silhouettes;
 - intentionally economical anatomy;
 - limited matte palette;
@@ -271,7 +271,7 @@ Bad:
 
 Good:
 
-“Square image. Flat oxblood background edge-to-edge. A small anthropomorphic parcel sits uneasily in a simple therapy chair. Three concerned parcel-people sit nearby. A tall narrow counsellor stands beside them holding a plain clipboard. Flat screen-printed cut-paper pictogram style…”
+“Square image. Flat oxblood background edge-to-edge. A small anthropomorphic parcel sits uneasily in a simple therapy chair. Three concerned parcel-people sit nearby. A tall narrow counsellor stands beside them holding a plain clipboard. Minimalistic flat vector style with simplified realism…”
 
 Do not tell the image generator about our filenames, cut numbers, production IDs, animation packet, or storyboard architecture unless absolutely necessary.
 

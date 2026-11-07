@@ -3,7 +3,7 @@
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.

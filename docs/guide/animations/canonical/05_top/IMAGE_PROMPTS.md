@@ -6,10 +6,10 @@ This is the third design. The first two failed because they did not look like th
 
 ## What the existing Guide frames teach
 
-- **People are tall, elegant paper-cut figures, not blobs.** Real proportions, drawn in side or three-quarter view, with a simple profile face (a small nose, a bit of hair), a tunic, a belt, trousers, boots. Hands and boots are picked out in a second colour.
+- **People are tall, elegant flat vector figures, not blobs.** Real proportions, drawn in side or three-quarter view, with a simple profile face (a small nose, a bit of hair), a tunic, a belt, trousers, boots. Hands and boots are picked out in a second colour.
 - **A recurring cast.** Uniformed functionaries in cap, tunic and boots. A woman in a jumpsuit with a bob haircut and a red megaphone. A big green bear-headed creature in a blue coat, with a cane, who is always the heaviest figure in the room.
 - **Diagram language.** Sound-wave arcs growing outward from a horn. A dashed arrow with an arrowhead. Copies of a figure fading into the distance. Meaning comes from these, not from lettering.
-- **Plain staging.** Two to four things per frame, large, on one flat colour field, with a little paper grain. A few heavy props: a green filing cabinet, a table, a plant. Deadpan poses.
+- **Plain staging.** Two to four things per frame, large, on one flat colour field, with no texture. A few heavy props: a green filing cabinet, a table, a plant. Deadpan poses.
 
 ## The story, in plain words
 
@@ -36,7 +36,7 @@ Poses needed: triumph (both arms up), shoving (leaning in, both arms forward), t
 
 The camera **must move**. It orbits the hill the whole 15 seconds, once all the way round. Because the hill is solid, the camera, like the players, can never see all six at once: whoever is on the far side is hidden behind the hill. That is the players' problem, shown by the camera. The one thing visible from every angle is whoever stands on the summit.
 
-The hill is a wide, low, round mound, flat and plain like a paper cake. The look is a paper-theatre diorama on a turntable: flat shapes, simple overlaps, and the camera sliding round. It must not turn into a 3D render.
+The hill is a wide, low, round mound, flat and plain like a paper cake. The look is a flat vector diorama on a turntable: flat shapes, simple overlaps, and the camera sliding round. It must not turn into a 3D render.
 
 Features, by compass position round the hill (0° is the front at the start, angles run clockwise seen from above):
 
@@ -81,7 +81,7 @@ Background for the whole animation: dark teal `#073D43`, from this entry's gener
 
 ## How to use
 
-1. Start one new ChatGPT conversation. Attach the three style references from `docs/guide/project/references/shared/`: `echo_clip_01_start.png` (the megaphone woman), `echo_clip_03_start.png` (the bear and the men) and `ls_clip_01_start.png` (the man at the door). Say: "These are the Guide's own animation frames. Match this exact style: flat paper-cut figures with real proportions, simple profile faces, uniforms and boots, a flat colour field, a little paper grain. Do not copy their content."
+1. Start one new ChatGPT conversation. Attach the three style references from `docs/guide/project/references/shared/`: `echo_clip_01_start.png` (the megaphone woman), `echo_clip_03_start.png` (the bear and the men) and `ls_clip_01_start.png` (the man at the door). Say: "These are the Guide's own animation frames. Match this exact style: flat vector figures with real proportions, simple profile faces, uniforms and boots, a flat colour field, no texture. Do not copy their content."
 2. Paste the **opening message** once, and wait for the reply.
 3. Generate **model sheet A**, then **model sheet B**. Do not go on until both are right.
 4. For every frame, attach both model sheets and the previous approved frame (none for frame 00), paste the style block, then the frame prompt.
@@ -98,7 +98,7 @@ The camera circles the hill the whole time, so in any single picture some of the
 
 Keep everything calm, flat and deadpan. Nobody acts for the camera.
 
-The six characters are in the style of the attached Guide frames: flat paper-cut figures with real proportions and simple profile faces. 1: a huge bear-headed creature with a mint-green head, a dusty-lavender coat and a cane, far bigger than the rest. 2: a slim woman with a bob haircut in a vermilion jumpsuit with a mustard megaphone. 3: a man in a vermilion tunic and trousers, a flat mustard cap, mustard boots and a belt. 4: the tallest of the people, a man in a vermilion tunic with a tall red peaked cap, hands on his hips. 5: a bare-headed man in a cream shirt and trousers with mustard boots. 6: a short stout man in a mustard coat, a dark-teal bowler hat and a mustard scarf. Keep each one identical in every image.
+The six characters are in the style of the attached Guide frames: flat vector figures with real proportions and simple profile faces. 1: a huge bear-headed creature with a mint-green head, a dusty-lavender coat and a cane, far bigger than the rest. 2: a slim woman with a bob haircut in a vermilion jumpsuit with a mustard megaphone. 3: a man in a vermilion tunic and trousers, a flat mustard cap, mustard boots and a belt. 4: the tallest of the people, a man in a vermilion tunic with a tall red peaked cap, hands on his hips. 5: a bare-headed man in a cream shirt and trousers with mustard boots. 6: a short stout man in a mustard coat, a dark-teal bowler hat and a mustard scarf. Keep each one identical in every image.
 
 Reply "ready" and wait for the first request.
 ~~~
@@ -106,7 +106,7 @@ Reply "ready" and wait for the first request.
 ## Style block (paste before every sheet and frame prompt)
 
 ~~~text
-Square image, 1:1. One single flat dark teal (#073D43) background fills the whole square edge to edge, with a very light paper grain. Flat 2D paper-cut illustration in the style of the attached Guide frames: tall elegant figures with real proportions, simple profile faces, solid flat colour shapes, slightly imperfect printed edges, large areas of empty space. No gradients, no gloss, no drop shadows, no 3D shading, no photographic detail. Only these colours besides the background: cream, mustard, mint green, vermilion, dusty lavender. No text, no letters, no numbers, no labels, no header, no border, no frame. Deadpan, calm and absurd, shown with complete seriousness.
+Square image, 1:1. One single flat dark teal (#073D43) background fills the whole square edge to edge, with no texture. Minimalistic flat vector illustration with simplified realism in the style of the attached Guide frames: tall elegant figures with real proportions, simple profile faces, solid flat colour shapes, crisp clean edges, large areas of empty space. No gradients, no gloss, no drop shadows, no 3D shading, no photographic detail. Only these colours besides the background: cream, mustard, mint green, vermilion, dusty lavender. No text, no letters, no numbers, no labels, no header, no border, no frame. Deadpan, calm and absurd, shown with complete seriousness.
 ~~~
 
 ## Model sheets
@@ -189,10 +189,10 @@ Medium view of the upper half of the same hill, seen from behind. The huge bear-
 
 ## Notes
 
-- **Check each sheet before using it.** Sheet A must show six clearly different people, the Bear far bigger than the rest, and all of them in the Guide's flat paper-cut style with real proportions. Sheet B must show four clear poses for each of the two characters.
+- **Check each sheet before using it.** Sheet A must show six clearly different people, the Bear far bigger than the rest, and all of them in the Guide's flat vector style with real proportions. Sheet B must show four clear poses for each of the two characters.
 - **Counting:** reject a frame that drops or duplicates a character. The camera hides some people on purpose, so frame 01 shows four, frame 02 shows five (the Bear, the two tumblers and the two scramblers) and frame 03 shows four (the Bear and three others) plus two arrows from hidden players. Do not ask for all six to be visible.
 - **Text:** none at all. The megaphone's sound arcs and the dashed arrows are marks, not letters. Reject any letters or numbers.
 - **If frame 02 is crowded,** make it in two passes: first the Bear at the summit with the two tumblers, then add the two scramblers.
-- **The orbit is a camera move, so do not ask ChatGPT for a 3D scene.** Each frame is a flat paper-cut picture of what the camera sees at that angle.
+- **The orbit is a camera move, so do not ask ChatGPT for a 3D scene.** Each frame is a flat vector picture of what the camera sees at that angle.
 - **Invented by me, because the guide does not say:** the six designs, the Bear as the king and the reason he can be seen, the Woman's megaphone, who swaps with whom, the compass positions and what each camera angle hides, cream for the dashed arrows, the crown. The camera orbit is the project owner's. The cast and style come from the project's existing frames. Reword freely.
 - **Content versus defect:** when a frame departs on content (a different hat, an extra bush), show it to the project owner rather than rejecting it. Reject only defects: wrong colour, non-flat background, broken shapes, stray text, wrong count.

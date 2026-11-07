@@ -40,7 +40,7 @@ CUT_SECONDS = 5
 CUTS_PER_PART = 3
 ZIP_TIME = (2026, 1, 1, 0, 0, 0)
 PALETTE = (
-    "cream (the cat and cut-paper figures), navy-black ink, brick red and mustard accents, plus one flat background "
+    "cream (the cat and the figures), navy-black ink, brick red and mustard accents, plus one flat background "
     "colour per beat taken from the reference images"
 )
 TITLE = "CAT — A BRIEF THEOLOGICAL AND MECHANICAL HISTORY"
@@ -57,8 +57,8 @@ FORMAT = (
 )
 
 STYLE = (
-    "STYLE: Flat 2D screen-printed cut-paper pictogram in the visual language of the 2005 Hitchhiker's Guide graphics: "
-    "economical geometric silhouettes, bold negative space, matte colour, slightly imperfect printed edges, dry deadpan "
+    "STYLE: Minimalistic flat vector illustration with simplified realism in the visual language of the 2005 Hitchhiker's Guide graphics: "
+    "economical geometric silhouettes, bold negative space, matte colour, crisp clean edges, dry deadpan "
     "staging. Opaque flat cutouts only: no gradients, gloss, shadows, 3D, depth of field or photorealism. Motion is crisp "
     "and mostly linear: slides, pivots, flips, flat pans and zooms; no camera shake, soft dissolves or bouncy easing. "
     "Palette: cream, navy-black, brick red, mustard, plus each beat's background colour."

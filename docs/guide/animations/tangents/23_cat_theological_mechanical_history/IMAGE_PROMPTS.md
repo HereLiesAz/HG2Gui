@@ -40,7 +40,7 @@ The existing stills change background colour from beat to beat, so these prompts
 ## Style block (paste before every frame prompt)
 
 ~~~text
-Square image, 1:1. One single flat background colour fills the whole square edge to edge. Flat 2D screen-printed cut-paper pictogram style: simple opaque cutout shapes, economical geometric silhouettes, matte colour, slightly imperfect printed edges, large areas of empty space, asymmetrical placement. No gradients, no gloss, no drop shadows, no 3D, no photographic detail. No text, no letters, no numbers, no labels, no captions, no border, no frame, no header. Deadpan, calm, absurd situations shown with complete seriousness.
+Square image, 1:1. One single flat background colour fills the whole square edge to edge. Minimalistic flat vector illustration with simplified realism: simple opaque shapes, economical geometric silhouettes, matte colour, crisp clean edges, large areas of empty space, asymmetrical placement. No gradients, no gloss, no drop shadows, no 3D, no photographic detail. No text, no letters, no numbers, no labels, no captions, no border, no frame, no header. Deadpan, calm, absurd situations shown with complete seriousness.
 
 The cat is always the same character: a flat cream-coloured cutout with a round head, two small triangular ears, thin cream whiskers, tiny dark dot eyes and a small dark nose. Dark ink is navy-black. Accent colours are brick red and mustard.
 ~~~

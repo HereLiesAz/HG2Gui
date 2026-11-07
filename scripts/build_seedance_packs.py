@@ -86,7 +86,7 @@ FORMAT AND FRAME
 
 STYLE_BLOCK = """\
 VISUAL DESIGN
-- Flat 2D screen-printed / cut-paper pictogram animation in the visual language of the 2005 Hitchhiker's Guide graphics: public-information-sign pictograms, economical silhouettes, bold negative space, matte colour, slightly imperfect printed edges, dry diagrammatic staging. Original compositions and original character designs; do not reproduce any existing film shot.
+- Minimalistic flat vector animation with simplified realism in the visual language of the 2005 Hitchhiker's Guide graphics: public-information-sign pictograms, economical silhouettes, bold negative space, matte colour, crisp clean edges, dry diagrammatic staging. Original compositions and original character designs; do not reproduce any existing film shot.
 - Characters and props are flat opaque cutout shapes placed directly on the single-colour background. No gradients, gloss, bloom, drop shadows, translucency, depth-of-field, photorealism or 3D rendering.
 - People, creatures, files, machines and processes use deliberately economical geometric anatomy and minimal facial detail. Meaning comes from pose, scale, object relationships and necessary in-world labels, not from lip-sync or expressive acting.
 - Perspective stays flattened. Diagrams may become rooms and labels may become physical objects; metaphors are treated as literal information graphics. Favour bold asymmetric composition and large areas of empty colour.

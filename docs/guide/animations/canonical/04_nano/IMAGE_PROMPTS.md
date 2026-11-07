@@ -6,7 +6,7 @@ This is the next canonical animation without frames: `01_pwd`, `02_pkg_install` 
 
 ## How to use
 
-1. Start one new ChatGPT conversation. Attach `docs/03_apt_get_update_frame_00.png` and say: "This is the style to match: flat matte cut-paper pictogram, one flat background colour. Do not copy its content."
+1. Start one new ChatGPT conversation. Attach `docs/03_apt_get_update_frame_00.png` and say: "This is the style to match: minimalistic flat vector with simplified realism, one flat background colour. Do not copy its content."
 2. Paste the **style block**, then the prompt for frame 00. Generate until it is right.
 3. For each later frame, attach the previous approved frame, paste the style block again, then the frame prompt. Say: "Keep the same capsule shapes, colours and lettering as the previous frame."
 4. Save approved frames as `docs/04_nano_frame_00.png` to `docs/04_nano_frame_03.png`. The Seedance pack builder (`scripts/build_seedance_packs.py`) picks them up by that name; no other change is needed.
@@ -18,7 +18,7 @@ Background for the whole animation: deep cobalt `#183D7A`, taken from this entry
 ## Style block (paste before every frame prompt)
 
 ~~~text
-Square image, 1:1. One single flat deep cobalt (#183D7A) background fills the whole square edge to edge. Flat 2D screen-printed cut-paper pictogram style: simple opaque cutout shapes, economical geometric silhouettes, matte colour, slightly imperfect printed edges, large areas of empty space. No gradients, no gloss, no drop shadows, no 3D shading, no photographic detail. Only these colours besides the background: mustard, violet, coral red, pale cyan. No header, no tabs, no border, no frame, no captions, no other text. The only lettering allowed is the lowercase word "nano" in a heavy geometric sans-serif, spelled exactly n-a-n-o, and only where the frame prompt says so. Deadpan, calm and absurd, shown with complete seriousness.
+Square image, 1:1. One single flat deep cobalt (#183D7A) background fills the whole square edge to edge. Minimalistic flat vector illustration with simplified realism: simple opaque shapes, economical geometric silhouettes, matte colour, crisp clean edges, large areas of empty space. No gradients, no gloss, no drop shadows, no 3D shading, no photographic detail. Only these colours besides the background: mustard, violet, coral red, pale cyan. No header, no tabs, no border, no frame, no captions, no other text. The only lettering allowed is the lowercase word "nano" in a heavy geometric sans-serif, spelled exactly n-a-n-o, and only where the frame prompt says so. Deadpan, calm and absurd, shown with complete seriousness.
 ~~~
 
 ## Frames

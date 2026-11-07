@@ -41,7 +41,7 @@ Create one EXACTLY 5.0-second segment of an original animated Guide entry that c
 REFERENCE LANGUAGE
 - Use the supplied movie screenshots as visual anchors for proportions, graphic density, palette behavior, and motion-graphic restraint.
 - Active composition is cinematic 2.35:1. If the generator only outputs 16:9, place a centered 2.35:1 active picture inside the 16:9 frame with clean black letterboxing; never stretch the artwork.
-- Flat 2D vector / cut-paper / screen-printed pictogram look, closer to an international information sign than a modern sci-fi HUD.
+- Minimalistic flat vector look with simplified realism, closer to an international information sign than a modern sci-fi HUD.
 - Persistent warm mustard Guide header across the top of the active picture. At upper left, two connected capsule tabs extend from / clip against the left edge. The first tab is the subject, the second the subtopic. Use the exact tab labels supplied below.
 - Typography: Jost ExtraBold/800 or a near geometric equivalent, uppercase, generous tracking. Text is a designed graphic element, not subtitles.
 - Use only 4–7 matte colors in the scene. No gradients. No gloss. No bloom. No drop shadows. No translucent glass. No depth-of-field. Very light imperfect print/screen texture is welcome; edges may feel slightly handmade.
@@ -71,7 +71,7 @@ Create one EXACTLY 5.0-second segment of an original animated Guide entry that c
 REFERENCE LANGUAGE
 - Use the supplied movie screenshots as visual anchors for proportions, graphic density, palette behavior, and motion-graphic restraint.
 - Active composition is cinematic 2.35:1. If the generator only outputs 16:9, place a centered 2.35:1 active picture inside the 16:9 frame with clean black letterboxing; never stretch the artwork.
-- Flat 2D vector / cut-paper / screen-printed pictogram look, closer to an international information sign than a modern sci-fi HUD.
+- Minimalistic flat vector look with simplified realism, closer to an international information sign than a modern sci-fi HUD.
 - Persistent warm mustard Guide header across the top of the active picture. At upper left, two connected capsule tabs extend from / clip against the left edge. The first tab is the subject, the second the subtopic. Use the exact tab labels supplied below.
 - Typography: Jost ExtraBold/800 or a near geometric equivalent, uppercase, generous tracking. Text is a designed graphic element, not subtitles.
 - Use only 4–7 matte colors in the scene. No gradients. No gloss. No bloom. No drop shadows. No translucent glass. No depth-of-field. Very light imperfect print/screen texture is welcome; edges may feel slightly handmade.
@@ -110,7 +110,7 @@ Create one EXACTLY 5.0-second segment of an original animated Guide entry that c
 REFERENCE LANGUAGE
 - Use the supplied movie screenshots as visual anchors for proportions, graphic density, palette behavior, and motion-graphic restraint.
 - Active composition is cinematic 2.35:1. If the generator only outputs 16:9, place a centered 2.35:1 active picture inside the 16:9 frame with clean black letterboxing; never stretch the artwork.
-- Flat 2D vector / cut-paper / screen-printed pictogram look, closer to an international information sign than a modern sci-fi HUD.
+- Minimalistic flat vector look with simplified realism, closer to an international information sign than a modern sci-fi HUD.
 - Persistent warm mustard Guide header across the top of the active picture. At upper left, two connected capsule tabs extend from / clip against the left edge. The first tab is the subject, the second the subtopic. Use the exact tab labels supplied below.
 - Typography: Jost ExtraBold/800 or a near geometric equivalent, uppercase, generous tracking. Text is a designed graphic element, not subtitles.
 - Use only 4–7 matte colors in the scene. No gradients. No gloss. No bloom. No drop shadows. No translucent glass. No depth-of-field. Very light imperfect print/screen texture is welcome; edges may feel slightly handmade.
@@ -149,7 +149,7 @@ Create one EXACTLY 5.0-second segment of an original animated Guide entry that c
 REFERENCE LANGUAGE
 - Use the supplied movie screenshots as visual anchors for proportions, graphic density, palette behavior, and motion-graphic restraint.
 - Active composition is cinematic 2.35:1. If the generator only outputs 16:9, place a centered 2.35:1 active picture inside the 16:9 frame with clean black letterboxing; never stretch the artwork.
-- Flat 2D vector / cut-paper / screen-printed pictogram look, closer to an international information sign than a modern sci-fi HUD.
+- Minimalistic flat vector look with simplified realism, closer to an international information sign than a modern sci-fi HUD.
 - Persistent warm mustard Guide header across the top of the active picture. At upper left, two connected capsule tabs extend from / clip against the left edge. The first tab is the subject, the second the subtopic. Use the exact tab labels supplied below.
 - Typography: Jost ExtraBold/800 or a near geometric equivalent, uppercase, generous tracking. Text is a designed graphic element, not subtitles.
 - Use only 4–7 matte colors in the scene. No gradients. No gloss. No bloom. No drop shadows. No translucent glass. No depth-of-field. Very light imperfect print/screen texture is welcome; edges may feel slightly handmade.
@@ -188,7 +188,7 @@ Create one EXACTLY 5.0-second segment of an original animated Guide entry that c
 REFERENCE LANGUAGE
 - Use the supplied movie screenshots as visual anchors for proportions, graphic density, palette behavior, and motion-graphic restraint.
 - Active composition is cinematic 2.35:1. If the generator only outputs 16:9, place a centered 2.35:1 active picture inside the 16:9 frame with clean black letterboxing; never stretch the artwork.
-- Flat 2D vector / cut-paper / screen-printed pictogram look, closer to an international information sign than a modern sci-fi HUD.
+- Minimalistic flat vector look with simplified realism, closer to an international information sign than a modern sci-fi HUD.
 - Persistent warm mustard Guide header across the top of the active picture. At upper left, two connected capsule tabs extend from / clip against the left edge. The first tab is the subject, the second the subtopic. Use the exact tab labels supplied below.
 - Typography: Jost ExtraBold/800 or a near geometric equivalent, uppercase, generous tracking. Text is a designed graphic element, not subtitles.
 - Use only 4–7 matte colors in the scene. No gradients. No gloss. No bloom. No drop shadows. No translucent glass. No depth-of-field. Very light imperfect print/screen texture is welcome; edges may feel slightly handmade.
