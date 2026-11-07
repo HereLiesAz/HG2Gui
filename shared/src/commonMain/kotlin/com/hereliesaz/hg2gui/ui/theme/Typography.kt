@@ -9,16 +9,24 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import hg2gui.shared.generated.resources.Res
-import hg2gui.shared.generated.resources.jost_black
-import hg2gui.shared.generated.resources.jost_semibold
-import hg2gui.shared.generated.resources.jost_extrabold
+import hg2gui.shared.generated.resources.azrienoch_black
+import hg2gui.shared.generated.resources.azrienoch_extrabold
+import hg2gui.shared.generated.resources.azrienoch_regular
+import hg2gui.shared.generated.resources.azrienoch_semibold
 import org.jetbrains.compose.resources.Font
 
+/**
+ * Azrienoch (hereliesaz/azrienoch, SIL OFL 1.1), a variable font derived from Jost. The four
+ * weights below are static instances of its variable build at wght 400/600/800/900, wdth 100,
+ * SERF 0, GRAD 0, so they behave the same on every Android version (variable-font axes need
+ * API 26). Glyphs Azrienoch lacks fall back to the system font per character.
+ */
 @Composable
-fun jostFontFamily() = FontFamily(
-    Font(Res.font.jost_black, FontWeight.Black),
-    Font(Res.font.jost_semibold, FontWeight.SemiBold),
-    Font(Res.font.jost_extrabold, FontWeight.ExtraBold)
+fun azrienochFontFamily() = FontFamily(
+    Font(Res.font.azrienoch_regular, FontWeight.Normal),
+    Font(Res.font.azrienoch_black, FontWeight.Black),
+    Font(Res.font.azrienoch_semibold, FontWeight.SemiBold),
+    Font(Res.font.azrienoch_extrabold, FontWeight.ExtraBold)
 )
 
 /**
@@ -31,12 +39,12 @@ fun jostFontFamily() = FontFamily(
  * expected to read, so a one-line change here moves every consumer together.
  */
 @Composable
-fun azphaltType(): AzphaltType = buildAzphaltType(jostFontFamily())
+fun azphaltType(): AzphaltType = buildAzphaltType(azrienochFontFamily())
 
 /**
  * The same scale on the platform default font. This is what [LocalAzphaltType] holds when no theme
  * has provided one (the desktop preview, a unit test, a `@Preview`), so a composable that reads the
- * scale never crashes outside `HG2GuiTheme`; it just renders in the system face instead of Jost.
+ * scale never crashes outside `HG2GuiTheme`; it just renders in the system face instead of Azrienoch.
  */
 fun fallbackAzphaltType(): AzphaltType = buildAzphaltType(FontFamily.Default)
 
@@ -116,7 +124,7 @@ data class AzphaltType(
 )
 
 /**
- * The active [AzphaltType]. `HG2GuiTheme` provides the Jost version; outside it this is
+ * The active [AzphaltType]. `HG2GuiTheme` provides the Azrienoch version; outside it this is
  * [fallbackAzphaltType] (system font, same sizes) rather than an error.
  */
 val LocalAzphaltType = staticCompositionLocalOf { fallbackAzphaltType() }
@@ -126,7 +134,7 @@ val LocalAzphaltType = staticCompositionLocalOf { fallbackAzphaltType() }
 // MaterialTheme.typography directly once migration is done.
 @Composable
 fun appTypography() = Typography().let {
-    val family = jostFontFamily()
+    val family = azrienochFontFamily()
     it.copy(
         displayLarge = it.displayLarge.copy(fontFamily = family),
         displayMedium = it.displayMedium.copy(fontFamily = family),

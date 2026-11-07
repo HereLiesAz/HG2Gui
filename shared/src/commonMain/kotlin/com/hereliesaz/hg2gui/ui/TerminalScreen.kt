@@ -51,7 +51,6 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -835,7 +834,6 @@ private fun LiveStatusStrip(status: String) {
                 modifier = Modifier.weight(1f),
                 style = type.body.copy(
                     color = onPage,
-                    fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.Normal,
                     fontSize = 12.sp,
                     lineHeight = 16.sp
@@ -1036,7 +1034,7 @@ private fun StatusDot(entry: TerminalHistoryEntry, surface: Color) {
         Spacer(Modifier.width(6.dp))
         Text(
             if (failed) "exit ${entry.exitCode}" else "ok",
-            style = LocalAzphaltType.current.pillCap.copy(color = ink, fontFamily = FontFamily.Monospace)
+            style = LocalAzphaltType.current.pillCap.copy(color = ink)
         )
     }
 }
@@ -1070,7 +1068,6 @@ internal fun buildStyledLine(
 
 @Composable
 private fun outputTextStyle(): TextStyle = LocalAzphaltType.current.body.copy(
-    fontFamily = FontFamily.Monospace,
     fontWeight = FontWeight.Normal,
     fontSize = 12.sp,
     lineHeight = 17.sp
@@ -1437,8 +1434,7 @@ private fun CommandLine(
                             color = Azphalt.Yellow.copy(alpha = .75f),
                             fontSize = 12.sp,
                             lineHeight = 16.sp,
-                            fontWeight = FontWeight.Normal,
-                            fontFamily = FontFamily.Monospace
+                            fontWeight = FontWeight.Normal
                         )
                     )
                 }
@@ -1457,8 +1453,7 @@ private fun CommandLine(
                             color = Azphalt.Yellow.copy(alpha = .85f),
                             fontSize = 12.sp,
                             lineHeight = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.Monospace
+                            fontWeight = FontWeight.Bold
                         )
                     )
                 } else {
@@ -1474,8 +1469,7 @@ private fun CommandLine(
                             color = Azphalt.Yellow,
                             fontSize = 12.sp,
                             lineHeight = 16.sp,
-                            fontWeight = FontWeight.Normal,
-                            fontFamily = FontFamily.Monospace
+                            fontWeight = FontWeight.Normal
                         ),
                         cursorBrush = SolidColor(Azphalt.Yellow),
                         singleLine = true,

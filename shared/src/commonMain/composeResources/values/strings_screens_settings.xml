@@ -53,7 +53,7 @@
     <string name="settings_motion_description_off">Animations are off in Android’s settings, so HG2Gui skips its entrance and transition effects and shows screens straight away.</string>
     <string name="settings_motion_button">Accessibility settings</string>
     <string name="settings_about_title">About</string>
-    <string name="settings_about_description">HG2Gui %1$s. Free software under the GNU General Public License v3. Bundled: the Jost typeface (SIL Open Font License 1.1) and Termux-derived binaries; their provenance and licences are listed in the source repository.</string>
+    <string name="settings_about_description">HG2Gui %1$s. Free software under the GNU General Public License v3. Bundled: the Azrienoch typeface, derived from Jost (SIL Open Font License 1.1) and Termux-derived binaries; their provenance and licences are listed in the source repository.</string>
     <string name="settings_about_privacy">Privacy policy</string>
     <string name="settings_about_privacy_description">Open the privacy policy</string>
     <string name="settings_about_licences">Source and licences</string>
