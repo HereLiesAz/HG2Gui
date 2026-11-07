@@ -2,7 +2,7 @@
 
 ## START shot
 
-Opening composition: A flat dusty-lavender hill rises from the dark teal ground.
+Opening composition: A flat mustard hill rises from the dark teal ground, and the camera begins to circle it.
 
 **START** — NO IMAGE
 
@@ -12,7 +12,7 @@ Opening composition: A flat dusty-lavender hill rises from the dark teal ground.
 
 ## END shot
 
-End on all six, scattered across the hill, every one of them king.
+End mid-orbit on the players it can see, every one of them king.
 
 **END** — NO IMAGE
 

@@ -8,15 +8,15 @@ Create the specified animation as a flat, matte screen-printed cut-paper pictogr
 Render EXACTLY 1:1 square; single background dark teal `#073D43`.
 
 SEQUENCE: top; CLIP 01; 5 seconds · 00:00–05:00.
-START: Opening composition: A flat dusty-lavender hill rises from the dark teal ground.
-END: End on all six, scattered across the hill, every one of them king.
+START: Opening composition: A flat mustard hill rises from the dark teal ground, and the camera begins to circle it.
+END: End mid-orbit on the players it can see, every one of them king.
 
 MOTION DIRECTOR'S TIMING
-0.0–2.4s: A flat dusty-lavender hill rises from the dark teal ground. Six small players appear one at a time, each in a different place: the foot of the hill, a ditch, behind a tree, halfway up, on a rock, and the summit.
-2.4–4.6s: Each throws both arms into the air. End on all six, scattered across the hill, every one of them king.
+0.0–2.4s: A flat mustard hill rises from the dark teal ground, and the camera begins to circle it. Six players appear one at a time, each in a different place: the foot of the hill, behind a tree, on a boulder, in a dip, halfway up, and the summit.
+2.4–4.6s: Each throws both arms into the air. The camera never sees all six at once. End mid-orbit on the players it can see, every one of them king.
 4.6–5.0s: Hold the exact finishing composition, no additional changes.
 
-EXACT STORY ACTION / WORDS: A flat dusty-lavender hill rises from the dark teal ground. Six small players appear one at a time, each in a different place: the foot of the hill, a ditch, behind a tree, halfway up, on a rock, and the summit. Each throws both arms into the air. End on all six, scattered across the hill, every one of them king.
+EXACT STORY ACTION / WORDS: A flat mustard hill rises from the dark teal ground, and the camera begins to circle it. Six players appear one at a time, each in a different place: the foot of the hill, behind a tree, on a boulder, in a dip, halfway up, and the summit. Each throws both arms into the air. The camera never sees all six at once. End mid-orbit on the players it can see, every one of them king.
 
 A REQUIRED BOUNDARY IS MISSING: these written shots are production requirements, not fabricated files. Final matched video generation must wait for approved boundary art.
 ~~~

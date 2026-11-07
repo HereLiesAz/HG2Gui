@@ -1,6 +1,6 @@
 ## Cut 02 — 05:00–10:00
 
-Challengers run in from every side toward the summit. The king there shoves each one back down the hill. Twice, a challenger gets through: the king tumbles down the slope, and the challenger takes the spot and raises both arms. Elsewhere on the hill, players hear cheering from places they cannot see and look puzzled. End with a new king at the summit and the other players glancing sideways at one another.
+The camera keeps circling. Players run in toward the summit, and the king there shoves each one back down the hill. Twice, a challenger gets through: the king tumbles off and the challenger takes the spot and raises both arms. Players out of the camera's view hear the cheering and look puzzled. End with a huge new king at the summit, two kings tumbling off it, and most of the hill hidden from view.
 
 ### Ready-to-paste generation prompt
 
@@ -34,7 +34,7 @@ Guide tab 2: KING OF THE HILL
 Palette lock: mustard, dark teal, mint green, vermilion, dusty lavender
 
 CUT 02 OF 03 — 05:00–10:00
-Challengers run in from every side toward the summit. The king there shoves each one back down the hill. Twice, a challenger gets through: the king tumbles down the slope, and the challenger takes the spot and raises both arms. Elsewhere on the hill, players hear cheering from places they cannot see and look puzzled. End with a new king at the summit and the other players glancing sideways at one another.
+The camera keeps circling. Players run in toward the summit, and the king there shoves each one back down the hill. Twice, a challenger gets through: the king tumbles off and the challenger takes the spot and raises both arms. Players out of the camera's view hear the cheering and look puzzled. End with a huge new king at the summit, two kings tumbling off it, and most of the hill hidden from view.
 ```
 
 ---
@@ -47,4 +47,4 @@ Challengers run in from every side toward the summit. The king there shoves each
 
 **END:** `05_top_frame_02.png`
 
-Challengers run in from every side toward the summit. The king there shoves each one back down the hill. Twice, a challenger gets through: the king tumbles down the slope, and the challenger takes the spot and raises both arms. Elsewhere on the hill, players hear cheering from places they cannot see and look puzzled. End with a new king at the summit and the other players glancing sideways at one another.
+The camera keeps circling. Players run in toward the summit, and the king there shoves each one back down the hill. Twice, a challenger gets through: the king tumbles off and the challenger takes the spot and raises both arms. Players out of the camera's view hear the cheering and look puzzled. End with a huge new king at the summit, two kings tumbling off it, and most of the hill hidden from view.

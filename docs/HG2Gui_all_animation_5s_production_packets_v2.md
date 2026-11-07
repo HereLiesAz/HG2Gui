@@ -1183,17 +1183,21 @@ The camera performs an absurd further ten-level zoom to make `^X Exit` barely le
 
 A hill appears.
 
-Six players are on it, each in a different place: the foot of the hill, a ditch, behind a tree, halfway up, on a rock, and the summit.
+The camera begins to circle it.
+
+Six players are on it, each in a different place: the foot of the hill, behind a tree, on a boulder, in a dip, halfway up, and the summit.
 
 Each has both arms in the air. Each is king.
 
-Challengers run in from every side toward the summit. The king there pushes each one back down the hill.
+At no point does the camera see all six.
+
+Challengers run in toward the summit. The king there pushes each one back down the hill.
 
 Twice, a challenger gets through. The king goes down the hill instead, and the challenger raises both arms.
 
 Elsewhere, players hear cheering from places they cannot see. They look puzzled.
 
-Thin lines of sight run from each player to the others they can see. Every player can see the one at the summit. Only the one at the summit can see everyone.
+Thin lines of sight run from each player to the others they can see. A few rise from behind the hill, from players the camera cannot see. Every player can see the one at the summit. Only the one at the summit can see everyone.
 
 A single crown settles on the summit player.
 
@@ -1262,7 +1266,7 @@ EDITING
 
 **Used as:** Cut 01 START
 
-A flat dusty-lavender hill rises from the dark teal ground.
+A flat mustard hill rises from the dark teal ground, and the camera begins to circle it.
 
 ### Frame 01 — `05_top_frame_01.png`
 
@@ -1288,7 +1292,7 @@ The trophy beside a completely unusable system.
 
 **END:** `05_top_frame_01.png`
 
-A flat dusty-lavender hill rises from the dark teal ground. Six small players appear one at a time, each in a different place: the foot of the hill, a ditch, behind a tree, halfway up, on a rock, and the summit. Each throws both arms into the air. End on all six, scattered across the hill, every one of them king.
+A flat mustard hill rises from the dark teal ground, and the camera begins to circle it. Six players appear one at a time, each in a different place: the foot of the hill, behind a tree, on a boulder, in a dip, halfway up, and the summit. Each throws both arms into the air. The camera never sees all six at once. End mid-orbit on the players it can see, every one of them king.
 
 ### Ready-to-paste video generation prompt
 
@@ -1328,7 +1332,7 @@ START FRAME: 05_top_frame_00.png
 END FRAME: 05_top_frame_01.png
 
 CUT 01 OF 03 — 00:00–05:00
-A flat dusty-lavender hill rises from the dark teal ground. Six small players appear one at a time, each in a different place: the foot of the hill, a ditch, behind a tree, halfway up, on a rock, and the summit. Each throws both arms into the air. End on all six, scattered across the hill, every one of them king.
+A flat mustard hill rises from the dark teal ground, and the camera begins to circle it. Six players appear one at a time, each in a different place: the foot of the hill, behind a tree, on a boulder, in a dip, halfway up, and the summit. Each throws both arms into the air. The camera never sees all six at once. End mid-orbit on the players it can see, every one of them king.
 ```
 
 ## Cut 02 — 05:00–10:00
@@ -1337,7 +1341,7 @@ A flat dusty-lavender hill rises from the dark teal ground. Six small players ap
 
 **END:** `05_top_frame_02.png`
 
-Challengers run in from every side toward the summit. The king there shoves each one back down the hill. Twice, a challenger gets through: the king tumbles down the slope, and the challenger takes the spot and raises both arms. Elsewhere on the hill, players hear cheering from places they cannot see and look puzzled. End with a new king at the summit and the other players glancing sideways at one another.
+The camera keeps circling. Players run in toward the summit, and the king there shoves each one back down the hill. Twice, a challenger gets through: the king tumbles off and the challenger takes the spot and raises both arms. Players out of the camera's view hear the cheering and look puzzled. End with a huge new king at the summit, two kings tumbling off it, and most of the hill hidden from view.
 
 ### Ready-to-paste video generation prompt
 
@@ -1377,7 +1381,7 @@ START FRAME: 05_top_frame_01.png
 END FRAME: 05_top_frame_02.png
 
 CUT 02 OF 03 — 05:00–10:00
-Challengers run in from every side toward the summit. The king there shoves each one back down the hill. Twice, a challenger gets through: the king tumbles down the slope, and the challenger takes the spot and raises both arms. Elsewhere on the hill, players hear cheering from places they cannot see and look puzzled. End with a new king at the summit and the other players glancing sideways at one another.
+The camera keeps circling. Players run in toward the summit, and the king there shoves each one back down the hill. Twice, a challenger gets through: the king tumbles off and the challenger takes the spot and raises both arms. Players out of the camera's view hear the cheering and look puzzled. End with a huge new king at the summit, two kings tumbling off it, and most of the hill hidden from view.
 ```
 
 ## Cut 03 — 10:00–15:00
@@ -1386,7 +1390,7 @@ Challengers run in from every side toward the summit. The king there shoves each
 
 **END:** `05_top_frame_03.png`
 
-Thin lines of sight run from each player to the other players they can see. Most see only one or two, but every line also reaches the player at the summit, who alone can see everyone. A single crown settles on that player. The other five slowly lower their arms. Hold on the king, arms still raised, with five players looking up.
+The camera completes its circle. Thin lines of sight run from each player to the others they can see. A few arrows rise from behind the hill, from players the camera cannot see, and every line reaches the player at the summit, who is visible from every side. A single crown settles on that player. The other five slowly lower their arms. Hold on the king, arms still raised.
 
 ### Ready-to-paste video generation prompt
 
@@ -1426,7 +1430,7 @@ START FRAME: 05_top_frame_02.png
 END FRAME: 05_top_frame_03.png
 
 CUT 03 OF 03 — 10:00–15:00
-Thin lines of sight run from each player to the other players they can see. Most see only one or two, but every line also reaches the player at the summit, who alone can see everyone. A single crown settles on that player. The other five slowly lower their arms. Hold on the king, arms still raised, with five players looking up.
+The camera completes its circle. Thin lines of sight run from each player to the others they can see. A few arrows rise from behind the hill, from players the camera cannot see, and every line reaches the player at the summit, who is visible from every side. A single crown settles on that player. The other five slowly lower their arms. Hold on the king, arms still raised.
 ```
 
 

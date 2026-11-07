@@ -492,17 +492,21 @@ top sorts by CPU use and keeps a list. It would like it noted that it only repor
 
 A hill appears.
 
-Six players are on it, each in a different place: the foot of the hill, a ditch, behind a tree, halfway up, on a rock, and the summit.
+The camera begins to circle it.
+
+Six players are on it, each in a different place: the foot of the hill, behind a tree, on a boulder, in a dip, halfway up, and the summit.
 
 Each has both arms in the air. Each is king.
 
-Challengers run in from every side toward the summit. The king there pushes each one back down the hill.
+At no point does the camera see all six.
+
+Challengers run in toward the summit. The king there pushes each one back down the hill.
 
 Twice, a challenger gets through. The king goes down the hill instead, and the challenger raises both arms.
 
 Elsewhere, players hear cheering from places they cannot see. They look puzzled.
 
-Thin lines of sight run from each player to the others they can see. Every player can see the one at the summit. Only the one at the summit can see everyone.
+Thin lines of sight run from each player to the others they can see. A few rise from behind the hill, from players the camera cannot see. Every player can see the one at the summit. Only the one at the summit can see everyone.
 
 A single crown settles on the summit player.
 
