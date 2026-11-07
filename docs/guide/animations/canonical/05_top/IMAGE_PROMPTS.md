@@ -157,6 +157,36 @@ Attach both model sheets and frame 02.
 Wide view, the same as frame 00 but now with people: the camera has come all the way round. The large mint-green tree at the right edge with the man in the flat cap beside it, both arms down. At the front foot of the hill, the short stout man in the bowler hat, both arms down. At the left foot, the slim woman in the vermilion jumpsuit, both arms down. All three face the summit. At the summit, the huge bear-headed creature stands with both arms and his cane raised and a small mustard three-pointed crown on his head. From each of the three, a thin dashed cream line with a small arrowhead runs straight to the bear. Two more dashed cream lines with arrowheads rise from behind the outline of the hill to the bear, from people we cannot see. Nothing else.
 ~~~
 
+## Extra views: the angles the four frames do not show
+
+The four boundary frames never show the Bear or the Bowler Man at their starting spots, and none shows the Bear shoving. A video model that only sees frames 00 to 03 has to invent those, and the camera passes both. Three more reference frames fix that. They are references for the video generation, not boundary frames: none of them starts or ends a cut.
+
+| View | Camera | What it shows |
+|---|---|---|
+| A | 0° | The starting wide view with people on it: the Bear halfway up the left slope, the Bowler Man at the front foot, the Cap Man by the tree, the Megaphone Woman at the summit, all with arms up. |
+| B | 300° | The Bear's side of the hill: the Bear halfway up, arms and cane up, the Bowler Man at the right foot, the Woman at the summit. |
+| C | 200° | The shove: the Bear on the summit pushing the Pale Man off with both hands, the Woman already tumbling down the other side, two men scrambling up. |
+
+Attach both model sheets and frame 02 to each, and say "same hill, same style, same characters". Save as `docs/05_top_view_a.png`, `docs/05_top_view_b.png`, `docs/05_top_view_c.png`.
+
+### View A — camera 0°, the starting view with people
+
+~~~text
+Wide view of the same round mustard hill as the attached frames, with the large mint-green tree at the right edge. Four of the characters from the attached model sheets stand on it, each with both arms raised in triumph: the huge bear-headed creature in the lavender coat halfway up the left slope, with his cane raised, much bigger than the others; the short stout man in the bowler hat at the front foot of the hill in the centre; the man in the flat cap standing beside the tree trunk at the right, half hidden by it; and, at the very top of the hill, the slim woman in the vermilion jumpsuit holding her mustard megaphone up to her mouth, one arm raised. Nobody else is in view. Nothing else.
+~~~
+
+### View B — camera 300°, the Bear's side
+
+~~~text
+Wide view of the same round mustard hill, seen from the other side. No tree and no boulder are in view. The huge bear-headed creature in the lavender coat stands halfway up the slope in the centre of the picture, both arms and his cane raised in triumph, much bigger than the others. At the right foot of the hill, the short stout man in the bowler hat stands with both arms raised. At the very top of the hill, the slim woman in the vermilion jumpsuit holds her mustard megaphone up to her mouth, one arm raised. Nobody else is in view. Nothing else.
+~~~
+
+### View C — camera 200°, the shove
+
+~~~text
+Medium view of the upper half of the same hill, seen from behind. The huge bear-headed creature in the lavender coat stands on the flat summit in the middle, leaning forward in the shoving pose from the attached sheet, both arms straight out toward the left, his cane in one hand. The bare-headed man in the cream shirt is being pushed off the summit at the left, tipping over backwards, arms flung out, one boot off the ground. At the right, far down the slope, the slim woman in the vermilion jumpsuit is already tumbling away, mid-roll, her mustard megaphone in the air above her. Lower on the near slope, the tallest man in the red peaked cap and the man in the flat cap scramble up with their arms out. Nothing else.
+~~~
+
 ## Notes
 
 - **Check each sheet before using it.** Sheet A must show six clearly different people, the Bear far bigger than the rest, and all of them in the Guide's flat paper-cut style with real proportions. Sheet B must show four clear poses for each of the two characters.
