@@ -14,10 +14,12 @@ The joke leans on one word: *execute* means both to run something and to put it 
 
 ## Look
 
-- **Minimalistic flat vector, simplified realism**, as in the 2005 film's own Guide animations. Everything is drawn with real proportions, real anatomy, real faces, hands and clothing, and real perspective, then simplified into clean flat colour shapes with crisp edges. Form is suggested by a few flat lighter and darker tones, never by gradients or texture.
-- **Nothing is a symbol or a blob.** A person looks like a person, a hand like a hand, a key like a key. The joke is carried by the situation, not by odd shapes.
-- **No characters are borrowed** from other entries or from the project's reference frames.
-- **Few things per frame**, large, with plenty of empty space.
+Taken from the project's own reference frames of the 2005 film's Guide animations (`docs/guide/project/references/shared/`, the `screencapture-...guillotine...` frames), not from any earlier prompt of mine:
+
+- **Flat vector with simplified realism.** Realistically proportioned figures and objects reduced to a few large flat colour shapes, each with at most one darker flat tone for shadow.
+- **Figures read almost as silhouettes** and are small in the frame. Faces are minimal: no eyes, no mouth, no wrinkles. Hair is one flat shape. Clothing is one flat colour with no folds, pockets, stitching or small accessories.
+- **Dark, saturated colour fields**, large areas of empty space, no outlines, no gradients, no texture.
+- **What is wrong, from a rejected render:** painted anime-style faces, shaded clothing folds, tool belts and other fine detail. That is detail, not simplified realism.
 
 ## No lettering at all
 
@@ -25,17 +27,17 @@ Nothing in this scene is written down: the keys are blank, the envelope is plain
 
 ## The cast and set
 
-- **The Hand.** A giant, realistically drawn human hand and wrist coming down from the top edge, out of a black-red cuffed sleeve with a mustard cufflink, index finger extended. Only the hand and wrist are ever seen. It never moves except to press the first key and, at the end, to go limp.
+- **The Hand.** A giant, realistically proportioned human hand and wrist coming down from the top edge, out of a black-red cuffed sleeve with a mustard cufflink, index finger extended. Only the hand and wrist are ever seen. It never moves except to press the first key and, at the end, to go limp.
 - **The planetoid.** A small rocky planetoid, seen as a curved horizon floating in the dark, where everything below the Hand happens.
 - **The first key.** A large blank mustard computer key on a muted-cyan base.
 - **The second key.** A smaller blank black-red key on its own small base, to the right of the first.
 - **The machine.** A compact industrial machine, round and mustard, with a big muted-cyan cogwheel on its side, a short chimney, a few lit windows and a conveyor belt feeding it, standing on the planetoid. Beside it: piles of cream folders (the files), muted-cyan glass jars (the memories) and mustard gears.
-- **The crowd.** Four different people, each drawn as a real individual with a real face:
-  1. **The Asker:** a tall, thin man of about sixty in a long dark coat, holding a small hat in both hands against his chest.
-  2. **The Mechanic:** a short, broad woman of about forty in mustard overalls with a tool belt, her hair tied back.
-  3. **The Elder:** an old, bald man in a long muted-cyan robe, leaning on a walking stick.
-  4. **The Young One:** a teenager in a cream jacket with a backpack.
-- **The Pair.** Two identical people in matching cream coveralls, tall, with short hair, who go for the second key.
+- **The crowd.** Four different people, each a distinct individual with realistic proportions and a distinct silhouette:
+  1. **The Asker:** a tall, thin man in a long cream coat, holding a small black-red hat in both hands against his chest.
+  2. **The Mechanic:** a short, broad woman in mustard overalls, her hair tied back.
+  3. **The Elder:** an old, bald, stooped man in a long muted-cyan robe, leaning on a walking stick.
+  4. **The Young One:** a teenager in a black-red jacket with a mustard backpack.
+- **The Pair.** Two identical tall people in matching muted-cyan coveralls, with short hair, who go for the second key.
 - **Nietzsche.** Tall and thin, in a long black-red coat with a high cream collar, hair brushed back, with an enormous walrus moustache. He holds a plain black envelope.
 - **The black envelope.** A plain matte black envelope, no text.
 
@@ -87,7 +89,7 @@ The camera moves between frames: it starts close on the hand, pulls back and til
 
 Keep everything calm and deadpan. Nobody acts for the camera.
 
-The style is minimalistic flat vector with simplified realism, like the animated Guide sequences in the 2005 film of The Hitchhiker's Guide to the Galaxy: real proportions, real anatomy, real faces, hands and clothing and real perspective, simplified into clean flat colour shapes with crisp edges. Form is suggested by a few flat lighter and darker tones, never by gradients or texture. Keep each design identical in every image.
+The style is flat vector illustration with simplified realism, in the manner of the animated Guide sequences of the 2005 film of The Hitchhiker's Guide to the Galaxy: realistically proportioned figures and objects reduced to a few large flat colour shapes, each with at most one darker flat tone for shadow. Figures are small in the frame and read almost as silhouettes: faces are minimal, with no eyes, no mouth, no wrinkles and no expression lines; hair is one flat shape; clothing is one flat colour with no folds, no pockets, no stitching and no accessories beyond the ones named. Keep each design identical in every image.
 
 Reply "ready" and wait for the first request.
 ~~~
@@ -95,7 +97,7 @@ Reply "ready" and wait for the first request.
 ## Style block (paste before every sheet and frame prompt)
 
 ~~~text
-Square image, 1:1. One single flat midnight blue (#111D38) background fills the whole square edge to edge, with no texture and no grain. Minimalistic flat vector illustration with simplified realism, like the animated Guide sequences in the 2005 film of The Hitchhiker's Guide to the Galaxy: real proportions, real anatomy, real faces, hands and clothing, and real perspective, simplified into clean flat colour shapes with crisp clean edges and large areas of empty space. Form is suggested only by a few flat lighter and darker tones. No gradients, no gloss, no drop shadows, no 3D rendering, no photographic detail, no outlines of uneven weight. Palette: mustard, black-red, cream, muted cyan, with flat lighter and darker tones of these and natural flat skin tones. No text, no letters, no numbers, no labels, no signs, no border, no frame. Deadpan, calm and absurd, shown with complete seriousness.
+Square image, 1:1. One single flat midnight blue (#111D38) background fills the whole square edge to edge, with no texture and no grain. Flat vector illustration with simplified realism, in the manner of the animated Guide sequences of the 2005 film of The Hitchhiker's Guide to the Galaxy: realistically proportioned figures and objects reduced to a few large flat colour shapes, each with at most one darker flat tone for shadow. Figures are small in the frame and read almost as silhouettes: faces are minimal, with no eyes, no mouth, no wrinkles and no expression lines; hair is one flat shape; clothing is one flat colour with no folds, no pockets, no stitching and no accessories beyond the ones named. Large areas of empty space. No gradients, no gloss, no shading, no outlines, no texture, no painterly, anime or cartoon rendering, no 3D, no photographic detail. Palette: mustard, black-red, cream, muted cyan, each with one darker flat tone, and one flat skin tone. No text, no letters, no numbers, no labels, no signs, no border, no frame. Deadpan, calm and absurd, shown with complete seriousness.
 ~~~
 
 ## Model sheets
@@ -103,19 +105,19 @@ Square image, 1:1. One single flat midnight blue (#111D38) background fills the 
 ### Model sheet A — the crowd
 
 ~~~text
-A character model sheet on the flat midnight blue background. One row of four different people standing side by side, evenly spaced, full length, each drawn with real proportions, a real face, real hands and real clothing. From left to right: a tall, thin man of about sixty in a long dark coat, holding a small hat in both hands against his chest; a short, broad woman of about forty in mustard overalls with a tool belt, her hair tied back; an old, bald man in a long muted-cyan robe, leaning on a walking stick; a teenager in a cream jacket with a backpack. Nothing else. No text.
+A character model sheet on the flat midnight blue background. One row of four different people standing side by side, evenly spaced, full length, each with realistic proportions and posture, drawn as flat shapes with minimal faces. From left to right: a tall, thin man in a long cream coat, holding a small black-red hat in both hands against his chest; a short, broad woman in mustard overalls, her hair tied back; an old, bald, stooped man in a long muted-cyan robe, leaning on a walking stick; a teenager in a black-red jacket with a mustard backpack. Nothing else. No text.
 ~~~
 
 ### Model sheet B — the Pair and Nietzsche (attach sheet A)
 
 ~~~text
-A character model sheet on the flat midnight blue background, in the same minimalistic flat vector style with simplified realism as the attached sheet. A row of three full-length people standing side by side, evenly spaced. On the left, two identical tall people with short hair, standing close together in matching cream coveralls, one of them reaching a hand forward. On the right, one tall thin man in profile, in a long black-red coat with a high cream collar, hair brushed back, with an enormous walrus moustache, one finger raised and a plain black envelope in his other hand. Real proportions, real faces, hands and clothing. Nothing else. No text.
+A character model sheet on the flat midnight blue background, in the same flat vector style with simplified realism as the attached sheet. A row of three full-length people standing side by side, evenly spaced, each with realistic proportions and posture, drawn as flat shapes with minimal faces. On the left, two identical tall people with short hair, standing close together in matching muted-cyan coveralls, one of them reaching a hand forward. On the right, one tall thin man in profile, in a long black-red coat with a high cream collar, hair brushed back, with an enormous walrus moustache, one finger raised and a plain black envelope in his other hand. Nothing else. No text.
 ~~~
 
 ### Model sheet C — the props (attach sheets A and B)
 
 ~~~text
-A prop model sheet on the flat midnight blue background, in the same minimalistic flat vector style with simplified realism as the attached sheets. Top row, three items: a giant realistically drawn human hand and wrist coming out of a black-red cuffed sleeve with a mustard cufflink, the index finger extended; a large blank mustard computer key on a muted-cyan base; a smaller blank black-red key on a smaller muted-cyan base. Bottom row, three items: a small rocky planetoid seen as a curved horizon, with a compact round mustard industrial machine standing on it, with a big muted-cyan cogwheel on its side, a short chimney, a few lit windows and a conveyor belt feeding it, and beside it a pile of cream folders, a row of muted-cyan glass jars and a heap of mustard gears; and a plain matte black envelope. No text on anything.
+A prop model sheet on the flat midnight blue background, in the same flat vector style with simplified realism as the attached sheets. Top row, three items: a giant realistically proportioned human hand and wrist coming out of a black-red cuffed sleeve with a mustard cufflink, the index finger extended; a large blank mustard computer key on a muted-cyan base; a smaller blank black-red key on a smaller muted-cyan base. Bottom row, three items: a small rocky planetoid seen as a curved horizon, with a compact round mustard industrial machine standing on it, with a big muted-cyan cogwheel on its side, a short chimney, a few lit windows and a conveyor belt feeding it, and beside it a pile of cream folders, a row of muted-cyan glass jars and a heap of mustard gears; and a plain matte black envelope. No text on anything.
 ~~~
 
 ## Frames
@@ -125,7 +127,7 @@ A prop model sheet on the flat midnight blue background, in the same minimalisti
 Attach the three sheets.
 
 ~~~text
-Close view. A giant, realistically drawn human hand and wrist comes down from the top edge of the picture out of a black-red cuffed sleeve with a mustard cufflink, its index finger extended and pointing straight down. A finger's width below the fingertip, a large blank mustard computer key sits on a muted-cyan base at the bottom centre. Nothing else in the picture: empty midnight blue all around. No text.
+Close view. A giant, realistically proportioned human hand and wrist comes down from the top edge of the picture out of a black-red cuffed sleeve with a mustard cufflink, its index finger extended and pointing straight down. A finger's width below the fingertip, a large blank mustard computer key sits on a muted-cyan base at the bottom centre. Nothing else in the picture: empty midnight blue all around. No text.
 ~~~
 
 ### Frame 01 — end of cut 01 / start of cut 02 · "A small machine begins to turn … the piles growing, and a crowd of small figures … beginning to look up."
@@ -133,7 +135,7 @@ Close view. A giant, realistically drawn human hand and wrist comes down from th
 Attach the three sheets and frame 00.
 
 ~~~text
-Wide view, the camera pulled back and tilted down. At the top edge, the giant hand with its finger pressing the large blank mustard key down flat on its base. Far below, a small rocky planetoid with a curved horizon, and on it the compact round mustard machine with the muted-cyan cog on its side, turning, a conveyor belt feeding it, with a pile of cream folders, a row of muted-cyan glass jars and a heap of mustard gears growing beside it. At the very bottom, the four people from the model sheet stand with their faces tilted up: the tall thin man with his hat, the broad woman in mustard overalls, the old bald man with his stick, the teenager with the backpack. Nothing else. No text.
+Wide view, the camera pulled back and tilted down. At the top edge, the giant hand with its finger pressing the large blank mustard key down flat on its base. Far below, a small rocky planetoid with a curved horizon, and on it the compact round mustard machine with the muted-cyan cog on its side, turning, a conveyor belt feeding it, with a pile of cream folders, a row of muted-cyan glass jars and a heap of mustard gears growing beside it. At the very bottom, the four people from the model sheet stand with their faces tilted up: the tall thin man in the cream coat with his hat, the broad woman in mustard overalls, the stooped old man in the cyan robe with his stick, the teenager in the black-red jacket with the mustard backpack. Nothing else. No text.
 ~~~
 
 ### Frame 02 — end of cut 02 / start of cut 03 · "End on the raised finger."
@@ -141,7 +143,7 @@ Wide view, the camera pulled back and tilted down. At the top edge, the giant ha
 Attach the three sheets and frame 01.
 
 ~~~text
-Medium view of the lower part of the same scene. The four people stand in a loose group, the tall thin man at the front with his small hat held to his chest. At the right, the two identical people in cream coveralls reach toward a smaller blank black-red key on its small base and have frozen with their hands out, looking up. At the centre, the tall thin man in the long black-red coat with the high cream collar and the enormous walrus moustache stands in profile with one finger raised. Behind them the compact mustard machine still runs. At the very top edge, the large mustard key and the bottom of the giant hand. Nothing else. No text.
+Medium view of the lower part of the same scene. The four people stand in a loose group, the tall thin man in the cream coat at the front with his small hat held to his chest. At the right, the two identical people in muted-cyan coveralls reach toward a smaller blank black-red key on its small base and have frozen with their hands out, looking up. At the centre, the tall thin man in the long black-red coat with the high cream collar and the enormous walrus moustache stands in profile with one finger raised. Behind them the compact mustard machine still runs. At the very top edge, the large mustard key and the bottom of the giant hand. Nothing else. No text.
 ~~~
 
 ### Frame 03 — end of cut 03 · "The hand goes limp. The machine stops … Hold."
@@ -149,7 +151,7 @@ Medium view of the lower part of the same scene. The four people stand in a loos
 Attach the three sheets and frame 02.
 
 ~~~text
-Wide view. The compact mustard machine is stopped: the cog is still, the conveyor is idle and its windows are dark. At the top edge, the giant hand hangs limp, its fingers dangling. The four people and the two identical people in cream coveralls stand in a loose group with their faces tilted up. At the centre, the tall thin man in the long black-red coat with the enormous walrus moustache stands in profile looking mildly surprised, his hand lowered, and a thin dashed cream line fades upward from his hand toward the hanging hand. Nothing else. No text.
+Wide view. The compact mustard machine is stopped: the cog is still, the conveyor is idle and its windows are dark. At the top edge, the giant hand hangs limp, its fingers dangling. The four people and the two identical people in muted-cyan coveralls stand in a loose group with their faces tilted up. At the centre, the tall thin man in the long black-red coat with the enormous walrus moustache stands in profile looking mildly surprised, his hand lowered, and a thin dashed cream line fades upward from his hand toward the hanging hand. Nothing else. No text.
 ~~~
 
 ## Notes
