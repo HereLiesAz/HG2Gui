@@ -1452,8 +1452,6 @@ Files pile up beside it. So do jars, and gears. A conveyor feeds it. It does not
 
 A crowd of small figures looks up. One steps forward, hat in hand, and asks politely. The hand does not move.
 
-Two figures in berets approach a second key. They reach for it, and stop when they see the first.
-
 A man with a magnificent moustache raises one finger.
 
 He posts a black envelope up to the hand.
@@ -1598,7 +1596,7 @@ A midnight-blue void. A hand the size of a continent descends and presses one la
 
 **END:** `06_kill_frame_02.png`
 
-The small figures gather, and one steps forward, hat in hand, to ask politely. The hand does not move. Two figures in berets approach a second, smaller red key, reach for it, and stop when they see the first. A man with a magnificent moustache steps forward and raises one finger. End on the raised finger.
+The small figures gather, and one steps forward, hat in hand, to ask politely. The hand does not move. A man with a magnificent moustache steps forward and raises one finger. End on the raised finger.
 
 ### Ready-to-paste video generation prompt
 
@@ -1638,7 +1636,7 @@ START FRAME: 06_kill_frame_01.png
 END FRAME: 06_kill_frame_02.png
 
 CUT 02 OF 03 — 05:00–10:00
-The small figures gather, and one steps forward, hat in hand, to ask politely. The hand does not move. Two figures in berets approach a second, smaller red key, reach for it, and stop when they see the first. A man with a magnificent moustache steps forward and raises one finger. End on the raised finger.
+The small figures gather, and one steps forward, hat in hand, to ask politely. The hand does not move. A man with a magnificent moustache steps forward and raises one finger. End on the raised finger.
 ```
 
 ## Cut 03 — 10:00–15:00
