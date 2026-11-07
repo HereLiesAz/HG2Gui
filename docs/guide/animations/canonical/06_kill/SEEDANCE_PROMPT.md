@@ -7,12 +7,12 @@ Fifteen seconds, 1:1, reference mode, nine images (Seedance's maximum). The prom
 3. `docs/06_kill_extra_3.png` - city at war
 4. `docs/06_kill_frame_01.png` - smog
 5. `docs/06_kill_frame_02.png` - the four people and the hand's middle finger
-6. the guillotine and the two people in cyan coveralls (not yet saved to the repo)
-7. the stage: the hand, the guillotine arriving, the four people (not yet saved)
-8. the man in the black-red coat aiming up (not yet saved)
-9. the end: the man with the lowered gun, the dead hand beside him (not yet saved)
+6. `docs/06_kill_pair.png` - the guillotine and the two people in cyan coveralls
+7. `docs/06_kill_stage.png` - the stage: the hand, the guillotine arriving, the four people
+8. `docs/06_kill_aim.png` - the man in the black-red coat aiming up
+9. `docs/06_kill_frame_03.png` - the end: the man with the lowered gun, the dead hand beside him
 
-Images 6 to 9 were seen in conversation but only images attached at the start of a message can be saved, so they need to be sent again. The opening frame (`06_kill_frame_00.png`) is not generated; beat 1 describes it in words.
+The opening frame (`06_kill_frame_00.png`) is not generated; beat 1 describes it in words.
 
 ~~~text
 FORMAT: Exactly 1:1 square, 15 seconds, one continuous generation of three consecutive 5-second beats. No header, tabs, title, border, letterbox, captions, timestamps or any text anywhere. No narration, voice or dialogue.
