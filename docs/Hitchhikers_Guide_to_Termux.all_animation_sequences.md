@@ -188,7 +188,7 @@ Files pile up beside it. So do jars, and gears. A conveyor feeds it. It does not
 
 A crowd of small figures looks up. One steps forward, hat in hand, and asks politely. The hand does not move.
 
-Two figures in berets approach a second key. They reach for it, and stop when they see the first.
+Two of the small figures approach a second key. They reach for it, and stop when they see the first.
 
 A man with a magnificent moustache raises one finger.
 

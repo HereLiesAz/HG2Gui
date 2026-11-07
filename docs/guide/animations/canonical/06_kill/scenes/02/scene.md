@@ -1,6 +1,6 @@
 ## Cut 02 — 05:00–10:00
 
-The small figures gather, and one steps forward, hat in hand, to ask politely. The hand does not move. Two figures in berets approach a second, smaller red key, reach for it, and stop when they see the first. A man with a magnificent moustache steps forward and raises one finger. End on the raised finger.
+The small figures gather, and one steps forward, hat in hand, to ask politely. The hand does not move. Two of the small figures approach a second, smaller red key, reach for it, and stop when they see the first. A man with a magnificent moustache steps forward and raises one finger. End on the raised finger.
 
 ### Ready-to-paste generation prompt
 
@@ -34,7 +34,7 @@ Guide tab 2: SIGNALS
 Palette lock: mustard, midnight blue, black-red, cream, muted cyan
 
 CUT 02 OF 03 — 05:00–10:00
-The small figures gather, and one steps forward, hat in hand, to ask politely. The hand does not move. Two figures in berets approach a second, smaller red key, reach for it, and stop when they see the first. A man with a magnificent moustache steps forward and raises one finger. End on the raised finger.
+The small figures gather, and one steps forward, hat in hand, to ask politely. The hand does not move. Two of the small figures approach a second, smaller red key, reach for it, and stop when they see the first. A man with a magnificent moustache steps forward and raises one finger. End on the raised finger.
 ```
 
 ---
@@ -47,4 +47,4 @@ The small figures gather, and one steps forward, hat in hand, to ask politely. T
 
 **END:** `06_kill_frame_02.png`
 
-The small figures gather, and one steps forward, hat in hand, to ask politely. The hand does not move. Two figures in berets approach a second, smaller red key, reach for it, and stop when they see the first. A man with a magnificent moustache steps forward and raises one finger. End on the raised finger.
+The small figures gather, and one steps forward, hat in hand, to ask politely. The hand does not move. Two of the small figures approach a second, smaller red key, reach for it, and stop when they see the first. A man with a magnificent moustache steps forward and raises one finger. End on the raised finger.
