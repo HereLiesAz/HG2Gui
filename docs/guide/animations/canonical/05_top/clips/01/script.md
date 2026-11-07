@@ -4,16 +4,12 @@
 
 Visual action, verbatim from the revised 5-second cut sheet:
 
-A flat process leaderboard appears under the header `SORT: %CPU`: `sensible_process 2%`, `useful_process 1%`, `idle_process 0%`. A large clipboard labeled `PERFORMANCE REVIEW` slides in from frame right. The bottom process notices it. End on the bottom process staring at the clipboard.
+A flat dusty-lavender hill rises from the dark teal ground. Six small players appear one at a time, each in a different place: the foot of the hill, a ditch, behind a tree, halfway up, on a rock, and the summit. Each throws both arms into the air. End on all six, scattered across the hill, every one of them king.
 
 ## Corresponding original script excerpt
 
-A leaderboard appears beneath:
+A hill appears.
 
-`SORT: %CPU`
+Six players are on it, each in a different place: the foot of the hill, a ditch, behind a tree, halfway up, on a rock, and the summit.
 
-1. sensible_process — 2%
-2. useful_process — 1%
-3. idle_process — 0%
-
-A clipboard marked **PERFORMANCE REVIEW** enters frame.
+Each has both arms in the air. Each is king.

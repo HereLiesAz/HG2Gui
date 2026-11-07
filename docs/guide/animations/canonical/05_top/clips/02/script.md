@@ -4,14 +4,12 @@
 
 Visual action, verbatim from the revised 5-second cut sheet:
 
-The bottom process begins literally shovelling little CPU blocks into itself; its percentage climbs and its row moves upward. The other processes notice and imitate it. The leaderboard becomes frantic but remains cleanly diagrammatic. End with all rows racing upward in CPU use.
+Challengers run in from every side toward the summit. The king there shoves each one back down the hill. Twice, a challenger gets through: the king tumbles down the slope, and the challenger takes the spot and raises both arms. Elsewhere on the hill, players hear cheering from places they cannot see and look puzzled. End with a new king at the summit and the other players glancing sideways at one another.
 
 ## Corresponding original script excerpt
 
-The process at the bottom starts eating CPU.
+Challengers run in from every side toward the summit. The king there pushes each one back down the hill.
 
-Its percentage rises.
+Twice, a challenger gets through. The king goes down the hill instead, and the challenger raises both arms.
 
-The others notice the clipboard.
-
-Soon every process is shovelling CPU into itself while climbing the board.
+Elsewhere, players hear cheering from places they cannot see. They look puzzled.

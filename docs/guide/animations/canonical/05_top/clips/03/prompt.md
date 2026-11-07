@@ -8,15 +8,15 @@ Create the specified animation as a flat, matte screen-printed cut-paper pictogr
 Render EXACTLY 1:1 square; single background dark teal `#073D43`.
 
 SEQUENCE: top; CLIP 03; 5 seconds · 10:00–15:00.
-START: Resume precisely from the preceding clip's final tableau: End with all rows racing upward in CPU use.
-END: Hold on the trophy beside a completely unusable system.
+START: Resume precisely from the preceding clip's final tableau: End with a new king at the summit and the other players glancing sideways at one another.
+END: Hold on the king, arms still raised, with five players looking up.
 
 MOTION DIRECTOR'S TIMING
-0.0–2.4s: One process hits `99%` and receives a tiny trophy. Confetti appears for half a second; simultaneously the entire terminal freezes rigid.
-2.4–4.6s: A boardroom stamp descends over the frozen picture: `RECORD QUARTER`. Hold on the trophy beside a completely unusable system.
+0.0–2.4s: Thin lines of sight run from each player to the other players they can see. Most see only one or two, but every line also reaches the player at the summit, who alone can see everyone.
+2.4–4.6s: A single crown settles on that player. The other five slowly lower their arms. Hold on the king, arms still raised, with five players looking up.
 4.6–5.0s: Hold the exact finishing composition, no additional changes.
 
-EXACT STORY ACTION / WORDS: One process hits `99%` and receives a tiny trophy. Confetti appears for half a second; simultaneously the entire terminal freezes rigid. A boardroom stamp descends over the frozen picture: `RECORD QUARTER`. Hold on the trophy beside a completely unusable system.
+EXACT STORY ACTION / WORDS: Thin lines of sight run from each player to the other players they can see. Most see only one or two, but every line also reaches the player at the summit, who alone can see everyone. A single crown settles on that player. The other five slowly lower their arms. Hold on the king, arms still raised, with five players looking up.
 
 A REQUIRED BOUNDARY IS MISSING: these written shots are production requirements, not fabricated files. Final matched video generation must wait for approved boundary art.
 ~~~

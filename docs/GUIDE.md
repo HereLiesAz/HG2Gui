@@ -470,47 +470,45 @@ For that, it must become a process.
 
 Displays a continuously refreshed view of processes and system resource use.
 
-When the display is sorted by CPU use, the name top creates an unfortunate impression that a competition is taking place.
+Before top, King of the Hill had a great many winners.
 
-The Process Advancement Board made this mistake formally.
+Each player stood wherever they happened to be standing on the hill, and was king of it. Anyone who came near was pushed back down. Everyone knew the rules, so this caused no difficulty.
 
-It noticed that a process could rise in the table by consuming more CPU and introduced performance targets accordingly.
+Difficulty began when some players overheard others declaring themselves king of the hill, which was puzzling, since they had been king of the hill for some time.
 
-Idle processes were placed on improvement plans.
+No player could see the whole hill. There were trees, and ditches, and the slope. So none of them could judge whether they were king or not.
 
-Useful processes were advised to demonstrate greater resource visibility.
+One player could see everyone. By no coincidence, everyone could see that player.
 
-Within one refresh interval, everything had become extremely important and almost nothing useful was happening.
+When the players compared their lists of the kings they had seen, exactly one name was on every list.
 
-top can sort by other fields, which merely gives the Board additional ways to misunderstand success.
+That was the top.
+
+It did not tell anyone who had won. Until then, everyone had.
+
+top sorts by CPU use and keeps a list. It would like it noted that it only reports who can be seen from everywhere, and that the only thing it ever invented was losers.
 
 **Animation candidate**
 
-A leaderboard appears beneath:
+A hill appears.
 
-SORT: %CPU
+Six players are on it, each in a different place: the foot of the hill, a ditch, behind a tree, halfway up, on a rock, and the summit.
 
-1. sensible_process — 2%
-2. useful_process — 1%
-3. idle_process — 0%
+Each has both arms in the air. Each is king.
 
-A clipboard marked PERFORMANCE REVIEW enters frame.
+Challengers run in from every side toward the summit. The king there pushes each one back down the hill.
 
-The process at the bottom starts eating CPU.
+Twice, a challenger gets through. The king goes down the hill instead, and the challenger raises both arms.
 
-Its percentage rises.
+Elsewhere, players hear cheering from places they cannot see. They look puzzled.
 
-The others notice the clipboard.
+Thin lines of sight run from each player to the others they can see. Every player can see the one at the summit. Only the one at the summit can see everyone.
 
-Soon every process is shovelling CPU into itself while climbing the board.
+A single crown settles on the summit player.
 
-One reaches 99%.
+The five others slowly lower their arms.
 
-A little trophy appears.
-
-The terminal freezes.
-
-The Board records a record quarter.
+Hold.
 
 ### `kill` — send a signal
 

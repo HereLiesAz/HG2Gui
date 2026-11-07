@@ -8,15 +8,15 @@ Create the specified animation as a flat, matte screen-printed cut-paper pictogr
 Render EXACTLY 1:1 square; single background dark teal `#073D43`.
 
 SEQUENCE: top; CLIP 01; 5 seconds · 00:00–05:00.
-START: Opening composition: A flat process leaderboard appears under the header `SORT: %CPU`: `sensible_process 2%`, `useful_process 1%`, `idle_process 0%`.
-END: End on the bottom process staring at the clipboard.
+START: Opening composition: A flat dusty-lavender hill rises from the dark teal ground.
+END: End on all six, scattered across the hill, every one of them king.
 
 MOTION DIRECTOR'S TIMING
-0.0–2.4s: A flat process leaderboard appears under the header `SORT: %CPU`: `sensible_process 2%`, `useful_process 1%`, `idle_process 0%`. A large clipboard labeled `PERFORMANCE REVIEW` slides in from frame right.
-2.4–4.6s: The bottom process notices it. End on the bottom process staring at the clipboard.
+0.0–2.4s: A flat dusty-lavender hill rises from the dark teal ground. Six small players appear one at a time, each in a different place: the foot of the hill, a ditch, behind a tree, halfway up, on a rock, and the summit.
+2.4–4.6s: Each throws both arms into the air. End on all six, scattered across the hill, every one of them king.
 4.6–5.0s: Hold the exact finishing composition, no additional changes.
 
-EXACT STORY ACTION / WORDS: A flat process leaderboard appears under the header `SORT: %CPU`: `sensible_process 2%`, `useful_process 1%`, `idle_process 0%`. A large clipboard labeled `PERFORMANCE REVIEW` slides in from frame right. The bottom process notices it. End on the bottom process staring at the clipboard.
+EXACT STORY ACTION / WORDS: A flat dusty-lavender hill rises from the dark teal ground. Six small players appear one at a time, each in a different place: the foot of the hill, a ditch, behind a tree, halfway up, on a rock, and the summit. Each throws both arms into the air. End on all six, scattered across the hill, every one of them king.
 
 A REQUIRED BOUNDARY IS MISSING: these written shots are production requirements, not fabricated files. Final matched video generation must wait for approved boundary art.
 ~~~

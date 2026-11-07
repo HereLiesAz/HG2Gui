@@ -1,6 +1,6 @@
 ## Cut 03 — 10:00–15:00
 
-One process hits `99%` and receives a tiny trophy. Confetti appears for half a second; simultaneously the entire terminal freezes rigid. A boardroom stamp descends over the frozen picture: `RECORD QUARTER`. Hold on the trophy beside a completely unusable system.
+Thin lines of sight run from each player to the other players they can see. Most see only one or two, but every line also reaches the player at the summit, who alone can see everyone. A single crown settles on that player. The other five slowly lower their arms. Hold on the king, arms still raised, with five players looking up.
 
 ### Ready-to-paste generation prompt
 
@@ -30,11 +30,11 @@ CONTINUITY / EDITING
 
 SEQUENCE-SPECIFIC LOCK
 Guide tab 1: TOP
-Guide tab 2: PERFORMANCE
+Guide tab 2: KING OF THE HILL
 Palette lock: mustard, dark teal, mint green, vermilion, dusty lavender
 
 CUT 03 OF 03 — 10:00–15:00
-One process hits `99%` and receives a tiny trophy. Confetti appears for half a second; simultaneously the entire terminal freezes rigid. A boardroom stamp descends over the frozen picture: `RECORD QUARTER`. Hold on the trophy beside a completely unusable system.
+Thin lines of sight run from each player to the other players they can see. Most see only one or two, but every line also reaches the player at the summit, who alone can see everyone. A single crown settles on that player. The other five slowly lower their arms. Hold on the king, arms still raised, with five players looking up.
 ```
 
 ---
@@ -47,4 +47,4 @@ One process hits `99%` and receives a tiny trophy. Confetti appears for half a s
 
 **END:** `05_top_frame_03.png`
 
-One process hits `99%` and receives a tiny trophy. Confetti appears for half a second; simultaneously the entire terminal freezes rigid. A boardroom stamp descends over the frozen picture: `RECORD QUARTER`. Hold on the trophy beside a completely unusable system.
+Thin lines of sight run from each player to the other players they can see. Most see only one or two, but every line also reaches the player at the summit, who alone can see everyone. A single crown settles on that player. The other five slowly lower their arms. Hold on the king, arms still raised, with five players looking up.

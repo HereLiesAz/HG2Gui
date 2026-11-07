@@ -145,31 +145,25 @@ A large human finger enters frame, misses the tiny `^X`, and presses the entire 
 
 **Animation candidate**
 
-A leaderboard appears beneath:
+A hill appears.
 
-`SORT: %CPU`
+Six players are on it, each in a different place: the foot of the hill, a ditch, behind a tree, halfway up, on a rock, and the summit.
 
-1. sensible_process — 2%
-2. useful_process — 1%
-3. idle_process — 0%
+Each has both arms in the air. Each is king.
 
-A clipboard marked **PERFORMANCE REVIEW** enters frame.
+Challengers run in from every side toward the summit. The king there pushes each one back down the hill.
 
-The process at the bottom starts eating CPU.
+Twice, a challenger gets through. The king goes down the hill instead, and the challenger raises both arms.
 
-Its percentage rises.
+Elsewhere, players hear cheering from places they cannot see. They look puzzled.
 
-The others notice the clipboard.
+Thin lines of sight run from each player to the others they can see. Every player can see the one at the summit. Only the one at the summit can see everyone.
 
-Soon every process is shovelling CPU into itself while climbing the board.
+A single crown settles on the summit player.
 
-One reaches 99%.
+The five others slowly lower their arms.
 
-A little trophy appears.
-
-The terminal freezes.
-
-The Board records a record quarter.
+Hold.
 
 ---
 

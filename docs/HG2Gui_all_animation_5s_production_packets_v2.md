@@ -1181,31 +1181,25 @@ The camera performs an absurd further ten-level zoom to make `^X Exit` barely le
 
 ## Source animation sequence
 
-A leaderboard appears beneath:
+A hill appears.
 
-`SORT: %CPU`
+Six players are on it, each in a different place: the foot of the hill, a ditch, behind a tree, halfway up, on a rock, and the summit.
 
-1. sensible_process — 2%
-2. useful_process — 1%
-3. idle_process — 0%
+Each has both arms in the air. Each is king.
 
-A clipboard marked **PERFORMANCE REVIEW** enters frame.
+Challengers run in from every side toward the summit. The king there pushes each one back down the hill.
 
-The process at the bottom starts eating CPU.
+Twice, a challenger gets through. The king goes down the hill instead, and the challenger raises both arms.
 
-Its percentage rises.
+Elsewhere, players hear cheering from places they cannot see. They look puzzled.
 
-The others notice the clipboard.
+Thin lines of sight run from each player to the others they can see. Every player can see the one at the summit. Only the one at the summit can see everyone.
 
-Soon every process is shovelling CPU into itself while climbing the board.
+A single crown settles on the summit player.
 
-One reaches 99%.
+The five others slowly lower their arms.
 
-A little trophy appears.
-
-The terminal freezes.
-
-The Board records a record quarter.
+Hold.
 
 ## Sequence lock
 
@@ -1268,7 +1262,7 @@ EDITING
 
 **Used as:** Cut 01 START
 
-A flat process leaderboard appears under the header `SORT: %CPU`: `sensible_process 2%`, `useful_process 1%`, `idle_process 0%`.
+A flat dusty-lavender hill rises from the dark teal ground.
 
 ### Frame 01 — `05_top_frame_01.png`
 
@@ -1294,7 +1288,7 @@ The trophy beside a completely unusable system.
 
 **END:** `05_top_frame_01.png`
 
-A flat process leaderboard appears under the header `SORT: %CPU`: `sensible_process 2%`, `useful_process 1%`, `idle_process 0%`. A large clipboard labeled `PERFORMANCE REVIEW` slides in from frame right. The bottom process notices it. End on the bottom process staring at the clipboard.
+A flat dusty-lavender hill rises from the dark teal ground. Six small players appear one at a time, each in a different place: the foot of the hill, a ditch, behind a tree, halfway up, on a rock, and the summit. Each throws both arms into the air. End on all six, scattered across the hill, every one of them king.
 
 ### Ready-to-paste video generation prompt
 
@@ -1334,7 +1328,7 @@ START FRAME: 05_top_frame_00.png
 END FRAME: 05_top_frame_01.png
 
 CUT 01 OF 03 — 00:00–05:00
-A flat process leaderboard appears under the header `SORT: %CPU`: `sensible_process 2%`, `useful_process 1%`, `idle_process 0%`. A large clipboard labeled `PERFORMANCE REVIEW` slides in from frame right. The bottom process notices it. End on the bottom process staring at the clipboard.
+A flat dusty-lavender hill rises from the dark teal ground. Six small players appear one at a time, each in a different place: the foot of the hill, a ditch, behind a tree, halfway up, on a rock, and the summit. Each throws both arms into the air. End on all six, scattered across the hill, every one of them king.
 ```
 
 ## Cut 02 — 05:00–10:00
@@ -1343,7 +1337,7 @@ A flat process leaderboard appears under the header `SORT: %CPU`: `sensible_proc
 
 **END:** `05_top_frame_02.png`
 
-The bottom process begins literally shovelling little CPU blocks into itself; its percentage climbs and its row moves upward. The other processes notice and imitate it. The leaderboard becomes frantic but remains cleanly diagrammatic. End with all rows racing upward in CPU use.
+Challengers run in from every side toward the summit. The king there shoves each one back down the hill. Twice, a challenger gets through: the king tumbles down the slope, and the challenger takes the spot and raises both arms. Elsewhere on the hill, players hear cheering from places they cannot see and look puzzled. End with a new king at the summit and the other players glancing sideways at one another.
 
 ### Ready-to-paste video generation prompt
 
@@ -1383,7 +1377,7 @@ START FRAME: 05_top_frame_01.png
 END FRAME: 05_top_frame_02.png
 
 CUT 02 OF 03 — 05:00–10:00
-The bottom process begins literally shovelling little CPU blocks into itself; its percentage climbs and its row moves upward. The other processes notice and imitate it. The leaderboard becomes frantic but remains cleanly diagrammatic. End with all rows racing upward in CPU use.
+Challengers run in from every side toward the summit. The king there shoves each one back down the hill. Twice, a challenger gets through: the king tumbles down the slope, and the challenger takes the spot and raises both arms. Elsewhere on the hill, players hear cheering from places they cannot see and look puzzled. End with a new king at the summit and the other players glancing sideways at one another.
 ```
 
 ## Cut 03 — 10:00–15:00
@@ -1392,7 +1386,7 @@ The bottom process begins literally shovelling little CPU blocks into itself; it
 
 **END:** `05_top_frame_03.png`
 
-One process hits `99%` and receives a tiny trophy. Confetti appears for half a second; simultaneously the entire terminal freezes rigid. A boardroom stamp descends over the frozen picture: `RECORD QUARTER`. Hold on the trophy beside a completely unusable system.
+Thin lines of sight run from each player to the other players they can see. Most see only one or two, but every line also reaches the player at the summit, who alone can see everyone. A single crown settles on that player. The other five slowly lower their arms. Hold on the king, arms still raised, with five players looking up.
 
 ### Ready-to-paste video generation prompt
 
@@ -1432,7 +1426,7 @@ START FRAME: 05_top_frame_02.png
 END FRAME: 05_top_frame_03.png
 
 CUT 03 OF 03 — 10:00–15:00
-One process hits `99%` and receives a tiny trophy. Confetti appears for half a second; simultaneously the entire terminal freezes rigid. A boardroom stamp descends over the frozen picture: `RECORD QUARTER`. Hold on the trophy beside a completely unusable system.
+Thin lines of sight run from each player to the other players they can see. Most see only one or two, but every line also reaches the player at the summit, who alone can see everyone. A single crown settles on that player. The other five slowly lower their arms. Hold on the king, arms still raised, with five players looking up.
 ```
 
 

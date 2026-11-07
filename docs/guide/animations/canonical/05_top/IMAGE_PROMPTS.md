@@ -2,91 +2,96 @@
 
 Four boundary frames for the three cuts of `05_top` (15 seconds). Frame `NN` is the START of cut `NN+1`; the same image is the END of cut `NN`. Frame 03 is the end of the last cut.
 
-Next in order after `04_nano`. This one is text-heavy, so read the notes at the bottom before you start.
+This replaces the earlier performance-review version of the scene, which is gone from the repo.
 
 ## The story, in plain words
 
-`top` is the Unix command that lists the programs running on a computer ("processes"), ranked by how much of the processor (CPU) each one is using. In this film the processes are office workers at a company, and the leaderboard is their quarterly ranking.
+Before `top`, King of the Hill had a great many winners. Each player stood wherever they happened to be on the hill and was king of it. Anyone who came near was pushed back down, and everyone knew the rules.
 
-There are three. `sensible_process` is a tidy worker who does exactly what is needed (2%). `useful_process` does a little (1%). `idle_process` does nothing at all (0%) and is asleep at the bottom of the board.
+Trouble started when some players overheard others declaring themselves king, which was puzzling, since they had been king for some time. No player could see the whole hill, because of trees, ditches and the slope, so none of them could judge whether they were king. One player could see everyone, and everyone could see that player. When the players compared their lists of the kings they had seen, exactly one name was on every list. That was the top.
 
-A performance review arrives, as a large clipboard. The bottom worker wakes up, stares at it, and works out the only thing the review measures is the CPU number, not whether any work gets done. So it starts literally shovelling CPU into itself to climb the board. The other two notice and copy it. Soon all three are frantically stuffing themselves, racing upward. The bottom worker reaches 99% and is handed a tiny trophy. At that moment the computer, with no CPU left for anything else, freezes solid. The Board of directors stamps the result RECORD QUARTER.
+It did not tell anyone who had won. Until then, everyone had. The top invented losers.
 
-The joke is deadpan and one idea long: everyone is rewarded for a number going up, and the machine is destroyed by it. Nobody performs for the camera; the staging stays calm, flat and diagrammatic. (This reading of the scene is mine. The guide gives the beats, not the reason; the clipboard is the cause I have chosen.)
+## What the pictures need to show
 
-## Cast
+Four pictures, each one calm and simple. There is no lettering anywhere, and no numbers.
 
-All three workers share one body: a small round-bodied, flat silhouette with two short legs, two stubby arms and a round head with two dot eyes. They differ only in colour and one marker item, so they stay recognisable in every frame.
+- **Frame 00:** the empty hill.
+- **Frame 01:** six kings, scattered, arms up.
+- **Frame 02:** the fight for the summit; the king there has just been replaced.
+- **Frame 03:** the lines of sight, the crown, one king left, five players with their arms down.
 
-- `sensible_process`: mint green, stands upright, a tiny necktie.
-- `useful_process`: dusty lavender, stands upright, a small wrench tucked under one arm.
-- `idle_process`: mustard, slouched, a tiny nightcap and a small pillow hugged to its chest.
+## Cast and set
 
-Props: the leaderboard (a mustard header strip over three rows), the clipboard (vermilion, with a cream sheet), little vermilion CPU blocks, a flat shovel for each worker, a tiny mustard trophy cup, and a vermilion boardroom stamp.
+All six players are the same small figure: a vermilion bean-shaped body, a round head, no face, two thin arms. Arms up is a V shape. Identical figures are the point of the joke, and they are far easier for an image generator to keep consistent.
+
+- The hill: one smooth dusty-lavender mound.
+- A tree, left of centre on the slope: a mint-green lollipop tree.
+- A rock, right of centre on the slope: a mint-green rounded rock.
+- A ditch, low on the slope: a dark-teal notch cut into the hill.
+- The crown: mustard, plain, three points.
+- The lines of sight: thin dashed mustard lines.
+
+## Colours
+
+Background for the whole animation: dark teal `#073D43`, from this entry's generated prompts. The palette is mustard, mint green, vermilion and dusty lavender; the guide names these without hex values, so the hex values below are my choices: mustard `#D9A12B`, mint green `#9FD8B8`, vermilion `#E34A2D`, dusty lavender `#A89CC8`.
 
 ## How to use
 
 1. Start one new ChatGPT conversation. Attach `docs/03_apt_get_update_frame_00.png` and say: "This is the style to match: flat matte cut-paper pictogram, one flat background colour. Do not copy its content."
-2. Paste the **opening message** below, once. It tells ChatGPT the story and the cast. Wait for it to answer.
-3. Paste the **style block**, then the prompt for frame 00. Generate until it is right.
-4. For each later frame, attach the previous approved frame, paste the style block again, then the frame prompt. Say: "Keep the same three workers, the same leaderboard layout and the same lettering style as the previous frame."
-5. Save approved frames as `docs/05_top_frame_00.png` to `docs/05_top_frame_03.png`. The Seedance pack builder (`scripts/build_seedance_packs.py`) picks them up by that name.
+2. Paste the **opening message** once, and wait for the reply.
+3. Paste the **style block**, then the prompt for frame 00. Regenerate until it is right.
+4. For each later frame, attach the previous approved frame, paste the style block, then the frame prompt, and say: "Keep the same hill, the same props and the same figures as the previous frame."
+5. Save approved frames as `docs/05_top_frame_00.png` to `docs/05_top_frame_03.png`.
 
 ## Opening message (paste once, before frame 00)
 
 ~~~text
-I am going to ask you for four images that are consecutive frames of one short animated scene. Here is what the scene is about, so you understand what each picture is for.
+I am going to ask you for four images that are consecutive frames of one short animated scene. Here is the story, so you know what each picture is for.
 
-"top" is the command that lists a computer's running programs, ranked by how much processor time (CPU) each uses. In our film those programs are office workers, and the ranking board is their quarterly leaderboard. There are three workers. sensible_process is a tidy worker who does just what is needed and uses 2%. useful_process does a little and uses 1%. idle_process does nothing and uses 0%; it is asleep at the bottom of the board.
+It is the game King of the Hill, before anyone had invented a way to tell who had won. Six players are scattered on a hill, each standing in a different place, each with both arms up, each believing they are king of the hill. Challengers run in and the players push them off. Sometimes a challenger gets through, and then the old king rolls down the hill and the challenger raises both arms. Most players cannot see the others, because of a tree, a ditch and the slope, so they cannot tell who has really won. One player, at the very top, can see everyone, and everyone can see that player. When everyone compares who they can see, one player is on every list. That player gets a crown. The other five lower their arms. The joke is that before this, everyone was a winner, and that the thing that found the winner invented losers.
 
-A performance review arrives as a big clipboard. idle_process wakes up, stares at it, and realises the review only measures the CPU number, so it starts literally shovelling little CPU blocks into itself to climb the board. The other two notice and copy it, until all three are frantically stuffing themselves and racing upward. idle_process reaches 99% and is handed a tiny trophy. At that moment the whole computer freezes solid, because there is no CPU left for anything else. The company's Board stamps the result RECORD QUARTER.
+Keep everything calm, flat and deadpan. Nobody acts for the camera. The six players are identical small figures: a vermilion bean-shaped body, a round head with no face, two thin arms. Arms up is a V shape. Keep them identical in every image.
 
-The joke is deadpan: everyone is rewarded for a number going up, and the machine is destroyed by it. Nobody acts for the camera. Keep everything calm, flat and diagrammatic.
-
-The three workers share one body: a small round-bodied flat silhouette with two short legs, two stubby arms and a round head with two dot eyes. They differ only in colour and one marker item. sensible_process is mint green, upright, with a tiny necktie. useful_process is dusty lavender, upright, with a small wrench under one arm. idle_process is mustard, slouched, with a tiny nightcap and a small pillow hugged to its chest. Keep them identical in every image.
-
-Reply "ready" and then wait for the first image request.
+Reply "ready" and wait for the first image request.
 ~~~
-
-## Colours
-
-Background for the whole animation: dark teal `#073D43`, taken from this entry's generated prompts. Palette: mustard `#D9A12B`, mint green `#9FD8B8`, vermilion `#E34A2D`, dusty lavender `#A89CC8`. The guide names these colours but gives no hex for them; the hex values are my choices.
 
 ## Style block (paste before every frame prompt)
 
 ~~~text
-Square image, 1:1. One single flat dark teal (#073D43) background fills the whole square edge to edge. Flat 2D screen-printed cut-paper pictogram style: simple opaque cutout shapes, economical geometric silhouettes, matte colour, slightly imperfect printed edges, large areas of empty space. No gradients, no gloss, no drop shadows, no 3D shading, no photographic detail. Only these colours besides the background: mustard, mint green, vermilion, dusty lavender. No header, no tabs, no border, no frame, no captions. The only lettering allowed is the text the frame prompt gives in quotation marks, in a heavy geometric sans-serif, spelled exactly as written, and nothing else. Deadpan, calm and absurd, shown with complete seriousness.
+Square image, 1:1. One single flat dark teal (#073D43) background fills the whole square edge to edge. Flat 2D screen-printed cut-paper pictogram style: simple opaque cutout shapes, economical geometric silhouettes, matte colour, slightly imperfect printed edges, large areas of empty space. No gradients, no gloss, no drop shadows, no 3D shading, no photographic detail. Only these colours besides the background: mustard, mint green, vermilion, dusty lavender. No text, no letters, no numbers, no labels, no header, no border, no frame. Deadpan, calm and absurd, shown with complete seriousness.
 ~~~
 
 ## Frames
 
-### Frame 00 — start of cut 01 · "A flat process leaderboard appears under the header `SORT: %CPU`."
+### Frame 00 — start of cut 01 · "A hill appears."
 
 ~~~text
-The company's quarterly leaderboard fills the middle of the square. Across its top, a mustard strip with the text "SORT: %CPU" in dark teal. Under it, three rows stacked evenly, each a long rounded mint-green bar. In each row, the worker stands at the left and the row's text sits at the right in dark teal. Row one: the mint-green necktie worker standing neatly, "sensible_process 2%". Row two: the dusty-lavender worker with the wrench, standing neatly, "useful_process 1%". Row three: the mustard worker in the nightcap, slumped over its pillow, fast asleep, "idle_process 0%". Each row also has a thin percentage bar that is almost empty. Nothing else in the picture; a lot of empty teal around the board.
+One smooth dusty-lavender hill, a wide rounded mound, sits low in the square with dark teal sky above it. On its left slope, one small mint-green lollipop tree. On its right slope, one mint-green rounded rock. Low on the slope, one dark-teal notch cut into the hill like a ditch. Nothing else. No people.
 ~~~
 
-### Frame 01 — end of cut 01 / start of cut 02 · "A large clipboard labeled `PERFORMANCE REVIEW` slides in from frame right. The bottom process notices it. End on the bottom process staring at the clipboard."
+### Frame 01 — end of cut 01 / start of cut 02 · "Six players are on it … Each has both arms in the air. Each is king."
 
 ~~~text
-The same leaderboard and the same three workers, unchanged: "SORT: %CPU", "sensible_process 2%", "useful_process 1%", "idle_process 0%". A large flat vermilion clipboard with a cream sheet has slid in from the right and stands at the right of the square, partly overlapping the board's edge, with the text "PERFORMANCE REVIEW" in dark teal across its top. In the bottom row, the mustard worker has woken: sitting bolt upright, nightcap askew, pillow dropped, eyes wide, head turned toward the clipboard, staring at it. The two workers above carry on as before, not yet looking.
+The same hill, tree, rock and ditch. Six identical small vermilion players, bean-shaped body and round faceless head, each with both thin arms raised in a V. They stand scattered: one at the very foot of the hill at the left, one in the ditch so that only its head and raised arms show above the notch, one half hidden behind the tree, one halfway up the right slope, one on top of the rock, and one at the summit. Every one of them is celebrating. Nothing else.
 ~~~
 
-### Frame 02 — end of cut 02 / start of cut 03 · "The bottom process begins literally shovelling little CPU blocks into itself; its percentage climbs and its row moves upward. The other processes notice and imitate it. … End with all rows racing upward in CPU use."
+### Frame 02 — end of cut 02 / start of cut 03 · "Challengers run in … The king there pushes each one back down the hill. Twice, a challenger gets through. The king goes down the hill instead, and the challenger raises both arms."
 
 ~~~text
-The same board, the same three workers and the same clipboard at the right. Every worker is now shovelling small vermilion square blocks into its own body with a little flat shovel, each still wearing its marker item (necktie, wrench, nightcap). The rows have reordered and the percentage bars are filling: first row, the mustard worker, "idle_process 81%"; second row, the dusty-lavender worker, "useful_process 63%"; third row, the mint-green worker, "sensible_process 47%". The workers lean forward, frantic but still plain flat shapes. A few loose vermilion blocks fly between the rows. The header still reads "SORT: %CPU".
+The same hill and props. At the summit, one vermilion player stands with both arms raised, newly crowned king of the spot. Just below the summit on the slope, the previous king tumbles head over heels down the hill, tilted sideways, mid-roll, with a few small mustard motion marks behind it. Lower on the slope, two more vermilion figures are rolling down, also tilted, pushed off. The other four players are exactly where they were in the previous frame, still with both arms raised. A few thin mustard curved lines like sound waves reach out from the summit player toward the others. Nothing else.
 ~~~
 
-### Frame 03 — end of cut 03 · "One process hits `99%` and receives a tiny trophy. Confetti appears for half a second; simultaneously the entire terminal freezes rigid. A boardroom stamp descends … `RECORD QUARTER`. Hold on the trophy beside a completely unusable system."
+### Frame 03 — end of cut 03 · "Thin lines of sight … A single crown settles on the summit player. The five others slowly lower their arms. Hold."
 
 ~~~text
-The same board, frozen rigid. The top row reads "idle_process 99%", the mustard worker standing very upright, swollen and still, beside a tiny mustard trophy cup. The two rows below are stuck mid-motion with their shovels and blocks hanging unmoving in the air. Flat confetti pieces in mint green, mustard and dusty lavender hang motionless across the picture. Over the whole picture, tilted slightly, a large vermilion rectangular boardroom stamp mark with the text "RECORD QUARTER" in cream, as if pressed down onto the frozen scene. The header still reads "SORT: %CPU".
+The same hill and props, with all six players back in their places from frame 01. The player at the summit stands with both arms raised and a small mustard three-pointed crown on its head. The other five players have both arms lowered at their sides, facing the summit. From each of the five, a thin dashed mustard line runs straight to the summit player. A few of the five also have one shorter dashed line to a neighbour. Nothing else.
 ~~~
 
 ## Notes
 
-- Text is the risk, and this scene has the most of it. Required, exactly as written: "SORT: %CPU", "sensible_process", "useful_process", "idle_process", their percentages, "PERFORMANCE REVIEW", "99%", "RECORD QUARTER". Reject any frame with a misspelling or an extra word. If a text item will not come out right after three tries, stop and ask the project owner; the guide's own advice is to leave a clean area and composite exact text in post.
-- Invented by me, to make the scene readable: the reason the bottom worker acts (it works out the review only measures CPU), the three marker items (necktie, wrench, nightcap and pillow), the percentages in frame 02 (81%, 63%, 47%) and their order, and that the bottom worker is the one who reaches 99%. The beats say none of this. Reword freely.
-- Frame 03 shows "frozen" by suspending the confetti and shovels mid-air under the stamp. If ChatGPT adds a frost or glitch effect, show it to the project owner rather than rejecting it.
-- When a frame departs from a prompt on content (an extra prop, a different layout), show it to the project owner rather than rejecting it; reject only defects (wrong colour, non-flat background, broken shape, stray text).
+- **Too busy:** frame 02 is the hardest picture. If ChatGPT crowds it, generate it in two passes: first the summit swap alone (king rolling down, new king up, nothing else), then ask it to add the two extra tumbling figures.
+- **Counting:** reject any frame with the wrong number of players. The count is six in frames 01 and 03, and a mix of standing and tumbling in frame 02.
+- **Text:** there should be none at all. Reject any frame with letters, numbers or labels.
+- **Invented by me, because the guide does not say:** the identical vermilion figures, the six players, the exact spots, the mint props, the crown and the dashed lines as a picture of "lists", and that the final king's arms stay up. Reword freely.
+- **Content versus defect:** when a frame departs from the prompt on content (an extra tree, a different crown), show it to the project owner rather than rejecting it. Reject only defects: wrong colour, non-flat background, broken shapes, stray text, wrong player count.
