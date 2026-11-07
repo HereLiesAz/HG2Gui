@@ -168,7 +168,7 @@ The camera completes its circle. Thin lines of sight run from each player to the
 
 **END:** `06_kill_frame_01.png`
 
-A miniature post office labeled `kill`. A clerk sorts envelopes into slots. Show three envelopes in succession, each cleanly readable: `TERM — REQUEST TO TERMINATE`, `HUP — HANGUP`, `STOP — DON'T MOVE`. Each slides to a different chute. End with the clerk noticing a distant black envelope.
+A midnight-blue void. A hand the size of a continent descends and presses one large mustard key. A small machine below begins to turn, and things start to pile up beside it: files, jars, gears, a conveyor feeding it. End on the machine running, the piles growing, and a crowd of small figures at the bottom of the frame beginning to look up.
 
 ### Cut 02 — 05:00–10:00
 
@@ -176,7 +176,7 @@ A miniature post office labeled `kill`. A clerk sorts envelopes into slots. Show
 
 **END:** `06_kill_frame_02.png`
 
-Camera pans a little along the sorting bench to reveal the black envelope alone under a warning lamp: `KILL — CANNOT BE REFUSED`. The clerk approaches it with exaggerated procedural caution, using tongs or a tiny cart, never emoting. End with one hand just about to touch it.
+The small figures gather, and one steps forward, hat in hand, to ask politely. The hand does not move. Two of the small figures approach a second, smaller red key, reach for it, and stop when they see the first. A man with a magnificent moustache steps forward and raises one finger. End on the raised finger.
 
 ### Cut 03 — 10:00–15:00
 
@@ -184,7 +184,7 @@ Camera pans a little along the sorting bench to reveal the black envelope alone 
 
 **END:** `06_kill_frame_03.png`
 
-The instant the clerk touches the black envelope, every other envelope, chute, parcel and waiting process snaps into perfect obedient alignment. No explosion. No violence. Just terrifying administrative cooperation. Hold on the clerk looking mildly pleased with improved workflow.
+The moustached man slides a black envelope into a slot and it rises to the hand. The hand goes limp. The machine stops, then the conveyors, then the lights, one by one. No explosion. Hold on the moustached man, mildly surprised, under a perfectly still hand.
 
 ## 07 — `df` — filesystem free space
 

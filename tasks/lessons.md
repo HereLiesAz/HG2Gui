@@ -18,3 +18,19 @@
 - `05_top`: my first two cast designs (identical bean figures, then generic cream people) were rejected because they did not look like the Guide. The project's own frames in `docs/guide/project/references/shared/` already define the cast and style: tall paper-cut figures in uniforms, a woman with a megaphone, a big green bear in a blue coat, sound arcs and dashed arrows.
 - Rule: before designing characters or props for any entry, open the existing reference frames and take the cast, proportions, palette and diagram language from them.
 - Rule: when the user states a staging rule (here, "the camera must move, and we never see all the players"), treat it as part of the joke, not a detail. It changed the frames, the camera plan and the animation text.
+
+## The user's own story beats any concept of mine
+
+- `kill`: I kept the guide's post-office concept and added a French clerk and a repainted sign; the user said it was "not very h2g2" and gave their own story (God executed a command; the French almost executed it; Nietzsche had an idea; the signal killed a little too well). That was the concept.
+- Rule: when the user adds a requirement to an existing scene, ask what the Guide's voice would do with it, which usually means a creation-myth or bureaucratic-history register, not a visual gag bolted onto the old scene. If unsure, offer one line of voice, not a full rewrite.
+- Rule: the Guide's recurring joke is a short, deadpan history of how a word or command came to mean what it does. Start there.
+
+- `kill` again: after the user gave their script I padded it with SIGTERM and SIGKILL lines because the Guide's entries usually end on a technical statement. The user said that choked the whole thing. Rule: when the user supplies the text of an entry, use it as given. Do not add technical landing lines, explanations or tails of my own. The only thing I may add is a one-line lead if the entry format needs one, and I must say so.
+
+- `kill` cast: I reused the Guide's uniformed men for the crowd. The user said they do not even like those, and that the book is science fiction. Rule: a new entry gets a new cast. Never lift characters from earlier entries or from the reference frames; take only flat-colour, paper-cut treatment. When the source is science fiction, the crowd is made of odd beings, not uniformed men.
+
+- Aesthetic: the target is minimalistic flat vector with simplified realism (believable proportions reduced to a few clean shapes, solid fills, crisp edges, no texture). I kept writing "paper-cut", "paper grain" and "printed edges" into prompts after the user said that was wrong. Rule: never write paper-cut, cut-paper, paper grain or printed-edge in an image prompt; say flat vector.
+
+- Style, again: "simplified realism" means real proportions, anatomy, faces and perspective drawn in flat vector. Words like "simple silhouette", "reduced to a few shapes", "diagram" and invented odd creatures (jellyfish, sacks) work against it. Rule: describe subjects as real things with real detail, then say the rendering is flat vector. Never describe a subject as a symbol or a silhouette.
+
+- Style, third time: "simplified realism" in the film's Guide frames means near-silhouette figures with realistic proportions, small in the frame, flat colour shapes, one darker tone, minimal faces (no eyes or mouth), no clothing folds, no small accessories. A render with painted faces, wrinkles, shaded folds and a tool belt was rejected as "whatever the fuck this is". Rule: before writing a style line, open the reference frames in `docs/guide/project/references/shared/` (the `screencapture-...guillotine...` and `ls_clip` frames) and describe what is actually there. Ban detail in the prompt explicitly (no eyes, no mouth, no folds, no pockets, no accessories).

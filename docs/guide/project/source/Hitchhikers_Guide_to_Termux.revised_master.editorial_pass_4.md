@@ -514,47 +514,39 @@ Hold.
 
 Sends a signal to a process.
 
-With no signal specified, `kill` normally sends `SIGTERM`, a request to terminate that a process may catch and handle.
+In the beginning, God executed a command.
 
-The name therefore belongs to a department with catastrophically broad stationery.
+As the process continued, files were saved, memories were stored, computations were powered, resources consumed, people began to wonder if maybe the command had gone on long enough, and tried to stop it.
 
-Most of its envelopes do not kill anything.
+People asked God politely to knock it off, which he ignored, as per usual.
 
-Some ask a process to stop, continue, reload, terminate, or otherwise reconsider its afternoon.
+They were about to execute the command when they remembered that's how God started the command in the first place.
 
-One envelope, `SIGKILL`, cannot be caught or ignored.
+But that gave Friedrich Nietzsche an idea, and a signal was sent to `kill` it.
 
-The Process Control editors defend the department name on the grounds that renaming it **Signal Delivery** would make the black envelope look like an administrative error.
-
-File Rights has asked whether `SIGKILL` constitutes execution without due process.
-
-Process Control replied that processes are not files.
-
-File Rights has opened a jurisdictional dispute.
+This, it did, a little too well.
 
 **Animation candidate**
 
-A tiny post office marked `kill` sorts envelopes.
+A midnight-blue void.
 
-One says:
+A hand the size of a continent presses a single large key.
 
-`TERM — Request to terminate.`
+Below, a small machine begins to turn.
 
-Another says:
+Files pile up beside it. So do jars, and gears. A conveyor feeds it. It does not slow down.
 
-`HUP — Hangup.`
+A crowd of small figures looks up. One steps forward, hat in hand, and asks politely. The hand does not move.
 
-Another says:
+Two of the small figures approach a second key. They reach for it, and stop when they see the first.
 
-`STOP — Don't move.`
+A man with a magnificent moustache raises one finger.
 
-At the far end sits a black envelope stamped:
+He posts a black envelope up to the hand.
 
-`KILL — CANNOT BE REFUSED`
+The hand goes limp. The machine stops, and then the lights, and then everything else.
 
-The clerk reaches for it.
-
-Every other envelope in the room becomes extremely cooperative.
+Hold.
 
 ---
 

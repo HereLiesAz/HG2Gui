@@ -1,6 +1,6 @@
 ## Cut 01 — 00:00–05:00
 
-A miniature post office labeled `kill`. A clerk sorts envelopes into slots. Show three envelopes in succession, each cleanly readable: `TERM — REQUEST TO TERMINATE`, `HUP — HANGUP`, `STOP — DON'T MOVE`. Each slides to a different chute. End with the clerk noticing a distant black envelope.
+A midnight-blue void. A hand the size of a continent descends and presses one large mustard key. A small machine below begins to turn, and things start to pile up beside it: files, jars, gears, a conveyor feeding it. End on the machine running, the piles growing, and a crowd of small figures at the bottom of the frame beginning to look up.
 
 ### Ready-to-paste generation prompt
 
@@ -10,7 +10,7 @@ Create one EXACTLY 5.0-second segment of an original animated Guide entry that c
 REFERENCE LANGUAGE
 - Use the supplied movie screenshots as visual anchors for proportions, graphic density, palette behavior, and motion-graphic restraint.
 - Active composition is cinematic 2.35:1. If the generator only outputs 16:9, place a centered 2.35:1 active picture inside the 16:9 frame with clean black letterboxing; never stretch the artwork.
-- Flat 2D vector / cut-paper / screen-printed pictogram look, closer to an international information sign than a modern sci-fi HUD.
+- Minimalistic flat vector look with simplified realism, closer to an international information sign than a modern sci-fi HUD.
 - Persistent warm mustard Guide header across the top of the active picture. At upper left, two connected capsule tabs extend from / clip against the left edge. The first tab is the subject, the second the subtopic. Use the exact tab labels supplied below.
 - Typography: Jost ExtraBold/800 or a near geometric equivalent, uppercase, generous tracking. Text is a designed graphic element, not subtitles.
 - Use only 4–7 matte colors in the scene. No gradients. No gloss. No bloom. No drop shadows. No translucent glass. No depth-of-field. Very light imperfect print/screen texture is welcome; edges may feel slightly handmade.
@@ -34,7 +34,7 @@ Guide tab 2: SIGNALS
 Palette lock: mustard, midnight blue, black-red, cream, muted cyan
 
 CUT 01 OF 03 — 00:00–05:00
-A miniature post office labeled `kill`. A clerk sorts envelopes into slots. Show three envelopes in succession, each cleanly readable: `TERM — REQUEST TO TERMINATE`, `HUP — HANGUP`, `STOP — DON'T MOVE`. Each slides to a different chute. End with the clerk noticing a distant black envelope.
+A midnight-blue void. A hand the size of a continent descends and presses one large mustard key. A small machine below begins to turn, and things start to pile up beside it: files, jars, gears, a conveyor feeding it. End on the machine running, the piles growing, and a crowd of small figures at the bottom of the frame beginning to look up.
 ```
 
 ---
@@ -47,4 +47,4 @@ A miniature post office labeled `kill`. A clerk sorts envelopes into slots. Show
 
 **END:** `06_kill_frame_01.png`
 
-A miniature post office labeled `kill`. A clerk sorts envelopes into slots. Show three envelopes in succession, each cleanly readable: `TERM — REQUEST TO TERMINATE`, `HUP — HANGUP`, `STOP — DON'T MOVE`. Each slides to a different chute. End with the clerk noticing a distant black envelope.
+A midnight-blue void. A hand the size of a continent descends and presses one large mustard key. A small machine below begins to turn, and things start to pile up beside it: files, jars, gears, a conveyor feeding it. End on the machine running, the piles growing, and a crowd of small figures at the bottom of the frame beginning to look up.

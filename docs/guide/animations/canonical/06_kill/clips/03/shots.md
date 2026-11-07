@@ -2,7 +2,7 @@
 
 ## START shot
 
-Resume precisely from the preceding clip's final tableau: End with one hand just about to touch it.
+Resume precisely from the preceding clip's final tableau: End on the raised finger.
 
 **START** — NO IMAGE
 
@@ -12,7 +12,7 @@ Resume precisely from the preceding clip's final tableau: End with one hand just
 
 ## END shot
 
-Hold on the clerk looking mildly pleased with improved workflow.
+Hold on the moustached man, mildly surprised, under a perfectly still hand.
 
 **END** — NO IMAGE
 

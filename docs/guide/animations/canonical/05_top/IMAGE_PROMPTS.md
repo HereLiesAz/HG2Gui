@@ -6,10 +6,10 @@ This is the third design. The first two failed because they did not look like th
 
 ## What the existing Guide frames teach
 
-- **People are tall, elegant paper-cut figures, not blobs.** Real proportions, drawn in side or three-quarter view, with a simple profile face (a small nose, a bit of hair), a tunic, a belt, trousers, boots. Hands and boots are picked out in a second colour.
+- **People are tall, elegant flat vector figures, not blobs.** Real proportions, drawn in side or three-quarter view, with a simple profile face (a small nose, a bit of hair), a tunic, a belt, trousers, boots. Hands and boots are picked out in a second colour.
 - **A recurring cast.** Uniformed functionaries in cap, tunic and boots. A woman in a jumpsuit with a bob haircut and a red megaphone. A big green bear-headed creature in a blue coat, with a cane, who is always the heaviest figure in the room.
 - **Diagram language.** Sound-wave arcs growing outward from a horn. A dashed arrow with an arrowhead. Copies of a figure fading into the distance. Meaning comes from these, not from lettering.
-- **Plain staging.** Two to four things per frame, large, on one flat colour field, with a little paper grain. A few heavy props: a green filing cabinet, a table, a plant. Deadpan poses.
+- **Plain staging.** Two to four things per frame, large, on one flat colour field, with no texture. A few heavy props: a green filing cabinet, a table, a plant. Deadpan poses.
 
 ## The story, in plain words
 
@@ -36,7 +36,7 @@ Poses needed: triumph (both arms up), shoving (leaning in, both arms forward), t
 
 The camera **must move**. It orbits the hill the whole 15 seconds, once all the way round. Because the hill is solid, the camera, like the players, can never see all six at once: whoever is on the far side is hidden behind the hill. That is the players' problem, shown by the camera. The one thing visible from every angle is whoever stands on the summit.
 
-The hill is a wide, low, round mound, flat and plain like a paper cake. The look is a paper-theatre diorama on a turntable: flat shapes, simple overlaps, and the camera sliding round. It must not turn into a 3D render.
+The hill is a wide, low, round mound, flat and plain like a paper cake. The look is a flat vector diorama on a turntable: flat shapes, simple overlaps, and the camera sliding round. It must not turn into a 3D render.
 
 Features, by compass position round the hill (0° is the front at the start, angles run clockwise seen from above):
 
@@ -72,7 +72,7 @@ The six players have compass positions at the start: the Pale Man in the dip at 
 The camera never stops moving. Only the people, and the camera, move.
 
 - **Cut 1 (0–5 s).** The empty hill. As the camera starts round, the players walk in one at a time, each to their spot, and raise both arms. The camera passes the Bowler Man, the Cap Man, the Peaked-Cap Man and the Pale Man, and at the summit the Megaphone Woman raises her megaphone, sound-wave arcs rippling out over the hill. The camera never sees the Bear or, at the end, the Bowler Man.
-- **Cut 2 (5–10 s).** The camera keeps circling and nudges in. The Pale Man, Peaked-Cap Man and Cap Man run for the summit and the Woman shoves each one back. At about 7 s the Pale Man gets through and she tumbles off. Then the Bear lumbers up from the far side, arrives in view at the summit, and the Pale Man cannot stop him. He tumbles off the other side. The Bear raises both arms and his cane. Players the camera cannot see tilt their heads, listening.
+- **Cut 2 (5–10 s).** The camera keeps circling and nudges in. The Pale Man, Peaked-Cap Man and Cap Man run for the summit and the Woman shoves each one back. At about 7 s the Pale Man gets through and she tumbles off. Then the Bear lumbers up from the far side and shoves the Pale Man off with both hands, then pushes back the two men scrambling up, and only then plants his feet and raises both arms and his cane to declare himself the winner. Players the camera cannot see tilt their heads, listening.
 - **Cut 3 (10–15 s).** The camera completes the circle. The tumblers get up and walk to a spot, arms down. Dashed cream arrows draw outward from each visible player to the Bear, and two more rise from behind the hill. A crown lands on the Bear. The other five lower their arms. Hold on the Bear for the last second as the camera settles.
 
 ## Colours
@@ -81,7 +81,7 @@ Background for the whole animation: dark teal `#073D43`, from this entry's gener
 
 ## How to use
 
-1. Start one new ChatGPT conversation. Attach the three style references from `docs/guide/project/references/shared/`: `echo_clip_01_start.png` (the megaphone woman), `echo_clip_03_start.png` (the bear and the men) and `ls_clip_01_start.png` (the man at the door). Say: "These are the Guide's own animation frames. Match this exact style: flat paper-cut figures with real proportions, simple profile faces, uniforms and boots, a flat colour field, a little paper grain. Do not copy their content."
+1. Start one new ChatGPT conversation. Attach the three style references from `docs/guide/project/references/shared/`: `echo_clip_01_start.png` (the megaphone woman), `echo_clip_03_start.png` (the bear and the men) and `ls_clip_01_start.png` (the man at the door). Say: "These are the Guide's own animation frames. Match this exact style: flat vector figures with real proportions, simple profile faces, uniforms and boots, a flat colour field, no texture. Do not copy their content."
 2. Paste the **opening message** once, and wait for the reply.
 3. Generate **model sheet A**, then **model sheet B**. Do not go on until both are right.
 4. For every frame, attach both model sheets and the previous approved frame (none for frame 00), paste the style block, then the frame prompt.
@@ -98,7 +98,7 @@ The camera circles the hill the whole time, so in any single picture some of the
 
 Keep everything calm, flat and deadpan. Nobody acts for the camera.
 
-The six characters are in the style of the attached Guide frames: flat paper-cut figures with real proportions and simple profile faces. 1: a huge bear-headed creature with a mint-green head, a dusty-lavender coat and a cane, far bigger than the rest. 2: a slim woman with a bob haircut in a vermilion jumpsuit with a mustard megaphone. 3: a man in a vermilion tunic and trousers, a flat mustard cap, mustard boots and a belt. 4: the tallest of the people, a man in a vermilion tunic with a tall red peaked cap, hands on his hips. 5: a bare-headed man in a cream shirt and trousers with mustard boots. 6: a short stout man in a mustard coat, a dark-teal bowler hat and a mustard scarf. Keep each one identical in every image.
+The six characters are in the style of the attached Guide frames: flat vector figures with real proportions and simple profile faces. 1: a huge bear-headed creature with a mint-green head, a dusty-lavender coat and a cane, far bigger than the rest. 2: a slim woman with a bob haircut in a vermilion jumpsuit with a mustard megaphone. 3: a man in a vermilion tunic and trousers, a flat mustard cap, mustard boots and a belt. 4: the tallest of the people, a man in a vermilion tunic with a tall red peaked cap, hands on his hips. 5: a bare-headed man in a cream shirt and trousers with mustard boots. 6: a short stout man in a mustard coat, a dark-teal bowler hat and a mustard scarf. Keep each one identical in every image.
 
 Reply "ready" and wait for the first request.
 ~~~
@@ -106,7 +106,7 @@ Reply "ready" and wait for the first request.
 ## Style block (paste before every sheet and frame prompt)
 
 ~~~text
-Square image, 1:1. One single flat dark teal (#073D43) background fills the whole square edge to edge, with a very light paper grain. Flat 2D paper-cut illustration in the style of the attached Guide frames: tall elegant figures with real proportions, simple profile faces, solid flat colour shapes, slightly imperfect printed edges, large areas of empty space. No gradients, no gloss, no drop shadows, no 3D shading, no photographic detail. Only these colours besides the background: cream, mustard, mint green, vermilion, dusty lavender. No text, no letters, no numbers, no labels, no header, no border, no frame. Deadpan, calm and absurd, shown with complete seriousness.
+Square image, 1:1. One single flat dark teal (#073D43) background fills the whole square edge to edge, with no texture. Minimalistic flat vector illustration with simplified realism in the style of the attached Guide frames: tall elegant figures with real proportions, simple profile faces, solid flat colour shapes, crisp clean edges, large areas of empty space. No gradients, no gloss, no drop shadows, no 3D shading, no photographic detail. Only these colours besides the background: cream, mustard, mint green, vermilion, dusty lavender. No text, no letters, no numbers, no labels, no header, no border, no frame. Deadpan, calm and absurd, shown with complete seriousness.
 ~~~
 
 ## Model sheets
@@ -157,12 +157,42 @@ Attach both model sheets and frame 02.
 Wide view, the same as frame 00 but now with people: the camera has come all the way round. The large mint-green tree at the right edge with the man in the flat cap beside it, both arms down. At the front foot of the hill, the short stout man in the bowler hat, both arms down. At the left foot, the slim woman in the vermilion jumpsuit, both arms down. All three face the summit. At the summit, the huge bear-headed creature stands with both arms and his cane raised and a small mustard three-pointed crown on his head. From each of the three, a thin dashed cream line with a small arrowhead runs straight to the bear. Two more dashed cream lines with arrowheads rise from behind the outline of the hill to the bear, from people we cannot see. Nothing else.
 ~~~
 
+## Extra views: the angles the four frames do not show
+
+The four boundary frames never show the Bear or the Bowler Man at their starting spots, and none shows the Bear shoving. A video model that only sees frames 00 to 03 has to invent those, and the camera passes both. Three more reference frames fix that. They are references for the video generation, not boundary frames: none of them starts or ends a cut.
+
+| View | Camera | What it shows |
+|---|---|---|
+| A | 0° | The starting wide view with people on it: the Bear halfway up the left slope, the Bowler Man at the front foot, the Cap Man by the tree, the Megaphone Woman at the summit, all with arms up. |
+| B | 300° | The Bear's side of the hill: the Bear halfway up, arms and cane up, the Bowler Man at the right foot, the Woman at the summit. |
+| C | 200° | The shove: the Bear on the summit pushing the Pale Man off with both hands, the Woman already tumbling down the other side, two men scrambling up. |
+
+Attach both model sheets and frame 02 to each, and say "same hill, same style, same characters". Save as `docs/05_top_view_a.png`, `docs/05_top_view_b.png`, `docs/05_top_view_c.png`.
+
+### View A — camera 0°, the starting view with people
+
+~~~text
+Wide view of the same round mustard hill as the attached frames, with the large mint-green tree at the right edge. Four of the characters from the attached model sheets stand on it, each with both arms raised in triumph: the huge bear-headed creature in the lavender coat halfway up the left slope, with his cane raised, much bigger than the others; the short stout man in the bowler hat at the front foot of the hill in the centre; the man in the flat cap standing beside the tree trunk at the right, half hidden by it; and, at the very top of the hill, the slim woman in the vermilion jumpsuit holding her mustard megaphone up to her mouth, one arm raised. Nobody else is in view. Nothing else.
+~~~
+
+### View B — camera 300°, the Bear's side
+
+~~~text
+Wide view of the same round mustard hill, seen from the other side. No tree and no boulder are in view. The huge bear-headed creature in the lavender coat stands halfway up the slope in the centre of the picture, both arms and his cane raised in triumph, much bigger than the others. At the right foot of the hill, the short stout man in the bowler hat stands with both arms raised. At the very top of the hill, the slim woman in the vermilion jumpsuit holds her mustard megaphone up to her mouth, one arm raised. Nobody else is in view. Nothing else.
+~~~
+
+### View C — camera 200°, the shove
+
+~~~text
+Medium view of the upper half of the same hill, seen from behind. The huge bear-headed creature in the lavender coat stands on the flat summit in the middle, leaning forward in the shoving pose from the attached sheet, both arms straight out toward the left, his cane in one hand. The bare-headed man in the cream shirt is being pushed off the summit at the left, tipping over backwards, arms flung out, one boot off the ground. At the right, far down the slope, the slim woman in the vermilion jumpsuit is already tumbling away, mid-roll, her mustard megaphone in the air above her. Lower on the near slope, the tallest man in the red peaked cap and the man in the flat cap scramble up with their arms out. Nothing else.
+~~~
+
 ## Notes
 
-- **Check each sheet before using it.** Sheet A must show six clearly different people, the Bear far bigger than the rest, and all of them in the Guide's flat paper-cut style with real proportions. Sheet B must show four clear poses for each of the two characters.
+- **Check each sheet before using it.** Sheet A must show six clearly different people, the Bear far bigger than the rest, and all of them in the Guide's flat vector style with real proportions. Sheet B must show four clear poses for each of the two characters.
 - **Counting:** reject a frame that drops or duplicates a character. The camera hides some people on purpose, so frame 01 shows four, frame 02 shows five (the Bear, the two tumblers and the two scramblers) and frame 03 shows four (the Bear and three others) plus two arrows from hidden players. Do not ask for all six to be visible.
 - **Text:** none at all. The megaphone's sound arcs and the dashed arrows are marks, not letters. Reject any letters or numbers.
 - **If frame 02 is crowded,** make it in two passes: first the Bear at the summit with the two tumblers, then add the two scramblers.
-- **The orbit is a camera move, so do not ask ChatGPT for a 3D scene.** Each frame is a flat paper-cut picture of what the camera sees at that angle.
+- **The orbit is a camera move, so do not ask ChatGPT for a 3D scene.** Each frame is a flat vector picture of what the camera sees at that angle.
 - **Invented by me, because the guide does not say:** the six designs, the Bear as the king and the reason he can be seen, the Woman's megaphone, who swaps with whom, the compass positions and what each camera angle hides, cream for the dashed arrows, the crown. The camera orbit is the project owner's. The cast and style come from the project's existing frames. Reword freely.
 - **Content versus defect:** when a frame departs on content (a different hat, an extra bush), show it to the project owner rather than rejecting it. Reject only defects: wrong colour, non-flat background, broken shapes, stray text, wrong count.

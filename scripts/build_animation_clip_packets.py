@@ -17,7 +17,7 @@ CUT_SHEET = ROOT / "docs/HG2Gui_animation_5s_cut_sheet_v2.md"
 
 STYLE = (
     "Flat 2D HG2Gui Guide animation "
-    "in the screen-printed cut-paper pictogram language of the 2005 Hitchhiker's Guide "
+    "in the minimalistic flat vector language of the 2005 Hitchhiker's Guide "
     "(do not copy film designs). One uninterrupted matte flat background color, edge to edge; "
     "limited matte palette, sparse geometry, flattened perspective, deadpan comedy, crisp "
     "linear slides/pivots/flips with slight printed-edge texture. NO app chrome, chapter "

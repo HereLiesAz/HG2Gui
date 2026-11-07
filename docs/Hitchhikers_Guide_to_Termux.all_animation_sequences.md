@@ -178,27 +178,25 @@ Hold.
 
 **Animation candidate**
 
-A tiny post office marked `kill` sorts envelopes.
+A midnight-blue void.
 
-One says:
+A hand the size of a continent presses a single large key.
 
-`TERM — Request to terminate.`
+Below, a small machine begins to turn.
 
-Another says:
+Files pile up beside it. So do jars, and gears. A conveyor feeds it. It does not slow down.
 
-`HUP — Hangup.`
+A crowd of small figures looks up. One steps forward, hat in hand, and asks politely. The hand does not move.
 
-Another says:
+Two of the small figures approach a second key. They reach for it, and stop when they see the first.
 
-`STOP — Don't move.`
+A man with a magnificent moustache raises one finger.
 
-At the far end sits a black envelope stamped:
+He posts a black envelope up to the hand.
 
-`KILL — CANNOT BE REFUSED`
+The hand goes limp. The machine stops, and then the lights, and then everything else.
 
-The clerk reaches for it.
-
-Every other envelope in the room becomes extremely cooperative.
+Hold.
 
 ---
 

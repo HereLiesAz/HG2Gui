@@ -1,6 +1,6 @@
 ## Cut 03 — 10:00–15:00
 
-The instant the clerk touches the black envelope, every other envelope, chute, parcel and waiting process snaps into perfect obedient alignment. No explosion. No violence. Just terrifying administrative cooperation. Hold on the clerk looking mildly pleased with improved workflow.
+The moustached man slides a black envelope into a slot and it rises to the hand. The hand goes limp. The machine stops, then the conveyors, then the lights, one by one. No explosion. Hold on the moustached man, mildly surprised, under a perfectly still hand.
 
 ### Ready-to-paste generation prompt
 
@@ -10,7 +10,7 @@ Create one EXACTLY 5.0-second segment of an original animated Guide entry that c
 REFERENCE LANGUAGE
 - Use the supplied movie screenshots as visual anchors for proportions, graphic density, palette behavior, and motion-graphic restraint.
 - Active composition is cinematic 2.35:1. If the generator only outputs 16:9, place a centered 2.35:1 active picture inside the 16:9 frame with clean black letterboxing; never stretch the artwork.
-- Flat 2D vector / cut-paper / screen-printed pictogram look, closer to an international information sign than a modern sci-fi HUD.
+- Minimalistic flat vector look with simplified realism, closer to an international information sign than a modern sci-fi HUD.
 - Persistent warm mustard Guide header across the top of the active picture. At upper left, two connected capsule tabs extend from / clip against the left edge. The first tab is the subject, the second the subtopic. Use the exact tab labels supplied below.
 - Typography: Jost ExtraBold/800 or a near geometric equivalent, uppercase, generous tracking. Text is a designed graphic element, not subtitles.
 - Use only 4–7 matte colors in the scene. No gradients. No gloss. No bloom. No drop shadows. No translucent glass. No depth-of-field. Very light imperfect print/screen texture is welcome; edges may feel slightly handmade.
@@ -34,7 +34,7 @@ Guide tab 2: SIGNALS
 Palette lock: mustard, midnight blue, black-red, cream, muted cyan
 
 CUT 03 OF 03 — 10:00–15:00
-The instant the clerk touches the black envelope, every other envelope, chute, parcel and waiting process snaps into perfect obedient alignment. No explosion. No violence. Just terrifying administrative cooperation. Hold on the clerk looking mildly pleased with improved workflow.
+The moustached man slides a black envelope into a slot and it rises to the hand. The hand goes limp. The machine stops, then the conveyors, then the lights, one by one. No explosion. Hold on the moustached man, mildly surprised, under a perfectly still hand.
 ```
 
 ---
@@ -47,4 +47,4 @@ The instant the clerk touches the black envelope, every other envelope, chute, p
 
 **END:** `06_kill_frame_03.png`
 
-The instant the clerk touches the black envelope, every other envelope, chute, parcel and waiting process snaps into perfect obedient alignment. No explosion. No violence. Just terrifying administrative cooperation. Hold on the clerk looking mildly pleased with improved workflow.
+The moustached man slides a black envelope into a slot and it rises to the hand. The hand goes limp. The machine stops, then the conveyors, then the lights, one by one. No explosion. Hold on the moustached man, mildly surprised, under a perfectly still hand.

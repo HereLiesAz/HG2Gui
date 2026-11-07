@@ -61,7 +61,7 @@ USER_A: angular brick-red human pictogram, rectangular head, narrow torso, long 
 
 ```text
 Create a square 1:1 SEQUENCE REFERENCE BOARD for one Guide entry. This board is production reference and will not appear in the app.
-Use the supplied 2005-film Guide screenshots only as visual-language references: original flat 2D vector / cut-paper / screen-printed pictograms, matte opaque geometry, economical anatomy, minimal faces and slightly imperfect print texture.
+Use the supplied 2005-film Guide screenshots only as visual-language references: original minimalistic flat vector illustration with simplified realism, matte opaque geometry, economical anatomy, minimal faces and crisp clean edges.
 Place every recurring character and major prop from the CHARACTER LOCK below on one neutral sheet. For each recurring character show the SAME design in front view, side view and three-quarter view plus one neutral action pose. For clone bases show only the base design. For recurring props show one clean orthographic view.
 Keep designs simple enough to reproduce exactly in every subsequent frame. Avoid tiny costume details that a video model will mutate.
 The board itself may use small ID labels solely for production reference. Do not add entry titles or decorative UI.
@@ -76,7 +76,7 @@ USER_A: angular brick-red human pictogram, rectangular head, narrow torso, long 
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -146,7 +146,7 @@ Locked wide pictogram of a filesystem corridor. At 0.5s a tiny user taps a `pwd`
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -195,7 +195,7 @@ Continue the exact frame. The user points at themself, then at the terminal, cle
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -244,7 +244,7 @@ The worker flips the new placard toward camera: `THEN STOP WORKING IN US`. The u
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -293,7 +293,7 @@ The user arrives one directory up. Before they can relax, the identical picket l
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -383,7 +383,7 @@ PACKAGE_A: small square parcel-person with one seam line and two stick limbs; CO
 
 ```text
 Create a square 1:1 SEQUENCE REFERENCE BOARD for one Guide entry. This board is production reference and will not appear in the app.
-Use the supplied 2005-film Guide screenshots only as visual-language references: original flat 2D vector / cut-paper / screen-printed pictograms, matte opaque geometry, economical anatomy, minimal faces and slightly imperfect print texture.
+Use the supplied 2005-film Guide screenshots only as visual-language references: original minimalistic flat vector illustration with simplified realism, matte opaque geometry, economical anatomy, minimal faces and crisp clean edges.
 Place every recurring character and major prop from the CHARACTER LOCK below on one neutral sheet. For each recurring character show the SAME design in front view, side view and three-quarter view plus one neutral action pose. For clone bases show only the base design. For recurring props show one clean orthographic view.
 Keep designs simple enough to reproduce exactly in every subsequent frame. Avoid tiny costume details that a video model will mutate.
 The board itself may use small ID labels solely for production reference. Do not add entry titles or decorative UI.
@@ -398,7 +398,7 @@ PACKAGE_A: small square parcel-person with one seam line and two stick limbs; CO
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -468,7 +468,7 @@ A therapy-room diagram: one small software package sits in a chair, three concer
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -517,7 +517,7 @@ Continue. Door swings open. A capsule label reads `BRING IN LIBFOO`. `libfoo` en
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -566,7 +566,7 @@ The chain keeps arriving: three become nine, nine become a dense crowd. Packages
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -615,7 +615,7 @@ A forklift enters carrying an entire second room as cargo and docks it to the fi
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -701,7 +701,7 @@ ALIEN_A: elderly pear-shaped alien with long narrow forearms and one drooping sh
 
 ```text
 Create a square 1:1 SEQUENCE REFERENCE BOARD for one Guide entry. This board is production reference and will not appear in the app.
-Use the supplied 2005-film Guide screenshots only as visual-language references: original flat 2D vector / cut-paper / screen-printed pictograms, matte opaque geometry, economical anatomy, minimal faces and slightly imperfect print texture.
+Use the supplied 2005-film Guide screenshots only as visual-language references: original minimalistic flat vector illustration with simplified realism, matte opaque geometry, economical anatomy, minimal faces and crisp clean edges.
 Place every recurring character and major prop from the CHARACTER LOCK below on one neutral sheet. For each recurring character show the SAME design in front view, side view and three-quarter view plus one neutral action pose. For clone bases show only the base design. For recurring props show one clean orthographic view.
 Keep designs simple enough to reproduce exactly in every subsequent frame. Avoid tiny costume details that a video model will mutate.
 The board itself may use small ID labels solely for production reference. Do not add entry titles or decorative UI.
@@ -716,7 +716,7 @@ ALIEN_A: elderly pear-shaped alien with long narrow forearms and one drooping sh
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -780,7 +780,7 @@ Government-office tableau. An elderly alien sits at a desk. A clerk calmly stamp
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -829,7 +829,7 @@ Cut within same palette to a stripped-down terminal diagram: `apt-get update`. A
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -878,7 +878,7 @@ Return to clerk and alien in split-screen with the package diagram. Clerk nods w
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -960,7 +960,7 @@ NANO_TILE: the same rounded rectangular word-object repeated recursively at exac
 
 ```text
 Create a square 1:1 SEQUENCE REFERENCE BOARD for one Guide entry. This board is production reference and will not appear in the app.
-Use the supplied 2005-film Guide screenshots only as visual-language references: original flat 2D vector / cut-paper / screen-printed pictograms, matte opaque geometry, economical anatomy, minimal faces and slightly imperfect print texture.
+Use the supplied 2005-film Guide screenshots only as visual-language references: original minimalistic flat vector illustration with simplified realism, matte opaque geometry, economical anatomy, minimal faces and crisp clean edges.
 Place every recurring character and major prop from the CHARACTER LOCK below on one neutral sheet. For each recurring character show the SAME design in front view, side view and three-quarter view plus one neutral action pose. For clone bases show only the base design. For recurring props show one clean orthographic view.
 Keep designs simple enough to reproduce exactly in every subsequent frame. Avoid tiny costume details that a video model will mutate.
 The board itself may use small ID labels solely for production reference. Do not add entry titles or decorative UI.
@@ -975,7 +975,7 @@ NANO_TILE: the same rounded rectangular word-object repeated recursively at exac
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -1039,7 +1039,7 @@ The single word `nano` sits centered like a labeled object. It unfolds like a hi
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -1088,7 +1088,7 @@ Continue the same zoom with identical nested geometry. More `nano` layers open i
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -1137,7 +1137,7 @@ The camera performs an absurd further ten-level zoom to make `^X Exit` barely le
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -1221,7 +1221,7 @@ PROCESS_BASE: tiny rounded rectangular process-person with two short legs and on
 
 ```text
 Create a square 1:1 SEQUENCE REFERENCE BOARD for one Guide entry. This board is production reference and will not appear in the app.
-Use the supplied 2005-film Guide screenshots only as visual-language references: original flat 2D vector / cut-paper / screen-printed pictograms, matte opaque geometry, economical anatomy, minimal faces and slightly imperfect print texture.
+Use the supplied 2005-film Guide screenshots only as visual-language references: original minimalistic flat vector illustration with simplified realism, matte opaque geometry, economical anatomy, minimal faces and crisp clean edges.
 Place every recurring character and major prop from the CHARACTER LOCK below on one neutral sheet. For each recurring character show the SAME design in front view, side view and three-quarter view plus one neutral action pose. For clone bases show only the base design. For recurring props show one clean orthographic view.
 Keep designs simple enough to reproduce exactly in every subsequent frame. Avoid tiny costume details that a video model will mutate.
 The board itself may use small ID labels solely for production reference. Do not add entry titles or decorative UI.
@@ -1236,7 +1236,7 @@ PROCESS_BASE: tiny rounded rectangular process-person with two short legs and on
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -1300,7 +1300,7 @@ A flat mustard hill rises from the dark teal ground, and the camera begins to ci
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -1349,7 +1349,7 @@ The camera keeps circling. Players run in toward the summit, and the king there 
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -1398,7 +1398,7 @@ The camera completes its circle. Thin lines of sight run from each player to the
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -1442,27 +1442,25 @@ The camera completes its circle. Thin lines of sight run from each player to the
 
 ## Source animation sequence
 
-A tiny post office marked `kill` sorts envelopes.
+A midnight-blue void.
 
-One says:
+A hand the size of a continent presses a single large key.
 
-`TERM — Request to terminate.`
+Below, a small machine begins to turn.
 
-Another says:
+Files pile up beside it. So do jars, and gears. A conveyor feeds it. It does not slow down.
 
-`HUP — Hangup.`
+A crowd of small figures looks up. One steps forward, hat in hand, and asks politely. The hand does not move.
 
-Another says:
+Two of the small figures approach a second key. They reach for it, and stop when they see the first.
 
-`STOP — Don't move.`
+A man with a magnificent moustache raises one finger.
 
-At the far end sits a black envelope stamped:
+He posts a black envelope up to the hand.
 
-`KILL — CANNOT BE REFUSED`
+The hand goes limp. The machine stops, and then the lights, and then everything else.
 
-The clerk reaches for it.
-
-Every other envelope in the room becomes extremely cooperative.
+Hold.
 
 ## Sequence lock
 
@@ -1480,7 +1478,7 @@ CLERK_A: short postal clerk pictogram with cylindrical cap and rectangular body;
 
 ```text
 Create a square 1:1 SEQUENCE REFERENCE BOARD for one Guide entry. This board is production reference and will not appear in the app.
-Use the supplied 2005-film Guide screenshots only as visual-language references: original flat 2D vector / cut-paper / screen-printed pictograms, matte opaque geometry, economical anatomy, minimal faces and slightly imperfect print texture.
+Use the supplied 2005-film Guide screenshots only as visual-language references: original minimalistic flat vector illustration with simplified realism, matte opaque geometry, economical anatomy, minimal faces and crisp clean edges.
 Place every recurring character and major prop from the CHARACTER LOCK below on one neutral sheet. For each recurring character show the SAME design in front view, side view and three-quarter view plus one neutral action pose. For clone bases show only the base design. For recurring props show one clean orthographic view.
 Keep designs simple enough to reproduce exactly in every subsequent frame. Avoid tiny costume details that a video model will mutate.
 The board itself may use small ID labels solely for production reference. Do not add entry titles or decorative UI.
@@ -1495,7 +1493,7 @@ CLERK_A: short postal clerk pictogram with cylindrical cap and rectangular body;
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -1525,25 +1523,25 @@ EDITING
 
 **Used as:** Cut 01 START
 
-A miniature post office labeled `kill`. A clerk sorts envelopes into slots.
+A midnight-blue void with a hand the size of a continent about to press one large mustard key.
 
 ### Frame 01 — `06_kill_frame_01.png`
 
 **Used as:** Cut 01 END / Cut 02 START
 
-The clerk noticing a distant black envelope.
+The machine running, the piles growing, and a crowd of small figures beginning to look up.
 
 ### Frame 02 — `06_kill_frame_02.png`
 
 **Used as:** Cut 02 END / Cut 03 START
 
-One hand just about to touch it.
+The moustached man with one finger raised, the small figures and the two keys behind him.
 
 ### Frame 03 — `06_kill_frame_03.png`
 
 **Used as:** Cut 03 END
 
-The clerk looking mildly pleased with improved workflow.
+The moustached man, mildly surprised, under a perfectly still hand, with the machine stopped.
 
 ## Cut 01 — 00:00–05:00
 
@@ -1551,7 +1549,7 @@ The clerk looking mildly pleased with improved workflow.
 
 **END:** `06_kill_frame_01.png`
 
-A miniature post office labeled `kill`. A clerk sorts envelopes into slots. Show three envelopes in succession, each cleanly readable: `TERM — REQUEST TO TERMINATE`, `HUP — HANGUP`, `STOP — DON'T MOVE`. Each slides to a different chute. End with the clerk noticing a distant black envelope.
+A midnight-blue void. A hand the size of a continent descends and presses one large mustard key. A small machine below begins to turn, and things start to pile up beside it: files, jars, gears, a conveyor feeding it. End on the machine running, the piles growing, and a crowd of small figures at the bottom of the frame beginning to look up.
 
 ### Ready-to-paste video generation prompt
 
@@ -1559,7 +1557,7 @@ A miniature post office labeled `kill`. A clerk sorts envelopes into slots. Show
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -1591,7 +1589,7 @@ START FRAME: 06_kill_frame_00.png
 END FRAME: 06_kill_frame_01.png
 
 CUT 01 OF 03 — 00:00–05:00
-A miniature post office labeled `kill`. A clerk sorts envelopes into slots. Show three envelopes in succession, each cleanly readable: `TERM — REQUEST TO TERMINATE`, `HUP — HANGUP`, `STOP — DON'T MOVE`. Each slides to a different chute. End with the clerk noticing a distant black envelope.
+A midnight-blue void. A hand the size of a continent descends and presses one large mustard key. A small machine below begins to turn, and things start to pile up beside it: files, jars, gears, a conveyor feeding it. End on the machine running, the piles growing, and a crowd of small figures at the bottom of the frame beginning to look up.
 ```
 
 ## Cut 02 — 05:00–10:00
@@ -1600,7 +1598,7 @@ A miniature post office labeled `kill`. A clerk sorts envelopes into slots. Show
 
 **END:** `06_kill_frame_02.png`
 
-Camera pans a little along the sorting bench to reveal the black envelope alone under a warning lamp: `KILL — CANNOT BE REFUSED`. The clerk approaches it with exaggerated procedural caution, using tongs or a tiny cart, never emoting. End with one hand just about to touch it.
+The small figures gather, and one steps forward, hat in hand, to ask politely. The hand does not move. Two of the small figures approach a second, smaller red key, reach for it, and stop when they see the first. A man with a magnificent moustache steps forward and raises one finger. End on the raised finger.
 
 ### Ready-to-paste video generation prompt
 
@@ -1608,7 +1606,7 @@ Camera pans a little along the sorting bench to reveal the black envelope alone 
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -1640,7 +1638,7 @@ START FRAME: 06_kill_frame_01.png
 END FRAME: 06_kill_frame_02.png
 
 CUT 02 OF 03 — 05:00–10:00
-Camera pans a little along the sorting bench to reveal the black envelope alone under a warning lamp: `KILL — CANNOT BE REFUSED`. The clerk approaches it with exaggerated procedural caution, using tongs or a tiny cart, never emoting. End with one hand just about to touch it.
+The small figures gather, and one steps forward, hat in hand, to ask politely. The hand does not move. Two of the small figures approach a second, smaller red key, reach for it, and stop when they see the first. A man with a magnificent moustache steps forward and raises one finger. End on the raised finger.
 ```
 
 ## Cut 03 — 10:00–15:00
@@ -1649,7 +1647,7 @@ Camera pans a little along the sorting bench to reveal the black envelope alone 
 
 **END:** `06_kill_frame_03.png`
 
-The instant the clerk touches the black envelope, every other envelope, chute, parcel and waiting process snaps into perfect obedient alignment. No explosion. No violence. Just terrifying administrative cooperation. Hold on the clerk looking mildly pleased with improved workflow.
+The moustached man slides a black envelope into a slot and it rises to the hand. The hand goes limp. The machine stops, then the conveyors, then the lights, one by one. No explosion. Hold on the moustached man, mildly surprised, under a perfectly still hand.
 
 ### Ready-to-paste video generation prompt
 
@@ -1657,7 +1655,7 @@ The instant the clerk touches the black envelope, every other envelope, chute, p
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -1689,7 +1687,7 @@ START FRAME: 06_kill_frame_02.png
 END FRAME: 06_kill_frame_03.png
 
 CUT 03 OF 03 — 10:00–15:00
-The instant the clerk touches the black envelope, every other envelope, chute, parcel and waiting process snaps into perfect obedient alignment. No explosion. No violence. Just terrifying administrative cooperation. Hold on the clerk looking mildly pleased with improved workflow.
+The moustached man slides a black envelope into a slot and it rises to the hand. The hand goes limp. The machine stops, then the conveyors, then the lights, one by one. No explosion. Hold on the moustached man, mildly surprised, under a perfectly still hand.
 ```
 
 
@@ -1745,7 +1743,7 @@ ADMIN_A: tall narrow administrator with square head and one pointer arm; PROTEST
 
 ```text
 Create a square 1:1 SEQUENCE REFERENCE BOARD for one Guide entry. This board is production reference and will not appear in the app.
-Use the supplied 2005-film Guide screenshots only as visual-language references: original flat 2D vector / cut-paper / screen-printed pictograms, matte opaque geometry, economical anatomy, minimal faces and slightly imperfect print texture.
+Use the supplied 2005-film Guide screenshots only as visual-language references: original minimalistic flat vector illustration with simplified realism, matte opaque geometry, economical anatomy, minimal faces and crisp clean edges.
 Place every recurring character and major prop from the CHARACTER LOCK below on one neutral sheet. For each recurring character show the SAME design in front view, side view and three-quarter view plus one neutral action pose. For clone bases show only the base design. For recurring props show one clean orthographic view.
 Keep designs simple enough to reproduce exactly in every subsequent frame. Avoid tiny costume details that a video model will mutate.
 The board itself may use small ID labels solely for production reference. Do not add entry titles or decorative UI.
@@ -1760,7 +1758,7 @@ ADMIN_A: tall narrow administrator with square head and one pointer arm; PROTEST
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -1824,7 +1822,7 @@ A disk is shown as a simple circular or rectangular storage diagram split into `
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -1873,7 +1871,7 @@ The administrator calmly removes the word `FREE` and replaces it with `AVAILABLE
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -1922,7 +1920,7 @@ The administrator points to one block of the `AVAILABLE` region; the block is in
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -2008,7 +2006,7 @@ FILE_A: cream rectangular file-card character with one folded corner; PROCESS_A:
 
 ```text
 Create a square 1:1 SEQUENCE REFERENCE BOARD for one Guide entry. This board is production reference and will not appear in the app.
-Use the supplied 2005-film Guide screenshots only as visual-language references: original flat 2D vector / cut-paper / screen-printed pictograms, matte opaque geometry, economical anatomy, minimal faces and slightly imperfect print texture.
+Use the supplied 2005-film Guide screenshots only as visual-language references: original minimalistic flat vector illustration with simplified realism, matte opaque geometry, economical anatomy, minimal faces and crisp clean edges.
 Place every recurring character and major prop from the CHARACTER LOCK below on one neutral sheet. For each recurring character show the SAME design in front view, side view and three-quarter view plus one neutral action pose. For clone bases show only the base design. For recurring props show one clean orthographic view.
 Keep designs simple enough to reproduce exactly in every subsequent frame. Avoid tiny costume details that a video model will mutate.
 The board itself may use small ID labels solely for production reference. Do not add entry titles or decorative UI.
@@ -2023,7 +2021,7 @@ FILE_A: cream rectangular file-card character with one folded corner; PROCESS_A:
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -2093,7 +2091,7 @@ A file is represented as a simple solid object sitting under a freestanding file
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -2142,7 +2140,7 @@ Continue. Reveal a tiny process at frame edge physically holding the file with o
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -2191,7 +2189,7 @@ The process lets go and walks away. The instant its hand releases, the file drop
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -2240,7 +2238,7 @@ A new file rises into the same storage slot from below, neatly labeled `draft_fi
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -2334,7 +2332,7 @@ SHELL_A: seated rectangular shell-office worker with round head; SCRIPT_A: thin 
 
 ```text
 Create a square 1:1 SEQUENCE REFERENCE BOARD for one Guide entry. This board is production reference and will not appear in the app.
-Use the supplied 2005-film Guide screenshots only as visual-language references: original flat 2D vector / cut-paper / screen-printed pictograms, matte opaque geometry, economical anatomy, minimal faces and slightly imperfect print texture.
+Use the supplied 2005-film Guide screenshots only as visual-language references: original minimalistic flat vector illustration with simplified realism, matte opaque geometry, economical anatomy, minimal faces and crisp clean edges.
 Place every recurring character and major prop from the CHARACTER LOCK below on one neutral sheet. For each recurring character show the SAME design in front view, side view and three-quarter view plus one neutral action pose. For clone bases show only the base design. For recurring props show one clean orthographic view.
 Keep designs simple enough to reproduce exactly in every subsequent frame. Avoid tiny costume details that a video model will mutate.
 The board itself may use small ID labels solely for production reference. Do not add entry titles or decorative UI.
@@ -2349,7 +2347,7 @@ SHELL_A: seated rectangular shell-office worker with round head; SCRIPT_A: thin 
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -2419,7 +2417,7 @@ A shell character sits at an office desk. A script waits outside the office with
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -2468,7 +2466,7 @@ A visual `RESET` card flips the set back. The shell types `source script.sh`. Th
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -2517,7 +2515,7 @@ The script briskly moves the desk, renames three filing drawers, swivels a road 
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -2566,7 +2564,7 @@ The shell looks around at the rearranged office. A single note on the moved desk
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -2664,7 +2662,7 @@ PACKET_A: tiny rounded square courier with two stick legs; HOST_A: simple rectan
 
 ```text
 Create a square 1:1 SEQUENCE REFERENCE BOARD for one Guide entry. This board is production reference and will not appear in the app.
-Use the supplied 2005-film Guide screenshots only as visual-language references: original flat 2D vector / cut-paper / screen-printed pictograms, matte opaque geometry, economical anatomy, minimal faces and slightly imperfect print texture.
+Use the supplied 2005-film Guide screenshots only as visual-language references: original minimalistic flat vector illustration with simplified realism, matte opaque geometry, economical anatomy, minimal faces and crisp clean edges.
 Place every recurring character and major prop from the CHARACTER LOCK below on one neutral sheet. For each recurring character show the SAME design in front view, side view and three-quarter view plus one neutral action pose. For clone bases show only the base design. For recurring props show one clean orthographic view.
 Keep designs simple enough to reproduce exactly in every subsequent frame. Avoid tiny costume details that a video model will mutate.
 The board itself may use small ID labels solely for production reference. Do not add entry titles or decorative UI.
@@ -2679,7 +2677,7 @@ PACKET_A: tiny rounded square courier with two stick legs; HOST_A: simple rectan
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -2749,7 +2747,7 @@ A tiny packet leaves a local machine and traverses a diagrammatic network of nod
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -2798,7 +2796,7 @@ Repeat two more round trips faster, using the same path and stopwatch. Keep the 
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -2847,7 +2845,7 @@ A polite notice panel slides in: `NO REPLY.` Then beneath it, smaller: `THE HOST
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -2896,7 +2894,7 @@ An even smaller line adds `WE REALLY HOPE IT'S THE FIRST ONE.` Beside the notice
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -2992,7 +2990,7 @@ USER_A: angular human pictogram at HERE; COMPUTER_HERE and COMPUTER_THERE: ident
 
 ```text
 Create a square 1:1 SEQUENCE REFERENCE BOARD for one Guide entry. This board is production reference and will not appear in the app.
-Use the supplied 2005-film Guide screenshots only as visual-language references: original flat 2D vector / cut-paper / screen-printed pictograms, matte opaque geometry, economical anatomy, minimal faces and slightly imperfect print texture.
+Use the supplied 2005-film Guide screenshots only as visual-language references: original minimalistic flat vector illustration with simplified realism, matte opaque geometry, economical anatomy, minimal faces and crisp clean edges.
 Place every recurring character and major prop from the CHARACTER LOCK below on one neutral sheet. For each recurring character show the SAME design in front view, side view and three-quarter view plus one neutral action pose. For clone bases show only the base design. For recurring props show one clean orthographic view.
 Keep designs simple enough to reproduce exactly in every subsequent frame. Avoid tiny costume details that a video model will mutate.
 The board itself may use small ID labels solely for production reference. Do not add entry titles or decorative UI.
@@ -3007,7 +3005,7 @@ USER_A: angular human pictogram at HERE; COMPUTER_HERE and COMPUTER_THERE: ident
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -3077,7 +3075,7 @@ Two flat planets sit far apart: left computer labeled `HERE`, right computer lab
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -3126,7 +3124,7 @@ The user types a command. The letters themselves travel down the tunnel to THERE
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -3175,7 +3173,7 @@ The labels `HERE` and `THERE` wobble, then mechanically relabel: left becomes `H
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -3224,7 +3222,7 @@ The user types `pwd`. Each planet sprouts a large pointing arrow toward itself a
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -3308,7 +3306,7 @@ COMPUTER_A: soft rounded modelling-clay-like computer pictogram built from simpl
 
 ```text
 Create a square 1:1 SEQUENCE REFERENCE BOARD for one Guide entry. This board is production reference and will not appear in the app.
-Use the supplied 2005-film Guide screenshots only as visual-language references: original flat 2D vector / cut-paper / screen-printed pictograms, matte opaque geometry, economical anatomy, minimal faces and slightly imperfect print texture.
+Use the supplied 2005-film Guide screenshots only as visual-language references: original minimalistic flat vector illustration with simplified realism, matte opaque geometry, economical anatomy, minimal faces and crisp clean edges.
 Place every recurring character and major prop from the CHARACTER LOCK below on one neutral sheet. For each recurring character show the SAME design in front view, side view and three-quarter view plus one neutral action pose. For clone bases show only the base design. For recurring props show one clean orthographic view.
 Keep designs simple enough to reproduce exactly in every subsequent frame. Avoid tiny costume details that a video model will mutate.
 The board itself may use small ID labels solely for production reference. Do not add entry titles or decorative UI.
@@ -3323,7 +3321,7 @@ COMPUTER_A: soft rounded modelling-clay-like computer pictogram built from simpl
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -3387,7 +3385,7 @@ A cheerful little computer made from soft modelling-clay shapes sits on a desk. 
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -3436,7 +3434,7 @@ A message card appears: `NO OBVIOUS ISSUES FOUND.` A severe Documentation clerk 
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -3485,7 +3483,7 @@ Security personnel rush in, retrieve `OBVIOUS` from Documentation, and snap it b
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -3569,7 +3567,7 @@ USER_A: simple angular human pictogram; MONUMENT_BASE: identical stone slab shap
 
 ```text
 Create a square 1:1 SEQUENCE REFERENCE BOARD for one Guide entry. This board is production reference and will not appear in the app.
-Use the supplied 2005-film Guide screenshots only as visual-language references: original flat 2D vector / cut-paper / screen-printed pictograms, matte opaque geometry, economical anatomy, minimal faces and slightly imperfect print texture.
+Use the supplied 2005-film Guide screenshots only as visual-language references: original minimalistic flat vector illustration with simplified realism, matte opaque geometry, economical anatomy, minimal faces and crisp clean edges.
 Place every recurring character and major prop from the CHARACTER LOCK below on one neutral sheet. For each recurring character show the SAME design in front view, side view and three-quarter view plus one neutral action pose. For clone bases show only the base design. For recurring props show one clean orthographic view.
 Keep designs simple enough to reproduce exactly in every subsequent frame. Avoid tiny costume details that a video model will mutate.
 The board itself may use small ID labels solely for production reference. Do not add entry titles or decorative UI.
@@ -3584,7 +3582,7 @@ USER_A: simple angular human pictogram; MONUMENT_BASE: identical stone slab shap
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -3648,7 +3646,7 @@ A user makes one tiny edit at a terminal, then `git commit`. A heavy stone monum
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -3697,7 +3695,7 @@ Second monument erupts: `FIX AGAIN`. Third edit; third monument: `FINAL FIX`. Mo
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -3746,7 +3744,7 @@ Time jumps forward through a simple color wipe. A future archaeologist squeezes 
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -3830,7 +3828,7 @@ SHIP_BASE: identical tiny ship pictogram cloned for each port; PORT_22/80/443: i
 
 ```text
 Create a square 1:1 SEQUENCE REFERENCE BOARD for one Guide entry. This board is production reference and will not appear in the app.
-Use the supplied 2005-film Guide screenshots only as visual-language references: original flat 2D vector / cut-paper / screen-printed pictograms, matte opaque geometry, economical anatomy, minimal faces and slightly imperfect print texture.
+Use the supplied 2005-film Guide screenshots only as visual-language references: original minimalistic flat vector illustration with simplified realism, matte opaque geometry, economical anatomy, minimal faces and crisp clean edges.
 Place every recurring character and major prop from the CHARACTER LOCK below on one neutral sheet. For each recurring character show the SAME design in front view, side view and three-quarter view plus one neutral action pose. For clone bases show only the base design. For recurring props show one clean orthographic view.
 Keep designs simple enough to reproduce exactly in every subsequent frame. Avoid tiny costume details that a video model will mutate.
 The board itself may use small ID labels solely for production reference. Do not add entry titles or decorative UI.
@@ -3845,7 +3843,7 @@ SHIP_BASE: identical tiny ship pictogram cloned for each port; PORT_22/80/443: i
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -3909,7 +3907,7 @@ A nautical chart fills the active picture. Three stylized harbours are numbered 
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -3958,7 +3956,7 @@ Second harbour gate shuts firmly and receives `CLOSED`. Third harbour becomes ob
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -4007,7 +4005,7 @@ A sober Port Authority clerk slides a long footer under the chart: `OBSERVATIONS
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -4097,7 +4095,7 @@ USER_A: angular human pictogram; CROND_CLERK_A: tiny clockwork clerk with circul
 
 ```text
 Create a square 1:1 SEQUENCE REFERENCE BOARD for one Guide entry. This board is production reference and will not appear in the app.
-Use the supplied 2005-film Guide screenshots only as visual-language references: original flat 2D vector / cut-paper / screen-printed pictograms, matte opaque geometry, economical anatomy, minimal faces and slightly imperfect print texture.
+Use the supplied 2005-film Guide screenshots only as visual-language references: original minimalistic flat vector illustration with simplified realism, matte opaque geometry, economical anatomy, minimal faces and crisp clean edges.
 Place every recurring character and major prop from the CHARACTER LOCK below on one neutral sheet. For each recurring character show the SAME design in front view, side view and three-quarter view plus one neutral action pose. For clone bases show only the base design. For recurring props show one clean orthographic view.
 Keep designs simple enough to reproduce exactly in every subsequent frame. Avoid tiny costume details that a video model will mutate.
 The board itself may use small ID labels solely for production reference. Do not add entry titles or decorative UI.
@@ -4112,7 +4110,7 @@ USER_A: angular human pictogram; CROND_CLERK_A: tiny clockwork clerk with circul
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -4182,7 +4180,7 @@ A user writes `03:00 — DO THE THING` on a card and files it into a cabinet lab
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -4231,7 +4229,7 @@ Next-night card flips into view. Same cabinet, same clock, same clerk. Before 03
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -4280,7 +4278,7 @@ Clock hits 03:00. The instruction card glows expectantly in its drawer. Nothing 
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -4329,7 +4327,7 @@ Clock reads 03:07. The bailiff returns the clerk to the desk. The card points ac
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -4413,7 +4411,7 @@ OBSERVER_A: seated narrow figure with round head and enormous bell beside chair;
 
 ```text
 Create a square 1:1 SEQUENCE REFERENCE BOARD for one Guide entry. This board is production reference and will not appear in the app.
-Use the supplied 2005-film Guide screenshots only as visual-language references: original flat 2D vector / cut-paper / screen-printed pictograms, matte opaque geometry, economical anatomy, minimal faces and slightly imperfect print texture.
+Use the supplied 2005-film Guide screenshots only as visual-language references: original minimalistic flat vector illustration with simplified realism, matte opaque geometry, economical anatomy, minimal faces and crisp clean edges.
 Place every recurring character and major prop from the CHARACTER LOCK below on one neutral sheet. For each recurring character show the SAME design in front view, side view and three-quarter view plus one neutral action pose. For clone bases show only the base design. For recurring props show one clean orthographic view.
 Keep designs simple enough to reproduce exactly in every subsequent frame. Avoid tiny costume details that a video model will mutate.
 The board itself may use small ID labels solely for production reference. Do not add entry titles or decorative UI.
@@ -4428,7 +4426,7 @@ OBSERVER_A: seated narrow figure with round head and enormous bell beside chair;
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -4492,7 +4490,7 @@ A terminal panel displays `watch something`. In front of it a small observer sit
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -4541,7 +4539,7 @@ Behind the observer, the entire room is silently replaced: wall color, furniture
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -4590,7 +4588,7 @@ Next tick: one character in the command output changes. The observer instantly r
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -4686,7 +4684,7 @@ AI_RESEARCHER_A: narrow humanoid carrying one oversized question-mark object; GU
 
 ```text
 Create a square 1:1 SEQUENCE REFERENCE BOARD for one Guide entry. This board is production reference and will not appear in the app.
-Use the supplied 2005-film Guide screenshots only as visual-language references: original flat 2D vector / cut-paper / screen-printed pictograms, matte opaque geometry, economical anatomy, minimal faces and slightly imperfect print texture.
+Use the supplied 2005-film Guide screenshots only as visual-language references: original minimalistic flat vector illustration with simplified realism, matte opaque geometry, economical anatomy, minimal faces and crisp clean edges.
 Place every recurring character and major prop from the CHARACTER LOCK below on one neutral sheet. For each recurring character show the SAME design in front view, side view and three-quarter view plus one neutral action pose. For clone bases show only the base design. For recurring props show one clean orthographic view.
 Keep designs simple enough to reproduce exactly in every subsequent frame. Avoid tiny costume details that a video model will mutate.
 The board itself may use small ID labels solely for production reference. Do not add entry titles or decorative UI.
@@ -4701,7 +4699,7 @@ AI_RESEARCHER_A: narrow humanoid carrying one oversized question-mark object; GU
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -4771,7 +4769,7 @@ A vast archive labeled `ANSWERS` stretches deep across the frame, shelves packed
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -4820,7 +4818,7 @@ AI carefully places the question mark inside. Alarms flash as solid color panels
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -4869,7 +4867,7 @@ The Guide opens the cabinet and inspects the historic first question. It is simp
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -4918,7 +4916,7 @@ Pan lands on a shelf labeled `WHERE YOU ARE`, packed and visibly old, dust inclu
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -5010,7 +5008,7 @@ RESEARCHER_A: tall slim scholar with round glasses shape and rectangular torso; 
 
 ```text
 Create a square 1:1 SEQUENCE REFERENCE BOARD for one Guide entry. This board is production reference and will not appear in the app.
-Use the supplied 2005-film Guide screenshots only as visual-language references: original flat 2D vector / cut-paper / screen-printed pictograms, matte opaque geometry, economical anatomy, minimal faces and slightly imperfect print texture.
+Use the supplied 2005-film Guide screenshots only as visual-language references: original minimalistic flat vector illustration with simplified realism, matte opaque geometry, economical anatomy, minimal faces and crisp clean edges.
 Place every recurring character and major prop from the CHARACTER LOCK below on one neutral sheet. For each recurring character show the SAME design in front view, side view and three-quarter view plus one neutral action pose. For clone bases show only the base design. For recurring props show one clean orthographic view.
 Keep designs simple enough to reproduce exactly in every subsequent frame. Avoid tiny costume details that a video model will mutate.
 The board itself may use small ID labels solely for production reference. Do not add entry titles or decorative UI.
@@ -5025,7 +5023,7 @@ RESEARCHER_A: tall slim scholar with round glasses shape and rectangular torso; 
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -5095,7 +5093,7 @@ A researcher studies at a desk while years pass through quick graphic day/night 
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -5144,7 +5142,7 @@ The researcher feeds books, maps, charts and notes into a geometric compression 
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -5193,7 +5191,7 @@ The `skill` package is installed into an assistant. It opens like luggage; a min
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -5242,7 +5240,7 @@ A second question card arrives with an obviously unrelated symbol. The assistant
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -5332,7 +5330,7 @@ FILE_BASE: identical upright file-card character; DOTFILE_BASE: exact clone of F
 
 ```text
 Create a square 1:1 SEQUENCE REFERENCE BOARD for one Guide entry. This board is production reference and will not appear in the app.
-Use the supplied 2005-film Guide screenshots only as visual-language references: original flat 2D vector / cut-paper / screen-printed pictograms, matte opaque geometry, economical anatomy, minimal faces and slightly imperfect print texture.
+Use the supplied 2005-film Guide screenshots only as visual-language references: original minimalistic flat vector illustration with simplified realism, matte opaque geometry, economical anatomy, minimal faces and crisp clean edges.
 Place every recurring character and major prop from the CHARACTER LOCK below on one neutral sheet. For each recurring character show the SAME design in front view, side view and three-quarter view plus one neutral action pose. For clone bases show only the base design. For recurring props show one clean orthographic view.
 Keep designs simple enough to reproduce exactly in every subsequent frame. Avoid tiny costume details that a video model will mutate.
 The board itself may use small ID labels solely for production reference. Do not add entry titles or decorative UI.
@@ -5347,7 +5345,7 @@ FILE_BASE: identical upright file-card character; DOTFILE_BASE: exact clone of F
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -5417,7 +5415,7 @@ A row of ordinary file characters stands for inspection. Several dotfiles stand 
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -5466,7 +5464,7 @@ A row of ordinary file characters stands for inspection. Several dotfiles stand 
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -5515,7 +5513,7 @@ At the end of the line, the directory itself raises a small card `.`. Behind it,
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -5564,7 +5562,7 @@ The inspector quietly sets the clipboard on the floor and walks away while `.` a
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -5646,7 +5644,7 @@ USER_A: angular human pictogram; CLERK_A: narrow service-window official; COMMAN
 
 ```text
 Create a square 1:1 SEQUENCE REFERENCE BOARD for one Guide entry. This board is production reference and will not appear in the app.
-Use the supplied 2005-film Guide screenshots only as visual-language references: original flat 2D vector / cut-paper / screen-printed pictograms, matte opaque geometry, economical anatomy, minimal faces and slightly imperfect print texture.
+Use the supplied 2005-film Guide screenshots only as visual-language references: original minimalistic flat vector illustration with simplified realism, matte opaque geometry, economical anatomy, minimal faces and crisp clean edges.
 Place every recurring character and major prop from the CHARACTER LOCK below on one neutral sheet. For each recurring character show the SAME design in front view, side view and three-quarter view plus one neutral action pose. For clone bases show only the base design. For recurring props show one clean orthographic view.
 Keep designs simple enough to reproduce exactly in every subsequent frame. Avoid tiny costume details that a video model will mutate.
 The board itself may use small ID labels solely for production reference. Do not add entry titles or decorative UI.
@@ -5661,7 +5659,7 @@ USER_A: angular human pictogram; CLERK_A: narrow service-window official; COMMAN
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -5725,7 +5723,7 @@ A user stands before a locked administrative door and submits `sudo command` thr
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -5774,7 +5772,7 @@ The clerk blocks the user, checks for a badge, then points through the door at t
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -5823,7 +5821,7 @@ On an unrooted-device variant, the second door is now fully visible: `ROOT AUTHO
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -5909,7 +5907,7 @@ OFFICER_A: compact demolition officer pictogram with rectangular rulebook; DOT_A
 
 ```text
 Create a square 1:1 SEQUENCE REFERENCE BOARD for one Guide entry. This board is production reference and will not appear in the app.
-Use the supplied 2005-film Guide screenshots only as visual-language references: original flat 2D vector / cut-paper / screen-printed pictograms, matte opaque geometry, economical anatomy, minimal faces and slightly imperfect print texture.
+Use the supplied 2005-film Guide screenshots only as visual-language references: original minimalistic flat vector illustration with simplified realism, matte opaque geometry, economical anatomy, minimal faces and crisp clean edges.
 Place every recurring character and major prop from the CHARACTER LOCK below on one neutral sheet. For each recurring character show the SAME design in front view, side view and three-quarter view plus one neutral action pose. For clone bases show only the base design. For recurring props show one clean orthographic view.
 Keep designs simple enough to reproduce exactly in every subsequent frame. Avoid tiny costume details that a video model will mutate.
 The board itself may use small ID labels solely for production reference. Do not add entry titles or decorative UI.
@@ -5924,7 +5922,7 @@ OFFICER_A: compact demolition officer pictogram with rectangular rulebook; DOT_A
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -5994,7 +5992,7 @@ A tiny hotel labeled `EMPTY DIRECTORY`. A demolition officer checks Room 1: empt
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -6043,7 +6041,7 @@ Rulebook footnote enlarges on screen: `THESE DON'T COUNT.` The officer looks bac
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -6092,7 +6090,7 @@ The officer stamps `EMPTY`. The hotel collapses not explosively but by being cle
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -6141,7 +6139,7 @@ The officer stamps `EMPTY`. The hotel collapses not explosively but by being cle
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -6239,7 +6237,7 @@ DETECTIVE_A: seated geometric detective with long rectangular notebook and small
 
 ```text
 Create a square 1:1 SEQUENCE REFERENCE BOARD for one Guide entry. This board is production reference and will not appear in the app.
-Use the supplied 2005-film Guide screenshots only as visual-language references: original flat 2D vector / cut-paper / screen-printed pictograms, matte opaque geometry, economical anatomy, minimal faces and slightly imperfect print texture.
+Use the supplied 2005-film Guide screenshots only as visual-language references: original minimalistic flat vector illustration with simplified realism, matte opaque geometry, economical anatomy, minimal faces and crisp clean edges.
 Place every recurring character and major prop from the CHARACTER LOCK below on one neutral sheet. For each recurring character show the SAME design in front view, side view and three-quarter view plus one neutral action pose. For clone bases show only the base design. For recurring props show one clean orthographic view.
 Keep designs simple enough to reproduce exactly in every subsequent frame. Avoid tiny costume details that a video model will mutate.
 The board itself may use small ID labels solely for production reference. Do not add entry titles or decorative UI.
@@ -6254,7 +6252,7 @@ DETECTIVE_A: seated geometric detective with long rectangular notebook and small
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -6324,7 +6322,7 @@ Detective office. A distraught editor presents `CHAPTER 5 IS MISSING`. Detective
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -6373,7 +6371,7 @@ Continue interrogation cards: `FILE TYPE?`, `MODIFICATION TIME?`, `SIZE?`. Each 
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -6422,7 +6420,7 @@ The detective reaches under the desk and immediately produces a file labeled `ch
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -6471,7 +6469,7 @@ Detective opens notebook, circles every exact search criterion in red, then circ
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -6553,7 +6551,7 @@ FILE_A and FILE_B: identical file-card shapes distinguished by label only; MACHI
 
 ```text
 Create a square 1:1 SEQUENCE REFERENCE BOARD for one Guide entry. This board is production reference and will not appear in the app.
-Use the supplied 2005-film Guide screenshots only as visual-language references: original flat 2D vector / cut-paper / screen-printed pictograms, matte opaque geometry, economical anatomy, minimal faces and slightly imperfect print texture.
+Use the supplied 2005-film Guide screenshots only as visual-language references: original minimalistic flat vector illustration with simplified realism, matte opaque geometry, economical anatomy, minimal faces and crisp clean edges.
 Place every recurring character and major prop from the CHARACTER LOCK below on one neutral sheet. For each recurring character show the SAME design in front view, side view and three-quarter view plus one neutral action pose. For clone bases show only the base design. For recurring props show one clean orthographic view.
 Keep designs simple enough to reproduce exactly in every subsequent frame. Avoid tiny costume details that a video model will mutate.
 The board itself may use small ID labels solely for production reference. Do not add entry titles or decorative UI.
@@ -6568,7 +6566,7 @@ FILE_A and FILE_B: identical file-card shapes distinguished by label only; MACHI
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -6632,7 +6630,7 @@ Two file cards approach a large machine labeled `CONCATENATE`. They enter separa
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -6681,7 +6679,7 @@ Now one single file approaches the machine alone and hesitates. The machine make
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -6730,7 +6728,7 @@ The machine sucks in the committee's meeting notes as they argue and prints them
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -6818,7 +6816,7 @@ PROCESS_BASE: tiny station-passenger pictogram cloned for all processes; USER_A:
 
 ```text
 Create a square 1:1 SEQUENCE REFERENCE BOARD for one Guide entry. This board is production reference and will not appear in the app.
-Use the supplied 2005-film Guide screenshots only as visual-language references: original flat 2D vector / cut-paper / screen-printed pictograms, matte opaque geometry, economical anatomy, minimal faces and slightly imperfect print texture.
+Use the supplied 2005-film Guide screenshots only as visual-language references: original minimalistic flat vector illustration with simplified realism, matte opaque geometry, economical anatomy, minimal faces and crisp clean edges.
 Place every recurring character and major prop from the CHARACTER LOCK below on one neutral sheet. For each recurring character show the SAME design in front view, side view and three-quarter view plus one neutral action pose. For clone bases show only the base design. For recurring props show one clean orthographic view.
 Keep designs simple enough to reproduce exactly in every subsequent frame. Avoid tiny costume details that a video model will mutate.
 The board itself may use small ID labels solely for production reference. Do not add entry titles or decorative UI.
@@ -6833,7 +6831,7 @@ PROCESS_BASE: tiny station-passenger pictogram cloned for all processes; USER_A:
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -6897,7 +6895,7 @@ A busy station filled with tiny process characters moving in different direction
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -6946,7 +6944,7 @@ The live station immediately resumes and changes fast: several processes leave, 
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -6995,7 +6993,7 @@ Reveal that the pointed-to process is no longer present and the station behind t
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -7075,7 +7073,7 @@ SEARCHLIGHT_A: fixed conical beam mounted to simple lamp head; CRANE_A: rigid ge
 
 ```text
 Create a square 1:1 SEQUENCE REFERENCE BOARD for one Guide entry. This board is production reference and will not appear in the app.
-Use the supplied 2005-film Guide screenshots only as visual-language references: original flat 2D vector / cut-paper / screen-printed pictograms, matte opaque geometry, economical anatomy, minimal faces and slightly imperfect print texture.
+Use the supplied 2005-film Guide screenshots only as visual-language references: original minimalistic flat vector illustration with simplified realism, matte opaque geometry, economical anatomy, minimal faces and crisp clean edges.
 Place every recurring character and major prop from the CHARACTER LOCK below on one neutral sheet. For each recurring character show the SAME design in front view, side view and three-quarter view plus one neutral action pose. For clone bases show only the base design. For recurring props show one clean orthographic view.
 Keep designs simple enough to reproduce exactly in every subsequent frame. Avoid tiny costume details that a video model will mutate.
 The board itself may use small ID labels solely for production reference. Do not add entry titles or decorative UI.
@@ -7090,7 +7088,7 @@ SEARCHLIGHT_A: fixed conical beam mounted to simple lamp head; CRANE_A: rigid ge
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -7154,7 +7152,7 @@ A huge rubbish heap made from strips of text. A tiny searchlight whose beam is s
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -7203,7 +7201,7 @@ Instead of plucking out the word, a crane descends and grabs the entire line con
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -7252,7 +7250,7 @@ A neat sign pops up: `MATCH FOUND`. Beneath it a smaller bureaucratic amendment 
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -7334,7 +7332,7 @@ INTERFACE_A: nervous rectangular network-interface character with one removable 
 
 ```text
 Create a square 1:1 SEQUENCE REFERENCE BOARD for one Guide entry. This board is production reference and will not appear in the app.
-Use the supplied 2005-film Guide screenshots only as visual-language references: original flat 2D vector / cut-paper / screen-printed pictograms, matte opaque geometry, economical anatomy, minimal faces and slightly imperfect print texture.
+Use the supplied 2005-film Guide screenshots only as visual-language references: original minimalistic flat vector illustration with simplified realism, matte opaque geometry, economical anatomy, minimal faces and crisp clean edges.
 Place every recurring character and major prop from the CHARACTER LOCK below on one neutral sheet. For each recurring character show the SAME design in front view, side view and three-quarter view plus one neutral action pose. For clone bases show only the base design. For recurring props show one clean orthographic view.
 Keep designs simple enough to reproduce exactly in every subsequent frame. Avoid tiny costume details that a video model will mutate.
 The board itself may use small ID labels solely for production reference. Do not add entry titles or decorative UI.
@@ -7349,7 +7347,7 @@ INTERFACE_A: nervous rectangular network-interface character with one removable 
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -7413,7 +7411,7 @@ A nervous network interface sits at a desk wearing a literal subnet mask. An inv
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -7462,7 +7460,7 @@ The investigator overlays address and mask like transparent stencils and marks t
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -7511,7 +7509,7 @@ A second investigator labeled `ANDROID SECURITY` enters, shuts the filing cabine
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -7595,7 +7593,7 @@ USER_A: angular human pictogram; MANUAL_PAGE_BASE: identical paper panel cloned 
 
 ```text
 Create a square 1:1 SEQUENCE REFERENCE BOARD for one Guide entry. This board is production reference and will not appear in the app.
-Use the supplied 2005-film Guide screenshots only as visual-language references: original flat 2D vector / cut-paper / screen-printed pictograms, matte opaque geometry, economical anatomy, minimal faces and slightly imperfect print texture.
+Use the supplied 2005-film Guide screenshots only as visual-language references: original minimalistic flat vector illustration with simplified realism, matte opaque geometry, economical anatomy, minimal faces and crisp clean edges.
 Place every recurring character and major prop from the CHARACTER LOCK below on one neutral sheet. For each recurring character show the SAME design in front view, side view and three-quarter view plus one neutral action pose. For clone bases show only the base design. For recurring props show one clean orthographic view.
 Keep designs simple enough to reproduce exactly in every subsequent frame. Avoid tiny costume details that a video model will mutate.
 The board itself may use small ID labels solely for production reference. Do not add entry titles or decorative UI.
@@ -7610,7 +7608,7 @@ USER_A: angular human pictogram; MANUAL_PAGE_BASE: identical paper panel cloned 
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -7674,7 +7672,7 @@ A user opens `man command`. The manual page is a clean paper panel. At the botto
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -7723,7 +7721,7 @@ The pages rapidly branch into a literal paper maze around the user, each corrido
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -7772,7 +7770,7 @@ The user has wandered into a remote branch labeled `MAGNETIC TAPE`. A large `YOU
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -7852,7 +7850,7 @@ HISTORIAN_A: thin figure with round spectacles and one pointer finger; HISTORY_B
 
 ```text
 Create a square 1:1 SEQUENCE REFERENCE BOARD for one Guide entry. This board is production reference and will not appear in the app.
-Use the supplied 2005-film Guide screenshots only as visual-language references: original flat 2D vector / cut-paper / screen-printed pictograms, matte opaque geometry, economical anatomy, minimal faces and slightly imperfect print texture.
+Use the supplied 2005-film Guide screenshots only as visual-language references: original minimalistic flat vector illustration with simplified realism, matte opaque geometry, economical anatomy, minimal faces and crisp clean edges.
 Place every recurring character and major prop from the CHARACTER LOCK below on one neutral sheet. For each recurring character show the SAME design in front view, side view and three-quarter view plus one neutral action pose. For clone bases show only the base design. For recurring props show one clean orthographic view.
 Keep designs simple enough to reproduce exactly in every subsequent frame. Avoid tiny costume details that a video model will mutate.
 The board itself may use small ID labels solely for production reference. Do not add entry titles or decorative UI.
@@ -7867,7 +7865,7 @@ HISTORIAN_A: thin figure with round spectacles and one pointer finger; HISTORY_B
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -7931,7 +7929,7 @@ A historian opens an enormous bound volume labeled `SHELL HISTORY`. Command line
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -7980,7 +7978,7 @@ Long visual pause. The historian flips backward one page, then another, looking 
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -8029,7 +8027,7 @@ The historian writes a sober marginal annotation next to the command: `MOTIVE UN
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -8111,7 +8109,7 @@ FINGER_A: oversized simplified hand with square fingertip; FILE_NEW_A and FILE_O
 
 ```text
 Create a square 1:1 SEQUENCE REFERENCE BOARD for one Guide entry. This board is production reference and will not appear in the app.
-Use the supplied 2005-film Guide screenshots only as visual-language references: original flat 2D vector / cut-paper / screen-printed pictograms, matte opaque geometry, economical anatomy, minimal faces and slightly imperfect print texture.
+Use the supplied 2005-film Guide screenshots only as visual-language references: original minimalistic flat vector illustration with simplified realism, matte opaque geometry, economical anatomy, minimal faces and crisp clean edges.
 Place every recurring character and major prop from the CHARACTER LOCK below on one neutral sheet. For each recurring character show the SAME design in front view, side view and three-quarter view plus one neutral action pose. For clone bases show only the base design. For recurring props show one clean orthographic view.
 Keep designs simple enough to reproduce exactly in every subsequent frame. Avoid tiny costume details that a video model will mutate.
 The board itself may use small ID labels solely for production reference. Do not add entry titles or decorative UI.
@@ -8126,7 +8124,7 @@ FINGER_A: oversized simplified hand with square fingertip; FILE_NEW_A and FILE_O
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -8190,7 +8188,7 @@ A giant simplified finger approaches an empty patch of the scene but stops a tin
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -8239,7 +8237,7 @@ The finger points toward an old existing file. `touch oldfile`. A clock icon abo
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -8288,7 +8286,7 @@ A theologian enters carrying a notebook, observes the finger that never touched 
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -8382,7 +8380,7 @@ YES_MACHINE_A: squat little box with one output slot and two tiny feet; QUESTION
 
 ```text
 Create a square 1:1 SEQUENCE REFERENCE BOARD for one Guide entry. This board is production reference and will not appear in the app.
-Use the supplied 2005-film Guide screenshots only as visual-language references: original flat 2D vector / cut-paper / screen-printed pictograms, matte opaque geometry, economical anatomy, minimal faces and slightly imperfect print texture.
+Use the supplied 2005-film Guide screenshots only as visual-language references: original minimalistic flat vector illustration with simplified realism, matte opaque geometry, economical anatomy, minimal faces and crisp clean edges.
 Place every recurring character and major prop from the CHARACTER LOCK below on one neutral sheet. For each recurring character show the SAME design in front view, side view and three-quarter view plus one neutral action pose. For clone bases show only the base design. For recurring props show one clean orthographic view.
 Keep designs simple enough to reproduce exactly in every subsequent frame. Avoid tiny costume details that a video model will mutate.
 The board itself may use small ID labels solely for production reference. Do not add entry titles or decorative UI.
@@ -8397,7 +8395,7 @@ YES_MACHINE_A: squat little box with one output slot and two tiny feet; QUESTION
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -8461,7 +8459,7 @@ A tiny machine sits across from a questioner. Card: `CONTINUE?` Machine instantl
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -8510,7 +8508,7 @@ With nobody present, the machine continues emitting `YES` at a steady mechanical
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -8559,7 +8557,7 @@ An archaeologist enters the ruins. Before asking anything, the machine says `YES
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -8641,7 +8639,7 @@ TRUE_BOX_A and FALSE_BOX_A: exact identical box geometry; RESEARCHER_A: narrow f
 
 ```text
 Create a square 1:1 SEQUENCE REFERENCE BOARD for one Guide entry. This board is production reference and will not appear in the app.
-Use the supplied 2005-film Guide screenshots only as visual-language references: original flat 2D vector / cut-paper / screen-printed pictograms, matte opaque geometry, economical anatomy, minimal faces and slightly imperfect print texture.
+Use the supplied 2005-film Guide screenshots only as visual-language references: original minimalistic flat vector illustration with simplified realism, matte opaque geometry, economical anatomy, minimal faces and crisp clean edges.
 Place every recurring character and major prop from the CHARACTER LOCK below on one neutral sheet. For each recurring character show the SAME design in front view, side view and three-quarter view plus one neutral action pose. For clone bases show only the base design. For recurring props show one clean orthographic view.
 Keep designs simple enough to reproduce exactly in every subsequent frame. Avoid tiny costume details that a video model will mutate.
 The board itself may use small ID labels solely for production reference. Do not add entry titles or decorative UI.
@@ -8656,7 +8654,7 @@ TRUE_BOX_A and FALSE_BOX_A: exact identical box geometry; RESEARCHER_A: narrow f
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -8720,7 +8718,7 @@ Two identical simple boxes sit side by side. A hand presses `true`. Nothing visi
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -8769,7 +8767,7 @@ A researcher enters and compares the boxes, taps them, looks behind them, finds 
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -8818,7 +8816,7 @@ The researcher waits. A small editorial annotation appears beside the silence: `
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -8894,7 +8892,7 @@ COMMAND_BASE: identical little command-person clone; RESEARCHER_A: one narrow fo
 
 ```text
 Create a square 1:1 SEQUENCE REFERENCE BOARD for one Guide entry. This board is production reference and will not appear in the app.
-Use the supplied 2005-film Guide screenshots only as visual-language references: original flat 2D vector / cut-paper / screen-printed pictograms, matte opaque geometry, economical anatomy, minimal faces and slightly imperfect print texture.
+Use the supplied 2005-film Guide screenshots only as visual-language references: original minimalistic flat vector illustration with simplified realism, matte opaque geometry, economical anatomy, minimal faces and crisp clean edges.
 Place every recurring character and major prop from the CHARACTER LOCK below on one neutral sheet. For each recurring character show the SAME design in front view, side view and three-quarter view plus one neutral action pose. For clone bases show only the base design. For recurring props show one clean orthographic view.
 Keep designs simple enough to reproduce exactly in every subsequent frame. Avoid tiny costume details that a video model will mutate.
 The board itself may use small ID labels solely for production reference. Do not add entry titles or decorative UI.
@@ -8909,7 +8907,7 @@ COMMAND_BASE: identical little command-person clone; RESEARCHER_A: one narrow fo
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -8973,7 +8971,7 @@ A command character speaks words into a large brass-colored pipe. The words trav
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -9022,7 +9020,7 @@ Pull back to reveal an entire flat city of commands connected by pipes carrying 
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -9071,7 +9069,7 @@ Researcher asks `WHO SAID THAT?` Every pipe in the city simultaneously grows a t
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -9155,7 +9153,7 @@ FILE_ORIGINAL_A and FILE_COPY_A: exact identical file-card geometry after copy; 
 
 ```text
 Create a square 1:1 SEQUENCE REFERENCE BOARD for one Guide entry. This board is production reference and will not appear in the app.
-Use the supplied 2005-film Guide screenshots only as visual-language references: original flat 2D vector / cut-paper / screen-printed pictograms, matte opaque geometry, economical anatomy, minimal faces and slightly imperfect print texture.
+Use the supplied 2005-film Guide screenshots only as visual-language references: original minimalistic flat vector illustration with simplified realism, matte opaque geometry, economical anatomy, minimal faces and crisp clean edges.
 Place every recurring character and major prop from the CHARACTER LOCK below on one neutral sheet. For each recurring character show the SAME design in front view, side view and three-quarter view plus one neutral action pose. For clone bases show only the base design. For recurring props show one clean orthographic view.
 Keep designs simple enough to reproduce exactly in every subsequent frame. Avoid tiny costume details that a video model will mutate.
 The board itself may use small ID labels solely for production reference. Do not add entry titles or decorative UI.
@@ -9170,7 +9168,7 @@ FILE_ORIGINAL_A and FILE_COPY_A: exact identical file-card geometry after copy; 
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -9234,7 +9232,7 @@ A file enters a simple copying booth. A light flashes once. Two file cards emerg
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -9283,7 +9281,7 @@ Inspector compares names: different. Compares timestamp and permission stamps: p
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -9332,7 +9330,7 @@ Inspector stamps a large report `COPY`, pauses, then adds beneath in much smalle
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -9414,7 +9412,7 @@ FILE_A: fixed upright file-card object with one folded corner; PHYSICIST_A: tall
 
 ```text
 Create a square 1:1 SEQUENCE REFERENCE BOARD for one Guide entry. This board is production reference and will not appear in the app.
-Use the supplied 2005-film Guide screenshots only as visual-language references: original flat 2D vector / cut-paper / screen-printed pictograms, matte opaque geometry, economical anatomy, minimal faces and slightly imperfect print texture.
+Use the supplied 2005-film Guide screenshots only as visual-language references: original minimalistic flat vector illustration with simplified realism, matte opaque geometry, economical anatomy, minimal faces and crisp clean edges.
 Place every recurring character and major prop from the CHARACTER LOCK below on one neutral sheet. For each recurring character show the SAME design in front view, side view and three-quarter view plus one neutral action pose. For clone bases show only the base design. For recurring props show one clean orthographic view.
 Keep designs simple enough to reproduce exactly in every subsequent frame. Avoid tiny costume details that a video model will mutate.
 The board itself may use small ID labels solely for production reference. Do not add entry titles or decorative UI.
@@ -9429,7 +9427,7 @@ FILE_A: fixed upright file-card object with one folded corner; PHYSICIST_A: tall
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -9493,7 +9491,7 @@ A file stands perfectly still on a stage whose floor label reads `/old/place/fil
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -9542,7 +9540,7 @@ Then command `mv file.txt answer.txt`. This time nothing in the scene moves exce
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -9591,7 +9589,7 @@ Physicist pulls out a large bureaucratic form labeled `FRAME OF REFERENCE`, sits
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -9679,7 +9677,7 @@ COURIER_A: tiny running courier with rectangular satchel and round head; SERVER_
 
 ```text
 Create a square 1:1 SEQUENCE REFERENCE BOARD for one Guide entry. This board is production reference and will not appear in the app.
-Use the supplied 2005-film Guide screenshots only as visual-language references: original flat 2D vector / cut-paper / screen-printed pictograms, matte opaque geometry, economical anatomy, minimal faces and slightly imperfect print texture.
+Use the supplied 2005-film Guide screenshots only as visual-language references: original minimalistic flat vector illustration with simplified realism, matte opaque geometry, economical anatomy, minimal faces and crisp clean edges.
 Place every recurring character and major prop from the CHARACTER LOCK below on one neutral sheet. For each recurring character show the SAME design in front view, side view and three-quarter view plus one neutral action pose. For clone bases show only the base design. For recurring props show one clean orthographic view.
 Keep designs simple enough to reproduce exactly in every subsequent frame. Avoid tiny costume details that a video model will mutate.
 The board itself may use small ID labels solely for production reference. Do not add entry titles or decorative UI.
@@ -9694,7 +9692,7 @@ COURIER_A: tiny running courier with rectangular satchel and round head; SERVER_
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -9758,7 +9756,7 @@ A tiny courier labeled `curl` receives a URL card and runs to a server building.
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -9807,7 +9805,7 @@ Second server gives another `Location` card. Then another server, another card, 
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
@@ -9856,7 +9854,7 @@ Courier arrives back at the original server from the opposite side. The server h
 Create one EXACTLY 5.0-second square Guide-animation cut.
 
 REFERENCE LANGUAGE
-- Use the supplied 2005-film Guide screenshots only as visual-language references: flat 2D vector / cut-paper / screen-printed pictograms, economical silhouettes, bold negative space, matte color, slightly imperfect printed edges, and dry diagrammatic staging. Create original compositions and original character designs.
+- Use the supplied 2005-film Guide screenshots only as visual-language references: minimalistic flat vector illustration with simplified realism, economical silhouettes, bold negative space, matte color, crisp clean edges, and dry diagrammatic staging. Create original compositions and original character designs.
 - OUTPUT ASPECT RATIO: exactly 1:1. Compose for a square canvas from the beginning. No letterboxing and no cinematic crop.
 - BACKGROUND: one single, flat, uninterrupted background color fills the entire square canvas from edge to edge. Use only the exact sequence background color supplied below. Do not create a second background band, top strip, bottom strip, colored edge, frame, border, matte, vignette, panel, window, chrome, or decorative perimeter.
 - The HG2Gui app supplies all entry titles, tabs, chapter labels, framing and interface chrome. Therefore the animation itself must contain NO entry title, NO subject title, NO category tabs, NO header bar, NO Guide banner, NO decorative border, NO window controls and NO edge UI of any kind.
