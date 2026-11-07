@@ -12,7 +12,7 @@ Opening composition: A midnight-blue void.
 
 ## END shot
 
-End on the machine running, the piles growing, and a crowd of small figures at the bottom of the frame beginning to look up.
+End on the screen going black under the smog and the buildings.
 
 **END** — NO IMAGE
 

@@ -9,14 +9,14 @@ Render EXACTLY 1:1 square; single background midnight blue `#111D38`.
 
 SEQUENCE: kill; CLIP 01; 5 seconds · 00:00–05:00.
 START: Opening composition: A midnight-blue void.
-END: End on the machine running, the piles growing, and a crowd of small figures at the bottom of the frame beginning to look up.
+END: End on the screen going black under the smog and the buildings.
 
 MOTION DIRECTOR'S TIMING
-0.0–2.4s: A midnight-blue void. A hand the size of a continent descends and presses one large mustard key. A small machine below begins to turn, and things start to pile up beside it: files, jars, gears, a conveyor feeding it.
-2.4–4.6s: End on the machine running, the piles growing, and a crowd of small figures at the bottom of the frame beginning to look up.
+0.0–2.4s: A midnight-blue void. A hand the size of a continent descends and presses a button. A brown planet pops up, and water pours onto it.
+2.4–4.6s: The camera zooms in to a desolate desert beach. Trees pop up, then a village, then a city, and more and more buildings crowd the screen. Wars break out and destroy some of the buildings, and more buildings replace them. Smog fills the air. End on the screen going black under the smog and the buildings.
 4.6–5.0s: Hold the exact finishing composition, no additional changes.
 
-EXACT STORY ACTION / WORDS: A midnight-blue void. A hand the size of a continent descends and presses one large mustard key. A small machine below begins to turn, and things start to pile up beside it: files, jars, gears, a conveyor feeding it. End on the machine running, the piles growing, and a crowd of small figures at the bottom of the frame beginning to look up.
+EXACT STORY ACTION / WORDS: A midnight-blue void. A hand the size of a continent descends and presses a button. A brown planet pops up, and water pours onto it. The camera zooms in to a desolate desert beach. Trees pop up, then a village, then a city, and more and more buildings crowd the screen. Wars break out and destroy some of the buildings, and more buildings replace them. Smog fills the air. End on the screen going black under the smog and the buildings.
 
 A REQUIRED BOUNDARY IS MISSING: these written shots are production requirements, not fabricated files. Final matched video generation must wait for approved boundary art.
 ~~~

@@ -1,6 +1,6 @@
 ## Cut 02 — 05:00–10:00
 
-The small figures gather, and one steps forward, hat in hand, to ask politely. The hand does not move. Two of the small figures approach a second, smaller red key, reach for it, and stop when they see the first. A man with a magnificent moustache steps forward and raises one finger. End on the raised finger.
+The people who asked God politely to stop walk in and plead. The giant hand comes down from the top of the screen and gives them the middle finger. Two figures wheel out a guillotine, pause while looking up, and wheel it back off the screen. End on the crowd looking up at the raised middle finger.
 
 ### Ready-to-paste generation prompt
 
@@ -34,7 +34,7 @@ Guide tab 2: SIGNALS
 Palette lock: mustard, midnight blue, black-red, cream, muted cyan
 
 CUT 02 OF 03 — 05:00–10:00
-The small figures gather, and one steps forward, hat in hand, to ask politely. The hand does not move. Two of the small figures approach a second, smaller red key, reach for it, and stop when they see the first. A man with a magnificent moustache steps forward and raises one finger. End on the raised finger.
+The people who asked God politely to stop walk in and plead. The giant hand comes down from the top of the screen and gives them the middle finger. Two figures wheel out a guillotine, pause while looking up, and wheel it back off the screen. End on the crowd looking up at the raised middle finger.
 ```
 
 ---
@@ -47,4 +47,4 @@ The small figures gather, and one steps forward, hat in hand, to ask politely. T
 
 **END:** `06_kill_frame_02.png`
 
-The small figures gather, and one steps forward, hat in hand, to ask politely. The hand does not move. Two of the small figures approach a second, smaller red key, reach for it, and stop when they see the first. A man with a magnificent moustache steps forward and raises one finger. End on the raised finger.
+The people who asked God politely to stop walk in and plead. The giant hand comes down from the top of the screen and gives them the middle finger. Two figures wheel out a guillotine, pause while looking up, and wheel it back off the screen. End on the crowd looking up at the raised middle finger.

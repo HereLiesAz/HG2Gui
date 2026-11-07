@@ -8,15 +8,15 @@ Create the specified animation as a minimalistic flat vector illustration with s
 Render EXACTLY 1:1 square; single background midnight blue `#111D38`.
 
 SEQUENCE: kill; CLIP 02; 5 seconds · 05:00–10:00.
-START: Resume precisely from the preceding clip's final tableau: End on the machine running, the piles growing, and a crowd of small figures at the bottom of the frame beginning to look up.
-END: End on the raised finger.
+START: Resume precisely from the preceding clip's final tableau: End on the screen going black under the smog and the buildings.
+END: End on the crowd looking up at the raised middle finger.
 
 MOTION DIRECTOR'S TIMING
-0.0–2.4s: The small figures gather, and one steps forward, hat in hand, to ask politely. The hand does not move. Two of the small figures approach a second, smaller red key, reach for it, and stop when they see the first.
-2.4–4.6s: A man with a magnificent moustache steps forward and raises one finger. End on the raised finger.
+0.0–2.4s: The people who asked God politely to stop walk in and plead. The giant hand comes down from the top of the screen and gives them the middle finger.
+2.4–4.6s: Two figures wheel out a guillotine, pause while looking up, and wheel it back off the screen. End on the crowd looking up at the raised middle finger.
 4.6–5.0s: Hold the exact finishing composition, no additional changes.
 
-EXACT STORY ACTION / WORDS: The small figures gather, and one steps forward, hat in hand, to ask politely. The hand does not move. Two of the small figures approach a second, smaller red key, reach for it, and stop when they see the first. A man with a magnificent moustache steps forward and raises one finger. End on the raised finger.
+EXACT STORY ACTION / WORDS: The people who asked God politely to stop walk in and plead. The giant hand comes down from the top of the screen and gives them the middle finger. Two figures wheel out a guillotine, pause while looking up, and wheel it back off the screen. End on the crowd looking up at the raised middle finger.
 
 A REQUIRED BOUNDARY IS MISSING: these written shots are production requirements, not fabricated files. Final matched video generation must wait for approved boundary art.
 ~~~
