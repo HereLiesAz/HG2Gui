@@ -73,9 +73,9 @@ Background for the whole animation: midnight blue `#111D38`, from this entry's g
 ~~~text
 I am going to ask you for two model sheets and then four consecutive frames of one short animated scene. Here is the story, so you know what each picture is for.
 
-In the beginning, God executed a command. It kept running, and files and memories piled up and resources were used, and people began to wonder whether it had gone on long enough. They asked God, politely, to stop. God ignored them. Two Frenchmen were about to execute the command, which can also mean to put it to death, when they remembered that executing it was how God had started it in the first place. A tall man with an enormous moustache, Friedrich Nietzsche, had an idea. He posted a black envelope up to God. The command stopped, and then everything else did, a little too well.
+In the beginning, God executed a command. As the process continued, files were saved, memories were stored, computations were powered, resources consumed, people began to wonder if maybe the command had gone on long enough, and tried to stop it. People asked God politely to knock it off, which he ignored, as per usual. The French were about to execute the command when they remembered that's how God started the command in the first place. But that gave Friedrich Nietzsche an idea, and a signal was sent to kill it. This, it did, a little too well. (Execute means both to run something and to put it to death.)
 
-In the pictures, God is only a giant hand coming down from the top of the picture. The command is a small round machine. Nothing in any picture is written: no letters, no numbers, no signs, no labels.
+In the pictures, God is only a giant hand coming down from the top of the picture. The command is a small round machine, and the signal is a plain black envelope that Nietzsche posts up to God. Nothing in any picture is written: no letters, no numbers, no signs, no labels.
 
 The camera moves between frames: it starts close on the hand, pulls back and tilts down to the machine and a small crowd, pushes in on the crowd, then tilts up to the hand and settles on a wide view.
 
