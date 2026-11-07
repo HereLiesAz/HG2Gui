@@ -30,11 +30,11 @@ Nothing in this scene is written down: the keys are blank, the envelope is plain
 - **The second key.** A smaller blank black-red key on its own small plinth, to the right of the first.
 - **The machine.** A small round mustard machine with a big muted-cyan cogwheel on its side, a short chimney, a few small cream windows and a conveyor belt feeding it, standing on the planetoid. Beside it: piles of cream folders (the files), muted-cyan jars (the memories) and mustard gears.
 - **The crowd.** Four different beings, one simple silhouette each:
-  1. **The Asker:** a tall, long-necked cream creature in a black-red waistcoat, with four arms, holding a tiny bowler hat to its chest in two of them.
-  2. **The Wheel:** a round mustard robot on a single wheel with one antenna.
-  3. **The Bowl:** a muted-cyan jellyfish floating in a round glass bowl.
-  4. **The Sack:** a short, wide, black-red sack-shaped creature on eight tiny feet.
-- **The Pair.** Two identical tall, thin cream beings with round heads and long arms, who go for the second key.
+  1. **The Asker:** a tall, slender cream alien with a long neck and a small head, drawn with believable anatomy, in a black-red waistcoat, with four slim arms, holding a tiny bowler hat to its chest in two of them.
+  2. **The Wheel:** a mustard service robot like a real industrial machine reduced to simple shapes: a rounded boxy body on one large wheel, a small head and one antenna.
+  3. **The Bowl:** a muted-cyan jellyfish with a realistic bell and trailing tentacles, floating in a round glass bowl.
+  4. **The Sack:** a short, wide, black-red creature built like a heavy armoured sack, with a segmented back and eight small legs.
+- **The Pair.** Two identical tall, thin cream beings with round heads and long, jointed limbs, drawn with believable anatomy, who go for the second key.
 - **Nietzsche.** The only human in the picture: tall and thin, in a long black-red coat with a high cream collar, hair brushed back, and a cream walrus moustache wider than his shoulders. He holds a plain black envelope.
 - **The black envelope.** A plain matte black envelope, no text.
 
@@ -102,13 +102,13 @@ Square image, 1:1. One single flat midnight blue (#111D38) background fills the 
 ### Model sheet A — the crowd
 
 ~~~text
-A character model sheet on the flat midnight blue background. One row of four different alien beings standing side by side, evenly spaced, each a single simple silhouette. From left to right: a tall, long-necked cream creature with four arms, in a black-red waistcoat, holding a tiny bowler hat to its chest in two of its hands; a round mustard robot on a single wheel with one antenna; a muted-cyan jellyfish floating in a round glass bowl; a short, wide, black-red sack-shaped creature on eight tiny feet. Nothing else. No text.
+A character model sheet on the flat midnight blue background. One row of four different alien beings standing side by side, evenly spaced, each a single simple silhouette. From left to right: a tall, slender cream alien with a long neck and a small head, with believable anatomy, four slim arms and a black-red waistcoat, holding a tiny bowler hat to its chest in two of its hands; a mustard service robot like a real industrial machine reduced to simple shapes, a rounded boxy body on one large wheel with a small head and one antenna; a muted-cyan jellyfish with a realistic bell and trailing tentacles, floating in a round glass bowl; a short, wide, black-red creature built like a heavy armoured sack, with a segmented back and eight small legs. Nothing else. No text.
 ~~~
 
 ### Model sheet B — the Pair and Nietzsche (attach sheet A)
 
 ~~~text
-A character model sheet on the flat midnight blue background, in the same minimalistic flat vector style as the attached sheet. A row of three characters standing side by side, evenly spaced. On the left, two identical tall, thin cream beings standing close together, each with a round head and long arms, one of them reaching a hand forward. On the right, one tall thin human man in profile, in a long black-red coat with a high cream collar, hair brushed back, with an enormous cream walrus moustache wider than his shoulders, one finger raised and a plain black envelope in his other hand. Nothing else. No text.
+A character model sheet on the flat midnight blue background, in the same minimalistic flat vector style as the attached sheet. A row of three characters standing side by side, evenly spaced. On the left, two identical tall, thin cream beings standing close together, each with a round head and long, jointed limbs and believable anatomy, one of them reaching a hand forward. On the right, one tall thin human man in profile, in a long black-red coat with a high cream collar, hair brushed back, with an enormous cream walrus moustache wider than his shoulders, one finger raised and a plain black envelope in his other hand. Nothing else. No text.
 ~~~
 
 ### Model sheet C — the props (attach sheets A and B)
