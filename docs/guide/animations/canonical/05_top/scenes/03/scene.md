@@ -1,6 +1,6 @@
 ## Cut 03 — 10:00–15:00
 
-Thin lines of sight run from each player to the other players they can see. Most see only one or two, but every line also reaches the player at the summit, who alone can see everyone. A single crown settles on that player. The other five slowly lower their arms. Hold on the king, arms still raised, with five players looking up.
+The camera completes its circle. Thin lines of sight run from each player to the others they can see. A few arrows rise from behind the hill, from players the camera cannot see, and every line reaches the player at the summit, who is visible from every side. A single crown settles on that player. The other five slowly lower their arms. Hold on the king, arms still raised.
 
 ### Ready-to-paste generation prompt
 
@@ -34,7 +34,7 @@ Guide tab 2: KING OF THE HILL
 Palette lock: mustard, dark teal, mint green, vermilion, dusty lavender
 
 CUT 03 OF 03 — 10:00–15:00
-Thin lines of sight run from each player to the other players they can see. Most see only one or two, but every line also reaches the player at the summit, who alone can see everyone. A single crown settles on that player. The other five slowly lower their arms. Hold on the king, arms still raised, with five players looking up.
+The camera completes its circle. Thin lines of sight run from each player to the others they can see. A few arrows rise from behind the hill, from players the camera cannot see, and every line reaches the player at the summit, who is visible from every side. A single crown settles on that player. The other five slowly lower their arms. Hold on the king, arms still raised.
 ```
 
 ---
@@ -47,4 +47,4 @@ Thin lines of sight run from each player to the other players they can see. Most
 
 **END:** `05_top_frame_03.png`
 
-Thin lines of sight run from each player to the other players they can see. Most see only one or two, but every line also reaches the player at the summit, who alone can see everyone. A single crown settles on that player. The other five slowly lower their arms. Hold on the king, arms still raised, with five players looking up.
+The camera completes its circle. Thin lines of sight run from each player to the others they can see. A few arrows rise from behind the hill, from players the camera cannot see, and every line reaches the player at the summit, who is visible from every side. A single crown settles on that player. The other five slowly lower their arms. Hold on the king, arms still raised.

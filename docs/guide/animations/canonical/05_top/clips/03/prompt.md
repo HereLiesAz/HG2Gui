@@ -8,15 +8,15 @@ Create the specified animation as a flat, matte screen-printed cut-paper pictogr
 Render EXACTLY 1:1 square; single background dark teal `#073D43`.
 
 SEQUENCE: top; CLIP 03; 5 seconds · 10:00–15:00.
-START: Resume precisely from the preceding clip's final tableau: End with a new king at the summit and the other players glancing sideways at one another.
-END: Hold on the king, arms still raised, with five players looking up.
+START: Resume precisely from the preceding clip's final tableau: End with a huge new king at the summit, two kings tumbling off it, and most of the hill hidden from view.
+END: Hold on the king, arms still raised.
 
 MOTION DIRECTOR'S TIMING
-0.0–2.4s: Thin lines of sight run from each player to the other players they can see. Most see only one or two, but every line also reaches the player at the summit, who alone can see everyone.
-2.4–4.6s: A single crown settles on that player. The other five slowly lower their arms. Hold on the king, arms still raised, with five players looking up.
+0.0–2.4s: The camera completes its circle. Thin lines of sight run from each player to the others they can see. A few arrows rise from behind the hill, from players the camera cannot see, and every line reaches the player at the summit, who is visible from every side.
+2.4–4.6s: A single crown settles on that player. The other five slowly lower their arms. Hold on the king, arms still raised.
 4.6–5.0s: Hold the exact finishing composition, no additional changes.
 
-EXACT STORY ACTION / WORDS: Thin lines of sight run from each player to the other players they can see. Most see only one or two, but every line also reaches the player at the summit, who alone can see everyone. A single crown settles on that player. The other five slowly lower their arms. Hold on the king, arms still raised, with five players looking up.
+EXACT STORY ACTION / WORDS: The camera completes its circle. Thin lines of sight run from each player to the others they can see. A few arrows rise from behind the hill, from players the camera cannot see, and every line reaches the player at the summit, who is visible from every side. A single crown settles on that player. The other five slowly lower their arms. Hold on the king, arms still raised.
 
 A REQUIRED BOUNDARY IS MISSING: these written shots are production requirements, not fabricated files. Final matched video generation must wait for approved boundary art.
 ~~~

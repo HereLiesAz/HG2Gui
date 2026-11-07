@@ -4,12 +4,16 @@
 
 Visual action, verbatim from the revised 5-second cut sheet:
 
-A flat dusty-lavender hill rises from the dark teal ground. Six small players appear one at a time, each in a different place: the foot of the hill, a ditch, behind a tree, halfway up, on a rock, and the summit. Each throws both arms into the air. End on all six, scattered across the hill, every one of them king.
+A flat mustard hill rises from the dark teal ground, and the camera begins to circle it. Six players appear one at a time, each in a different place: the foot of the hill, behind a tree, on a boulder, in a dip, halfway up, and the summit. Each throws both arms into the air. The camera never sees all six at once. End mid-orbit on the players it can see, every one of them king.
 
 ## Corresponding original script excerpt
 
 A hill appears.
 
-Six players are on it, each in a different place: the foot of the hill, a ditch, behind a tree, halfway up, on a rock, and the summit.
+The camera begins to circle it.
+
+Six players are on it, each in a different place: the foot of the hill, behind a tree, on a boulder, in a dip, halfway up, and the summit.
 
 Each has both arms in the air. Each is king.
+
+At no point does the camera see all six.

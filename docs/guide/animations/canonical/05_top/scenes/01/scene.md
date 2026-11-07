@@ -1,6 +1,6 @@
 ## Cut 01 — 00:00–05:00
 
-A flat dusty-lavender hill rises from the dark teal ground. Six small players appear one at a time, each in a different place: the foot of the hill, a ditch, behind a tree, halfway up, on a rock, and the summit. Each throws both arms into the air. End on all six, scattered across the hill, every one of them king.
+A flat mustard hill rises from the dark teal ground, and the camera begins to circle it. Six players appear one at a time, each in a different place: the foot of the hill, behind a tree, on a boulder, in a dip, halfway up, and the summit. Each throws both arms into the air. The camera never sees all six at once. End mid-orbit on the players it can see, every one of them king.
 
 ### Ready-to-paste generation prompt
 
@@ -34,7 +34,7 @@ Guide tab 2: KING OF THE HILL
 Palette lock: mustard, dark teal, mint green, vermilion, dusty lavender
 
 CUT 01 OF 03 — 00:00–05:00
-A flat dusty-lavender hill rises from the dark teal ground. Six small players appear one at a time, each in a different place: the foot of the hill, a ditch, behind a tree, halfway up, on a rock, and the summit. Each throws both arms into the air. End on all six, scattered across the hill, every one of them king.
+A flat mustard hill rises from the dark teal ground, and the camera begins to circle it. Six players appear one at a time, each in a different place: the foot of the hill, behind a tree, on a boulder, in a dip, halfway up, and the summit. Each throws both arms into the air. The camera never sees all six at once. End mid-orbit on the players it can see, every one of them king.
 ```
 
 ---
@@ -47,4 +47,4 @@ A flat dusty-lavender hill rises from the dark teal ground. Six small players ap
 
 **END:** `05_top_frame_01.png`
 
-A flat dusty-lavender hill rises from the dark teal ground. Six small players appear one at a time, each in a different place: the foot of the hill, a ditch, behind a tree, halfway up, on a rock, and the summit. Each throws both arms into the air. End on all six, scattered across the hill, every one of them king.
+A flat mustard hill rises from the dark teal ground, and the camera begins to circle it. Six players appear one at a time, each in a different place: the foot of the hill, behind a tree, on a boulder, in a dip, halfway up, and the summit. Each throws both arms into the air. The camera never sees all six at once. End mid-orbit on the players it can see, every one of them king.

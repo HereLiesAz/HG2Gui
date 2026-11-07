@@ -2,7 +2,7 @@
 
 ## START shot
 
-Resume precisely from the preceding clip's final tableau: End with a new king at the summit and the other players glancing sideways at one another.
+Resume precisely from the preceding clip's final tableau: End with a huge new king at the summit, two kings tumbling off it, and most of the hill hidden from view.
 
 **START** — NO IMAGE
 
@@ -12,7 +12,7 @@ Resume precisely from the preceding clip's final tableau: End with a new king at
 
 ## END shot
 
-Hold on the king, arms still raised, with five players looking up.
+Hold on the king, arms still raised.
 
 **END** — NO IMAGE
 

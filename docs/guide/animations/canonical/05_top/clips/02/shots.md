@@ -2,7 +2,7 @@
 
 ## START shot
 
-Resume precisely from the preceding clip's final tableau: End on all six, scattered across the hill, every one of them king.
+Resume precisely from the preceding clip's final tableau: End mid-orbit on the players it can see, every one of them king.
 
 **START** — NO IMAGE
 
@@ -12,7 +12,7 @@ Resume precisely from the preceding clip's final tableau: End on all six, scatte
 
 ## END shot
 
-End with a new king at the summit and the other players glancing sideways at one another.
+End with a huge new king at the summit, two kings tumbling off it, and most of the hill hidden from view.
 
 **END** — NO IMAGE
 
