@@ -33,6 +33,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.input.key.KeyEvent
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.layout.onSizeChanged
@@ -42,6 +43,7 @@ import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle as ComposeTextStyle
 import androidx.compose.ui.text.drawText
@@ -62,10 +64,12 @@ import com.hereliesaz.hg2gui.ui.LocalAzphaltUiScale
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
 import com.hereliesaz.hg2gui.ui.menu.onPage
 import com.hereliesaz.hg2gui.ui.screenInsets
+import com.hereliesaz.hg2gui.ui.theme.azrienochFontFamily
 import com.termux.terminal.KeyHandler
 import com.termux.terminal.TerminalEmulator
 import com.termux.terminal.TerminalRow
 import com.termux.terminal.TextStyle as TmStyle
+import com.termux.terminal.WcWidth
 import kotlin.math.max
 import kotlin.math.min
 
@@ -197,8 +201,14 @@ private fun RawTerminalSurface(
     // an unkeyed measurement would keep positioning the grid with the old cell.
     val density = LocalDensity.current
     val uiScale = LocalAzphaltUiScale.current
-    val cellMetrics = remember(measurer, density.density, density.fontScale, uiScale) {
-        measurer.measure("X", ComposeTextStyle(fontFamily = FontFamily.Monospace, fontSize = CELL_FONT_SIZE))
+    val family = azrienochFontFamily()
+    // Azrienoch is proportional, so the cell is a fixed box and every glyph is stretched to it (see
+    // GlyphCache). The digit zero sets the width: a typical letter then needs little stretching.
+    val cellMetrics = remember(measurer, family, density.density, density.fontScale, uiScale) {
+        measurer.measure("0", ComposeTextStyle(fontFamily = family, fontSize = CELL_FONT_SIZE))
+    }
+    val glyphs = remember(measurer, family, density.density, density.fontScale, uiScale) {
+        GlyphCache(measurer, family)
     }
     val cellWidthPx = cellMetrics.size.width.coerceAtLeast(1)
     val cellHeightPx = cellMetrics.size.height.coerceAtLeast(1)
@@ -220,7 +230,7 @@ private fun RawTerminalSurface(
             StructuredShellStatus(holder)
             TerminalGrid(
                 holder = holder,
-                measurer = measurer,
+                glyphs = glyphs,
                 focusRequester = focusRequester,
                 ctrlArmed = ctrlArmed,
                 altArmed = altArmed,
@@ -310,7 +320,7 @@ private const val CLOSE_HUE = 6
 @Composable
 private fun TerminalGrid(
     holder: FullScreenPtySession,
-    measurer: TextMeasurer,
+    glyphs: GlyphCache,
     focusRequester: FocusRequester,
     ctrlArmed: Boolean,
     altArmed: Boolean,
@@ -359,7 +369,7 @@ private fun TerminalGrid(
                 }
             }
         ) {
-            drawTerminal(holder, GridMetrics(columns, rows, cellWidthPx.toFloat(), cellHeightPx.toFloat()), measurer)
+            drawTerminal(holder, GridMetrics(columns, rows, cellWidthPx.toFloat(), cellHeightPx.toFloat()), glyphs)
         }
 
         BasicTextField(
@@ -547,10 +557,10 @@ private class RenderContext(
     val screenCols: Int,
     val colors: IntArray,
     val defaultBg: Int,
-    val measurer: TextMeasurer
+    val glyphs: GlyphCache
 )
 
-private fun DrawScope.drawTerminal(holder: FullScreenPtySession, metrics: GridMetrics, measurer: TextMeasurer) {
+private fun DrawScope.drawTerminal(holder: FullScreenPtySession, metrics: GridMetrics, glyphs: GlyphCache) {
     val emulator = holder.session.emulator ?: return
     val screen = emulator.screen
     val colors = emulator.mColors.mCurrentColors
@@ -561,7 +571,7 @@ private fun DrawScope.drawTerminal(holder: FullScreenPtySession, metrics: GridMe
         screenCols = min(metrics.columns, screen.mColumns),
         colors = colors,
         defaultBg = defaultBg,
-        measurer = measurer
+        glyphs = glyphs
     )
 
     drawRect(Color(defaultBg), size = Size(metrics.columns * metrics.cellWidth, metrics.rows * metrics.cellHeight))
@@ -600,19 +610,67 @@ private fun DrawScope.drawRun(line: TerminalRow?, span: RowSpan, style: Long, ct
     }
 
     val bold = effect and TmStyle.CHARACTER_ATTRIBUTE_BOLD != 0
-    val layout = ctx.measurer.measure(
-        text,
-        ComposeTextStyle(
-            color = Color(fg),
-            fontFamily = FontFamily.Monospace,
-            fontSize = CELL_FONT_SIZE,
-            fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal
-        )
-    )
-    drawText(layout, topLeft = Offset(x, y))
+    drawGlyphs(text, span.col, span.row, Color(fg), bold, ctx)
     if (effect and TmStyle.CHARACTER_ATTRIBUTE_UNDERLINE != 0) {
         drawLine(Color(fg), Offset(x, y + ctx.metrics.cellHeight - 1), Offset(x + runWidth, y + ctx.metrics.cellHeight - 1))
     }
+}
+
+/**
+ * Draws [text] one grid cluster at a time, each stretched horizontally to its cell width (two cells
+ * for a wide character). The font is proportional; this is what makes it fit a terminal grid.
+ * [text] is the run's text as [terminalRowText] returns it: one char or cluster per cell, with the
+ * second cell of a wide character omitted.
+ */
+@Suppress("LongParameterList")
+private fun DrawScope.drawGlyphs(text: String, startCol: Int, row: Int, color: Color, bold: Boolean, ctx: RenderContext) {
+    val cellWidth = ctx.metrics.cellWidth
+    val y = row * ctx.metrics.cellHeight
+    var col = startCol
+    var index = 0
+    while (index < text.length) {
+        val base = text.codePointAt(index)
+        var end = index + Character.charCount(base)
+        // Zero-width combiners stay with their base character.
+        while (end < text.length) {
+            val next = text.codePointAt(end)
+            if (WcWidth.width(next) != 0) break
+            end += Character.charCount(next)
+        }
+        val cells = WcWidth.width(base).coerceIn(1, 2)
+        if (base != ' '.code) {
+            val layout = ctx.glyphs.layout(text.substring(index, end), bold)
+            val natural = layout.size.width.coerceAtLeast(1)
+            val x = col * cellWidth
+            withTransform({ scale(cells * cellWidth / natural, 1f, pivot = Offset(x, y)) }) {
+                drawText(layout, color = color, topLeft = Offset(x, y))
+            }
+        }
+        col += cells
+        index = end
+    }
+}
+
+/**
+ * Measured layouts of single grid clusters, kept for the life of the screen (the TextMeasurer's own
+ * cache holds eight entries, far too few for a full grid redrawn every frame). Keyed by the
+ * cluster and its weight; colour is applied at draw time so it does not multiply the entries.
+ * Rebuilt by the caller whenever the font size, density or font scale changes.
+ */
+private class GlyphCache(private val measurer: TextMeasurer, private val family: FontFamily) {
+    private val layouts = HashMap<String, TextLayoutResult>()
+
+    fun layout(cluster: String, bold: Boolean): TextLayoutResult =
+        layouts.getOrPut(if (bold) "$cluster\u0000b" else cluster) {
+            measurer.measure(
+                cluster,
+                ComposeTextStyle(
+                    fontFamily = family,
+                    fontSize = CELL_FONT_SIZE,
+                    fontWeight = if (bold) FontWeight.ExtraBold else FontWeight.Normal
+                )
+            )
+        }
 }
 
 private fun DrawScope.drawCursor(holder: FullScreenPtySession, emulator: TerminalEmulator, ctx: RenderContext) {
