@@ -64,7 +64,7 @@ import com.hereliesaz.hg2gui.ui.LocalAzphaltUiScale
 import com.hereliesaz.hg2gui.ui.menu.Azphalt
 import com.hereliesaz.hg2gui.ui.menu.onPage
 import com.hereliesaz.hg2gui.ui.screenInsets
-import com.hereliesaz.hg2gui.ui.theme.azrienochFontFamily
+import com.hereliesaz.hg2gui.ui.theme.azrienochMonoFontFamily
 import com.termux.terminal.KeyHandler
 import com.termux.terminal.TerminalEmulator
 import com.termux.terminal.TerminalRow
@@ -201,9 +201,10 @@ private fun RawTerminalSurface(
     // an unkeyed measurement would keep positioning the grid with the old cell.
     val density = LocalDensity.current
     val uiScale = LocalAzphaltUiScale.current
-    val family = azrienochFontFamily()
-    // Azrienoch is proportional, so the cell is a fixed box and every glyph is stretched to it (see
-    // GlyphCache). The digit zero sets the width: a typical letter then needs little stretching.
+    val family = azrienochMonoFontFamily()
+    // The Mono cut of Azrienoch has one width for every ASCII glyph, so the cell is that width. Each cluster
+    // is still drawn on its own and scaled to its cell (see GlyphCache), which also fits glyphs the font
+    // lacks and the system draws instead. The digit zero sets the width.
     val cellMetrics = remember(measurer, family, density.density, density.fontScale, uiScale) {
         measurer.measure("0", ComposeTextStyle(fontFamily = family, fontSize = CELL_FONT_SIZE))
     }
@@ -667,7 +668,7 @@ private class GlyphCache(private val measurer: TextMeasurer, private val family:
                 ComposeTextStyle(
                     fontFamily = family,
                     fontSize = CELL_FONT_SIZE,
-                    fontWeight = if (bold) FontWeight.ExtraBold else FontWeight.Normal
+                    fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal
                 )
             )
         }

@@ -9,3 +9,5 @@ instances of `fonts/variable/Azrienoch-VF.ttf` made with `fontTools.varLib.insta
 800 / 900, `wdth` 100, `SERF` 0, `GRAD` 0.
 
 Characters used in the app's strings that Azrienoch still lacks: `▸` and `✓`. They render in the system font.
+
+`azrienoch_mono_regular.ttf` and `azrienoch_mono_bold.ttf` are the Mono cut (`wdth` 0) at `wght` 400 and 800, used by the full-screen terminal grid.

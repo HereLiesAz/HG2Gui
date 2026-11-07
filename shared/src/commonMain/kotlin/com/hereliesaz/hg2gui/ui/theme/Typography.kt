@@ -11,6 +11,8 @@ import androidx.compose.ui.unit.sp
 import hg2gui.shared.generated.resources.Res
 import hg2gui.shared.generated.resources.azrienoch_black
 import hg2gui.shared.generated.resources.azrienoch_extrabold
+import hg2gui.shared.generated.resources.azrienoch_mono_bold
+import hg2gui.shared.generated.resources.azrienoch_mono_regular
 import hg2gui.shared.generated.resources.azrienoch_regular
 import hg2gui.shared.generated.resources.azrienoch_semibold
 import org.jetbrains.compose.resources.Font
@@ -27,6 +29,16 @@ fun azrienochFontFamily() = FontFamily(
     Font(Res.font.azrienoch_black, FontWeight.Black),
     Font(Res.font.azrienoch_semibold, FontWeight.SemiBold),
     Font(Res.font.azrienoch_extrabold, FontWeight.ExtraBold)
+)
+
+/**
+ * Azrienoch at its Mono width stop (`wdth` 0): every ASCII glyph is the same width. Used by the full-screen
+ * terminal grid. Static instances at wght 400 and 800, with SERF 0 and GRAD 0.
+ */
+@Composable
+fun azrienochMonoFontFamily() = FontFamily(
+    Font(Res.font.azrienoch_mono_regular, FontWeight.Normal),
+    Font(Res.font.azrienoch_mono_bold, FontWeight.Bold)
 )
 
 /**
