@@ -41,7 +41,7 @@ import com.hereliesaz.hg2gui.ui.theme.azphaltType
  * The root of every HG2Gui Activity's content. Provides, for everything beneath it:
  * - the Material colour scheme, typography and `LocalContentColor`, all following the rolled
  *   [Azphalt.currentGround] (recomposes on a ground reroll);
- * - [LocalAzphaltType] (the Jost type scale) and [LocalAzphaltUiScale];
+ * - [LocalAzphaltType] (the Azrienoch type scale) and [LocalAzphaltUiScale];
  * - a root background painted with the ground's [pageBrush], so the very first composed frame, a
  *   "Loading..." screen and any area a screen forgets to fill all show the ground rather than the
  *   window's own colour;
