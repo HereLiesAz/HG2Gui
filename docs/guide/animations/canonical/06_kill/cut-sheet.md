@@ -8,7 +8,7 @@
 
 **END:** `06_kill_frame_01.png`
 
-A midnight-blue void. A hand the size of a continent descends and presses one large mustard key. A small machine below begins to turn, and things start to pile up beside it: files, jars, gears, a conveyor feeding it. End on the machine running, the piles growing, and a crowd of small figures at the bottom of the frame beginning to look up.
+A midnight-blue void. A hand the size of a continent descends and presses a button. A brown planet pops up, and water pours onto it. The camera zooms in to a desolate desert beach. Trees pop up, then a village, then a city, and more and more buildings crowd the screen. Wars break out and destroy some of the buildings, and more buildings replace them. Smog fills the air. End on the screen going black under the smog and the buildings.
 
 ### Cut 02 — 05:00–10:00
 
@@ -16,7 +16,7 @@ A midnight-blue void. A hand the size of a continent descends and presses one la
 
 **END:** `06_kill_frame_02.png`
 
-The small figures gather, and one steps forward, hat in hand, to ask politely. The hand does not move. Two of the small figures approach a second, smaller red key, reach for it, and stop when they see the first. A man with a magnificent moustache steps forward and raises one finger. End on the raised finger.
+The people who asked God politely to stop walk in and plead. The giant hand comes down from the top of the screen and gives them the middle finger. Two figures wheel out a guillotine, pause while looking up, and wheel it back off the screen. End on the crowd looking up at the raised middle finger.
 
 ### Cut 03 — 10:00–15:00
 
@@ -24,4 +24,4 @@ The small figures gather, and one steps forward, hat in hand, to ask politely. T
 
 **END:** `06_kill_frame_03.png`
 
-The moustached man slides a black envelope into a slot and it rises to the hand. The hand goes limp. The machine stops, then the conveyors, then the lights, one by one. No explosion. Hold on the moustached man, mildly surprised, under a perfectly still hand.
+Nietzsche walks on, raises one finger as if he has an idea, puts his hand in his pocket and pulls out a gun. He aims at the top of the screen and pulls the trigger. The giant hand falls from out of view and lands behind him, dead. End on Nietzsche with the gun lowered and the dead hand lying behind him.

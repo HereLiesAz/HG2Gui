@@ -2,7 +2,7 @@
 
 ## START shot
 
-Resume precisely from the preceding clip's final tableau: End on the raised finger.
+Resume precisely from the preceding clip's final tableau: End on the crowd looking up at the raised middle finger.
 
 **START** — NO IMAGE
 
@@ -12,7 +12,7 @@ Resume precisely from the preceding clip's final tableau: End on the raised fing
 
 ## END shot
 
-Hold on the moustached man, mildly surprised, under a perfectly still hand.
+End on Nietzsche with the gun lowered and the dead hand lying behind him.
 
 **END** — NO IMAGE
 

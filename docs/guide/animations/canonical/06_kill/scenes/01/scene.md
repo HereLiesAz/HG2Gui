@@ -1,6 +1,6 @@
 ## Cut 01 — 00:00–05:00
 
-A midnight-blue void. A hand the size of a continent descends and presses one large mustard key. A small machine below begins to turn, and things start to pile up beside it: files, jars, gears, a conveyor feeding it. End on the machine running, the piles growing, and a crowd of small figures at the bottom of the frame beginning to look up.
+A midnight-blue void. A hand the size of a continent descends and presses a button. A brown planet pops up, and water pours onto it. The camera zooms in to a desolate desert beach. Trees pop up, then a village, then a city, and more and more buildings crowd the screen. Wars break out and destroy some of the buildings, and more buildings replace them. Smog fills the air. End on the screen going black under the smog and the buildings.
 
 ### Ready-to-paste generation prompt
 
@@ -34,7 +34,7 @@ Guide tab 2: SIGNALS
 Palette lock: mustard, midnight blue, black-red, cream, muted cyan
 
 CUT 01 OF 03 — 00:00–05:00
-A midnight-blue void. A hand the size of a continent descends and presses one large mustard key. A small machine below begins to turn, and things start to pile up beside it: files, jars, gears, a conveyor feeding it. End on the machine running, the piles growing, and a crowd of small figures at the bottom of the frame beginning to look up.
+A midnight-blue void. A hand the size of a continent descends and presses a button. A brown planet pops up, and water pours onto it. The camera zooms in to a desolate desert beach. Trees pop up, then a village, then a city, and more and more buildings crowd the screen. Wars break out and destroy some of the buildings, and more buildings replace them. Smog fills the air. End on the screen going black under the smog and the buildings.
 ```
 
 ---
@@ -47,4 +47,4 @@ A midnight-blue void. A hand the size of a continent descends and presses one la
 
 **END:** `06_kill_frame_01.png`
 
-A midnight-blue void. A hand the size of a continent descends and presses one large mustard key. A small machine below begins to turn, and things start to pile up beside it: files, jars, gears, a conveyor feeding it. End on the machine running, the piles growing, and a crowd of small figures at the bottom of the frame beginning to look up.
+A midnight-blue void. A hand the size of a continent descends and presses a button. A brown planet pops up, and water pours onto it. The camera zooms in to a desolate desert beach. Trees pop up, then a village, then a city, and more and more buildings crowd the screen. Wars break out and destroy some of the buildings, and more buildings replace them. Smog fills the air. End on the screen going black under the smog and the buildings.

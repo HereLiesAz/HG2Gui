@@ -4,12 +4,14 @@
 
 Visual action, verbatim from the revised 5-second cut sheet:
 
-The moustached man slides a black envelope into a slot and it rises to the hand. The hand goes limp. The machine stops, then the conveyors, then the lights, one by one. No explosion. Hold on the moustached man, mildly surprised, under a perfectly still hand.
+Nietzsche walks on, raises one finger as if he has an idea, puts his hand in his pocket and pulls out a gun. He aims at the top of the screen and pulls the trigger. The giant hand falls from out of view and lands behind him, dead. End on Nietzsche with the gun lowered and the dead hand lying behind him.
 
 ## Corresponding original script excerpt
 
-He posts a black envelope up to the hand.
+Nietzsche walks on, raises one finger as if he has an idea, puts his hand in his pocket and pulls out a gun.
 
-The hand goes limp. The machine stops, and then the lights, and then everything else.
+He aims at the top of the screen and pulls the trigger.
+
+The giant hand falls from out of view and lands behind him, dead.
 
 Hold.

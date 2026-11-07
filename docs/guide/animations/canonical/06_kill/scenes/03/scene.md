@@ -1,6 +1,6 @@
 ## Cut 03 — 10:00–15:00
 
-The moustached man slides a black envelope into a slot and it rises to the hand. The hand goes limp. The machine stops, then the conveyors, then the lights, one by one. No explosion. Hold on the moustached man, mildly surprised, under a perfectly still hand.
+Nietzsche walks on, raises one finger as if he has an idea, puts his hand in his pocket and pulls out a gun. He aims at the top of the screen and pulls the trigger. The giant hand falls from out of view and lands behind him, dead. End on Nietzsche with the gun lowered and the dead hand lying behind him.
 
 ### Ready-to-paste generation prompt
 
@@ -34,7 +34,7 @@ Guide tab 2: SIGNALS
 Palette lock: mustard, midnight blue, black-red, cream, muted cyan
 
 CUT 03 OF 03 — 10:00–15:00
-The moustached man slides a black envelope into a slot and it rises to the hand. The hand goes limp. The machine stops, then the conveyors, then the lights, one by one. No explosion. Hold on the moustached man, mildly surprised, under a perfectly still hand.
+Nietzsche walks on, raises one finger as if he has an idea, puts his hand in his pocket and pulls out a gun. He aims at the top of the screen and pulls the trigger. The giant hand falls from out of view and lands behind him, dead. End on Nietzsche with the gun lowered and the dead hand lying behind him.
 ```
 
 ---
@@ -47,4 +47,4 @@ The moustached man slides a black envelope into a slot and it rises to the hand.
 
 **END:** `06_kill_frame_03.png`
 
-The moustached man slides a black envelope into a slot and it rises to the hand. The hand goes limp. The machine stops, then the conveyors, then the lights, one by one. No explosion. Hold on the moustached man, mildly surprised, under a perfectly still hand.
+Nietzsche walks on, raises one finger as if he has an idea, puts his hand in his pocket and pulls out a gun. He aims at the top of the screen and pulls the trigger. The giant hand falls from out of view and lands behind him, dead. End on Nietzsche with the gun lowered and the dead hand lying behind him.

@@ -180,21 +180,29 @@ Hold.
 
 A midnight-blue void.
 
-A hand the size of a continent presses a single large key.
+A hand the size of a continent presses a button.
 
-Below, a small machine begins to turn.
+A brown planet pops up. Water pours onto it.
 
-Files pile up beside it. So do jars, and gears. A conveyor feeds it. It does not slow down.
+The camera zooms in to a desolate desert beach.
 
-A crowd of small figures looks up. One steps forward, hat in hand, and asks politely. The hand does not move.
+Trees pop up. A village pops up. Then a city, and more and more buildings crowd the screen.
 
-Two of the small figures approach a second key. They reach for it, and stop when they see the first.
+Wars break out and destroy some of the buildings. More buildings replace them. Smog fills the air.
 
-A man with a magnificent moustache raises one finger.
+Between the smog and the buildings, the screen goes black.
 
-He posts a black envelope up to the hand.
+The people who asked God politely to stop walk in and plead.
 
-The hand goes limp. The machine stops, and then the lights, and then everything else.
+The giant hand comes down from the top of the screen and gives them the middle finger.
+
+Two figures wheel out a guillotine, pause while looking up, and wheel it back off.
+
+Nietzsche walks on, raises one finger as if he has an idea, puts his hand in his pocket and pulls out a gun.
+
+He aims at the top of the screen and pulls the trigger.
+
+The giant hand falls from out of view and lands behind him, dead.
 
 Hold.
 

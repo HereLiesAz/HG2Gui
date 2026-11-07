@@ -4,12 +4,12 @@
 
 Visual action, verbatim from the revised 5-second cut sheet:
 
-The small figures gather, and one steps forward, hat in hand, to ask politely. The hand does not move. Two of the small figures approach a second, smaller red key, reach for it, and stop when they see the first. A man with a magnificent moustache steps forward and raises one finger. End on the raised finger.
+The people who asked God politely to stop walk in and plead. The giant hand comes down from the top of the screen and gives them the middle finger. Two figures wheel out a guillotine, pause while looking up, and wheel it back off the screen. End on the crowd looking up at the raised middle finger.
 
 ## Corresponding original script excerpt
 
-A crowd of small figures looks up. One steps forward, hat in hand, and asks politely. The hand does not move.
+The people who asked God politely to stop walk in and plead.
 
-Two of the small figures approach a second key. They reach for it, and stop when they see the first.
+The giant hand comes down from the top of the screen and gives them the middle finger.
 
-A man with a magnificent moustache raises one finger.
+Two figures wheel out a guillotine, pause while looking up, and wheel it back off.

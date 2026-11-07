@@ -4,14 +4,20 @@
 
 Visual action, verbatim from the revised 5-second cut sheet:
 
-A midnight-blue void. A hand the size of a continent descends and presses one large mustard key. A small machine below begins to turn, and things start to pile up beside it: files, jars, gears, a conveyor feeding it. End on the machine running, the piles growing, and a crowd of small figures at the bottom of the frame beginning to look up.
+A midnight-blue void. A hand the size of a continent descends and presses a button. A brown planet pops up, and water pours onto it. The camera zooms in to a desolate desert beach. Trees pop up, then a village, then a city, and more and more buildings crowd the screen. Wars break out and destroy some of the buildings, and more buildings replace them. Smog fills the air. End on the screen going black under the smog and the buildings.
 
 ## Corresponding original script excerpt
 
 A midnight-blue void.
 
-A hand the size of a continent presses a single large key.
+A hand the size of a continent presses a button.
 
-Below, a small machine begins to turn.
+A brown planet pops up. Water pours onto it.
 
-Files pile up beside it. So do jars, and gears. A conveyor feeds it. It does not slow down.
+The camera zooms in to a desolate desert beach.
+
+Trees pop up. A village pops up. Then a city, and more and more buildings crowd the screen.
+
+Wars break out and destroy some of the buildings. More buildings replace them. Smog fills the air.
+
+Between the smog and the buildings, the screen goes black.

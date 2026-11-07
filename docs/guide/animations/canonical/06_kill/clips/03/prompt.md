@@ -8,15 +8,15 @@ Create the specified animation as a minimalistic flat vector illustration with s
 Render EXACTLY 1:1 square; single background midnight blue `#111D38`.
 
 SEQUENCE: kill; CLIP 03; 5 seconds · 10:00–15:00.
-START: Resume precisely from the preceding clip's final tableau: End on the raised finger.
-END: Hold on the moustached man, mildly surprised, under a perfectly still hand.
+START: Resume precisely from the preceding clip's final tableau: End on the crowd looking up at the raised middle finger.
+END: End on Nietzsche with the gun lowered and the dead hand lying behind him.
 
 MOTION DIRECTOR'S TIMING
-0.0–2.4s: The moustached man slides a black envelope into a slot and it rises to the hand. The hand goes limp.
-2.4–4.6s: The machine stops, then the conveyors, then the lights, one by one. No explosion. Hold on the moustached man, mildly surprised, under a perfectly still hand.
+0.0–2.4s: Nietzsche walks on, raises one finger as if he has an idea, puts his hand in his pocket and pulls out a gun.
+2.4–4.6s: He aims at the top of the screen and pulls the trigger. The giant hand falls from out of view and lands behind him, dead. End on Nietzsche with the gun lowered and the dead hand lying behind him.
 4.6–5.0s: Hold the exact finishing composition, no additional changes.
 
-EXACT STORY ACTION / WORDS: The moustached man slides a black envelope into a slot and it rises to the hand. The hand goes limp. The machine stops, then the conveyors, then the lights, one by one. No explosion. Hold on the moustached man, mildly surprised, under a perfectly still hand.
+EXACT STORY ACTION / WORDS: Nietzsche walks on, raises one finger as if he has an idea, puts his hand in his pocket and pulls out a gun. He aims at the top of the screen and pulls the trigger. The giant hand falls from out of view and lands behind him, dead. End on Nietzsche with the gun lowered and the dead hand lying behind him.
 
 A REQUIRED BOUNDARY IS MISSING: these written shots are production requirements, not fabricated files. Final matched video generation must wait for approved boundary art.
 ~~~

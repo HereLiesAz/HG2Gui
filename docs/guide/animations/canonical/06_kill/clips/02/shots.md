@@ -2,7 +2,7 @@
 
 ## START shot
 
-Resume precisely from the preceding clip's final tableau: End on the machine running, the piles growing, and a crowd of small figures at the bottom of the frame beginning to look up.
+Resume precisely from the preceding clip's final tableau: End on the screen going black under the smog and the buildings.
 
 **START** — NO IMAGE
 
@@ -12,7 +12,7 @@ Resume precisely from the preceding clip's final tableau: End on the machine run
 
 ## END shot
 
-End on the raised finger.
+End on the crowd looking up at the raised middle finger.
 
 **END** — NO IMAGE
 
