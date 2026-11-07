@@ -518,13 +518,13 @@ Sends a signal to a process.
 
 In the beginning, God executed a command.
 
-As the process continued, files were saved, memories were stored, computations were powered, resources consumed, people began to wonder if maybe the command had gone on long enough, and tried to turn it off.
+As the process continued, files were saved, memories were stored, computations were powered, resources consumed, people began to wonder if maybe the command had gone on long enough, and tried to stop it.
 
-People asked God politely to knock it off.
+People asked God politely to knock it off, which he ignored, as per usual.
 
 The French were about to execute the command when they remembered that's how God started the command in the first place.
 
-But that gave Friedrich Nietzsche an idea, and a signal was sent to kill.
+But that gave Friedrich Nietzsche an idea, and a signal was sent to kill it.
 
 This, it did, a little too well.
 

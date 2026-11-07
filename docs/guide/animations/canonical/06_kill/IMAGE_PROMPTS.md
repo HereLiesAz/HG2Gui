@@ -6,9 +6,9 @@ This replaces the earlier post-office version of the scene. The story is the pro
 
 ## The story, in plain words
 
-In the beginning, God executed a command. As the process continued, files were saved, memories were stored, computations were powered, resources consumed, people began to wonder if maybe the command had gone on long enough, and tried to turn it off. People asked God politely to knock it off.
+In the beginning, God executed a command. As the process continued, files were saved, memories were stored, computations were powered, resources consumed, people began to wonder if maybe the command had gone on long enough, and tried to stop it. People asked God politely to knock it off, which he ignored, as per usual.
 
-The French were about to execute the command when they remembered that's how God started the command in the first place. But that gave Friedrich Nietzsche an idea, and a signal was sent to kill. This, it did, a little too well.
+The French were about to execute the command when they remembered that's how God started the command in the first place. But that gave Friedrich Nietzsche an idea, and a signal was sent to kill it. This, it did, a little too well.
 
 The joke leans on one word: *execute* means both to run something and to put it to death. God started the command by executing it, so the French cannot execute it without confusing the two.
 
