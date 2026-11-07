@@ -29,3 +29,24 @@ BEAT 3 (10-15 s): The same stage, empty again except for the four people, who st
 
 CONTINUITY: Nobody performs for the camera; the tone is calm and deadpan. The hand, button, planet, city, stage, guillotine and every person keep the colours, shapes and scale of the references. Invent no events beyond the beats; no fades, title cards or transition graphics.
 ~~~
+
+## Beat 2 on its own (redo)
+
+The first generation of beat 2 as a separate clip let the four people rise into the frame with a crossfade ghost, and the guillotine never left. This version fixes the order, bans dissolves and ghosting, and runs 8 seconds so the exit reads; trim or speed it up in the edit. Attach `docs/06_kill_stage.png` (`@Image1`), `docs/06_kill_pair.png` (`@Image2`) and `docs/06_kill_frame_02.png` (`@Image3`). 2250 characters.
+
+~~~text
+FORMAT: Exactly 1:1 square, 8 seconds, one continuous shot on one flat midnight-blue background, fixed camera. No header, tabs, title, border, letterbox, captions or any text. No narration, voice or dialogue.
+
+STYLE: Minimalistic flat vector illustration with simplified realism, in the visual language of the 2005 Hitchhiker's Guide graphics: realistically proportioned figures and objects reduced to a few flat colour shapes, figures small and almost silhouettes, faces minimal with no eyes or mouth, crisp clean edges. No outlines, gradients, gloss, shading, 3D, depth of field or photorealism. Motion is crisp and graphic. No camera shake, no dissolves or crossfades, no ghosting or transparency: every figure is fully solid at every moment. No bouncy easing.
+
+REFERENCES (keep every design exactly): @Image1 the stage: the giant hand giving the middle finger at the top left, the guillotine on its cart arriving at the left, four people standing at the lower right. @Image2 the two identical people in muted-cyan coveralls pushing the guillotine. @Image3 the four people looking up at the hand.
+
+ACTION, in order, with no extra events:
+0-1.5 s: The bare midnight-blue stage. The four people of @Image3 walk in from the right edge along one ground line, as whole figures at full size, and stop at the lower right with their faces tilted up. The tall thin man in the cream coat holds his hat to his chest, then holds it out and bows.
+1.5-3 s: The giant hand slides in from the top-left corner, turns, and settles giving the middle finger, exactly as in @Image1. It does not move again.
+3-5 s: The two people of @Image2 wheel the guillotine in from the left edge along the same ground line and stop at the left, as in @Image1.
+5-6 s: The two people look up at the hand. Nothing else moves. Pause.
+6-8 s: The two people turn the cart around and wheel the guillotine back out past the left edge until it is gone. The hand and the four people stay still and end exactly as in @Image3's arrangement, with the stage empty on the left.
+
+CONTINUITY: Calm and deadpan; nobody performs for the camera. The hand, guillotine and every person keep the colours, shapes and scale of the references. Invent no events; no fades, title cards or transition graphics.
+~~~
