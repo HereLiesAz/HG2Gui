@@ -12,11 +12,11 @@ START: Resume precisely from the preceding clip's final tableau: End on the mach
 END: End on the raised finger.
 
 MOTION DIRECTOR'S TIMING
-0.0–2.4s: The small figures gather, and one steps forward, hat in hand, to ask politely. The hand does not move.
+0.0–2.4s: The small figures gather, and one steps forward, hat in hand, to ask politely. The hand does not move. Two figures in berets approach a second, smaller red key, reach for it, and stop when they see the first.
 2.4–4.6s: A man with a magnificent moustache steps forward and raises one finger. End on the raised finger.
 4.6–5.0s: Hold the exact finishing composition, no additional changes.
 
-EXACT STORY ACTION / WORDS: The small figures gather, and one steps forward, hat in hand, to ask politely. The hand does not move. A man with a magnificent moustache steps forward and raises one finger. End on the raised finger.
+EXACT STORY ACTION / WORDS: The small figures gather, and one steps forward, hat in hand, to ask politely. The hand does not move. Two figures in berets approach a second, smaller red key, reach for it, and stop when they see the first. A man with a magnificent moustache steps forward and raises one finger. End on the raised finger.
 
 A REQUIRED BOUNDARY IS MISSING: these written shots are production requirements, not fabricated files. Final matched video generation must wait for approved boundary art.
 ~~~

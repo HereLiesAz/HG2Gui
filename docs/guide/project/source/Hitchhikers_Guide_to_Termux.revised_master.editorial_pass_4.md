@@ -520,6 +520,8 @@ As the process continued, files were saved, memories were stored, computations w
 
 People asked God politely to knock it off, which he ignored, as per usual.
 
+The French were about to execute the command when they remembered that's how God started the command in the first place.
+
 But that gave Friedrich Nietzsche an idea, and a signal was sent to `kill` it.
 
 This, it did, a little too well.
@@ -535,6 +537,8 @@ Below, a small machine begins to turn.
 Files pile up beside it. So do jars, and gears. A conveyor feeds it. It does not slow down.
 
 A crowd of small figures looks up. One steps forward, hat in hand, and asks politely. The hand does not move.
+
+Two figures in berets approach a second key. They reach for it, and stop when they see the first.
 
 A man with a magnificent moustache raises one finger.
 
