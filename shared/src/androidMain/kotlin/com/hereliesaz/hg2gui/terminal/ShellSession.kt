@@ -63,6 +63,8 @@ actual class ShellSession private constructor(
         private const val EXIT_INTERRUPTED = 130
         private const val EXIT_TIMED_OUT = 124
         private const val STARTUP_PROBE_MS = 300L
+        // A pipe-backed shell can exit before its final stdout bytes become readable.
+        private const val EXIT_DRAIN_GRACE_MS = 200L
         private const val PROMPT_IDLE_MS = 400L
         private const val INTR_BYTE = 0x03
         private const val PENDING_TRIM_THRESHOLD = 65_536
@@ -377,6 +379,8 @@ actual class ShellSession private constructor(
      *   the call keeps waiting. A command stops only through [interrupt], a prompt that
      *   [onNeedInput] declined (null) and that stayed silent for a quiet period, or the opt-in
      *   [timeoutMs] cap (> 0) for headless callers. Stopping cancels the command, not the shell.
+     * - When a pipe-backed shell exits mid-command, its final buffered stdout is drained for
+     *   a bounded grace period before the exit notice, so the last output is not lost.
      * - One command at a time: a second concurrent call is refused with -1.
      *
      * Returns the command's exit status, 130 for an interrupted or declined-prompt command, 124
@@ -619,13 +623,26 @@ actual class ShellSession private constructor(
                     if (!processStillRunning()) {
                         // The shell exited between the readiness check and now: whatever it wrote
                         // before dying (and the start marker, if it died at once) is still in the
-                        // pipe and is real output.
+                        // pipe and is real output. BufferedReader.ready() may briefly be
+                        // false after the child exits but before the pipe delivers its last
+                        // bytes. Poll only for this bounded grace period: earlier background
+                        // children may still hold the pipe open, so an unbounded read can hang.
+                        val drainDeadline = System.nanoTime() + EXIT_DRAIN_GRACE_MS * 1_000_000L
                         try {
-                            while (sout.ready()) {
-                                val n = sout.read(buf)
-                                if (n <= 0) break
-                                pending.append(buf, 0, n)
-                                if (!started) started = discardBeforeStart(pending)
+                            while (System.nanoTime() < drainDeadline) {
+                                if (sout.ready()) {
+                                    val n = sout.read(buf)
+                                    if (n <= 0) break
+                                    pending.append(buf, 0, n)
+                                    if (!started) started = discardBeforeStart(pending)
+                                } else {
+                                    try {
+                                        Thread.sleep(5L)
+                                    } catch (e: InterruptedException) {
+                                        Thread.currentThread().interrupt()
+                                        break
+                                    }
+                                }
                             }
                         } catch (ignored: IOException) {}
                         markDeadIfCurrent(myGeneration)
