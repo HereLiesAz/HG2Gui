@@ -74,6 +74,24 @@ class ShellSessionRecoveryTest {
     }
 
     @Test
+    fun rapidShellExitKeepsTrailingOutputAcrossRestarts() {
+        val s = session()
+        repeat(20) { attempt ->
+            val exited = s.exec("echo tail-$attempt; exit 3")
+            assertEquals(-1, exited.exitCode)
+            assertTrue(
+                "exit $attempt lost its last stdout bytes: ${exited.output}",
+                exited.output.contains("tail-$attempt")
+            )
+            assertTrue(exited.output.contains("[shell exited"))
+        }
+        val next = s.exec("echo recovered")
+        assertEquals(0, next.exitCode)
+        assertTrue(next.output.startsWith("[shell restarted]"))
+        assertTrue(next.output.endsWith("recovered"))
+    }
+
+    @Test
     fun exitInsideACommandIsFollowedByARespawnedShell() {
         val s = session()
         s.exec("KEEP=yes")
