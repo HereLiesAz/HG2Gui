@@ -1,5 +1,5 @@
 [versions]
-agp = "9.4.1"
+agp = "9.5.1"
 # Pinned NDK, read by composeApp/build.gradle.kts and .github/workflows/ci.yml (the only two places that need it).
 ndk = "29.0.14206865"
 detekt = "1.23.8"
