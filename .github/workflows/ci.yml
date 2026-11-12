@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -54,6 +55,10 @@ jobs:
       - name: Static analysis (non-blocking)
         continue-on-error: true
         run: ./gradlew detekt --build-cache
+
+      - name: Report CI result
+        if: always()
+        uses: HereLiesAz/workflows/.github/actions/ci-report@de579d34aee1d8a18b9d5329afdd94632258f621
 
   # composeApp (the app module: API receiver, MCP service, updater, manifest) was never built or
   # tested by CI: the job above only covers :shared and :terminal-emulator. Its preBuild compiles the
@@ -105,3 +110,7 @@ jobs:
           name: composeapp-lint-report
           path: composeApp/build/reports/lint-results-*.*
           if-no-files-found: ignore
+
+      - name: Report CI result
+        if: always()
+        uses: HereLiesAz/workflows/.github/actions/ci-report@de579d34aee1d8a18b9d5329afdd94632258f621
