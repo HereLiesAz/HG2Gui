@@ -32,7 +32,7 @@ runtime = "1.12.2"
 termuxAmLibrary = "v2.0.0"
 uiTooling = "1.12.2"
 window = "1.5.1"
-uiautomatorShell = "2.4.0"
+uiautomatorShell = "2.4.1"
 composeHotReload = "1.2.0"
 
 [libraries]
